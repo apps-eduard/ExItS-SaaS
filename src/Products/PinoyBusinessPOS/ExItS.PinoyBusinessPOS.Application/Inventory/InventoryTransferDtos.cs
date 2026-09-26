@@ -228,7 +228,15 @@ public sealed record InventoryTransferListItemDto(
     Guid? ReceivedBy = null,
     Guid? CancelledBy = null,
     DateTimeOffset? ClosedAtUtc = null,
-    Guid? ClosedBy = null);
+    Guid? ClosedBy = null,
+    /// <summary>True when this transfer chose RequestReplacement follow-up.</summary>
+    bool HasRequestReplacementFollowUp = false,
+    /// <summary>Family-level remaining to dispatch (Needs fulfillment).</summary>
+    decimal RemainingToDispatchQty = 0,
+    /// <summary>Family-level still in transit.</summary>
+    decimal OpenInTransitQty = 0,
+    /// <summary>True while RequestReplacement family fulfillment is still outstanding.</summary>
+    bool HasOpenDiscrepancyFollowUp = false);
 
 public sealed record InventoryTransferFilter(
     string? Status = null,

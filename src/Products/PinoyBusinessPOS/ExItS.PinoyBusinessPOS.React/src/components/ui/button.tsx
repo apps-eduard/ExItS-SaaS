@@ -90,10 +90,11 @@ export const buttonVariantsCva = cva(
         auto: "rounded-[var(--exits-control-radius)]",
       },
       /**
-       * Danger solid strength: soft tint (ordinary) vs strong fill (confirmation).
-       * Only applies when intent=danger and appearance=solid|elevated|gradient.
+       * Fill strength for solid/elevated/gradient.
+       * soft = tinted surface (product default for Success/Info/Warning/Danger).
+       * strong = Prime-style filled semantic color (Severities gallery).
        */
-      dangerFill: {
+      emphasis: {
         soft: "",
         strong: "",
       },
@@ -159,14 +160,30 @@ export const buttonVariantsCva = cva(
       {
         intent: "success",
         appearance: "solid",
+        emphasis: "soft",
         class:
           "border border-border bg-[var(--exits-success-soft)] text-[var(--exits-success)] hover:border-[var(--exits-success)]",
       },
       {
         intent: "success",
         appearance: "elevated",
+        emphasis: "soft",
         class:
           "border border-border bg-[var(--exits-success-soft)] text-[var(--exits-success)] hover:border-[var(--exits-success)]",
+      },
+      {
+        intent: "success",
+        appearance: "solid",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-success)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-success)]",
+      },
+      {
+        intent: "success",
+        appearance: "elevated",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-success)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-success)]",
       },
       {
         intent: "success",
@@ -183,20 +200,44 @@ export const buttonVariantsCva = cva(
       {
         intent: "success",
         appearance: "gradient",
+        emphasis: "soft",
         class:
           "border border-border bg-gradient-to-b from-[var(--exits-success-soft)] to-[color-mix(in_srgb,var(--exits-success)_18%,var(--exits-success-soft))] text-[var(--exits-success)] hover:brightness-100",
       },
       {
+        intent: "success",
+        appearance: "gradient",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-gradient-to-b from-[var(--exits-success)] to-[color-mix(in_srgb,var(--exits-success)_78%,#000)] text-white hover:brightness-100",
+      },
+      {
         intent: "info",
         appearance: "solid",
+        emphasis: "soft",
         class:
           "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
       },
       {
         intent: "info",
         appearance: "elevated",
+        emphasis: "soft",
         class:
           "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
+      },
+      {
+        intent: "info",
+        appearance: "solid",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-info)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-info)]",
+      },
+      {
+        intent: "info",
+        appearance: "elevated",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-info)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-info)]",
       },
       {
         intent: "info",
@@ -213,20 +254,44 @@ export const buttonVariantsCva = cva(
       {
         intent: "info",
         appearance: "gradient",
+        emphasis: "soft",
         class:
           "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
       },
       {
+        intent: "info",
+        appearance: "gradient",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-gradient-to-b from-[var(--exits-info)] to-[color-mix(in_srgb,var(--exits-info)_78%,#000)] text-white hover:brightness-100",
+      },
+      {
         intent: "warning",
         appearance: "solid",
+        emphasis: "soft",
         class:
           "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
       },
       {
         intent: "warning",
         appearance: "elevated",
+        emphasis: "soft",
         class:
           "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
+      },
+      {
+        intent: "warning",
+        appearance: "solid",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-warning)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-warning)]",
+      },
+      {
+        intent: "warning",
+        appearance: "elevated",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-warning)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-warning)]",
       },
       {
         intent: "warning",
@@ -243,20 +308,28 @@ export const buttonVariantsCva = cva(
       {
         intent: "warning",
         appearance: "gradient",
+        emphasis: "soft",
         class:
           "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
       },
       {
+        intent: "warning",
+        appearance: "gradient",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-gradient-to-b from-[var(--exits-warning)] to-[color-mix(in_srgb,var(--exits-warning)_78%,#000)] text-white hover:brightness-100",
+      },
+      {
         intent: "danger",
         appearance: "solid",
-        dangerFill: "soft",
+        emphasis: "soft",
         class:
           "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
       },
       {
         intent: "danger",
         appearance: "elevated",
-        dangerFill: "soft",
+        emphasis: "soft",
         class:
           "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
       },
@@ -274,26 +347,26 @@ export const buttonVariantsCva = cva(
       {
         intent: "danger",
         appearance: "gradient",
-        dangerFill: "soft",
+        emphasis: "soft",
         class:
           "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
       },
       {
         intent: "danger",
         appearance: "solid",
-        dangerFill: "strong",
+        emphasis: "strong",
         class: "bg-[var(--exits-danger)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-danger)]",
       },
       {
         intent: "danger",
         appearance: "elevated",
-        dangerFill: "strong",
+        emphasis: "strong",
         class: "bg-[var(--exits-danger)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-danger)]",
       },
       {
         intent: "danger",
         appearance: "gradient",
-        dangerFill: "strong",
+        emphasis: "strong",
         class:
           "bg-gradient-to-b from-[var(--exits-danger)] to-[color-mix(in_srgb,var(--exits-danger)_78%,#000)] text-white hover:brightness-100 focus-visible:ring-[var(--exits-danger)]",
       },
@@ -303,30 +376,38 @@ export const buttonVariantsCva = cva(
       appearance: "solid",
       size: "default",
       shape: "auto",
-      dangerFill: "soft",
+      emphasis: "soft",
     },
   },
 );
 
+export type ButtonEmphasis = "soft" | "strong";
+
 export type ResolvedButtonVisual = {
   intent: ButtonIntentTone;
   appearance: ButtonAppearance;
-  dangerFill: "soft" | "strong";
+  emphasis: ButtonEmphasis;
 };
 
 /**
  * Map legacy variant/treatment → canonical intent + appearance.
- * New `intent` / `appearance` win when provided.
+ * New `intent` / `appearance` / `emphasis` win when provided.
  */
 export function resolveButtonVisual(options: {
   intent?: ButtonIntentTone | null;
   appearance?: ButtonAppearance | null;
+  emphasis?: ButtonEmphasis | null;
+  /**
+   * @deprecated Prefer `emphasis`. Alias for danger solid strength.
+   */
+  dangerFill?: ButtonEmphasis | null;
   /** @deprecated */
   variant?: ButtonLegacyVariant | null;
   /** @deprecated Prefer appearance elevated|gradient|solid */
   treatment?: ButtonLegacyTreatment | null;
 }): ResolvedButtonVisual {
-  const hasNew = options.intent != null || options.appearance != null;
+  const explicitEmphasis = options.emphasis ?? options.dangerFill ?? null;
+  const hasNew = options.intent != null || options.appearance != null || explicitEmphasis != null;
 
   if (hasNew) {
     const intent = options.intent ?? "primary";
@@ -336,7 +417,7 @@ export function resolveButtonVisual(options: {
     } else if (options.appearance == null && options.treatment === "gradient") {
       appearance = "gradient";
     }
-    return { intent, appearance, dangerFill: "soft" };
+    return { intent, appearance, emphasis: explicitEmphasis ?? "soft" };
   }
 
   const variant = options.variant ?? "default";
@@ -344,7 +425,7 @@ export function resolveButtonVisual(options: {
 
   let intent: ButtonIntentTone = "primary";
   let appearance: ButtonAppearance = "solid";
-  let dangerFill: "soft" | "strong" = "soft";
+  let emphasis: ButtonEmphasis = "soft";
 
   switch (variant) {
     case "default":
@@ -378,12 +459,12 @@ export function resolveButtonVisual(options: {
     case "destructive":
       intent = "danger";
       appearance = "solid";
-      dangerFill = "soft";
+      emphasis = "soft";
       break;
     case "dangerStrong":
       intent = "danger";
       appearance = "solid";
-      dangerFill = "strong";
+      emphasis = "strong";
       break;
     default:
       intent = "primary";
@@ -398,16 +479,25 @@ export function resolveButtonVisual(options: {
     }
   }
 
-  return { intent, appearance, dangerFill };
+  return { intent, appearance, emphasis };
 }
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
-  Omit<VariantProps<typeof buttonVariantsCva>, "intent" | "appearance" | "dangerFill"> & {
+  Omit<VariantProps<typeof buttonVariantsCva>, "intent" | "appearance" | "emphasis"> & {
     asChild?: boolean;
     /** Semantic tone (preferred). */
     intent?: ButtonIntentTone;
     /** Visual treatment (preferred): solid | outline | ghost | elevated | gradient */
     appearance?: ButtonAppearance;
+    /**
+     * Fill strength for solid/elevated/gradient (soft tint vs strong filled).
+     * Severities gallery uses `strong`. Product defaults remain `soft`.
+     */
+    emphasis?: ButtonEmphasis;
+    /**
+     * @deprecated Prefer `emphasis`. Kept for danger solid strength call sites.
+     */
+    dangerFill?: ButtonEmphasis;
     /**
      * @deprecated Prefer `intent` + `appearance`.
      * Legacy: default→primary+solid, secondary→neutral+solid (muted),
@@ -443,6 +533,8 @@ export function resolveButtonClassName(
   options: {
     intent?: ButtonIntentTone | null;
     appearance?: ButtonAppearance | null;
+    emphasis?: ButtonEmphasis | null;
+    dangerFill?: ButtonEmphasis | null;
     variant?: ButtonLegacyVariant | null;
     treatment?: ButtonLegacyTreatment | null;
     size?: VariantProps<typeof buttonVariantsCva>["size"];
@@ -455,7 +547,7 @@ export function resolveButtonClassName(
     buttonVariantsCva({
       intent: visual.intent,
       appearance: visual.appearance,
-      dangerFill: visual.dangerFill,
+      emphasis: visual.emphasis,
       size: options.size,
       shape: options.shape,
     }),
@@ -471,6 +563,8 @@ export function buttonVariants(
   options: {
     intent?: ButtonIntentTone | null;
     appearance?: ButtonAppearance | null;
+    emphasis?: ButtonEmphasis | null;
+    dangerFill?: ButtonEmphasis | null;
     variant?: ButtonLegacyVariant | null;
     treatment?: ButtonLegacyTreatment | null;
     size?: VariantProps<typeof buttonVariantsCva>["size"];
@@ -488,6 +582,8 @@ export function Button({
   className,
   intent,
   appearance,
+  emphasis,
+  dangerFill,
   variant,
   treatment,
   size,
@@ -496,12 +592,14 @@ export function Button({
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : "button";
-  const visual = resolveButtonVisual({ intent, appearance, variant, treatment });
+  const visual = resolveButtonVisual({ intent, appearance, emphasis, dangerFill, variant, treatment });
   return (
     <Comp
       className={resolveButtonClassName({
         intent,
         appearance,
+        emphasis,
+        dangerFill,
         variant,
         treatment,
         size,
@@ -510,6 +608,7 @@ export function Button({
       })}
       data-intent={visual.intent}
       data-appearance={visual.appearance}
+      data-emphasis={visual.emphasis}
       {...props}
     />
   );

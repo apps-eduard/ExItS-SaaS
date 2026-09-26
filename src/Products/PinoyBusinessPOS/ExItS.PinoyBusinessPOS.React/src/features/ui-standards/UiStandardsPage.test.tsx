@@ -96,6 +96,81 @@ describe("UiStandardsPage", () => {
     expect(within(buttons).getByTestId("ui-standard-appearance-elevated")).toBeInTheDocument();
   });
 
+  it("renders Prime-style Button gallery sections mapped to ExItS axes", () => {
+    renderPage();
+    const gallery = screen.getByTestId("ui-standard-button-gallery");
+    expect(gallery).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-default")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-severities")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-text")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-outlined")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-group")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-splitbutton")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-templating")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-icons")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-raised")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-rounded")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-icons")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-text")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-outlined")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-loading")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary")).toHaveAttribute(
+      "data-gallery-severity",
+      "primary",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-help")).toHaveAttribute(
+      "data-gallery-severity",
+      "help",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-warn")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary")).toHaveAttribute(
+      "data-gallery-severity",
+      "secondary",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-contrast")).toHaveAttribute(
+      "data-gallery-severity",
+      "contrast",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).toContain(
+      "exits-severity-btn",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).toContain(
+      "var(--exits-severity-primary)",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary").className).toContain(
+      "var(--exits-severity-secondary)",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severities").textContent).not.toMatch(
+      /Primary · Secondary · Success/,
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-group-save")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-split-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-template-primeng")).toHaveTextContent(
+      "PrimeNG",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-round-text-success")).toHaveAttribute(
+      "data-appearance",
+      "ghost",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-round-outlined-danger")).toHaveAttribute(
+      "data-appearance",
+      "outline",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-loading-plain")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-raised-success")).toHaveAttribute(
+      "data-appearance",
+      "elevated",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-text-danger")).toHaveAttribute(
+      "data-appearance",
+      "ghost",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-outlined-info")).toHaveAttribute(
+      "data-appearance",
+      "outline",
+    );
+  });
+
   it("updates Button playground preview and snippet from selected props", async () => {
     const user = userEvent.setup();
     renderPage();
@@ -171,6 +246,12 @@ describe("UiStandardsPage", () => {
       "data-shape",
       "auto",
     );
+    const qty = screen.getByTestId("ui-standards-preference-qty").closest(
+      "[data-testid='quantity-stepper']",
+    );
+    expect(qty?.className).toContain("quantity-stepper--outline");
+    expect(qty?.className).toContain("quantity-stepper--cart");
+    expect(within(preview).getByText("QuantityStepper Outline (standard)")).toBeInTheDocument();
   });
 
   it("shows Do / Don’t guidance card", () => {
@@ -291,9 +372,22 @@ describe("UiStandardsPage", () => {
     await user.click(screen.getByTestId("ui-standards-filter-data"));
     expect(screen.getByTestId("ui-standards-data-exits-table")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tables-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-table")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-responsive-data-preview-options")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-responsive-data-category-filter")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-rdv-head-category")).toBeInTheDocument();
+    expect(within(screen.getByTestId("ui-standard-card-table")).getAllByText("Retail").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("ui-standard-responsive-data-search")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-rdv-head-customer-sort")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-responsive-data-pagination")).getByTestId(
+        "exits-table-page-size",
+      ),
+    ).toBeInTheDocument();
+
     expect(screen.getByTestId("ui-standards-table")).toHaveClass("exits-table-container");
     expect(screen.getByTestId("ui-standards-table-demo")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-table")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-table-search")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-responsive-data")).toBeInTheDocument();
     expect(
       within(screen.getByTestId("ui-standard-card-table")).getByText("Responsive Data View"),
@@ -325,6 +419,23 @@ describe("UiStandardsPage", () => {
     const appleRow = screen.getByTestId("ui-standards-main-row-apple");
     await user.click(within(appleRow).getByRole("button", { name: "Edit Apple" }));
     expect(screen.getByRole("menuitem", { name: "SKU" })).toBeInTheDocument();
+  });
+
+  it("Responsive Data View locks search, sort, export, page size, and category filter as default", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByTestId("ui-standards-filter-data"));
+
+    const card = screen.getByTestId("ui-standard-card-table");
+    expect(within(card).getByTestId("ui-standard-responsive-data-search")).toBeInTheDocument();
+    expect(within(card).getByTestId("ui-standard-responsive-data-category-filter")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-rdv-head-customer-sort")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-responsive-data-pagination")).getByTestId(
+        "exits-table-page-size",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-responsive-data-preview-options")).not.toBeInTheDocument();
   });
 
   it("switches Responsive Data View device preview between TABLE and LIST", async () => {
@@ -377,13 +488,15 @@ describe("UiStandardsPage", () => {
       "390",
     );
     expect(within(card).getByTestId("ui-standard-list-edit-1")).toBeInTheDocument();
-
-    const search = within(card).getByTestId("ui-standard-table-search").querySelector("input");
-    expect(search).toBeTruthy();
-    await user.clear(search!);
-    await user.type(search!, "Ana");
+    expect(within(card).queryByTestId("ui-standard-table-search")).not.toBeInTheDocument();
     expect(within(records).getByText("Ana Santos")).toBeInTheDocument();
-    expect(within(records).queryByText("Juan Dela Cruz")).not.toBeInTheDocument();
+    expect(within(records).getByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(within(card).getByTestId("ui-standard-responsive-data-pagination")).toBeInTheDocument();
+    expect(
+      within(card).getByTestId("ui-standard-responsive-data-pagination").querySelector(
+        "[data-testid='exits-table-page']",
+      ),
+    ).toHaveTextContent("1 / 2");
   });
 
   it("switches Approved ExitsTable device preview (md 768: Desktop/Tablet TABLE, Mobile LIST)", async () => {
@@ -432,11 +545,11 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-mobile-row-apple")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-mobile-select-all")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-mobile-select-all-label")).toHaveTextContent(
-      /Select all \(3\)/i,
+      /Select all \(10\)/i,
     );
 
     await user.click(screen.getByTestId("ui-standards-mobile-select-all-checkbox"));
-    expect(screen.getByTestId("ui-standards-selected-count")).toHaveTextContent("3 selected");
+    expect(screen.getByTestId("ui-standards-selected-count")).toHaveTextContent("10 selected");
     expect(screen.getByTestId("ui-standards-mobile-select-all-label")).toHaveTextContent(
       /Deselect all/i,
     );
@@ -471,15 +584,90 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-view-switcher")).not.toBeInTheDocument();
   });
 
-  it("opens Actions filter (Buttons) from category=actions", () => {
-    renderPage("/ui-standards?category=actions");
-    expect(screen.getByTestId("ui-standards-filter-actions")).toHaveAttribute(
+  it("opens Forms filter with Form Controls and QuantityStepper variant card", () => {
+    renderPage("/ui-standards?category=forms");
+    expect(screen.getByTestId("ui-standards-filter-forms")).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByTestId("ui-standard-card-forms")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-quantity-stepper")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-quantity-stepper")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-qty-outline").closest("[data-testid='quantity-stepper']")?.className).toContain(
+      "quantity-stepper--outline",
+    );
+    expect(screen.getByTestId("ui-standard-qty-auto").closest("[data-testid='quantity-stepper']")?.className).toContain(
+      "quantity-stepper--auto",
+    );
+    expect(screen.getByTestId("ui-standard-qty-field").closest("[data-testid='quantity-stepper']")?.className).toContain(
+      "quantity-stepper--field",
+    );
+    expect(screen.getByTestId("ui-standard-qty-standard")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-qty-soft")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-qty-pill")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-quantity-stepper-legacy")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-qty-legacy")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-catalog-row-quantity-stepper")).toBeInTheDocument();
+  });
+
+  it("opens Buttons filter from category=buttons with full button gallery", () => {
+    renderPage("/ui-standards?category=buttons");
+    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute(
       "data-selected",
       "true",
     );
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-upload")).not.toBeInTheDocument();
+  });
+
+  it("opens Messages filter from category=messages with full Diamond message gallery", () => {
+    renderPage("/ui-standards?category=messages");
+    expect(screen.getByTestId("ui-standards-filter-messages")).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByTestId("ui-standard-card-messages")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-message-gallery")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-toast")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-severity")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-custom")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-expanded")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-action")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-inline")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-message")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-outlined")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-gallery-simple")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-msg-filled-success")).toHaveAttribute(
+      "data-gallery-message-severity",
+      "success",
+    );
+    expect(screen.getByTestId("ui-standard-msg-filled-success").className).toContain("outline-[#bbf7d0]");
+    expect(screen.getByTestId("ui-standard-msg-filled-success").className).toContain("border-0");
+    expect(screen.getByTestId("ui-standard-msg-outlined-error")).toHaveAttribute(
+      "data-gallery-message-variant",
+      "outlined",
+    );
+    expect(screen.getByTestId("ui-standard-msg-outlined-error").className).toContain("outline-[#dc2626]");
+    expect(screen.getByTestId("ui-standard-msg-outlined-error").className).toContain("bg-transparent");
+    expect(screen.getByTestId("ui-standard-msg-simple-contrast")).toHaveAttribute(
+      "data-gallery-message-variant",
+      "simple",
+    );
+    expect(screen.getByTestId("ui-standard-msg-inline-banner")).toHaveTextContent(
+      "Validation Failed",
+    );
+    expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
+  });
+
+  it("maps legacy category=actions to Buttons filter", () => {
+    renderPage("/ui-standards?category=actions");
+    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
   });
 });
 
@@ -494,7 +682,7 @@ describe("ShellUiStandardsButton", () => {
     const link = screen.getByTestId("shell-ui-standards-button");
     expect(link).toHaveAttribute("aria-label", "UI Standards");
     expect(link).toHaveAttribute("title", "UI Standards");
-    expect(link).toHaveAttribute("href", "/ui-standards?category=actions");
+    expect(link).toHaveAttribute("href", "/ui-standards?category=buttons");
     expect(link.textContent?.replace(/\s+/g, " ").trim()).toBe("UI Standards");
     expect(link.querySelector("svg")).not.toBeNull();
   });

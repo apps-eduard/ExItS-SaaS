@@ -41,10 +41,8 @@ import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView";
-import {
-  ProductFinderPanel,
-  SelectedItemsPanel,
-} from "@/components/exits/ProductSelectionWorkspace";
+import { SelectedItemsPanel } from "@/components/exits/ProductSelectionWorkspace";
+import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ReceiveCategoryMultiSelect } from "@/features/purchasing/ReceiveCategoryMultiSelect";
 import { ReceiveStockFindProductsView } from "@/features/purchasing/ReceiveStockFindProductsView";
 import { ReceiveStockReceiptItemsView } from "@/features/purchasing/ReceiveStockReceiptItemsView";
@@ -635,9 +633,8 @@ export function ReceiveStockPage() {
         productId: line.productId,
         quantity: line.quantity,
         unitCost: line.unitCost,
-        expiryDate: line.tracksExpiration ? line.expiryDate.trim() : null,
-        lotNumber:
-          line.tracksExpiration && line.lotNumber.trim() ? line.lotNumber.trim() : null,
+        expiryDate: line.expiryDate.trim() || null,
+        lotNumber: line.lotNumber.trim() || null,
       })),
       ...paymentFields,
     };
@@ -868,16 +865,22 @@ export function ReceiveStockPage() {
               />
             </SelectedItemsPanel>
 
-            {finderOpen ? (
-              <ProductFinderPanel
-                title={t("purchasing.findProducts")}
-                headingId="direct-add-products-heading"
-                panelId={finderPanelId}
-                closeLabel={t("purchasing.closeFindProducts")}
-                onClose={closeFinder}
-                closeTestId="direct-close-finder"
-                testId="direct-add-products"
-              >
+            <ExitsModal
+              open={finderOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  closeFinder();
+                }
+              }}
+              title={t("purchasing.findProducts")}
+              closeLabel={t("purchasing.closeFindProducts")}
+              testId="direct-add-products"
+              id={finderPanelId}
+              size="lg"
+              fullHeightOnCompact
+              className="lg:max-h-[min(92dvh,48rem)] lg:max-w-3xl"
+            >
+              <div className="flex flex-col gap-3">
                 <ProductSelectionToolbar
                   className="receive-stock-finder__filters"
                   testId="direct-finder-toolbar"
@@ -966,8 +969,8 @@ export function ReceiveStockPage() {
                     t={t}
                   />
                 ) : null}
-              </ProductFinderPanel>
-            ) : null}
+              </div>
+            </ExitsModal>
           </div>
 
           <div className="receive-stock-actions">
@@ -1166,6 +1169,25 @@ export function ReceiveStockPage() {
                   {line.quantity} {line.uom} × {formatPeso(line.unitCost)}
                   {` · ${t("purchasing.sellingPriceShort")} ${formatPeso(line.sellingPrice)}`}
                 </span>
+                {line.expiryDate.trim() || line.lotNumber.trim() ? (
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">
+                    {[
+                      line.expiryDate.trim()
+                        ? `${t("purchasing.expiryDate")}: ${line.expiryDate.trim()}`
+                        : null,
+                      line.lotNumber.trim()
+                        ? `${t("purchasing.lotNumber")}: ${line.lotNumber.trim()}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                ) : null}
+                {!line.tracksExpiration && line.expiryDate.trim() ? (
+                  <span className="receive-stock-expiry-enable-hint">
+                    {t("purchasing.expiryEnableTrackingHint")}
+                  </span>
+                ) : null}
                 <span className="tabular-nums font-semibold">
                   {formatPeso(roundMoney(line.quantity * line.unitCost))}
                 </span>

@@ -14,7 +14,7 @@ export type ShellUiStandardsButtonProps = {
  * Dev/local-validation only — icon-only shortcut to the UI Standards reference page.
  */
 export function ShellUiStandardsButton({
-  to = "/ui-standards?category=actions",
+  to = "/ui-standards?category=buttons",
   label,
   testId = "shell-ui-standards-button",
   className,

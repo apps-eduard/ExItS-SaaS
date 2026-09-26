@@ -196,8 +196,9 @@ export function UiStandardsPage() {
                 ExitsTable reference
               </h2>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                Approved / locked full table: search, filter, sort, multi-select, output icons,
-                pagination, actions, and field-menu inline editing.
+                Use live Responsive Data View for feature previews (search, sort, export, page size,
+                category). The locked full ExitsTable reference remains below for Actions / inline
+                edit.
               </p>
               <UiStandardsTablesPanel isOpen={isOpen} setOpen={setOpen} />
             </section>

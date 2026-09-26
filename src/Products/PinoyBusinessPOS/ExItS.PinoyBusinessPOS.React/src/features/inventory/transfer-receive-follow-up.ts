@@ -126,14 +126,14 @@ export function sumTransferFollowUpUnits(rows: readonly TransferFollowUpRow[]): 
   return rows.reduce((sum, row) => sum + row.qty, 0);
 }
 
-export function defaultTransferFollowUps(linkedStockRequest: boolean): {
+export function defaultTransferFollowUps(_linkedStockRequest: boolean): {
   missingFollowUp: TransferMissingFollowUp;
   damagedFollowUp: TransferDamagedOtherFollowUp;
   otherFollowUp: TransferDamagedOtherFollowUp;
 } {
   return {
-    // Missing can wait for the original shipment; replacement only makes sense when linked.
-    missingFollowUp: linkedStockRequest ? "request_replacement" : "wait_original",
+    // Wait / Request replacement both create Needs fulfillment; default Request replacement.
+    missingFollowUp: "request_replacement",
     // Damaged / other: Request replacement or Accept shortage (always available).
     damagedFollowUp: "request_replacement",
     otherFollowUp: "request_replacement",

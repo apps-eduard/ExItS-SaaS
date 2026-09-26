@@ -1,6 +1,7 @@
 export type UiStandardFilterCategory =
   | "all"
-  | "actions"
+  | "buttons"
+  | "messages"
   | "feedback"
   | "overlays"
   | "forms"
@@ -13,12 +14,14 @@ export type UiStandardFilterCategory =
 
 export type UiStandardLiveCardId =
   | "buttons"
+  | "messages"
   | "toasts"
   | "confirm"
   | "drawer"
   | "modal"
   | "status"
   | "forms"
+  | "quantityStepper"
   | "upload"
   | "selects"
   | "nav"
@@ -32,7 +35,8 @@ export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
   label: string;
 }> = [
   { id: "all", label: "All" },
-  { id: "actions", label: "Actions" },
+  { id: "buttons", label: "Buttons" },
+  { id: "messages", label: "Messages" },
   { id: "feedback", label: "Feedback" },
   { id: "overlays", label: "Overlays" },
   { id: "forms", label: "Forms" },
@@ -56,9 +60,16 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
   {
     id: "buttons",
     title: "Buttons",
-    category: "actions",
+    category: "buttons",
     keywords: [
       "button",
+      "buttons",
+      "gallery",
+      "severity",
+      "raised",
+      "text",
+      "rounded",
+      "outlined",
       "save",
       "create",
       "add",
@@ -69,6 +80,7 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "delete",
       "primary",
       "neutral",
+      "secondary",
       "danger",
       "success",
       "warning",
@@ -87,8 +99,36 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "playground",
       "auto",
       "shape",
+      "pill",
+      "round",
       "snippet",
       "copy",
+      "actions",
+    ],
+  },
+  {
+    id: "messages",
+    title: "Messages",
+    category: "messages",
+    keywords: [
+      "message",
+      "messages",
+      "toast",
+      "severity",
+      "inline",
+      "outlined",
+      "simple",
+      "validation",
+      "notice",
+      "alert",
+      "success",
+      "info",
+      "warn",
+      "error",
+      "secondary",
+      "contrast",
+      "gallery",
+      "diamond",
     ],
   },
   {
@@ -168,6 +208,24 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     ],
   },
   {
+    id: "quantityStepper",
+    title: "QuantityStepper",
+    category: "forms",
+    keywords: [
+      "quantity",
+      "stepper",
+      "auto",
+      "capsule",
+      "cart",
+      "control shape",
+      "pill",
+      "soft",
+      "standard",
+      "editOnClick",
+      "variant",
+    ],
+  },
+  {
     id: "upload",
     title: "Upload",
     category: "upload",
@@ -234,7 +292,6 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "actions",
       "edit",
       "more",
-      "search",
       "desktop",
       "tablet",
       "mobile",
@@ -274,7 +331,7 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
   {
     id: "dodont",
     title: "Do / Don’t",
-    category: "actions",
+    category: "buttons",
     keywords: [
       "do",
       "dont",
@@ -311,7 +368,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "button",
     component: "Button",
     standard: "Button",
-    category: "actions",
+    category: "buttons",
     status: "Locked",
     summary: "Intent + appearance compose; shapes; states; icon motion",
     keywords: ["button", "primary", "neutral", "danger", "solid", "outline", "ghost", "elevated", "gradient", "save", "edit", "delete", "action"],
@@ -320,7 +377,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "action-semantics",
     component: "EXITS_ACTIONS / action-icons",
     standard: "Action semantics",
-    category: "actions",
+    category: "buttons",
     status: "Locked",
     summary: "Canonical icons + default intents + primary hierarchy",
     keywords: ["action", "icon", "save", "create", "delete", "hierarchy", "primary"],
@@ -329,10 +386,19 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "table-action",
     component: "TableActionButton",
     standard: "Table actions",
-    category: "actions",
+    category: "buttons",
     status: "Locked",
     summary: "Compact icon-only row actions with aria-label + tooltip",
     keywords: ["table", "action", "edit", "delete", "icon"],
+  },
+  {
+    id: "message-gallery",
+    component: "UiStandardsMessageGallery",
+    standard: "Message (Diamond sample)",
+    category: "messages",
+    status: "Pilot",
+    summary: "Diamond Message gallery: toast, severity, inline, filled/outlined/simple",
+    keywords: ["message", "toast", "inline", "severity", "outlined", "simple", "diamond"],
   },
   {
     id: "toast",
@@ -395,29 +461,44 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
   },
   {
     id: "input",
-    component: "Input / SearchField / Switch / QuantityStepper",
+    component: "Input / SearchField / Switch",
     standard: "Form controls",
     category: "forms",
     status: "Locked",
-    summary:
-      "Canonical form fields, search, validation, disabled; QuantityStepper default [neutral −][qty][primary +] for forms; cart capsule variant=auto adopts Preferences Control Shape (soft/standard/pill); editOnClick for middle-tap → input (sell cart non-kg); measured shows whole by default, accepts typed decimals; fractions below 1 allowed",
+    summary: "Canonical form fields, search, validation, disabled",
     keywords: [
       "form",
       "input",
       "search",
       "switch",
       "validation",
+      "textarea",
+      "checkbox",
+      "email",
+    ],
+  },
+  {
+    id: "quantity-stepper",
+    component: "QuantityStepper",
+    standard: "Quantity stepper",
+    category: "forms",
+    status: "Locked",
+    summary:
+      "Standard = variant outline (surface + primary border, Control Shape). Also auto / field / standard / soft / pill. Forms filter card shows all capsule variants.",
+    keywords: [
       "quantity",
       "stepper",
+      "outline",
+      "auto",
+      "field",
+      "capsule",
+      "cart",
+      "control shape",
       "pill",
       "soft",
       "standard",
-      "auto",
       "editOnClick",
-      "middle edit",
-      "control shape",
-      "cart",
-      "purchasing",
+      "variant",
     ],
   },
   {
@@ -572,6 +653,10 @@ function matchesQuery(haystack: string[], query: string): boolean {
 
 export function parseUiStandardCategoryParam(raw: string | null): UiStandardFilterCategory {
   const value = (raw ?? "").trim().toLowerCase();
+  // Legacy Actions filter → Buttons
+  if (value === "actions") {
+    return "buttons";
+  }
   const allowed = UI_STANDARD_FILTER_OPTIONS.map((o) => o.id);
   return (allowed.includes(value as UiStandardFilterCategory)
     ? value

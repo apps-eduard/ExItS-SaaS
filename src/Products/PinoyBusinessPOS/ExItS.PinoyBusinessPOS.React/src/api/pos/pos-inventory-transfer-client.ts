@@ -232,6 +232,16 @@ export const inventoryTransferListItemDtoSchema = z.object({
   dispatchedBy: guidSchema.nullable().optional(),
   receivedBy: guidSchema.nullable().optional(),
   cancelledBy: guidSchema.nullable().optional(),
+  closedAtUtc: z.string().nullable().optional(),
+  closedBy: guidSchema.nullable().optional(),
+  /** True when this transfer chose RequestReplacement follow-up. */
+  hasRequestReplacementFollowUp: z.boolean().optional().default(false),
+  /** Family-level remaining to dispatch (Needs fulfillment). */
+  remainingToDispatchQty: z.number().optional().default(0),
+  /** Family-level still in transit. */
+  openInTransitQty: z.number().optional().default(0),
+  /** True while RequestReplacement family fulfillment is still outstanding. */
+  hasOpenDiscrepancyFollowUp: z.boolean().optional().default(false),
 });
 
 export const inventoryTransferPagedResultSchema = z.object({

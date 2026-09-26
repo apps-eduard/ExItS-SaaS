@@ -504,6 +504,7 @@ describe("buildReceivingDecisionView", () => {
                 quantityDamaged: 0,
                 quantityMissing: 5,
                 missingDisposition: "ExpectedLater",
+                note: "Partial truck — rest coming tomorrow",
               },
             ],
           },
@@ -513,6 +514,7 @@ describe("buildReceivingDecisionView", () => {
     expect(view.missingQty).toBe(5);
     expect(view.missingDisposition).toBe("ExpectedLater");
     expect(view.damagedFollowUp).toBeNull();
+    expect(view.otherReasonNote).toBe("Partial truck — rest coming tomorrow");
   });
 });
 

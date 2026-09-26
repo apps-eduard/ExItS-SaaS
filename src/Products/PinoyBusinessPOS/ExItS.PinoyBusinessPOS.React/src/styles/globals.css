@@ -63,6 +63,43 @@
   --exits-shadow-sm: 0 1px 2px color-mix(in srgb, #0f172a 4%, transparent);
   --exits-shadow-md: 0 4px 12px color-mix(in srgb, #0f172a 6%, transparent);
   --exits-shadow-lg: 0 10px 24px color-mix(in srgb, #0f172a 8%, transparent);
+
+  /*
+   * Diamond LIGHT severity palette (UI Standards Severities showcase).
+   * Separate from configurable --exits-primary brand preference.
+   * @see https://diamond.primeng.org/uikit/button
+   */
+  --exits-severity-primary: #10b981;
+  --exits-severity-primary-foreground: #ffffff;
+  --exits-severity-primary-hover: #059669;
+
+  --exits-severity-secondary: #f1f5f9;
+  --exits-severity-secondary-foreground: #334155;
+  --exits-severity-secondary-hover: #e2e8f0;
+
+  --exits-severity-success: #22c55e;
+  --exits-severity-success-foreground: #ffffff;
+  --exits-severity-success-hover: #16a34a;
+
+  --exits-severity-info: #0ea5e9;
+  --exits-severity-info-foreground: #ffffff;
+  --exits-severity-info-hover: #0284c7;
+
+  --exits-severity-warn: #f97316;
+  --exits-severity-warn-foreground: #ffffff;
+  --exits-severity-warn-hover: #ea580c;
+
+  --exits-severity-help: #a855f7;
+  --exits-severity-help-foreground: #ffffff;
+  --exits-severity-help-hover: #9333ea;
+
+  --exits-severity-danger: #ef4444;
+  --exits-severity-danger-foreground: #ffffff;
+  --exits-severity-danger-hover: #dc2626;
+
+  --exits-severity-contrast: #020617;
+  --exits-severity-contrast-foreground: #ffffff;
+  --exits-severity-contrast-hover: #0f172a;
 }
 
 /* ---- Dark: cool neutral hierarchy (Atlantis cleanliness; Primary remains accent) ---- */
@@ -101,6 +138,39 @@
   --exits-shadow-sm: 0 1px 2px color-mix(in srgb, #000 12%, transparent);
   --exits-shadow-md: 0 4px 12px color-mix(in srgb, #000 16%, transparent);
   --exits-shadow-lg: 0 10px 24px color-mix(in srgb, #000 20%, transparent);
+
+  /* Dark severity palette (Aura-like lighter fills) — must not leak into light */
+  --exits-severity-primary: #34d399;
+  --exits-severity-primary-foreground: #18181b;
+  --exits-severity-primary-hover: #6ee7b7;
+
+  --exits-severity-secondary: #27272a;
+  --exits-severity-secondary-foreground: #d4d4d8;
+  --exits-severity-secondary-hover: #3f3f46;
+
+  --exits-severity-success: #4ade80;
+  --exits-severity-success-foreground: #052e16;
+  --exits-severity-success-hover: #86efac;
+
+  --exits-severity-info: #38bdf8;
+  --exits-severity-info-foreground: #082f49;
+  --exits-severity-info-hover: #7dd3fc;
+
+  --exits-severity-warn: #fb923c;
+  --exits-severity-warn-foreground: #431407;
+  --exits-severity-warn-hover: #fdba74;
+
+  --exits-severity-help: #c084fc;
+  --exits-severity-help-foreground: #3b0764;
+  --exits-severity-help-hover: #d8b4fe;
+
+  --exits-severity-danger: #f87171;
+  --exits-severity-danger-foreground: #450a0a;
+  --exits-severity-danger-hover: #fca5a5;
+
+  --exits-severity-contrast: #ffffff;
+  --exits-severity-contrast-foreground: #09090b;
+  --exits-severity-contrast-hover: #f4f4f5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -140,6 +210,38 @@
     --exits-shadow-sm: 0 1px 2px color-mix(in srgb, #000 12%, transparent);
     --exits-shadow-md: 0 4px 12px color-mix(in srgb, #000 16%, transparent);
     --exits-shadow-lg: 0 10px 24px color-mix(in srgb, #000 20%, transparent);
+
+    --exits-severity-primary: #34d399;
+    --exits-severity-primary-foreground: #18181b;
+    --exits-severity-primary-hover: #6ee7b7;
+
+    --exits-severity-secondary: #27272a;
+    --exits-severity-secondary-foreground: #d4d4d8;
+    --exits-severity-secondary-hover: #3f3f46;
+
+    --exits-severity-success: #4ade80;
+    --exits-severity-success-foreground: #052e16;
+    --exits-severity-success-hover: #86efac;
+
+    --exits-severity-info: #38bdf8;
+    --exits-severity-info-foreground: #082f49;
+    --exits-severity-info-hover: #7dd3fc;
+
+    --exits-severity-warn: #fb923c;
+    --exits-severity-warn-foreground: #431407;
+    --exits-severity-warn-hover: #fdba74;
+
+    --exits-severity-help: #c084fc;
+    --exits-severity-help-foreground: #3b0764;
+    --exits-severity-help-hover: #d8b4fe;
+
+    --exits-severity-danger: #f87171;
+    --exits-severity-danger-foreground: #450a0a;
+    --exits-severity-danger-hover: #fca5a5;
+
+    --exits-severity-contrast: #ffffff;
+    --exits-severity-contrast-foreground: #09090b;
+    --exits-severity-contrast-hover: #f4f4f5;
   }
 }
 
@@ -912,6 +1014,26 @@ html {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Long tables: vertical body scroll + sticky header row. */
+.exits-table-scroll--sticky-header {
+  max-height: min(22rem, 55vh);
+  overflow-y: auto;
+}
+
+.exits-table-scroll--sticky-header .exits-table__header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.exits-table-scroll--sticky-header .exits-table__head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: color-mix(in srgb, var(--exits-surface-muted, #eef2ef) 92%, var(--exits-surface, #fff));
+  box-shadow: 0 1px 0 var(--exits-border, #d8e0da);
+}
+
 @media (min-width: 768px) {
   .exits-table-scroll {
     display: block;
@@ -938,7 +1060,7 @@ html {
   border-bottom: 1px solid var(--exits-border, #d8e0da);
   color: var(--exits-muted, #5b6b60);
   font-size: calc(var(--exits-table-font-size) * 0.95);
-  font-weight: var(--exits-font-weight-medium);
+  font-weight: var(--exits-font-weight-bold);
   white-space: nowrap;
   text-transform: none;
   letter-spacing: normal;
@@ -15541,7 +15663,8 @@ a.dashboard-metric-card:focus-visible {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Canonical QuantityStepper — embedded [−|qty|+] group */
+/* Canonical QuantityStepper — outline capsule [− qty +] (variant=outline by default).
+   Solid primary: variant=auto. Legacy form field chrome: explicit variant=default. */
 .quantity-stepper {
   --quantity-stepper-height: var(--exits-control-height);
   --quantity-stepper-btn-size: var(--exits-control-height);
@@ -15566,8 +15689,9 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .quantity-stepper--cart .quantity-stepper__group {
-  gap: 0.05rem;
-  padding-inline: 0.15rem;
+  gap: 0;
+  padding-inline: 0;
+  width: 100%;
   border: 1.5px solid #fff;
   background: var(--exits-primary);
   box-shadow:
@@ -15592,6 +15716,94 @@ a.dashboard-metric-card:focus-visible {
 
 .quantity-stepper--auto .quantity-stepper__group {
   border-radius: var(--exits-control-radius);
+}
+
+.quantity-stepper--field .quantity-stepper__group {
+  border-radius: var(--exits-control-radius);
+}
+
+.quantity-stepper--outline .quantity-stepper__group {
+  border-radius: var(--exits-control-radius);
+}
+
+/* Field: primary capsule ends + white/surface center (input look). */
+.quantity-stepper--field.quantity-stepper--cart .quantity-stepper__value,
+.quantity-stepper--field.quantity-stepper--cart .quantity-stepper__input {
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  border-radius: calc(var(--exits-control-radius) * 0.55);
+  margin-block: 0.12rem;
+  margin-inline: 0.05rem;
+  align-self: stretch;
+  height: auto;
+  min-height: 0;
+}
+
+.quantity-stepper--field.quantity-stepper--cart .quantity-stepper__input {
+  line-height: calc(var(--quantity-stepper-height) - 3px - 0.24rem);
+}
+
+.quantity-stepper--field.quantity-stepper--cart .quantity-stepper__value--button:hover:not(:disabled),
+.quantity-stepper--field.quantity-stepper--cart .quantity-stepper__value--button:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--exits-text) 6%, var(--exits-surface));
+}
+
+/* Outline: surface fill + primary border (no solid primary body). */
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__group {
+  border: 1.5px solid var(--exits-primary);
+  background: var(--exits-surface);
+  box-shadow: none;
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__group:focus-within {
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
+.quantity-stepper--outline.quantity-stepper--cart.quantity-stepper--invalid .quantity-stepper__group {
+  border-color: var(--exits-danger);
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn,
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--minus,
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--plus {
+  background: transparent;
+  color: var(--exits-primary);
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--minus:hover:not(:disabled),
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--minus:focus-visible:not(:disabled),
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--plus:hover:not(:disabled),
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--plus:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+  color: var(--exits-primary);
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--minus:disabled,
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--plus:disabled {
+  background: transparent;
+  color: var(--exits-primary);
+  opacity: 0.45;
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__value,
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__input {
+  background: transparent;
+  color: var(--exits-text);
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__unit {
+  color: var(--exits-muted);
+  opacity: 1;
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__value--button {
+  color: var(--exits-text);
+}
+
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__value--button:hover:not(:disabled),
+.quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__value--button:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--exits-primary) 8%, transparent);
 }
 
 .quantity-stepper--cart .quantity-stepper__group:focus-within {
@@ -15635,8 +15847,48 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-primary-foreground);
   font-size: var(--exits-text-sm);
   font-weight: 700;
-  min-width: var(--quantity-stepper-input-min-ch);
-  max-width: var(--quantity-stepper-input-max-ch);
+  /* Keep qty + unit as a tight centered pair (do not stretch apart). */
+  flex: 0 0 auto;
+  width: var(--quantity-stepper-input-width, auto);
+  min-width: 0;
+  max-width: none;
+  text-align: center;
+  padding: 0;
+}
+
+.quantity-stepper--cart .quantity-stepper__middle {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  gap: 0;
+  padding-inline: 0.15rem;
+  justify-content: center;
+}
+
+.quantity-stepper--cart .quantity-stepper__unit {
+  color: inherit;
+  /* Match compact qty text; avoid inherit sm which clips descenders (kg) in 2rem capsule. */
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  max-width: 4.5rem;
+  max-height: 100%;
+  opacity: 0.92;
+}
+
+.quantity-stepper--cart .quantity-stepper__input {
+  line-height: calc(var(--quantity-stepper-height) - 3px);
+}
+
+.quantity-stepper--cart .quantity-stepper__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* Compact form defaults use 12ch; cart/auto capsule must keep narrow ch or + clips. */
@@ -15656,6 +15908,7 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .quantity-stepper__group {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: stretch;
   min-width: 0;
@@ -15664,6 +15917,26 @@ a.dashboard-metric-card:focus-visible {
   border-radius: var(--exits-field-radius, var(--exits-radius-md));
   background: var(--exits-surface);
   overflow: hidden;
+}
+
+.quantity-stepper__middle {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  height: 100%;
+  width: var(--quantity-stepper-input-width, auto);
+  min-width: var(--quantity-stepper-input-width, var(--quantity-stepper-input-min-ch, 12ch));
+  max-width: 100%;
+}
+
+.quantity-stepper__middle .quantity-stepper__input,
+.quantity-stepper__middle .quantity-stepper__value {
+  width: var(--quantity-stepper-input-width, auto);
+  min-width: 0;
+  max-width: none;
+  flex: 0 0 auto;
 }
 
 .quantity-stepper__group:focus-within {
@@ -15692,7 +15965,7 @@ a.dashboard-metric-card:focus-visible {
   justify-content: center;
   width: var(--quantity-stepper-btn-size);
   min-width: var(--quantity-stepper-btn-size);
-  height: 100%;
+  height: auto;
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -15773,23 +16046,37 @@ a.dashboard-metric-card:focus-visible {
   min-width: var(--quantity-stepper-input-min-ch);
   max-width: var(--quantity-stepper-input-max-ch);
   width: var(--quantity-stepper-input-width, var(--quantity-stepper-input-min-ch));
-  height: 100%;
+  height: auto;
   margin: 0;
   border: 0;
   border-inline: 1px solid var(--exits-border);
   border-radius: 0;
   background: transparent;
-  padding: 0 0.2rem;
+  padding: 0;
   overflow: hidden;
   text-overflow: clip;
   text-align: center;
   font: inherit;
   font-size: var(--exits-text-sm);
   font-weight: 600;
-  line-height: 1;
   color: var(--exits-text);
   appearance: none;
   box-shadow: none;
+}
+
+/* Native <input> text is not flex-centered — match control height line box. */
+.quantity-stepper__input {
+  display: block;
+  padding-block: 0;
+  line-height: calc(var(--quantity-stepper-height) - 2px);
+  vertical-align: middle;
+}
+
+.quantity-stepper__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .quantity-stepper__value--button {
@@ -15826,12 +16113,6 @@ a.dashboard-metric-card:focus-visible {
   font-size: var(--exits-text-xs);
 }
 
-.quantity-stepper__value {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 @media (max-width: 40rem) {
   .quantity-stepper__input,
   .quantity-stepper__value,
@@ -15842,10 +16123,20 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .quantity-stepper__unit {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
   max-width: 5.5rem;
+  max-height: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--exits-muted, #5b6b60);
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  /* > 1 so descenders (g in kg) are not clipped by the capsule. */
+  line-height: 1.2;
 }
 
 /* Shared text/date/textarea controls used across inventory & purchasing forms */
@@ -18437,13 +18728,149 @@ a.exits-chip--primary:hover {
 
 .receive-stock-receipt-table .receive-cost-input {
   box-sizing: border-box;
-  width: 7rem;
-  min-width: 7rem;
-  max-width: 7rem;
+  width: 5.5rem;
+  min-width: 5.5rem;
+  max-width: 5.5rem;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  /* Match compact QuantityStepper height + qty text in the same row. */
+  font-size: var(--exits-text-sm);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.receive-stock-cost-field.exits-currency-field {
+  width: auto;
+  min-height: 2rem;
+  height: 2rem;
   padding-inline: 0.45rem;
-  /* Match compact QuantityStepper input size in the same row. */
-  font-size: var(--exits-text-xs);
+  gap: 0.25rem;
+}
+
+.receive-stock-cost-field .exits-currency-field__prefix {
+  font-size: var(--exits-text-sm);
+  font-weight: 700;
+}
+
+.receive-stock-receipt-table .receive-stock-expiry-input,
+.receive-stock-receipt-table .receive-stock-lot-input {
+  height: 2rem;
+  min-height: 2rem;
+  max-height: 2rem;
+  padding-block: 0;
+  font-size: var(--exits-text-sm);
   font-weight: 600;
+  line-height: 1.2;
+}
+
+.receive-stock-receipt-product__sku {
+  color: var(--exits-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+}
+
+.receive-stock-expiry-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.receive-stock-expiry-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.receive-stock-expiry-field__clear {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+}
+
+.receive-stock-receipt-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.receive-stock-expiry-enable-notice {
+  width: 100%;
+  padding-block: 0.5rem;
+  padding-inline: 0.75rem;
+  font-size: var(--exits-text-sm);
+}
+
+.receive-stock-expiry-enable-notice__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.receive-stock-expiry-enable-notice__clear-date {
+  margin: 0;
+  padding: 0.15rem 0.4rem;
+  border: 0;
+  border-radius: var(--exits-radius-sm, 4px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.receive-stock-expiry-enable-notice__clear-date:hover {
+  background: color-mix(in srgb, var(--exits-info) 12%, transparent);
+}
+
+.receive-stock-expiry-enable-notice__clear-date:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
+.receive-stock-expiry-enable-notice__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--exits-radius-sm, 4px);
+  background: transparent;
+  color: inherit;
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.receive-stock-expiry-enable-notice__close:hover {
+  opacity: 1;
+}
+
+.receive-stock-expiry-enable-notice__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
+.receive-stock-expiry-enable-hint {
+  display: block;
+  max-width: 12rem;
+  color: var(--exits-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.25;
 }
 
 .receive-stock-receipt-table__expiry-col {
@@ -18464,6 +18891,17 @@ a.exits-chip--primary:hover {
   width: 7rem;
   min-width: 6.5rem;
   max-width: 8rem;
+}
+
+.receive-stock-expiry-input,
+.receive-stock-lot-input {
+  height: 2rem;
+  min-height: 2rem;
+  max-height: 2rem;
+  padding-block: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .receive-stock-product-table .exits-table__col--actions,
@@ -18612,10 +19050,7 @@ a.exits-chip--primary:hover {
 .receive-stock-receipt-row--highlight > td,
 .receive-stock-receipt-row--highlight > th {
   background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
-  transition:
-    background-color var(--exits-motion-slow) var(--exits-ease-standard),
-    box-shadow var(--exits-motion-slow) var(--exits-ease-standard);
+  transition: background-color var(--exits-motion-slow) var(--exits-ease-standard);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -19022,12 +19457,49 @@ a.exits-chip--primary:hover {
   --quantity-stepper-input-max-ch: 14ch;
 }
 
+.receive-stock-receipt-list .receive-stock-cost-field.exits-currency-field {
+  width: 100%;
+  min-height: 2rem;
+  height: 2rem;
+}
+
+.receive-stock-receipt-list .receive-stock-expiry-field {
+  width: 100%;
+}
+
+.receive-stock-receipt-list .receive-stock-expiry-field .receive-stock-expiry-input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
 .receive-stock-receipt-list .receive-cost-input,
 .receive-stock-receipt-list .receive-stock-expiry-input,
 .receive-stock-receipt-list .receive-stock-lot-input {
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  padding-block: 0;
+  font-size: var(--exits-text-sm);
+  line-height: 1.2;
+}
+
+.receive-stock-receipt-list .receive-stock-expiry-input,
+.receive-stock-receipt-list .receive-stock-lot-input {
+  height: 2rem;
+  min-height: 2rem;
+  max-height: 2rem;
+}
+
+.receive-stock-receipt-list .receive-cost-input {
+  font-weight: 700;
+}
+
+.receive-stock-receipt-list .exits-data-record__subtitle {
+  font-size: 0.6875rem;
 }
 
 .receive-stock-find-products-responsive,

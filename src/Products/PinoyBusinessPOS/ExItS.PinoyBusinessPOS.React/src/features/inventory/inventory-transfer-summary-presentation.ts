@@ -204,12 +204,16 @@ export function buildReceivingDecisionView(
         if (!otherReasonNote) {
           otherReasonNote = trimNonEmpty(line.otherReasonNote);
         }
-        if (!receiptLineNote) {
-          receiptLineNote = trimNonEmpty(line.note);
-        }
         if (!receiptLineExpectedProductId) {
           receiptLineExpectedProductId = line.productId;
         }
+      }
+      // Remarks/note apply to any discrepancy classification (damaged / missing / other).
+      if ((d > 1e-9 || m > 1e-9 || o > 1e-9) && !receiptLineNote) {
+        receiptLineNote = trimNonEmpty(line.note);
+      }
+      if ((d > 1e-9 || m > 1e-9 || o > 1e-9) && !otherReasonNote) {
+        otherReasonNote = trimNonEmpty(line.otherReasonNote);
       }
     }
   }
@@ -277,13 +281,14 @@ export function buildReceivingDecisionView(
   }
 
   const lineDiscrepancyNote =
-    expectedProductId != null
-      ? trimNonEmpty(
-          transfer.lines?.find(
-            (l) => l.productId.toLowerCase() === expectedProductId!.toLowerCase(),
-          )?.discrepancyNote,
-        )
-      : null;
+    trimNonEmpty(
+      transfer.lines?.find((l) => {
+        if (expectedProductId != null) {
+          return l.productId.toLowerCase() === expectedProductId.toLowerCase();
+        }
+        return trimNonEmpty(l.discrepancyNote) != null;
+      })?.discrepancyNote,
+    );
 
   const resolvedNote = pickReceivingDecisionNote(
     otherReasonNote,

@@ -6,7 +6,9 @@ import {
   ArrowRight,
   ArrowUpRight,
   Ban,
+  Check,
   ChevronRight,
+  Clock3,
   FilePlus2,
   PackageCheck,
   PackageOpen,
@@ -64,9 +66,12 @@ import { InventoryTransferReceiveMode } from "@/features/inventory/InventoryTran
 import {
   branchDisplayName,
   formatTransferQty,
-  inventoryTransferStatusLabelKey,
-  inventoryTransferStatusTone,
+  inventoryTransferStatusPresentation,
 } from "@/features/inventory/inventory-transfer-labels";
+import {
+  InventoryTransferStatusChip,
+  inventoryTransferHasOpenDiscrepancyFollowUp,
+} from "@/features/inventory/InventoryTransferStatusChip";
 import {
   canDestinationCloseRemainder,
   canDestinationReceiveTransfer,
@@ -158,7 +163,17 @@ function ExceptionSendBackButtonContent({
   );
 }
 
-function inventoryTransferStatusIcon(status: string) {
+function inventoryTransferStatusIcon(
+  status: string,
+  options?: { hasOpenDiscrepancyFollowUp?: boolean },
+) {
+  if (status === "ClosedWithDiscrepancy") {
+    return options?.hasOpenDiscrepancyFollowUp ? (
+      <Clock3 aria-hidden />
+    ) : (
+      <Check aria-hidden />
+    );
+  }
   switch (status) {
     case "InTransit":
       return <Truck aria-hidden />;
@@ -166,8 +181,6 @@ function inventoryTransferStatusIcon(status: string) {
       return <PackageOpen aria-hidden />;
     case "Received":
       return <PackageCheck aria-hidden />;
-    case "ClosedWithDiscrepancy":
-      return <PackageOpen aria-hidden />;
     case "Cancelled":
       return <Ban aria-hidden />;
     case "Draft":
@@ -587,8 +600,18 @@ export function InventoryTransferDetailPage() {
   const receiveButtonLabel =
     isPartiallyReceived ? t("transfer.receiveRemaining") : t("transfer.receive");
 
-  const statusLabel = t(inventoryTransferStatusLabelKey(transfer.status));
-  const statusTone = inventoryTransferStatusTone(transfer.status);
+  const hasOpenDiscrepancyFollowUp = inventoryTransferHasOpenDiscrepancyFollowUp(
+    [...thisTransferCustodies, ...thisTransferExceptionCustodies],
+    {
+      remainingToDispatchQty,
+      openInTransitQty: transfer.openInTransitQty ?? 0,
+    },
+  );
+  const statusPresentation = inventoryTransferStatusPresentation(transfer.status, {
+    hasOpenDiscrepancyFollowUp,
+  });
+  const statusLabel = t(statusPresentation.labelKey);
+  const statusTone = statusPresentation.tone;
   const transferTitle =
     transfer.transferNumber?.trim() || t("transfer.summaryTitle");
 
@@ -823,7 +846,9 @@ export function InventoryTransferDetailPage() {
           <PoProcessHeaderActions
             statusLabel={statusLabel}
             statusTone={statusTone}
-            statusIcon={inventoryTransferStatusIcon(transfer.status)}
+            statusIcon={inventoryTransferStatusIcon(transfer.status, {
+              hasOpenDiscrepancyFollowUp,
+            })}
             timelineEnabled={activityEvents.length > 0}
             onTimeline={() => setTimelineOpen(true)}
             onPreview={() => setDocumentPreviewOpen(true)}
@@ -860,7 +885,9 @@ export function InventoryTransferDetailPage() {
           sourceName={sourceName}
           destName={destName}
           statusLabel={statusLabel}
-          statusIcon={inventoryTransferStatusIcon(transfer.status)}
+          statusIcon={inventoryTransferStatusIcon(transfer.status, {
+            hasOpenDiscrepancyFollowUp,
+          })}
           busy={busy}
           online={online}
           localErrorAlert={localErrorAlert}
@@ -1641,13 +1668,27 @@ export function InventoryTransferDetailPage() {
                             </StatusChip>
                           ))}
                         </div>
-                        <StatusChip
-                          tone={inventoryTransferStatusTone(member.status)}
-                          appearance="soft"
-                          shape="soft"
-                        >
-                          {t(inventoryTransferStatusLabelKey(member.status))}
-                        </StatusChip>
+                        <InventoryTransferStatusChip
+                          status={member.status}
+                          hasOpenDiscrepancyFollowUp={inventoryTransferHasOpenDiscrepancyFollowUp(
+                            [
+                              ...damageCustodies.filter(
+                                (c) =>
+                                  c.transferId.toLowerCase() ===
+                                  member.transferId.toLowerCase(),
+                              ),
+                              ...exceptionCustodies.filter(
+                                (c) =>
+                                  c.transferId.toLowerCase() ===
+                                  member.transferId.toLowerCase(),
+                              ),
+                            ],
+                            {
+                              remainingToDispatchQty,
+                              openInTransitQty: transfer.openInTransitQty ?? 0,
+                            },
+                          )}
+                        />
                       </div>
 
                       <span

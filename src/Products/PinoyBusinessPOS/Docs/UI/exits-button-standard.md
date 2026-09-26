@@ -58,6 +58,7 @@ Button
 |------|---------|--------|
 | **Intent** | Why the button looks that way | `primary` · `neutral` · `success` · `info` · `warning` · `danger` |
 | **Appearance** | How it is drawn | `solid` · `outline` · `ghost` · `elevated` · `gradient` |
+| **Emphasis** | Fill strength (solid/elevated/gradient) | `soft` (default) · `strong` (Prime Severities) |
 | **Shape** | Geometry | `auto` · `standard` · `soft` · `pill` · `round` |
 | **State** | Interaction | normal / hover / focus / disabled / loading |
 
@@ -138,6 +139,25 @@ Gradient is appearance-only. Prefer **Primary** (brand). Non-primary gradients f
 | `variant="secondary"` (historical “Muted”) | `intent="neutral"` + `appearance="solid"` |
 
 Keep legacy `variant="secondary"` working via alias; do not introduce `intent="muted"`.
+
+---
+
+## Gallery mapping (UI Standards)
+
+`/ui-standards` → **Buttons** → **Gallery** shows a Prime-style layout. Map Prime labels to ExItS axes — do not add Prime-only variants to the component API.
+
+| Prime section | ExItS |
+|---------------|-------|
+| Default (Submit / Disabled / Link) | Primary+Solid · disabled · Primary+Ghost |
+| Icons | `size="icon"` · icon children leading/trailing |
+| Severities | Solid × each intent (Secondary = Neutral) |
+| Raised | `appearance="elevated"` |
+| Text | `appearance="ghost"` |
+| Rounded | `shape="pill"` |
+| Outlined | `appearance="outline"` |
+| Rounded Icons | `size="icon"` + `shape="round"` |
+
+**Not locked intents:** Help and Contrast. Use Info for help-like tone; Contrast in the gallery is a one-off foreground sample only.
 
 ---
 

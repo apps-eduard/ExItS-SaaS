@@ -57,7 +57,7 @@ describe("Button intent + appearance (locked standard)", () => {
     expect(resolveButtonVisual({ variant: "secondary" })).toEqual({
       intent: "neutral",
       appearance: "solid",
-      dangerFill: "soft",
+      emphasis: "soft",
     });
   });
 
@@ -71,8 +71,20 @@ describe("Button intent + appearance (locked standard)", () => {
     expect(resolveButtonVisual({ intent: "success", appearance: "outline" })).toEqual({
       intent: "success",
       appearance: "outline",
-      dangerFill: "soft",
+      emphasis: "soft",
     });
+  });
+
+  it("applies strong emphasis filled colors for severities", () => {
+    const strongSuccess = buttonVariants({
+      intent: "success",
+      appearance: "solid",
+      emphasis: "strong",
+    });
+    expect(strongSuccess).toContain("bg-[var(--exits-success)]");
+    expect(strongSuccess).toContain("text-white");
+    expect(resolveButtonVisual({ variant: "dangerStrong" }).emphasis).toBe("strong");
+    expect(resolveButtonVisual({ intent: "danger", emphasis: "strong" }).emphasis).toBe("strong");
   });
 
   it("keeps action semantics on the canonical model", () => {

@@ -703,17 +703,6 @@ export function InventoryMovementTransactionDrawer({
                             </dd>
                           </>
                         ) : null}
-                        {receivingDecision.otherReasonNote ? (
-                          <>
-                            <dt className="m-0 text-muted">{t("transfer.note")}</dt>
-                            <dd
-                              className="m-0 text-end font-medium"
-                              data-testid="inventory-movement-receiving-note"
-                            >
-                              {receivingDecision.otherReasonNote}
-                            </dd>
-                          </>
-                        ) : null}
                         {receivingDecision.otherFollowUp ? (
                           <>
                             <dt className="m-0 text-muted">{t("transfer.followUp.decisionCol")}</dt>
@@ -784,6 +773,14 @@ export function InventoryMovementTransactionDrawer({
                         ) : null}
                       </>
                     ) : null}
+
+                    <dt className="m-0 text-muted">{t("transfer.remarks")}</dt>
+                    <dd
+                      className="m-0 text-end font-medium"
+                      data-testid="inventory-movement-receiving-note"
+                    >
+                      {receivingDecision.otherReasonNote?.trim() || "—"}
+                    </dd>
                   </dl>
                 </Card>
               ) : null}

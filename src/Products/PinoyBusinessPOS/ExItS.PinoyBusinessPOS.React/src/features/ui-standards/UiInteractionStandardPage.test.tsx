@@ -39,7 +39,7 @@ describe("UiInteractionStandardPage alias", () => {
 describe("ui-standard-catalog filters", () => {
   it("filters live cards and catalog rows by search", () => {
     const toastCards = filterLiveCards("all", "toast");
-    expect(toastCards.map((c) => c.id)).toEqual(["toasts"]);
+    expect(toastCards.map((c) => c.id)).toEqual(expect.arrayContaining(["toasts", "messages"]));
     const danger = filterCatalogRows("all", "danger");
     expect(danger.some((r) => r.id === "button")).toBe(true);
     expect(danger.some((r) => r.id === "confirm")).toBe(true);
@@ -58,6 +58,18 @@ describe("ui-standard-catalog filters", () => {
     ]);
   });
 
+  it("Messages category isolates message gallery", () => {
+    expect(filterLiveCards("messages", "").map((c) => c.id)).toEqual(["messages"]);
+    expect(filterCatalogRows("messages", "").map((r) => r.id)).toEqual(["message-gallery"]);
+  });
+
+  it("Forms category includes Form Controls and QuantityStepper cards", () => {
+    expect(filterLiveCards("forms", "").map((c) => c.id)).toEqual(["forms", "quantityStepper"]);
+    expect(filterCatalogRows("forms", "").map((r) => r.id)).toEqual(
+      expect.arrayContaining(["input", "quantity-stepper"]),
+    );
+  });
+
   it("Upload category isolates upload standards", () => {
     expect(filterLiveCards("upload", "").map((c) => c.id)).toEqual(["upload"]);
     expect(filterLiveCards("all", "upload").map((c) => c.id)).toContain("upload");
@@ -74,7 +86,7 @@ describe("ui-standard-catalog filters", () => {
     expect(filterLiveCards("all", "primary").map((c) => c.id)).toEqual(
       expect.arrayContaining(["buttons", "dodont"]),
     );
-    expect(filterLiveCards("actions", "").map((c) => c.id)).toEqual(
+    expect(filterLiveCards("buttons", "").map((c) => c.id)).toEqual(
       expect.arrayContaining(["buttons", "dodont"]),
     );
   });

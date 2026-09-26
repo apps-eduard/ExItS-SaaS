@@ -12,6 +12,7 @@ import {
   stepQuantity,
   stripQuantityGrouping,
 } from "@/lib/quantity-rules";
+import { formatUnitOfMeasureSymbol } from "@/lib/unit-of-measure";
 import {
   nextWeightLineQuantityKg,
   usesAdaptiveWeightSteps,
@@ -92,12 +93,13 @@ export type QuantityStepperProps = {
   compact?: boolean;
   /**
    * Visual variant:
-   * - **default** — form field group [ neutral − ][ qty ][ primary + ]
-   * - **standard / soft / pill** — cart primary capsule with explicit radius
-   * - **auto** — cart primary capsule; radius follows Preferences → Control Shape
-   *   (`data-control-shape` → `--exits-control-radius`)
+   * - **outline** (standard / default) — surface capsule with primary border; radius follows Preferences → Control Shape
+   * - **auto** — solid primary capsule; radius follows Control Shape
+   * - **field** — primary capsule with white/surface center like an input; radius follows Control Shape
+   * - **standard / soft / pill** — solid primary capsule with explicit radius
+   * - **default** — legacy form field group [ neutral − ][ qty ][ primary + ] (avoid for new UI)
    */
-  variant?: "default" | "standard" | "soft" | "pill" | "auto";
+  variant?: "default" | "standard" | "soft" | "pill" | "auto" | "field" | "outline";
   /**
    * When set in display-only mode, the center quantity becomes a button
    * (e.g. open weight entry from sell cart).
@@ -151,9 +153,11 @@ export function quantityStepperInputWidthCh(
 
 /**
  * Canonical ExItS quantity control.
- * - **default** — form field group: [ neutral − ][ editable qty ][ primary + ]
- * - **standard / soft / pill** — cart primary capsule with explicit Control Shape radius
- * - **auto** — cart primary capsule; adopts global Control Shape via `--exits-control-radius`
+ * - **outline** (default / standard) — surface capsule with primary border; adopts Preferences → Control Shape
+ * - **auto** — solid primary capsule; Control Shape radius
+ * - **field** — primary capsule with white/surface center (input look); Control Shape radius
+ * - **standard / soft / pill** — solid primary capsule with explicit Control Shape radius
+ * - **default** — legacy form field group [ neutral − ][ editable qty ][ primary + ] (opt-in only)
  * - **editOnClick** — center tap reveals numeric input (sell cart non-kg)
  * - **onValueClick** — center tap opens parent dialog (sell cart kg / `1.5kg`)
  * Editable when `onChange` is set; display-only when using increment/decrement callbacks.
@@ -179,7 +183,7 @@ export function QuantityStepper({
   valueTestId,
   className,
   compact = false,
-  variant = "default",
+  variant = "outline",
   onValueClick,
   valueClickLabel,
   editOnClick = false,
@@ -198,7 +202,9 @@ export function QuantityStepper({
     variant === "pill" ||
     variant === "soft" ||
     variant === "standard" ||
-    variant === "auto";
+    variant === "auto" ||
+    variant === "field" ||
+    variant === "outline";
   const hasCatalogProfile = unitOfMeasure != null && sellingMode != null;
   const precision =
     precisionProp ??
@@ -217,6 +223,9 @@ export function QuantityStepper({
 
   const [draft, setDraft] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
+  /** Unit symbol inside qty middle when idle; hide while typing so Enter/blur brings it back. */
+  const unitSymbol = unit?.trim() ? formatUnitOfMeasureSymbol(unit) : "";
+  const showUnit = Boolean(unitSymbol) && !(editOnClick ? clickEditing : focused);
 
   useEffect(() => {
     if (!focused) {
@@ -280,10 +289,24 @@ export function QuantityStepper({
 
   const buttonLabel = canEditValue ? formattedValue : String(value);
   const visibleText = editable ? (draft ?? displayValue) : buttonLabel;
-  const inputWidthCh = quantityStepperInputWidthCh(visibleText, { compact, cart: cartCapsule });
-  const inputWidthStyle = {
-    ["--quantity-stepper-input-width" as string]: `${inputWidthCh}ch`,
-    width: `${inputWidthCh}ch`,
+  const unitLabel = unitSymbol;
+  const digitWidthCh = quantityStepperInputWidthCh(visibleText, {
+    compact,
+    cart: cartCapsule,
+  });
+  const middleMeasureText =
+    showUnit && unitLabel ? `${visibleText} ${unitLabel}` : visibleText;
+  const middleWidthCh = quantityStepperInputWidthCh(middleMeasureText, {
+    compact,
+    cart: cartCapsule,
+  });
+  const middleWidthStyle = {
+    ["--quantity-stepper-input-width" as string]: `${middleWidthCh}ch`,
+    width: `${middleWidthCh}ch`,
+  } as const;
+  const digitWidthStyle = {
+    ["--quantity-stepper-input-width" as string]: `${digitWidthCh}ch`,
+    width: `${digitWidthCh}ch`,
   } as const;
 
   function commit(next: number) {
@@ -483,93 +506,101 @@ export function QuantityStepper({
         >
           −
         </button>
-        {editable ? (
-          <input
-            ref={inputRef}
-            id={inputId}
-            className={cn(
-              "quantity-stepper__input tabular-nums",
-              compact && "quantity-stepper__input--compact",
-            )}
-            style={inputWidthStyle}
-            value={visibleText}
-            inputMode={precision > 0 ? "decimal" : "numeric"}
-            disabled={disabled}
-            aria-invalid={invalid || undefined}
-            aria-label={ariaLabel ?? "Quantity"}
-            data-testid={valueTestId}
-            onFocus={() => {
-              setFocused(true);
-              setDraft(displayValue);
-            }}
-            onChange={(event) => {
-              const nextText = event.target.value;
-              // Whole units: reject decimal point entirely while typing.
-              if (precision <= 0 && nextText.includes(".")) {
-                return;
-              }
-              const parsed = parseQuantityTyping(nextText, precision);
-              if (parsed.kind === "invalid") {
-                return;
-              }
-              // Draft-only while typing — allow "1.", "0.", "1.5" without clamping.
-              setDraft(nextText);
-            }}
-            onBlur={() => {
-              if (editOnClick) {
-                endClickEdit();
-                return;
-              }
-              commitFromDraft();
-              setFocused(false);
-            }}
-            onKeyDown={handleInputKeyDown}
-          />
-        ) : canEditValue && editOnClick ? (
-          <button
-            type="button"
-            className={cn(
-              "quantity-stepper__value quantity-stepper__value--button tabular-nums",
-              compact && "quantity-stepper__input--compact",
-            )}
-            style={inputWidthStyle}
-            data-testid={valueTestId}
-            aria-label={valueClickLabel ?? ariaLabel ?? "Edit quantity"}
-            disabled={disabled}
-            onClick={() => {
-              setClickEditing(true);
-              setDraft(formattedValue);
-            }}
-          >
-            {buttonLabel}
-          </button>
-        ) : onValueClick ? (
-          <button
-            type="button"
-            className={cn(
-              "quantity-stepper__value quantity-stepper__value--button tabular-nums",
-              compact && "quantity-stepper__input--compact",
-            )}
-            style={inputWidthStyle}
-            data-testid={valueTestId}
-            aria-label={valueClickLabel ?? ariaLabel ?? "Edit quantity"}
-            disabled={disabled}
-            onClick={onValueClick}
-          >
-            {buttonLabel}
-          </button>
-        ) : (
-          <span
-            className={cn(
-              "quantity-stepper__value tabular-nums",
-              compact && "quantity-stepper__input--compact",
-            )}
-            style={inputWidthStyle}
-            data-testid={valueTestId}
-          >
-            {buttonLabel}
-          </span>
-        )}
+        <div className="quantity-stepper__middle" style={middleWidthStyle}>
+          {editable ? (
+            <input
+              ref={inputRef}
+              id={inputId}
+              className={cn(
+                "quantity-stepper__input tabular-nums",
+                compact && "quantity-stepper__input--compact",
+              )}
+              style={digitWidthStyle}
+              value={visibleText}
+              size={Math.max(1, visibleText.length)}
+              inputMode={precision > 0 ? "decimal" : "numeric"}
+              disabled={disabled}
+              aria-invalid={invalid || undefined}
+              aria-label={ariaLabel ?? "Quantity"}
+              data-testid={valueTestId}
+              onFocus={() => {
+                setFocused(true);
+                setDraft(displayValue);
+              }}
+              onChange={(event) => {
+                const nextText = event.target.value;
+                // Whole units: reject decimal point entirely while typing.
+                if (precision <= 0 && nextText.includes(".")) {
+                  return;
+                }
+                const parsed = parseQuantityTyping(nextText, precision);
+                if (parsed.kind === "invalid") {
+                  return;
+                }
+                // Draft-only while typing — allow "1.", "0.", "1.5" without clamping.
+                setDraft(nextText);
+              }}
+              onBlur={() => {
+                if (editOnClick) {
+                  endClickEdit();
+                  return;
+                }
+                commitFromDraft();
+                setFocused(false);
+              }}
+              onKeyDown={handleInputKeyDown}
+            />
+          ) : canEditValue && editOnClick ? (
+            <button
+              type="button"
+              className={cn(
+                "quantity-stepper__value quantity-stepper__value--button tabular-nums",
+                compact && "quantity-stepper__input--compact",
+              )}
+              style={digitWidthStyle}
+              data-testid={valueTestId}
+              aria-label={valueClickLabel ?? ariaLabel ?? "Edit quantity"}
+              disabled={disabled}
+              onClick={() => {
+                setClickEditing(true);
+                setDraft(formattedValue);
+              }}
+            >
+              {buttonLabel}
+            </button>
+          ) : onValueClick ? (
+            <button
+              type="button"
+              className={cn(
+                "quantity-stepper__value quantity-stepper__value--button tabular-nums",
+                compact && "quantity-stepper__input--compact",
+              )}
+              style={digitWidthStyle}
+              data-testid={valueTestId}
+              aria-label={valueClickLabel ?? ariaLabel ?? "Edit quantity"}
+              disabled={disabled}
+              onClick={onValueClick}
+            >
+              {buttonLabel}
+            </button>
+          ) : (
+            <span
+              className={cn(
+                "quantity-stepper__value tabular-nums",
+                compact && "quantity-stepper__input--compact",
+              )}
+              style={digitWidthStyle}
+              data-testid={valueTestId}
+            >
+              {buttonLabel}
+            </span>
+          )}
+          {showUnit ? (
+            <span className="quantity-stepper__unit" aria-hidden>
+              {` ${unitLabel}`}
+            </span>
+          ) : null}
+        </div>
         <button
           type="button"
           className="quantity-stepper__btn quantity-stepper__btn--plus"
@@ -581,11 +612,6 @@ export function QuantityStepper({
           +
         </button>
       </div>
-      {unit ? (
-        <span className="quantity-stepper__unit shrink-0 text-[length:var(--exits-text-xs)] text-muted">
-          {unit}
-        </span>
-      ) : null}
     </div>
   );
 }

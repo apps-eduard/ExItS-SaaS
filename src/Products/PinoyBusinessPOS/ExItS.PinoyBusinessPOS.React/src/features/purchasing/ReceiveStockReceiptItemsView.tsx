@@ -1,4 +1,5 @@
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExitsDataRecordCard } from "@/components/exits/ExitsDataRecordCard";
 import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
@@ -12,8 +13,9 @@ import {
   ExitsTableHeader,
   ExitsTableRow,
 } from "@/components/exits/ExitsTable";
+import { Notice } from "@/components/exits/Notice";
 import type { ResponsiveDataLayout } from "@/components/exits/responsive-data-view";
-import { QuantityStepper } from "@/components/exits/MoneyQuantity";
+import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { receiveCostMarginKind } from "@/features/purchasing/receive-cost-margin";
 import {
   formatMoneyInput,
@@ -74,7 +76,7 @@ function ReceiptQtyStepper({
       onChange={(next) => onPatchLine(line.productId, { quantity: next })}
       unitOfMeasure={line.uom}
       sellingMode={line.sellingMode}
-      unit={line.uom}
+      unit={line.uom?.trim() || undefined}
       invalid={!(line.quantity > 0)}
       decreaseLabel={t("purchasing.decreaseQty")}
       increaseLabel={t("purchasing.increaseQty")}
@@ -96,30 +98,124 @@ function ReceiptCostInput({
 }) {
   const costInvalid = !(line.unitCost > 0);
   return (
-    <input
-      className="exits-input receive-cost-input tabular-nums"
-      value={line.costInput}
-      onChange={(e) =>
-        onPatchLine(line.productId, {
-          costInput: normalizeMoneyAmountTyping(e.target.value),
-        })
-      }
-      onBlur={(e) => {
-        const parsed = parseMoneyInput(e.target.value);
-        if (parsed !== null) {
+    <div className="exits-currency-field receive-stock-cost-field">
+      <span className="exits-currency-field__prefix" aria-hidden>
+        ₱
+      </span>
+      <input
+        className="exits-currency-field__input receive-cost-input tabular-nums"
+        value={line.costInput}
+        onChange={(e) =>
           onPatchLine(line.productId, {
-            costInput: formatMoneyInput(parsed),
-          });
+            costInput: normalizeMoneyAmountTyping(e.target.value),
+          })
         }
-      }}
-      inputMode="decimal"
-      placeholder="0.00"
-      autoComplete="off"
-      aria-invalid={costInvalid || undefined}
-      aria-required
-      aria-label={t("purchasing.costShort")}
-      data-testid={`direct-line-cost-${line.productId}`}
-    />
+        onBlur={(e) => {
+          const parsed = parseMoneyInput(e.target.value);
+          if (parsed !== null) {
+            onPatchLine(line.productId, {
+              costInput: formatMoneyInput(parsed),
+            });
+          }
+        }}
+        inputMode="decimal"
+        placeholder="0.00"
+        autoComplete="off"
+        aria-invalid={costInvalid || undefined}
+        aria-required
+        aria-label={t("purchasing.costShort")}
+        data-testid={`direct-line-cost-${line.productId}`}
+      />
+    </div>
+  );
+}
+
+function ReceiptExpiryDateInput({
+  line,
+  onPatchLine,
+  t,
+}: {
+  line: ReceiveStockReceiptLine;
+  onPatchLine: ReceiveStockReceiptItemsViewProps["onPatchLine"];
+  t: Translate;
+}) {
+  const expiryRequired = line.tracksExpiration;
+  const expiryInvalid = expiryRequired && !line.expiryDate.trim();
+  const hasValue = Boolean(line.expiryDate.trim());
+  return (
+    <div className="receive-stock-expiry-field">
+      <input
+        type="date"
+        className="exits-input receive-stock-expiry-input"
+        value={line.expiryDate}
+        onChange={(e) =>
+          onPatchLine(line.productId, {
+            expiryDate: e.target.value,
+          })
+        }
+        aria-invalid={expiryInvalid || undefined}
+        aria-required={expiryRequired || undefined}
+        aria-label={t("purchasing.expiryDate")}
+        data-testid={`direct-line-expiry-${line.productId}`}
+      />
+      {hasValue ? (
+        <Button
+          type="button"
+          intent="warning"
+          appearance="outline"
+          shape="pill"
+          size="icon"
+          className="receive-stock-expiry-field__clear"
+          aria-label={t("purchasing.clearExpiryDate")}
+          data-testid={`direct-line-expiry-clear-${line.productId}`}
+          onClick={() => onPatchLine(line.productId, { expiryDate: "" })}
+        >
+          <X className="size-3.5" aria-hidden strokeWidth={2} />
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function ExpiryEnableTrackingNotice({
+  t,
+  onClearDates,
+}: {
+  t: Translate;
+  onClearDates: () => void;
+}) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <Notice
+      tone="info"
+      testId="direct-receipt-expiry-hint"
+      className="receive-stock-expiry-enable-notice"
+      action={
+        <div className="receive-stock-expiry-enable-notice__actions">
+          <button
+            type="button"
+            className="receive-stock-expiry-enable-notice__clear-date"
+            data-testid="direct-receipt-expiry-hint-clear"
+            onClick={onClearDates}
+          >
+            {t("purchasing.clearExpiryDate")}
+          </button>
+          <button
+            type="button"
+            className="receive-stock-expiry-enable-notice__close"
+            aria-label={t("shell.needsAttention.close")}
+            data-testid="direct-receipt-expiry-hint-close"
+            onClick={() => setDismissed(true)}
+          >
+            <X className="size-4" aria-hidden strokeWidth={2} />
+          </button>
+        </div>
+      }
+    >
+      {t("purchasing.expiryEnableTrackingHint")}
+    </Notice>
   );
 }
 
@@ -137,19 +233,13 @@ function ReceiptSellingCell({
       : marginKind === "negativeMargin"
         ? t("purchasing.costNegativeMarginWarning")
         : null;
-  const sellingDisplay =
-    line.effectiveSellingPrice > 0
-      ? formatMoneyInput(line.effectiveSellingPrice)
-      : "0.00";
   return (
     <div className="receive-stock-selling-cell">
-      <span
-        className="receive-stock-selling-readonly tabular-nums"
-        aria-label={t("purchasing.sellingPriceShort")}
-        data-testid={`direct-line-selling-${line.productId}`}
-      >
-        {sellingDisplay}
-      </span>
+      <MoneyDisplay
+        amount={line.effectiveSellingPrice > 0 ? line.effectiveSellingPrice : 0}
+        className="receive-stock-selling-readonly"
+        testId={`direct-line-selling-${line.productId}`}
+      />
       {marginLabel ? (
         <span
           className="receive-stock-margin-warning"
@@ -175,28 +265,11 @@ function ReceiptExpiryLotDetails({
   onPatchLine: ReceiveStockReceiptItemsViewProps["onPatchLine"];
   t: Translate;
 }) {
-  if (!line.tracksExpiration) {
-    return null;
-  }
-  const expiryInvalid = !line.expiryDate.trim();
   return (
     <div className="receive-stock-receipt-card__details">
       <label className="receive-stock-field">
         <span className="receive-stock-field__label">{t("purchasing.expiryDate")}</span>
-        <input
-          type="date"
-          className="exits-input receive-stock-expiry-input"
-          value={line.expiryDate}
-          onChange={(e) =>
-            onPatchLine(line.productId, {
-              expiryDate: e.target.value,
-            })
-          }
-          aria-invalid={expiryInvalid || undefined}
-          aria-required
-          aria-label={t("purchasing.expiryDate")}
-          data-testid={`direct-line-expiry-${line.productId}`}
-        />
+        <ReceiptExpiryDateInput line={line} onPatchLine={onPatchLine} t={t} />
       </label>
       <label className="receive-stock-field">
         <span className="receive-stock-field__label">{t("purchasing.lotNumber")}</span>
@@ -208,6 +281,8 @@ function ReceiptExpiryLotDetails({
               lotNumber: e.target.value,
             })
           }
+          maxLength={64}
+          placeholder={t("purchasing.lotNumberOptional")}
           aria-label={t("purchasing.lotNumber")}
           data-testid={`direct-line-lot-${line.productId}`}
         />
@@ -252,6 +327,10 @@ export function ReceiveStockReceiptItemsView({
   onRemoveLine,
   t,
 }: ReceiveStockReceiptItemsViewProps) {
+  const showExpiryEnableNotice = lines.some(
+    (line) => !line.tracksExpiration && Boolean(line.expiryDate.trim()),
+  );
+
   const tableBody = (
         <ExitsTableContainer className="receive-stock-receipt-table">
           <ExitsTable>
@@ -260,7 +339,7 @@ export function ReceiveStockReceiptItemsView({
                 <ExitsTableHead cellAlign="text">
                   {t("purchasing.receiveProduct")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="text">{t("purchasing.qtyShort")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="center">{t("purchasing.qtyShort")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("purchasing.costShort")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">
                   {t("purchasing.sellingPriceShort")}
@@ -285,7 +364,6 @@ export function ReceiveStockReceiptItemsView({
             <ExitsTableBody>
               {lines.map((line) => {
                 const lineTotal = roundMoney(line.quantity * line.unitCost);
-                const expiryInvalid = line.tracksExpiration && !line.expiryDate.trim();
                 return (
                   <ExitsTableRow
                     key={line.productId}
@@ -298,12 +376,10 @@ export function ReceiveStockReceiptItemsView({
                     <ExitsTableCell cellAlign="text">
                       <div className="font-medium leading-snug">{line.name}</div>
                       {line.sku ? (
-                        <div className="text-[length:var(--exits-text-xs)] text-muted">
-                          {line.sku}
-                        </div>
+                        <div className="receive-stock-receipt-product__sku">{line.sku}</div>
                       ) : null}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="text">
+                    <ExitsTableCell cellAlign="center">
                       <ReceiptQtyStepper line={line} onPatchLine={onPatchLine} t={t} />
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text">
@@ -316,41 +392,22 @@ export function ReceiveStockReceiptItemsView({
                       cellAlign="text"
                       className="receive-stock-receipt-table__expiry-col"
                     >
-                      {line.tracksExpiration ? (
-                        <input
-                          type="date"
-                          className="exits-input receive-stock-expiry-input"
-                          value={line.expiryDate}
-                          onChange={(e) =>
-                            onPatchLine(line.productId, {
-                              expiryDate: e.target.value,
-                            })
-                          }
-                          aria-invalid={expiryInvalid || undefined}
-                          aria-required
-                          aria-label={t("purchasing.expiryDate")}
-                          data-testid={`direct-line-expiry-${line.productId}`}
-                        />
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
+                      <ReceiptExpiryDateInput line={line} onPatchLine={onPatchLine} t={t} />
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text">
-                      {line.tracksExpiration ? (
-                        <input
-                          className="exits-input receive-stock-lot-input"
-                          value={line.lotNumber}
-                          onChange={(e) =>
-                            onPatchLine(line.productId, {
-                              lotNumber: e.target.value,
-                            })
-                          }
-                          aria-label={t("purchasing.lotNumber")}
-                          data-testid={`direct-line-lot-${line.productId}`}
-                        />
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
+                      <input
+                        className="exits-input receive-stock-lot-input"
+                        value={line.lotNumber}
+                        onChange={(e) =>
+                          onPatchLine(line.productId, {
+                            lotNumber: e.target.value,
+                          })
+                        }
+                        maxLength={64}
+                        placeholder={t("purchasing.lotNumberOptional")}
+                        aria-label={t("purchasing.lotNumber")}
+                        data-testid={`direct-line-lot-${line.productId}`}
+                      />
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="numeric">
                       <span className="font-semibold tabular-nums">{formatPeso(lineTotal)}</span>
@@ -420,13 +477,26 @@ export function ReceiveStockReceiptItemsView({
         </ul>
   );
 
+  const clearEnableTrackingExpiryDates = () => {
+    for (const line of lines) {
+      if (!line.tracksExpiration && line.expiryDate.trim()) {
+        onPatchLine(line.productId, { expiryDate: "" });
+      }
+    }
+  };
+
   return (
-    <ExitsResponsiveDataView
-      layout={layout}
-      testId="direct-receipt-table"
-      className="receive-stock-receipt-responsive"
-      table={layout === "table" ? tableBody : null}
-      list={layout === "list" ? listBody : null}
-    />
+    <div className="receive-stock-receipt-items">
+      {showExpiryEnableNotice ? (
+        <ExpiryEnableTrackingNotice t={t} onClearDates={clearEnableTrackingExpiryDates} />
+      ) : null}
+      <ExitsResponsiveDataView
+        layout={layout}
+        testId="direct-receipt-table"
+        className="receive-stock-receipt-responsive"
+        table={layout === "table" ? tableBody : null}
+        list={layout === "list" ? listBody : null}
+      />
+    </div>
   );
 }

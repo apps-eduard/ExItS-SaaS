@@ -84,8 +84,8 @@ export function Notice({
         {children != null && children !== "" ? (
           <div className="m-0 leading-snug text-inherit [&_p]:m-0">{children}</div>
         ) : null}
-        {action ? <div className="mt-0.5">{action}</div> : null}
       </div>
+      {action ? <div className="exits-notice__action shrink-0 self-start">{action}</div> : null}
     </div>
   );
 }

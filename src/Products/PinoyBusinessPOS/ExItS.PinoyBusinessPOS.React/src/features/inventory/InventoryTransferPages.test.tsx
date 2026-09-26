@@ -466,7 +466,7 @@ describe("Inventory Transfer React flow", () => {
           damagedFollowUp: "RequestReplacement",
           damagedCustodyDecision: "KeepAtDestination",
           missingQty: 3,
-          missingDisposition: "ExpectedLater",
+          missingDisposition: "CloseMissing",
           discrepancyNote: "Mixed receipt",
         }),
       ],

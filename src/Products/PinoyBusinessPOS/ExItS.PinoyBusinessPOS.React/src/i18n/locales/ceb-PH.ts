@@ -3572,6 +3572,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",
   "uiStandards.tableDemoLede": "Approved ExitsTable reference with search, filter, sort, multi-select, output icons, pagination, Actions, and field-menu inline editing.",
+  "uiStandards.tableSimpleTitle": "Simple table",
+  "uiStandards.tableSimpleLede": "No search — sticky header, body scroll, pagination, and a sort preview where you choose which columns are sortable. Filter, multi-select, output, Actions, and inline edit stay OFF.",
   "uiStandards.buttonTreatmentsTitle": "Button treatments",
   "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
@@ -4910,9 +4912,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.status.partiallyReceived": "Partially received",
 
   "transfer.status.received": "Received",
-  "transfer.status.closedWithDiscrepancy": "Closed with discrepancy",
-  "transfer.byPartiallyReceived": "Partially received by",
-  "transfer.byClosedWithDiscrepancy": "Closed by",
+  "transfer.status.closedWithDiscrepancy": "Discrepancy",
+  "transfer.byPartiallyReceived": "Partially received by {name}",
+  "transfer.byClosedWithDiscrepancy": "Closed by {name}",
 
   "transfer.title": "Mga Inventory Transfer",
 
@@ -9988,7 +9990,14 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.expiryDate": "Expiry date",
 
+  "purchasing.lotNumberOptional": "Optional",
+
   "purchasing.expiryRequired": "Expiry date is required when receiving expiration-tracked stock.",
+
+  "purchasing.clearExpiryDate": "Clear date",
+
+  "purchasing.expiryEnableTrackingHint":
+    "Expiry tracking will be enabled when this receipt is saved.",
 
   "purchasing.receiveExpiryHelper": "Expiry is recorded for this received stock.",
 

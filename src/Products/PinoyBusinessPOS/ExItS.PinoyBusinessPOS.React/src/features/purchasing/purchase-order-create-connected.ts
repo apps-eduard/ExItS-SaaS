@@ -3,6 +3,7 @@ import type {
   SupplierProductExposure,
 } from "@/api/pos/pos-connected-suppliers-client";
 import type { ExitsSelectOption } from "@/components/exits/ExitsSelect";
+import { formatUnitOfMeasureSymbol } from "@/lib/unit-of-measure";
 
 /**
  * UI-only sentinel for the “No category” multi-select option.
@@ -431,37 +432,7 @@ export function retainCompatibleDraftLines(
 }
 
 export function formatUnitOfMeasureLabel(unitOfMeasure: string): string {
-  const unit = unitOfMeasure.trim();
-  if (!unit) {
-    return "pc";
-  }
-  switch (unit.toLowerCase()) {
-    case "kilogram":
-    case "kilograms":
-    case "kg":
-      return "Kg";
-    case "gram":
-    case "grams":
-      return "g";
-    case "liter":
-    case "litre":
-    case "liters":
-    case "litres":
-      return "L";
-    case "milliliter":
-    case "millilitre":
-    case "milliliters":
-    case "millilitres":
-    case "ml":
-      return "mL";
-    case "piece":
-    case "pieces":
-    case "pc":
-    case "pcs":
-      return "pc";
-    default:
-      return unit;
-  }
+  return formatUnitOfMeasureSymbol(unitOfMeasure);
 }
 
 export function formatUnitPriceLabel(unitPurchaseCost: number, _unitOfMeasure?: string): string {

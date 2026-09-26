@@ -40,7 +40,7 @@ public sealed class InventoryTransferReceiveClassificationTests
     }
 
     [Fact]
-    public void B_missing_expected_later_leaves_outstanding_and_partially_received()
+    public void B_missing_expected_later_closes_and_creates_discrepancy()
     {
         var transfer = DispatchSingleLine(100m);
         transfer.Receive(
@@ -48,11 +48,11 @@ public sealed class InventoryTransferReceiveClassificationTests
             Actor,
             Utc.AddMinutes(2));
 
-        Assert.Equal(InventoryTransferStatus.PartiallyReceived, transfer.Status);
+        Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, transfer.Status);
         var line = transfer.Lines.Single();
         Assert.Equal(70m, line.ReceivedQty);
-        Assert.Equal(0m, line.ClosedQty);
-        Assert.Equal(30m, line.OutstandingQty);
+        Assert.Equal(30m, line.ClosedQty);
+        Assert.Equal(0m, line.OutstandingQty);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class InventoryTransferReceiveClassificationTests
     }
 
     [Fact]
-    public void D_mixed_classification_keeps_open_in_transit_for_expected_later_missing()
+    public void D_mixed_classification_closes_expected_later_missing()
     {
         var transfer = DispatchSingleLine(100m);
         transfer.Receive(
@@ -89,13 +89,13 @@ public sealed class InventoryTransferReceiveClassificationTests
 
         var line = transfer.Lines.Single();
         Assert.Equal(70m, line.ReceivedQty);
-        Assert.Equal(20m, line.ClosedQty);
-        Assert.Equal(10m, line.OutstandingQty);
-        Assert.Equal(InventoryTransferStatus.PartiallyReceived, transfer.Status);
+        Assert.Equal(30m, line.ClosedQty);
+        Assert.Equal(0m, line.OutstandingQty);
+        Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, transfer.Status);
     }
 
     [Fact]
-    public void E_close_remainder_after_expected_later_missing_updates_stock_request_remaining()
+    public void E_expected_later_missing_immediately_increases_remaining_to_dispatch()
     {
         var transfer = DispatchSingleLine(100m);
         transfer.Receive(
@@ -122,15 +122,8 @@ public sealed class InventoryTransferReceiveClassificationTests
         request.MarkDispatched(Actor, Utc.AddMinutes(1), transfer.Id.Value);
 
         var afterReceive = StockRequestDispatchCoverage.Compute(request, [transfer]);
-        Assert.Equal(20m, afterReceive.RemainingToDispatchByProduct[Coke.Value]);
-
-        transfer.CloseRemainder(
-            Actor,
-            Utc.AddMinutes(3),
-            transferLevelReason: InventoryTransferDiscrepancyReason.LostInTransit);
-
-        var afterClose = StockRequestDispatchCoverage.Compute(request, [transfer]);
-        Assert.Equal(30m, afterClose.RemainingToDispatchByProduct[Coke.Value]);
+        Assert.Equal(30m, afterReceive.RemainingToDispatchByProduct[Coke.Value]);
+        Assert.Equal(0m, afterReceive.OpenInTransitByProduct.GetValueOrDefault(Coke.Value));
         Assert.Equal(30m, transfer.Lines.Single().ClosedQty);
         Assert.Equal(0m, transfer.Lines.Single().OutstandingQty);
     }

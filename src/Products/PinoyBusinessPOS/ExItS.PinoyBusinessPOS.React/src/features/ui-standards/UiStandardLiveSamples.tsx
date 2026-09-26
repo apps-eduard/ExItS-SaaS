@@ -27,15 +27,20 @@ import { ExitsMultiSelect } from "@/components/exits/ExitsMultiSelect";
 import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import {
+  cycleExitsTableSort,
   ExitsTable,
   ExitsTableBody,
   ExitsTableCell,
   ExitsTableContainer,
   ExitsTableHead,
   ExitsTableHeader,
+  ExitsTableOutputActions,
+  ExitsTablePagination,
   ExitsTableRow,
   ExitsTableToolbar,
+  type ExitsTableSortDirection,
 } from "@/components/exits/ExitsTable";
+import { SearchField } from "@/components/exits/SearchField";
 import { ExitsDataRecordCard } from "@/components/exits/ExitsDataRecordCard";
 import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
 import { ExitsUpload, type ExitsUploadItem } from "@/components/exits/ExitsUpload";
@@ -44,7 +49,6 @@ import { ExitsTabs } from "@/components/exits/ExitsTabs";
 import { FormDrawer } from "@/components/exits/FormDrawer";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { ModuleSubnav } from "@/components/exits/ModuleSubnav";
-import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { TableActionButton } from "@/components/exits/TableActionButton";
 import { useExitsToast } from "@/components/exits/ToastProvider";
@@ -69,6 +73,8 @@ import type { PosSaleDto } from "@/api/pos/pos-sales-client";
 import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
 import { UiStandardsDoDont } from "@/features/ui-standards/UiStandardsDoDont";
+import { UiStandardsButtonGallery } from "@/features/ui-standards/UiStandardsButtonGallery";
+import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
 import {
   UiStandardsButtonPlayground,
   UiStandardsSelectPlayground,
@@ -179,13 +185,17 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [paymentTerms, setPaymentTerms] = useState("30");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [amount, setAmount] = useState("1,250.00");
-  const [stepperWhole, setStepperWhole] = useState(1);
-  const [stepperWeighted, setStepperWeighted] = useState(1.5);
-  const [stepperFractional, setStepperFractional] = useState(0.5);
-  const [stepperLarge, setStepperLarge] = useState(1250.5);
-  const [stepperMiddleEdit, setStepperMiddleEdit] = useState(3);
+  const [stepperQty, setStepperQty] = useState(2);
+  const [stepperEditQty, setStepperEditQty] = useState(3);
   const [selectedRow, setSelectedRow] = useState("1");
-  const [tableSearch, setTableSearch] = useState("");
+  const [dataTablePage, setDataTablePage] = useState(1);
+  const [dataTablePageSize, setDataTablePageSize] = useState(10);
+  const [dataTableSearch, setDataTableSearch] = useState("");
+  const [dataCategoryFilter, setDataCategoryFilter] = useState("all");
+  const [dataSortKey, setDataSortKey] = useState<"customer" | "type" | "category" | "balance" | "status" | null>(
+    null,
+  );
+  const [dataSortDirection, setDataSortDirection] = useState<ExitsTableSortDirection>(null);
   const [dataPreviewDevice, setDataPreviewDevice] = useState<UiStandardsDataPreviewDevice>(
     UI_STANDARDS_DATA_PREVIEW_DEFAULT,
   );
@@ -235,48 +245,95 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const DeleteIcon = getActionIcon("delete");
   const RetryIcon = getActionIcon("retry");
 
-  const tableRows = useMemo(
-    () => [
-      {
-        id: "1",
-        customer: "Juan Dela Cruz",
-        type: "Personal",
-        balance: "₱1,250.00",
-        status: "Active" as const,
-        statusTone: "success" as const,
-      },
-      {
-        id: "2",
-        customer: "Paul Coffee",
-        type: "Business",
-        balance: "₱8,500.00",
-        status: "Pending" as const,
-        statusTone: "warning" as const,
-      },
-      {
-        id: "3",
-        customer: "Ana Santos",
-        type: "Personal",
-        balance: "₱0.00",
-        status: "Active" as const,
-        statusTone: "success" as const,
-      },
-    ],
-    [],
-  );
+  const tableRows = useMemo(() => {
+    const categories = ["Retail", "Wholesale", "VIP", "Walk-in"] as const;
+    const names = [
+      ["Juan Dela Cruz", "Personal", "₱1,250.00", "Active", "success"],
+      ["Paul Coffee", "Business", "₱8,500.00", "Pending", "warning"],
+      ["Ana Santos", "Personal", "₱0.00", "Active", "success"],
+      ["Maria Reyes", "Business", "₱2,100.00", "Active", "success"],
+      ["Carlo Mendoza", "Personal", "₱450.00", "Pending", "warning"],
+      ["Liza Gomez", "Business", "₱12,000.00", "Active", "success"],
+      ["Rico Navarro", "Personal", "₱75.00", "Active", "success"],
+      ["Grace Lim", "Business", "₱3,300.00", "Pending", "warning"],
+      ["Benito Cruz", "Personal", "₱980.00", "Active", "success"],
+      ["Sofia Tan", "Business", "₱5,600.00", "Active", "success"],
+      ["Diego Ramos", "Personal", "₱120.00", "Pending", "warning"],
+      ["Elena Vargas", "Business", "₱9,400.00", "Active", "success"],
+      ["Miguel Torres", "Personal", "₱0.00", "Active", "success"],
+      ["Patricia Ong", "Business", "₱1,780.00", "Pending", "warning"],
+      ["Andre Villanueva", "Personal", "₱640.00", "Active", "success"],
+      ["Joan Castillo", "Business", "₱4,250.00", "Active", "success"],
+      ["Kevin Sy", "Personal", "₱210.00", "Pending", "warning"],
+      ["Nina Domingo", "Business", "₱7,900.00", "Active", "success"],
+      ["Oscar Padilla", "Personal", "₱55.00", "Active", "success"],
+      ["Paula Chua", "Business", "₱15,200.00", "Pending", "warning"],
+    ] as const;
+    return names.map(([customer, type, balance, status, statusTone], index) => ({
+      id: String(index + 1),
+      customer,
+      type,
+      category: categories[index % categories.length]!,
+      balance,
+      status,
+      statusTone: statusTone as "success" | "warning",
+    }));
+  }, []);
 
-  const filteredTableRows = useMemo(() => {
-    const q = tableSearch.trim().toLowerCase();
-    if (!q) {
-      return tableRows;
-    }
-    return tableRows.filter(
-      (row) =>
+  const filteredSortedTableRows = useMemo(() => {
+    const q = dataTableSearch.trim().toLowerCase();
+    let rows = tableRows.filter((row) => {
+      if (dataCategoryFilter !== "all" && row.category !== dataCategoryFilter) {
+        return false;
+      }
+      if (!q) {
+        return true;
+      }
+      return (
         row.customer.toLowerCase().includes(q) ||
         row.type.toLowerCase().includes(q) ||
-        row.status.toLowerCase().includes(q),
-    );
-  }, [tableRows, tableSearch]);
+        row.category.toLowerCase().includes(q) ||
+        row.status.toLowerCase().includes(q)
+      );
+    });
+    if (dataSortKey && dataSortDirection) {
+      const dir = dataSortDirection === "asc" ? 1 : -1;
+      rows = [...rows].sort((a, b) => {
+        switch (dataSortKey) {
+          case "customer":
+            return a.customer.localeCompare(b.customer) * dir;
+          case "type":
+            return a.type.localeCompare(b.type) * dir;
+          case "category":
+            return a.category.localeCompare(b.category) * dir;
+          case "balance":
+            return a.balance.localeCompare(b.balance) * dir;
+          case "status":
+            return a.status.localeCompare(b.status) * dir;
+          default:
+            return 0;
+        }
+      });
+    }
+    return rows;
+  }, [tableRows, dataTableSearch, dataCategoryFilter, dataSortKey, dataSortDirection]);
+
+  const dataTablePageCount = Math.max(
+    1,
+    Math.ceil(filteredSortedTableRows.length / dataTablePageSize) || 1,
+  );
+  const safeDataTablePage = Math.min(dataTablePage, dataTablePageCount);
+  const pagedTableRows = useMemo(() => {
+    const start = (safeDataTablePage - 1) * dataTablePageSize;
+    return filteredSortedTableRows.slice(start, start + dataTablePageSize);
+  }, [filteredSortedTableRows, safeDataTablePage, dataTablePageSize]);
+
+  function toggleDataSort(key: "customer" | "type" | "category" | "balance" | "status") {
+    const next = cycleExitsTableSort(dataSortKey, dataSortDirection, key);
+    setDataSortKey(next.key as typeof key | null);
+    setDataSortDirection(next.direction);
+    setDataTablePage(1);
+  }
 
   const { layout: dataLayout } = useResponsiveDataLayout({
     tableMinWidthPx: 1024,
@@ -291,8 +348,12 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
     <>
       <div className="grid min-w-0 gap-3 lg:grid-cols-2" data-testid="ui-standard-cards">
         {show("buttons") ? (
-          <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-buttons">
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-buttons"
+          >
             <CardTitle>Buttons</CardTitle>
+            <UiStandardsButtonGallery />
             <UiStandardsButtonPlayground />
             <div className="flex flex-col gap-2">
               <SectionLabel>Common actions</SectionLabel>
@@ -479,6 +540,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 />
               </div>
             </div>
+          </Card>
+        ) : null}
+
+        {show("messages") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-messages"
+          >
+            <CardTitle>Messages</CardTitle>
+            <UiStandardsMessageGallery />
           </Card>
         ) : null}
 
@@ -777,214 +848,62 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 Enter a valid email address.
               </span>
             </div>
+          </Card>
+        ) : null}
+
+        {show("quantityStepper") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3"
+            data-testid="ui-standard-card-quantity-stepper"
+          >
+            <CardTitle>QuantityStepper</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              Standard / default is <code className="text-foreground">variant=&quot;outline&quot;</code> —
+              surface capsule with primary border; radius follows Preferences → Control Shape.{" "}
+              <code className="text-foreground">auto</code> is the solid primary capsule;{" "}
+              <code className="text-foreground">field</code> keeps a white/surface center. Explicit{" "}
+              <code className="text-foreground">standard</code> /{" "}
+              <code className="text-foreground">soft</code> /{" "}
+              <code className="text-foreground">pill</code> lock solid-capsule geometry.
+            </p>
+
             <div className="flex flex-col gap-2" data-testid="ui-standard-quantity-stepper">
-              <SectionLabel>QuantityStepper</SectionLabel>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Canonical <code className="text-foreground">QuantityStepper</code> (
-                <code className="text-foreground">MoneyQuantity.tsx</code> /{" "}
-                <code className="text-foreground">ExItS.DesignSystem</code>).
-              </p>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                <strong className="font-medium text-foreground">Default (forms)</strong> —{" "}
-                <strong className="font-medium text-foreground">
-                  [ neutral − ][ editable qty ][ primary + ]
-                </strong>
-                . Measured units default to whole display (1 not 1.00) but accept typed decimals
-                up to 2 places. Fractions below 1 allowed (min typically 0.01). Whole units stay
-                integers (min 1). Receive Stock / Create PO reuse default.
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <QuantityStepper
-                  compact
-                  value={stepperWhole}
-                  onChange={setStepperWhole}
-                  min={1}
-                  step={1}
-                  precision={0}
-                  unit="Pack"
-                  decreaseLabel="Decrease whole quantity"
-                  increaseLabel="Increase whole quantity"
-                  ariaLabel="Whole unit quantity"
-                  valueTestId="ui-standard-qty-whole"
-                />
-                <QuantityStepper
-                  compact
-                  value={stepperWeighted}
-                  onChange={setStepperWeighted}
-                  min={0.01}
-                  step={1}
-                  precision={2}
-                  unit="Kg"
-                  decreaseLabel="Decrease weight quantity"
-                  increaseLabel="Increase weight quantity"
-                  ariaLabel="Weighted quantity"
-                  valueTestId="ui-standard-qty-weighted"
-                />
-                <QuantityStepper
-                  compact
-                  value={stepperFractional}
-                  onChange={setStepperFractional}
-                  min={0.01}
-                  step={1}
-                  precision={2}
-                  unit="Kg"
-                  decreaseLabel="Decrease fractional quantity"
-                  increaseLabel="Increase fractional quantity"
-                  ariaLabel="Fractional kilogram quantity"
-                  valueTestId="ui-standard-qty-fractional"
-                />
-                <QuantityStepper
-                  compact
-                  value={stepperLarge}
-                  onChange={setStepperLarge}
-                  min={0.01}
-                  step={1}
-                  precision={2}
-                  unit="Kg"
-                  decreaseLabel="Decrease large quantity"
-                  increaseLabel="Increase large quantity"
-                  ariaLabel="Large quantity with thousands"
-                  valueTestId="ui-standard-qty-large"
-                />
-                <QuantityStepper
-                  compact
-                  value={0.01}
-                  onChange={() => undefined}
-                  min={0.01}
-                  step={1}
-                  precision={2}
-                  unit="Kg"
-                  decreaseLabel="Decrease at measured minimum"
-                  increaseLabel="Increase at measured minimum"
-                  ariaLabel="Measured minimum (minus disabled)"
-                  valueTestId="ui-standard-qty-at-min"
-                />
-                <QuantityStepper
-                  compact
-                  value={1}
-                  onChange={() => undefined}
-                  min={1}
-                  step={1}
-                  precision={0}
-                  disabled
-                  decreaseLabel="Decrease disabled quantity"
-                  increaseLabel="Increase disabled quantity"
-                  ariaLabel="Disabled quantity"
-                  valueTestId="ui-standard-qty-disabled"
-                />
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                <strong className="font-medium text-foreground">Cart capsule</strong> — solid
-                primary, white rim, light − qty +. Radius follows Control Shape:{" "}
-                <code className="text-foreground">standard</code> /{" "}
-                <code className="text-foreground">soft</code> /{" "}
-                <code className="text-foreground">pill</code>, or{" "}
-                <code className="text-foreground">auto</code> (adopts Preferences → Control
-                Shape via <code className="text-foreground">--exits-control-radius</code>). Sell
-                cart uses <code className="text-foreground">variant=&quot;auto&quot;</code>.
-              </p>
+              <SectionLabel>Standard — Outline</SectionLabel>
               <div
-                className="flex flex-wrap items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
-                data-testid="ui-standard-quantity-stepper-pill"
+                className="flex flex-wrap items-center gap-3"
+                data-testid="ui-standard-quantity-stepper-outline"
               >
                 <QuantityStepper
                   compact
-                  variant="auto"
-                  value={stepperWhole}
-                  onChange={setStepperWhole}
+                  variant="outline"
+                  value={stepperQty}
+                  onChange={setStepperQty}
                   min={1}
                   step={1}
                   precision={0}
-                  decreaseLabel="Decrease auto quantity"
-                  increaseLabel="Increase auto quantity"
-                  ariaLabel="Auto cart quantity (follows Control Shape)"
-                  valueTestId="ui-standard-qty-auto"
+                  decreaseLabel="Decrease outline quantity"
+                  increaseLabel="Increase outline quantity"
+                  ariaLabel="Outline quantity (standard)"
+                  valueTestId="ui-standard-qty-outline"
                 />
                 <QuantityStepper
                   compact
-                  variant="standard"
-                  value={stepperWhole}
-                  onChange={setStepperWhole}
-                  min={1}
-                  step={1}
-                  precision={0}
-                  decreaseLabel="Decrease standard quantity"
-                  increaseLabel="Increase standard quantity"
-                  ariaLabel="Standard cart quantity"
-                  valueTestId="ui-standard-qty-standard"
-                />
-                <QuantityStepper
-                  compact
-                  variant="soft"
-                  value={stepperWhole}
-                  onChange={setStepperWhole}
-                  min={1}
-                  step={1}
-                  precision={0}
-                  decreaseLabel="Decrease soft quantity"
-                  increaseLabel="Increase soft quantity"
-                  ariaLabel="Soft cart quantity"
-                  valueTestId="ui-standard-qty-soft"
-                />
-                <QuantityStepper
-                  compact
-                  variant="pill"
-                  value={stepperWhole}
-                  onChange={setStepperWhole}
-                  min={1}
-                  step={1}
-                  precision={0}
-                  decreaseLabel="Decrease pill quantity"
-                  increaseLabel="Increase pill quantity"
-                  ariaLabel="Pill cart quantity"
-                  valueTestId="ui-standard-qty-pill"
-                />
-                <QuantityStepper
-                  compact
-                  variant="auto"
-                  value={1}
-                  onChange={() => undefined}
-                  min={1}
-                  step={1}
-                  precision={0}
-                  disabled
-                  decreaseLabel="Decrease disabled cart quantity"
-                  increaseLabel="Increase disabled cart quantity"
-                  ariaLabel="Disabled cart quantity"
-                  valueTestId="ui-standard-qty-pill-disabled"
-                />
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                <strong className="font-medium text-foreground">
-                  Auto + middle edit
-                </strong>{" "}
-                — cart capsule with{" "}
-                <code className="text-foreground">editOnClick</code> (middle → input). Kg lines
-                keep display like <code className="text-foreground">1.5kg</code> and{" "}
-                <code className="text-foreground">onValueClick</code>.
-              </p>
-              <div
-                className="flex flex-wrap items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
-                data-testid="ui-standard-quantity-stepper-pill-edit"
-              >
-                <QuantityStepper
-                  compact
-                  variant="auto"
+                  variant="outline"
                   editOnClick
-                  value={stepperMiddleEdit}
-                  onChange={setStepperMiddleEdit}
+                  value={stepperEditQty}
+                  onChange={setStepperEditQty}
                   min={1}
                   step={1}
                   precision={0}
-                  decreaseLabel="Decrease middle-edit quantity"
-                  increaseLabel="Increase middle-edit quantity"
+                  decreaseLabel="Decrease outline middle-edit quantity"
+                  increaseLabel="Increase outline middle-edit quantity"
                   valueClickLabel="Edit quantity"
-                  ariaLabel="Auto middle-edit quantity"
-                  valueTestId="ui-standard-qty-pill-edit"
+                  ariaLabel="Outline middle-edit quantity"
+                  valueTestId="ui-standard-qty-outline-edit"
                 />
                 <QuantityStepper
                   compact
-                  variant="auto"
+                  variant="outline"
                   value="1.5kg"
                   decreaseLabel="Decrease weight display"
                   increaseLabel="Increase weight display"
@@ -992,14 +911,127 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   onDecrement={() => undefined}
                   onIncrement={() => undefined}
                   onValueClick={() => undefined}
-                  ariaLabel="Auto weight display (opens dialog in sell cart)"
-                  valueTestId="ui-standard-qty-pill-kg"
+                  ariaLabel="Outline weight display"
+                  valueTestId="ui-standard-qty-outline-kg"
+                />
+                <QuantityStepper
+                  compact
+                  variant="outline"
+                  value={1}
+                  onChange={() => undefined}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  disabled
+                  decreaseLabel="Decrease disabled outline quantity"
+                  increaseLabel="Increase disabled outline quantity"
+                  ariaLabel="Disabled outline quantity"
+                  valueTestId="ui-standard-qty-outline-disabled"
                 />
               </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="ui-standard-qty-playground">
-                Playground — Pack: {stepperWhole} · Kg: {stepperWeighted} (shows 1.5) · Fractional:{" "}
-                {stepperFractional} (shows 0.5) · Large: {stepperLarge} (shows 1,250.5) · Middle
-                edit: {stepperMiddleEdit}
+
+              <SectionLabel>Filled — Auto (solid primary)</SectionLabel>
+              <div className="flex flex-wrap items-center gap-3">
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  value={stepperQty}
+                  onChange={setStepperQty}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease auto quantity"
+                  increaseLabel="Increase auto quantity"
+                  ariaLabel="Auto quantity (filled)"
+                  valueTestId="ui-standard-qty-auto"
+                />
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  editOnClick
+                  value={stepperEditQty}
+                  onChange={setStepperEditQty}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease auto middle-edit quantity"
+                  increaseLabel="Increase auto middle-edit quantity"
+                  valueClickLabel="Edit quantity"
+                  ariaLabel="Auto middle-edit quantity"
+                  valueTestId="ui-standard-qty-auto-edit"
+                />
+              </div>
+
+              <SectionLabel>Field — white center (input look)</SectionLabel>
+              <div className="flex flex-wrap items-center gap-3" data-testid="ui-standard-quantity-stepper-field">
+                <QuantityStepper
+                  compact
+                  variant="field"
+                  value={stepperQty}
+                  onChange={setStepperQty}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease field quantity"
+                  increaseLabel="Increase field quantity"
+                  ariaLabel="Field quantity (white center)"
+                  valueTestId="ui-standard-qty-field"
+                />
+                <QuantityStepper
+                  compact
+                  variant="field"
+                  editOnClick
+                  value={stepperEditQty}
+                  onChange={setStepperEditQty}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease field middle-edit quantity"
+                  increaseLabel="Increase field middle-edit quantity"
+                  valueClickLabel="Edit quantity"
+                  ariaLabel="Field middle-edit quantity"
+                  valueTestId="ui-standard-qty-field-edit"
+                />
+              </div>
+
+              <SectionLabel>Capsule shapes — Standard / Soft / Pill</SectionLabel>
+              <div
+                className="flex flex-wrap items-center gap-3"
+                data-testid="ui-standard-quantity-stepper-shapes"
+              >
+                {(
+                  [
+                    ["standard", "ui-standard-qty-standard"],
+                    ["soft", "ui-standard-qty-soft"],
+                    ["pill", "ui-standard-qty-pill"],
+                  ] as const
+                ).map(([variant, testId]) => (
+                  <div key={variant} className="flex flex-col gap-1">
+                    <span className="text-[length:var(--exits-text-xs)] capitalize text-muted">
+                      {variant}
+                    </span>
+                    <QuantityStepper
+                      compact
+                      variant={variant}
+                      value={stepperQty}
+                      onChange={setStepperQty}
+                      min={1}
+                      step={1}
+                      precision={0}
+                      decreaseLabel={`Decrease ${variant} quantity`}
+                      increaseLabel={`Increase ${variant} quantity`}
+                      ariaLabel={`${variant} quantity`}
+                      valueTestId={testId}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <p
+                className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                data-testid="ui-standard-qty-playground"
+              >
+                Playground — qty: {stepperQty} · middle-edit: {stepperEditQty}
               </p>
             </div>
           </Card>
@@ -1568,9 +1600,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           >
             <CardTitle>Responsive Data View</CardTitle>
             <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-              Desktop = TABLE. Narrow = LIST / record cards. Horizontal scroll is an opt-in
-              exception only. Multi-select stays TABLE-only by default. Preview sizes simulate
-              layout width without resizing the browser.
+              Locked default: search, sort, export, page size, category filter, sticky header, and
+              pagination.
             </p>
             <UiStandardsResponsiveDataDeviceFrame
               device={dataPreviewDevice}
@@ -1585,31 +1616,106 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                     search={
                       <SearchField
                         label="Search customers"
-                        value={tableSearch}
-                        onChange={(e) => setTableSearch(e.target.value)}
-                        onClear={() => setTableSearch("")}
+                        value={dataTableSearch}
+                        onChange={(e) => {
+                          setDataTableSearch(e.target.value);
+                          setDataTablePage(1);
+                        }}
+                        onClear={() => {
+                          setDataTableSearch("");
+                          setDataTablePage(1);
+                        }}
                         placeholder="Search customers..."
-                        testId="ui-standard-table-search"
+                        testId="ui-standard-responsive-data-search"
+                      />
+                    }
+                    filter={
+                      <ExitsSelect
+                        value={dataCategoryFilter}
+                        options={[
+                          { value: "all", label: "All categories" },
+                          { value: "Retail", label: "Retail" },
+                          { value: "Wholesale", label: "Wholesale" },
+                          { value: "VIP", label: "VIP" },
+                          { value: "Walk-in", label: "Walk-in" },
+                        ]}
+                        onChange={(next) => {
+                          setDataCategoryFilter(next);
+                          setDataTablePage(1);
+                        }}
+                        menuLabel="Category"
+                        testId="ui-standard-responsive-data-category-filter"
+                        aria-label="Category filter"
+                      />
+                    }
+                    output={
+                      <ExitsTableOutputActions
+                        csvLabel="Export CSV"
+                        xlsxLabel="Export Excel"
+                        pdfLabel="Export PDF"
+                        printLabel="Print"
+                        menuLabel="Export / print"
+                        onCsv={() => undefined}
+                        onXlsx={() => undefined}
+                        onPdf={() => undefined}
+                        onPrint={() => undefined}
                       />
                     }
                   />
                 }
                 table={
                   <ExitsTableContainer>
-                    <ExitsTable>
+                    <ExitsTable stickyHeader>
                       <ExitsTableHeader>
                         <ExitsTableRow>
-                          <ExitsTableHead>Customer</ExitsTableHead>
-                          <ExitsTableHead>Type</ExitsTableHead>
-                          <ExitsTableHead cellAlign="money">Balance</ExitsTableHead>
-                          <ExitsTableHead>Status</ExitsTableHead>
+                          <ExitsTableHead
+                            sortable
+                            sortDirection={dataSortKey === "customer" ? dataSortDirection : null}
+                            onSort={() => toggleDataSort("customer")}
+                            data-testid="ui-standard-rdv-head-customer"
+                          >
+                            Customer
+                          </ExitsTableHead>
+                          <ExitsTableHead
+                            sortable
+                            sortDirection={dataSortKey === "type" ? dataSortDirection : null}
+                            onSort={() => toggleDataSort("type")}
+                            data-testid="ui-standard-rdv-head-type"
+                          >
+                            Type
+                          </ExitsTableHead>
+                          <ExitsTableHead
+                            sortable
+                            sortDirection={dataSortKey === "category" ? dataSortDirection : null}
+                            onSort={() => toggleDataSort("category")}
+                            data-testid="ui-standard-rdv-head-category"
+                          >
+                            Category
+                          </ExitsTableHead>
+                          <ExitsTableHead
+                            cellAlign="money"
+                            sortable
+                            sortDirection={dataSortKey === "balance" ? dataSortDirection : null}
+                            onSort={() => toggleDataSort("balance")}
+                            data-testid="ui-standard-rdv-head-balance"
+                          >
+                            Balance
+                          </ExitsTableHead>
+                          <ExitsTableHead
+                            sortable
+                            sortDirection={dataSortKey === "status" ? dataSortDirection : null}
+                            onSort={() => toggleDataSort("status")}
+                            data-testid="ui-standard-rdv-head-status"
+                          >
+                            Status
+                          </ExitsTableHead>
                           <ExitsTableHead cellAlign="actions" className="w-28">
                             Actions
                           </ExitsTableHead>
                         </ExitsTableRow>
                       </ExitsTableHeader>
                       <ExitsTableBody>
-                        {filteredTableRows.map((row) => (
+                        {pagedTableRows.map((row) => (
                           <ExitsTableRow
                             key={row.id}
                             data-selected={selectedRow === row.id || undefined}
@@ -1622,6 +1728,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                           >
                             <ExitsTableCell>{row.customer}</ExitsTableCell>
                             <ExitsTableCell>{row.type}</ExitsTableCell>
+                            <ExitsTableCell>{row.category}</ExitsTableCell>
                             <ExitsTableCell cellAlign="money" className="tabular-nums">
                               {row.balance}
                             </ExitsTableCell>
@@ -1658,20 +1765,24 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                     className="exits-data-record-list"
                     data-testid="ui-standard-responsive-data-records"
                   >
-                    {filteredTableRows.map((row) => (
+                    {pagedTableRows.map((row) => (
                       <ExitsDataRecordCard
                         as="li"
                         key={row.id}
                         selected={selectedRow === row.id}
                         onClick={() => setSelectedRow(row.id)}
                         title={row.customer}
-                        subtitle={row.type}
+                        subtitle={`${row.type} · ${row.category}`}
                         status={<StatusChip tone={row.statusTone}>{row.status}</StatusChip>}
                         fields={[
                           {
                             label: "Balance",
                             value: row.balance,
                             emphasize: true,
+                          },
+                          {
+                            label: "Category",
+                            value: row.category,
                           },
                         ]}
                         primaryAction={
@@ -1695,15 +1806,35 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                     ))}
                   </ul>
                 }
+                pagination={
+                  <ExitsTablePagination
+                    page={safeDataTablePage}
+                    pageSize={dataTablePageSize}
+                    total={filteredSortedTableRows.length}
+                    pageSizeOptions={[10, 25, 50]}
+                    showPageSize
+                    onPageChange={setDataTablePage}
+                    onPageSizeChange={(size) => {
+                      setDataTablePageSize(size);
+                      setDataTablePage(1);
+                    }}
+                    rowsPerPageLabel="Rows per page"
+                    previousLabel="Previous"
+                    nextLabel="Next"
+                    rangeLabel="{from}–{to} of {total}"
+                    data-testid="ui-standard-responsive-data-pagination"
+                  />
+                }
               />
             </UiStandardsResponsiveDataDeviceFrame>
             <div className="flex flex-col gap-1 text-[length:var(--exits-text-xs)] text-muted">
               <SectionLabel>Rules</SectionLabel>
               <ul className="m-0 list-disc space-y-0.5 ps-4">
-                <li>Search is shared across TABLE and LIST.</li>
-                <li>LIST shows primary + secondary + metrics + one quick action + More.</li>
+                <li>
+                  Locked default includes search, sort, export, page size, and category filter.
+                </li>
+                <li>Sticky header + pagination (range + Previous / Next) stay on by default.</li>
                 <li>Multi-select: TABLE only by default (not shown in this sample).</li>
-                <li>Horizontal scroll: exception mode only — not the global default.</li>
               </ul>
             </div>
           </Card>

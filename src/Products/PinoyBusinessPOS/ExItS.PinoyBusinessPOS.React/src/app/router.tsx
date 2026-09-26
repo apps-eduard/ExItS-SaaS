@@ -471,7 +471,7 @@ export const appRoutes = [
             ],
           },
           { path: "ui-standards", element: <UiStandardsPage /> },
-          { path: "ui-standard", element: <Navigate to="/ui-standards?category=actions" replace /> },
+          { path: "ui-standard", element: <Navigate to="/ui-standards?category=buttons" replace /> },
           {
             path: "more",
             element: (

@@ -867,6 +867,56 @@ internal sealed class InventoryTransferDamageCustodyRepository : IInventoryTrans
         return records.Select(InventoryTransferEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlySet<Guid>> ListTransferIdsWithRequestReplacementAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (transferIds.Count == 0)
+        {
+            return new HashSet<Guid>();
+        }
+
+        var requestReplacement = nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement);
+        var ids = await _db.InventoryTransferDamageCustodies.AsNoTracking()
+            .Where(c =>
+                c.OrganizationId == organizationId.Value
+                && transferIds.Contains(c.TransferId)
+                && c.FollowUpIntent == requestReplacement)
+            .Select(c => c.TransferId)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return ids.ToHashSet();
+    }
+
+    public async Task<IReadOnlySet<Guid>> ListTransferIdsWithPendingReturnAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (transferIds.Count == 0)
+        {
+            return new HashSet<Guid>();
+        }
+
+        string[] pending =
+        [
+            nameof(InventoryTransferDamageCustodyStatus.AwaitingReturn),
+            nameof(InventoryTransferDamageCustodyStatus.ReturnInTransit)
+        ];
+        var ids = await _db.InventoryTransferDamageCustodies.AsNoTracking()
+            .Where(c =>
+                c.OrganizationId == organizationId.Value
+                && transferIds.Contains(c.TransferId)
+                && pending.Contains(c.Status))
+            .Select(c => c.TransferId)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return ids.ToHashSet();
+    }
+
     public Task AddAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default)
     {
         _db.InventoryTransferDamageCustodies.Add(InventoryTransferEntityMapper.ToRecord(custody));
@@ -957,6 +1007,56 @@ internal sealed class InventoryTransferExceptionCustodyRepository : IInventoryTr
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         return records.Select(InventoryTransferEntityMapper.ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlySet<Guid>> ListTransferIdsWithRequestReplacementAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (transferIds.Count == 0)
+        {
+            return new HashSet<Guid>();
+        }
+
+        var requestReplacement = nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement);
+        var ids = await _db.InventoryTransferExceptionCustodies.AsNoTracking()
+            .Where(c =>
+                c.OrganizationId == organizationId.Value
+                && transferIds.Contains(c.TransferId)
+                && c.FollowUpIntent == requestReplacement)
+            .Select(c => c.TransferId)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return ids.ToHashSet();
+    }
+
+    public async Task<IReadOnlySet<Guid>> ListTransferIdsWithPendingReturnAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (transferIds.Count == 0)
+        {
+            return new HashSet<Guid>();
+        }
+
+        string[] pending =
+        [
+            nameof(InventoryTransferExceptionCustodyStatus.AwaitingReturn),
+            nameof(InventoryTransferExceptionCustodyStatus.ReturnInTransit)
+        ];
+        var ids = await _db.InventoryTransferExceptionCustodies.AsNoTracking()
+            .Where(c =>
+                c.OrganizationId == organizationId.Value
+                && transferIds.Contains(c.TransferId)
+                && pending.Contains(c.Status))
+            .Select(c => c.TransferId)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return ids.ToHashSet();
     }
 
     public Task AddAsync(InventoryTransferExceptionCustody custody, CancellationToken cancellationToken = default)

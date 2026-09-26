@@ -296,14 +296,20 @@ export function ExitsTableOutputActions({
   );
 }
 
-export type ExitsTableProps = HTMLAttributes<HTMLTableElement>;
+export type ExitsTableProps = HTMLAttributes<HTMLTableElement> & {
+  /** Enable body scroll with sticky column headers (long tables). */
+  stickyHeader?: boolean;
+};
 
 export const ExitsTable = forwardRef<HTMLTableElement, ExitsTableProps>(function ExitsTable(
-  { className, ...props },
+  { className, stickyHeader = false, ...props },
   ref,
 ) {
   return (
-    <div className="exits-table-scroll">
+    <div
+      className={cn("exits-table-scroll", stickyHeader && "exits-table-scroll--sticky-header")}
+      data-sticky-header={stickyHeader ? "true" : undefined}
+    >
       <table ref={ref} className={cn("exits-table", className)} {...props} />
     </div>
   );
@@ -826,6 +832,8 @@ export type ExitsTablePaginationProps = HTMLAttributes<HTMLDivElement> & {
   pageSize: number;
   total: number;
   pageSizeOptions?: ReadonlyArray<number>;
+  /** When false, hide the rows-per-page control (Previous / Next + range stay). Default true. */
+  showPageSize?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   rowsPerPageLabel: string;
@@ -841,6 +849,7 @@ export function ExitsTablePagination({
   pageSize,
   total,
   pageSizeOptions = [10, 25, 50, 100],
+  showPageSize = true,
   onPageChange,
   onPageSizeChange,
   rowsPerPageLabel,
@@ -865,21 +874,23 @@ export function ExitsTablePagination({
       <p className="exits-table-pagination__range" data-testid="exits-table-pagination-range">
         {rangeLabel.replace("{from}", String(from)).replace("{to}", String(to)).replace("{total}", String(total))}
       </p>
-      <label className="exits-table-pagination__size">
-        <span>{rowsPerPageLabel}</span>
-        <select
-          className="exits-select exits-table-pagination__size-select"
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          data-testid="exits-table-page-size"
-        >
-          {pageSizeOptions.map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
-      </label>
+      {showPageSize ? (
+        <label className="exits-table-pagination__size">
+          <span>{rowsPerPageLabel}</span>
+          <select
+            className="exits-select exits-table-pagination__size-select"
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            data-testid="exits-table-page-size"
+          >
+            {pageSizeOptions.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <div className="exits-table-pagination__nav">
         <PaginationNavButton
           disabled={!canPrev}
@@ -891,7 +902,7 @@ export function ExitsTablePagination({
           <span>{previousLabel}</span>
         </PaginationNavButton>
         <span className="exits-table-pagination__page" data-testid="exits-table-page">
-          {safePage}
+          {safePage} / {pageCount}
         </span>
         <PaginationNavButton
           disabled={!canNext}

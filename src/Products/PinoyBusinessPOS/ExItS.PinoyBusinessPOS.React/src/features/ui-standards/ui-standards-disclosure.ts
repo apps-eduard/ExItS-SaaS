@@ -5,6 +5,7 @@ export const UI_STANDARDS_SECTIONS_STORAGE_KEY = "exits.uiStandards.sections.v1"
  * (locked ExitsTable reference panel under Data filter).
  */
 export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
+  "tables.simple": false,
   "tables.demo": true,
   "tables.alignment": false,
   "tables.actions": false,

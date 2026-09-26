@@ -335,7 +335,7 @@ describe("ReceiveStockPage payment at receipt", () => {
   });
 });
 
-describe("ReceiveStockPage receipt-first collapsible picker", () => {
+describe("ReceiveStockPage receipt-first product dialog", () => {
   beforeEach(() => {
     listSuppliers.mockResolvedValue({
       items: [],
@@ -419,7 +419,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     renderPage();
     await openFinder(user);
     expect(screen.getByTestId("direct-receipt-items")).toBeInTheDocument();
-    await user.click(screen.getByTestId("direct-close-finder"));
+    await user.click(screen.getByTestId("direct-add-products-close"));
     await waitFor(() => {
       expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
     });
@@ -515,7 +515,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
         "1 selected",
       );
     });
-    await user.click(screen.getByTestId("direct-close-finder"));
+    await user.click(screen.getByTestId("direct-add-products-close"));
     await openFinder(user);
     expect(screen.getByTestId("direct-category-multiselect")).toHaveTextContent(
       "1 selected",
@@ -898,5 +898,130 @@ describe("ReceiveStockPage cost vs selling price margin warning", () => {
     const action = await screen.findByTestId("exits-toast-action");
     expect(action).toHaveTextContent("Review price");
     expect(action).toHaveAttribute("href", `/catalog/products/${productId}/edit`);
+  });
+});
+
+describe("ReceiveStockPage optional expiry and lot", () => {
+  beforeEach(() => {
+    listSuppliers.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 100,
+    });
+    listCatalogCategories.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+    listCatalogProducts.mockResolvedValue({
+      items: [productDto()],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    });
+    listDirectPurchases.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 8,
+    });
+    createDirectPurchaseReceipt.mockResolvedValue({
+      directPurchaseReceiptId: receiptId,
+      receiptNumber: "DPR-1",
+      organizationId: orgId,
+      branchId,
+      purchaseDate: "2026-09-01",
+      supplierId: null,
+      sourceName: null,
+      referenceNumber: null,
+      notes: null,
+      status: "Posted",
+      totalCost: 1000,
+      createdAtUtc: "2026-09-01T00:00:00Z",
+      lines: [],
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("always shows optional expiry and lot inputs for non-tracked products", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-lot-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).not.toHaveAttribute(
+      "aria-required",
+    );
+  });
+
+  it("shows enable-tracking info notice above the receipt table when expiry is entered", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-01-15");
+    const hint = screen.getByTestId("direct-receipt-expiry-hint");
+    expect(hint).toHaveAttribute("data-tone", "info");
+    expect(hint).toHaveTextContent(
+      "Expiry tracking will be enabled when this receipt is saved.",
+    );
+    expect(screen.getByTestId("direct-receipt-table")).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-expiry-clear-${productId}`)).toBeInTheDocument();
+    await user.click(screen.getByTestId("direct-receipt-expiry-hint-close"));
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+  });
+
+  it("clears expiry from the notice Clear date action and from the date clear control", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-01-15");
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("2027-01-15");
+    await user.click(screen.getByTestId("direct-receipt-expiry-hint-clear"));
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("");
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-02-01");
+    expect(screen.getByTestId("direct-receipt-expiry-hint")).toBeInTheDocument();
+    await user.click(screen.getByTestId(`direct-line-expiry-clear-${productId}`));
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("");
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+  });
+
+  it("serializes blank expiry/lot as omitted and lot-only without forcing expiry", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-lot-${productId}`), "LOT-A");
+    await user.click(screen.getByTestId("direct-review"));
+    await user.click(screen.getByTestId("direct-confirm"));
+    await waitFor(() => {
+      expect(createDirectPurchaseReceipt).toHaveBeenCalled();
+    });
+    const body = createDirectPurchaseReceipt.mock.calls[0]![1] as {
+      lines: Array<{ expiryDate?: string | null; lotNumber?: string | null }>;
+    };
+    expect(body.lines[0]?.lotNumber).toBe("LOT-A");
+    expect(body.lines[0]?.expiryDate == null || body.lines[0]?.expiryDate === "").toBe(true);
+  });
+
+  it("requires expiry for already-tracked products", async () => {
+    const user = userEvent.setup();
+    listCatalogProducts.mockResolvedValue({
+      items: [productDto({ tracksExpiration: true })],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    });
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveAttribute(
+      "aria-required",
+    );
+    expect(screen.getByTestId("direct-review")).toBeDisabled();
   });
 });

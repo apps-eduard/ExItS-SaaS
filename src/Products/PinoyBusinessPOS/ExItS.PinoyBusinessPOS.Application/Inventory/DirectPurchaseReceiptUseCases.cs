@@ -224,10 +224,31 @@ public sealed class CreateDirectPurchaseReceipt
                             }
                         }
 
+                        var utcNow = _clock.UtcNow;
                         var drafts = new List<DirectPurchaseReceiptLineDraft>(request.Lines.Count);
                         foreach (var line in request.Lines)
                         {
                             var product = productsById[line.ProductId];
+                            var account = accountsByProduct[line.ProductId];
+
+                            // Expiry on a non-tracked product turns tracking on atomically with this receipt
+                            // (zero on-hand only). Existing on-hand must be allocated via EnableExpirationTracking first.
+                            if (!product.TracksExpiration && line.ExpiryDate is not null)
+                            {
+                                if (account.OnHandQuantity > 0m)
+                                {
+                                    return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                        ApplicationErrorCodes.ExpirationInitializationRequired,
+                                        "This product already has stock on hand. Assign expiry dates to existing stock before receiving with an expiry date.");
+                                }
+
+                                product.SetExpirationTracking(
+                                    tracksExpiration: true,
+                                    expirationWarningDays: null,
+                                    utcNow);
+                                await _products.UpdateAsync(product, ct).ConfigureAwait(false);
+                            }
+
                             if (product.TracksExpiration && line.ExpiryDate is null)
                             {
                                 return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
@@ -235,6 +256,9 @@ public sealed class CreateDirectPurchaseReceipt
                                     "Expiration date is required when receiving expiration-tracked stock.");
                             }
 
+                            // Lot-only (no expiry) is allowed as a receipt-line snapshot when tracking is off.
+                            // InventoryLot always requires an expiration date — lot-only does not create a lot
+                            // and does not enable TracksExpiration.
                             drafts.Add(new DirectPurchaseReceiptLineDraft(
                                 product.Id,
                                 product.Name,
@@ -247,7 +271,6 @@ public sealed class CreateDirectPurchaseReceipt
                                 line.LotNumber));
                         }
 
-                        var utcNow = _clock.UtcNow;
                         var businessDate = DirectPurchaseReceiptNumbers.BusinessDateOf(utcNow);
                         var receiptNumber = await _receipts
                             .AllocateNextNumberAsync(orgId, businessDate, ct)

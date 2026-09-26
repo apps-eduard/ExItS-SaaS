@@ -66,8 +66,8 @@ Per line at receive time:
 - Each receive wave classifies **this wave only** against current outstanding:
   - `GoodQty` → increases `ReceivedQty`; posts destination `TransferIn` (physical + sellable)
   - `DamagedQty` → increases `ClosedQty`; posts `TransferDamageHold` + parks `DamagedQuantity` (physical + damaged, **sellable +0**)
-  - `MissingQty` + `ExpectedLater` → stays open in transit (`OpenInTransit`)
-  - `MissingQty` + `RequestReplacement` / `AcceptShortage` → closes missing; Accept increases `WaivedQty`
+  - `MissingQty` + `ExpectedLater` (“Wait for remaining delivery”) → closes missing; increases `RemainingToDispatch` (source Fulfill remaining)
+  - `MissingQty` + `CloseMissing` / `AcceptShortage` → closes missing; Accept increases `WaivedQty`
   - When damaged or missing is used, `GoodQty + DamagedQty + MissingQty` (+ Other) must equal outstanding for that line in that wave
 
 When outstanding reaches zero: all good → `Received`; any closed qty → `ClosedWithDiscrepancy` (**UI: “Received with discrepancy”**). Completing one physical shipment does **not** complete the StockRequest / transfer family when replacement quantity remains.
@@ -150,6 +150,7 @@ Authoritative per-product coverage (query **and** prepare/dispatch — `StockReq
 ```text
 SatisfiedGood      = Σ ReceivedQty (good only) across non-cancelled linked transfers
 OpenInTransit      = Σ OutstandingQty on InTransit / PartiallyReceived members
+                   (excludes historical ExpectedLater open — those are Needs fulfillment)
 Waived             = Σ WaivedQty (accepted shortage + accepted damage + accepted other)
 RemainingToDispatch = MAX(0, FulfillmentTarget − SatisfiedGood − OpenInTransit − Waived)
 ```
@@ -163,7 +164,7 @@ Examples:
 | Sent 10, good 5, damaged accept 5 | 5 | 0 | 5 | **0** → Fulfilled |
 | Sent 10, good 5, damaged replace 5 | 5 | 0 | 0 | **5** → Needs fulfillment |
 | R1 in transit 5 | 5 | 5 | 0 | **0** (blocked until R1 settles) |
-| Missing ExpectedLater 5 | … | 5 | 0 | blocked via OpenInTransit |
+| Missing ExpectedLater 5 | … | 0 | 0 | **5** → Needs fulfillment (Wait for remaining delivery) |
 | Missing RequestReplacement 5 | … | 0 | 0 | Remaining includes 5 |
 
 Status uses good + waived (not “pretend damaged was good received”):

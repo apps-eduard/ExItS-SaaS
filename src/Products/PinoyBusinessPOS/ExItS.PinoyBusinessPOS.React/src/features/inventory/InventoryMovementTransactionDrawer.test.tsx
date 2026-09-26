@@ -499,6 +499,7 @@ describe("InventoryMovementTransactionDrawer", () => {
               quantityOther: 0,
               missingDisposition: "AcceptShortage",
               quantityWaived: 2,
+              note: "Accepted short delivery from truck",
             },
           ],
         },
@@ -603,6 +604,10 @@ describe("InventoryMovementTransactionDrawer", () => {
     expect(receivingDecision).toHaveTextContent(/Receiving decision/);
     expect(receivingDecision).toHaveTextContent(/Missing/);
     expect(receivingDecision).toHaveTextContent(/Accepted shortage/i);
+    expect(screen.getByTestId("inventory-movement-receiving-note")).toHaveTextContent(
+      "Accepted short delivery from truck",
+    );
+    expect(receivingDecision).toHaveTextContent(/Remarks/i);
 
     const overall = screen.getByTestId("inventory-movement-transaction-overall-fulfillment");
     expect(overall).toHaveTextContent(/Target \/ requested/);

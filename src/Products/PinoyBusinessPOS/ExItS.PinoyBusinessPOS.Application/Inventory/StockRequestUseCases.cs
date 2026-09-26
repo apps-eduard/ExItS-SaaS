@@ -1203,6 +1203,28 @@ public sealed class PrepareStockRequestTransfer
                 : ApplicationResult<InventoryTransferDto>.Success(existingDto);
         }
 
+        var utcNow = _clock.UtcNow;
+        var closedAny = false;
+        foreach (var member in linkedTransfers)
+        {
+            if (InventoryTransferCoverageMath.TryCloseExpectedLaterOpen(member, actorId, utcNow))
+            {
+                await _transfers.UpdateAsync(member, cancellationToken).ConfigureAwait(false);
+                closedAny = true;
+            }
+        }
+
+        if (closedAny)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            linkedTransfers = (await _transfers
+                    .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
+                    .ConfigureAwait(false))
+                .Where(t => t.Status != InventoryTransferStatus.Cancelled)
+                .OrderByDescending(t => t.UpdatedAtUtc)
+                .ToList();
+        }
+
         var remainingLines = StockRequestDispatchCoverage.BuildRemainingDispatchLines(
             stockRequest,
             linkedTransfers,
@@ -1545,7 +1567,8 @@ public sealed class DispatchStockRequest
 /// <summary>
 /// Authoritative stock-request dispatch coverage (used by query + prepare/dispatch).
 /// SatisfiedGood = SUM(GoodReceived) across non-cancelled linked transfers.
-/// OpenInTransit = outstanding on InTransit / PartiallyReceived family members only.
+/// OpenInTransit = outstanding on InTransit / PartiallyReceived members, excluding historical
+/// ExpectedLater open (those count toward RemainingToDispatch / Needs fulfillment).
 /// Waived = accepted shortage / accepted damage / accepted other on transfer lines.
 /// RemainingToDispatch = MAX(0, FulfillmentTarget − SatisfiedGood − OpenInTransit − Waived).
 /// Damaged physical inventory, destination hold, and source recovery never satisfy destination demand.
@@ -1573,11 +1596,12 @@ internal static class StockRequestDispatchCoverage
             .GroupBy(l => l.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.Sum(x => x.ReceivedQty));
 
-        var openInTransitByProduct = active
-            .Where(t => t.Status is InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived)
-            .SelectMany(t => t.Lines)
-            .GroupBy(l => l.ProductId.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => Math.Max(0m, x.OutstandingQty)));
+        var openInTransitByProduct = stockRequest.Lines
+            .Select(l => l.ProductId.Value)
+            .Distinct()
+            .ToDictionary(
+                productId => productId,
+                productId => InventoryTransferCoverageMath.OpenInTransitQtyForProduct(active, productId));
 
         var waivedByProduct = active
             .SelectMany(t => t.Lines)

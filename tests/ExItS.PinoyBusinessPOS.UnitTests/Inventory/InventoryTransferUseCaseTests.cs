@@ -825,7 +825,7 @@ public sealed class InventoryTransferUseCaseTests
     }
 
     [Fact]
-    public async Task Classified_receive_with_expected_later_missing_blocks_then_releases_remaining_dispatch()
+    public async Task Classified_receive_with_expected_later_missing_enables_remaining_dispatch()
     {
         var fx = await SeedAsync(cokeOnHand: 130m);
         var request = StockRequest.Create(
@@ -861,18 +861,7 @@ public sealed class InventoryTransferUseCaseTests
 
         var second = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
         Assert.True(second.IsSuccess, $"{second.ErrorCode}: {second.ErrorMessage}");
-        Assert.Equal(20m, second.Value!.TotalSentQty);
-
-        Assert.True((await fx.CloseRemainder.ExecuteAsync(
-            OrgA,
-            first.Value.TransferId,
-            new CloseRemainderInventoryTransferRequest(DiscrepancyReason: "LostInTransit"),
-            ActorB,
-            BranchB)).IsSuccess);
-
-        var third = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
-        Assert.True(third.IsSuccess, $"{third.ErrorCode}: {third.ErrorMessage}");
-        Assert.Equal(10m, third.Value!.TotalSentQty);
+        Assert.Equal(30m, second.Value!.TotalSentQty);
     }
 
     [Fact]
@@ -1830,12 +1819,12 @@ public sealed class InventoryTransferUseCaseTests
 
         var dto = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
         Assert.Equal(10m, dto!.SatisfiedAtDestinationQty);
-        Assert.Equal(5m, dto.OpenInTransitQty);
-        Assert.Equal(5m, dto.RemainingToDispatchQty);
+        Assert.Equal(0m, dto.OpenInTransitQty);
+        Assert.Equal(10m, dto.RemainingToDispatchQty);
 
         var r1Prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
         Assert.True(r1Prep.IsSuccess, r1Prep.ErrorMessage);
-        Assert.Equal(5m, r1Prep.Value!.TotalSentQty);
+        Assert.Equal(10m, r1Prep.Value!.TotalSentQty);
     }
 
     [Fact]
@@ -1885,8 +1874,8 @@ public sealed class InventoryTransferUseCaseTests
         Assert.Equal(3m, fx.Balances.Damaged(BranchA, fx.CokeId));
         var dto = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
         Assert.Equal(10m, dto!.SatisfiedAtDestinationQty);
-        Assert.Equal(5m, dto.OpenInTransitQty);
-        Assert.Equal(5m, dto.RemainingToDispatchQty);
+        Assert.Equal(0m, dto.OpenInTransitQty);
+        Assert.Equal(10m, dto.RemainingToDispatchQty);
     }
 
     [Fact]
@@ -2034,7 +2023,7 @@ public sealed class InventoryTransferUseCaseTests
 
         var r1Prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
         Assert.True(r1Prep.IsSuccess, r1Prep.ErrorMessage);
-        Assert.Equal(5m, r1Prep.Value!.TotalSentQty);
+        Assert.Equal(10m, r1Prep.Value!.TotalSentQty);
         var r1 = await fx.Dispatch.ExecuteAsync(OrgA, r1Prep.Value!.TransferId, ActorA, BranchA);
         Assert.True((await fx.Receive.ExecuteAsync(
             OrgA,
@@ -2042,7 +2031,7 @@ public sealed class InventoryTransferUseCaseTests
             new ReceiveInventoryTransferRequest([
                 new InventoryTransferReceiveLineRequest(
                     fx.CokeId,
-                    GoodQty: 0m,
+                    GoodQty: 5m,
                     DamagedQty: 3m,
                     MissingQty: 2m,
                     MissingDisposition: nameof(InventoryTransferMissingDisposition.ExpectedLater),
@@ -3083,6 +3072,41 @@ public sealed class InventoryTransferUseCaseTests
                 Items.Where(c => c.OrganizationId == organizationId && transferIds.Contains(c.TransferId)).ToList());
         }
 
+        public Task<IReadOnlySet<Guid>> ListTransferIdsWithRequestReplacementAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = Items
+                .Where(c =>
+                    c.OrganizationId == organizationId
+                    && transferIds.Contains(c.TransferId.Value)
+                    && c.FollowUpIntent == InventoryTransferDiscrepancyFollowUp.RequestReplacement)
+                .Select(c => c.TransferId.Value)
+                .ToHashSet();
+            return Task.FromResult<IReadOnlySet<Guid>>(ids);
+        }
+
+        public Task<IReadOnlySet<Guid>> ListTransferIdsWithPendingReturnAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default)
+        {
+            InventoryTransferDamageCustodyStatus[] pending =
+            [
+                InventoryTransferDamageCustodyStatus.AwaitingReturn,
+                InventoryTransferDamageCustodyStatus.ReturnInTransit
+            ];
+            var ids = Items
+                .Where(c =>
+                    c.OrganizationId == organizationId
+                    && transferIds.Contains(c.TransferId.Value)
+                    && pending.Contains(c.Status))
+                .Select(c => c.TransferId.Value)
+                .ToHashSet();
+            return Task.FromResult<IReadOnlySet<Guid>>(ids);
+        }
+
         public Task AddAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default)
         {
             Items.Add(custody);
@@ -3132,6 +3156,41 @@ public sealed class InventoryTransferUseCaseTests
                 .ToHashSet();
             return Task.FromResult<IReadOnlyList<InventoryTransferExceptionCustody>>(
                 Items.Where(c => c.OrganizationId == organizationId && transferIds.Contains(c.TransferId)).ToList());
+        }
+
+        public Task<IReadOnlySet<Guid>> ListTransferIdsWithRequestReplacementAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = Items
+                .Where(c =>
+                    c.OrganizationId == organizationId
+                    && transferIds.Contains(c.TransferId.Value)
+                    && c.FollowUpIntent == InventoryTransferDiscrepancyFollowUp.RequestReplacement)
+                .Select(c => c.TransferId.Value)
+                .ToHashSet();
+            return Task.FromResult<IReadOnlySet<Guid>>(ids);
+        }
+
+        public Task<IReadOnlySet<Guid>> ListTransferIdsWithPendingReturnAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default)
+        {
+            InventoryTransferExceptionCustodyStatus[] pending =
+            [
+                InventoryTransferExceptionCustodyStatus.AwaitingReturn,
+                InventoryTransferExceptionCustodyStatus.ReturnInTransit
+            ];
+            var ids = Items
+                .Where(c =>
+                    c.OrganizationId == organizationId
+                    && transferIds.Contains(c.TransferId.Value)
+                    && pending.Contains(c.Status))
+                .Select(c => c.TransferId.Value)
+                .ToHashSet();
+            return Task.FromResult<IReadOnlySet<Guid>>(ids);
         }
 
         public Task AddAsync(InventoryTransferExceptionCustody custody, CancellationToken cancellationToken = default)
