@@ -33,6 +33,12 @@ internal static class DirectPurchaseHistoryEndpoints
             }
 
             var filter = new DirectPurchaseHistoryFilter(sourceType, from, to, search, status);
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch);
+            if (actingBranch is Guid branch && branch != Guid.Empty)
+            {
+                filter = filter with { ReceivingBranchId = branch };
+            }
+
             var result = await queries
                 .ListAsync(organizationId, filter, page, pageSize, ct)
                 .ConfigureAwait(false);

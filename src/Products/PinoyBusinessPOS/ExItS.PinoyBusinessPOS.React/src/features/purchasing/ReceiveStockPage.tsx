@@ -406,7 +406,12 @@ export function ReceiveStockPage() {
   });
 
   const recentCompletedQuery = useQuery({
-    queryKey: ["direct-purchases", "receive-stock-recent", workspace?.organizationId],
+    queryKey: [
+      "direct-purchases",
+      "receive-stock-recent",
+      workspace?.organizationId,
+      workspace?.branchId,
+    ],
     enabled: Boolean(workspace) && online,
     queryFn: ({ signal }) =>
       listDirectPurchases(

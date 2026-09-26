@@ -265,6 +265,38 @@ public sealed class WasteLossUseCaseTests
     }
 
     [Fact]
+    public async Task Bound_branch_rejects_write_off_of_other_branch_lot()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
+        product.SetExpirationTracking(true, 7, Utc);
+
+        var main = PosBranchId.From(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var panay = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var lot = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2026, 9, 15),
+            10m,
+            Utc,
+            main,
+            "MAIN-LOT");
+        fx.Lots.Items.Add(lot);
+
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Expired),
+                [new CreateWasteLossLineRequest(fx.CokeId, 3m, InventoryLotId: lot.Id.Value)],
+                BranchId: panay),
+            Actor);
+
+        Assert.Equal(DomainErrorCodes.InventoryLotMismatch, result.ErrorCode);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(10m, lot.QuantityOnHand);
+    }
+
+    [Fact]
     public async Task Expiration_tracked_requires_explicit_lot()
     {
         var fx = await SeedAsync(cokeOnHand: 10m);
@@ -844,6 +876,7 @@ public sealed class WasteLossUseCaseTests
         public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
             PosOrganizationId organizationId,
             DateOnly today,
+            PosBranchId? branchId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult((0, 0));
 

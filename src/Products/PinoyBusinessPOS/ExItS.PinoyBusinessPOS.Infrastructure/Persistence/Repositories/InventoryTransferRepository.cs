@@ -115,6 +115,13 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
                 query = query.Where(t => t.SourceBranchId == involved || t.DestinationBranchId == involved);
             }
         }
+        else if (acting is Guid involvedBranch)
+        {
+            // Direction All / blank / status-only: workspace branch must be source or destination.
+            // Never return organization-wide transfers for a bound operational branch.
+            query = query.Where(t =>
+                t.SourceBranchId == involvedBranch || t.DestinationBranchId == involvedBranch);
+        }
 
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query

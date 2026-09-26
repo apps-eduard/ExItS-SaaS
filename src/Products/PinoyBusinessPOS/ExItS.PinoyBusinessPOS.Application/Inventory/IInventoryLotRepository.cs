@@ -55,10 +55,13 @@ public interface IInventoryLotRepository
     /// <summary>
     /// Counts on-hand expired lots (date-based) and near-expiry lots using each product's
     /// <c>EffectiveExpirationWarningDays</c> (joined from catalog products).
+    /// When <paramref name="branchId"/> is set, counts only lots for that exact branch
+    /// (org-level <c>BranchId</c> null lots are excluded).
     /// </summary>
     Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
         PosOrganizationId organizationId,
         DateOnly today,
+        PosBranchId? branchId = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default);

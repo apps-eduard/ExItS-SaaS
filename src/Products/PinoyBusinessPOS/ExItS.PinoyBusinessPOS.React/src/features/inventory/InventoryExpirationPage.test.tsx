@@ -86,6 +86,13 @@ function renderPage() {
 
 describe("InventoryExpirationPage expired write-off action", () => {
   beforeEach(() => {
+    workspaceMock.boundWorkspace = {
+      organizationId: orgId,
+      organizationDisplayName: "Kizy Store",
+      branchId,
+      branchName: "Main",
+      experience: "operations" as const,
+    };
     workspaceMock.sessionGrant = {
       productAccessAllowed: true,
       membershipRole: "OrganizationOwner",
@@ -110,6 +117,8 @@ describe("InventoryExpirationPage expired write-off action", () => {
     renderPage();
     await screen.findByTestId(`expiring-lot-${expiredLotId}`);
 
+    expect(screen.getByTestId("page-header-subtitle")).toHaveTextContent("Main");
+
     const writeOff = screen.getByTestId(`expiring-lot-write-off-${expiredLotId}`);
     expect(writeOff).toHaveAttribute(
       "href",
@@ -124,6 +133,67 @@ describe("InventoryExpirationPage expired write-off action", () => {
     expect(screen.getByTestId(`expiring-lot-view-${expiredLotId}`)).toBeInTheDocument();
     expect(screen.getByTestId(`expiring-lot-view-${nearLotId}`)).toBeInTheDocument();
     expect(screen.queryByTestId(`expiring-lot-write-off-${nearLotId}`)).not.toBeInTheDocument();
+  });
+
+  it("keys expiring query by branch and clears prior branch rows on switch", async () => {
+    const listSpy = vi.spyOn(inventoryClient, "listExpiringLots");
+    listSpy.mockImplementation(async (workspace) => {
+      if (workspace.branchId === branchId) {
+        return {
+          items: [expiredLot(), nearLot()],
+          totalCount: 2,
+          page: 1,
+          pageSize: 50,
+          expiredCount: 1,
+          nearExpiryCount: 1,
+        };
+      }
+      return {
+        items: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 50,
+        expiredCount: 0,
+        nearExpiryCount: 0,
+      };
+    });
+
+    const { rerender } = renderPage();
+    await screen.findByTestId(`expiring-lot-${expiredLotId}`);
+    expect(screen.getByTestId("inventory-expiry-expired-count")).toHaveTextContent("1");
+    expect(listSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: orgId, branchId }),
+      expect.anything(),
+      expect.anything(),
+    );
+
+    const panayId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+    workspaceMock.boundWorkspace = {
+      ...workspaceMock.boundWorkspace,
+      branchId: panayId,
+      branchName: "Panay Warehouse",
+    };
+    rerender(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/expiration"]}>
+          <Routes>
+            <Route path="/inventory/expiration" element={<InventoryExpirationPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("page-header-subtitle")).toHaveTextContent("Panay Warehouse");
+      expect(screen.queryByTestId(`expiring-lot-${expiredLotId}`)).not.toBeInTheDocument();
+      expect(screen.getByTestId("inventory-expiry-expired-count")).toHaveTextContent("0");
+      expect(screen.getByTestId("inventory-expiry-near-count")).toHaveTextContent("0");
+    });
+    expect(listSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: orgId, branchId: panayId }),
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   it("hides Write off when ManageInventory is denied", async () => {

@@ -73,12 +73,28 @@ internal static class InventoryTransferEndpoints
         }
 
         var dto = await queries.GetByIdAsync(organizationId, transferId, ct).ConfigureAwait(false);
-        return dto is null
-            ? PosApiResults.Problem(
+        if (dto is null)
+        {
+            return PosApiResults.Problem(
                 ApplicationErrorCodes.InventoryTransferNotFound,
                 "Inventory transfer was not found.",
-                StatusCodes.Status404NotFound)
-            : Results.Ok(dto);
+                StatusCodes.Status404NotFound);
+        }
+
+        // Bound operational workspace: only transfers involving the current branch.
+        if (PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch)
+            && actingBranch is Guid branch
+            && branch != Guid.Empty
+            && dto.SourceBranchId != branch
+            && dto.DestinationBranchId != branch)
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.InventoryTransferNotFound,
+                "Inventory transfer was not found.",
+                StatusCodes.Status404NotFound);
+        }
+
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> CreateTransfer(

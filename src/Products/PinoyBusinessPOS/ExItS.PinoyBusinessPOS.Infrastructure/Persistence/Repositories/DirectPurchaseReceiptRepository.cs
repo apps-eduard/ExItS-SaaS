@@ -82,6 +82,11 @@ public sealed class DirectPurchaseReceiptRepository : IDirectPurchaseReceiptRepo
             query = query.Where(r => r.PurchaseDate <= to);
         }
 
+        if (filter.ReceivingBranchId is Guid receivingBranch && receivingBranch != Guid.Empty)
+        {
+            query = query.Where(r => r.ReceivingBranchId == receivingBranch);
+        }
+
         if (filter.SupplierId is Guid supplierId)
         {
             query = query.Where(r => r.SupplierId == supplierId);

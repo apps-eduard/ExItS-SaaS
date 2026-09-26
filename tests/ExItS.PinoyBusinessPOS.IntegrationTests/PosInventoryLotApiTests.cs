@@ -297,6 +297,70 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Expiring_lots_and_counts_are_scoped_to_requested_branch()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var branchMain = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var branchIloilo = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var branchPanay = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var product = await CreateProductAsync(client, org, "Branch Expiry Fruit", tracksExpiration: true);
+
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        var expired = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5));
+        var near = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
+        var panayNear = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(4));
+
+        await ReceiveAsync(client, org, product.ProductId, 50m, expired, "MAIN-EXP", branchMain);
+        await ReceiveAsync(client, org, product.ProductId, 20m, near, "MAIN-NEAR", branchMain);
+        await ReceiveAsync(client, org, product.ProductId, 30m, expired, "ILO-EXP", branchIloilo);
+        await ReceiveAsync(client, org, product.ProductId, 12m, panayNear, "PANAY-NEAR", branchPanay);
+
+        using var main = Scoped(HttpMethod.Get, $"{Inventory}/lots?window=Days30", org, branchMain);
+        using var mainResponse = await client.SendAsync(main);
+        mainResponse.EnsureSuccessStatusCode();
+        var mainPage = await mainResponse.Content.ReadFromJsonAsync<PosExpiringLotPagedResult>(JsonOptions);
+        Assert.NotNull(mainPage);
+        Assert.Equal(1, mainPage!.ExpiredCount);
+        Assert.Equal(1, mainPage.NearExpiryCount);
+        Assert.Equal(2, mainPage.Items.Count);
+        Assert.All(mainPage.Items, lot => Assert.Equal(branchMain, lot.BranchId));
+        Assert.Contains(mainPage.Items, l => l.LotNumber == "MAIN-EXP");
+        Assert.Contains(mainPage.Items, l => l.LotNumber == "MAIN-NEAR");
+        Assert.DoesNotContain(mainPage.Items, l => l.LotNumber == "ILO-EXP");
+        Assert.DoesNotContain(mainPage.Items, l => l.LotNumber == "PANAY-NEAR");
+
+        using var iloilo = Scoped(HttpMethod.Get, $"{Inventory}/lots?window=Days30", org, branchIloilo);
+        using var iloiloResponse = await client.SendAsync(iloilo);
+        var iloiloPage = await iloiloResponse.Content.ReadFromJsonAsync<PosExpiringLotPagedResult>(JsonOptions);
+        Assert.Equal(1, iloiloPage!.ExpiredCount);
+        Assert.Equal(0, iloiloPage.NearExpiryCount);
+        Assert.Single(iloiloPage.Items);
+        Assert.Equal("ILO-EXP", iloiloPage.Items[0].LotNumber);
+
+        using var panay = Scoped(HttpMethod.Get, $"{Inventory}/lots?window=Days30", org, branchPanay);
+        using var panayResponse = await client.SendAsync(panay);
+        var panayPage = await panayResponse.Content.ReadFromJsonAsync<PosExpiringLotPagedResult>(JsonOptions);
+        Assert.Equal(0, panayPage!.ExpiredCount);
+        Assert.Equal(1, panayPage.NearExpiryCount);
+        Assert.Single(panayPage.Items);
+        Assert.Equal("PANAY-NEAR", panayPage.Items[0].LotNumber);
+
+        var emptyBranch = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        using var empty = Scoped(HttpMethod.Get, $"{Inventory}/lots?window=Days30", org, emptyBranch);
+        using var emptyResponse = await client.SendAsync(empty);
+        var emptyPage = await emptyResponse.Content.ReadFromJsonAsync<PosExpiringLotPagedResult>(JsonOptions);
+        Assert.Equal(0, emptyPage!.ExpiredCount);
+        Assert.Equal(0, emptyPage.NearExpiryCount);
+        Assert.Empty(emptyPage.Items);
+        Assert.Equal(0, emptyPage.TotalCount);
+    }
+
+    [Fact]
     public async Task Manual_decrease_without_lot_uses_FEFO_on_sellable_lots()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);

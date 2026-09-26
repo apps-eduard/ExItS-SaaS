@@ -132,17 +132,26 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
     public async Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
         PosOrganizationId organizationId,
         DateOnly today,
+        PosBranchId? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var org = organizationId.Value;
         var defaultWarning = InventoryLot.DefaultWarningDays;
+        var branch = branchId?.Value;
+
+        var lots = _db.InventoryLots.AsNoTracking()
+            .Where(lot => lot.OrganizationId == org && lot.QuantityOnHand > 0m);
+        if (branch is Guid exactBranch)
+        {
+            // Exact branch only — never treat BranchId-null legacy lots as belonging to every branch.
+            lots = lots.Where(lot => lot.BranchId == exactBranch);
+        }
 
         var onHand =
-            from lot in _db.InventoryLots.AsNoTracking()
+            from lot in lots
             join product in _db.CatalogProducts.AsNoTracking()
                 on new { Org = lot.OrganizationId, Id = lot.ProductId }
                 equals new { Org = product.OrganizationId, Id = product.Id }
-            where lot.OrganizationId == org && lot.QuantityOnHand > 0m
             select new { lot.ExpirationDate, product.TracksExpiration, product.ExpirationWarningDays };
 
         var expired = await onHand

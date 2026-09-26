@@ -299,6 +299,18 @@ public sealed class CreateWasteLoss
                                                     $"Inventory lot does not belong to product '{product.Name}'.");
                                                 return;
                                             }
+
+                                            // Bound branch may only write off lots for that branch
+                                            // (matches ListLots / ListExpiring filters).
+                                            if (request.BranchId is Guid wasteBranch
+                                                && wasteBranch != Guid.Empty
+                                                && lot.BranchId != PosBranchId.From(wasteBranch))
+                                            {
+                                                failure = ApplicationResult<WasteLossDto>.Failure(
+                                                    DomainErrorCodes.InventoryLotMismatch,
+                                                    $"Inventory lot does not belong to the selected branch for '{product.Name}'.");
+                                                return;
+                                            }
                                         }
                                         else if (line.InventoryLotId is Guid providedLot && providedLot != Guid.Empty)
                                         {

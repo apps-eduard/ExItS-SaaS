@@ -878,6 +878,7 @@ public sealed class EnableExpirationTrackingUseCaseTests
         public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
             PosOrganizationId organizationId,
             DateOnly today,
+            PosBranchId? branchId = null,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

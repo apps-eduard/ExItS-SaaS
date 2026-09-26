@@ -79,7 +79,7 @@ public sealed class InventoryLotQueryService
             .ListExpiringPagedAsync(orgId, branch, expireOnOrBefore, expireOnOrAfter, search, skip, take, cancellationToken)
             .ConfigureAwait(false);
         var counts = await _lots
-            .CountExpiryAsync(orgId, today, cancellationToken)
+            .CountExpiryAsync(orgId, today, branch, cancellationToken)
             .ConfigureAwait(false);
 
         var productIds = items.Select(l => l.ProductId).Distinct().ToArray();

@@ -637,6 +637,61 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         return page!.Items;
     }
 
+    [Fact]
+    public async Task List_all_and_detail_are_scoped_to_acting_branch()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var branchPanay = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var product = await CreateProductAsync(client, org, "Scope Coke", "Piece", 25m, "tr-scope");
+        await EnableAsync(client, org, product.ProductId, 200m);
+
+        // Unrelated to Panay — must never appear in Panay scoped list/detail.
+        var mainToIloilo = await CreateTransferAsync(client, org, BranchA, BranchB, product.ProductId, 10m);
+        var mainToPanay = await CreateTransferAsync(client, org, BranchA, branchPanay, product.ProductId, 11m);
+        await DispatchAsync(client, org, BranchA, mainToPanay.TransferId);
+        await ReceiveAsync(
+            client,
+            org,
+            branchPanay,
+            mainToPanay.TransferId,
+            [new InventoryTransferReceiveLineRequest(product.ProductId, 11m)]);
+        var panayToIloilo = await CreateTransferAsync(client, org, branchPanay, BranchB, product.ProductId, 5m);
+
+        using var allPanay = Scoped(HttpMethod.Get, $"{Inventory}/transfers", org, branchPanay);
+        using var allPanayResponse = await client.SendAsync(allPanay);
+        allPanayResponse.EnsureSuccessStatusCode();
+        var panayAll = await allPanayResponse.Content.ReadFromJsonAsync<PagedResult<InventoryTransferListItemDto>>(JsonOptions);
+        Assert.NotNull(panayAll);
+        Assert.Equal(2, panayAll!.TotalCount);
+        Assert.DoesNotContain(panayAll.Items, t => t.TransferId == mainToIloilo.TransferId);
+        Assert.Contains(panayAll.Items, t => t.TransferId == mainToPanay.TransferId);
+        Assert.Contains(panayAll.Items, t => t.TransferId == panayToIloilo.TransferId);
+
+        using var outPanay = Scoped(HttpMethod.Get, $"{Inventory}/transfers?direction=outgoing", org, branchPanay);
+        using var outResponse = await client.SendAsync(outPanay);
+        var panayOut = await outResponse.Content.ReadFromJsonAsync<PagedResult<InventoryTransferListItemDto>>(JsonOptions);
+        Assert.Single(panayOut!.Items);
+        Assert.Equal(panayToIloilo.TransferId, panayOut.Items[0].TransferId);
+
+        var inboundDraft = await CreateTransferAsync(client, org, BranchA, branchPanay, product.ProductId, 3m);
+        await DispatchAsync(client, org, BranchA, inboundDraft.TransferId);
+        using var inResponse = await client.SendAsync(
+            Scoped(HttpMethod.Get, $"{Inventory}/transfers?direction=incoming", org, branchPanay));
+        var panayIn = await inResponse.Content.ReadFromJsonAsync<PagedResult<InventoryTransferListItemDto>>(JsonOptions);
+        Assert.Contains(panayIn!.Items, t => t.TransferId == inboundDraft.TransferId);
+        Assert.DoesNotContain(panayIn.Items, t => t.TransferId == mainToIloilo.TransferId);
+
+        using var foreignDetail = Scoped(HttpMethod.Get, $"{Inventory}/transfers/{mainToIloilo.TransferId:D}", org, branchPanay);
+        using var foreignResponse = await client.SendAsync(foreignDetail);
+        Assert.Equal(HttpStatusCode.NotFound, foreignResponse.StatusCode);
+
+        using var involvedDetail = Scoped(HttpMethod.Get, $"{Inventory}/transfers/{panayToIloilo.TransferId:D}", org, branchPanay);
+        using var involvedResponse = await client.SendAsync(involvedDetail);
+        involvedResponse.EnsureSuccessStatusCode();
+    }
+
     private static async Task<decimal> OnHandAsync(HttpClient client, Guid org, Guid productId, Guid? branchId = null)
     {
         var account = await AccountAsync(client, org, productId, branchId);

@@ -73,6 +73,11 @@ internal sealed class PurchaseOrderRepository : IPurchaseOrderRepository
             query = query.Where(p => p.OrderDate <= filter.ToOrderDate.Value);
         }
 
+        if (filter.IntendedReceivingBranchId is Guid receivingBranch && receivingBranch != Guid.Empty)
+        {
+            query = query.Where(p => p.IntendedReceivingBranchId == receivingBranch);
+        }
+
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
             .OrderByDescending(p => p.UpdatedAtUtc)

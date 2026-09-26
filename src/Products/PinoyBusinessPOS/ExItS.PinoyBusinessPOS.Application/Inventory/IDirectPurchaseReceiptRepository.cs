@@ -46,4 +46,5 @@ public sealed record DirectPurchaseReceiptFilter(
     DateOnly? ToPurchaseDate = null,
     Guid? SupplierId = null,
     string? SourceSearch = null,
-    string? ReferenceNumber = null);
+    string? ReferenceNumber = null,
+    Guid? ReceivingBranchId = null);

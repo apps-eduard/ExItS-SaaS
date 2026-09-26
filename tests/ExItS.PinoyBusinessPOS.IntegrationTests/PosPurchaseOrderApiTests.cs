@@ -230,6 +230,58 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         return await client.SendAsync(request);
     }
 
+    [Fact]
+    public async Task List_and_detail_are_scoped_to_intended_receiving_branch()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var branchPanay = Guid.Parse("33333333-3333-3333-3333-333333333333");
+
+        var supplier = await CreateSupplierAsync(client, org, new CreateSupplierRequest("Branch Scope Supplier"));
+        var product = await CreateProductAsync(client, org, "Scope Item", "Piece", 10m, sku: "po-scope-1");
+
+        using var createMain = Scoped(HttpMethod.Post, PurchaseOrders, org, PrimaryBranch);
+        createMain.Content = JsonContent.Create(
+            new CreatePurchaseOrderRequest(
+                supplier.SupplierId,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                [new CreatePurchaseOrderLineRequest(product.ProductId, 2m, 5m)],
+                IntendedReceivingBranchId: PrimaryBranch),
+            options: JsonOptions);
+        using var mainResponse = await client.SendAsync(createMain);
+        Assert.Equal(HttpStatusCode.Created, mainResponse.StatusCode);
+        var mainPo = await mainResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
+
+        using var createPanay = Scoped(HttpMethod.Post, PurchaseOrders, org, branchPanay);
+        createPanay.Content = JsonContent.Create(
+            new CreatePurchaseOrderRequest(
+                supplier.SupplierId,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                [new CreatePurchaseOrderLineRequest(product.ProductId, 3m, 5m)],
+                IntendedReceivingBranchId: branchPanay),
+            options: JsonOptions);
+        using var panayResponse = await client.SendAsync(createPanay);
+        Assert.Equal(HttpStatusCode.Created, panayResponse.StatusCode);
+        var panayPo = await panayResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
+
+        using var listPanay = Scoped(HttpMethod.Get, PurchaseOrders, org, branchPanay);
+        using var listResponse = await client.SendAsync(listPanay);
+        listResponse.EnsureSuccessStatusCode();
+        var listed = await listResponse.Content.ReadFromJsonAsync<PagedResult<PosPurchaseOrderDto>>(JsonOptions);
+        Assert.NotNull(listed);
+        Assert.Contains(listed!.Items, p => p.PurchaseOrderId == panayPo!.PurchaseOrderId);
+        Assert.DoesNotContain(listed.Items, p => p.PurchaseOrderId == mainPo!.PurchaseOrderId);
+
+        using var foreignDetail = Scoped(HttpMethod.Get, $"{PurchaseOrders}/{mainPo!.PurchaseOrderId:D}", org, branchPanay);
+        using var foreignResponse = await client.SendAsync(foreignDetail);
+        Assert.Equal(HttpStatusCode.NotFound, foreignResponse.StatusCode);
+
+        using var okDetail = Scoped(HttpMethod.Get, $"{PurchaseOrders}/{panayPo!.PurchaseOrderId:D}", org, branchPanay);
+        using var okResponse = await client.SendAsync(okDetail);
+        okResponse.EnsureSuccessStatusCode();
+    }
+
     private static async Task<PosSupplierDto> CreateSupplierAsync(
         HttpClient client,
         Guid org,
