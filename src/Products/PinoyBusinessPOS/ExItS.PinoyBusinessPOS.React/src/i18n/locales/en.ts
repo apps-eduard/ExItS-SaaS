@@ -4734,8 +4734,11 @@ export const en = {
   "transfer.receiveFailedTitle": "Cannot receive transfer",
   "transfer.draftEmpty": "Add at least one product.",
   "transfer.draftNoEdit":
-    "Draft transfers cannot be edited. Cancel this draft and create a new transfer to change items.",
+    "Only the source branch can edit this draft transfer.",
   "transfer.draftNumber": "Draft",
+  "transfer.editTitle": "Edit Inventory Transfer",
+  "transfer.editLede": "Add, remove, or change items on this draft. Source and destination stay the same.",
+  "transfer.saveChanges": "Save changes",
   "transfer.duplicateLine": "That product lot is already on this transfer.",
   "transfer.empty": "No inventory transfers yet",
   "transfer.emptyDetail": "Move stock between your branches when needed.",

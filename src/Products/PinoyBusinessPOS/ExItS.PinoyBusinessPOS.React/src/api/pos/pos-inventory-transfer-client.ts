@@ -273,6 +273,13 @@ export type CreateInventoryTransferRequest = {
   operationId?: string | null;
 };
 
+export type UpdateInventoryTransferRequest = {
+  lines: InventoryTransferLineRequest[];
+  notes?: string | null;
+  /** Client-generated idempotency entity id. */
+  operationId?: string | null;
+};
+
 export const INVENTORY_TRANSFER_DAMAGED_CUSTODY_DECISIONS = [
   "KeepAtDestination",
   "ReturnToSource",
@@ -419,6 +426,49 @@ export async function createInventoryTransfer(
     workspace,
     signal,
     path: PATH,
+    body: payload,
+    headers,
+  });
+  return inventoryTransferDtoSchema.parse(raw);
+}
+
+export async function updateInventoryTransfer(
+  workspace: PosWorkspaceScope,
+  transferId: string,
+  body: UpdateInventoryTransferRequest,
+  signal?: AbortSignal,
+): Promise<InventoryTransferDto> {
+  const operationId = body.operationId?.trim() || crypto.randomUUID();
+  const payload: Record<string, unknown> = {
+    lines: body.lines.map((line) => {
+      const entry: Record<string, unknown> = {
+        productId: line.productId,
+        quantity: line.quantity,
+      };
+      if (line.sourceLotId) {
+        entry.sourceLotId = line.sourceLotId;
+      }
+      return entry;
+    }),
+  };
+  const notes = trimOrUndef(body.notes);
+  if (notes) {
+    payload.notes = notes;
+  } else if (body.notes === null || body.notes === "") {
+    payload.notes = null;
+  }
+
+  const headers = await buildPosMutationIdempotencyHeaders(
+    operationId,
+    JSON.stringify(payload),
+    OFFLINE_OPERATION_TYPES.InventoryTransferUpdate,
+  );
+
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/${transferId}`,
     body: payload,
     headers,
   });

@@ -12,6 +12,7 @@ import {
   FilePlus2,
   PackageCheck,
   PackageOpen,
+  Plus,
   Truck,
 } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -568,6 +569,7 @@ export function InventoryTransferDetailPage() {
   const isFinal = isTransferTerminalStatus(transfer.status);
   const canMutate = allowManage && online && !busy;
   const canDispatch = canMutate && isSource && isDraft;
+  const canEditDraft = canMutate && isSource && isDraft;
   const canCancel = canMutate && isSource && (isDraft || isInTransit);
   const canReceive = canMutate && isDestination && canDestinationReceiveTransfer(transfer);
   const canCloseRemainder = canMutate && isDestination && canDestinationCloseRemainder(transfer);
@@ -1847,9 +1849,9 @@ export function InventoryTransferDetailPage() {
         </ExitsTableContainer>
       </section>
 
-      {canCancel || canDispatch || canReceive || canCloseRemainder || canFulfillRemaining ? (
+      {canCancel || canDispatch || canReceive || canCloseRemainder || canFulfillRemaining || canEditDraft ? (
         <div className="receive-stock-actions" data-testid="transfer-detail-actions">
-          {isDraft ? (
+          {isDraft && !canEditDraft ? (
             <p className="m-0 me-auto text-[length:var(--exits-text-xs)] text-muted">
               {t("transfer.draftNoEdit")}
             </p>
@@ -1877,6 +1879,21 @@ export function InventoryTransferDetailPage() {
               <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
               {smartBack.backLabel}
             </Button>
+            {canEditDraft ? (
+              <Button
+                type="button"
+                appearance="outline"
+                disabled={!canMutate}
+                onClick={() => {
+                  setLocalError(null);
+                  navigate(`/inventory/transfers/${transfer.transferId}/edit`);
+                }}
+                data-testid="transfer-edit-draft"
+              >
+                <Plus className="size-4 shrink-0" aria-hidden />
+                {t("transfer.addProducts")}
+              </Button>
+            ) : null}
             {canCancel ? (
               <Button
                 type="button"

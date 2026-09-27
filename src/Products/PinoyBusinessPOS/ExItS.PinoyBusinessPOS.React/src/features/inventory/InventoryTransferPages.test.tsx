@@ -53,6 +53,7 @@ const workspaceMock = {
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => workspaceMock,
+  useOptionalWorkspace: () => workspaceMock,
 }));
 
 vi.mock("@/connectivity/browser-online", () => ({
@@ -222,7 +223,9 @@ describe("Inventory Transfer React flow", () => {
       "Draft",
     );
     expect(screen.getByTestId("transfer-dispatch")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-edit-draft")).toBeInTheDocument();
     expect(screen.queryByTestId("transfer-receive")).not.toBeInTheDocument();
+    expect(screen.queryByText(/cannot be edited/i)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByTestId("transfer-dispatch"));
     expect(dispatchSpy).not.toHaveBeenCalled();

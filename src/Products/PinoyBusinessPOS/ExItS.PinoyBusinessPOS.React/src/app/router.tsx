@@ -790,6 +790,7 @@ export const appRoutes = [
               { path: "stock-counts/:stockCountId", element: <StockCountDetailPage /> },
               { path: "transfers", element: <InventoryTransferListPage /> },
               { path: "transfers/new", element: <InventoryTransferCreatePage /> },
+              { path: "transfers/:transferId/edit", element: <InventoryTransferCreatePage /> },
               { path: "transfers/:transferId", element: <InventoryTransferDetailPage /> },
               { path: "stock-requests", element: <StockRequestListPage /> },
               {

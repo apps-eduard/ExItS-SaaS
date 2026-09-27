@@ -420,6 +420,7 @@ builder.Services.AddScoped<CompleteStockCount>();
 builder.Services.AddScoped<CancelStockCount>();
 builder.Services.AddScoped<InventoryTransferQueryService>();
 builder.Services.AddScoped<CreateInventoryTransfer>();
+builder.Services.AddScoped<UpdateInventoryTransfer>();
 builder.Services.AddScoped<PrepareInventoryTransferRemaining>();
 builder.Services.AddScoped<DispatchInventoryTransfer>();
 builder.Services.AddScoped<ReceiveInventoryTransfer>();

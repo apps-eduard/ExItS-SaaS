@@ -307,6 +307,12 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         var lineById = existingLines.ToDictionary(l => l.Id);
+        var keepLineIds = transfer.Lines.Select(l => l.Id.Value).ToHashSet();
+        foreach (var orphan in existingLines.Where(l => !keepLineIds.Contains(l.Id)))
+        {
+            _db.InventoryTransferLines.Remove(orphan);
+        }
+
         foreach (var line in transfer.Lines)
         {
             if (lineById.TryGetValue(line.Id.Value, out var existingLine))
@@ -319,6 +325,11 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
                 existingLine.DiscrepancyReason = updated.DiscrepancyReason;
                 existingLine.DiscrepancyNote = updated.DiscrepancyNote;
                 existingLine.UnitCostSnapshot = updated.UnitCostSnapshot;
+                existingLine.SourceLotId = updated.SourceLotId;
+                existingLine.LotNumber = updated.LotNumber;
+                existingLine.ExpirationDate = updated.ExpirationDate;
+                existingLine.NameSnapshot = updated.NameSnapshot;
+                existingLine.LineNumber = updated.LineNumber;
             }
             else
             {

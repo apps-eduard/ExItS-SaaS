@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -16,7 +16,13 @@ import {
   type PosInventoryLotDto,
 } from "@/api/pos/pos-inventory-client";
 import { PosApiError } from "@/api/pos/pos-http";
-import { createInventoryTransfer } from "@/api/pos/pos-inventory-transfer-client";
+import {
+  createInventoryTransfer,
+  getInventoryTransfer,
+  updateInventoryTransfer,
+  type InventoryTransferDto,
+  type InventoryTransferLineDto,
+} from "@/api/pos/pos-inventory-transfer-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -137,6 +143,63 @@ function expandDraftToRequestLines(drafts: readonly DraftProduct[]) {
   return lines;
 }
 
+function groupTransferLinesByProduct(
+  lines: readonly InventoryTransferLineDto[],
+): Map<string, InventoryTransferLineDto[]> {
+  const groups = new Map<string, InventoryTransferLineDto[]>();
+  for (const line of lines) {
+    const existing = groups.get(line.productId);
+    if (existing) {
+      existing.push(line);
+    } else {
+      groups.set(line.productId, [line]);
+    }
+  }
+  return groups;
+}
+
+function draftFromTransferLines(
+  productLines: readonly InventoryTransferLineDto[],
+  lots: readonly PosInventoryLotDto[],
+  availableQuantity: number,
+): DraftProduct {
+  const first = productLines[0]!;
+  const tracksExpiration = productLines.some((line) => Boolean(line.sourceLotId));
+  const quantity = productLines.reduce((sum, line) => sum + line.sentQty, 0);
+  const lotById = new Map(lots.map((lot) => [lot.lotId, lot]));
+  const allocations: TransferLotAllocationSlice[] = tracksExpiration
+    ? productLines
+        .filter((line) => line.sourceLotId && line.sentQty > 0)
+        .map((line) => {
+          const lot = lotById.get(line.sourceLotId!);
+          return {
+            lotId: line.sourceLotId!,
+            quantity: line.sentQty,
+            lotAvailableQuantity: lot ? Math.max(0, lot.quantityOnHand) : 0,
+            expirationDate: lot?.expirationDate ?? line.expirationDate ?? "",
+            lotNumber: lot?.lotNumber ?? line.lotNumber ?? null,
+          };
+        })
+    : [];
+
+  return {
+    key: first.productId,
+    productId: first.productId,
+    name: first.productName,
+    sku: first.sku ?? null,
+    unitOfMeasure: first.unitOfMeasure,
+    quantity,
+    unitCost: first.unitCostSnapshot ?? null,
+    tracksExpiration,
+    isTracked: true,
+    availableQuantity,
+    eligibleLotQuantity: tracksExpiration ? eligibleLotQtyFromLots(lots) : null,
+    // Preserve saved lot picks; auto would re-FEFO and may diverge from the draft.
+    allocationMode: tracksExpiration ? "manual" : "auto",
+    allocations,
+  };
+}
+
 function allocateAuto(
   lots: readonly PosInventoryLotDto[],
   quantity: number,
@@ -164,6 +227,8 @@ function refreshAllocationAvailability(
 export function InventoryTransferCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { transferId: editTransferId } = useParams<{ transferId?: string }>();
+  const isEditMode = Boolean(editTransferId);
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
@@ -180,6 +245,8 @@ export function InventoryTransferCreatePage() {
   const [saving, setSaving] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
   const [changeLotsProductId, setChangeLotsProductId] = useState<string | null>(null);
+  const [editHydrated, setEditHydrated] = useState(!isEditMode);
+  const [editLoadError, setEditLoadError] = useState<string | null>(null);
   const finderPanelId = "transfer-product-finder-panel";
   const operationIdRef = useRef<string | null>(null);
   const { layout: pickerLayout } = useResponsiveDataLayout({
@@ -384,6 +451,90 @@ export function InventoryTransferCreatePage() {
       return [];
     }
   }
+
+  // Load existing draft when editing.
+  useEffect(() => {
+    if (!isEditMode || !editTransferId || !workspace || !boundWorkspace?.branchId) {
+      return;
+    }
+    if (!online || !allowManage) {
+      return;
+    }
+
+    let cancelled = false;
+    setEditHydrated(false);
+    setEditLoadError(null);
+
+    async function hydrate(transfer: InventoryTransferDto) {
+      if (transfer.status !== "Draft") {
+        setEditLoadError(t("transfer.draftNoEdit"));
+        return;
+      }
+      if (transfer.sourceBranchId !== boundWorkspace!.branchId) {
+        setEditLoadError(t("transfer.draftNoEdit"));
+        return;
+      }
+
+      setDestinationBranchId(transfer.destinationBranchId);
+      setNotes(transfer.notes?.trim() ?? "");
+
+      const groups = groupTransferLinesByProduct(transfer.lines);
+      const nextLots: Record<string, PosInventoryLotDto[]> = {};
+      const drafts: DraftProduct[] = [];
+      for (const [, productLines] of groups) {
+        const tracksExpiration = productLines.some((line) => Boolean(line.sourceLotId));
+        const productId = productLines[0]!.productId;
+        let lots: PosInventoryLotDto[] = [];
+        if (tracksExpiration) {
+          try {
+            const result = await listProductLots(workspace!, productId, { pageSize: 50 });
+            lots = result.items;
+            nextLots[productId] = lots;
+          } catch {
+            nextLots[productId] = [];
+          }
+        }
+        drafts.push(draftFromTransferLines(productLines, lots, 0));
+      }
+
+      if (cancelled) {
+        return;
+      }
+      setLotsCache((prev) => ({ ...prev, ...nextLots }));
+      setLines(drafts);
+      setEditHydrated(true);
+    }
+
+    void getInventoryTransfer(workspace, editTransferId)
+      .then((transfer) => {
+        if (cancelled) {
+          return;
+        }
+        return hydrate(transfer);
+      })
+      .catch((err) => {
+        if (cancelled) {
+          return;
+        }
+        const detail =
+          err instanceof PosApiError
+            ? (err.problem.detail ?? t("transfer.loadFailed"))
+            : t("transfer.loadFailed");
+        setEditLoadError(detail);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isEditMode,
+    editTransferId,
+    workspace,
+    boundWorkspace?.branchId,
+    online,
+    allowManage,
+    t,
+  ]);
 
   // Prefetch lot counts for expiry products visible in the finder.
   useEffect(() => {
@@ -690,17 +841,26 @@ export function InventoryTransferCreatePage() {
     setSaving(true);
     setError(null);
     try {
-      const created = await createInventoryTransfer(workspace, {
-        sourceBranchId: boundWorkspace.branchId,
-        destinationBranchId,
-        notes: notes.trim() || null,
-        operationId: operationIdRef.current,
-        lines: expandDraftToRequestLines(lines),
-      });
+      const requestLines = expandDraftToRequestLines(lines);
+      const saved =
+        isEditMode && editTransferId
+          ? await updateInventoryTransfer(workspace, editTransferId, {
+              notes: notes.trim() || null,
+              operationId: operationIdRef.current,
+              lines: requestLines,
+            })
+          : await createInventoryTransfer(workspace, {
+              sourceBranchId: boundWorkspace.branchId,
+              destinationBranchId,
+              notes: notes.trim() || null,
+              operationId: operationIdRef.current,
+              lines: requestLines,
+            });
       operationIdRef.current = null;
-      navigate(`/inventory/transfers/${created.transferId}`, {
+      void queryClient.invalidateQueries({ queryKey: ["inventory", "transfers"] });
+      navigate(`/inventory/transfers/${saved.transferId}`, {
         replace: true,
-        state: { flash: "created" },
+        state: { flash: isEditMode ? "updated" : "created" },
       });
     } catch (err) {
       const detail =
@@ -763,9 +923,9 @@ export function InventoryTransferCreatePage() {
     return (
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="transfer-create-denied">
         <PageHeader
-          title={t("transfer.newTitle")}
-          backTo="/inventory/transfers"
-          backLabel={t("transfer.backList")}
+          title={isEditMode ? t("transfer.editTitle") : t("transfer.newTitle")}
+          backTo={isEditMode && editTransferId ? `/inventory/transfers/${editTransferId}` : "/inventory/transfers"}
+          backLabel={isEditMode ? t("transfer.backToTransfer") : t("transfer.backList")}
           backTestId="page-header-back-transfers"
         />
         <ErrorState title={t("transfer.errorTitle")} detail={t("transfer.manageDenied")} />
@@ -777,7 +937,7 @@ export function InventoryTransferCreatePage() {
     return (
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="transfer-create-single-branch">
         <PageHeader
-          title={t("transfer.newTitle")}
+          title={isEditMode ? t("transfer.editTitle") : t("transfer.newTitle")}
           backTo="/inventory/transfers"
           backLabel={t("transfer.backList")}
           backTestId="page-header-back-transfers"
@@ -793,19 +953,40 @@ export function InventoryTransferCreatePage() {
     );
   }
 
+  if (isEditMode && editLoadError) {
+    return (
+      <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="transfer-edit-load-error">
+        <PageHeader
+          title={t("transfer.editTitle")}
+          backTo={editTransferId ? `/inventory/transfers/${editTransferId}` : "/inventory/transfers"}
+          backLabel={t("transfer.backToTransfer")}
+          backTestId="page-header-back-transfers"
+        />
+        <ErrorState title={t("transfer.errorTitle")} detail={editLoadError} />
+      </div>
+    );
+  }
+
+  if (isEditMode && !editHydrated) {
+    return <LoadingState label={t("session.loading")} />;
+  }
+
   const createDisabled =
     !online || saving || Boolean(createBlockedReason) || lines.length === 0 || !destinationBranchId;
+
+  const pageBackTo =
+    isEditMode && editTransferId ? `/inventory/transfers/${editTransferId}` : "/inventory/transfers";
 
   return (
     <div
       className="inventory-transfer-create-page exits-page flex min-w-0 flex-col gap-4"
-      data-testid="inventory-transfer-create-page"
+      data-testid={isEditMode ? "inventory-transfer-edit-page" : "inventory-transfer-create-page"}
     >
       <PageHeader
-        title={t("transfer.newTitle")}
-        description={t("transfer.newLede")}
-        backTo="/inventory/transfers"
-        backLabel={t("transfer.backList")}
+        title={isEditMode ? t("transfer.editTitle") : t("transfer.newTitle")}
+        description={isEditMode ? t("transfer.editLede") : t("transfer.newLede")}
+        backTo={pageBackTo}
+        backLabel={isEditMode ? t("transfer.backToTransfer") : t("transfer.backList")}
         backTestId="page-header-back-transfers"
       />
 
@@ -850,7 +1031,19 @@ export function InventoryTransferCreatePage() {
           {
             key: "to",
             label: t("transfer.toBranch"),
-            value: (
+            value: isEditMode ? (
+              <span
+                className="inline-flex min-w-0 items-center gap-2 font-semibold"
+                data-testid="transfer-destination-branch-locked"
+              >
+                <Store className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 truncate">
+                  {orgBranches.find((b) => b.branchId === destinationBranchId)?.name ??
+                    destinations.find((b) => b.branchId === destinationBranchId)?.name ??
+                    destinationBranchId}
+                </span>
+              </span>
+            ) : (
               <ExitsSelect
                 value={destinationBranchId}
                 options={destinationOptions}
@@ -1052,22 +1245,24 @@ export function InventoryTransferCreatePage() {
               appearance="ghost"
               className="font-semibold"
               disabled={saving}
-              onClick={() => navigate("/inventory/transfers")}
+              onClick={() => navigate(pageBackTo)}
               data-testid="transfer-cancel-create"
             >
               <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
-              {t("transfer.backList")}
+              {isEditMode ? t("transfer.backToTransfer") : t("transfer.backList")}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving}
-              onClick={resetForm}
-              data-testid="transfer-reset-create"
-            >
-              <RotateCcw className="size-4 shrink-0" aria-hidden />
-              {t("transfer.resetCreate")}
-            </Button>
+            {!isEditMode ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={resetForm}
+                data-testid="transfer-reset-create"
+              >
+                <RotateCcw className="size-4 shrink-0" aria-hidden />
+                {t("transfer.resetCreate")}
+              </Button>
+            ) : null}
             <Button
               type="button"
               disabled={createDisabled}
@@ -1075,7 +1270,11 @@ export function InventoryTransferCreatePage() {
               data-testid="transfer-save-draft"
             >
               <ArrowRightLeft className="size-4 shrink-0" aria-hidden />
-              {saving ? t("transfer.saving") : t("transfer.saveDraft")}
+              {saving
+                ? t("transfer.saving")
+                : isEditMode
+                  ? t("transfer.saveChanges")
+                  : t("transfer.saveDraft")}
             </Button>
           </div>
         </div>

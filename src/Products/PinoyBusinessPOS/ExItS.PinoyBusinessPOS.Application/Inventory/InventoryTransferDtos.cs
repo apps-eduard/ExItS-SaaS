@@ -19,6 +19,11 @@ public sealed record CreateInventoryTransferRequest(
     string? ReplacementReason = null,
     string? DamageHandlingPolicy = null);
 
+/// <summary>Replace draft lines/notes. Source and destination stay fixed.</summary>
+public sealed record UpdateInventoryTransferRequest(
+    IReadOnlyList<InventoryTransferLineRequest> Lines,
+    string? Notes = null);
+
 public sealed record InventoryTransferReceiveLineRequest(
     Guid ProductId,
     decimal ReceivedQty = 0,

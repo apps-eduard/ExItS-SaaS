@@ -496,6 +496,9 @@ public static class OfflineOperationTypes
     /// <summary>Server-side idempotency for inventory transfer create. Online-only.</summary>
     public const string InventoryTransferCreate = "inventory_transfer.create";
 
+    /// <summary>Server-side idempotency for inventory transfer draft update. Online-only.</summary>
+    public const string InventoryTransferUpdate = "inventory_transfer.update";
+
     /// <summary>Server-side idempotency for inventory transfer dispatch. Online-only.</summary>
     public const string InventoryTransferDispatch = "inventory_transfer.dispatch";
 

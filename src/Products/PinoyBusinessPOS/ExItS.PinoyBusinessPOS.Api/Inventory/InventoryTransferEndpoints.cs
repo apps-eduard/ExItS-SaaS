@@ -15,6 +15,7 @@ internal static class InventoryTransferEndpoints
         group.MapGet("/transfers", ListTransfers);
         group.MapPost("/transfers", CreateTransfer);
         group.MapGet("/transfers/{transferId:guid}", GetTransfer);
+        group.MapPut("/transfers/{transferId:guid}", UpdateTransfer);
         group.MapPost("/transfers/{transferId:guid}/dispatch", DispatchTransfer);
         // Receive-now: body line quantities apply to this wave only (not cumulative totals).
         group.MapPost("/transfers/{transferId:guid}/receive", ReceiveTransfer);
@@ -125,6 +126,39 @@ internal static class InventoryTransferEndpoints
                     ct2),
                 dto => dto,
                 dto => Results.Created($"/api/v1/pos/inventory/transfers/{dto.TransferId:D}", dto),
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> UpdateTransfer(
+        HttpRequest request,
+        Guid transferId,
+        UpdateInventoryTransferRequest body,
+        UpdateInventoryTransfer useCase,
+        InventoryTransferQueryService queries,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferUpdate,
+                idempotency,
+                ct2 => ToDtoAsync(
+                    useCase.ExecuteAsync(organizationId, transferId, body, actorId, branchId, ct2),
+                    organizationId,
+                    queries,
+                    ct2),
+                dto => dto,
+                Results.Ok,
                 ct)
             .ConfigureAwait(false);
     }

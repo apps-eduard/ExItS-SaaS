@@ -29,6 +29,7 @@ export const OFFLINE_OPERATION_TYPES = {
   WasteLoss: "inventory.waste_loss",
   ProductionRun: "inventory.production_run",
   InventoryTransferCreate: "inventory_transfer.create",
+  InventoryTransferUpdate: "inventory_transfer.update",
   InventoryTransferDispatch: "inventory_transfer.dispatch",
   InventoryTransferReceive: "inventory_transfer.receive",
   InventoryTransferExceptionDispatchReturn: "inventory_transfer.exception_dispatch_return",

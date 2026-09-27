@@ -351,6 +351,47 @@ public sealed class InventoryTransferUseCaseTests
     }
 
     [Fact]
+    public async Task Update_draft_replaces_lines_and_rejects_non_draft()
+    {
+        var fx = await SeedAsync(cokeOnHand: 50m, spriteOnHand: 40m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess);
+
+        var updated = await fx.Update.ExecuteAsync(
+            OrgA,
+            created.Value!.Id.Value,
+            new UpdateInventoryTransferRequest(
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 5m),
+                    new InventoryTransferLineRequest(fx.SpriteId, 8m),
+                ],
+                "Updated notes"),
+            ActorA,
+            BranchA);
+        Assert.True(updated.IsSuccess);
+        Assert.Equal(2, updated.Value!.Lines.Count);
+        Assert.Equal(5m, updated.Value.Lines.Single(l => l.ProductId.Value == fx.CokeId).SentQty);
+        Assert.Equal(8m, updated.Value.Lines.Single(l => l.ProductId.Value == fx.SpriteId).SentQty);
+        Assert.Equal("Updated notes", updated.Value.Notes);
+
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, created.Value.Id.Value, ActorA, BranchA);
+        Assert.True(dispatched.IsSuccess);
+
+        var afterDispatch = await fx.Update.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new UpdateInventoryTransferRequest([new InventoryTransferLineRequest(fx.CokeId, 1m)]),
+            ActorA,
+            BranchA);
+        Assert.False(afterDispatch.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidInventoryTransferStatusTransition, afterDispatch.ErrorCode);
+    }
+
+    [Fact]
     public async Task Create_rejects_duplicate_product_lines_that_collectively_exceed_stock()
     {
         var fx = await SeedAsync(cokeOnHand: 10m);
@@ -2538,6 +2579,7 @@ public sealed class InventoryTransferUseCaseTests
         public FixedClock Clock { get; } = new(Utc);
         public FakeBranches Branches { get; } = new();
         public CreateInventoryTransfer Create { get; }
+        public UpdateInventoryTransfer Update { get; }
         public DispatchInventoryTransfer Dispatch { get; }
         public ReceiveInventoryTransfer Receive { get; }
         public CloseRemainderInventoryTransfer CloseRemainder { get; }
@@ -2560,6 +2602,7 @@ public sealed class InventoryTransferUseCaseTests
             var lotStock = new InventoryLotStockService(Lots);
             var expirationPolicies = BranchExpirationTestHelpers.CreateResolver(ExpirationSettings);
             Create = new CreateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, expirationPolicies, Branches, UnitOfWork, Clock);
+            Update = new UpdateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, expirationPolicies, Branches, UnitOfWork, Clock);
             Dispatch = new DispatchInventoryTransfer(
                 Transfers,
                 Inventory,
