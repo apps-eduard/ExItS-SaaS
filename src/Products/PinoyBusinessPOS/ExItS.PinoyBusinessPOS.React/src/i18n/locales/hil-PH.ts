@@ -13706,6 +13706,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "stockRequest.col.requestQty": "Kadamuon sang request",
   "stockRequest.approve": "Aprubahan",
   "stockRequest.approveAndPrepare": "Aprubahan kag andama",
+  "stockRequest.approvedButPrepareFailed":
+    "Naaprubahan ang request, pero wala maandam ang transfer. Mahimo mo ini andamon liwat.",
   "stockRequest.startPreparing": "Sugodi ang pag-andam",
   "stockRequest.dispatchStock": "Ipadala ang stock",
   "stockRequest.receiveLinked": "Batuna ang stock",

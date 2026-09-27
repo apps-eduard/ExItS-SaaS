@@ -13707,6 +13707,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.col.requestQty": "Kaadu ti request",
   "stockRequest.approve": "Aprubahan",
   "stockRequest.approveAndPrepare": "Aprubahan ken isagsagana",
+  "stockRequest.approvedButPrepareFailed":
+    "Naaprobaran ti request, ngem saan a maisagsagana ti transfer. Mabalinmo a saganaanen manen.",
   "stockRequest.startPreparing": "Rugian ti panagsagana",
   "stockRequest.dispatchStock": "Ipatulod ti stock",
   "stockRequest.receiveLinked": "Awaten ti stock",

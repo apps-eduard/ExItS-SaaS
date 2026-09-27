@@ -8711,6 +8711,8 @@ export const en = {
   "stockRequest.col.requestQty": "Request qty",
   "stockRequest.approve": "Approve",
   "stockRequest.approveAndPrepare": "Approve & prepare",
+  "stockRequest.approvedButPrepareFailed":
+    "Request was approved, but the transfer could not be prepared. You can prepare it again.",
   "stockRequest.startPreparing": "Start preparing",
   "stockRequest.dispatchStock": "Dispatch stock",
   "stockRequest.receiveLinked": "Receive stock",

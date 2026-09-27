@@ -273,4 +273,117 @@ describe("StockRequestDetailPage transfer-style header", () => {
     });
     expect(await screen.findByTestId("transfer-draft-dest")).toBeInTheDocument();
   });
+
+  it("approve succeeds then prepare fails → Approved with Prepare transfer retry only", async () => {
+    const user = userEvent.setup();
+    const draftId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    workspaceState.branchId = WH_A;
+    workspaceState.branchName = "Panay Warehouse";
+    workspaceState.branchType = "Warehouse";
+
+    const pending = detailDto();
+    pending.requestedSourceLocationId = WH_A;
+    pending.destinationLocationId = TEST_BRANCH_A_ID;
+    const approved = {
+      ...pending,
+      status: "Approved",
+      lines: pending.lines.map((line) => ({
+        ...line,
+        approvedQuantity: 10,
+        remainingToDispatchQuantity: 10,
+      })),
+    };
+
+    const getSpy = vi
+      .spyOn(stockRequestsClient, "getStockRequest")
+      .mockResolvedValueOnce(pending as never)
+      .mockResolvedValue(approved as never);
+    vi.spyOn(stockRequestsClient, "approveStockRequest").mockResolvedValue(approved as never);
+    const prepareSpy = vi
+      .spyOn(stockRequestsClient, "prepareStockRequestTransfer")
+      .mockRejectedValueOnce(new Error("prepare failed"))
+      .mockResolvedValueOnce({ transferId: draftId, status: "Draft" } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/stock-requests/${REQUEST_ID}`]}>
+          <Routes>
+            <Route
+              path="/inventory/stock-requests/:stockRequestId"
+              element={<StockRequestDetailPage />}
+            />
+            <Route
+              path="/inventory/transfers/:transferId"
+              element={<div data-testid="transfer-draft-dest" />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    await user.click(await screen.findByTestId("stock-request-approve-prepare"));
+    await waitFor(() => {
+      expect(stockRequestsClient.approveStockRequest).toHaveBeenCalledTimes(1);
+      expect(prepareSpy).toHaveBeenCalledTimes(1);
+    });
+    expect(
+      await screen.findByText(
+        /Request was approved, but the transfer could not be prepared\. You can prepare it again\./i,
+      ),
+    ).toBeInTheDocument();
+    expect(await screen.findByTestId("stock-request-detail")).toHaveAttribute(
+      "data-status",
+      "Approved",
+    );
+    expect(screen.getByTestId("stock-request-fulfill-remaining")).toBeInTheDocument();
+    expect(screen.queryByTestId("stock-request-approve-prepare")).not.toBeInTheDocument();
+    expect(getSpy.mock.calls.length).toBeGreaterThan(1);
+
+    await user.click(screen.getByTestId("stock-request-fulfill-remaining"));
+    await waitFor(() => {
+      expect(prepareSpy).toHaveBeenCalledTimes(2);
+      expect(stockRequestsClient.approveStockRequest).toHaveBeenCalledTimes(1);
+    });
+    expect(await screen.findByTestId("transfer-draft-dest")).toBeInTheDocument();
+  });
+
+  it("scopes detail and activity query keys by branch so workspace switch does not reuse cache", async () => {
+    workspaceState.branchId = WH_A;
+    workspaceState.branchType = "Warehouse";
+    const { unmount } = renderDetail(`/inventory/stock-requests/${REQUEST_ID}`);
+    expect(await screen.findByTestId("stock-request-detail")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(stockRequestsClient.getStockRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: WH_A }),
+        REQUEST_ID,
+        expect.anything(),
+      );
+      expect(stockRequestsClient.getStockRequestActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: WH_A }),
+        REQUEST_ID,
+        expect.anything(),
+      );
+    });
+    unmount();
+
+    workspaceState.branchId = TEST_BRANCH_A_ID;
+    workspaceState.branchType = "Retail";
+    renderDetail(`/inventory/stock-requests/${REQUEST_ID}`);
+    expect(await screen.findByTestId("stock-request-detail")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(stockRequestsClient.getStockRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: TEST_BRANCH_A_ID }),
+        REQUEST_ID,
+        expect.anything(),
+      );
+      expect(stockRequestsClient.getStockRequestActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: TEST_BRANCH_A_ID }),
+        REQUEST_ID,
+        expect.anything(),
+      );
+    });
+    expect(stockRequestsClient.getStockRequest).toHaveBeenCalledTimes(2);
+    expect(stockRequestsClient.getStockRequestActivity).toHaveBeenCalledTimes(2);
+  });
 });

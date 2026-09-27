@@ -13706,6 +13706,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.col.requestQty": "Kantidad sa request",
   "stockRequest.approve": "Aprubahan",
   "stockRequest.approveAndPrepare": "Aprubahan ug andama",
+  "stockRequest.approvedButPrepareFailed":
+    "Naaprubahan ang request, apan dili maandam ang transfer. Mahimo nimo kini andamon pag-usab.",
   "stockRequest.startPreparing": "Sugdi ang pag-andam",
   "stockRequest.dispatchStock": "Ipadala ang stock",
   "stockRequest.receiveLinked": "Dawata ang stock",

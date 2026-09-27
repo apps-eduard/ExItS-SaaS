@@ -272,18 +272,23 @@ internal static class StockRequestEndpoints
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
-        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
         {
             return problem!;
         }
 
         var dto = await queries.GetByIdAsync(organizationId, stockRequestId, ct).ConfigureAwait(false);
-        return dto is null
-            ? PosApiResults.Problem(
+        if (dto is null
+            || (dto.RequestedSourceLocationId != branchId && dto.DestinationLocationId != branchId))
+        {
+            return PosApiResults.Problem(
                 "pos.inventory.stock_request.not_found",
                 "Stock request was not found.",
-                StatusCodes.Status404NotFound)
-            : Results.Ok(dto);
+                StatusCodes.Status404NotFound);
+        }
+
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> CreateStockRequest(
@@ -348,12 +353,13 @@ internal static class StockRequestEndpoints
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
-        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
         {
             return problem!;
         }
 
-        var result = await useCase.ExecuteAsync(organizationId, stockRequestId, ct).ConfigureAwait(false);
+        var result = await useCase.ExecuteAsync(organizationId, stockRequestId, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 

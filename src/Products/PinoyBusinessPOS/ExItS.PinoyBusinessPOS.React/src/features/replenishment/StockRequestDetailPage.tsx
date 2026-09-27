@@ -164,13 +164,23 @@ export function StockRequestDetailPage() {
   );
 
   const query = useQuery({
-    queryKey: ["stock-request", stockRequestId, workspace?.organizationId],
+    queryKey: [
+      "stock-request",
+      stockRequestId,
+      workspace?.organizationId,
+      workspace?.branchId,
+    ],
     enabled: Boolean(workspace && stockRequestId),
     queryFn: ({ signal }) => getStockRequest(workspace!, stockRequestId, signal),
   });
 
   const activityQuery = useQuery({
-    queryKey: ["stock-request-activity", stockRequestId, workspace?.organizationId],
+    queryKey: [
+      "stock-request-activity",
+      stockRequestId,
+      workspace?.organizationId,
+      workspace?.branchId,
+    ],
     enabled: Boolean(workspace && stockRequestId),
     queryFn: ({ signal }) => getStockRequestActivity(workspace!, stockRequestId, signal),
   });
@@ -236,15 +246,24 @@ export function StockRequestDetailPage() {
       }
       await approveStockRequest(workspace, dto.stockRequestId, { lineApprovals: approvals });
       if (!andPrepare) {
-        return null;
+        return { phase: "approved" as const };
       }
-      // Approve & prepare → create/reuse Draft transfer (no auto-dispatch) and open it for review.
-      return prepareStockRequestTransfer(workspace, dto.stockRequestId);
+      try {
+        const transfer = await prepareStockRequestTransfer(workspace, dto.stockRequestId);
+        return { phase: "prepared" as const, transfer };
+      } catch {
+        // Approval already committed — surface Approved + prepare retry; do not roll back.
+        return { phase: "prepareFailed" as const };
+      }
     },
-    onSuccess: async (transfer) => {
+    onSuccess: async (result) => {
       await invalidate();
-      if (transfer?.transferId) {
-        navigate(`/inventory/transfers/${transfer.transferId}`);
+      if (result.phase === "prepared") {
+        navigate(`/inventory/transfers/${result.transfer.transferId}`);
+        return;
+      }
+      if (result.phase === "prepareFailed") {
+        setActionError(t("stockRequest.approvedButPrepareFailed"));
       }
     },
     onError: () => setActionError(t("stockRequest.actionError")),

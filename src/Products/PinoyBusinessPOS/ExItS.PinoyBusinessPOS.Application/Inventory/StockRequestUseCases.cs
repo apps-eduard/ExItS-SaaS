@@ -1852,13 +1852,16 @@ public sealed class GetStockRequestActivity
     public async Task<ApplicationResult<IReadOnlyList<StockRequestActivityEventDto>>> ExecuteAsync(
         Guid organizationId,
         Guid stockRequestId,
+        Guid actingBranchId,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
         var request = await _requests
             .GetByIdAsync(orgId, StockRequestId.From(stockRequestId), cancellationToken)
             .ConfigureAwait(false);
-        if (request is null)
+        if (request is null
+            || (request.RequestedSourceLocationId.Value != actingBranchId
+                && request.DestinationLocationId.Value != actingBranchId))
         {
             return ApplicationResult<IReadOnlyList<StockRequestActivityEventDto>>.Failure(
                 "pos.inventory.stock_request.not_found",

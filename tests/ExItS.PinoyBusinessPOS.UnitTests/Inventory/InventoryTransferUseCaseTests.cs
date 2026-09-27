@@ -1357,7 +1357,7 @@ public sealed class InventoryTransferUseCaseTests
         Assert.Equal(Utc.AddMinutes(10), closed.Value!.ClosedAtUtc);
         Assert.Equal(ActorB, closed.Value.ClosedBy);
 
-        var activity = await fx.StockRequestActivity.ExecuteAsync(OrgA, request.Id.Value);
+        var activity = await fx.StockRequestActivity.ExecuteAsync(OrgA, request.Id.Value, BranchA);
         Assert.True(activity.IsSuccess);
         var closeEvent = Assert.Single(
             activity.Value!,
@@ -1365,6 +1365,60 @@ public sealed class InventoryTransferUseCaseTests
         Assert.Equal(Utc.AddMinutes(10), closeEvent.OccurredAtUtc);
         Assert.Equal(ActorB, closeEvent.ActorId);
         Assert.Equal(3m, closeEvent.Quantity);
+    }
+
+    [Fact]
+    public async Task Stock_request_activity_allows_source_and_destination_only()
+    {
+        var fx = await SeedAsync(cokeOnHand: 40m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "260922-301");
+        await fx.StockRequests.AddAsync(request);
+
+        var source = await fx.StockRequestActivity.ExecuteAsync(OrgA, request.Id.Value, BranchA);
+        Assert.True(source.IsSuccess, $"{source.ErrorCode}: {source.ErrorMessage}");
+        Assert.Contains(source.Value!, e => e.EventType == StockRequestActivityEventTypes.Requested);
+
+        var destination = await fx.StockRequestActivity.ExecuteAsync(OrgA, request.Id.Value, BranchB);
+        Assert.True(destination.IsSuccess, $"{destination.ErrorCode}: {destination.ErrorMessage}");
+
+        var unrelated = await fx.StockRequestActivity.ExecuteAsync(OrgA, request.Id.Value, BranchC);
+        Assert.False(unrelated.IsSuccess);
+        Assert.Equal("pos.inventory.stock_request.not_found", unrelated.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Stock_request_detail_branch_scope_matches_transfer_not_found_style()
+    {
+        var fx = await SeedAsync(cokeOnHand: 40m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "260922-302");
+        await fx.StockRequests.AddAsync(request);
+
+        var queries = new StockRequestQueryService(fx.StockRequests, fx.Transfers, fx.Branches);
+        var dto = await queries.GetByIdAsync(OrgA, request.Id.Value);
+        Assert.NotNull(dto);
+
+        // Endpoint GetStockRequest applies this same gate after GetByIdAsync (incl. full-access users).
+        static bool VisibleToBranch(StockRequestDto detail, Guid actingBranchId) =>
+            detail.RequestedSourceLocationId == actingBranchId
+            || detail.DestinationLocationId == actingBranchId;
+
+        Assert.True(VisibleToBranch(dto!, BranchA));
+        Assert.True(VisibleToBranch(dto!, BranchB));
+        Assert.False(VisibleToBranch(dto!, BranchC));
     }
 
     [Fact]

@@ -126,6 +126,11 @@ describe("Inventory Transfer React flow", () => {
   beforeEach(() => {
     workspaceMock.boundWorkspace.branchId = mainId;
     workspaceMock.boundWorkspace.branchName = "Main Store";
+    workspaceMock.sessionGrant = {
+      productAccessAllowed: true,
+      membershipRole: "OrganizationOwner",
+      productLocalRoleCode: "Owner",
+    };
     vi.spyOn(transferClient, "listInventoryTransfers").mockResolvedValue({
       items: [],
       totalCount: 0,
@@ -1849,5 +1854,193 @@ describe("Inventory Transfer React flow", () => {
         "ClosedWithDiscrepancy",
       ),
     );
+  });
+
+  it("?mode=receive enters receive mode only when destination ManageInventory online receivable", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    workspaceMock.sessionGrant = {
+      productAccessAllowed: true,
+      membershipRole: "OrganizationOwner",
+      productLocalRoleCode: "Owner",
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-receive-page")).toBeInTheDocument();
+  });
+
+  it("?mode=receive on source branch stays detail and strips query", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-transfer-receive-page")).not.toBeInTheDocument();
+  });
+
+  it("?mode=receive on unrelated branch stays detail", async () => {
+    const otherBranch = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    workspaceMock.boundWorkspace.branchId = otherBranch;
+    workspaceMock.boundWorkspace.branchName = "Other";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-transfer-receive-page")).not.toBeInTheDocument();
+  });
+
+  it("?mode=receive with ViewInventory-only stays detail", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    workspaceMock.sessionGrant = {
+      productAccessAllowed: true,
+      membershipRole: "OrganizationMember",
+      productLocalRoleCode: "ReportingUser",
+      mappedPosRoleCode: "ReportingUser",
+      organizationManagementAuthority: false,
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-transfer-receive-page")).not.toBeInTheDocument();
+  });
+
+  it("?mode=receive with non-receivable status stays detail", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    workspaceMock.sessionGrant = {
+      productAccessAllowed: true,
+      membershipRole: "OrganizationOwner",
+      productLocalRoleCode: "Owner",
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(draftTransfer() as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-transfer-receive-page")).not.toBeInTheDocument();
+  });
+
+  it("successful receive strips ?mode=receive and returns to detail", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    workspaceMock.sessionGrant = {
+      productAccessAllowed: true,
+      membershipRole: "OrganizationOwner",
+      productLocalRoleCode: "Owner",
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer")
+      .mockResolvedValueOnce(inTransitTransfer() as never)
+      .mockResolvedValue({
+        ...inTransitTransfer(),
+        status: "Received",
+        totalReceivedQty: 24,
+        totalOutstandingQty: 0,
+      } as never);
+    const receiveSpy = vi.spyOn(transferClient, "receiveInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "Received",
+      totalReceivedQty: 24,
+      totalOutstandingQty: 0,
+    } as never);
+    const user = userEvent.setup();
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-receive-page")).toBeInTheDocument();
+    await user.click(screen.getByTestId("transfer-receive-review"));
+    await waitFor(() =>
+      expect(screen.getByTestId("transfer-receive-review-summary")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByTestId("transfer-receive-confirm"));
+    await waitFor(() => expect(receiveSpy).toHaveBeenCalled());
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-transfer-receive-page")).not.toBeInTheDocument();
+  });
+
+  it("includes branchId in transfer detail query key so branch switch refetches", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(draftTransfer() as never);
+    const { unmount } = render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(transferClient.getInventoryTransfer).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: mainId }),
+        transferId,
+        expect.anything(),
+      );
+    });
+    unmount();
+
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(transferClient.getInventoryTransfer).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: branchBId }),
+        transferId,
+        expect.anything(),
+      );
+    });
+    expect(transferClient.getInventoryTransfer).toHaveBeenCalledTimes(2);
   });
 });

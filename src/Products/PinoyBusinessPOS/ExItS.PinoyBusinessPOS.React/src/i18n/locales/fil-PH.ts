@@ -13768,6 +13768,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.col.requestQty": "Dami ng request",
   "stockRequest.approve": "Aprubahan",
   "stockRequest.approveAndPrepare": "Aprubahan at ihanda",
+  "stockRequest.approvedButPrepareFailed":
+    "Naaprubahan ang request, pero hindi maihanda ang transfer. Maaari mong ihanda ulit.",
   "stockRequest.startPreparing": "Simulan ang paghahanda",
   "stockRequest.dispatchStock": "Ipadala ang stock",
   "stockRequest.receiveLinked": "Tumanggap ng stock",

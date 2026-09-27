@@ -210,9 +210,7 @@ export function InventoryTransferDetailPage() {
   const [localError, setLocalError] = useState<LocalError | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const [mode, setMode] = useState<Mode>(() =>
-    searchParams.get("mode") === "receive" ? "receive" : "detail",
-  );
+  const [mode, setMode] = useState<Mode>("detail");
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [closeRemainderOpen, setCloseRemainderOpen] = useState<CloseRemainderOpen>(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
@@ -239,7 +237,12 @@ export function InventoryTransferDetailPage() {
   const actingBranchId = boundWorkspace?.branchId ?? null;
 
   const query = useQuery({
-    queryKey: ["inventory-transfer", workspace?.organizationId, transferId],
+    queryKey: [
+      "inventory-transfer",
+      workspace?.organizationId,
+      workspace?.branchId,
+      transferId,
+    ],
     enabled: Boolean(workspace) && Boolean(transferId) && online,
     queryFn: ({ signal }) => getInventoryTransfer(workspace!, transferId, signal),
   });
@@ -267,19 +270,52 @@ export function InventoryTransferDetailPage() {
     }
   }, [location.pathname, location.state, navigate, showToast, t]);
 
-  // Honor ?mode=receive deep-link from stock request Ready to receive.
+  // ?mode=receive is UX intent only — enter receive when normal receive gates pass.
   useEffect(() => {
-    if (searchParams.get("mode") === "receive") {
-      setMode("receive");
+    const wantReceive = searchParams.get("mode") === "receive";
+    if (!wantReceive) {
+      return;
     }
-  }, [searchParams]);
+    if (!transfer) {
+      return;
+    }
+    const sameBranch = (a: string | null | undefined, b: string | null | undefined) =>
+      Boolean(a && b && a.toLowerCase() === b.toLowerCase());
+    const allowed =
+      allowManage &&
+      online &&
+      sameBranch(actingBranchId, transfer.destinationBranchId) &&
+      canDestinationReceiveTransfer(transfer);
+    if (allowed) {
+      setMode("receive");
+      return;
+    }
+    setMode("detail");
+    const next = new URLSearchParams(searchParams);
+    next.delete("mode");
+    setSearchParams(next, { replace: true });
+  }, [
+    searchParams,
+    transfer,
+    allowManage,
+    online,
+    actingBranchId,
+    setSearchParams,
+  ]);
 
   // Leave receive mode when transfer is no longer receivable; strip query intent.
   useEffect(() => {
     if (!transfer || mode !== "receive") {
       return;
     }
-    if (canDestinationReceiveTransfer(transfer)) {
+    const sameBranch = (a: string | null | undefined, b: string | null | undefined) =>
+      Boolean(a && b && a.toLowerCase() === b.toLowerCase());
+    const stillAllowed =
+      allowManage &&
+      online &&
+      sameBranch(actingBranchId, transfer.destinationBranchId) &&
+      canDestinationReceiveTransfer(transfer);
+    if (stillAllowed) {
       return;
     }
     setMode("detail");
@@ -291,6 +327,9 @@ export function InventoryTransferDetailPage() {
   }, [
     transfer,
     mode,
+    allowManage,
+    online,
+    actingBranchId,
     searchParams,
     setSearchParams,
   ]);
@@ -316,19 +355,19 @@ export function InventoryTransferDetailPage() {
         "lines" in updated
       ) {
         queryClient.setQueryData(
-          ["inventory-transfer", workspace.organizationId, transferId],
+          ["inventory-transfer", workspace.organizationId, workspace.branchId, transferId],
           updated,
         );
       } else {
         // Custody mutations return custody DTOs (not full transfer). Always refetch transfer detail.
         await queryClient.invalidateQueries({
-          queryKey: ["inventory-transfer", workspace.organizationId, transferId],
+          queryKey: ["inventory-transfer", workspace.organizationId, workspace.branchId, transferId],
         });
       }
       await queryClient.invalidateQueries({
         queryKey: ["inventory-transfer", workspace.organizationId],
         predicate: (query) => {
-          const cachedId = query.queryKey[2];
+          const cachedId = query.queryKey[3];
           return typeof cachedId === "string" && cachedId !== transferId;
         },
       });
@@ -417,14 +456,14 @@ export function InventoryTransferDetailPage() {
     try {
       const updated = await receiveInventoryTransfer(workspace, transfer.transferId, body);
       queryClient.setQueryData(
-        ["inventory-transfer", workspace.organizationId, transferId],
+        ["inventory-transfer", workspace.organizationId, workspace.branchId, transferId],
         updated,
       );
       // Refetch sibling family pages (root / R1…) without clobbering the just-updated DTO.
       await queryClient.invalidateQueries({
         queryKey: ["inventory-transfer", workspace.organizationId],
         predicate: (query) => {
-          const cachedId = query.queryKey[2];
+          const cachedId = query.queryKey[3];
           return typeof cachedId === "string" && cachedId !== transferId;
         },
       });
@@ -442,6 +481,11 @@ export function InventoryTransferDetailPage() {
         "success",
       );
       setMode("detail");
+      if (searchParams.get("mode") === "receive") {
+        const next = new URLSearchParams(searchParams);
+        next.delete("mode");
+        setSearchParams(next, { replace: true });
+      }
     } catch (err) {
       const detail = resolveTransferActionError(err, t("transfer.actionFailed"));
       setLocalError({ title: t("transfer.receiveFailedTitle"), detail });
