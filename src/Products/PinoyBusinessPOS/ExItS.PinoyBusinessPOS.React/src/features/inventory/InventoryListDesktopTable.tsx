@@ -6,7 +6,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Eye, X } from "lucide-react";
+import { Check, Eye, MoreHorizontal, X } from "lucide-react";
 import {
   enableInventoryTracking,
   type PosInventoryAccountDto,
@@ -20,14 +20,7 @@ import {
 } from "@/features/inventory/inventory-opening-price-feedback";
 import {
   formatInventoryQty,
-  InventoryInTransitBadge,
-  InventoryPendingReturnBadge,
-  InventoryReservedBadge,
   resolveAvailableQuantity,
-  resolveInTransitInboundQuantity,
-  resolveInTransitOutboundQuantity,
-  resolvePendingReturnQuantity,
-  resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
@@ -49,12 +42,12 @@ export function InventoryListDesktopTable({
   items,
   workspace,
   allowManage,
-  onOpenReservations,
+  onOpenSummary,
 }: {
   items: PosInventoryAccountDto[];
   workspace: PosWorkspaceScope;
   allowManage: boolean;
-  onOpenReservations: (product: { productId: string; name: string }) => void;
+  onOpenSummary: (item: PosInventoryAccountDto) => void;
 }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -204,16 +197,7 @@ export function InventoryListDesktopTable({
             const stockStatus = tracked ? item.stockStatus?.trim() ?? "" : "";
             const stockStatusKey = stockStatus.toLowerCase();
             const outOfStock = stockStatusKey.includes("out");
-            const showStockChip =
-              tracked &&
-              Boolean(stockStatus) &&
-              (lowStock || outOfStock || stockStatusKey.includes("low"));
-            const tracksExpiry = tracked && item.tracksExpiration === true;
             const availableQty = resolveAvailableQuantity(item);
-            const reservedQty = resolveReservedQuantity(item);
-            const pendingReturnQty = resolvePendingReturnQuantity(item);
-            const inTransitOutQty = resolveInTransitOutboundQuantity(item);
-            const inTransitInQty = resolveInTransitInboundQuantity(item);
             const sellingView =
               item.sellingPrice != null || item.effectiveSellingPrice != null
                 ? resolveEffectiveSellingPriceView({
@@ -249,26 +233,6 @@ export function InventoryListDesktopTable({
                   >
                     {item.name}
                   </AppLinkWithReturn>
-                  {tracksExpiry || showStockChip ? (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {tracksExpiry ? (
-                        <span className="inventory-row__badge inventory-row__badge--expiry">
-                          {t("inventory.tracksExpirationShort")}
-                        </span>
-                      ) : null}
-                      {showStockChip ? (
-                        <span
-                          className={
-                            outOfStock
-                              ? "inventory-row__badge inventory-row__badge--out"
-                              : "inventory-row__badge inventory-row__badge--low"
-                          }
-                        >
-                          {outOfStock ? stockStatus : t("inventory.lowStock")}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
                 </td>
 
                 <td
@@ -421,58 +385,16 @@ export function InventoryListDesktopTable({
 
                 <td className="px-3 py-2.5 align-middle text-center">
                   {tracked ? (
-                    <div className="inline-flex flex-col items-center gap-1">
-                      <span
-                        className={cn(
-                          "tabular-nums font-semibold",
-                          lowStock && "text-[var(--exits-warning,#b45309)]",
-                          outOfStock && "text-danger",
-                        )}
-                        data-testid={`inventory-table-available-${item.productId}`}
-                      >
-                        {formatInventoryQty(availableQty)}
-                      </span>
-                      <div className="flex flex-wrap items-center justify-center gap-1">
-                        <InventoryReservedBadge
-                          reservedQuantity={reservedQty}
-                          onClick={() =>
-                            onOpenReservations({
-                              productId: item.productId,
-                              name: item.name,
-                            })
-                          }
-                          testId={`inventory-table-reserved-${item.productId}`}
-                        />
-                        <InventoryInTransitBadge
-                          quantity={inTransitOutQty}
-                          branchName={item.inTransitOutboundBranchName}
-                          direction="outbound"
-                          onClick={() =>
-                            onOpenReservations({
-                              productId: item.productId,
-                              name: item.name,
-                            })
-                          }
-                          testId={`inventory-table-in-transit-out-${item.productId}`}
-                        />
-                        <InventoryInTransitBadge
-                          quantity={inTransitInQty}
-                          branchName={item.inTransitInboundBranchName}
-                          direction="inbound"
-                          onClick={() =>
-                            onOpenReservations({
-                              productId: item.productId,
-                              name: item.name,
-                            })
-                          }
-                          testId={`inventory-table-in-transit-in-${item.productId}`}
-                        />
-                        <InventoryPendingReturnBadge
-                          pendingReturnQuantity={pendingReturnQty}
-                          testId={`inventory-table-pending-return-${item.productId}`}
-                        />
-                      </div>
-                    </div>
+                    <span
+                      className={cn(
+                        "tabular-nums font-semibold",
+                        lowStock && "text-[var(--exits-warning,#b45309)]",
+                        outOfStock && "text-danger",
+                      )}
+                      data-testid={`inventory-table-available-${item.productId}`}
+                    >
+                      {formatInventoryQty(availableQty)}
+                    </span>
                   ) : (
                     <span className="text-muted" aria-hidden>
                       —
@@ -514,6 +436,19 @@ export function InventoryListDesktopTable({
                         </Button>
                       </>
                     ) : null}
+                    <Button
+                      type="button"
+                      size="icon"
+                      intent="info"
+                      appearance="outline"
+                      className="size-9 shrink-0"
+                      aria-label={t("inventory.productSummary.open")}
+                      title={t("inventory.productSummary.open")}
+                      data-testid={`inventory-table-summary-${item.productId}`}
+                      onClick={() => onOpenSummary(item)}
+                    >
+                      <MoreHorizontal className="size-4" aria-hidden />
+                    </Button>
                     <Button
                       asChild
                       type="button"

@@ -136,6 +136,14 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryBranchReorderSettingRecord> InventoryBranchReorderSettings => Set<InventoryBranchReorderSettingRecord>();
     internal DbSet<InventoryBranchReorderDefaultRecord> InventoryBranchReorderDefaults => Set<InventoryBranchReorderDefaultRecord>();
     internal DbSet<InventoryBranchExpirationSettingRecord> InventoryBranchExpirationSettings => Set<InventoryBranchExpirationSettingRecord>();
+    internal DbSet<OrganizationExpirySalePolicySettingRecord> OrganizationExpirySalePolicySettings =>
+        Set<OrganizationExpirySalePolicySettingRecord>();
+    internal DbSet<OrganizationCategoryExpirySalePolicyRecord> OrganizationCategoryExpirySalePolicies =>
+        Set<OrganizationCategoryExpirySalePolicyRecord>();
+    internal DbSet<BranchExpirySalePolicySettingRecord> BranchExpirySalePolicySettings =>
+        Set<BranchExpirySalePolicySettingRecord>();
+    internal DbSet<BranchCategoryExpirySalePolicyRecord> BranchCategoryExpirySalePolicies =>
+        Set<BranchCategoryExpirySalePolicyRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
     internal DbSet<InventoryLotIdentityCorrectionRecord> InventoryLotIdentityCorrections => Set<InventoryLotIdentityCorrectionRecord>();
@@ -4712,6 +4720,97 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_inventory_branch_expiration_settings_products");
+        });
+
+        modelBuilder.Entity<OrganizationExpirySalePolicySettingRecord>(entity =>
+        {
+            entity.ToTable("organization_expiry_sale_policy_settings", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_organization_expiry_sale_policy_settings_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => e.OrganizationId)
+                .HasName("pk_organization_expiry_sale_policy_settings");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+        });
+
+        modelBuilder.Entity<OrganizationCategoryExpirySalePolicyRecord>(entity =>
+        {
+            entity.ToTable("organization_category_expiry_sale_policies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_organization_category_expiry_sale_policies_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.CategoryId })
+                .HasName("pk_organization_category_expiry_sale_policies");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+
+            entity.HasOne<ProductCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_organization_category_expiry_sale_policies_categories");
+        });
+
+        modelBuilder.Entity<BranchExpirySalePolicySettingRecord>(entity =>
+        {
+            entity.ToTable("branch_expiry_sale_policy_settings", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_branch_expiry_sale_policy_settings_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId })
+                .HasName("pk_branch_expiry_sale_policy_settings");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+        });
+
+        modelBuilder.Entity<BranchCategoryExpirySalePolicyRecord>(entity =>
+        {
+            entity.ToTable("branch_category_expiry_sale_policies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_branch_category_expiry_sale_policies_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.CategoryId })
+                .HasName("pk_branch_category_expiry_sale_policies");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_branch_category_expiry_sale_policies_org_branch");
+
+            entity.HasOne<ProductCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_branch_category_expiry_sale_policies_categories");
         });
 
         modelBuilder.Entity<ExpenseCategoryRecord>(entity =>

@@ -30,6 +30,35 @@ Purchase goods receipts remain product-level in this overlay (same as non-expiry
 
 Not an organization-wide mandate. Global Catalog does not store live `ExpirationDate`.
 
+## Expiry sale policy (StopSellingDaysBeforeExpiry)
+
+Separate from expiration **tracking** and **warning days**:
+
+| Concept | Meaning |
+|---|---|
+| `TracksExpiration` | Whether the branch/product captures expiry lots |
+| `ExpirationWarningDays` | Near-expiry **alert / presentation** window only — never sale eligibility |
+| `StopSellingDaysBeforeExpiry` | Normal **POS sale** eligibility cutoff (organization / category / branch hierarchy) |
+
+Default organization behavior: `StopSellingDaysBeforeExpiry = 0` → stock may be sold **on** its expiry date; the next calendar day it is **Expired** and never sellable.
+
+Formal lot sale eligibility (business date = today):
+
+- `ExpirationDate < today` → **Expired** (absolute; no override may allow sale)
+- else if `StopSellingDaysBeforeExpiry > 0` and `ExpirationDate <= today + StopSellingDays` → **SaleBlockedByExpiryPolicy** (physically on hand, not sellable)
+- else → **Sellable**
+
+Policy precedence (most specific wins): Branch+Category → Branch default → Organization Category → Organization default.
+
+Canonical resolver: `ExpirySalePolicyResolver`. FEFO for **normal sales** allocates only Sellable lots under the effective policy. Transfers / stock-use / waste / custody keep absolute-expiry rules and do **not** apply the sale cutoff.
+
+Physical on-hand does **not** decrease when a lot becomes policy-blocked or expired by time. Expired physical stock is removed via existing Waste/Loss → Expired (or equivalent authorized disposal). There is no midnight auto-write-off and no separate “unlock expired” mutation — locks are derived from lot dates + policy.
+
+Inventory list/detail project:
+
+- `SellableQuantity` / `SalePolicyBlockedQuantity` / `ExpiredQuantity` (lot partition)
+- `AvailableQuantity` for expiration-tracked products = `Min(operational available, sellable lot qty)` so the main Available number matches what a normal sale can consume
+
 ## Lot model
 
 ```text
@@ -49,26 +78,27 @@ Stable lot ids. PostgreSQL unique identity:
 
 ## FEFO
 
-Expiration-tracked sales consume **First Expire, First Out** among **non-expired** lots (`ExpirationDate >= today`). Earliest expiry first; continue to the next lot when the first is exhausted. Non-tracked products keep existing product-level deduction.
+Expiration-tracked **normal sales** consume **First Expire, First Out** among lots whose effective sale eligibility is **Sellable** under `StopSellingDaysBeforeExpiry` (past-expiry always excluded; policy-blocked lots are skipped). Earliest expiry first; continue to the next eligible lot when the first is exhausted. Non-tracked products keep existing product-level deduction.
 
-Sales remain org-scoped (no sale `BranchId`). FEFO therefore considers on-hand lots for the product across branches.
+Non-sale physical flows (branch transfer FEFO, stock-use, production materials) continue to exclude only **expired** lots (`ExpirationDate < today`) and do not apply the sale cutoff.
 
 ## Expired stock
 
-Expired lots stay on-hand until an authorized `Out` adjustment (reason `Expired` or existing reasons). They are not sellable, not auto-deleted, and not silently zeroed. Checkout rejects when non-expired sellable qty is insufficient, even if expired qty would cover the sale.
+Expired lots stay on-hand until an authorized Waste/Loss (reason `Expired`) or other authorized disposal. They are not sellable, not auto-deleted, and not silently zeroed at midnight. Checkout rejects when sellable qty is insufficient, even if expired or policy-blocked qty would cover the sale.
 
-Near-expiry (including expires today) remains sellable. UI distinguishes Expired / Expires today / Expires in N days.
+Near-expiry (warning window) remains a presentation concept and is independent of stop-selling days.
 
 ## Inventory totals
 
 | Figure | Source |
 |---|---|
-| Total on-hand | `InventoryAccount.OnHandQuantity` = sum of lots |
-| Sellable | sum of non-expired lot qty (detail only) |
-| Expired | sum of expired lot qty (detail only) |
-| Near-expiry | warning-window lots, not expired (detail only) |
+| Physical on-hand | Branch / account on-hand (lots sum when tracking) |
+| Sellable | Sum of lot qty with sale eligibility Sellable |
+| Sale policy blocked | Sum of lot qty blocked by stop-selling days (not yet expired) |
+| Expired | Sum of lot qty with `ExpirationDate < today` |
+| Available (list/detail main) | For expiration-tracked: `Min(operational available, sellable)` |
 
-Product **list** does not load lots (no N+1). Lot summaries are on inventory/product detail and `GET .../lots` (paged).
+List enrichment batches lots + effective policies (no N+1 per row). Lot detail pages and `GET .../lots` remain available for lot identity.
 
 ## Receiving / adjustments
 

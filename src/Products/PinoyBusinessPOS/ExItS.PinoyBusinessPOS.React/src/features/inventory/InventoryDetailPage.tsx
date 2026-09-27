@@ -51,12 +51,16 @@ import { InventoryMovementsResponsiveList } from "@/features/inventory/Inventory
 import { InventoryMovementTransactionDrawer } from "@/features/inventory/InventoryMovementTransactionDrawer";
 import {
   formatInventoryQty,
+  InventoryExpiredBadge,
   InventoryInTransitBadge,
   InventoryReservedBadge,
+  InventorySaleBlockedBadge,
   resolveAvailableQuantity,
+  resolveExpiredQuantity,
   resolveInTransitInboundQuantity,
   resolveInTransitOutboundQuantity,
   resolveReservedQuantity,
+  resolveSalePolicyBlockedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
 import {
@@ -747,6 +751,20 @@ export function InventoryDetailPage() {
                 </span>
               </button>
               <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+                {account.tracksExpiration ? (
+                  <>
+                    <InventoryExpiredBadge
+                      expiredQuantity={resolveExpiredQuantity(account)}
+                      unitOfMeasure={account.unitOfMeasure}
+                      testId="inventory-detail-expired-badge"
+                    />
+                    <InventorySaleBlockedBadge
+                      salePolicyBlockedQuantity={resolveSalePolicyBlockedQuantity(account)}
+                      unitOfMeasure={account.unitOfMeasure}
+                      testId="inventory-detail-sale-blocked-badge"
+                    />
+                  </>
+                ) : null}
                 <InventoryReservedBadge
                   reservedQuantity={resolveReservedQuantity(account)}
                   onClick={() => setReservationsOpen(true)}
@@ -788,10 +806,39 @@ export function InventoryDetailPage() {
                   className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]"
                   data-testid="inventory-stock-breakdown"
                 >
-                  <dt className="text-muted">{t("inventory.onHand")}</dt>
-                  <dd className="m-0 justify-self-end tabular-nums font-medium">
-                    {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
-                  </dd>
+                  {account.tracksExpiration ? (
+                    <>
+                      <dt className="text-muted">{t("inventory.physicalOnHand")}</dt>
+                      <dd className="m-0 justify-self-end tabular-nums font-medium">
+                        {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
+                      </dd>
+                      <dt className="text-muted">{t("inventory.sellable")}</dt>
+                      <dd className="m-0 justify-self-end tabular-nums font-medium">
+                        {formatInventoryQty(
+                          account.sellableQuantity != null && Number.isFinite(account.sellableQuantity)
+                            ? Math.max(0, account.sellableQuantity)
+                            : resolveAvailableQuantity(account),
+                        )}{" "}
+                        {account.unitOfMeasure}
+                      </dd>
+                      <dt className="text-muted">{t("inventory.saleBlocked")}</dt>
+                      <dd className="m-0 justify-self-end tabular-nums font-medium">
+                        {formatInventoryQty(resolveSalePolicyBlockedQuantity(account))}{" "}
+                        {account.unitOfMeasure}
+                      </dd>
+                      <dt className="text-muted">{t("inventory.expiredQty")}</dt>
+                      <dd className="m-0 justify-self-end tabular-nums font-medium">
+                        {formatInventoryQty(resolveExpiredQuantity(account))} {account.unitOfMeasure}
+                      </dd>
+                    </>
+                  ) : (
+                    <>
+                      <dt className="text-muted">{t("inventory.onHand")}</dt>
+                      <dd className="m-0 justify-self-end tabular-nums font-medium">
+                        {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
+                      </dd>
+                    </>
+                  )}
                   <dt className="text-muted">{t("inventory.reserved")}</dt>
                   <dd className="m-0 justify-self-end tabular-nums font-medium">
                     {formatInventoryQty(resolveReservedQuantity(account))} {account.unitOfMeasure}

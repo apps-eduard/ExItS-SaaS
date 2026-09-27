@@ -231,6 +231,11 @@ public static class DomainErrorCodes
     /// <summary>Normal branch transfer cannot use an expired source lot.</summary>
     public const string InventoryLotExpiredForTransfer = "pos.inventory.lot.expired_for_transfer";
     public const string InvalidExpirationWarningDays = "pos.inventory.expiration_warning_days.invalid";
+    public const string InvalidStopSellingDaysBeforeExpiry =
+        "pos.inventory.stop_selling_days_before_expiry.invalid";
+    public const string InvalidExpirySalePolicyActor = "pos.inventory.expiry_sale_policy.actor.invalid";
+    public const string InvalidExpirySalePolicyCategory =
+        "pos.inventory.expiry_sale_policy.category.invalid";
     public const string InvalidInventoryExpirationActor = "pos.inventory.expiration.actor.invalid";
     public const string InvalidStockMovementId = "pos.inventory.movement.id.invalid";
     public const string InvalidInventoryMovementType = "pos.inventory.movement_type.invalid";

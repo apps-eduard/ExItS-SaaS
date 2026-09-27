@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { buildExpiredWasteQuickFlowHref } from "@/features/inventory/expired-waste-quick-flow";
+import { BranchExpirySalePolicyCard } from "@/features/inventory/BranchExpirySalePolicyCard";
 import {
   EXPIRY_WINDOWS,
   addLocalDays,
@@ -77,6 +78,7 @@ export function InventoryExpirationPage() {
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowWriteOff = canManageInventory(sessionGrant);
+  const allowManagePolicy = canManageInventory(sessionGrant);
   const [windowCode, setWindowCode] = useState<ExpiryWindowCode>("Days30");
   const [customFrom, setCustomFrom] = useState(() => formatLocalDateOnly());
   const [customTo, setCustomTo] = useState(() => addLocalDays(formatLocalDateOnly(), 30));
@@ -167,6 +169,8 @@ export function InventoryExpirationPage() {
         backLabel={t(pageBackNav.inventory.labelKey)}
         backTestId="page-header-back-inventory"
       />
+
+      <BranchExpirySalePolicyCard workspace={workspace} canEdit={allowManagePolicy} />
 
       <div className="inventory-expiry-window flex min-w-0 flex-col gap-1.5">
         <span

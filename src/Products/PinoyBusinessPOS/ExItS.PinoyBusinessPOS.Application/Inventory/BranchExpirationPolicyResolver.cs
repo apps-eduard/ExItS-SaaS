@@ -54,6 +54,23 @@ public sealed class BranchExpirationPolicyResolver
         return result;
     }
 
+    /// <summary>Resolve expiration tracking for one product across many branches.</summary>
+    public async Task<IReadOnlyDictionary<Guid, BranchExpirationPolicy>> ResolveManyBranchesAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        IReadOnlyCollection<PosBranchId> branchIds,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<Guid, BranchExpirationPolicy>(branchIds.Count);
+        foreach (var branchId in branchIds.Distinct())
+        {
+            result[branchId.Value] = await ResolveAsync(organizationId, branchId, productId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return result;
+    }
+
     public static BranchExpirationPolicy FromSetting(InventoryBranchExpirationSetting? setting) =>
         setting is { TracksExpiration: true }
             ? new BranchExpirationPolicy(true, setting.ExpirationWarningDays)

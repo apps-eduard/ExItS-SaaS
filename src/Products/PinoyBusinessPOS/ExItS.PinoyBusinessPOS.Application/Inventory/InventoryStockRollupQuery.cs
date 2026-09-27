@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -58,6 +59,7 @@ public sealed record PosInventoryAreaRollupDto(
 /// Organization totals are the authoritative <see cref="InventoryAccount"/> figures and are populated
 /// only for organization-wide viewers. Accessible totals are always derived from the caller's authorized
 /// branches and must never be presented as organization inventory.
+/// Available quantities honor expiry sale eligibility when branch expiration tracking is on.
 /// </summary>
 public sealed record PosInventoryStockRollupDto(
     Guid ProductId,
@@ -76,8 +78,9 @@ public sealed record PosInventoryStockRollupDto(
 
 /// <summary>
 /// Hierarchical Organization → Area → Branch stock read (AREA-02).
-/// Organization values stay the authoritative <see cref="InventoryAccount"/> figures; area values are
-/// derived sums of authorized branch balances only. Read-only: no stock authority lives on an area.
+/// Organization on-hand/reserved stay the authoritative <see cref="InventoryAccount"/> figures; available
+/// is capped by sellable lot qty when expiration tracking is on. Area values are derived sums of
+/// authorized branch balances only. Read-only: no stock authority lives on an area.
 /// </summary>
 public sealed class InventoryStockRollupQuery
 {
@@ -85,17 +88,35 @@ public sealed class InventoryStockRollupQuery
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly IAuthorizedBranchGroupingDirectory _grouping;
+    private readonly IInventoryLotRepository _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
+    private readonly ExpirySalePolicyResolver _expirySalePolicies;
+    private readonly IClock _clock;
 
     public InventoryStockRollupQuery(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
         IInventoryBranchBalanceRepository balances,
-        IAuthorizedBranchGroupingDirectory grouping)
+        IAuthorizedBranchGroupingDirectory grouping,
+        IInventoryLotRepository? lots = null,
+        BranchExpirationPolicyResolver? expirationPolicies = null,
+        ExpirySalePolicyResolver? expirySalePolicies = null,
+        IClock? clock = null)
     {
         _inventory = inventory;
         _products = products;
         _balances = balances;
         _grouping = grouping;
+        _lots = lots ?? EmptyInventoryLotRepository.Instance;
+        _expirationPolicies = expirationPolicies
+            ?? new BranchExpirationPolicyResolver(EmptyBranchExpirationSettings.Instance);
+        _expirySalePolicies = expirySalePolicies
+            ?? new ExpirySalePolicyResolver(
+                EmptyOrganizationExpirySalePolicyRepository.Instance,
+                EmptyOrganizationCategoryExpirySalePolicyRepository.Instance,
+                EmptyBranchExpirySalePolicyRepository.Instance,
+                EmptyBranchCategoryExpirySalePolicyRepository.Instance);
+        _clock = clock ?? SystemClock.Instance;
     }
 
     public async Task<ApplicationResult<PosInventoryStockRollupDto>> GetProductAsync(
@@ -151,12 +172,64 @@ public sealed class InventoryStockRollupQuery
             .GroupBy(b => b.BranchId.Value)
             .ToDictionary(g => g.Key, g => g.First());
 
+        var branchIds = authorizedBranches.Select(b => PosBranchId.From(b.BranchId)).ToList();
+        var expirationByBranch = await _expirationPolicies
+            .ResolveManyBranchesAsync(orgId, catalogProductId, branchIds, cancellationToken)
+            .ConfigureAwait(false);
+
+        var anyTracks = expirationByBranch.Values.Any(p => p.TracksExpiration);
+        IReadOnlyList<InventoryLot> allLots = [];
+        IReadOnlyDictionary<Guid, EffectiveExpirySalePolicy> salePolicyByBranch = new Dictionary<Guid, EffectiveExpirySalePolicy>();
+        if (anyTracks)
+        {
+            allLots = await _lots
+                .ListOnHandAsync(orgId, catalogProductId, branchId: null, includeDepleted: false, cancellationToken)
+                .ConfigureAwait(false);
+            var categoryId = product.CategoryId?.Value;
+            var distinctBranchKeys = authorizedBranches.Select(b => b.BranchId).Distinct().ToList();
+            var policyMap = new Dictionary<Guid, EffectiveExpirySalePolicy>(distinctBranchKeys.Count);
+            foreach (var branchId in distinctBranchKeys)
+            {
+                policyMap[branchId] = await _expirySalePolicies
+                    .ResolveAsync(orgId, PosBranchId.From(branchId), categoryId, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            salePolicyByBranch = policyMap;
+        }
+
+        var lotsByBranch = allLots
+            .Where(l => l.BranchId is not null)
+            .GroupBy(l => l.BranchId!.Value)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<InventoryLot>)g.ToList());
+        var orgLevelLots = allLots.Where(l => l.BranchId is null).ToList();
+        var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
+
         var visibleRows = authorizedBranches
             .Select(branch =>
             {
                 balanceByBranchId.TryGetValue(branch.BranchId, out var balance);
                 var onHand = balance?.OnHandQuantity ?? 0m;
                 var reserved = balance?.ReservedQuantity ?? 0m;
+                var operational = Math.Max(0m, onHand - reserved);
+                var available = operational;
+                expirationByBranch.TryGetValue(branch.BranchId, out var expirationPolicy);
+                if (expirationPolicy.TracksExpiration)
+                {
+                    lotsByBranch.TryGetValue(branch.BranchId, out var branchLots);
+                    branchLots ??= [];
+                    // Branch-scoped lots only. Org-level (BranchId null) lots adjust organization
+                    // available below — never attributed to every empty tracking branch.
+                    // No lot overlay yet: keep operational available (do not zero-cap).
+                    if (branchLots.Count > 0)
+                    {
+                        salePolicyByBranch.TryGetValue(branch.BranchId, out var salePolicy);
+                        var stopDays = salePolicy.StopSellingDaysBeforeExpiry;
+                        var buckets = InventoryLotFefo.ProjectSaleBuckets(branchLots, today, stopDays);
+                        available = Math.Min(operational, buckets.Sellable);
+                    }
+                }
+
                 return new
                 {
                     branch.AreaId,
@@ -166,7 +239,7 @@ public sealed class InventoryStockRollupQuery
                         branch.BranchName,
                         onHand,
                         reserved,
-                        onHand - reserved)
+                        available)
                 };
             })
             .ToList();
@@ -179,7 +252,7 @@ public sealed class InventoryStockRollupQuery
                 IsUnassigned: group.Key is null,
                 group.Sum(x => x.Row.OnHandQuantity),
                 group.Sum(x => x.Row.ReservedQuantity),
-                group.Sum(x => x.Row.OnHandQuantity) - group.Sum(x => x.Row.ReservedQuantity),
+                group.Sum(x => x.Row.AvailableQuantity),
                 group
                     .Select(x => x.Row)
                     .OrderBy(row => row.BranchName, StringComparer.OrdinalIgnoreCase)
@@ -190,6 +263,30 @@ public sealed class InventoryStockRollupQuery
 
         var accessibleOnHand = visibleRows.Sum(x => x.Row.OnHandQuantity);
         var accessibleReserved = visibleRows.Sum(x => x.Row.ReservedQuantity);
+        var accessibleAvailable = visibleRows.Sum(x => x.Row.AvailableQuantity);
+
+        decimal? organizationAvailable = null;
+        if (scope.IsOrganizationWide)
+        {
+            // Keep account authority for on-hand/reserved; available honors sellable caps when tracked.
+            organizationAvailable = account.AvailableQuantity;
+            if (anyTracks)
+            {
+                organizationAvailable = Math.Min(organizationAvailable.Value, accessibleAvailable);
+                if (orgLevelLots.Count > 0)
+                {
+                    var orgBuckets = InventoryLotFefo.ProjectSaleBuckets(
+                        orgLevelLots,
+                        today,
+                        InventoryLotSaleEligibility.DefaultStopSellingDays);
+                    var nonSellable = orgBuckets.PolicyBlocked + orgBuckets.Expired;
+                    if (nonSellable > 0m)
+                    {
+                        organizationAvailable = Math.Max(0m, organizationAvailable.Value - nonSellable);
+                    }
+                }
+            }
+        }
 
         return ApplicationResult<PosInventoryStockRollupDto>.Success(
             new PosInventoryStockRollupDto(
@@ -200,11 +297,206 @@ public sealed class InventoryStockRollupQuery
                 OrganizationTotalsVisible: scope.IsOrganizationWide,
                 scope.IsOrganizationWide ? account.OnHandQuantity : null,
                 scope.IsOrganizationWide ? account.ReservedQuantity : null,
-                scope.IsOrganizationWide ? account.AvailableQuantity : null,
+                organizationAvailable,
                 accessibleOnHand,
                 accessibleReserved,
-                accessibleOnHand - accessibleReserved,
+                accessibleAvailable,
                 areas.Any(area => !area.IsUnassigned),
                 areas));
     }
+}
+
+/// <summary>No-op lot repository for rollup tests / optional DI.</summary>
+file sealed class EmptyInventoryLotRepository : IInventoryLotRepository
+{
+    public static EmptyInventoryLotRepository Instance { get; } = new();
+
+    public Task<InventoryLot?> GetByIdAsync(
+        PosOrganizationId organizationId,
+        InventoryLotId lotId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<InventoryLot?>(null);
+
+    public Task<InventoryLot?> FindAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        DateOnly expirationDate,
+        string normalizedLotNumber,
+        PosBranchId? branchId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<InventoryLot?>(null);
+
+    public Task<IReadOnlyList<InventoryLot>> ListOnHandAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId? branchId,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<InventoryLot>>([]);
+
+    public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<InventoryLot>>([]);
+
+    public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId? branchId,
+        bool includeDepleted,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<(IReadOnlyList<InventoryLot>, int)>(([], 0));
+
+    public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListExpiringPagedAsync(
+        PosOrganizationId organizationId,
+        PosBranchId? branchId,
+        DateOnly expireOnOrBefore,
+        DateOnly? expireOnOrAfter,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<(IReadOnlyList<InventoryLot>, int)>(([], 0));
+
+    public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
+        PosOrganizationId organizationId,
+        DateOnly today,
+        PosBranchId? branchId = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult((0, 0));
+
+    public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task UpdateAsync(InventoryLot lot, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task AddMovementAsync(InventoryLotMovement movement, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task<bool> HasMovementAsync(
+        PosOrganizationId organizationId,
+        Guid sourceId,
+        InventoryLotId lotId,
+        StockMovementType movementType,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public Task<IReadOnlyList<InventoryLotMovement>> ListBySourceAsync(
+        PosOrganizationId organizationId,
+        Guid sourceId,
+        StockMovementType movementType,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<InventoryLotMovement>>([]);
+
+    public Task AdoptOrgLevelLotsForBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}
+
+file sealed class EmptyOrganizationExpirySalePolicyRepository : IOrganizationExpirySalePolicyRepository
+{
+    public static EmptyOrganizationExpirySalePolicyRepository Instance { get; } = new();
+
+    public Task<OrganizationExpirySalePolicySetting?> GetAsync(
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<OrganizationExpirySalePolicySetting?>(null);
+
+    public Task UpsertAsync(
+        OrganizationExpirySalePolicySetting setting,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}
+
+file sealed class EmptyOrganizationCategoryExpirySalePolicyRepository : IOrganizationCategoryExpirySalePolicyRepository
+{
+    public static EmptyOrganizationCategoryExpirySalePolicyRepository Instance { get; } = new();
+
+    public Task<OrganizationCategoryExpirySalePolicy?> GetAsync(
+        PosOrganizationId organizationId,
+        Guid categoryId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<OrganizationCategoryExpirySalePolicy?>(null);
+
+    public Task<IReadOnlyList<OrganizationCategoryExpirySalePolicy>> ListByOrganizationAsync(
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<OrganizationCategoryExpirySalePolicy>>([]);
+
+    public Task UpsertAsync(
+        OrganizationCategoryExpirySalePolicy policy,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task DeleteAsync(
+        PosOrganizationId organizationId,
+        Guid categoryId,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}
+
+file sealed class EmptyBranchExpirySalePolicyRepository : IBranchExpirySalePolicyRepository
+{
+    public static EmptyBranchExpirySalePolicyRepository Instance { get; } = new();
+
+    public Task<BranchExpirySalePolicySetting?> GetAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<BranchExpirySalePolicySetting?>(null);
+
+    public Task UpsertAsync(
+        BranchExpirySalePolicySetting setting,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task DeleteAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}
+
+file sealed class EmptyBranchCategoryExpirySalePolicyRepository : IBranchCategoryExpirySalePolicyRepository
+{
+    public static EmptyBranchCategoryExpirySalePolicyRepository Instance { get; } = new();
+
+    public Task<BranchCategoryExpirySalePolicy?> GetAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        Guid categoryId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<BranchCategoryExpirySalePolicy?>(null);
+
+    public Task<IReadOnlyList<BranchCategoryExpirySalePolicy>> ListByBranchAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<BranchCategoryExpirySalePolicy>>([]);
+
+    public Task UpsertAsync(
+        BranchCategoryExpirySalePolicy policy,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task DeleteAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        Guid categoryId,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}
+
+file sealed class SystemClock : IClock
+{
+    public static SystemClock Instance { get; } = new();
+    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
 }

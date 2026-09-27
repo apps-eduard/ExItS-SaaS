@@ -20,6 +20,22 @@ export type PosInventoryAttentionSummaryDto = z.infer<
   typeof posInventoryAttentionSummaryDtoSchema
 >;
 
+/**
+ * Inventory account quantity fields used by list/detail sellable locks.
+ * Full list payloads are not zod-parsed end-to-end; this documents the sale-capped shape.
+ */
+export const posInventoryAccountSaleQuantitiesSchema = z.object({
+  onHandQuantity: z.number(),
+  availableQuantity: z.number().optional(),
+  sellableQuantity: z.number().nullable().optional(),
+  expiredQuantity: z.number().nullable().optional(),
+  nearExpiryQuantity: z.number().nullable().optional(),
+  /** On-hand blocked by stop-selling-days policy (not calendar-expired). */
+  salePolicyBlockedQuantity: z.number().nullable().optional(),
+  reservedQuantity: z.number().optional(),
+  pendingReturnQuantity: z.number().optional(),
+});
+
 export type PosInventoryAccountDto = {
   productId: string;
   organizationId: string;
@@ -42,6 +58,11 @@ export type PosInventoryAccountDto = {
   sellableQuantity?: number | null;
   expiredQuantity?: number | null;
   nearExpiryQuantity?: number | null;
+  /**
+   * On-hand lot quantity blocked from normal sale by stop-selling-days policy
+   * (not yet calendar-expired). Null when the product does not track expiration.
+   */
+  salePolicyBlockedQuantity?: number | null;
   hasOpeningStock?: boolean;
   sku?: string | null;
   barcode?: string | null;

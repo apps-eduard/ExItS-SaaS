@@ -3,6 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as inventoryClient from "@/api/pos/pos-inventory-client";
+import * as expirySalePolicyClient from "@/api/pos/pos-expiry-sale-policy-client";
+import * as catalogClient from "@/api/pos/pos-catalog-client";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 
 const orgId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -106,6 +108,27 @@ describe("InventoryExpirationPage expired write-off action", () => {
       pageSize: 50,
       expiredCount: 1,
       nearExpiryCount: 1,
+    });
+    vi.spyOn(expirySalePolicyClient, "getBranchExpirySalePolicy").mockResolvedValue({
+      stopSellingDaysBeforeExpiry: 0,
+      updatedAtUtc: null,
+      updatedBy: null,
+      isExplicit: false,
+    });
+    vi.spyOn(expirySalePolicyClient, "getEffectiveExpirySalePolicy").mockResolvedValue({
+      stopSellingDaysBeforeExpiry: 0,
+      source: "OrganizationDefault",
+      organizationDefaultDays: 0,
+      organizationCategoryDays: null,
+      branchDefaultDays: null,
+      branchCategoryDays: null,
+    });
+    vi.spyOn(expirySalePolicyClient, "listBranchCategoryExpirySalePolicies").mockResolvedValue([]);
+    vi.spyOn(catalogClient, "listCatalogCategories").mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 200,
     });
   });
 

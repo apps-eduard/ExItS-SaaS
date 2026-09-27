@@ -144,7 +144,7 @@ describe("InventoryListPage desktop table", () => {
     expect(screen.getByTestId("inventory-table-unit-cost-value-prod-apple")).toHaveTextContent(/45/);
   });
 
-  it("shows reserved badge only when reservedQty > 0 and opens drawer", async () => {
+  it("shows reserved quantity in product summary drawer, not as a table chip", async () => {
     const user = userEvent.setup();
     vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
       items: [
@@ -161,23 +161,56 @@ describe("InventoryListPage desktop table", () => {
       page: 1,
       pageSize: 50,
     });
-    vi.spyOn(inventoryClient, "getInventoryProductReservations").mockResolvedValue({
-      productId: "prod-banana",
-      productName: "Banana Lakatan",
-      unitOfMeasure: "Kilogram",
-      onHandQuantity: 100,
-      reservedQuantity: 5,
-      availableQuantity: 95,
-      reservations: [],
-    } as never);
 
     renderPage();
 
-    const badge = await screen.findByTestId("inventory-table-reserved-prod-banana");
-    expect(badge).toHaveTextContent(/5/);
-    await user.click(badge);
+    expect(screen.queryByTestId("inventory-table-reserved-prod-banana")).not.toBeInTheDocument();
+    await user.click(await screen.findByTestId("inventory-table-summary-prod-banana"));
+    expect(await screen.findByTestId("inventory-product-summary-drawer")).toBeInTheDocument();
+    expect(screen.getByTestId("inventory-product-summary-reserved")).toHaveTextContent(/5/);
+  });
+
+  it("opens product summary drawer from action ellipsis with stock and config", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
+      items: [
+        item({
+          tracksExpiration: true,
+          expirationWarningDays: 7,
+          expiredQuantity: 50,
+          sellableQuantity: 40,
+          reservedQuantity: 10,
+          availableQuantity: 40,
+          categoryName: "Produce",
+        }),
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+    });
+    const expirySalePolicy = await import("@/api/pos/pos-expiry-sale-policy-client");
+    vi.spyOn(expirySalePolicy, "getEffectiveExpirySalePolicy").mockResolvedValue({
+      stopSellingDaysBeforeExpiry: 3,
+      source: "OrganizationDefault",
+      organizationDefaultDays: 3,
+      organizationCategoryDays: null,
+      branchDefaultDays: null,
+      branchCategoryDays: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByTestId("inventory-table-summary-prod-apple"));
+    expect(await screen.findByTestId("inventory-product-summary-drawer")).toBeInTheDocument();
+    expect(screen.getByTestId("inventory-product-summary-reserved")).toHaveTextContent(/10/);
+    expect(screen.getByTestId("inventory-product-summary-expired")).toHaveTextContent(/50/);
+    expect(screen.getByTestId("inventory-product-summary-expiration-tracking")).toHaveTextContent(
+      /On/,
+    );
     await waitFor(() => {
-      expect(screen.getByTestId("inventory-reservations-drawer")).toBeInTheDocument();
+      expect(screen.getByTestId("inventory-product-summary-stop-selling-days")).toHaveTextContent(
+        /3 days/,
+      );
     });
   });
 

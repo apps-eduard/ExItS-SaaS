@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Lock, RotateCcw } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, Lock, RotateCcw } from "lucide-react";
 import { formatQuantityDisplay } from "@/cart/sell-cart-helpers";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -79,6 +79,160 @@ export function resolveInTransitInboundQuantity(item: {
     return Math.max(0, item.inTransitInboundQuantity);
   }
   return 0;
+}
+
+export function resolveExpiredQuantity(item: {
+  expiredQuantity?: number | null;
+}): number {
+  if (item.expiredQuantity != null && Number.isFinite(item.expiredQuantity)) {
+    return Math.max(0, item.expiredQuantity);
+  }
+  return 0;
+}
+
+export function resolveSalePolicyBlockedQuantity(item: {
+  salePolicyBlockedQuantity?: number | null;
+}): number {
+  if (item.salePolicyBlockedQuantity != null && Number.isFinite(item.salePolicyBlockedQuantity)) {
+    return Math.max(0, item.salePolicyBlockedQuantity);
+  }
+  return 0;
+}
+
+export function InventoryExpiredBadge({
+  expiredQuantity,
+  unitOfMeasure,
+  onClick,
+  testId,
+  className,
+}: {
+  expiredQuantity: number;
+  unitOfMeasure?: string;
+  onClick?: () => void;
+  testId?: string;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  if (!(expiredQuantity > 0)) return null;
+
+  const label = t("inventory.expiredBadge")
+    .replace("{qty}", formatInventoryQty(expiredQuantity))
+    .replace("{uom}", unitOfMeasure?.trim() || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const content = (
+    <>
+      <Lock className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
+      <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </>
+  );
+
+  const sharedClass = cn(
+    "inventory-expired-badge inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-left text-[length:var(--exits-text-xs)] font-medium",
+    "border-[color-mix(in_srgb,var(--exits-danger)_40%,var(--exits-border))] bg-[var(--exits-danger-soft)] text-[var(--exits-danger)]",
+    className,
+  );
+
+  if (!onClick) {
+    return (
+      <span className={sharedClass} data-testid={testId ?? "inventory-expired-badge"} aria-label={label}>
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        sharedClass,
+        "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-[color-mix(in_srgb,var(--exits-danger)_14%,var(--exits-danger-soft))]",
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      data-testid={testId ?? "inventory-expired-badge"}
+      aria-label={label}
+    >
+      {content}
+    </button>
+  );
+}
+
+export function InventorySaleBlockedBadge({
+  salePolicyBlockedQuantity,
+  unitOfMeasure,
+  onClick,
+  testId,
+  className,
+}: {
+  salePolicyBlockedQuantity: number;
+  unitOfMeasure?: string;
+  onClick?: () => void;
+  testId?: string;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  if (!(salePolicyBlockedQuantity > 0)) return null;
+
+  const label = t("inventory.saleBlockedBadge")
+    .replace("{qty}", formatInventoryQty(salePolicyBlockedQuantity))
+    .replace("{uom}", unitOfMeasure?.trim() || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const content = (
+    <>
+      <CalendarClock className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
+      <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </>
+  );
+
+  const sharedClass = cn(
+    "inventory-sale-blocked-badge inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-left text-[length:var(--exits-text-xs)] font-medium",
+    "border-[color-mix(in_srgb,var(--exits-warning)_35%,var(--exits-border))] bg-[var(--exits-warning-soft)] text-[var(--exits-warning)]",
+    className,
+  );
+
+  if (!onClick) {
+    return (
+      <span
+        className={sharedClass}
+        data-testid={testId ?? "inventory-sale-blocked-badge"}
+        aria-label={label}
+      >
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        sharedClass,
+        "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-[color-mix(in_srgb,var(--exits-warning)_14%,var(--exits-warning-soft))]",
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      data-testid={testId ?? "inventory-sale-blocked-badge"}
+      aria-label={label}
+    >
+      {content}
+    </button>
+  );
 }
 
 export function InventoryReservedBadge({

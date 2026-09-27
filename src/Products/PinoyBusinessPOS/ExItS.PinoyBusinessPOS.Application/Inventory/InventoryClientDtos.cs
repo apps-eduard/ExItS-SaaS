@@ -45,7 +45,12 @@ public sealed record PosInventoryAccountDto(
     /// <summary>Latest acquisition unit cost when known (tracked products; display only).</summary>
     decimal? UnitCost = null,
     /// <summary>Recorded opening-stock quantity for this branch when an OpeningStock movement exists.</summary>
-    decimal? OpeningQuantity = null);
+    decimal? OpeningQuantity = null,
+    /// <summary>
+    /// On-hand lot quantity blocked from normal sale by stop-selling-days policy (not yet calendar-expired).
+    /// Null when the product does not track expiration.
+    /// </summary>
+    decimal? SalePolicyBlockedQuantity = null);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,

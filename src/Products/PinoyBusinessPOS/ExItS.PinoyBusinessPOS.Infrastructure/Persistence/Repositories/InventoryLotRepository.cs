@@ -63,6 +63,40 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
         return records.Select(InventoryEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<InventoryLot>> ListOnHandForProductsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        PosBranchId? branchId,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = productIds.Select(p => p.Value).Distinct().ToList();
+        var query = _db.InventoryLots.Where(l =>
+            l.OrganizationId == organizationId.Value && ids.Contains(l.ProductId));
+        if (branchId is not null)
+        {
+            query = query.Where(l => l.BranchId == branchId.Value);
+        }
+
+        if (!includeDepleted)
+        {
+            query = query.Where(l => l.QuantityOnHand > 0m);
+        }
+
+        var records = await query
+            .OrderBy(l => l.ProductId)
+            .ThenBy(l => l.ExpirationDate)
+            .ThenBy(l => l.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
@@ -80,6 +114,36 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
 
         var records = await query
             .OrderBy(l => l.ExpirationDate)
+            .ThenBy(l => l.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryEntityMapper.ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandForProductsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = productIds.Select(p => p.Value).Distinct().ToList();
+        var query = _db.InventoryLots.Where(l =>
+            l.OrganizationId == organizationId.Value
+            && ids.Contains(l.ProductId)
+            && l.BranchId == null);
+        if (!includeDepleted)
+        {
+            query = query.Where(l => l.QuantityOnHand > 0m);
+        }
+
+        var records = await query
+            .OrderBy(l => l.ProductId)
+            .ThenBy(l => l.ExpirationDate)
             .ThenBy(l => l.CreatedAtUtc)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
