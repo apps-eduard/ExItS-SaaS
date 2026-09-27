@@ -466,11 +466,23 @@ public sealed class StockRequestQueryService
         var activeTransfers = linkedTransfers
             .Where(t => t.Status != InventoryTransferStatus.Cancelled)
             .ToList();
-        var damagedByProduct = activeTransfers
+
+        // Dispatched = SentQty on transfers that left Draft (Draft contributes 0).
+        // Cumulative Dispatched may exceed Approved when replacements (R1/R2) ship.
+        var dispatchedByProduct = activeTransfers
+            .Where(t => t.Status != InventoryTransferStatus.Draft)
+            .SelectMany(t => t.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.SentQty));
+
+        // Discrepancy = Damaged + Missing + Other classified on receipts (not Good, not Waived).
+        var discrepancyByProduct = activeTransfers
             .SelectMany(t => t.Receipts)
             .SelectMany(r => r.Lines)
             .GroupBy(l => l.ProductId.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityDamaged));
+            .ToDictionary(
+                g => g.Key,
+                g => g.Sum(x => x.QuantityDamaged + x.QuantityMissing + x.QuantityOther));
 
         return new(
             request.Id.Value,
@@ -516,8 +528,8 @@ public sealed class StockRequestQueryService
                     waived,
                     line.NameSnapshot,
                     UnitOfMeasures.ToCode(line.UnitOfMeasure),
-                    damagedByProduct.GetValueOrDefault(productId),
-                    line.FulfillmentTargetQuantity);
+                    discrepancyByProduct.GetValueOrDefault(productId),
+                    dispatchedByProduct.GetValueOrDefault(productId));
             }).ToList(),
             linkedTransfers
                 .OrderByDescending(t => t.UpdatedAtUtc)

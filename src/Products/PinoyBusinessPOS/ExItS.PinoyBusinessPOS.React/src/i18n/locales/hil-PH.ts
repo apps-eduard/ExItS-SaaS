@@ -13649,6 +13649,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "stockRequest.items": "item",
   "stockRequest.requested": "Ginpangayo",
   "stockRequest.approved": "Ginaaprubahan",
+  "stockRequest.goodReceived": "Good received",
   "stockRequest.approvedQty": "Ginaaprubahan nga kadamuon",
   "stockRequest.fulfilled": "Natuman",
   "stockRequest.received": "Nabatón",

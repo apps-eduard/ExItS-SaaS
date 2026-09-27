@@ -13711,6 +13711,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.items": "item",
   "stockRequest.requested": "Hiniling",
   "stockRequest.approved": "Naaprubahan",
+  "stockRequest.goodReceived": "Good received",
   "stockRequest.approvedQty": "Naaprubahang dami",
   "stockRequest.fulfilled": "Natupad",
   "stockRequest.received": "Natanggap",

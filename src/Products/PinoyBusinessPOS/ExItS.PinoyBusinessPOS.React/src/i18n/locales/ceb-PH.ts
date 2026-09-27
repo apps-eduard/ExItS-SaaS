@@ -13649,6 +13649,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.items": "item",
   "stockRequest.requested": "Gipangayo",
   "stockRequest.approved": "Gi-aprubahan",
+  "stockRequest.goodReceived": "Good received",
   "stockRequest.approvedQty": "Gi-aprubahan nga kantidad",
   "stockRequest.fulfilled": "Natuman",
   "stockRequest.received": "Nadawat",

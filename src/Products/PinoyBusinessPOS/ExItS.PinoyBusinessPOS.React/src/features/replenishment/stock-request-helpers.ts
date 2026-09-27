@@ -126,17 +126,38 @@ export function findOpenCoveringTransfer(
     totalOutstandingQty?: number;
   }>,
 ): OpenCoveringTransfer | null {
-  const open = linkedTransfers.find(
-    (t) =>
-      (t.status === "InTransit" || t.status === "PartiallyReceived") &&
-      (t.totalOutstandingQty ?? 0) > 0,
-  );
+  const open = listReceivableTransfers(linkedTransfers)[0];
   if (!open) return null;
   return {
     transferId: open.transferId,
-    transferLabel: open.transferNumber ?? open.transferId.slice(0, 8),
+    transferLabel: open.transferNumber?.trim() || open.transferId.slice(0, 8),
     outstandingQty: open.totalOutstandingQty ?? 0,
   };
+}
+
+/** All linked transfers the destination can receive (InTransit / PartiallyReceived with outstanding). */
+export function listReceivableTransfers(
+  linkedTransfers: ReadonlyArray<{
+    transferId: string;
+    transferNumber?: string | null;
+    status: string;
+    totalOutstandingQty?: number;
+  }>,
+): Array<{
+  transferId: string;
+  transferNumber?: string | null;
+  status: string;
+  totalOutstandingQty?: number;
+}> {
+  return linkedTransfers.filter(
+    (t) =>
+      (t.status === "InTransit" || t.status === "PartiallyReceived") &&
+      (t.totalOutstandingQty == null || t.totalOutstandingQty > 0),
+  );
+}
+
+export function transferReceiveHref(transferId: string): string {
+  return `/inventory/transfers/${transferId}?mode=receive`;
 }
 
 export function openCoveringTransferMessage(

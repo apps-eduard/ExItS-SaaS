@@ -7,6 +7,7 @@ import {
   filterStockRequestsByTab,
   findOpenCoveringTransfer,
   hasConfiguredInternalSource,
+  listReceivableTransfers,
   openCoveringTransferMessage,
   pickPreferredSourceId,
   prepareTransferPrimaryLabelKey,
@@ -15,6 +16,7 @@ import {
   stockRequestStatusLabelKey,
   stockRequestStatusTone,
   totalRemainingToDispatch,
+  transferReceiveHref,
 } from "@/features/replenishment/stock-request-helpers";
 
 describe("stock-request-helpers", () => {
@@ -90,6 +92,36 @@ describe("stock-request-helpers", () => {
       transferLabel: "TR-1",
       outstandingQty: 12,
     });
+  });
+
+  it("lists all receivable transfers and builds receive deep-link", () => {
+    const linked = [
+      {
+        transferId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        transferNumber: "TR-1",
+        status: "Draft",
+        totalOutstandingQty: 10,
+      },
+      {
+        transferId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        transferNumber: "TR-2",
+        status: "InTransit",
+        totalOutstandingQty: 5,
+      },
+      {
+        transferId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        transferNumber: "TR-3",
+        status: "PartiallyReceived",
+        totalOutstandingQty: 3,
+      },
+    ];
+    expect(listReceivableTransfers(linked).map((t) => t.transferId)).toEqual([
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    ]);
+    expect(transferReceiveHref("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")).toBe(
+      "/inventory/transfers/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb?mode=receive",
+    );
   });
 
   it("surfaces open covering transfer for replacement guard copy", () => {

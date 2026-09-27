@@ -58,7 +58,15 @@ public sealed record StockRequestLineDto(
     decimal WaivedQuantity,
     string NameSnapshot,
     string UnitOfMeasure,
+    /// <summary>
+    /// Damaged + Missing + Other classified on linked transfer receipts (discrepancy aggregate).
+    /// Does not include Good received or Waived (accepted shortage).
+    /// </summary>
     decimal DamagedQuantity = 0m,
+    /// <summary>
+    /// Cumulative SentQty from linked transfers that left Draft. Draft contributes 0.
+    /// May exceed Approved when replacement transfers ship.
+    /// </summary>
     decimal SentQuantity = 0m);
 
 public sealed record StockRequestLinkedTransferDto(

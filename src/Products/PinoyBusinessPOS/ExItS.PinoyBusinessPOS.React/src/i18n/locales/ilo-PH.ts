@@ -13650,6 +13650,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.items": "item",
   "stockRequest.requested": "Naikiddaw",
   "stockRequest.approved": "Naaprubahan",
+  "stockRequest.goodReceived": "Good received",
   "stockRequest.approvedQty": "Naaprubahan a kaadu",
   "stockRequest.fulfilled": "Natungpal",
   "stockRequest.received": "Naawat",

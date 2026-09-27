@@ -8654,6 +8654,7 @@ export const en = {
   "stockRequest.items": "items",
   "stockRequest.requested": "Requested",
   "stockRequest.approved": "Approved",
+  "stockRequest.goodReceived": "Good received",
   "stockRequest.approvedQty": "Approved qty",
   "stockRequest.fulfilled": "Fulfilled",
   "stockRequest.received": "Received",

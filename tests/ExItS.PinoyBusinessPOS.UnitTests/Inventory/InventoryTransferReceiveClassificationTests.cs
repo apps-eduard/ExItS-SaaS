@@ -272,6 +272,65 @@ public sealed class InventoryTransferReceiveClassificationTests
         Assert.Equal(InventoryTransferDiscrepancyReason.WrongItem, transfer.Lines.Single().DiscrepancyReason);
     }
 
+    [Fact]
+    public void Map_draft_does_not_count_as_dispatched_and_discrepancy_aggregates_receipt_issues()
+    {
+        var draft = InventoryTransfer.CreateDraft(
+            Org,
+            BranchA,
+            BranchB,
+            [new InventoryTransferLineDraft(Coke, 10m, "Coke", UnitOfMeasure.Piece)],
+            Actor,
+            Utc);
+        var request = StockRequest.Create(
+            Org,
+            BranchB,
+            BranchA,
+            [new StockRequestLineDraft(Coke, 10m, "Coke", UnitOfMeasure.Piece)],
+            Actor,
+            Utc,
+            "260922-400");
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Coke.Value] = 10m });
+
+        var draftDto = StockRequestQueryService.Map(
+            request,
+            [draft],
+            new Dictionary<Guid, string>());
+        var draftLine = Assert.Single(draftDto.Lines);
+        Assert.Equal(10m, draftLine.ApprovedQuantity);
+        Assert.Equal(0m, draftLine.SentQuantity);
+        Assert.Equal(0m, draftLine.FulfilledQuantity);
+        Assert.Equal(0m, draftLine.DamagedQuantity);
+        Assert.Equal(0m, draftLine.InProgressQuantity);
+        Assert.Equal(10m, draftLine.RemainingToDispatchQuantity);
+
+        draft.Dispatch("260922-401", Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(2), draft.Id.Value);
+        var inTransitDto = StockRequestQueryService.Map(
+            request,
+            [draft],
+            new Dictionary<Guid, string>());
+        var inTransitLine = Assert.Single(inTransitDto.Lines);
+        Assert.Equal(10m, inTransitLine.SentQuantity);
+        Assert.Equal(10m, inTransitLine.InProgressQuantity);
+        Assert.Equal(0m, inTransitLine.RemainingToDispatchQuantity);
+
+        draft.Receive(
+            [Classify(Coke, good: 5m, damaged: 5m)],
+            Actor,
+            Utc.AddMinutes(3));
+        var afterReceiveDto = StockRequestQueryService.Map(
+            request,
+            [draft],
+            new Dictionary<Guid, string>());
+        var afterReceiveLine = Assert.Single(afterReceiveDto.Lines);
+        Assert.Equal(10m, afterReceiveLine.SentQuantity);
+        Assert.Equal(5m, afterReceiveLine.FulfilledQuantity);
+        Assert.Equal(5m, afterReceiveLine.DamagedQuantity);
+        Assert.Equal(0m, afterReceiveLine.InProgressQuantity);
+        Assert.Equal(5m, afterReceiveLine.RemainingToDispatchQuantity);
+    }
+
     private static StockRequest LinkedStockRequest(InventoryTransfer transfer, decimal approvedQty)
     {
         var request = StockRequest.Create(

@@ -50,11 +50,13 @@ import {
   canPrepareTransfer,
   findLinkedDraftTransfer,
   findOpenCoveringTransfer,
+  listReceivableTransfers,
   normalizeStockRequestStatus,
   prepareTransferPrimaryLabelKey,
   stockRequestStatusLabelKey,
   stockRequestStatusTone,
   totalRemainingToDispatch,
+  transferReceiveHref,
 } from "@/features/replenishment/stock-request-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -233,11 +235,18 @@ export function StockRequestDetailPage() {
         throw new Error("qty");
       }
       await approveStockRequest(workspace, dto.stockRequestId, { lineApprovals: approvals });
-      if (andPrepare) {
-        await prepareStockRequest(workspace, dto.stockRequestId);
+      if (!andPrepare) {
+        return null;
+      }
+      // Approve & prepare → create/reuse Draft transfer (no auto-dispatch) and open it for review.
+      return prepareStockRequestTransfer(workspace, dto.stockRequestId);
+    },
+    onSuccess: async (transfer) => {
+      await invalidate();
+      if (transfer?.transferId) {
+        navigate(`/inventory/transfers/${transfer.transferId}`);
       }
     },
-    onSuccess: () => void invalidate(),
     onError: () => setActionError(t("stockRequest.actionError")),
   });
 
@@ -329,19 +338,14 @@ export function StockRequestDetailPage() {
     prepareTransferLabelKey === "stockRequest.fulfillRemaining"
       ? t("stockRequest.fulfillRemaining").replace("{qty}", String(remainingDispatchQty))
       : t(prepareTransferLabelKey as MessageKey);
+  const receivableTransfers = listReceivableTransfers(dto.linkedTransfers);
   const canReceive =
     allowManage &&
     isDestination &&
     (dto.status === "InTransit" || dto.status === "PartiallyFulfilled") &&
-    Boolean(
-      dto.linkedTransfers.find(
-        (tr) => tr.status === "InTransit" || tr.status === "PartiallyReceived",
-      )?.transferId ?? linkedTransferId,
-    );
-  const receiveTransferId =
-    dto.linkedTransfers.find(
-      (tr) => tr.status === "InTransit" || tr.status === "PartiallyReceived",
-    )?.transferId ?? linkedTransferId;
+    receivableTransfers.length > 0;
+  const singleReceiveTransferId =
+    receivableTransfers.length === 1 ? receivableTransfers[0]!.transferId : null;
   const canCancel =
     allowManage && isDestination && canCancelStockRequestAsDestination(dto.status);
   const showSourceFulfillmentSummary =
@@ -372,22 +376,19 @@ export function StockRequestDetailPage() {
           {
             headers: [
               t("purchasing.colProduct"),
-              t("stockRequest.requested"),
-              t("transfer.sent"),
-              t("transfer.good"),
-              t("transfer.damaged"),
+              t("stockRequest.approved"),
+              t("transfer.dispatched"),
+              t("stockRequest.goodReceived"),
+              t("transfer.discrepancy"),
               t("transfer.inTransit"),
               t("transfer.needsFulfillment"),
             ],
             rows: dto.lines.map((line) => {
-              const sent =
-                line.sentQuantity > 0
-                  ? line.sentQuantity
-                  : (line.approvedQuantity ?? line.requestedQuantity);
+              const approved = line.approvedQuantity ?? line.requestedQuantity;
               return [
                 line.nameSnapshot,
-                formatTransferQty(line.requestedQuantity),
-                formatTransferQty(sent),
+                formatTransferQty(approved),
+                formatTransferQty(line.sentQuantity),
                 formatTransferQty(line.fulfilledQuantity),
                 formatTransferQty(line.damagedQuantity ?? 0),
                 formatTransferQty(line.inProgressQuantity),
@@ -407,22 +408,19 @@ export function StockRequestDetailPage() {
           [],
           [
             t("purchasing.colProduct"),
-            t("stockRequest.requested"),
-            t("transfer.sent"),
-            t("transfer.good"),
-            t("transfer.damaged"),
+            t("stockRequest.approved"),
+            t("transfer.dispatched"),
+            t("stockRequest.goodReceived"),
+            t("transfer.discrepancy"),
             t("transfer.inTransit"),
             t("transfer.needsFulfillment"),
           ],
           ...dto.lines.map((line) => {
-            const sent =
-              line.sentQuantity > 0
-                ? line.sentQuantity
-                : (line.approvedQuantity ?? line.requestedQuantity);
+            const approved = line.approvedQuantity ?? line.requestedQuantity;
             return [
               line.nameSnapshot,
-              formatTransferQty(line.requestedQuantity),
-              formatTransferQty(sent),
+              formatTransferQty(approved),
+              formatTransferQty(line.sentQuantity),
               formatTransferQty(line.fulfilledQuantity),
               formatTransferQty(line.damagedQuantity ?? 0),
               formatTransferQty(line.inProgressQuantity),
@@ -460,28 +458,30 @@ export function StockRequestDetailPage() {
         <thead>
           <tr>
             <th>{t("purchasing.colProduct")}</th>
-            <th>{t("stockRequest.requested")}</th>
-            <th>{t("transfer.sent")}</th>
-            <th>{t("transfer.good")}</th>
-            <th>{t("transfer.damaged")}</th>
+            <th>{t("stockRequest.approved")}</th>
+            <th>{t("transfer.dispatched")}</th>
+            <th>{t("stockRequest.goodReceived")}</th>
+            <th>{t("transfer.discrepancy")}</th>
             <th>{t("transfer.inTransit")}</th>
             <th>{t("transfer.needsFulfillment")}</th>
           </tr>
         </thead>
         <tbody>
           {dto.lines.map((line) => {
-            const sent =
-              line.sentQuantity > 0
-                ? line.sentQuantity
-                : (line.approvedQuantity ?? line.requestedQuantity);
+            const approved = line.approvedQuantity ?? line.requestedQuantity;
             return (
               <tr key={line.lineId}>
-                <td>{line.nameSnapshot}</td>
                 <td>
-                  {formatTransferQty(line.requestedQuantity)} {line.unitOfMeasure}
+                  {line.nameSnapshot}
+                  <div>
+                    {t("stockRequest.requested")}: {formatTransferQty(line.requestedQuantity)}
+                  </div>
                 </td>
                 <td>
-                  {formatTransferQty(sent)} {line.unitOfMeasure}
+                  {formatTransferQty(approved)} {line.unitOfMeasure}
+                </td>
+                <td>
+                  {formatTransferQty(line.sentQuantity)} {line.unitOfMeasure}
                 </td>
                 <td>
                   {formatTransferQty(line.fulfilledQuantity)} {line.unitOfMeasure}
@@ -607,23 +607,26 @@ export function StockRequestDetailPage() {
                     <ExitsTableHead cellAlign="text" colSize="flex">
                       {t("purchasing.colProduct")}
                     </ExitsTableHead>
-                    {pendingAtSource ? (
-                      <ExitsTableHead
-                        cellAlign="center"
-                        className="stock-request-approve-qty-col whitespace-nowrap"
-                        colWidth="9.5rem"
-                      >
-                        {t("stockRequest.approvedQty")}
-                      </ExitsTableHead>
-                    ) : null}
-                    <ExitsTableHead cellAlign="center" colSize="numeric">
-                      {t("transfer.sent")}
+                    <ExitsTableHead
+                      cellAlign="center"
+                      className={
+                        pendingAtSource
+                          ? "stock-request-approve-qty-col whitespace-nowrap"
+                          : "whitespace-nowrap"
+                      }
+                      colWidth={pendingAtSource ? "9.5rem" : undefined}
+                      colSize={pendingAtSource ? undefined : "numeric"}
+                    >
+                      {t("stockRequest.approved")}
                     </ExitsTableHead>
                     <ExitsTableHead cellAlign="center" colSize="numeric">
-                      {t("transfer.good")}
+                      {t("transfer.dispatched")}
                     </ExitsTableHead>
                     <ExitsTableHead cellAlign="center" colSize="numeric">
-                      {t("transfer.damaged")}
+                      {t("stockRequest.goodReceived")}
+                    </ExitsTableHead>
+                    <ExitsTableHead cellAlign="center" colSize="numeric">
+                      {t("transfer.discrepancy")}
                     </ExitsTableHead>
                     <ExitsTableHead cellAlign="center" colSize="numeric">
                       {t("transfer.inTransit")}
@@ -635,10 +638,7 @@ export function StockRequestDetailPage() {
                 </ExitsTableHeader>
                 <ExitsTableBody>
                   {dto.lines.map((line) => {
-                    const sent =
-                      line.sentQuantity > 0
-                        ? line.sentQuantity
-                        : (line.approvedQuantity ?? line.requestedQuantity);
+                    const approved = line.approvedQuantity ?? line.requestedQuantity;
                     return (
                       <ExitsTableRow
                         key={line.lineId}
@@ -648,16 +648,19 @@ export function StockRequestDetailPage() {
                           <div>{line.nameSnapshot}</div>
                           <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
                             {line.unitOfMeasure}
-                            {pendingAtSource
-                              ? ` · ${t("stockRequest.requested")}: ${line.requestedQuantity}`
-                              : ""}
+                            {` · ${t("stockRequest.requested")}: ${formatTransferQty(line.requestedQuantity)}`}
                           </div>
                         </ExitsTableCell>
-                        {pendingAtSource ? (
-                          <ExitsTableCell
-                            cellAlign="center"
-                            className="stock-request-approve-qty-col"
-                          >
+                        <ExitsTableCell
+                          cellAlign="center"
+                          className={
+                            pendingAtSource
+                              ? "stock-request-approve-qty-col"
+                              : "tabular-nums"
+                          }
+                          colSize={pendingAtSource ? undefined : "numeric"}
+                        >
+                          {pendingAtSource ? (
                             <StockRequestApproveQtyStepper
                               productId={line.productId}
                               requestedQuantity={line.requestedQuantity}
@@ -671,10 +674,17 @@ export function StockRequestDetailPage() {
                               }
                               t={t}
                             />
-                          </ExitsTableCell>
-                        ) : null}
-                        <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
-                          {formatTransferQty(sent)}
+                          ) : (
+                            formatTransferQty(approved)
+                          )}
+                        </ExitsTableCell>
+                        <ExitsTableCell
+                          cellAlign="center"
+                          colSize="numeric"
+                          className="tabular-nums"
+                          data-testid={`stock-request-dispatched-${line.productId}`}
+                        >
+                          {formatTransferQty(line.sentQuantity)}
                         </ExitsTableCell>
                         <ExitsTableCell
                           cellAlign="center"
@@ -688,7 +698,7 @@ export function StockRequestDetailPage() {
                           cellAlign="center"
                           colSize="numeric"
                           className="tabular-nums"
-                          data-testid={`stock-request-damaged-${line.productId}`}
+                          data-testid={`stock-request-discrepancy-${line.productId}`}
                         >
                           {formatTransferQty(line.damagedQuantity ?? 0)}
                         </ExitsTableCell>
@@ -720,51 +730,46 @@ export function StockRequestDetailPage() {
           layout === "list" ? (
             <ul className="exits-data-record-list" data-testid="stock-request-lines-mobile">
               {dto.lines.map((line) => {
-                const sent =
-                  line.sentQuantity > 0
-                    ? line.sentQuantity
-                    : (line.approvedQuantity ?? line.requestedQuantity);
+                const approved = line.approvedQuantity ?? line.requestedQuantity;
                 return (
                   <ExitsDataRecordCard
                     key={line.lineId}
                     as="li"
                     data-testid={`stock-request-line-${line.productId}`}
                     title={line.nameSnapshot}
-                    subtitle={
-                      pendingAtSource
-                        ? `${line.unitOfMeasure} · ${t("stockRequest.requested")}: ${line.requestedQuantity}`
-                        : line.unitOfMeasure
-                    }
+                    subtitle={`${line.unitOfMeasure} · ${t("stockRequest.requested")}: ${formatTransferQty(line.requestedQuantity)}`}
                     fields={[
-                      ...(pendingAtSource
-                        ? [
-                            {
-                              label: t("stockRequest.approvedQty"),
-                              value: (
-                                <StockRequestApproveQtyStepper
-                                  productId={line.productId}
-                                  requestedQuantity={line.requestedQuantity}
-                                  unitOfMeasure={line.unitOfMeasure}
-                                  value={approvedQtys[line.productId]}
-                                  onChange={(next) =>
-                                    setApprovedQtys((prev) => ({
-                                      ...prev,
-                                      [line.productId]: next,
-                                    }))
-                                  }
-                                  t={t}
-                                />
-                              ),
-                              emphasize: true,
-                            },
-                          ]
-                        : []),
                       {
-                        label: t("transfer.sent"),
-                        value: formatTransferQty(sent),
+                        label: t("stockRequest.approved"),
+                        value: pendingAtSource ? (
+                          <StockRequestApproveQtyStepper
+                            productId={line.productId}
+                            requestedQuantity={line.requestedQuantity}
+                            unitOfMeasure={line.unitOfMeasure}
+                            value={approvedQtys[line.productId]}
+                            onChange={(next) =>
+                              setApprovedQtys((prev) => ({
+                                ...prev,
+                                [line.productId]: next,
+                              }))
+                            }
+                            t={t}
+                          />
+                        ) : (
+                          formatTransferQty(approved)
+                        ),
+                        emphasize: true,
                       },
                       {
-                        label: t("transfer.good"),
+                        label: t("transfer.dispatched"),
+                        value: (
+                          <span data-testid={`stock-request-dispatched-${line.productId}`}>
+                            {formatTransferQty(line.sentQuantity)}
+                          </span>
+                        ),
+                      },
+                      {
+                        label: t("stockRequest.goodReceived"),
                         value: (
                           <span data-testid={`stock-request-received-${line.productId}`}>
                             {formatTransferQty(line.fulfilledQuantity)}
@@ -772,9 +777,9 @@ export function StockRequestDetailPage() {
                         ),
                       },
                       {
-                        label: t("transfer.damaged"),
+                        label: t("transfer.discrepancy"),
                         value: (
-                          <span data-testid={`stock-request-damaged-${line.productId}`}>
+                          <span data-testid={`stock-request-discrepancy-${line.productId}`}>
                             {formatTransferQty(line.damagedQuantity ?? 0)}
                           </span>
                         ),
@@ -930,10 +935,37 @@ export function StockRequestDetailPage() {
         </div>
       ) : null}
 
-      {canReceive && receiveTransferId ? (
-        <Button asChild data-testid="stock-request-receive">
-          <Link to={`/inventory/transfers/${receiveTransferId}`}>{t("stockRequest.readyToReceive")}</Link>
-        </Button>
+      {canReceive ? (
+        singleReceiveTransferId ? (
+          <Button asChild data-testid="stock-request-receive">
+            <Link to={transferReceiveHref(singleReceiveTransferId)}>
+              {t("stockRequest.readyToReceive")}
+            </Link>
+          </Button>
+        ) : (
+          <div
+            className="flex min-w-0 flex-col gap-2"
+            data-testid="stock-request-receive-choices"
+          >
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+              {t("stockRequest.readyToReceive")}
+            </p>
+            <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+              {receivableTransfers.map((tr) => (
+                <li key={tr.transferId}>
+                  <Button asChild variant="outline" data-testid={`stock-request-receive-${tr.transferId}`}>
+                    <Link to={transferReceiveHref(tr.transferId)}>
+                      {tr.transferNumber?.trim() || tr.transferId.slice(0, 8)}
+                      {tr.totalOutstandingQty != null
+                        ? ` · ${formatTransferQty(tr.totalOutstandingQty)}`
+                        : ""}
+                    </Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
       ) : null}
 
       {canCancel ? (

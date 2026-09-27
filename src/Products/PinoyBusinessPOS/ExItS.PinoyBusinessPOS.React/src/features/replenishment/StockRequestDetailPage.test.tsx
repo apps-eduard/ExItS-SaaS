@@ -159,4 +159,118 @@ describe("StockRequestDetailPage transfer-style header", () => {
     renderDetail();
     expect(await screen.findByTestId("page-header-back-warehouse-requests")).toBeInTheDocument();
   });
+
+  it("opens Ready to receive into transfer receive mode", async () => {
+    const transferId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    workspaceState.branchId = TEST_BRANCH_A_ID;
+    workspaceState.branchType = "Retail";
+    const dto = detailDto();
+    dto.status = "InTransit";
+    dto.lines[0]!.sentQuantity = 10;
+    dto.lines[0]!.inProgressQuantity = 10;
+    dto.lines[0]!.remainingToDispatchQuantity = 0;
+    dto.linkedTransfers = [
+      {
+        transferId,
+        transferNumber: "TR-9",
+        status: "InTransit",
+        totalSentQty: 10,
+        totalReceivedQty: 0,
+        totalOutstandingQty: 10,
+        totalClosedQty: 0,
+        createdAtUtc: "2026-09-27T00:00:00Z",
+        createdBy: ACTOR_ID,
+        updatedAtUtc: "2026-09-27T01:00:00Z",
+      },
+    ] as never;
+    vi.spyOn(stockRequestsClient, "getStockRequest").mockResolvedValue(dto as never);
+    renderDetail(`/inventory/stock-requests/${REQUEST_ID}`);
+
+    const receive = await screen.findByTestId("stock-request-receive");
+    expect(receive).toHaveAttribute(
+      "href",
+      `/inventory/transfers/${transferId}?mode=receive`,
+    );
+  });
+
+  it("lists multiple receivable transfers instead of picking one", async () => {
+    workspaceState.branchId = TEST_BRANCH_A_ID;
+    workspaceState.branchType = "Retail";
+    const dto = detailDto();
+    dto.status = "PartiallyFulfilled";
+    dto.linkedTransfers = [
+      {
+        transferId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        transferNumber: "TR-1",
+        status: "InTransit",
+        totalSentQty: 5,
+        totalReceivedQty: 0,
+        totalOutstandingQty: 5,
+        totalClosedQty: 0,
+        createdAtUtc: "2026-09-27T00:00:00Z",
+        createdBy: ACTOR_ID,
+        updatedAtUtc: "2026-09-27T01:00:00Z",
+      },
+      {
+        transferId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        transferNumber: "TR-R1",
+        status: "PartiallyReceived",
+        totalSentQty: 5,
+        totalReceivedQty: 2,
+        totalOutstandingQty: 3,
+        totalClosedQty: 0,
+        createdAtUtc: "2026-09-27T02:00:00Z",
+        createdBy: ACTOR_ID,
+        updatedAtUtc: "2026-09-27T03:00:00Z",
+      },
+    ] as never;
+    vi.spyOn(stockRequestsClient, "getStockRequest").mockResolvedValue(dto as never);
+    renderDetail(`/inventory/stock-requests/${REQUEST_ID}`);
+
+    expect(await screen.findByTestId("stock-request-receive-choices")).toBeInTheDocument();
+    expect(screen.queryByTestId("stock-request-receive")).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("stock-request-receive-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+    ).toHaveAttribute(
+      "href",
+      "/inventory/transfers/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa?mode=receive",
+    );
+  });
+
+  it("Approve & prepare creates or reuses transfer Draft and navigates to it", async () => {
+    const user = userEvent.setup();
+    const draftId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    workspaceState.branchId = WH_A;
+    workspaceState.branchName = "Panay Warehouse";
+    workspaceState.branchType = "Warehouse";
+    vi.spyOn(stockRequestsClient, "approveStockRequest").mockResolvedValue({} as never);
+    vi.spyOn(stockRequestsClient, "prepareStockRequestTransfer").mockResolvedValue({
+      transferId: draftId,
+      status: "Draft",
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/stock-requests/${REQUEST_ID}`]}>
+          <Routes>
+            <Route
+              path="/inventory/stock-requests/:stockRequestId"
+              element={<StockRequestDetailPage />}
+            />
+            <Route
+              path="/inventory/transfers/:transferId"
+              element={<div data-testid="transfer-draft-dest" />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    await user.click(await screen.findByTestId("stock-request-approve-prepare"));
+    await waitFor(() => {
+      expect(stockRequestsClient.approveStockRequest).toHaveBeenCalled();
+      expect(stockRequestsClient.prepareStockRequestTransfer).toHaveBeenCalled();
+    });
+    expect(await screen.findByTestId("transfer-draft-dest")).toBeInTheDocument();
+  });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -194,6 +194,7 @@ export function InventoryTransferDetailPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
   const { transferId = "" } = useParams();
   const online = useBrowserOnline();
@@ -209,7 +210,9 @@ export function InventoryTransferDetailPage() {
   const [localError, setLocalError] = useState<LocalError | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const [mode, setMode] = useState<Mode>("detail");
+  const [mode, setMode] = useState<Mode>(() =>
+    searchParams.get("mode") === "receive" ? "receive" : "detail",
+  );
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [closeRemainderOpen, setCloseRemainderOpen] = useState<CloseRemainderOpen>(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
@@ -264,12 +267,33 @@ export function InventoryTransferDetailPage() {
     }
   }, [location.pathname, location.state, navigate, showToast, t]);
 
+  // Honor ?mode=receive deep-link from stock request Ready to receive.
   useEffect(() => {
-    if (!transfer || !canDestinationReceiveTransfer(transfer)) {
+    if (searchParams.get("mode") === "receive") {
+      setMode("receive");
+    }
+  }, [searchParams]);
+
+  // Leave receive mode when transfer is no longer receivable; strip query intent.
+  useEffect(() => {
+    if (!transfer || mode !== "receive") {
+      return;
+    }
+    if (canDestinationReceiveTransfer(transfer)) {
       return;
     }
     setMode("detail");
-  }, [transfer?.transferId, transfer?.status, transfer?.updatedAtUtc, transfer?.totalReceivedQty]);
+    if (searchParams.get("mode") === "receive") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("mode");
+      setSearchParams(next, { replace: true });
+    }
+  }, [
+    transfer,
+    mode,
+    searchParams,
+    setSearchParams,
+  ]);
 
   async function refreshAfter(
     mutation: () => Promise<unknown>,
@@ -316,6 +340,11 @@ export function InventoryTransferDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["wh-dash"] });
       showToast(successMessage, "success");
       setMode("detail");
+      if (searchParams.get("mode") === "receive") {
+        const next = new URLSearchParams(searchParams);
+        next.delete("mode");
+        setSearchParams(next, { replace: true });
+      }
     } catch (err) {
       const detail = resolveTransferActionError(err, t("transfer.actionFailed"));
       setLocalError({ title: failureTitle, detail });
@@ -822,7 +851,14 @@ export function InventoryTransferDetailPage() {
           backTo: `/inventory/transfers/${transfer.transferId}`,
           backLabel: t("transfer.backToTransfer"),
           backTestId: "page-header-back-transfer",
-          onBack: () => setMode("detail"),
+          onBack: () => {
+            setMode("detail");
+            if (searchParams.get("mode") === "receive") {
+              const next = new URLSearchParams(searchParams);
+              next.delete("mode");
+              setSearchParams(next, { replace: true });
+            }
+          },
         }
       : smartBack;
 
@@ -894,7 +930,14 @@ export function InventoryTransferDetailPage() {
           online={online}
           localErrorAlert={localErrorAlert}
           embedded
-          onBack={() => setMode("detail")}
+          onBack={() => {
+            setMode("detail");
+            if (searchParams.get("mode") === "receive") {
+              const next = new URLSearchParams(searchParams);
+              next.delete("mode");
+              setSearchParams(next, { replace: true });
+            }
+          }}
           onSubmitReceive={(body) => {
             setLocalError(null);
             void onReceive(body);
@@ -1916,6 +1959,9 @@ export function InventoryTransferDetailPage() {
                 onClick={() => {
                   setLocalError(null);
                   setMode("receive");
+                  const next = new URLSearchParams(searchParams);
+                  next.set("mode", "receive");
+                  setSearchParams(next, { replace: true });
                 }}
                 data-testid="transfer-receive"
               >
