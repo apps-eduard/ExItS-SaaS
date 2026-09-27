@@ -311,6 +311,36 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
+        using var enableExpiry = Scoped(
+            HttpMethod.Post,
+            $"{Inventory}/products/{product.ProductId:D}/expiration-tracking/enable",
+            org,
+            branchMain);
+        enableExpiry.Content = JsonContent.Create(
+            new EnableExpirationTrackingRequest(ExpirationWarningDays: 7),
+            options: JsonOptions);
+        (await client.SendAsync(enableExpiry)).EnsureSuccessStatusCode();
+
+        using var enableExpiryIlo = Scoped(
+            HttpMethod.Post,
+            $"{Inventory}/products/{product.ProductId:D}/expiration-tracking/enable",
+            org,
+            branchIloilo);
+        enableExpiryIlo.Content = JsonContent.Create(
+            new EnableExpirationTrackingRequest(ExpirationWarningDays: 7),
+            options: JsonOptions);
+        (await client.SendAsync(enableExpiryIlo)).EnsureSuccessStatusCode();
+
+        using var enableExpiryPanay = Scoped(
+            HttpMethod.Post,
+            $"{Inventory}/products/{product.ProductId:D}/expiration-tracking/enable",
+            org,
+            branchPanay);
+        enableExpiryPanay.Content = JsonContent.Create(
+            new EnableExpirationTrackingRequest(ExpirationWarningDays: 7),
+            options: JsonOptions);
+        (await client.SendAsync(enableExpiryPanay)).EnsureSuccessStatusCode();
+
         var expired = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5));
         var near = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
         var panayNear = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(4));

@@ -19,13 +19,12 @@ import {
   canViewInventory,
   canViewPurchasing,
 } from "@/access/pos-capabilities";
-import { listInventory } from "@/api/pos/pos-inventory-client";
+import { getInventoryAttentionSummary } from "@/api/pos/pos-inventory-client";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import {
   isReceivablePurchaseOrderStatus,
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
-import { getManagementOverview } from "@/api/pos/pos-reporting-client";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -117,29 +116,17 @@ export function ManagerWarehouseHome({
   const canDashboard = canViewDashboard(sessionGrant);
   const canReports = canAccessReportsHub(sessionGrant);
 
-  const overviewQuery = useQuery({
-    queryKey: ["manager-home", "warehouse-overview", workspace?.organizationId, workspace?.branchId],
-    enabled: Boolean(isWarehouse && workspace && (canInventory || canPurchasing)),
-    staleTime: 30_000,
-    queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
-  });
-
-  /** Branch-scoped monitored low stock (same engine as Inventory / Low stock settings). */
-  const lowStockQuery = useQuery({
+  /** Branch-scoped physical inventory attention (never management/overview). */
+  const attentionQuery = useQuery({
     queryKey: [
-      "manager-home",
-      "warehouse-low-stock",
+      "inventory",
+      "attention-summary",
       workspace?.organizationId,
       workspace?.branchId,
     ],
     enabled: Boolean(isWarehouse && workspace && canInventory),
     staleTime: 30_000,
-    queryFn: ({ signal }) =>
-      listInventory(
-        workspace!,
-        { tracked: true, lowStock: true, page: 1, pageSize: 1 },
-        signal,
-      ),
+    queryFn: ({ signal }) => getInventoryAttentionSummary(workspace!, signal),
   });
 
   const incomingTransfersQuery = useQuery({
@@ -180,21 +167,23 @@ export function ManagerWarehouseHome({
     return <Navigate to={workingExperienceRoute(boundWorkspace.experience)} replace />;
   }
 
-  const overview = overviewQuery.data;
+  const attention = attentionQuery.data;
   const incomingTransfers = (incomingTransfersQuery.data?.items ?? []).filter(
     (item) => item.status === "InTransit" || item.status === "PartiallyReceived",
   );
   const receivablePos = (purchaseOrdersQuery.data?.items ?? []).filter((po) =>
     isReceivablePurchaseOrderStatus(po.status),
   );
-  const lowStock = lowStockQuery.data?.totalCount ?? 0;
-  const expiry = (overview?.expiredLotCount ?? 0) + (overview?.nearExpiryLotCount ?? 0);
+  const lowStock = canInventory ? (attention?.lowStockProductCount ?? 0) : 0;
+  const expiredLotCount = canInventory ? (attention?.expiredLotCount ?? 0) : 0;
+  const nearExpiryLotCount = canInventory ? (attention?.nearExpiryLotCount ?? 0) : 0;
+  const expiry = expiredLotCount + nearExpiryLotCount;
 
   const attentionItems = buildManagerAttentionItems(
     {
-      lowStockProductCount: canInventory ? lowStock : 0,
-      expiredLotCount: canInventory ? (overview?.expiredLotCount ?? 0) : 0,
-      nearExpiryLotCount: canInventory ? (overview?.nearExpiryLotCount ?? 0) : 0,
+      lowStockProductCount: lowStock,
+      expiredLotCount,
+      nearExpiryLotCount,
       receivablePoCount: canPurchasing ? receivablePos.length : 0,
       pendingIncomingTransferCount: canInventory ? incomingTransfers.length : 0,
     },
@@ -260,11 +249,11 @@ export function ManagerWarehouseHome({
   }
 
   const loading =
-    overviewQuery.isLoading ||
-    incomingTransfersQuery.isLoading ||
-    purchaseOrdersQuery.isLoading;
+    (canInventory && attentionQuery.isLoading) ||
+    (canInventory && incomingTransfersQuery.isLoading) ||
+    (canPurchasing && purchaseOrdersQuery.isLoading);
   const loadError =
-    overviewQuery.error ?? incomingTransfersQuery.error ?? purchaseOrdersQuery.error;
+    attentionQuery.error ?? incomingTransfersQuery.error ?? purchaseOrdersQuery.error;
 
   return (
     <div
@@ -387,19 +376,19 @@ export function ManagerWarehouseHome({
                 {snapshotModules.map((mod) => {
                   let detail = "";
                   let titleKey: MessageKey = "managerHome.snapshot.inventory";
-                  let attention = false;
+                  let attentionTone = false;
                   if (mod.summaryKind === "inventory") {
                     titleKey = "managerHome.snapshot.inventory";
-                    attention = (mod.lowStock ?? 0) > 0 || (mod.expiry ?? 0) > 0;
-                    detail = attention
+                    attentionTone = (mod.lowStock ?? 0) > 0 || (mod.expiry ?? 0) > 0;
+                    detail = attentionTone
                       ? t("managerHome.snapshot.inventoryDetail")
                           .replace("{low}", String(mod.lowStock ?? 0))
                           .replace("{expiry}", String(mod.expiry ?? 0))
                       : t("managerHome.snapshot.inventoryClear");
                   } else if (mod.summaryKind === "transfers") {
                     titleKey = "managerHome.snapshot.transfers";
-                    attention = (mod.transferCount ?? 0) > 0;
-                    detail = attention
+                    attentionTone = (mod.transferCount ?? 0) > 0;
+                    detail = attentionTone
                       ? t("managerHome.snapshot.transfersDetail").replace(
                           "{count}",
                           String(mod.transferCount ?? 0),
@@ -407,8 +396,8 @@ export function ManagerWarehouseHome({
                       : t("managerHome.snapshot.transfersClear");
                   } else if (mod.summaryKind === "purchasing") {
                     titleKey = "managerHome.snapshot.purchasing";
-                    attention = (mod.receivableCount ?? 0) > 0;
-                    detail = attention
+                    attentionTone = (mod.receivableCount ?? 0) > 0;
+                    detail = attentionTone
                       ? t("managerHome.snapshot.purchasingDetail").replace(
                           "{count}",
                           String(mod.receivableCount ?? 0),
@@ -429,7 +418,7 @@ export function ManagerWarehouseHome({
                       href={mod.href}
                       testId={mod.testId}
                       icon={icon}
-                      tone={attention ? "attention" : "default"}
+                      tone={attentionTone ? "attention" : "default"}
                     />
                   );
                 })}

@@ -7,7 +7,7 @@ import {
   canViewInventory,
   canViewPurchasing,
 } from "@/access/pos-capabilities";
-import { listInventory, listExpiringLots } from "@/api/pos/pos-inventory-client";
+import { getInventoryAttentionSummary, listInventory, listExpiringLots } from "@/api/pos/pos-inventory-client";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import {
   getInventoryMovementsReport,
@@ -138,11 +138,15 @@ export function WarehouseManagementDashboardPage() {
           listInventory(workspace!, { tracked: true, page: 1, pageSize: 200 }, signal),
       },
       {
-        queryKey: ["wh-dash", "low-stock", workspace?.organizationId, workspace?.branchId],
+        queryKey: [
+          "inventory",
+          "attention-summary",
+          workspace?.organizationId,
+          workspace?.branchId,
+        ],
         enabled: enabled && canInventory,
         staleTime: STALE,
-        queryFn: ({ signal }) =>
-          listInventory(workspace!, { lowStock: true, page: 1, pageSize: 1 }, signal),
+        queryFn: ({ signal }) => getInventoryAttentionSummary(workspace!, signal),
       },
       {
         queryKey: ["wh-dash", "expiry", workspace?.organizationId, workspace?.branchId],
@@ -209,7 +213,7 @@ export function WarehouseManagementDashboardPage() {
 
   const [
     trackedQ,
-    lowStockQ,
+    attentionQ,
     expiryQ,
     txOutQ,
     txInQ,
@@ -224,21 +228,12 @@ export function WarehouseManagementDashboardPage() {
 
   const trackedItems = trackedQ.data?.items ?? [];
   const trackedCount = trackedQ.data?.totalCount ?? trackedItems.length;
-  const lowStockCount = lowStockQ.data?.totalCount ?? 0;
-  const fullTrackedPage =
-    trackedQ.data != null && trackedItems.length >= Math.min(trackedCount, trackedItems.length)
-      ? trackedCount <= trackedItems.length
-      : false;
-  const outOfStockCount = fullTrackedPage
-    ? trackedItems.filter((i) => i.onHandQuantity <= 0).length
-    : null;
-  const healthyCount =
-    outOfStockCount == null
-      ? Math.max(0, trackedCount - lowStockCount)
-      : Math.max(0, trackedCount - lowStockCount - outOfStockCount);
+  const lowStockCount = attentionQ.data?.lowStockProductCount ?? 0;
+  const outOfStockCount = attentionQ.data?.outOfStockProductCount ?? 0;
+  const healthyCount = Math.max(0, trackedCount - lowStockCount - outOfStockCount);
 
-  const expiredCount = expiryQ.data?.expiredCount ?? 0;
-  const nearExpiryCount = expiryQ.data?.nearExpiryCount ?? 0;
+  const expiredCount = attentionQ.data?.expiredLotCount ?? 0;
+  const nearExpiryCount = attentionQ.data?.nearExpiryLotCount ?? 0;
 
   const outgoing = txOutQ.data?.items ?? [];
   const incoming = txInQ.data?.items ?? [];
@@ -450,7 +445,7 @@ export function WarehouseManagementDashboardPage() {
           <DashboardPanel title={t("warehouseDashboard.currentStock")} testId="warehouse-stock-health">
             <MetricRow label={t("warehouseDashboard.health.healthy")} value={healthyCount} />
             <MetricRow label={t("warehouseDashboard.health.lowStock")} value={lowStockCount} />
-            {outOfStockCount != null ? (
+            {outOfStockCount > 0 || trackedCount > 0 ? (
               <MetricRow label={t("warehouseDashboard.health.outOfStock")} value={outOfStockCount} />
             ) : null}
             <MetricRow label={t("warehouseDashboard.health.nearExpiry")} value={nearExpiryCount} />

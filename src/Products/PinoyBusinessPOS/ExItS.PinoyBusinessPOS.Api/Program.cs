@@ -374,6 +374,7 @@ builder.Services.AddScoped<InventoryProductReservationsQuery>();
 builder.Services.AddScoped<BranchInventoryContextResolver>();
 builder.Services.AddScoped<BranchExpirationPolicyResolver>();
 builder.Services.AddScoped<InventoryLotQueryService>();
+builder.Services.AddScoped<InventoryAttentionQueryService>();
 builder.Services.AddScoped<CorrectInventoryLotIdentity>();
 builder.Services.AddScoped<BranchInventoryMutationService>();
 builder.Services.AddScoped<EnableInventoryTracking>();

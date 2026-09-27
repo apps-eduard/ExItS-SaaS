@@ -140,6 +140,12 @@ vi.spyOn(posInventoryClient, "listInventory").mockResolvedValue({
   page: 1,
   pageSize: 200,
 });
+vi.spyOn(posInventoryClient, "getInventoryAttentionSummary").mockResolvedValue({
+  lowStockProductCount: 0,
+  outOfStockProductCount: 0,
+  expiredLotCount: 0,
+  nearExpiryLotCount: 0,
+});
 vi.spyOn(posInventoryClient, "listExpiringLots").mockResolvedValue({
   items: [],
   totalCount: 0,

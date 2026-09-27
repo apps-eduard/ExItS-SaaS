@@ -11,6 +11,7 @@ Per-product expiration tracking for PinoyBusinessPOS. Expiration belongs to a **
 - Existing-stock lot quantities must sum exactly to that **branch** on-hand.
 - Operational policy is stored in `InventoryBranchExpirationSetting` (per org + branch + product).
 - `CatalogProduct.TracksExpiration` / `ExpirationWarningDays` remain **legacy compatibility** fields only; they are not authoritative for branch inventory operations and must not be turned on from normal catalog create/edit UX.
+- Branch operational attention (`GET /api/v1/pos/inventory/attention-summary`) uses `CountExpiryAsync` for the bound branch only. Organization `GET /api/v1/pos/management/overview` lot counts stay org-wide for management/reporting screens — do not mix the two on one operational surface.
 
 ## Audit result
 

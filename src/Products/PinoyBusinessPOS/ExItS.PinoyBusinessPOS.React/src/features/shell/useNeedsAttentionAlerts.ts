@@ -22,9 +22,8 @@ import {
   getSupplierConnectedSupplierCommerceReadiness,
   listBusinessCustomers,
 } from "@/api/pos/pos-connected-suppliers-client";
-import { listInventory } from "@/api/pos/pos-inventory-client";
+import { getInventoryAttentionSummary } from "@/api/pos/pos-inventory-client";
 import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
-import { getManagementOverview } from "@/api/pos/pos-reporting-client";
 import {
   buildNeedsAttentionAlerts,
   formatNeedsAttentionBadge,
@@ -97,31 +96,16 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
 
   const enabled = Boolean(workspace);
 
-  const overviewQuery = useQuery({
+  const inventoryAttentionQuery = useQuery({
     queryKey: [
-      ...needsAttentionQueryKey(organizationId, branchId),
-      "overview",
-      allowInventory,
+      "inventory",
+      "attention-summary",
+      organizationId ?? "none",
+      branchId ?? "none",
     ],
     enabled: enabled && allowInventory,
     staleTime: 60_000,
-    queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
-  });
-
-  const outOfStockQuery = useQuery({
-    queryKey: [
-      ...needsAttentionQueryKey(organizationId, branchId),
-      "out-of-stock",
-      allowInventory,
-    ],
-    enabled: enabled && allowInventory,
-    staleTime: 60_000,
-    queryFn: ({ signal }) =>
-      listInventory(
-        workspace!,
-        { tracked: true, stockStatus: "OutOfStock", page: 1, pageSize: 1 },
-        signal,
-      ),
+    queryFn: ({ signal }) => getInventoryAttentionSummary(workspace!, signal),
   });
 
   const paymentsQuery = useQuery({
@@ -320,10 +304,13 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     return buildNeedsAttentionAlerts({
       inventory: allowInventory
         ? {
-            lowStockProductCount: overviewQuery.data?.lowStockProductCount ?? null,
-            outOfStockProductCount: outOfStockQuery.data?.totalCount ?? null,
-            expiredLotCount: overviewQuery.data?.expiredLotCount ?? null,
-            nearExpiryLotCount: overviewQuery.data?.nearExpiryLotCount ?? null,
+            lowStockProductCount:
+              inventoryAttentionQuery.data?.lowStockProductCount ?? null,
+            outOfStockProductCount:
+              inventoryAttentionQuery.data?.outOfStockProductCount ?? null,
+            expiredLotCount: inventoryAttentionQuery.data?.expiredLotCount ?? null,
+            nearExpiryLotCount:
+              inventoryAttentionQuery.data?.nearExpiryLotCount ?? null,
           }
         : null,
       commerce: allowCommerce
@@ -367,10 +354,10 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     branchReadinessQuery.data,
     orgFulfillmentQuery.data?.offerDelivery,
     commerceReadinessQuery.data,
-    outOfStockQuery.data?.totalCount,
-    overviewQuery.data?.expiredLotCount,
-    overviewQuery.data?.lowStockProductCount,
-    overviewQuery.data?.nearExpiryLotCount,
+    inventoryAttentionQuery.data?.expiredLotCount,
+    inventoryAttentionQuery.data?.lowStockProductCount,
+    inventoryAttentionQuery.data?.nearExpiryLotCount,
+    inventoryAttentionQuery.data?.outOfStockProductCount,
     paymentsQuery.data,
     paymentsQuery.isSuccess,
     subscriptionInputs,
@@ -383,7 +370,7 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
   const badge = formatNeedsAttentionBadge(count);
 
   const isLoading =
-    (allowInventory && (overviewQuery.isLoading || outOfStockQuery.isLoading)) ||
+    (allowInventory && inventoryAttentionQuery.isLoading) ||
     (allowPaymentDetection && paymentsQuery.isLoading) ||
     ((allowSuppliers || allowCredit) &&
       (businessCustomersQuery.isLoading ||
@@ -392,8 +379,7 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     (allowSubscription && subscriptionQuery.isLoading);
 
   const isFetching =
-    overviewQuery.isFetching ||
-    outOfStockQuery.isFetching ||
+    inventoryAttentionQuery.isFetching ||
     paymentsQuery.isFetching ||
     businessCustomersQuery.isFetching ||
     commerceReadinessQuery.isFetching ||

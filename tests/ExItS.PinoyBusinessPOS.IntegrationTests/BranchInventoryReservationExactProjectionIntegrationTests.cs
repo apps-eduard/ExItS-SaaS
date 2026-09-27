@@ -631,6 +631,7 @@ public sealed class BranchInventoryReservationExactProjectionIntegrationTests(Po
         new(
             new InventoryRepository(db),
             new InventoryLotStockService(new InventoryLotRepository(db)),
+            new BranchExpirationPolicyResolver(new InventoryBranchExpirationSettingRepository(db)),
             new InventoryBranchBalanceRepository(db),
             new FixedPrimaryDirectory(primary));
 

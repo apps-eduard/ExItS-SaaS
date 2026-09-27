@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
 import {
@@ -6,6 +7,18 @@ import {
 } from "@/api/pos/pos-mutation-idempotency";
 
 const INVENTORY_PATH = "/api/v1/pos/inventory";
+
+/** Bound-branch physical inventory attention (not organization-wide management overview). */
+export const posInventoryAttentionSummaryDtoSchema = z.object({
+  lowStockProductCount: z.number(),
+  outOfStockProductCount: z.number(),
+  expiredLotCount: z.number(),
+  nearExpiryLotCount: z.number(),
+});
+
+export type PosInventoryAttentionSummaryDto = z.infer<
+  typeof posInventoryAttentionSummaryDtoSchema
+>;
 
 export type PosInventoryAccountDto = {
   productId: string;
@@ -361,6 +374,23 @@ export function listInventory(
           : undefined,
     }),
   });
+}
+
+/**
+ * Branch-authoritative inventory attention for operational screens.
+ * Scope comes only from workspace headers (organizationId + branchId).
+ */
+export async function getInventoryAttentionSummary(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<PosInventoryAttentionSummaryDto> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/attention-summary`,
+  });
+  return posInventoryAttentionSummaryDtoSchema.parse(raw);
 }
 
 export function getInventoryProduct(

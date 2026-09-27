@@ -103,6 +103,16 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         return (items, total);
     }
 
+    public async Task<int> CountAsync(
+        BranchInventoryContext context,
+        BranchInventoryListFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, total) = await BuildFilteredListQueryAsync(context, filter, cancellationToken)
+            .ConfigureAwait(false);
+        return total;
+    }
+
     public async Task<(IReadOnlyList<Guid> ProductIds, int TotalCount)> ListProductIdsAsync(
         BranchInventoryContext context,
         BranchInventoryListFilter filter,
