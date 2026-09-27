@@ -40,6 +40,7 @@ public sealed class PurchaseStockService : IPurchaseStockService
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
     private readonly BranchInventoryMutationService _branchMutations;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IOrganizationBranchDirectory? _branches;
 
     public PurchaseStockService(
@@ -48,6 +49,7 @@ public sealed class PurchaseStockService : IPurchaseStockService
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         BranchInventoryMutationService branchMutations,
+        BranchExpirationPolicyResolver expirationPolicies,
         IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
@@ -55,6 +57,7 @@ public sealed class PurchaseStockService : IPurchaseStockService
         _branchBalances = branchBalances;
         _lots = lots;
         _branchMutations = branchMutations;
+        _expirationPolicies = expirationPolicies;
         _branches = branches;
     }
 
@@ -85,6 +88,9 @@ public sealed class PurchaseStockService : IPurchaseStockService
             .ListByIdsAsync(organizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
         var productsById = catalogProducts.ToDictionary(p => p.Id.Value);
+        var policies = await _expirationPolicies
+            .ResolveManyAsync(organizationId, receivingBranch, productIds, cancellationToken)
+            .ConfigureAwait(false);
         Guid? primaryBranchId = _branches is null
             ? null
             : await _branches.GetPrimaryBranchIdAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
@@ -159,7 +165,8 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 continue;
             }
 
-            if (product.TracksExpiration && line.ExpiryDate is null)
+            var policy = policies.GetValueOrDefault(line.ProductId.Value, BranchExpirationPolicy.Off);
+            if (policy.TracksExpiration && line.ExpiryDate is null)
             {
                 throw new DomainException(
                     DomainErrorCodes.InventoryExpirationRequired,
@@ -180,7 +187,7 @@ public sealed class PurchaseStockService : IPurchaseStockService
                     unitCost: line.BaseUnitCost)
                 .WithBranch(receivingBranch.Value);
 
-            if (product.TracksExpiration)
+            if (policy.TracksExpiration)
             {
                 var receivedLot = await _lots
                     .ReceiveAsync(

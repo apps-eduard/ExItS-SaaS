@@ -29,13 +29,20 @@ public sealed class EnableExpirationTrackingUseCaseTests
     public async Task Zero_stock_enables_tracking_without_lots()
     {
         var fx = Seed(onHand: 0m, tracksExpiration: false);
-        var result = await fx.Enable.ExecuteAsync(OrgId, fx.ProductId, Actor, expirationWarningDays: 14, existingStockLots: null);
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            expirationWarningDays: 14,
+            existingStockLots: null,
+            branchId: BranchId);
 
         Assert.True(result.IsSuccess);
         Assert.True(result.Value!.TracksExpiration);
         Assert.Equal(14, result.Value.ExpirationWarningDays);
         Assert.Equal(0m, result.Value.OnHandQuantity);
         Assert.Empty(result.Value.Lots);
+        AssertBranchExpirationEnabled(fx, warningDays: 14);
         Assert.Empty(fx.Lots.Items);
         Assert.Empty(fx.Inventory.Movements);
         Assert.Empty(fx.Lots.Movements);
@@ -51,9 +58,11 @@ public sealed class EnableExpirationTrackingUseCaseTests
             Actor,
             expirationWarningDays: 7,
             [new ExistingStockLotInput(10m, ExpiryA, "LOT-1")],
-            expectedOnHandQuantity: 10m);
+            expectedOnHandQuantity: 10m,
+            branchId: BranchId);
 
         Assert.True(result.IsSuccess);
+        AssertBranchExpirationEnabled(fx, warningDays: 7);
         Assert.Equal(10m, fx.Inventory.GetOnHand(fx.ProductId));
         Assert.Empty(fx.Inventory.Movements);
         Assert.Single(fx.Lots.Items);
@@ -78,9 +87,11 @@ public sealed class EnableExpirationTrackingUseCaseTests
             [
                 new ExistingStockLotInput(20m, ExpiryA, "A"),
                 new ExistingStockLotInput(30m, ExpiryB, "B")
-            ]);
+            ],
+            branchId: BranchId);
 
         Assert.True(result.IsSuccess);
+        AssertBranchExpirationEnabled(fx);
         Assert.Equal(50m, fx.Inventory.GetOnHand(fx.ProductId));
         Assert.Equal(2, fx.Lots.Items.Count);
         Assert.Equal(50m, fx.Lots.Items.Sum(l => l.QuantityOnHand));
@@ -98,11 +109,12 @@ public sealed class EnableExpirationTrackingUseCaseTests
             fx.ProductId,
             Actor,
             null,
-            [new ExistingStockLotInput(7m, ExpiryA)]);
+            [new ExistingStockLotInput(7m, ExpiryA)],
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.ExpirationAllocationMismatch, result.ErrorCode);
-        Assert.False(fx.Products.Items[0].TracksExpiration);
+        Assert.Empty(fx.ExpirationSettings.Items);
         Assert.Empty(fx.Lots.Items);
     }
 
@@ -115,11 +127,64 @@ public sealed class EnableExpirationTrackingUseCaseTests
             fx.ProductId,
             Actor,
             null,
-            [new ExistingStockLotInput(12m, ExpiryA)]);
+            [new ExistingStockLotInput(12m, ExpiryA)],
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.ExpirationAllocationMismatch, result.ErrorCode);
         Assert.Empty(fx.Lots.Items);
+    }
+
+    [Fact]
+    public async Task Allocation_mismatch_vs_branch_on_hand_is_rejected()
+    {
+        var fx = Seed(onHand: 40m, tracksExpiration: false);
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            null,
+            [
+                new ExistingStockLotInput(10m, ExpiryA),
+                new ExistingStockLotInput(15m, ExpiryB)
+            ],
+            branchId: BranchId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ExpirationAllocationMismatch, result.ErrorCode);
+        Assert.Empty(fx.ExpirationSettings.Items);
+        Assert.Empty(fx.Lots.Items);
+    }
+
+    [Fact]
+    public async Task Branch_on_hand_not_org_total_is_required_for_allocation()
+    {
+        var fx = Seed(onHand: 170m, tracksExpiration: false, branchOnHand: 50m);
+
+        var wrongOrgTotal = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            null,
+            [new ExistingStockLotInput(170m, ExpiryA)],
+            branchId: BranchId);
+        Assert.False(wrongOrgTotal.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ExpirationAllocationMismatch, wrongOrgTotal.ErrorCode);
+        Assert.Empty(fx.Lots.Items);
+
+        var correctBranch = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            null,
+            [new ExistingStockLotInput(50m, ExpiryA)],
+            expectedOnHandQuantity: 50m,
+            branchId: BranchId);
+        Assert.True(correctBranch.IsSuccess);
+        Assert.Equal(50m, correctBranch.Value!.OnHandQuantity);
+        AssertBranchExpirationEnabled(fx);
+        Assert.Single(fx.Lots.Items);
+        Assert.Equal(50m, fx.Lots.Items[0].QuantityOnHand);
     }
 
     [Fact]
@@ -132,7 +197,8 @@ public sealed class EnableExpirationTrackingUseCaseTests
             Actor,
             null,
             [new ExistingStockLotInput(10m, ExpiryA)],
-            expectedOnHandQuantity: 9m);
+            expectedOnHandQuantity: 9m,
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.ExpirationAllocationStockChanged, result.ErrorCode);
@@ -148,7 +214,8 @@ public sealed class EnableExpirationTrackingUseCaseTests
             fx.ProductId,
             Actor,
             null,
-            [new ExistingStockLotInput(5m, ExpiryDate: null)]);
+            [new ExistingStockLotInput(5m, ExpiryDate: null)],
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorCodes.InventoryExpirationRequired, result.ErrorCode);
@@ -167,7 +234,8 @@ public sealed class EnableExpirationTrackingUseCaseTests
             [
                 new ExistingStockLotInput(10m, ExpiryA),
                 new ExistingStockLotInput(0m, ExpiryB)
-            ]);
+            ],
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.ExpirationLotQuantityInvalid, result.ErrorCode);
@@ -192,7 +260,13 @@ public sealed class EnableExpirationTrackingUseCaseTests
     public async Task Missing_lots_when_on_hand_positive_requires_initialization()
     {
         var fx = Seed(onHand: 8m, tracksExpiration: false);
-        var result = await fx.Enable.ExecuteAsync(OrgId, fx.ProductId, Actor, null, existingStockLots: []);
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            null,
+            existingStockLots: [],
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.ExpirationInitializationRequired, result.ErrorCode);
@@ -272,7 +346,8 @@ public sealed class EnableExpirationTrackingUseCaseTests
             fx.ProductId,
             Actor,
             null,
-            [new ExistingStockLotInput(10m, ExpiryA)]);
+            [new ExistingStockLotInput(10m, ExpiryA)],
+            branchId: BranchId);
 
         Assert.True(result.IsSuccess);
         Assert.Single(fx.Lots.Items);
@@ -290,7 +365,13 @@ public sealed class EnableExpirationTrackingUseCaseTests
             3m,
             Utc));
 
-        var result = await fx.Enable.ExecuteAsync(OrgId, fx.ProductId, Actor, null, null);
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            null,
+            null,
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.ExpirationTrackingAlreadyEnabled, result.ErrorCode);
@@ -311,10 +392,12 @@ public sealed class EnableExpirationTrackingUseCaseTests
                 new ExistingStockLotInput(6m, ExpiryA, "A101"),
                 new ExistingStockLotInput(4m, ExpiryB, "B202")
             ],
-            expectedOnHandQuantity: 10m);
+            expectedOnHandQuantity: 10m,
+            branchId: BranchId);
 
         Assert.True(result.IsSuccess);
         Assert.True(result.Value!.TracksExpiration);
+        AssertBranchExpirationEnabled(fx, warningDays: 7);
         Assert.Equal(10m, fx.Inventory.GetOnHand(fx.ProductId));
         Assert.Empty(fx.Inventory.Movements);
         Assert.Equal(2, fx.Lots.Items.Count);
@@ -328,7 +411,13 @@ public sealed class EnableExpirationTrackingUseCaseTests
     {
         var fx = Seed(onHand: 10m, tracksExpiration: true);
 
-        var result = await fx.Enable.ExecuteAsync(OrgId, fx.ProductId, Actor, null, null);
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            null,
+            null,
+            branchId: BranchId);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.ExpirationInitializationRequired, result.ErrorCode);
@@ -345,9 +434,11 @@ public sealed class EnableExpirationTrackingUseCaseTests
             fx.ProductId,
             Actor,
             null,
-            [new ExistingStockLotInput(15m, ExpiryA)]);
+            [new ExistingStockLotInput(15m, ExpiryA)],
+            branchId: BranchId);
 
         Assert.True(result.IsSuccess);
+        AssertBranchExpirationEnabled(fx);
         Assert.Empty(fx.Inventory.Movements);
         Assert.DoesNotContain(
             fx.Lots.Movements,
@@ -400,7 +491,7 @@ public sealed class EnableExpirationTrackingUseCaseTests
         Assert.Equal(PosBranchId.From(BranchId), fx.Lots.Items[0].BranchId);
     }
 
-    private static Fixture Seed(decimal onHand, bool tracksExpiration)
+    private static Fixture Seed(decimal onHand, bool tracksExpiration, decimal? branchOnHand = null)
     {
         var org = PosOrganizationId.From(OrgId);
         var product = CatalogProduct.Create(
@@ -434,8 +525,54 @@ public sealed class EnableExpirationTrackingUseCaseTests
         var lotStock = new InventoryLotStockService(lots);
         var clock = new FixedClock(Utc);
         var uow = new ImmediateUnitOfWork();
-        var enable = new EnableExpirationTracking(products, inventory, lots, lotStock, uow, clock);
-        return new Fixture(product.Id.Value, products, inventory, lots, enable, uow, clock);
+        var balances = new InMemoryBranchBalances();
+        var resolvedBranchOnHand = branchOnHand ?? onHand;
+        if (resolvedBranchOnHand > 0m)
+        {
+            balances.Items.Add(InventoryBranchBalance.Create(
+                org,
+                PosBranchId.From(BranchId),
+                product.Id,
+                resolvedBranchOnHand,
+                Utc));
+        }
+
+        var expirationSettings = new InMemoryBranchExpirationSettings();
+        if (tracksExpiration)
+        {
+            expirationSettings.Items.Add(InventoryBranchExpirationSetting.CreateEnabled(
+                org,
+                PosBranchId.From(BranchId),
+                product.Id,
+                expirationWarningDays: 7,
+                Actor,
+                Utc));
+        }
+
+        var branches = new FixedPrimaryBranches(BranchId);
+        var enable = new EnableExpirationTracking(
+            products,
+            inventory,
+            balances,
+            lots,
+            expirationSettings,
+            lotStock,
+            branches,
+            uow,
+            clock);
+        return new Fixture(product.Id.Value, products, inventory, lots, enable, uow, clock, expirationSettings);
+    }
+
+    private static void AssertBranchExpirationEnabled(Fixture fx, int? warningDays = null)
+    {
+        var setting = Assert.Single(fx.ExpirationSettings.Items);
+        Assert.Equal(PosBranchId.From(BranchId), setting.BranchId);
+        Assert.Equal(CatalogProductId.From(fx.ProductId), setting.ProductId);
+        Assert.True(setting.TracksExpiration);
+        if (warningDays is int days)
+        {
+            Assert.Equal(days, setting.ExpirationWarningDays);
+        }
     }
 
     private sealed record Fixture(
@@ -445,7 +582,8 @@ public sealed class EnableExpirationTrackingUseCaseTests
         InMemoryLots Lots,
         EnableExpirationTracking Enable,
         ImmediateUnitOfWork UnitOfWork,
-        FixedClock Clock);
+        FixedClock Clock,
+        InMemoryBranchExpirationSettings ExpirationSettings);
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
@@ -1078,5 +1216,68 @@ public sealed class EnableExpirationTrackingUseCaseTests
 
         public Task UpdateAsync(ProductBrand brand, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class FixedPrimaryBranches(Guid primaryId) : IOrganizationBranchDirectory
+    {
+        public Task<bool> ExistsInOrganizationAsync(
+            Guid organizationId,
+            Guid branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public Task<bool> IsActiveInOrganizationAsync(
+            Guid organizationId,
+            Guid branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
+            Guid organizationId,
+            IReadOnlyCollection<Guid> branchIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string>>(
+                branchIds.ToDictionary(id => id, id => id.ToString("D")));
+
+        public Task<Guid?> GetPrimaryBranchIdAsync(
+            Guid organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<Guid?>(primaryId);
+
+        public Task<string> GetBranchTypeAsync(
+            Guid organizationId,
+            Guid branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult("Retail");
+    }
+
+    private sealed class InMemoryBranchBalances : IInventoryBranchBalanceRepository
+    {
+        public List<InventoryBranchBalance> Items { get; } = [];
+
+        public Task<InventoryBranchBalance?> GetAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(b =>
+                b.OrganizationId == organizationId && b.BranchId == branchId && b.ProductId == productId));
+
+        public Task<IReadOnlyList<InventoryBranchBalance>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryBranchBalance>>(
+                Items.Where(b => b.OrganizationId == organizationId && productIds.Contains(b.ProductId)).ToList());
+
+        public Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default)
+        {
+            Items.RemoveAll(b =>
+                b.OrganizationId == balance.OrganizationId
+                && b.BranchId == balance.BranchId
+                && b.ProductId == balance.ProductId);
+            Items.Add(balance);
+            return Task.CompletedTask;
+        }
     }
 }

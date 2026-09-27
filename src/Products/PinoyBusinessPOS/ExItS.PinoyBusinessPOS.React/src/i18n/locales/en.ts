@@ -4442,11 +4442,14 @@ export const en = {
   "inventory.expirationTrackingDisabled": "Expiration tracking disabled.",
   "inventory.manageExpirationSettings": "Manage expiration settings",
   "inventory.expirationSettingsTitle": "Expiration settings",
+  "inventory.expirationSettingsTitleWithBranch": "Expiration tracking · {branchName}",
   "inventory.expirationSettingsEnableHint":
-    "Turn on expiration tracking to record expiry dates for stock lots and near-expiry warnings.",
+    "Turn on expiration tracking for this branch to record expiry dates for current branch stock lots and near-expiry warnings.",
+  "inventory.expirationSettingsBranchStockHint":
+    "Quantities and lot allocation use this branch’s on-hand stock only (not the organization total).",
   "inventory.expirationSetupRequired": "Missing expiry",
   "inventory.expirationSetupRequiredDetail":
-    "This product has stock on hand without expiry lots. Assign expiry dates to match the current on-hand quantity.",
+    "This product has stock on hand at the current branch without expiry lots. Assign expiry dates to match the current branch on-hand quantity.",
   "inventory.expirationPendingSummary":
     "{qty} {uom} on hand need expiry dates before Good / Near expiry / Expired totals can be shown.",
   "inventory.assignExpirationDates": "Assign expiry",
@@ -4456,8 +4459,8 @@ export const en = {
   "inventory.expirationWarningSaved": "Near-expiry warning saved.",
   "inventory.expirationWarningDaysInvalid": "Enter a near-expiry warning of at least 1 day.",
   "inventory.enableExpirationCopy":
-    "This product already has {qty} {uom} on hand. Assign expiry dates to existing stock before enabling tracking.",
-  "inventory.enableExpirationCurrentStock": "Current stock",
+    "This branch already has {qty} {uom} on hand. Assign expiry dates to existing branch stock before enabling tracking.",
+  "inventory.enableExpirationCurrentStock": "Current branch stock",
   "inventory.enableExpirationQuantity": "Quantity",
   "inventory.enableExpirationExpiry": "Expiry date",
   "inventory.enableExpirationLotOptional": "Batch / Lot number (optional)",
@@ -4465,7 +4468,7 @@ export const en = {
   "inventory.enableExpirationAllocated": "Allocated {allocated} / {onHand}",
   "inventory.enableExpirationRemaining": "Remaining: {remaining}",
   "inventory.enableExpirationOverAllocated":
-    "Allocated {allocated} exceeds on-hand ({onHand}). Reduce lot quantities to match.",
+    "Allocated {allocated} exceeds branch on-hand ({onHand}). Reduce lot quantities to match.",
   "inventory.enableExpirationQuantityMax": "Max {max} for this row",
   "inventory.enableExpirationSubmitHint":
     "Enter expiry dates and allocate exactly {onHand} {uom} to save.",
@@ -5317,7 +5320,7 @@ export const en = {
   "catalog.expirationBehaviorHint":
     "Near-expiry stock remains sellable. Expired stock cannot be sold. Earliest-expiring stock is used first (FEFO).",
   "catalog.expirationManagedInSettings":
-    "Manage expiration tracking and near-expiry warning from Inventory expiration settings.",
+    "Expiration tracking is managed per branch in Inventory expiration settings for the current workspace branch.",
   "customers.title": "Customers",
   "customers.lede": "Manage people and business customers.",
   "customers.open": "Customers",

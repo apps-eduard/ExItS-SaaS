@@ -19,6 +19,7 @@ public sealed class WasteLossUseCaseTests
 {
     private static readonly Guid OrgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static readonly Guid ActingBranch = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly DateTimeOffset Utc = new(2026, 8, 29, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -237,20 +238,24 @@ public sealed class WasteLossUseCaseTests
         var fx = await SeedAsync(cokeOnHand: 10m);
         var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
         product.SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, ActingBranch);
 
         var lot = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
             new DateOnly(2026, 9, 15),
             10m,
-            Utc);
+            Utc,
+            PosBranchId.From(ActingBranch),
+            "ACTING-LOT");
         fx.Lots.Items.Add(lot);
 
         var result = await fx.Create.ExecuteAsync(
             OrgA,
             new CreateWasteLossRequest(
                 nameof(WasteLossReason.Expired),
-                [new CreateWasteLossLineRequest(fx.CokeId, 3m, InventoryLotId: lot.Id.Value)]),
+                [new CreateWasteLossLineRequest(fx.CokeId, 3m, InventoryLotId: lot.Id.Value)],
+                BranchId: ActingBranch),
             Actor);
 
         Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
@@ -273,6 +278,7 @@ public sealed class WasteLossUseCaseTests
 
         var main = PosBranchId.From(Guid.Parse("11111111-1111-1111-1111-111111111111"));
         var panay = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        await fx.EnableBranchExpirationAsync(fx.CokeId, panay);
         var lot = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -302,12 +308,14 @@ public sealed class WasteLossUseCaseTests
         var fx = await SeedAsync(cokeOnHand: 10m);
         var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
         product.SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, ActingBranch);
 
         var result = await fx.Create.ExecuteAsync(
             OrgA,
             new CreateWasteLossRequest(
                 nameof(WasteLossReason.Expired),
-                [new CreateWasteLossLineRequest(fx.CokeId, 1m)]),
+                [new CreateWasteLossLineRequest(fx.CokeId, 1m)],
+                BranchId: ActingBranch),
             Actor);
 
         Assert.Equal(DomainErrorCodes.WasteLossLotRequired, result.ErrorCode);
@@ -371,8 +379,10 @@ public sealed class WasteLossUseCaseTests
         public InMemoryWasteLosses WasteLosses { get; } = new();
         public InMemoryBranchBalances Branches { get; } = new();
         public InMemoryLots Lots { get; } = new();
+        public InMemoryBranchExpirationSettings ExpirationSettings { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
+        public FixedPrimaryBranches BranchesDirectory { get; } = new(ActingBranch);
         public CreateWasteLoss Create { get; }
         public VoidWasteLoss Void { get; }
 
@@ -387,8 +397,10 @@ public sealed class WasteLossUseCaseTests
                 Branches,
                 Lots,
                 lots,
+                BranchExpirationTestHelpers.CreateResolver(ExpirationSettings),
                 UnitOfWork,
-                Clock);
+                Clock,
+                BranchesDirectory);
             Void = new VoidWasteLoss(
                 WasteLosses,
                 Products,
@@ -398,6 +410,16 @@ public sealed class WasteLossUseCaseTests
                 UnitOfWork,
                 Clock);
         }
+
+        public Task EnableBranchExpirationAsync(Guid productId, Guid branchId, int? warningDays = 7) =>
+            ExpirationSettings.UpsertAsync(
+                InventoryBranchExpirationSetting.CreateEnabled(
+                    PosOrganizationId.From(OrgA),
+                    PosBranchId.From(branchId),
+                    CatalogProductId.From(productId),
+                    warningDays,
+                    Actor,
+                    Utc));
 
         public Task AddProductAsync(
             Guid productId,
@@ -441,6 +463,22 @@ public sealed class WasteLossUseCaseTests
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;
+    }
+
+    private sealed class FixedPrimaryBranches(Guid primaryId) : IOrganizationBranchDirectory
+    {
+        public Task<bool> ExistsInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
+            Guid organizationId,
+            IReadOnlyCollection<Guid> branchIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string>>(
+                branchIds.ToDictionary(id => id, id => id.ToString("D")));
+
+        public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Guid?>(primaryId);
     }
 
     private sealed class ImmediateUnitOfWork : IPosUnitOfWork

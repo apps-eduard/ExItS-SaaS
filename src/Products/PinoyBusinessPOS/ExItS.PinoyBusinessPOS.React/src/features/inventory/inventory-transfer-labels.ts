@@ -150,7 +150,15 @@ export function branchDisplayName(
   fallbackId: string,
 ): string {
   const trimmed = name?.trim();
-  return trimmed || fallbackId;
+  if (trimmed) {
+    return trimmed;
+  }
+  // Never surface raw branch GUIDs in route labels when the API omitted a name.
+  const guidLike =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      fallbackId.trim(),
+    );
+  return guidLike ? "Unknown branch" : fallbackId.trim() || "Unknown branch";
 }
 
 export function parseTransferQuantity(text: string): number | "invalid" | "empty" {

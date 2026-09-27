@@ -339,6 +339,7 @@ public sealed class InventoryTransferUseCaseTests
             fx.Balances,
             fx.Lots,
             new InventoryLotStockService(fx.Lots),
+            BranchExpirationTestHelpers.CreateResolver(),
             fx.UnitOfWork,
             fx.Clock,
             fx.Branches);
@@ -354,6 +355,7 @@ public sealed class InventoryTransferUseCaseTests
     {
         var fx = await SeedAsync(cokeOnHand: 10m);
         fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
         var lotA = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -408,6 +410,7 @@ public sealed class InventoryTransferUseCaseTests
     {
         var fx = await SeedAsync(cokeOnHand: 20m);
         fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
         var lotA = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -437,6 +440,7 @@ public sealed class InventoryTransferUseCaseTests
     {
         var fx = await SeedAsync(cokeOnHand: 20m);
         fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
         var expired = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -464,6 +468,7 @@ public sealed class InventoryTransferUseCaseTests
     {
         var fx = await SeedAsync(cokeOnHand: 20m);
         fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
         var lot = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -497,6 +502,7 @@ public sealed class InventoryTransferUseCaseTests
     {
         var fx = await SeedAsync(cokeOnHand: 20m);
         fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
         var expiresToday = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -523,6 +529,7 @@ public sealed class InventoryTransferUseCaseTests
     {
         var fx = await SeedAsync(cokeOnHand: 20m);
         fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
         var lot = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -554,6 +561,8 @@ public sealed class InventoryTransferUseCaseTests
     {
         var fx = await SeedAsync(cokeOnHand: 20m);
         fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchB);
         var lot = InventoryLot.Create(
             PosOrganizationId.From(OrgA),
             CatalogProductId.From(fx.CokeId),
@@ -2498,6 +2507,7 @@ public sealed class InventoryTransferUseCaseTests
                 fx.Balances,
                 fx.Lots,
                 new InventoryLotStockService(fx.Lots),
+                BranchExpirationTestHelpers.CreateResolver(),
                 fx.UnitOfWork,
                 fx.Clock,
                 fx.Branches);
@@ -2520,6 +2530,7 @@ public sealed class InventoryTransferUseCaseTests
         public InMemoryExceptionCustodies ExceptionCustodies { get; }
         public InMemoryBalances Balances { get; } = new();
         public InMemoryLots Lots { get; } = new();
+        public InMemoryBranchExpirationSettings ExpirationSettings { get; } = new();
         public CapturingAlerts Alerts { get; } = new();
         public CapturingNotifications Notifications { get; } = new();
         public InMemoryStockRequests StockRequests { get; } = new();
@@ -2547,7 +2558,8 @@ public sealed class InventoryTransferUseCaseTests
             DamageCustodies = new InMemoryDamageCustodies(Transfers);
             ExceptionCustodies = new InMemoryExceptionCustodies(Transfers);
             var lotStock = new InventoryLotStockService(Lots);
-            Create = new CreateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, Branches, UnitOfWork, Clock);
+            var expirationPolicies = BranchExpirationTestHelpers.CreateResolver(ExpirationSettings);
+            Create = new CreateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, expirationPolicies, Branches, UnitOfWork, Clock);
             Dispatch = new DispatchInventoryTransfer(
                 Transfers,
                 Inventory,
@@ -2555,6 +2567,7 @@ public sealed class InventoryTransferUseCaseTests
                 Products,
                 Lots,
                 lotStock,
+                expirationPolicies,
                 Branches,
                 Alerts,
                 StockRequests,
@@ -2570,6 +2583,8 @@ public sealed class InventoryTransferUseCaseTests
                 Products,
                 Lots,
                 lotStock,
+                expirationPolicies,
+                ExpirationSettings,
                 Branches,
                 Alerts,
                 StockRequests,
@@ -2644,6 +2659,16 @@ public sealed class InventoryTransferUseCaseTests
 
             await Task.CompletedTask;
         }
+
+        public Task EnableBranchExpirationAsync(Guid productId, Guid branchId, int? warningDays = 7) =>
+            ExpirationSettings.UpsertAsync(
+                InventoryBranchExpirationSetting.CreateEnabled(
+                    PosOrganizationId.From(OrgA),
+                    PosBranchId.From(branchId),
+                    CatalogProductId.From(productId),
+                    warningDays,
+                    ActorA,
+                    Utc));
     }
 
     private sealed class FixedClock : IClock

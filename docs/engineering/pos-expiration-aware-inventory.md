@@ -2,6 +2,16 @@
 
 Per-product expiration tracking for PinoyBusinessPOS. Expiration belongs to a **quantity of stock** (a lot), not to `CatalogProduct`. Default is off. Existing non-expiry inventory, sales, and receiving behavior is unchanged.
 
+## Branch-scoped expiration tracking (invariant)
+
+**Authoritative expiration enablement is branch-scoped**, not catalog-global:
+
+- `EnableExpirationTracking` **requires** a selected `branchId`.
+- Authoritative on-hand for enable / lot allocation is the **current branch physical quantity** via `BranchStockResolver` (explicit `InventoryBranchBalance`, or primary-branch unallocated overlay) — **not** the organization `InventoryAccount` total.
+- Existing-stock lot quantities must sum exactly to that **branch** on-hand.
+- Operational policy is stored in `InventoryBranchExpirationSetting` (per org + branch + product).
+- `CatalogProduct.TracksExpiration` / `ExpirationWarningDays` remain **legacy compatibility** fields only; they are not authoritative for branch inventory operations and must not be turned on from normal catalog create/edit UX.
+
 ## Audit result
 
 Expiration tracking was **missing**. Inventory was org-level `InventoryAccount` plus optional `InventoryBranchBalance`. `StockMovement` is the product-level ledger. There was no lot/batch table. Sales deduct org on-hand. Branch transfers already exist and identified stock by product+qty only.
@@ -12,15 +22,18 @@ Purchase goods receipts remain product-level in this overlay (same as non-expiry
 
 | Field | Default | Meaning |
 |---|---|---|
-| `TracksExpiration` | `false` | Per-product. When false, no lot UI or FEFO. |
-| `ExpirationWarningDays` | `7` when tracking is on | Near-expiry window. Does not block sale. |
+| `InventoryBranchExpirationSetting.TracksExpiration` | off | **Authoritative** per branch + product. When off for the branch, no lot UI or FEFO for that branch. |
+| `InventoryBranchExpirationSetting.ExpirationWarningDays` | `7` when tracking is on | Near-expiry window for the branch. Does not block sale. |
+| `CatalogProduct.TracksExpiration` | `false` | **Legacy** compatibility only — not authoritative for enable/allocate. |
+| `CatalogProduct.ExpirationWarningDays` | nullable | **Legacy** compatibility only. |
 
 Not an organization-wide mandate. Global Catalog does not store live `ExpirationDate`.
 
 ## Lot model
 
 ```text
-CatalogProduct.TracksExpiration
+InventoryBranchExpirationSetting (branch + product)   authoritative tracking flag
+CatalogProduct.TracksExpiration                       legacy compatibility only
   InventoryAccount              org on-hand total (unchanged)
   InventoryLot                  org + product + optional branch + expiry + optional lot number
   InventoryLotMovement          lot-level ledger (idempotent per source+lot+type)
@@ -58,9 +71,9 @@ Product **list** does not load lots (no N+1). Lot summaries are on inventory/pro
 
 ## Receiving / adjustments
 
-When `TracksExpiration = false`: existing Enable / Adjust In/Out.
+When branch expiration tracking is off: existing Enable / Adjust In/Out.
 
-When true:
+When on for the branch:
 
 - In / opening qty > 0 requires expiration date
 - Out requires `LotId` or expiry + optional lot number

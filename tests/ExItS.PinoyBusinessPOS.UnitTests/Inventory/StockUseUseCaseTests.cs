@@ -266,6 +266,7 @@ public sealed class StockUseUseCaseTests
                 Inventory,
                 Branches,
                 lots,
+                BranchExpirationTestHelpers.CreateResolver(),
                 UnitOfWork,
                 Clock);
             Void = new VoidStockUse(

@@ -261,7 +261,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             RemoteBranch);
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.True(product.TracksExpiration);
+        Assert.False(product.TracksExpiration);
+        AssertBranchExpirationEnabled(fx, fx.CokeId);
         Assert.Single(fx.Lots.Items);
         Assert.Equal(expiry, fx.Lots.Items[0].ExpirationDate);
         Assert.Equal(3m, fx.Lots.Items[0].QuantityOnHand);
@@ -290,7 +291,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             RemoteBranch);
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.True(product.TracksExpiration);
+        Assert.False(product.TracksExpiration);
+        AssertBranchExpirationEnabled(fx, fx.CokeId);
         Assert.Single(fx.Lots.Items);
         Assert.Equal("APPLE-A", fx.Lots.Items[0].LotNumber);
         Assert.Equal(expiry, result.Value!.Lines[0].ExpiryDate);
@@ -375,8 +377,12 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             RemoteBranch);
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.True(coke.TracksExpiration);
+        Assert.False(coke.TracksExpiration);
         Assert.False(sprite.TracksExpiration);
+        AssertBranchExpirationEnabled(fx, fx.CokeId);
+        Assert.DoesNotContain(
+            fx.ExpirationSettings.Items,
+            s => s.ProductId.Value == fx.SpriteId && s.TracksExpiration);
         Assert.Single(fx.Lots.Items);
         Assert.Equal(fx.CokeId, fx.Lots.Items[0].ProductId.Value);
         Assert.Equal("S-LOT", result.Value!.Lines.Single(l => l.ProductId == fx.SpriteId).LotNumber);
@@ -449,7 +455,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             Actor,
             RemoteBranch);
         Assert.True(first.IsSuccess, first.ErrorMessage);
-        Assert.True(product.TracksExpiration);
+        Assert.False(product.TracksExpiration);
+        AssertBranchExpirationEnabled(fx, fx.CokeId);
         Assert.Equal(5m, fx.Inventory.GetOnHand(fx.CokeId));
         Assert.Equal(5m, fx.Lots.Items.Where(l => l.ProductId.Value == fx.CokeId).Sum(l => l.QuantityOnHand));
 
@@ -496,7 +503,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             expectedOnHandQuantity: 100m,
             branchId: RemoteBranch);
         Assert.True(enable.IsSuccess, enable.ErrorMessage);
-        Assert.True(product.TracksExpiration);
+        Assert.False(product.TracksExpiration);
+        AssertBranchExpirationEnabled(fx, fx.CokeId, warningDays: 7);
         Assert.Equal(100m, fx.Inventory.GetOnHand(fx.CokeId));
         Assert.Equal(100m, fx.Lots.Items.Where(l => l.ProductId.Value == fx.CokeId).Sum(l => l.QuantityOnHand));
         Assert.Equal(movementCountBeforeEnable, fx.Inventory.Movements.Count);
@@ -555,6 +563,20 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         return fx;
     }
 
+    private static void AssertBranchExpirationEnabled(Fixture fx, Guid productId, int? warningDays = null)
+    {
+        var setting = Assert.Single(
+            fx.ExpirationSettings.Items,
+            s => s.BranchId == PosBranchId.From(RemoteBranch)
+                 && s.ProductId.Value == productId
+                 && s.TracksExpiration);
+        Assert.True(setting.TracksExpiration);
+        if (warningDays is int days)
+        {
+            Assert.Equal(days, setting.ExpirationWarningDays);
+        }
+    }
+
     private sealed class Fixture
     {
         public Guid CokeId { get; } = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
@@ -565,6 +587,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         public InMemoryReceipts Receipts { get; } = new();
         public InMemorySuppliers Suppliers { get; } = new();
         public InMemoryLots Lots { get; } = new();
+        public InMemoryBranchExpirationSettings ExpirationSettings { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
         public InMemoryBranchBalances BranchBalances { get; } = new();
@@ -575,6 +598,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         public Fixture()
         {
             var lotStock = new InventoryLotStockService(Lots);
+            var expirationPolicies = BranchExpirationTestHelpers.CreateResolver(ExpirationSettings);
             Create = new CreateDirectPurchaseReceipt(
                 Receipts,
                 Products,
@@ -583,6 +607,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 BranchBalances,
                 lotStock,
                 new BranchInventoryMutationService(),
+                expirationPolicies,
+                ExpirationSettings,
                 UnitOfWork,
                 new CreateSupplierPayableFromReceipt(new NoOpSupplierPayableRepository()),
                 Clock,
@@ -590,13 +616,16 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             Enable = new EnableExpirationTracking(
                 Products,
                 Inventory,
+                BranchBalances,
                 Lots,
+                ExpirationSettings,
                 lotStock,
+                Branches,
                 UnitOfWork,
                 Clock);
         }
 
-        public Task AddProductAsync(
+        public async Task AddProductAsync(
             Guid productId,
             string name,
             decimal opening,
@@ -610,11 +639,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 10m,
                 Utc,
                 id: CatalogProductId.From(productId));
-            if (tracksExpiration)
-            {
-                product.SetExpirationTracking(true, expirationWarningDays: null, Utc);
-            }
-
+            // CatalogProduct.TracksExpiration is legacy — do not set from seed; branch setting is authoritative.
             Products.Items.Add(product);
             if (track)
             {
@@ -630,7 +655,17 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 }
             }
 
-            return Task.CompletedTask;
+            if (tracksExpiration)
+            {
+                await ExpirationSettings.UpsertAsync(
+                    InventoryBranchExpirationSetting.CreateEnabled(
+                        PosOrganizationId.From(OrgA),
+                        PosBranchId.From(RemoteBranch),
+                        CatalogProductId.From(productId),
+                        expirationWarningDays: null,
+                        Actor,
+                        Utc)).ConfigureAwait(false);
+            }
         }
     }
 

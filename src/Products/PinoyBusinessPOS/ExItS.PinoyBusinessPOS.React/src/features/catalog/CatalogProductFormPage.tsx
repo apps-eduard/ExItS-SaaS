@@ -371,7 +371,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const [initialCapabilities, setInitialCapabilities] =
     useState<ProductCapabilityFlags | null>(null);
 
-  const [tracksExpiration, setTracksExpiration] = useState(false);
+  const [tracksExpiration] = useState(false);
 
   const [trackStockQuantity, setTrackStockQuantity] = useState(mode === "create");
 
@@ -389,8 +389,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const [openingExpiryDate, setOpeningExpiryDate] = useState("");
 
   const [openingBatchLot, setOpeningBatchLot] = useState("");
-
-  const [expirationWarningDays, setExpirationWarningDays] = useState("7");
 
   const [unitOfMeasure, setUnitOfMeasure] = useState<PosUnitOfMeasureCode>(
     DEFAULT_CATALOG_UNIT_OF_MEASURE,
@@ -540,15 +538,11 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     setCapabilities(caps);
     setInitialCapabilities(caps);
 
-    setTracksExpiration(product.tracksExpiration === true);
-
     setTrackStockQuantity(product.isTracked !== false);
 
     setCanExposeToConnectedBuyers(product.canExposeToConnectedBuyers === true);
     setReturnPolicyMode(product.returnPolicyMode ?? "UseDefault");
     setReturnPolicyWindowDays(product.returnPolicyWindowDays ?? null);
-
-    setExpirationWarningDays(String(product.expirationWarningDays ?? 7));
 
     setUnitOfMeasure(
       (POS_UNIT_OF_MEASURE_CODES.includes(product.unitOfMeasure as PosUnitOfMeasureCode)
@@ -579,12 +573,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       setUnitOfMeasure("Kilogram");
     }
   }, [sellingMode]);
-
-  useEffect(() => {
-    if (!trackStockQuantity && tracksExpiration) {
-      setTracksExpiration(false);
-    }
-  }, [trackStockQuantity, tracksExpiration]);
 
   useEffect(() => {
     if (capabilities.canBeUsedAsIngredient && !trackStockQuantity) {
@@ -781,12 +769,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         unitsPayload = draftsToUnitInputs(unitDrafts);
       }
 
-      const warningDays = Number(expirationWarningDays);
-      const resolvedWarningDays =
-        trackStockQuantity && tracksExpiration && !Number.isNaN(warningDays) && warningDays > 0
-          ? warningDays
-          : null;
-
       if (mode === "create") {
         const resolvedScope: CatalogProductScopeCode = canGovern
           ? createScope
@@ -808,8 +790,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           canBeUsedAsIngredient: capabilities.canBeUsedAsIngredient,
           isProduced: capabilities.isProduced,
           units: unitsPayload,
-          tracksExpiration: trackStockQuantity && tracksExpiration,
-          expirationWarningDays: resolvedWarningDays,
+          tracksExpiration: false,
+          expirationWarningDays: null,
           scope: resolvedScope,
           returnPolicyMode,
           returnPolicyReturnsAllowed: returnPolicyMode === "Custom" ? true : null,
@@ -1609,31 +1591,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                         {t("openingStock.value")}: ₱{openingStockValue.toFixed(2)}
                       </p>
                     ) : null}
-
-                    {tracksExpiration ? (
-                      <>
-                        <Input
-                          label={t("openingStock.expiry")}
-                          name="openingExpiryDate"
-                          type="date"
-                          value={openingExpiryDate}
-                          onChange={(e) => setOpeningExpiryDate(e.target.value)}
-                          data-testid="catalog-opening-expiry"
-                        />
-
-                        <Input
-                          label={t("openingStock.batch")}
-                          name="openingBatchLot"
-                          value={openingBatchLot}
-                          onChange={(e) => setOpeningBatchLot(e.target.value)}
-                          data-testid="catalog-opening-batch"
-                        />
-
-                        <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
-                          {t("openingStock.expiryHelper")}
-                        </p>
-                      </>
-                    ) : null}
                   </>
                 ) : null}
               </>
@@ -1717,84 +1674,45 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           <h2 className="catalog-form-section__title">{t("catalog.sectionExpiration")}</h2>
 
           <div className="catalog-form-section__grid">
-            {mode === "edit" ? (
-              <div
-                className="catalog-form-field--full flex flex-col gap-2"
-                data-testid="catalog-expiration-settings-summary"
-              >
-                {productQuery.data?.tracksExpiration ? (
-                  <TagChip
-                    tone="success"
-                    shape="soft"
-                    icon={<CalendarClock aria-hidden />}
-                    title={t("inventory.expirationTrackingOnWithWarning").replace(
-                      "{days}",
-                      String(productQuery.data.expirationWarningDays ?? 7),
-                    )}
+            <div
+              className="catalog-form-field--full flex flex-col gap-2"
+              data-testid="catalog-expiration-settings-summary"
+            >
+              {mode === "edit" && productQuery.data?.tracksExpiration ? (
+                <TagChip
+                  tone="success"
+                  shape="soft"
+                  icon={<CalendarClock aria-hidden />}
+                  title={t("inventory.expirationTrackingOnWithWarning").replace(
+                    "{days}",
+                    String(productQuery.data.expirationWarningDays ?? 7),
+                  )}
+                >
+                  {t("inventory.expirationTrackingOnWithWarning").replace(
+                    "{days}",
+                    String(productQuery.data.expirationWarningDays ?? 7),
+                  )}
+                </TagChip>
+              ) : (
+                <TagChip tone="neutral" shape="soft" icon={<Ban aria-hidden />}>
+                  {t("inventory.expirationTrackingOff")}
+                </TagChip>
+              )}
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("catalog.expirationManagedInSettings")}
+              </p>
+              {mode === "edit" && productId ? (
+                <Button asChild variant="outline" className="w-fit">
+                  <Link
+                    to={`/inventory/${productId}/expiration`}
+                    data-testid="catalog-manage-expiration-settings"
                   >
-                    {t("inventory.expirationTrackingOnWithWarning").replace(
-                      "{days}",
-                      String(productQuery.data.expirationWarningDays ?? 7),
-                    )}
-                  </TagChip>
-                ) : (
-                  <TagChip tone="neutral" shape="soft" icon={<Ban aria-hidden />}>
-                    {t("inventory.expirationTrackingOff")}
-                  </TagChip>
-                )}
-                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                  {t("catalog.expirationManagedInSettings")}
-                </p>
-                {productId ? (
-                  <Button asChild variant="outline" className="w-fit">
-                    <Link
-                      to={`/inventory/${productId}/expiration`}
-                      data-testid="catalog-manage-expiration-settings"
-                    >
-                      <Settings2 className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
-                      {t("inventory.manageExpirationSettings")}
-                    </Link>
-                  </Button>
-                ) : null}
-              </div>
-            ) : (
-              <>
-                <FormCheck
-                  label={t("catalog.tracksExpiration")}
-                  checked={tracksExpiration}
-                  testId="catalog-tracks-expiration"
-                  disabled={!trackStockQuantity}
-                  onChange={setTracksExpiration}
-                />
-
-                <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("catalog.tracksExpirationHint")}
-                </p>
-
-                {tracksExpiration ? (
-                  <Input
-                    label={t("catalog.expirationWarningDays")}
-                    name="expirationWarningDays"
-                    inputMode="numeric"
-                    value={expirationWarningDays}
-                    onChange={(e) => setExpirationWarningDays(e.target.value)}
-                    data-testid="catalog-expiration-warning-days"
-                  />
-                ) : null}
-
-                {tracksExpiration ? (
-                  <>
-                    <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
-                      {t("catalog.expirationReceivingHint")}
-                    </p>
-
-                    <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
-                      {t("catalog.expirationBehaviorHint")}
-                    </p>
-                  </>
-                ) : null}
-              </>
-            )}
+                    <Settings2 className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                    {t("inventory.manageExpirationSettings")}
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           </div>
         </section>
         </div>

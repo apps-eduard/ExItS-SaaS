@@ -649,8 +649,8 @@ public sealed class ProductionUseCaseTests
             CreateDefinition = new CreateProductionDefinition(Definitions, Products, Units, Inventory, UnitOfWork, Clock);
             UpdateDefinition = new UpdateProductionDefinition(Definitions, CreateDefinition, UnitOfWork, Clock);
             CreateRun = new CreateProductionRun(
-                Runs, Definitions, Products, Units, Inventory, Branches, lots, UnitOfWork, Clock);
-            VoidRun = new VoidProductionRun(Runs, Products, Inventory, Branches, lots, UnitOfWork, Clock);
+                Runs, Definitions, Products, Units, Inventory, Branches, lots, BranchExpirationTestHelpers.CreateResolver(), UnitOfWork, Clock);
+            VoidRun = new VoidProductionRun(Runs, Products, Inventory, Branches, lots, BranchExpirationTestHelpers.CreateResolver(), UnitOfWork, Clock);
         }
 
         public Task AddProductAsync(

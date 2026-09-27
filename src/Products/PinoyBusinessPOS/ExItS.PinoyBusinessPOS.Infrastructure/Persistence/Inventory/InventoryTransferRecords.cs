@@ -238,3 +238,17 @@ internal sealed class InventoryBranchReorderDefaultRecord
     public Guid UpdatedBy { get; set; }
     public uint Xmin { get; set; }
 }
+
+internal sealed class InventoryBranchExpirationSettingRecord
+{
+    public Guid OrganizationId { get; set; }
+    public Guid BranchId { get; set; }
+    public Guid ProductId { get; set; }
+    public bool TracksExpiration { get; set; }
+    public int? ExpirationWarningDays { get; set; }
+    public DateTimeOffset EnabledAtUtc { get; set; }
+    public Guid EnabledBy { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public Guid UpdatedBy { get; set; }
+    public uint Xmin { get; set; }
+}

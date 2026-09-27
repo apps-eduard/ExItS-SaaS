@@ -135,6 +135,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<InventoryBranchReorderSettingRecord> InventoryBranchReorderSettings => Set<InventoryBranchReorderSettingRecord>();
     internal DbSet<InventoryBranchReorderDefaultRecord> InventoryBranchReorderDefaults => Set<InventoryBranchReorderDefaultRecord>();
+    internal DbSet<InventoryBranchExpirationSettingRecord> InventoryBranchExpirationSettings => Set<InventoryBranchExpirationSettingRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
@@ -4643,6 +4644,38 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
             entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+        });
+
+        modelBuilder.Entity<InventoryBranchExpirationSettingRecord>(entity =>
+        {
+            entity.ToTable("inventory_branch_expiration_settings", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_expiration_settings_warning_days",
+                    "expiration_warning_days IS NULL OR (expiration_warning_days >= 1 AND expiration_warning_days <= 365)");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId })
+                .HasName("pk_inventory_branch_expiration_settings");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.TracksExpiration).HasColumnName("tracks_expiration");
+            entity.Property(e => e.ExpirationWarningDays).HasColumnName("expiration_warning_days");
+            entity.Property(e => e.EnabledAtUtc).HasColumnName("enabled_at_utc");
+            entity.Property(e => e.EnabledBy).HasColumnName("enabled_by");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId, e.TracksExpiration })
+                .HasDatabaseName("ix_inventory_branch_expiration_settings_org_branch_enabled");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_branch_expiration_settings_products");
         });
 
         modelBuilder.Entity<ExpenseCategoryRecord>(entity =>

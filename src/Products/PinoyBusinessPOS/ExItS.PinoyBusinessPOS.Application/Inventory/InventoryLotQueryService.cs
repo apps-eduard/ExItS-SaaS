@@ -12,17 +12,20 @@ public sealed class InventoryLotQueryService
 {
     private readonly IInventoryLotRepository _lots;
     private readonly ICatalogProductRepository _products;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public InventoryLotQueryService(
         IInventoryLotRepository lots,
         ICatalogProductRepository products,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _lots = lots;
         _products = products;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -50,7 +53,12 @@ public sealed class InventoryLotQueryService
             .ListPagedAsync(orgId, catalogProductId, branch, includeDepleted, skip, take, cancellationToken)
             .ConfigureAwait(false);
         var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
-        var warning = product.EffectiveExpirationWarningDays;
+        // LEGACY_COMPAT: product-level warning when no branch context is supplied.
+        var warning = branch is PosBranchId warningBranch
+            ? (await _expirationPolicies
+                .ResolveAsync(orgId, warningBranch, catalogProductId, cancellationToken)
+                .ConfigureAwait(false)).EffectiveWarningDays
+            : product.EffectiveExpirationWarningDays;
         return new PagedResult<PosInventoryLotDto>(
             items.Select(l => Map(l, today, warning)).ToList(),
             total,
@@ -93,10 +101,39 @@ public sealed class InventoryLotQueryService
             }
         }
 
+        var warningByBranchProduct = new Dictionary<(Guid BranchId, Guid ProductId), int>();
+        if (branch is PosBranchId listBranch && productIds.Length > 0)
+        {
+            var policies = await _expirationPolicies
+                .ResolveManyAsync(orgId, listBranch, productIds, cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var (productKey, policy) in policies)
+            {
+                warningByBranchProduct[(listBranch.Value, productKey)] = policy.EffectiveWarningDays;
+            }
+        }
+        else
+        {
+            foreach (var group in items.Where(l => l.BranchId is not null).GroupBy(l => l.BranchId!.Value))
+            {
+                var ids = group.Select(l => l.ProductId).Distinct().ToList();
+                var policies = await _expirationPolicies
+                    .ResolveManyAsync(orgId, PosBranchId.From(group.Key), ids, cancellationToken)
+                    .ConfigureAwait(false);
+                foreach (var (productKey, policy) in policies)
+                {
+                    warningByBranchProduct[(group.Key, productKey)] = policy.EffectiveWarningDays;
+                }
+            }
+        }
+
         var mapped = items.Select(lot =>
         {
             products.TryGetValue(lot.ProductId, out var product);
-            var warning = product?.EffectiveExpirationWarningDays ?? InventoryLot.DefaultWarningDays;
+            var warning = lot.BranchId is PosBranchId lotBranch
+                && warningByBranchProduct.TryGetValue((lotBranch.Value, lot.ProductId.Value), out var days)
+                    ? days
+                    : product?.EffectiveExpirationWarningDays ?? InventoryLot.DefaultWarningDays;
             return new PosExpiringLotDto(
                 lot.Id.Value,
                 lot.ProductId.Value,

@@ -147,25 +147,29 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
             lots = lots.Where(lot => lot.BranchId == exactBranch);
         }
 
+        // Only lots with a concrete branch and an enabled branch expiration setting count.
+        lots = lots.Where(lot => lot.BranchId != null);
+
         var onHand =
             from lot in lots
-            join product in _db.CatalogProducts.AsNoTracking()
-                on new { Org = lot.OrganizationId, Id = lot.ProductId }
-                equals new { Org = product.OrganizationId, Id = product.Id }
-            select new { lot.ExpirationDate, product.TracksExpiration, product.ExpirationWarningDays };
+            join setting in _db.InventoryBranchExpirationSettings.AsNoTracking()
+                on new { Org = lot.OrganizationId, Branch = lot.BranchId!.Value, Id = lot.ProductId }
+                equals new { Org = setting.OrganizationId, Branch = setting.BranchId, Id = setting.ProductId }
+            where setting.TracksExpiration
+            select new { lot.ExpirationDate, setting.ExpirationWarningDays };
 
         var expired = await onHand
             .CountAsync(row => row.ExpirationDate < today, cancellationToken)
             .ConfigureAwait(false);
 
-        // Near-expiry window is per product (EffectiveExpirationWarningDays). DateOnly.AddDays with a
+        // Near-expiry window is per branch setting (EffectiveWarningDays). DateOnly.AddDays with a
         // column does not reliably translate; project warning days then evaluate the window in-memory.
         var candidates = await onHand
             .Where(row => row.ExpirationDate >= today)
             .Select(row => new
             {
                 row.ExpirationDate,
-                WarningDays = row.TracksExpiration && row.ExpirationWarningDays != null
+                WarningDays = row.ExpirationWarningDays != null
                     ? row.ExpirationWarningDays.Value
                     : defaultWarning
             })

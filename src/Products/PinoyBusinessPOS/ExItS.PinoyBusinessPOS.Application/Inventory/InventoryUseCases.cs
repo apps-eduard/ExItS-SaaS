@@ -21,6 +21,7 @@ public sealed class InventoryQueryService
     private readonly BranchInventoryContextResolver _branchContext;
     private readonly IInventoryTransferRepository _transfers;
     private readonly IDirectPurchaseReceiptRepository _directPurchases;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IOrganizationBranchDirectory? _branches;
     private readonly IEffectivePriceResolver? _effectivePrices;
     private readonly InventoryCostResolver? _costs;
@@ -35,6 +36,7 @@ public sealed class InventoryQueryService
         BranchInventoryContextResolver branchContext,
         IInventoryTransferRepository transfers,
         IDirectPurchaseReceiptRepository directPurchases,
+        BranchExpirationPolicyResolver expirationPolicies,
         IClock clock,
         IOrganizationBranchDirectory? branches = null,
         IEffectivePriceResolver? effectivePrices = null,
@@ -48,6 +50,7 @@ public sealed class InventoryQueryService
         _branchContext = branchContext;
         _transfers = transfers;
         _directPurchases = directPurchases;
+        _expirationPolicies = expirationPolicies;
         _clock = clock;
         _branches = branches;
         _effectivePrices = effectivePrices;
@@ -88,10 +91,13 @@ public sealed class InventoryQueryService
         decimal? sellable = null;
         decimal? expired = null;
         decimal? near = null;
-        if (product.TracksExpiration)
+        var branch = PosBranchId.From(context.BranchId);
+        var policy = await _expirationPolicies
+            .ResolveAsync(orgId, branch, catalogProductId, cancellationToken)
+            .ConfigureAwait(false);
+        if (policy.TracksExpiration)
         {
             var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
-            var branch = PosBranchId.From(context.BranchId);
             var lots = await _lots
                 .ListOnHandAsync(orgId, catalogProductId, branch, includeDepleted: false, cancellationToken)
                 .ConfigureAwait(false);
@@ -104,7 +110,7 @@ public sealed class InventoryQueryService
                 lots = InventoryLotCompatibility.UnionByLotId(lots, legacyLots);
             }
 
-            var warning = product.EffectiveExpirationWarningDays;
+            var warning = policy.EffectiveWarningDays;
             sellable = InventoryLotFefo.SellableQuantity(lots, today);
             expired = InventoryLotFefo.ExpiredQuantity(lots, today);
             near = InventoryLotFefo.NearExpiryQuantity(lots, today, warning);
@@ -138,7 +144,8 @@ public sealed class InventoryQueryService
             expired,
             near,
             hasOpeningStock,
-            branchRead);
+            branchRead,
+            policy);
         var withCommitments = await EnrichWithTransferCommitmentsAsync(
                 organizationId,
                 context.BranchId,
@@ -717,7 +724,8 @@ public sealed class InventoryQueryService
         decimal? expiredQuantity = null,
         decimal? nearExpiryQuantity = null,
         bool hasOpeningStock = false,
-        BranchInventoryProductRead? branchRead = null)
+        BranchInventoryProductRead? branchRead = null,
+        BranchExpirationPolicy? expirationPolicy = null)
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = branchRead?.BranchOnHand ?? account?.OnHandQuantity ?? 0m;
@@ -736,6 +744,13 @@ public sealed class InventoryQueryService
         var stockStatus = isTracked
             ? InventoryStockStatuses.ToCode(InventoryStockStatuses.Derive(isTracked, available, reorder))
             : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
+        // LEGACY_COMPAT: without a branch policy, DTO still surfaces CatalogProduct.TracksExpiration.
+        var tracksExpiration = expirationPolicy?.TracksExpiration ?? product.TracksExpiration;
+        var expirationWarningDays = expirationPolicy is { TracksExpiration: true }
+            ? expirationPolicy.Value.ExpirationWarningDays
+            : expirationPolicy is null
+                ? product.ExpirationWarningDays
+                : null;
 
         return new PosInventoryAccountDto(
             product.Id.Value,
@@ -755,8 +770,8 @@ public sealed class InventoryQueryService
             movementCount,
             account?.CreatedAtUtc ?? product.CreatedAtUtc,
             account?.UpdatedAtUtc ?? product.UpdatedAtUtc,
-            product.TracksExpiration,
-            product.ExpirationWarningDays,
+            tracksExpiration,
+            expirationWarningDays,
             sellableQuantity,
             expiredQuantity,
             nearExpiryQuantity,
@@ -876,6 +891,7 @@ public sealed class EnableInventoryTracking
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
     private readonly BranchInventoryMutationService _branchMutations;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -887,6 +903,7 @@ public sealed class EnableInventoryTracking
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         BranchInventoryMutationService branchMutations,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         ISupplierProductExposureRepository exposures,
@@ -897,6 +914,7 @@ public sealed class EnableInventoryTracking
         _branchBalances = branchBalances;
         _lots = lots;
         _branchMutations = branchMutations;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _exposures = exposures;
@@ -1014,7 +1032,9 @@ public sealed class EnableInventoryTracking
                         cancellationToken)
                     .ConfigureAwait(false);
 
-                if (product.TracksExpiration)
+                if ((await _expirationPolicies
+                        .ResolveAsync(orgId, actingBranch, catalogProductId, cancellationToken)
+                        .ConfigureAwait(false)).TracksExpiration)
                 {
                     if (expirationDate is null)
                     {
@@ -1073,6 +1093,7 @@ public sealed class AddOpeningStock
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
     private readonly BranchInventoryMutationService _branchMutations;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -1083,6 +1104,7 @@ public sealed class AddOpeningStock
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         BranchInventoryMutationService branchMutations,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBranchDirectory? branches = null)
@@ -1092,6 +1114,7 @@ public sealed class AddOpeningStock
         _branchBalances = branchBalances;
         _lots = lots;
         _branchMutations = branchMutations;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
@@ -1226,7 +1249,9 @@ public sealed class AddOpeningStock
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            if (product.TracksExpiration)
+            if ((await _expirationPolicies
+                    .ResolveAsync(orgId, actingBranch, catalogProductId, cancellationToken)
+                    .ConfigureAwait(false)).TracksExpiration)
             {
                 if (expirationDate is null)
                 {
@@ -1358,6 +1383,7 @@ public sealed class AdjustInventoryStock
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly IInventoryLotRepository _lotRepository;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -1369,6 +1395,7 @@ public sealed class AdjustInventoryStock
         IInventoryBranchBalanceRepository branchBalances,
         IInventoryLotRepository lotRepository,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBranchDirectory? branches = null)
@@ -1379,6 +1406,7 @@ public sealed class AdjustInventoryStock
         _branchBalances = branchBalances;
         _lotRepository = lotRepository;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
@@ -1549,7 +1577,11 @@ public sealed class AdjustInventoryStock
                         cancellationToken)
                     .ConfigureAwait(false);
 
-            if (product.TracksExpiration)
+            var tracksExpiration = branch is PosBranchId adjustBranch
+                && (await _expirationPolicies
+                    .ResolveAsync(orgId, adjustBranch, catalogProductId, cancellationToken)
+                    .ConfigureAwait(false)).TracksExpiration;
+            if (tracksExpiration)
             {
                 if (string.Equals(normalizedDirection, "In", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1735,17 +1767,20 @@ public sealed class SaleStockService : ISaleStockService
 {
     private readonly IInventoryRepository _inventory;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly IOrganizationBranchDirectory? _branches;
 
     public SaleStockService(
         IInventoryRepository inventory,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IInventoryBranchBalanceRepository? branchBalances = null,
         IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _branchBalances = branchBalances;
         _branches = branches;
     }
@@ -1968,6 +2003,19 @@ public sealed class SaleStockService : ISaleStockService
                     var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
                     var primaryId = await ResolvePrimaryAsync(sale.OrganizationId.Value, ct).ConfigureAwait(false);
                     var physicalBranch = ResolveSalePhysicalBranch(sale, branchId);
+                    IReadOnlyDictionary<Guid, BranchExpirationPolicy> salePolicies =
+                        new Dictionary<Guid, BranchExpirationPolicy>();
+                    if (physicalBranch is Guid saleBranch && saleBranch != Guid.Empty)
+                    {
+                        salePolicies = await _expirationPolicies
+                            .ResolveManyAsync(
+                                sale.OrganizationId,
+                                PosBranchId.From(saleBranch),
+                                productIds,
+                                ct)
+                            .ConfigureAwait(false);
+                    }
+
                     foreach (var line in sale.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -1989,7 +2037,9 @@ public sealed class SaleStockService : ISaleStockService
                                 "One or more products in the cart were not found in this organization.");
                         }
 
-                        if (product.TracksExpiration)
+                        var tracksExpiration = salePolicies.TryGetValue(line.ProductId.Value, out var policy)
+                            && policy.TracksExpiration;
+                        if (tracksExpiration)
                         {
                             account.Release(line.Quantity);
                             account.Touch(utcNow);
@@ -2005,7 +2055,8 @@ public sealed class SaleStockService : ISaleStockService
                                     ct,
                                     physicalBranch,
                                     applyBranchOverlay: false,
-                                    primaryBranchId: primaryId)
+                                    primaryBranchId: primaryId,
+                                    tracksExpiration: true)
                                 .ConfigureAwait(false);
                             await ApplyBranchReservationAsync(
                                     sale.OrganizationId,
@@ -2124,9 +2175,15 @@ public sealed class SaleStockService : ISaleStockService
         CancellationToken cancellationToken,
         Guid? branchId = null,
         bool applyBranchOverlay = true,
-        Guid? primaryBranchId = null)
+        Guid? primaryBranchId = null,
+        bool? tracksExpiration = null)
     {
-        if (product.TracksExpiration)
+        var useLots = tracksExpiration
+            ?? (branchId is Guid location && location != Guid.Empty
+                && (await _expirationPolicies
+                    .ResolveAsync(organizationId, PosBranchId.From(location), line.ProductId, cancellationToken)
+                    .ConfigureAwait(false)).TracksExpiration);
+        if (useLots)
         {
             var today = InventoryLot.BusinessDateOf(utcNow);
             try
@@ -2141,8 +2198,8 @@ public sealed class SaleStockService : ISaleStockService
                         utcNow,
                         StockMovementType.SaleDeduction,
                         StockMovementSourceType.Sale,
-                        branchId: branchId is Guid location && location != Guid.Empty
-                            ? PosBranchId.From(location)
+                        branchId: branchId is Guid locationId && locationId != Guid.Empty
+                            ? PosBranchId.From(locationId)
                             : null,
                         sourceId: sale.Id.Value,
                         cancellationToken: cancellationToken,

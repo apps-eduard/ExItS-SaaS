@@ -4117,9 +4117,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.manageExpirationSettings": "I-manage ang expiration settings",
 
   "inventory.expirationSettingsTitle": "Expiration settings",
-
+  "inventory.expirationSettingsTitleWithBranch": "Expiration tracking · {branchName}",
   "inventory.expirationSettingsEnableHint":
-
     "I-on ang expiration tracking para ma-record ang expiry dates sang stock lots kag near-expiry warnings.",
 
   "inventory.expirationSetupRequired": "Missing expiry",

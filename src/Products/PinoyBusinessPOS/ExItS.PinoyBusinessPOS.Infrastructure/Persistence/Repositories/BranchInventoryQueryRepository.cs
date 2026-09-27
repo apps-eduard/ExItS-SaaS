@@ -200,6 +200,11 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
             from reorder in reorderJoin.DefaultIfEmpty()
             join cat in _db.ProductCategories.AsNoTracking() on p.CategoryId equals cat.Id into catJoin
             from cat in catJoin.DefaultIfEmpty()
+            join exp in _db.InventoryBranchExpirationSettings.AsNoTracking()
+                on new { OrganizationId = orgId, BranchId = branchId, ProductId = p.Id }
+                equals new { exp.OrganizationId, exp.BranchId, exp.ProductId }
+                into expJoin
+            from exp in expJoin.DefaultIfEmpty()
             let orgOnHand = a != null ? a.OnHandQuantity : 0m
             let otherSum = _db.InventoryBranchBalances
                 .Where(b => b.OrganizationId == orgId && b.BranchId != branchId && b.ProductId == p.Id)
@@ -267,8 +272,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 ReorderQuantity = reorderQuantity,
                 CreatedAtUtc = a != null ? a.CreatedAtUtc : p.CreatedAtUtc,
                 UpdatedAtUtc = a != null ? a.UpdatedAtUtc : p.UpdatedAtUtc,
-                TracksExpiration = p.TracksExpiration,
-                ExpirationWarningDays = p.ExpirationWarningDays,
+                TracksExpiration = exp != null && exp.TracksExpiration,
+                ExpirationWarningDays = exp != null && exp.TracksExpiration ? exp.ExpirationWarningDays : null,
                 Sku = p.Sku,
                 Barcode = p.Barcode,
                 CategoryId = p.CategoryId,

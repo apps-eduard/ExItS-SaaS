@@ -14,17 +14,20 @@ public sealed class CatalogBranchStockResolver
     private readonly IInventoryRepository _inventory;
     private readonly BranchInventoryReadService _branchReads;
     private readonly IInventoryLotRepository _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IClock _clock;
 
     public CatalogBranchStockResolver(
         IInventoryRepository inventory,
         BranchInventoryReadService branchReads,
         IInventoryLotRepository lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IClock clock)
     {
         _inventory = inventory;
         _branchReads = branchReads;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _clock = clock;
     }
 
@@ -47,9 +50,16 @@ public sealed class CatalogBranchStockResolver
         var branchReads = await _branchReads
             .ResolveAsync(context, accounts, cancellationToken)
             .ConfigureAwait(false);
+        var branch = PosBranchId.From(context.BranchId);
+        var policies = await _expirationPolicies
+            .ResolveManyAsync(orgId, branch, productIds, cancellationToken)
+            .ConfigureAwait(false);
 
         var expirationProducts = products
-            .Where(p => p.TracksExpiration && accountByProduct.TryGetValue(p.ProductId, out var a) && a.IsTracked)
+            .Where(p =>
+                policies.GetValueOrDefault(p.ProductId).TracksExpiration
+                && accountByProduct.TryGetValue(p.ProductId, out var a)
+                && a.IsTracked)
             .Select(p => CatalogProductId.From(p.ProductId))
             .Distinct()
             .ToList();

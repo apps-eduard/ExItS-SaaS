@@ -49,17 +49,20 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly IOrganizationBranchDirectory? _branches;
     private readonly InventoryLotStockService? _lots;
+    private readonly BranchExpirationPolicyResolver? _expirationPolicies;
 
     public CustomerOrderStockService(
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository? branchBalances = null,
         IOrganizationBranchDirectory? branches = null,
-        InventoryLotStockService? lots = null)
+        InventoryLotStockService? lots = null,
+        BranchExpirationPolicyResolver? expirationPolicies = null)
     {
         _inventory = inventory;
         _branchBalances = branchBalances;
         _branches = branches;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
     }
 
     public Task<ApplicationResult> EnsureAvailableAsync(
@@ -296,6 +299,11 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                     var primaryId = await ResolvePrimaryAsync(order.SellerOrganizationId.Value, ct)
                         .ConfigureAwait(false);
                     var branchId = PosBranchId.From(order.FulfillmentBranchId);
+                    var orderPolicies = _expirationPolicies is null
+                        ? (IReadOnlyDictionary<Guid, BranchExpirationPolicy>)new Dictionary<Guid, BranchExpirationPolicy>()
+                        : await _expirationPolicies
+                            .ResolveManyAsync(order.SellerOrganizationId, branchId, productIds, ct)
+                            .ConfigureAwait(false);
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -321,7 +329,8 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                                 "One or more products on the order were not found.");
                         }
 
-                        if (product.TracksExpiration && _lots is not null)
+                        if (orderPolicies.GetValueOrDefault(line.ProductId.Value).TracksExpiration
+                            && _lots is not null)
                         {
                             var today = InventoryLot.BusinessDateOf(utcNow);
                             try

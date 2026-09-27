@@ -4117,9 +4117,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.manageExpirationSettings": "I-manage ti expiration settings",
 
   "inventory.expirationSettingsTitle": "Expiration settings",
-
+  "inventory.expirationSettingsTitleWithBranch": "Expiration tracking · {branchName}",
   "inventory.expirationSettingsEnableHint":
-
     "I-on ti expiration tracking tapno mairekord ti expiry dates dagiti stock lots ken near-expiry warnings.",
 
   "inventory.expirationSetupRequired": "Missing expiry",

@@ -458,4 +458,30 @@ internal static class InventoryTransferEntityMapper
             UpdatedAtUtc = setting.UpdatedAtUtc,
             UpdatedBy = setting.UpdatedBy
         };
+
+    public static InventoryBranchExpirationSetting ToDomain(InventoryBranchExpirationSettingRecord record) =>
+        InventoryBranchExpirationSetting.Rehydrate(
+            PosOrganizationId.From(record.OrganizationId),
+            PosBranchId.From(record.BranchId),
+            CatalogProductId.From(record.ProductId),
+            record.TracksExpiration,
+            record.ExpirationWarningDays,
+            record.EnabledAtUtc,
+            record.EnabledBy,
+            record.UpdatedAtUtc,
+            record.UpdatedBy);
+
+    public static InventoryBranchExpirationSettingRecord ToRecord(InventoryBranchExpirationSetting setting) =>
+        new()
+        {
+            OrganizationId = setting.OrganizationId.Value,
+            BranchId = setting.BranchId.Value,
+            ProductId = setting.ProductId.Value,
+            TracksExpiration = setting.TracksExpiration,
+            ExpirationWarningDays = setting.ExpirationWarningDays,
+            EnabledAtUtc = setting.EnabledAtUtc,
+            EnabledBy = setting.EnabledBy,
+            UpdatedAtUtc = setting.UpdatedAtUtc,
+            UpdatedBy = setting.UpdatedBy
+        };
 }

@@ -413,6 +413,7 @@ builder.Services.AddScoped<GetOrganizationB2bPublicProfile>();
 builder.Services.AddScoped<GetOrganizationDocumentPublicIdentity>();
 builder.Services.AddScoped<MembershipBusinessProfileUseCases>();
 builder.Services.AddScoped<ResolveOrganizationActorDisplayNames>();
+builder.Services.AddScoped<ResolveOrganizationBranchDisplayNames>();
 builder.Services.AddScoped<AddOrganizationMembership>();
 builder.Services.AddScoped<ChangeOrganizationRole>();
 builder.Services.AddScoped<SuspendOrganizationMembership>();

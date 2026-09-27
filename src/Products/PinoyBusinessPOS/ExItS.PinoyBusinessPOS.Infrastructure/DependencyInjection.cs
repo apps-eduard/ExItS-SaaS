@@ -91,6 +91,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryBranchBalanceRepository, InventoryBranchBalanceRepository>();
         services.AddScoped<IInventoryBranchReorderRepository, InventoryBranchReorderRepository>();
         services.AddScoped<IInventoryBranchReorderDefaultRepository, InventoryBranchReorderDefaultRepository>();
+        services.AddScoped<IInventoryBranchExpirationSettingRepository, InventoryBranchExpirationSettingRepository>();
         services.AddScoped<IBranchInventoryQueryRepository, BranchInventoryQueryRepository>();
         services.AddScoped<IBranchInventoryReservationCutover, BranchInventoryReservationCutover>();
         services.AddScoped<IInventoryPhysicalAudit, InventoryPhysicalAuditService>();

@@ -376,6 +376,7 @@ public sealed class CreateInventoryTransfer
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -387,6 +388,7 @@ public sealed class CreateInventoryTransfer
         IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
         IInventoryLotRepository lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IOrganizationBranchDirectory branches,
         IPosUnitOfWork unitOfWork,
         IClock clock,
@@ -397,6 +399,7 @@ public sealed class CreateInventoryTransfer
         _balances = balances;
         _products = products;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _branches = branches;
         _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
@@ -427,7 +430,15 @@ public sealed class CreateInventoryTransfer
 
         var orgId = PosOrganizationId.From(organizationId);
         var drafts = await InventoryTransferLineFactory
-            .CreateDraftsAsync(_products, _lots, orgId, request.Lines, _clock.UtcNow, cancellationToken)
+            .CreateDraftsAsync(
+                _products,
+                _lots,
+                _expirationPolicies,
+                orgId,
+                PosBranchId.From(request.SourceBranchId),
+                request.Lines,
+                _clock.UtcNow,
+                cancellationToken)
             .ConfigureAwait(false);
         if (!drafts.IsSuccess)
         {
@@ -534,6 +545,7 @@ public sealed class PrepareInventoryTransferRemaining
     private readonly PrepareStockRequestTransfer _prepareStockRequestTransfer;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -544,6 +556,7 @@ public sealed class PrepareInventoryTransferRemaining
         PrepareStockRequestTransfer prepareStockRequestTransfer,
         ICatalogProductRepository products,
         IInventoryLotRepository lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -553,6 +566,7 @@ public sealed class PrepareInventoryTransferRemaining
         _prepareStockRequestTransfer = prepareStockRequestTransfer;
         _products = products;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -785,6 +799,9 @@ public sealed class PrepareInventoryTransferRemaining
         var productIds = remainingLines.Select(l => CatalogProductId.From(l.ProductId)).Distinct().ToList();
         var catalog = (await _products.ListByIdsAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false))
             .ToDictionary(p => p.Id.Value);
+        var sourcePolicies = await _expirationPolicies
+            .ResolveManyAsync(organizationId, sourceBranchId, productIds, cancellationToken)
+            .ConfigureAwait(false);
 
         var expanded = new List<InventoryTransferLineRequest>();
         foreach (var group in remainingLines.GroupBy(l => l.ProductId))
@@ -802,7 +819,7 @@ public sealed class PrepareInventoryTransferRemaining
                     "Product was not found.");
             }
 
-            if (!product.TracksExpiration)
+            if (!sourcePolicies.GetValueOrDefault(group.Key).TracksExpiration)
             {
                 expanded.Add(new InventoryTransferLineRequest(group.Key, quantity, SourceLotId: null));
                 continue;
@@ -844,6 +861,7 @@ public sealed class DispatchInventoryTransfer
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lotRepository;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
     private readonly IStockRequestRepository _stockRequests;
@@ -859,6 +877,7 @@ public sealed class DispatchInventoryTransfer
         ICatalogProductRepository products,
         IInventoryLotRepository lotRepository,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
         IStockRequestRepository stockRequests,
@@ -873,6 +892,7 @@ public sealed class DispatchInventoryTransfer
         _products = products;
         _lotRepository = lotRepository;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _branches = branches;
         _alerts = alerts;
         _stockRequests = stockRequests;
@@ -931,6 +951,63 @@ public sealed class DispatchInventoryTransfer
             .ToDictionary(p => p.Id.Value);
         var balances = (await _balances.ListByProductIdsAsync(orgId, productIds, ct).ConfigureAwait(false))
             .ToList();
+        var distinctProductIds = productIds.Distinct().ToList();
+        var sourcePolicies = await _expirationPolicies
+            .ResolveManyAsync(orgId, transfer.SourceBranchId, distinctProductIds, ct)
+            .ConfigureAwait(false);
+        var destPolicies = await _expirationPolicies
+            .ResolveManyAsync(orgId, transfer.DestinationBranchId, distinctProductIds, ct)
+            .ConfigureAwait(false);
+        var primaryBranchId = await _branches
+            .GetPrimaryBranchIdAsync(organizationId, ct)
+            .ConfigureAwait(false);
+        var expiryBranchNames = await _branches
+            .GetNamesAsync(
+                organizationId,
+                [transfer.SourceBranchId.Value, transfer.DestinationBranchId.Value],
+                ct)
+            .ConfigureAwait(false);
+        var sourceBranchLabel = expiryBranchNames.TryGetValue(transfer.SourceBranchId.Value, out var sourceName)
+                && !string.IsNullOrWhiteSpace(sourceName)
+            ? sourceName
+            : "source branch";
+        var destinationBranchLabel = expiryBranchNames.TryGetValue(transfer.DestinationBranchId.Value, out var destName)
+                && !string.IsNullOrWhiteSpace(destName)
+            ? destName
+            : "destination branch";
+
+        foreach (var productId in distinctProductIds)
+        {
+            var sourceOn = sourcePolicies.GetValueOrDefault(productId.Value).TracksExpiration;
+            var destOn = destPolicies.GetValueOrDefault(productId.Value).TracksExpiration;
+            var productLabel = catalog.TryGetValue(productId.Value, out var catalogProduct)
+                ? catalogProduct.Name
+                : "this product";
+            if (!sourceOn && destOn)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    DomainErrorCodes.InventoryTransferSourceExpirySetupRequired,
+                    $"{destinationBranchLabel} requires expiry tracking for {productLabel}, but {sourceBranchLabel} does not. Enable expiration tracking for {productLabel} at {sourceBranchLabel} before dispatching.");
+            }
+
+            if (sourceOn && !destOn)
+            {
+                var account = accounts.GetValueOrDefault(productId.Value);
+                var orgOnHand = account is { IsTracked: true } ? account.OnHandQuantity : 0m;
+                var destOnHand = BranchStockResolver.ResolveOnHand(
+                    transfer.DestinationBranchId,
+                    primaryBranchId,
+                    orgOnHand,
+                    balances,
+                    productId);
+                if (destOnHand > 0m)
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InventoryTransferDestinationExpirySetupRequired,
+                        $"{sourceBranchLabel} tracks expiration for {productLabel}, but {destinationBranchLabel} already has on-hand stock without expiration tracking. Set up expiry tracking for {productLabel} at {destinationBranchLabel} before this lot-aware transfer can be dispatched.");
+                }
+            }
+        }
 
         try
         {
@@ -1163,6 +1240,8 @@ public sealed class ReceiveInventoryTransfer
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lotRepository;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
+    private readonly IInventoryBranchExpirationSettingRepository _expirationSettings;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
     private readonly IStockRequestRepository _stockRequests;
@@ -1179,6 +1258,8 @@ public sealed class ReceiveInventoryTransfer
         ICatalogProductRepository products,
         IInventoryLotRepository lotRepository,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
+        IInventoryBranchExpirationSettingRepository expirationSettings,
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
         IStockRequestRepository stockRequests,
@@ -1194,6 +1275,8 @@ public sealed class ReceiveInventoryTransfer
         _products = products;
         _lotRepository = lotRepository;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
+        _expirationSettings = expirationSettings;
         _branches = branches;
         _alerts = alerts;
         _stockRequests = stockRequests;
@@ -1455,6 +1538,68 @@ public sealed class ReceiveInventoryTransfer
 
                 if (expiry is DateOnly lotExpiry)
                 {
+                    var destPolicy = await _expirationPolicies
+                        .ResolveAsync(orgId, transfer.DestinationBranchId, line.ProductId, ct)
+                        .ConfigureAwait(false);
+                    if (!destPolicy.TracksExpiration)
+                    {
+                        // SOURCE ON / DEST OFF: only auto-enable when destination branch on-hand is still zero.
+                        // If untracked stock appeared after dispatch, require destination setup first.
+                        var orgOnHand = account is { IsTracked: true } ? account.OnHandQuantity : 0m;
+                        var destBalances = await _balances
+                            .ListByProductIdsAsync(orgId, [line.ProductId], ct)
+                            .ConfigureAwait(false);
+                        var destPrimary = await _branches
+                            .GetPrimaryBranchIdAsync(organizationId, ct)
+                            .ConfigureAwait(false);
+                        var destOnHand = BranchStockResolver.ResolveOnHand(
+                            transfer.DestinationBranchId,
+                            destPrimary,
+                            orgOnHand,
+                            destBalances,
+                            line.ProductId);
+                        if (destOnHand > 0m)
+                        {
+                            var receiveBranchNames = await _branches
+                                .GetNamesAsync(
+                                    organizationId,
+                                    [transfer.SourceBranchId.Value, transfer.DestinationBranchId.Value],
+                                    ct)
+                                .ConfigureAwait(false);
+                            var sourceLabel = receiveBranchNames.TryGetValue(transfer.SourceBranchId.Value, out var src)
+                                    && !string.IsNullOrWhiteSpace(src)
+                                ? src
+                                : "source branch";
+                            var destLabel = receiveBranchNames.TryGetValue(transfer.DestinationBranchId.Value, out var dst)
+                                    && !string.IsNullOrWhiteSpace(dst)
+                                ? dst
+                                : "destination branch";
+                            return ApplicationResult<InventoryTransfer>.Failure(
+                                DomainErrorCodes.InventoryTransferDestinationExpirySetupRequired,
+                                $"{destLabel} now has on-hand {line.NameSnapshot} stock without expiration tracking (transfer from {sourceLabel}). Set up expiry tracking for {line.NameSnapshot} at {destLabel} before receiving this lot-aware transfer.");
+                        }
+
+                        var existingSetting = await _expirationSettings
+                            .GetAsync(orgId, transfer.DestinationBranchId, line.ProductId, ct)
+                            .ConfigureAwait(false);
+                        if (existingSetting is null)
+                        {
+                            existingSetting = InventoryBranchExpirationSetting.CreateEnabled(
+                                orgId,
+                                transfer.DestinationBranchId,
+                                line.ProductId,
+                                expirationWarningDays: null,
+                                actorId,
+                                utcNow);
+                        }
+                        else
+                        {
+                            existingSetting.Enable(expirationWarningDays: null, actorId, utcNow);
+                        }
+
+                        await _expirationSettings.UpsertAsync(existingSetting, ct).ConfigureAwait(false);
+                    }
+
                     var destLot = await _lots
                         .ReceiveAsync(
                             orgId,
@@ -2399,7 +2544,9 @@ internal static class InventoryTransferLineFactory
     public static async Task<ApplicationResult<IReadOnlyList<InventoryTransferLineDraft>>> CreateDraftsAsync(
         ICatalogProductRepository products,
         IInventoryLotRepository lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         PosOrganizationId organizationId,
+        PosBranchId sourceBranchId,
         IReadOnlyList<InventoryTransferLineRequest>? lines,
         DateTimeOffset utcNow,
         CancellationToken cancellationToken)
@@ -2414,6 +2561,9 @@ internal static class InventoryTransferLineFactory
         var productIds = lines.Select(l => CatalogProductId.From(l.ProductId)).ToList();
         var catalog = (await products.ListByIdsAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false))
             .ToDictionary(p => p.Id.Value);
+        var sourcePolicies = await expirationPolicies
+            .ResolveManyAsync(organizationId, sourceBranchId, productIds.Distinct().ToList(), cancellationToken)
+            .ConfigureAwait(false);
 
         var drafts = new List<InventoryTransferLineDraft>(lines.Count);
         foreach (var line in lines)
@@ -2435,7 +2585,7 @@ internal static class InventoryTransferLineFactory
             InventoryLotId? sourceLotId = null;
             string? lotNumber = null;
             DateOnly? expirationDate = null;
-            if (product.TracksExpiration)
+            if (sourcePolicies.GetValueOrDefault(line.ProductId).TracksExpiration)
             {
                 if (line.SourceLotId is null)
                 {

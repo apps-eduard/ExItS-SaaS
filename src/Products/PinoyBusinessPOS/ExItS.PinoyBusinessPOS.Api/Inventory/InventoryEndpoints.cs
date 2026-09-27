@@ -809,6 +809,7 @@ internal static class InventoryEndpoints
         Guid productId,
         EnableExpirationTrackingRequest? body,
         EnableExpirationTracking useCase,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -818,8 +819,14 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct)
+            .ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
         body ??= new EnableExpirationTrackingRequest();
-        PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
         var result = await useCase
             .ExecuteAsync(
                 organizationId,
@@ -828,7 +835,7 @@ internal static class InventoryEndpoints
                 body.ExpirationWarningDays,
                 body.ExistingStockLots,
                 body.ExpectedOnHandQuantity,
-                branchId,
+                branchResolved.Context!.BranchId,
                 ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);

@@ -4117,9 +4117,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.manageExpirationSettings": "I-manage ang expiration settings",
 
   "inventory.expirationSettingsTitle": "Expiration settings",
-
+  "inventory.expirationSettingsTitleWithBranch": "Expiration tracking · {branchName}",
   "inventory.expirationSettingsEnableHint":
-
     "I-on ang expiration tracking aron i-record ang expiry dates sa stock lots ug near-expiry warnings.",
 
   "inventory.expirationSetupRequired": "Missing expiry",

@@ -2423,6 +2423,7 @@ public sealed class ReceivePurchaseOrder
     private readonly IConnectedPoReceivingIssueRepository? _receivingIssues;
     private readonly IInventoryRepository? _sellerInventory;
     private readonly ConnectedPoReturnEligibilityService? _returnEligibility;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -2441,7 +2442,8 @@ public sealed class ReceivePurchaseOrder
         ISupplierPayableRepository? payables = null,
         IConnectedPoReceivingIssueRepository? receivingIssues = null,
         IInventoryRepository? sellerInventory = null,
-        ConnectedPoReturnEligibilityService? returnEligibility = null)
+        ConnectedPoReturnEligibilityService? returnEligibility = null,
+        BranchExpirationPolicyResolver? expirationPolicies = null)
     {
         _orders = orders;
         _products = products;
@@ -2458,6 +2460,8 @@ public sealed class ReceivePurchaseOrder
         _receivingIssues = receivingIssues;
         _sellerInventory = sellerInventory;
         _returnEligibility = returnEligibility;
+        _expirationPolicies = expirationPolicies
+            ?? new BranchExpirationPolicyResolver(EmptyBranchExpirationSettings.Instance);
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2575,6 +2579,15 @@ public sealed class ReceivePurchaseOrder
                     productError.ErrorMessage!);
             }
 
+            var receivingBranch = PosBranchId.From(receivingBranchId);
+            var receivePolicies = await _expirationPolicies
+                .ResolveManyAsync(
+                    org,
+                    receivingBranch,
+                    productIds.Select(CatalogProductId.From).ToList(),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             var receiveLines = request.Lines
                 .Select(l =>
                 {
@@ -2594,7 +2607,8 @@ public sealed class ReceivePurchaseOrder
                             l.OtherReasonCode);
                     }
 
-                    if (product.TracksExpiration && l.ReceiveQty > 0m && l.ExpiryDate is null)
+                    var policy = receivePolicies.GetValueOrDefault(l.ProductId, BranchExpirationPolicy.Off);
+                    if (policy.TracksExpiration && l.ReceiveQty > 0m && l.ExpiryDate is null)
                     {
                         throw new DomainException(
                             DomainErrorCodes.InventoryExpirationRequired,
@@ -2646,7 +2660,6 @@ public sealed class ReceivePurchaseOrder
             var receiptPayment = paymentResolution.Value!;
             var utcNow = _clock.GetUtcNow();
             var businessDate = GoodsReceiptNumbers.BusinessDateOf(utcNow);
-            var receivingBranch = PosBranchId.From(receivingBranchId);
             IReadOnlyList<PurchaseReceiptStockOutcome> stockOutcomes = [];
 
             var (_, receipt) = await _orders.ReceiveAsync(
@@ -3009,6 +3022,7 @@ public sealed class VoidGoodsReceipt
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
     private readonly BranchInventoryMutationService _branchMutations;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly IConnectedPurchaseOrderRepository? _connectedOrders;
@@ -3023,6 +3037,7 @@ public sealed class VoidGoodsReceipt
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         BranchInventoryMutationService branchMutations,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
         IClock clock,
@@ -3036,6 +3051,7 @@ public sealed class VoidGoodsReceipt
         _branchBalances = branchBalances;
         _lots = lots;
         _branchMutations = branchMutations;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
         _clock = clock;
@@ -3187,6 +3203,9 @@ public sealed class VoidGoodsReceipt
                             .ToList();
                         var products = await _products.ListByIdsAsync(orgId, productIds, ct).ConfigureAwait(false);
                         var productsById = products.ToDictionary(p => p.Id.Value);
+                        var policies = await _expirationPolicies
+                            .ResolveManyAsync(orgId, receivingBranch, productIds, ct)
+                            .ConfigureAwait(false);
 
                         ApplicationResult<PosGoodsReceiptDto>? failure = null;
                         await _inventory
@@ -3198,8 +3217,8 @@ public sealed class VoidGoodsReceipt
                                     var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
                                     var anyLotTracked = receipt.Lines.Any(l =>
                                         l.QuantityReceived > 0m
-                                        && productsById.TryGetValue(l.ProductId.Value, out var p)
-                                        && p.TracksExpiration
+                                        && policies.TryGetValue(l.ProductId.Value, out var policy)
+                                        && policy.TracksExpiration
                                         && accountsByProduct.TryGetValue(l.ProductId.Value, out var a)
                                         && a.IsTracked);
 
@@ -3245,7 +3264,9 @@ public sealed class VoidGoodsReceipt
                                             return;
                                         }
 
-                                        if (!product.TracksExpiration
+                                        var tracksExpiration = policies.TryGetValue(line.ProductId.Value, out var linePolicy)
+                                            && linePolicy.TracksExpiration;
+                                        if (!tracksExpiration
                                             && account.OnHandQuantity < line.BaseQuantity)
                                         {
                                             failure = ApplicationResult<PosGoodsReceiptDto>.Failure(

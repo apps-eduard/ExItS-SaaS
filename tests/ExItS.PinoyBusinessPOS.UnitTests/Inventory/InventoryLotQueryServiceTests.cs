@@ -20,6 +20,7 @@ public sealed class InventoryLotQueryServiceTests
         var service = new InventoryLotQueryService(
             lots,
             new EmptyProducts(),
+            BranchExpirationTestHelpers.CreateResolver(),
             new ImmediateUnitOfWork(),
             new FixedClock());
 
