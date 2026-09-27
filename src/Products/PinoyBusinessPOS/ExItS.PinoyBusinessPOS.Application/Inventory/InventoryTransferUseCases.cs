@@ -378,6 +378,7 @@ public sealed class CreateInventoryTransfer
     private readonly IInventoryLotRepository _lots;
     private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IOrganizationBranchDirectory _branches;
+    private readonly ISupplyRouteRepository _supplyRoutes;
     private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -390,6 +391,7 @@ public sealed class CreateInventoryTransfer
         IInventoryLotRepository lots,
         BranchExpirationPolicyResolver expirationPolicies,
         IOrganizationBranchDirectory branches,
+        ISupplyRouteRepository supplyRoutes,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         InventoryCostResolver? costs = null)
@@ -401,6 +403,7 @@ public sealed class CreateInventoryTransfer
         _lots = lots;
         _expirationPolicies = expirationPolicies;
         _branches = branches;
+        _supplyRoutes = supplyRoutes;
         _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -426,6 +429,28 @@ public sealed class CreateInventoryTransfer
         if (branchGuard is not null)
         {
             return branchGuard;
+        }
+
+        if (request.SourceBranchId != request.DestinationBranchId)
+        {
+            var sourceType = await _branches
+                .GetBranchTypeAsync(organizationId, request.SourceBranchId, cancellationToken)
+                .ConfigureAwait(false);
+            if (SupplyRouteSourceRules.IsWarehouseBranchType(sourceType))
+            {
+                var orgForRoutes = PosOrganizationId.From(organizationId);
+                var routes = await _supplyRoutes
+                    .ListBySourceAsync(orgForRoutes, PosBranchId.From(request.SourceBranchId), cancellationToken)
+                    .ConfigureAwait(false);
+                var covered = routes.Any(r =>
+                    r.IsActive && r.DestinationLocationId.Value == request.DestinationBranchId);
+                if (!covered)
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        ApplicationErrorCodes.InventoryTransferDestinationNotCovered,
+                        "This warehouse can only transfer to branches assigned in supply coverage.");
+                }
+            }
         }
 
         var orgId = PosOrganizationId.From(organizationId);

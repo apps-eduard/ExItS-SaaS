@@ -7,6 +7,7 @@ import {
   Hash,
   MapPin,
   MonitorSmartphone,
+  Network,
   Package,
   Store,
   Truck,
@@ -27,6 +28,7 @@ import {
   issueBranchSuspendStepUp,
   type GovernanceStepUpFailureReason,
 } from "@/api/platform/governance-step-up-client";
+import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
 import {
   archiveOrganizationBranch,
   getOrganizationBranch,
@@ -37,6 +39,7 @@ import {
   updateOrganizationBranchDetails,
 } from "@/api/platform/organization-branches-client";
 import { listPosDevices } from "@/api/platform/pos-devices-client";
+import { listSupplyRoutes } from "@/api/pos/pos-supply-routes-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { Notice } from "@/components/exits/Notice";
@@ -58,6 +61,11 @@ import {
 } from "@/features/branches/branch-defaults";
 import { branchFulfillmentEditPath } from "@/features/branches/branch-setup-tabs";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
+import { SupplyCoverageManageSheet } from "@/features/replenishment/SupplyCoverageManageSheet";
+import {
+  warehouseCoverageSummary,
+  type CoverageLocation,
+} from "@/features/replenishment/supply-coverage-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -138,9 +146,18 @@ export function BranchManagementDetailPage() {
   const canInventory = canViewInventory(sessionGrant);
   const canReceive = canManageInventory(sessionGrant);
   const canPurchasing = canViewPurchasing(sessionGrant);
+  const canConfigureCoverage = canManageInventory(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const supplyWorkspace = useMemo(
+    () =>
+      organizationId
+        ? { organizationId, branchId: boundWorkspace?.branchId ?? null }
+        : null,
+    [organizationId, boundWorkspace?.branchId],
+  );
 
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  const [coverageSheetOpen, setCoverageSheetOpen] = useState(false);
   const [detailsDraft, setDetailsDraft] = useState<{
     name: string;
     contactPhone: string;
@@ -231,6 +248,55 @@ export function BranchManagementDetailPage() {
       return result.value;
     },
   });
+
+  const branchIsWarehouse = isWarehouseBranch(branchQuery.data?.branchType);
+
+  const supplyRoutesQuery = useQuery({
+    queryKey: ["supply-routes", organizationId],
+    enabled: Boolean(supplyWorkspace && branchIsWarehouse && activeTab === "overview"),
+    queryFn: ({ signal }) => listSupplyRoutes(supplyWorkspace!, signal),
+  });
+
+  const areasQuery = useQuery({
+    queryKey: ["org-areas", organizationId],
+    enabled: Boolean(organizationId && branchIsWarehouse && coverageSheetOpen),
+    queryFn: async ({ signal }) => {
+      const result = await listOrganizationAreas(organizationId!, signal);
+      if (!result.ok) {
+        throw new Error(result.body?.detail ?? t("supplyRoutes.loadError"));
+      }
+      return result.value.areas;
+    },
+  });
+
+  const coverageLocations: CoverageLocation[] = useMemo(
+    () =>
+      (summaryQuery.data ?? []).map((b) => ({
+        id: b.id,
+        name: b.name,
+        code: b.code,
+        branchType: b.branchType,
+        status: b.status,
+        areaId: b.areaId,
+        areaName: b.areaName,
+      })),
+    [summaryQuery.data],
+  );
+
+  const coverageSummary = useMemo(() => {
+    if (!branchId || !branchIsWarehouse) {
+      return null;
+    }
+    return warehouseCoverageSummary(
+      coverageLocations,
+      supplyRoutesQuery.data ?? [],
+      branchId,
+    );
+  }, [branchId, branchIsWarehouse, coverageLocations, supplyRoutesQuery.data]);
+
+  const servedBranchCount = coverageSummary
+    ? coverageSummary.retailCount + coverageSummary.warehouseCount
+    : null;
 
   const devicesQuery = useQuery({
     queryKey: ["platform-pos-devices", organizationId],
@@ -591,7 +657,25 @@ export function BranchManagementDetailPage() {
                   )}
                 </dd>
               </div>
-              {!isWarehouse ? (
+              {isWarehouse ? (
+                <button
+                  type="button"
+                  className="branch-mgmt-overview__item branch-mgmt-overview__item--action text-left"
+                  data-testid="branch-warehouse-served-branches-card"
+                  aria-label={t("branches.detail.servedBranchesAria")}
+                  onClick={() => setCoverageSheetOpen(true)}
+                >
+                  <dt>
+                    <Network className="branch-mgmt-overview__icon" aria-hidden />
+                    <span>{t("branches.detail.servedBranches")}</span>
+                  </dt>
+                  <dd data-testid="branch-warehouse-served-branches-count">
+                    {servedBranchCount == null && supplyRoutesQuery.isLoading
+                      ? "…"
+                      : String(servedBranchCount ?? 0)}
+                  </dd>
+                </button>
+              ) : (
                 <>
                   <div className="branch-mgmt-overview__item">
                     <dt>
@@ -623,7 +707,7 @@ export function BranchManagementDetailPage() {
                     </dd>
                   </div>
                 </>
-              ) : null}
+              )}
             </dl>
             <div className="branch-mgmt-overview__actions">
               <Button type="button" variant="outline" onClick={() => selectTab("details")}>
@@ -1012,6 +1096,21 @@ export function BranchManagementDetailPage() {
           </Button>
         </div>
       </BottomSheet>
+
+      {isWarehouse ? (
+        <SupplyCoverageManageSheet
+          open={coverageSheetOpen}
+          onClose={() => setCoverageSheetOpen(false)}
+          workspace={supplyWorkspace}
+          organizationId={organizationId}
+          sourceLocationId={branchId}
+          sourceName={branch.name}
+          locations={coverageLocations}
+          routes={supplyRoutesQuery.data ?? []}
+          areas={areasQuery.data ?? []}
+          allowManage={canConfigureCoverage}
+        />
+      ) : null}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import * as posInventoryClient from "@/api/pos/pos-inventory-client";
 import * as posTransferClient from "@/api/pos/pos-inventory-transfer-client";
 import * as posPurchaseOrdersClient from "@/api/pos/pos-purchase-orders-client";
 import * as posStockRequestsClient from "@/api/pos/pos-stock-requests-client";
+import * as posSupplyRoutesClient from "@/api/pos/pos-supply-routes-client";
 import * as platformAuthClient from "@/api/platform/platform-auth-client";
 import { TEST_BRANCH_A_ID, TEST_ORG_A_ID } from "@/test/session-context";
 
@@ -172,6 +173,19 @@ vi.spyOn(posStockRequestsClient, "listIncomingStockRequests").mockResolvedValue(
   page: 1,
   pageSize: 40,
 });
+vi.spyOn(posSupplyRoutesClient, "listSupplyRoutes").mockResolvedValue([
+  {
+    routeId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+    organizationId: TEST_ORG_A_ID,
+    sourceLocationId: TEST_BRANCH_A_ID,
+    destinationLocationId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    isPreferred: true,
+    isActive: true,
+    notes: null,
+    createdAtUtc: "2026-09-05T00:00:00Z",
+    updatedAtUtc: "2026-09-05T00:00:00Z",
+  },
+]);
 vi.spyOn(posReportingClient, "getInventoryMovementsReport").mockResolvedValue({
   fromDate: "2026-09-05",
   toDate: "2026-09-05",
@@ -221,6 +235,7 @@ describe("DashboardRoutePage location-type routing", () => {
     await waitFor(() => {
       expect(screen.getByTestId("warehouse-management-dashboard")).toBeInTheDocument();
       expect(screen.getByTestId("warehouse-kpi-strip")).toBeInTheDocument();
+      expect(screen.getByTestId("wh-kpi-branches")).toHaveTextContent("1");
       expect(screen.getByTestId("warehouse-transfers")).toBeInTheDocument();
       expect(screen.getByTestId("warehouse-replenishment")).toBeInTheDocument();
     });

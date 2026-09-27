@@ -4956,6 +4956,16 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "transfer.selectDestination": "Select destination branch",
 
+  "transfer.noCoveredDestinationsTitle": "No assigned branches",
+
+  "transfer.noCoveredDestinationsDetail":
+    "This warehouse can only transfer to branches assigned in supply coverage. Assign branches first, then try again.",
+
+  "transfer.coverageLoadFailed": "Could not load warehouse branch coverage.",
+
+  "transfer.destinationNotCovered":
+    "This warehouse can only transfer to branches assigned in supply coverage.",
+
   "transfer.selectDiscrepancy": "Select reason",
 
   "transfer.selectLot": "Select lot",
@@ -13535,6 +13545,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "branches.create.name.warehouse": "Warehouse name",
   "branches.create.code.warehouse": "Warehouse code",
   "branches.detail.overview.warehouse": "Warehouse overview",
+  "branches.detail.servedBranches": "Branches served",
+  "branches.detail.servedBranchesHint": "Tap to add or remove branches this warehouse supplies",
+  "branches.detail.servedBranchesViewHint": "Branches this warehouse currently supplies",
+  "branches.detail.servedBranchesAria": "Branches served by this warehouse",
   "branches.detail.details.warehouse": "Warehouse details",
   "branches.detail.codeReadonly.warehouse": "Warehouse code",
   "branches.detail.lifecycleTitle.warehouse": "Warehouse lifecycle",
@@ -13808,6 +13822,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.loading": "Loading warehouse dashboard?",
   "warehouseDashboard.currentLocationOnly": "Current warehouse only",
   "warehouseDashboard.kpi.tracked": "Tracked products",
+  "warehouseDashboard.kpi.branchesServed": "Branches served",
   "warehouseDashboard.kpi.lowStock": "Low stock",
   "warehouseDashboard.kpi.expiry": "Expiry alerts",
   "warehouseDashboard.kpi.pendingRequests": "Pending requests",

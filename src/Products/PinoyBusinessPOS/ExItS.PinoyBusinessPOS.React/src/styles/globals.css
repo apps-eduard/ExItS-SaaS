@@ -23029,6 +23029,25 @@ a.exits-chip--primary:hover {
   background: var(--exits-surface);
 }
 
+button.branch-mgmt-overview__item--action {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition:
+    border-color var(--exits-motion-fast) ease,
+    background-color var(--exits-motion-fast) ease;
+}
+
+button.branch-mgmt-overview__item--action:hover {
+  border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+button.branch-mgmt-overview__item--action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--exits-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
 .branch-mgmt-overview__item dt {
   display: inline-flex;
   align-items: center;

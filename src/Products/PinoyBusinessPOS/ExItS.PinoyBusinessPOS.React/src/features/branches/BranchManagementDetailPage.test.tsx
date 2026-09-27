@@ -59,6 +59,18 @@ vi.mock("@/api/platform/pos-devices-client", () => ({
   listPosDevices: (...args: unknown[]) => listPosDevices(...args),
 }));
 
+const listSupplyRoutes = vi.fn();
+const listOrganizationAreas = vi.fn();
+
+vi.mock("@/api/pos/pos-supply-routes-client", () => ({
+  listSupplyRoutes: (...args: unknown[]) => listSupplyRoutes(...args),
+  upsertSupplyCoverageBySource: vi.fn(),
+}));
+
+vi.mock("@/api/platform/organization-areas-client", () => ({
+  listOrganizationAreas: (...args: unknown[]) => listOrganizationAreas(...args),
+}));
+
 vi.mock("@/features/branches/BranchStaffAccessPanel", () => ({
   BranchStaffAccessPanel: () => <div data-testid="branch-staff-access-panel" />,
 }));
@@ -113,8 +125,18 @@ function warehouseBranch(overrides: Record<string, unknown> = {}) {
 function summaryFor(branch: Record<string, unknown>) {
   return {
     id: branch.id,
+    organizationId: branch.organizationId,
+    code: branch.code,
+    name: branch.name,
+    branchType: branch.branchType,
+    isPrimary: branch.isPrimary ?? false,
+    status: branch.status ?? "Active",
+    city: null,
+    region: null,
+    addressLine1: null,
     assignedStaffCount: 0,
     activeDeviceCount: 0,
+    areaId: null,
     areaName: null,
     pickupEnabled: false,
     deliveryEnabled: false,
@@ -159,6 +181,8 @@ describe("BranchManagementDetailPage", () => {
       value: [summaryFor(retail)],
     });
     listPosDevices.mockResolvedValue({ ok: true, value: [] });
+    listSupplyRoutes.mockResolvedValue([]);
+    listOrganizationAreas.mockResolvedValue({ ok: true, value: { areas: [] } });
   });
 
   it("shows overview with secondary/lifecycle and fulfillment link for retail", async () => {
@@ -250,6 +274,44 @@ describe("BranchManagementDetailPage", () => {
       "href",
       "/purchasing",
     );
+    expect(screen.getByTestId("branch-warehouse-served-branches-card")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-warehouse-served-branches-count")).toHaveTextContent("0");
+  });
+
+  it("opens supply coverage sheet from warehouse served-branches card", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const warehouse = warehouseBranch();
+    const retail = retailBranch({
+      id: "33333333-3333-3333-3333-333333333333",
+      name: "Main Retail",
+      code: "MAIN",
+      branchType: "Retail",
+    });
+    getOrganizationBranch.mockResolvedValue({ ok: true, value: warehouse });
+    listBranchManagementSummaries.mockResolvedValue({
+      ok: true,
+      value: [summaryFor(warehouse), summaryFor(retail)],
+    });
+    listSupplyRoutes.mockResolvedValue([
+      {
+        routeId: "r1",
+        organizationId: warehouse.organizationId,
+        sourceLocationId: warehouse.id,
+        destinationLocationId: retail.id,
+        isPreferred: true,
+        isActive: true,
+        notes: null,
+        createdAtUtc: "2026-01-01T00:00:00Z",
+        updatedAtUtc: "2026-01-01T00:00:00Z",
+      },
+    ]);
+
+    renderDetail("overview");
+    await waitFor(() => {
+      expect(screen.getByTestId("branch-warehouse-served-branches-count")).toHaveTextContent("1");
+    });
+    await user.click(screen.getByTestId("branch-warehouse-served-branches-card"));
+    expect(await screen.findByTestId("supply-coverage-panel")).toBeInTheDocument();
   });
 
   it("normalizes warehouse ?tab=fulfillment away from retail fulfillment UI", async () => {

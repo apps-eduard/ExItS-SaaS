@@ -6,6 +6,7 @@ import { AppProviders } from "@/app/providers";
 import { PosApiError } from "@/api/pos/pos-http";
 import * as inventoryClient from "@/api/pos/pos-inventory-client";
 import * as transferClient from "@/api/pos/pos-inventory-transfer-client";
+import * as supplyRoutesClient from "@/api/pos/pos-supply-routes-client";
 import { InventoryTransferCreatePage } from "@/features/inventory/InventoryTransferCreatePage";
 import {
   canAddTransferQuantity,
@@ -15,6 +16,7 @@ import {
 const orgId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const mainId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const branchBId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const branchCId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 const soapId = "11111111-1111-1111-1111-111111111111";
 const zeroId = "22222222-2222-2222-2222-222222222222";
 
@@ -24,6 +26,7 @@ const workspaceMock = {
     organizationDisplayName: "Store",
     branchId: mainId,
     branchName: "Main Branch",
+    branchType: "Retail" as "Retail" | "Warehouse",
     experience: "operations" as const,
   },
   sessionGrant: {
@@ -42,6 +45,7 @@ const workspaceMock = {
           secondaryLine: "",
           isPrimary: true,
           isActive: true,
+          branchType: "Retail" as "Retail" | "Warehouse",
         },
         {
           branchId: branchBId,
@@ -49,6 +53,7 @@ const workspaceMock = {
           secondaryLine: "",
           isPrimary: false,
           isActive: true,
+          branchType: "Retail" as "Retail" | "Warehouse",
         },
       ],
     },
@@ -183,6 +188,26 @@ describe("inventory-transfer-stock-guard helpers", () => {
 
 describe("InventoryTransferCreatePage stock guard", () => {
   beforeEach(() => {
+    workspaceMock.boundWorkspace.branchType = "Retail";
+    workspaceMock.boundWorkspace.branchName = "Main Branch";
+    workspaceMock.workspaces[0]!.branches = [
+      {
+        branchId: mainId,
+        name: "Main Branch",
+        secondaryLine: "",
+        isPrimary: true,
+        isActive: true,
+        branchType: "Retail",
+      },
+      {
+        branchId: branchBId,
+        name: "Iloilo Branch",
+        secondaryLine: "",
+        isPrimary: false,
+        isActive: true,
+        branchType: "Retail",
+      },
+    ];
     vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
       items: [account(soapId, "Bath Soap Bar", 10), account(zeroId, "Zero Stock Item", 0)],
       totalCount: 2,
@@ -199,6 +224,61 @@ describe("InventoryTransferCreatePage stock guard", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("warehouse source only lists branches covered by supply routes", async () => {
+    const user = userEvent.setup();
+    workspaceMock.boundWorkspace.branchType = "Warehouse";
+    workspaceMock.boundWorkspace.branchName = "Iloilo Warehouse";
+    workspaceMock.workspaces[0]!.branches = [
+      {
+        branchId: mainId,
+        name: "Iloilo Warehouse",
+        secondaryLine: "",
+        isPrimary: false,
+        isActive: true,
+        branchType: "Warehouse",
+      },
+      {
+        branchId: branchBId,
+        name: "Main",
+        secondaryLine: "",
+        isPrimary: true,
+        isActive: true,
+        branchType: "Retail",
+      },
+      {
+        branchId: branchCId,
+        name: "Other Branch",
+        secondaryLine: "",
+        isPrimary: false,
+        isActive: true,
+        branchType: "Retail",
+      },
+    ];
+    vi.spyOn(supplyRoutesClient, "listSupplyRoutes").mockResolvedValue([
+      {
+        routeId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+        organizationId: orgId,
+        sourceLocationId: mainId,
+        destinationLocationId: branchBId,
+        isPreferred: true,
+        isActive: true,
+        notes: null,
+        createdAtUtc: "2026-08-29T08:00:00Z",
+        updatedAtUtc: "2026-08-29T08:00:00Z",
+      },
+    ]);
+
+    renderCreate();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("transfer-destination-branch")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("transfer-destination-branch"));
+    expect(await screen.findByRole("menuitem", { name: /^Main$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Other Branch/i })).not.toBeInTheDocument();
   });
 
   it("shows source availability and blocks zero-stock add", async () => {

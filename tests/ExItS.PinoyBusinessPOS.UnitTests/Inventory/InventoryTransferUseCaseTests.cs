@@ -22,10 +22,32 @@ public sealed class InventoryTransferUseCaseTests
     private static readonly Guid OrgB = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab");
     private static readonly Guid BranchA = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid BranchB = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid BranchC = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly Guid BranchOtherOrg = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid ActorA = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static readonly Guid ActorB = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
     internal static readonly DateTimeOffset Utc = new(2026, 8, 13, 8, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task Warehouse_transfer_rejects_destination_outside_supply_coverage()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        var rejected = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchC, [new InventoryTransferLineRequest(fx.CokeId, 1m)]),
+            ActorA,
+            BranchA);
+        Assert.False(rejected.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InventoryTransferDestinationNotCovered, rejected.ErrorCode);
+        Assert.Empty(fx.Transfers.Items);
+
+        var covered = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 1m)]),
+            ActorA,
+            BranchA);
+        Assert.True(covered.IsSuccess, $"{covered.ErrorCode}: {covered.ErrorMessage}");
+    }
 
     [Fact]
     public async Task Same_org_transfer_full_receive_updates_ledger_and_not_destination_before_receive()
@@ -2578,6 +2600,7 @@ public sealed class InventoryTransferUseCaseTests
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
         public FakeBranches Branches { get; } = new();
+        public InMemorySupplyRoutes SupplyRoutes { get; } = new();
         public CreateInventoryTransfer Create { get; }
         public UpdateInventoryTransfer Update { get; }
         public DispatchInventoryTransfer Dispatch { get; }
@@ -2601,7 +2624,18 @@ public sealed class InventoryTransferUseCaseTests
             ExceptionCustodies = new InMemoryExceptionCustodies(Transfers);
             var lotStock = new InventoryLotStockService(Lots);
             var expirationPolicies = BranchExpirationTestHelpers.CreateResolver(ExpirationSettings);
-            Create = new CreateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, expirationPolicies, Branches, UnitOfWork, Clock);
+            SupplyRoutes.SeedCovered(OrgA, BranchA, BranchB, Utc);
+            Create = new CreateInventoryTransfer(
+                Transfers,
+                Inventory,
+                Balances,
+                Products,
+                Lots,
+                expirationPolicies,
+                Branches,
+                SupplyRoutes,
+                UnitOfWork,
+                Clock);
             Update = new UpdateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, expirationPolicies, Branches, UnitOfWork, Clock);
             Dispatch = new DispatchInventoryTransfer(
                 Transfers,
@@ -2734,7 +2768,7 @@ public sealed class InventoryTransferUseCaseTests
     private sealed class FakeBranches : IOrganizationBranchDirectory
     {
         public Task<bool> ExistsInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(organizationId == OrgA && (branchId == BranchA || branchId == BranchB));
+            Task.FromResult(organizationId == OrgA && (branchId == BranchA || branchId == BranchB || branchId == BranchC));
 
         public Task<bool> IsActiveInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
             ExistsInOrganizationAsync(organizationId, branchId, cancellationToken);
@@ -2747,10 +2781,61 @@ public sealed class InventoryTransferUseCaseTests
             IReadOnlyCollection<Guid> branchIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, string>>(
-                branchIds.ToDictionary(id => id, id => id == BranchA ? "Branch A" : "Branch B"));
+                branchIds.ToDictionary(
+                    id => id,
+                    id => id == BranchA ? "Branch A" : id == BranchB ? "Branch B" : "Branch C"));
 
         public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<Guid?>(organizationId == OrgA ? BranchA : null);
+    }
+
+    private sealed class InMemorySupplyRoutes : ISupplyRouteRepository
+    {
+        private readonly List<SupplyRoute> _items = [];
+
+        public void SeedCovered(Guid organizationId, Guid sourceBranchId, Guid destinationBranchId, DateTimeOffset utcNow)
+        {
+            _items.Add(SupplyRoute.Create(
+                PosOrganizationId.From(organizationId),
+                PosBranchId.From(sourceBranchId),
+                PosBranchId.From(destinationBranchId),
+                utcNow,
+                isPreferred: true,
+                isActive: true));
+        }
+
+        public Task<SupplyRoute?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            SupplyRouteId routeId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(r => r.OrganizationId == organizationId && r.Id == routeId));
+
+        public Task<IReadOnlyList<SupplyRoute>> ListByDestinationAsync(
+            PosOrganizationId organizationId,
+            PosBranchId destinationLocationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<SupplyRoute>>(
+                _items.Where(r => r.OrganizationId == organizationId && r.DestinationLocationId == destinationLocationId).ToList());
+
+        public Task<IReadOnlyList<SupplyRoute>> ListBySourceAsync(
+            PosOrganizationId organizationId,
+            PosBranchId sourceLocationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<SupplyRoute>>(
+                _items.Where(r => r.OrganizationId == organizationId && r.SourceLocationId == sourceLocationId).ToList());
+
+        public Task<IReadOnlyList<SupplyRoute>> ListAllAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<SupplyRoute>>(_items.Where(r => r.OrganizationId == organizationId).ToList());
+
+        public Task AddAsync(SupplyRoute route, CancellationToken cancellationToken = default)
+        {
+            _items.Add(route);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(SupplyRoute route, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class CapturingAlerts : IInventoryTransferAlertSink

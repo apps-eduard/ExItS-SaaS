@@ -62,6 +62,8 @@ import { InventoryTransferProductSelection } from "@/features/inventory/Inventor
 import { TransferChangeLotsDialog } from "@/features/inventory/TransferChangeLotsDialog";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
+import { listSupplyRoutes } from "@/api/pos/pos-supply-routes-client";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 /** Synthetic category filter id — not a real catalog category. */
@@ -279,13 +281,72 @@ export function InventoryTransferCreatePage() {
     return (org?.branches ?? []).filter((b) => b.isActive);
   }, [workspaces, boundWorkspace?.organizationId]);
 
-  const destinations = useMemo(
-    () => orgBranches.filter((b) => b.branchId !== boundWorkspace?.branchId),
-    [orgBranches, boundWorkspace?.branchId],
-  );
+  const isWarehouseSource = isWarehouseBranch(boundWorkspace?.branchType);
+
+  const coverageQuery = useQuery({
+    queryKey: [
+      "supply-routes",
+      workspace?.organizationId,
+      "transfer-coverage",
+      workspace?.branchId,
+    ],
+    enabled: Boolean(workspace) && online && allowManage && isWarehouseSource && !isEditMode,
+    queryFn: ({ signal }) => listSupplyRoutes(workspace!, signal),
+  });
+
+  const destinations = useMemo(() => {
+    const others = orgBranches.filter((b) => b.branchId !== boundWorkspace?.branchId);
+    if (!isWarehouseSource || isEditMode) {
+      return others;
+    }
+    const routes = coverageQuery.data ?? [];
+    const allowed = new Set(
+      routes
+        .filter(
+          (route) =>
+            route.isActive && route.sourceLocationId === boundWorkspace?.branchId,
+        )
+        .map((route) => route.destinationLocationId),
+    );
+    return others.filter((branch) => allowed.has(branch.branchId));
+  }, [
+    orgBranches,
+    boundWorkspace?.branchId,
+    isWarehouseSource,
+    isEditMode,
+    coverageQuery.data,
+  ]);
+
+  useEffect(() => {
+    if (isEditMode || !destinationBranchId) {
+      return;
+    }
+    if (isWarehouseSource && coverageQuery.isLoading) {
+      return;
+    }
+    if (destinations.some((branch) => branch.branchId === destinationBranchId)) {
+      return;
+    }
+    setDestinationBranchId("");
+  }, [
+    isEditMode,
+    destinationBranchId,
+    destinations,
+    isWarehouseSource,
+    coverageQuery.isLoading,
+  ]);
 
   const multiBranch = orgBranches.length >= 2;
   const sourceName = boundWorkspace?.branchName ?? t("transfer.sourceBranch");
+  const coveragePending = isWarehouseSource && !isEditMode && coverageQuery.isLoading;
+  const coverageFailed = isWarehouseSource && !isEditMode && coverageQuery.isError;
+  const noCoveredDestinations =
+    isWarehouseSource &&
+    !isEditMode &&
+    !coveragePending &&
+    !coverageFailed &&
+    multiBranch &&
+    destinations.length === 0;
 
   const pickerQueryKey = [
     "inventory",
@@ -880,6 +941,8 @@ export function InventoryTransferCreatePage() {
             ? t("transfer.dispatchLotsExpired")
             : t("transfer.lotExpiredCannotTransfer"),
         );
+      } else if (errorCode.includes("destination_not_covered")) {
+        setError(t("transfer.destinationNotCovered"));
       } else if (looksLikeLotConcurrency) {
         setError(t("transfer.lotStockChanged"));
       } else {
@@ -948,6 +1011,50 @@ export function InventoryTransferCreatePage() {
           icon={<ArrowRightLeft className="size-5" strokeWidth={1.75} />}
           title={t("transfer.requiresTwoBranches")}
           detail={t("transfer.singleBranchDetail")}
+        />
+      </div>
+    );
+  }
+
+  if (coveragePending) {
+    return <LoadingState label={t("session.loading")} />;
+  }
+
+  if (coverageFailed) {
+    return (
+      <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="transfer-create-coverage-error">
+        <PageHeader
+          title={isEditMode ? t("transfer.editTitle") : t("transfer.newTitle")}
+          backTo="/inventory/transfers"
+          backLabel={t("transfer.backList")}
+          backTestId="page-header-back-transfers"
+        />
+        <ErrorState
+          title={t("transfer.errorTitle")}
+          detail={t("transfer.coverageLoadFailed")}
+        />
+      </div>
+    );
+  }
+
+  if (noCoveredDestinations) {
+    return (
+      <div
+        className="exits-page flex min-w-0 flex-col gap-3"
+        data-testid="transfer-create-no-covered-destinations"
+      >
+        <PageHeader
+          title={isEditMode ? t("transfer.editTitle") : t("transfer.newTitle")}
+          backTo="/inventory/transfers"
+          backLabel={t("transfer.backList")}
+          backTestId="page-header-back-transfers"
+        />
+        <EmptyState
+          align="center"
+          variant="setup"
+          icon={<Store className="size-5" strokeWidth={1.75} />}
+          title={t("transfer.noCoveredDestinationsTitle")}
+          detail={t("transfer.noCoveredDestinationsDetail")}
         />
       </div>
     );

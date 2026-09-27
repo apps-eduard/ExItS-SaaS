@@ -18,6 +18,7 @@ import {
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
 import { listIncomingStockRequests } from "@/api/pos/pos-stock-requests-client";
+import { listSupplyRoutes } from "@/api/pos/pos-supply-routes-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -208,6 +209,12 @@ export function WarehouseManagementDashboardPage() {
         staleTime: STALE,
         queryFn: ({ signal }) => listIncomingStockRequests(workspace!, 1, 40, signal),
       },
+      {
+        queryKey: ["wh-dash", "supply-routes", workspace?.organizationId, workspace?.branchId],
+        enabled: enabled && canInventory,
+        staleTime: STALE,
+        queryFn: ({ signal }) => listSupplyRoutes(workspace!, signal),
+      },
     ],
   });
 
@@ -221,6 +228,7 @@ export function WarehouseManagementDashboardPage() {
     movementsQ,
     purchasingQ,
     stockReqQ,
+    supplyRoutesQ,
   ] = results;
 
   const loading = results.some((q) => q.isLoading);
@@ -245,13 +253,40 @@ export function WarehouseManagementDashboardPage() {
   );
   const movementSummary = summarizeMovementTypes(movementsQ.data?.byType ?? []);
   const destinations = topDestinationsFromOutgoing(outgoing);
+  const productNamesById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of trackedItems) {
+      const name = item.name?.trim();
+      if (item.productId && name) {
+        map.set(item.productId, name);
+      }
+    }
+    return map;
+  }, [trackedItems]);
   const movedProducts = topMovedProductsFromRows(
     (movementsQ.data?.rows ?? []) as Record<string, unknown>[],
     movedDir,
+    5,
+    productNamesById,
   );
   const stockReqItems = stockReqQ.data?.items ?? [];
   const stockReqCounts = stockRequestStatusCounts(stockReqItems);
   const pendingRequests = stockReqCounts.pending;
+  const branchesServed = useMemo(() => {
+    const sourceId = workspace?.branchId;
+    if (!sourceId) return 0;
+    const ids = new Set<string>();
+    for (const route of supplyRoutesQ.data ?? []) {
+      if (
+        route.isActive &&
+        route.sourceLocationId === sourceId &&
+        route.destinationLocationId
+      ) {
+        ids.add(route.destinationLocationId);
+      }
+    }
+    return ids.size;
+  }, [supplyRoutesQ.data, workspace?.branchId]);
 
   const attention = buildWarehouseAttentionItems({
     lowStock: canInventory ? lowStockCount : 0,
@@ -389,6 +424,12 @@ export function WarehouseManagementDashboardPage() {
             value={trackedCount}
             testId="wh-kpi-tracked"
             href="/inventory"
+          />
+          <KpiChip
+            label={t("warehouseDashboard.kpi.branchesServed")}
+            value={branchesServed}
+            testId="wh-kpi-branches"
+            href={workspace ? `/org/branches/${workspace.branchId}` : undefined}
           />
           <KpiChip
             label={t("warehouseDashboard.kpi.lowStock")}

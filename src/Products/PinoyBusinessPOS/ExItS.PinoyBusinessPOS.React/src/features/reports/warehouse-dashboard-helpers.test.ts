@@ -98,6 +98,33 @@ describe("warehouse-dashboard-helpers", () => {
       "outbound",
     );
     expect(outbound).toEqual([{ productId: "p1", productName: "Rice", quantity: 15 }]);
+
+    const inbound = topMovedProductsFromRows(
+      [
+        { productId: "p2", productName: "Water", quantityEffect: 8 },
+        { productId: "p2", quantityEffect: 2 },
+        { productId: "p1", productName: "Rice", quantityEffect: -3 },
+      ],
+      "inbound",
+    );
+    expect(inbound).toEqual([{ productId: "p2", productName: "Water", quantity: 10 }]);
+  });
+
+  it("resolves moved product names from lookup when report rows omit names", () => {
+    const names = new Map([["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "Bath Soap"]]);
+    const inbound = topMovedProductsFromRows(
+      [{ productId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", quantityEffect: 4 }],
+      "inbound",
+      5,
+      names,
+    );
+    expect(inbound).toEqual([
+      {
+        productId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        productName: "Bath Soap",
+        quantity: 4,
+      },
+    ]);
   });
 
   it("counts stock request statuses and builds non-zero attention only", () => {
