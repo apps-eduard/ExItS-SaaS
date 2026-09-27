@@ -15226,7 +15226,7 @@ a.dashboard-metric-card:focus-visible {
   }
 
   .app-top-bar__row--shell-desktop {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .app-top-bar--shell-desktop {
@@ -15242,6 +15242,21 @@ a.dashboard-metric-card:focus-visible {
   .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand {
     display: none;
   }
+}
+
+.app-top-bar__leading {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.app-top-bar__sidebar-mode {
+  color: var(--exits-text-muted);
+}
+
+.app-top-bar__sidebar-mode:hover {
+  color: var(--exits-text);
 }
 
 .app-top-bar__brand {
@@ -23944,6 +23959,10 @@ html[data-navigation-mode="reveal"] {
   --exits-shell-sidebar-width: 3.75rem;
 }
 
+html[data-navigation-mode="hidden"] {
+  --exits-shell-sidebar-width: 0rem;
+}
+
 [dir="rtl"] {
   --exits-sidebar-label-slide: 0.25rem;
 }
@@ -24016,6 +24035,21 @@ html[data-motion="reduced"] .exits-tooltip {
   [data-navigation-mode="standard"] .admin-sidebar.admin-sidebar--expanded {
     position: relative;
     width: 100%;
+  }
+
+  /* —— HIDDEN: desktop sidenav fully removed; topbar cycle restores it —— */
+  [data-navigation-mode="hidden"] .admin-sidebar-rail {
+    display: none !important;
+    width: 0;
+    flex: 0 0 0;
+    min-width: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  [data-navigation-mode="hidden"] .admin-shell__column,
+  [data-navigation-mode="hidden"] .operations-shell__column {
+    padding-inline-start: max(var(--exits-page-gutter-inline), env(safe-area-inset-left));
   }
 
   /* —— COMPACT: permanent icon rail (no hover/focus expand) —— */

@@ -304,7 +304,7 @@ describe("Preferences icon top navigation", () => {
     );
   });
 
-  it("supports Navigation mode: Standard, Compact, and Reveal with persistence", async () => {
+  it("supports Navigation mode: Standard, Compact, Hidden, and Reveal with persistence", async () => {
     const user = userEvent.setup();
     renderAuthenticatedAt("/settings/preferences/navigation");
 
@@ -323,6 +323,15 @@ describe("Preferences icon top navigation", () => {
       expect(document.documentElement.dataset.navigationMode).toBe("compact");
     });
     expect(screen.getByRole("radio", { name: "Sidebar: Compact" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
+    await user.click(screen.getByRole("radio", { name: "Sidebar: Hidden" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.navigationMode).toBe("hidden");
+    });
+    expect(screen.getByRole("radio", { name: "Sidebar: Hidden" })).toHaveAttribute(
       "aria-checked",
       "true",
     );
@@ -347,10 +356,14 @@ describe("Preferences icon top navigation", () => {
     expect(stored.navigationMode).toBe("standard");
 
     expect(globalsCss).toContain('[data-navigation-mode="compact"]');
+    expect(globalsCss).toContain('[data-navigation-mode="hidden"]');
     expect(globalsCss).toContain('[data-navigation-mode="reveal"]');
     expect(globalsCss).toMatch(/--exits-shell-sidebar-width:\s*15\.5rem/);
     expect(globalsCss).toMatch(
       /html\[data-navigation-mode="compact"\][\s\S]*?--exits-shell-sidebar-width:\s*3\.75rem/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-navigation-mode="hidden"\][\s\S]*?--exits-shell-sidebar-width:\s*0rem/,
     );
     expect(globalsCss).toMatch(
       /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:hover/,
