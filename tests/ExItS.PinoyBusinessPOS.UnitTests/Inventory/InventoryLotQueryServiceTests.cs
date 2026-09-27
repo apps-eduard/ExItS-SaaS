@@ -1,5 +1,4 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
-using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -21,7 +20,7 @@ public sealed class InventoryLotQueryServiceTests
             lots,
             new EmptyProducts(),
             BranchExpirationTestHelpers.CreateResolver(),
-            new ImmediateUnitOfWork(),
+            new EmptyIdentitySupport(),
             new FixedClock());
 
         await service.ListExpiringAsync(Org, Branch, "Days30", null, null, null, 1, 20);
@@ -183,14 +182,20 @@ public sealed class InventoryLotQueryServiceTests
         public Task UpdateAsync(CatalogProduct product, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
-    private sealed class ImmediateUnitOfWork : IPosUnitOfWork
+    private sealed class EmptyIdentitySupport : IInventoryLotIdentityEditSupport
     {
-        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task<T> ExecuteInSerializableTransactionAsync<T>(
-            Func<CancellationToken, Task<T>> action,
+        public Task<IReadOnlyDictionary<Guid, IReadOnlyList<StockMovementType>>> ListDistinctMovementTypesByLotIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> lotIds,
             CancellationToken cancellationToken = default) =>
-            action(cancellationToken);
+            Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<StockMovementType>>>(
+                new Dictionary<Guid, IReadOnlyList<StockMovementType>>());
+
+        public Task<IReadOnlySet<Guid>> ListLotIdsReferencedByActiveTransferDraftAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> lotIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
     }
 
     private sealed class FixedClock : IClock

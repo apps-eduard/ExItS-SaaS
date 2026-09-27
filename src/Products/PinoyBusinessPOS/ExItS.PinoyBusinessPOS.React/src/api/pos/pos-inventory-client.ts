@@ -164,6 +164,8 @@ export type PosInventoryLotDto = {
   expiryStatus: string;
   createdAtUtc: string;
   updatedAtUtc: string;
+  canEditIdentity?: boolean;
+  identityLockReason?: string | null;
 };
 
 export type PosExpiringLotDto = {
@@ -577,6 +579,32 @@ export function listProductLots(
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 50,
     }),
+  });
+}
+
+export function correctInventoryLotIdentity(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  lotId: string,
+  body: {
+    expirationDate: string;
+    lotNumber?: string | null;
+    reason: string;
+    expectedUpdatedAtUtc?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<PosInventoryLotDto> {
+  return posRequest({
+    method: "PATCH",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/lots/${lotId}/identity`,
+    body: {
+      expirationDate: body.expirationDate,
+      lotNumber: body.lotNumber ?? null,
+      reason: body.reason,
+      expectedUpdatedAtUtc: body.expectedUpdatedAtUtc ?? null,
+    },
   });
 }
 

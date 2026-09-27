@@ -31,6 +31,8 @@ Earlier phases excluded batches/expiry; **later source added lots**.
 
 Classification: **PROVEN_CURRENT** for core expiry/lot/FEFO. Do **not** emit `POS_EXPIRY_BATCH_CONTRACT_MISSING`.
 
+Lot identity (expiration + optional batch/lot number) may be corrected only while the lot has no downstream operational history and is not referenced by an active transfer draft; TransferIn lots stay locked. Blank lot numbers are not an exception after usage.
+
 ## APIs / MAUI / React
 
 API: inventory lots endpoints under `/api/v1/pos/inventory`.

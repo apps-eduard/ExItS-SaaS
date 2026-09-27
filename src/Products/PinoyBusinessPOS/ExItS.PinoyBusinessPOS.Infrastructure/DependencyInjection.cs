@@ -80,6 +80,8 @@ public static class DependencyInjection
         services.AddScoped<IReturnBatchRepository, ReturnBatchRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryLotRepository, InventoryLotRepository>();
+        services.AddScoped<IInventoryLotIdentityEditSupport, InventoryLotIdentityEditSupport>();
+        services.AddScoped<IInventoryLotIdentityCorrectionRepository, InventoryLotIdentityCorrectionRepository>();
         services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.IManagementOverviewReadStore, ManagementOverviewReadStore>();
         services.AddScoped<InventoryLotStockService>();
         services.AddScoped<IInventoryReorderChangeRepository, InventoryReorderChangeRepository>();

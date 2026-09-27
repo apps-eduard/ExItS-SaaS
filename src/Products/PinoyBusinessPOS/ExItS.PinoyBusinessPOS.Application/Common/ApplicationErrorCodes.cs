@@ -141,6 +141,11 @@ public static class ApplicationErrorCodes
     /// <summary>An existing-stock lot line has invalid quantity (must be &gt; 0).</summary>
     public const string ExpirationLotQuantityInvalid = "pos.inventory.expiration.lot_quantity_invalid";
 
+    public const string InventoryLotNotFound = "pos.inventory.lot.not_found";
+    public const string InventoryLotIdentityLocked = "pos.inventory.lot_identity_locked";
+    public const string InventoryLotIdentityConflict = "pos.inventory.lot_identity_conflict";
+    public const string InventoryLotChanged = "pos.inventory.lot_changed";
+
     public const string ExpenseCategoryNotFound = "pos.expense_category.not_found";
     public const string ExpenseCategoryNameConflict = "pos.expense_category.name.conflict";
     public const string ExpenseCategoryNotAssignable = "pos.expense_category.not_assignable";

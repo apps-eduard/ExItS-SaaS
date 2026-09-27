@@ -1,6 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
-using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -13,20 +12,20 @@ public sealed class InventoryLotQueryService
     private readonly IInventoryLotRepository _lots;
     private readonly ICatalogProductRepository _products;
     private readonly BranchExpirationPolicyResolver _expirationPolicies;
-    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IInventoryLotIdentityEditSupport _identitySupport;
     private readonly IClock _clock;
 
     public InventoryLotQueryService(
         IInventoryLotRepository lots,
         ICatalogProductRepository products,
         BranchExpirationPolicyResolver expirationPolicies,
-        IPosUnitOfWork unitOfWork,
+        IInventoryLotIdentityEditSupport identitySupport,
         IClock clock)
     {
         _lots = lots;
         _products = products;
         _expirationPolicies = expirationPolicies;
-        _unitOfWork = unitOfWork;
+        _identitySupport = identitySupport;
         _clock = clock;
     }
 
@@ -59,8 +58,25 @@ public sealed class InventoryLotQueryService
                 .ResolveAsync(orgId, warningBranch, catalogProductId, cancellationToken)
                 .ConfigureAwait(false)).EffectiveWarningDays
             : product.EffectiveExpirationWarningDays;
+
+        var editability = await ResolveEditabilityAsync(
+                orgId,
+                items.Select(l => l.Id.Value).ToArray(),
+                cancellationToken)
+            .ConfigureAwait(false);
+
         return new PagedResult<PosInventoryLotDto>(
-            items.Select(l => Map(l, today, warning)).ToList(),
+            items.Select(l =>
+            {
+                editability.TryGetValue(l.Id.Value, out var lockReason);
+                lockReason ??= InventoryLotIdentityEditPolicy.LockReasonNone;
+                return Map(
+                    l,
+                    today,
+                    warning,
+                    InventoryLotIdentityEditPolicy.CanEditIdentity(lockReason),
+                    lockReason);
+            }).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -181,7 +197,12 @@ public sealed class InventoryLotQueryService
         return (null, today.AddDays(days));
     }
 
-    public static PosInventoryLotDto Map(InventoryLot lot, DateOnly today, int warningDays) =>
+    public static PosInventoryLotDto Map(
+        InventoryLot lot,
+        DateOnly today,
+        int warningDays,
+        bool canEditIdentity = false,
+        string? identityLockReason = null) =>
         new(
             lot.Id.Value,
             lot.ProductId.Value,
@@ -191,5 +212,37 @@ public sealed class InventoryLotQueryService
             lot.QuantityOnHand,
             InventoryLotExpiryStatuses.ToCode(lot.ExpiryStatus(today, warningDays)),
             lot.CreatedAtUtc,
-            lot.UpdatedAtUtc);
+            lot.UpdatedAtUtc,
+            canEditIdentity,
+            identityLockReason ?? InventoryLotIdentityEditPolicy.LockReasonNone);
+
+    private async Task<Dictionary<Guid, string>> ResolveEditabilityAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> lotIds,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<Guid, string>();
+        if (lotIds.Count == 0)
+        {
+            return result;
+        }
+
+        var movementsByLot = await _identitySupport
+            .ListDistinctMovementTypesByLotIdsAsync(organizationId, lotIds, cancellationToken)
+            .ConfigureAwait(false);
+        var draftRefs = await _identitySupport
+            .ListLotIdsReferencedByActiveTransferDraftAsync(organizationId, lotIds, cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var lotId in lotIds)
+        {
+            movementsByLot.TryGetValue(lotId, out var types);
+            types ??= Array.Empty<StockMovementType>();
+            result[lotId] = InventoryLotIdentityEditPolicy.ResolveLockReason(
+                types,
+                draftRefs.Contains(lotId));
+        }
+
+        return result;
+    }
 }

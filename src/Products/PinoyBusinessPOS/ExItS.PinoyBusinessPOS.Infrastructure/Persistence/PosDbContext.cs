@@ -138,6 +138,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryBranchExpirationSettingRecord> InventoryBranchExpirationSettings => Set<InventoryBranchExpirationSettingRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
+    internal DbSet<InventoryLotIdentityCorrectionRecord> InventoryLotIdentityCorrections => Set<InventoryLotIdentityCorrectionRecord>();
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
     internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
@@ -3067,6 +3068,41 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.InventoryAccountId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_inventory_reorder_changes_accounts");
+        });
+
+        modelBuilder.Entity<InventoryLotIdentityCorrectionRecord>(entity =>
+        {
+            entity.ToTable("inventory_lot_identity_corrections");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.InventoryLotId).HasColumnName("inventory_lot_id").IsRequired();
+            entity.Property(e => e.OldExpirationDate).HasColumnName("old_expiration_date").IsRequired();
+            entity.Property(e => e.NewExpirationDate).HasColumnName("new_expiration_date").IsRequired();
+            entity.Property(e => e.OldLotNumber)
+                .HasColumnName("old_lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength);
+            entity.Property(e => e.NewLotNumber)
+                .HasColumnName("new_lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength);
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(InventoryLotIdentityCorrection.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.CorrectedBy).HasColumnName("corrected_by").IsRequired();
+            entity.Property(e => e.CorrectedAtUtc).HasColumnName("corrected_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.InventoryLotId, e.CorrectedAtUtc })
+                .HasDatabaseName("ix_inventory_lot_identity_corrections_org_lot_corrected");
+
+            entity.HasOne<InventoryLotRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.InventoryLotId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_lot_identity_corrections_lots");
         });
 
         modelBuilder.Entity<StockCountRecord>(entity =>

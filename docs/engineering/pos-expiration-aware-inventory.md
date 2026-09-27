@@ -178,3 +178,18 @@ Device Verified is **No** until the owner validates on a physical device.
 3. Confirm Branch B keeps lot identities and expiry dates.
 4. Partial receive Lot A = 3; shortage 1 stays on Lot A.
 5. Retry receive does not duplicate destination stock.
+
+## Lot identity correction (metadata only)
+
+**DRAFT / UNUSED LOT** — When a lot has only origin/acquisition movements (opening stock, purchase/direct purchase receipt, manual increase, expiration initialization, production output) and is **not** referenced by an active transfer draft, expiration date and batch/lot number may be corrected with an audit record (`InventoryLotIdentityCorrection`). Quantity never changes.
+
+**DOWNSTREAM USAGE EXISTS** — Once inventory from a lot has participated in an operational transaction (sale, transfer, stock use, waste/loss, variance, return, reversal, transfer damage/exception, etc.), **both** expiration date and batch/lot number are locked through normal editing. A blank lot number is **not** an exception.
+
+> Once inventory from a lot has participated in an operational transaction, the lot's expiration date and batch/lot number are immutable through normal editing.
+
+Additional permanent locks for normal edit:
+
+- Lots created by **TransferIn** (destination must preserve source identity for cross-branch traceability).
+- Lots referenced by an **active transfer Draft** (`SourceLotId`) — cancel/remove the draft reference before correcting.
+
+Identity collision (same org + branch + product + expiry + normalized lot number) is rejected without merging quantities. Post-usage reclassification of remaining stock is a separate future workflow.

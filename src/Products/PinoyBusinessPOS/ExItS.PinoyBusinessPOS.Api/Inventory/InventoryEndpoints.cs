@@ -4,6 +4,8 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Api.Inventory;
@@ -43,6 +45,7 @@ internal static class InventoryEndpoints
         group.MapPost("/{productId:guid}/adjustments", Adjust);
         group.MapPost("/products/{productId:guid}/expiration-tracking/enable", EnableExpirationTracking);
         group.MapGet("/{productId:guid}/lots", ListLots);
+        group.MapPatch("/{productId:guid}/lots/{lotId:guid}/identity", CorrectLotIdentity);
         group.MapGet("/{productId:guid}/movements", ListMovements);
 
         return app;
@@ -431,6 +434,59 @@ internal static class InventoryEndpoints
             .ListAsync(organizationId, productId, includeDepleted ?? false, page, pageSize, branchResolved.Context!.BranchId, ct)
             .ConfigureAwait(false);
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> CorrectLotIdentity(
+        HttpRequest request,
+        Guid productId,
+        Guid lotId,
+        CorrectInventoryLotIdentityRequest body,
+        CorrectInventoryLotIdentity useCase,
+        BranchExpirationPolicyResolver expirationPolicies,
+        BranchInventoryContextResolver branchResolver,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+        {
+            return problem!;
+        }
+
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
+        var branchId = branchResolved.Context!.BranchId;
+        var policy = await expirationPolicies
+            .ResolveAsync(
+                PosOrganizationId.From(organizationId),
+                PosBranchId.From(branchId),
+                CatalogProductId.From(productId),
+                ct)
+            .ConfigureAwait(false);
+
+        var result = await useCase
+            .ExecuteAsync(
+                organizationId,
+                branchId,
+                productId,
+                lotId,
+                body,
+                actorId,
+                policy.EffectiveWarningDays,
+                ct)
+            .ConfigureAwait(false);
+
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : PosApiResults.Problem(
+                result.ErrorCode!,
+                result.ErrorMessage!,
+                PosApiResults.MapStatusCode(result.ErrorCode!),
+                result.ErrorDetails);
     }
 
     private static async Task<IResult> SetReorder(

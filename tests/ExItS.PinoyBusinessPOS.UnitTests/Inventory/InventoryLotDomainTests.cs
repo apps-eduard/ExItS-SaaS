@@ -130,6 +130,59 @@ public sealed class InventoryLotDomainTests
     }
 
     [Fact]
+    public void CorrectIdentity_changes_expiry_and_lot_number()
+    {
+        var lot = InventoryLot.Create(Org, Product, Today.AddDays(10), 50m, Utc, lotNumber: null);
+        var later = Utc.AddMinutes(5);
+        Assert.True(lot.CorrectIdentity(Today.AddDays(40), "LOT-A", later));
+        Assert.Equal(Today.AddDays(40), lot.ExpirationDate);
+        Assert.Equal("LOT-A", lot.LotNumber);
+        Assert.Equal("LOT-A", lot.NormalizedLotNumber);
+        Assert.Equal(50m, lot.QuantityOnHand);
+        Assert.Equal(later, lot.UpdatedAtUtc);
+        Assert.Equal(Org, lot.OrganizationId);
+        Assert.Equal(Product, lot.ProductId);
+    }
+
+    [Fact]
+    public void CorrectIdentity_allows_blank_to_value_and_value_to_blank()
+    {
+        var lot = InventoryLot.Create(Org, Product, Today.AddDays(10), 10m, Utc);
+        Assert.True(lot.CorrectIdentity(Today.AddDays(10), "lot-b", Utc.AddMinutes(1)));
+        Assert.Equal("lot-b", lot.LotNumber);
+        Assert.Equal("LOT-B", lot.NormalizedLotNumber);
+
+        Assert.True(lot.CorrectIdentity(Today.AddDays(10), null, Utc.AddMinutes(2)));
+        Assert.Null(lot.LotNumber);
+        Assert.Equal(string.Empty, lot.NormalizedLotNumber);
+        Assert.Equal(10m, lot.QuantityOnHand);
+    }
+
+    [Fact]
+    public void CorrectIdentity_preserves_normalization_and_rejects_too_long_lot()
+    {
+        var lot = InventoryLot.Create(Org, Product, Today.AddDays(10), 5m, Utc, lotNumber: "A");
+        Assert.True(lot.CorrectIdentity(Today.AddDays(11), "  abc  ", Utc.AddMinutes(1)));
+        Assert.Equal("abc", lot.LotNumber);
+        Assert.Equal("ABC", lot.NormalizedLotNumber);
+
+        var tooLong = new string('x', InventoryLot.LotNumberMaxLength + 1);
+        var ex = Assert.Throws<DomainException>(() => lot.CorrectIdentity(Today.AddDays(11), tooLong, Utc.AddMinutes(2)));
+        Assert.Equal(DomainErrorCodes.InvalidInventoryLotNumber, ex.ErrorCode);
+        Assert.Equal(5m, lot.QuantityOnHand);
+    }
+
+    [Fact]
+    public void CorrectIdentity_noop_when_unchanged()
+    {
+        var lot = InventoryLot.Create(Org, Product, Today.AddDays(10), 8m, Utc, lotNumber: "LOT-1");
+        var before = lot.UpdatedAtUtc;
+        Assert.False(lot.CorrectIdentity(Today.AddDays(10), "LOT-1", Utc.AddHours(1)));
+        Assert.Equal(before, lot.UpdatedAtUtc);
+        Assert.Equal(8m, lot.QuantityOnHand);
+    }
+
+    [Fact]
     public void Warning_days_out_of_range_are_rejected()
     {
         var ex = Assert.Throws<DomainException>(() => InventoryLot.NormalizeWarningDays(0));

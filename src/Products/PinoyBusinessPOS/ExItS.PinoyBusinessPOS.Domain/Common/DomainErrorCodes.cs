@@ -215,6 +215,12 @@ public static class DomainErrorCodes
     public const string InvalidInventoryAccountId = "pos.inventory.account.id.invalid";
     public const string InvalidInventoryLotId = "pos.inventory.lot.id.invalid";
     public const string InvalidInventoryLotNumber = "pos.inventory.lot_number.invalid";
+    public const string InvalidInventoryLotIdentityCorrectionId =
+        "pos.inventory.lot_identity_correction.id.invalid";
+    public const string InvalidInventoryLotIdentityCorrectionReason =
+        "pos.inventory.lot_identity_correction.reason.invalid";
+    public const string InvalidInventoryLotIdentityCorrectionActor =
+        "pos.inventory.lot_identity_correction.actor.invalid";
     public const string InventoryExpirationRequired = "pos.inventory.expiration.required";
     public const string InventoryLotMismatch = "pos.inventory.lot.mismatch";
     public const string InventoryExpirationBranchRequired = "pos.inventory.expiration.branch_required";

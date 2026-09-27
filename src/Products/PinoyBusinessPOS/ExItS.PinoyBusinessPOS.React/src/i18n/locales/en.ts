@@ -4510,7 +4510,35 @@ export const en = {
   "inventory.lotColumnBatch": "Batch",
   "inventory.lotColumnAvailable": "Available",
   "inventory.lotColumnStatus": "Status",
+  "inventory.lotColumnAction": "Action",
   "inventory.lotCardBatch": "Lot",
+  "inventory.editLotIdentityAria": "Edit lot information",
+  "inventory.editLotIdentityTitle": "Edit lot information",
+  "inventory.editLotIdentityHelper":
+    "Changes are recorded in the audit history. Lot quantity will not change.",
+  "inventory.editLotIdentityProduct": "Product:",
+  "inventory.editLotIdentityLocation": "Location:",
+  "inventory.editLotIdentityAvailable": "Available:",
+  "inventory.editLotIdentityExpiry": "Expiration date",
+  "inventory.editLotIdentityBatch": "Batch / Lot number",
+  "inventory.editLotIdentityBatchOptional": "Optional",
+  "inventory.editLotIdentityReason": "Reason for correction",
+  "inventory.editLotIdentityCancel": "Cancel",
+  "inventory.editLotIdentitySave": "Save changes",
+  "inventory.editLotIdentitySaving": "Saving…",
+  "inventory.lotIdentityLockedUsed":
+    "Lot information is locked because stock from this lot has already been used.",
+  "inventory.lotIdentityLockedActiveDraft":
+    "This lot is referenced by an active transfer draft.",
+  "inventory.lotIdentityLockedTransferred":
+    "Lot information is locked because stock from this lot has been transferred.",
+  "inventory.lotIdentityLockedReceivedFromTransfer":
+    "Lot information received from a transfer cannot be changed here.",
+  "inventory.lotIdentityLockedReferenced":
+    "Lot information is locked because it is referenced by an active document.",
+  "inventory.lotIdentityConflict":
+    "A lot with this expiration date and batch/lot number already exists at this location.",
+  "inventory.lotIdentityChanged": "Lot information changed. Reload and try again.",
   "inventory.movementExpiry": "Expiry",
   "inventory.movementLot": "Lot",
   "inventory.movementUnitCost": "Unit cost",

@@ -7,6 +7,7 @@ import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   adjustInventoryStock,
   addOpeningStock,
+  correctInventoryLotIdentity,
   disableInventoryTracking,
   enableInventoryTracking,
   getInventoryProduct,
@@ -44,6 +45,7 @@ import {
   resolveInventoryBranchDisplayName,
 } from "@/features/inventory/inventory-branch-labels";
 import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
+import { EditLotIdentityDialog } from "@/features/inventory/EditLotIdentityDialog";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import { InventoryMovementsResponsiveList } from "@/features/inventory/InventoryMovementsResponsiveList";
 import { InventoryMovementTransactionDrawer } from "@/features/inventory/InventoryMovementTransactionDrawer";
@@ -123,6 +125,8 @@ export function InventoryDetailPage() {
   const [reservationsOpen, setReservationsOpen] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<PosStockMovementDto | null>(null);
   const [areaOverrides, setAreaOverrides] = useState<Record<string, boolean>>({});
+  const [editingLot, setEditingLot] = useState<PosInventoryLotDto | null>(null);
+  const [editLotError, setEditLotError] = useState<string | null>(null);
   const movementIdRef = useRef<string | null>(null);
   const statusDetailsId = useId();
 
@@ -247,6 +251,37 @@ export function InventoryDetailPage() {
     await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
     await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
   }
+
+  const correctLotIdentityMutation = useMutation({
+    mutationFn: (values: {
+      expirationDate: string;
+      lotNumber: string | null;
+      reason: string;
+      expectedUpdatedAtUtc: string;
+    }) =>
+      correctInventoryLotIdentity(workspace!, productId!, editingLot!.lotId, values),
+    onSuccess: async () => {
+      setEditLotError(null);
+      setEditingLot(null);
+      await invalidateInventory();
+      toast.success(t("inventory.editLotIdentitySave"));
+    },
+    onError: (err) => {
+      if (err instanceof PosApiError) {
+        if (err.errorCode === "pos.inventory.lot_identity_conflict") {
+          setEditLotError(t("inventory.lotIdentityConflict"));
+          return;
+        }
+        if (err.errorCode === "pos.inventory.lot_changed") {
+          setEditLotError(t("inventory.lotIdentityChanged"));
+          return;
+        }
+        setEditLotError(describePosApiError(err, t));
+        return;
+      }
+      setEditLotError(describePosApiError(err, t));
+    },
+  });
 
   const enableMutation = useMutation({
     mutationFn: () => {
@@ -639,6 +674,14 @@ export function InventoryDetailPage() {
             lots={lots}
             unitOfMeasure={account.unitOfMeasure}
             formatStatus={formatStatus}
+            onEditLotIdentity={
+              allowManageInventory
+                ? (lot) => {
+                    setEditLotError(null);
+                    setEditingLot(lot);
+                  }
+                : undefined
+            }
           />
         )}
         {lotsQuery.hasNextPage ? (
@@ -1528,6 +1571,23 @@ export function InventoryDetailPage() {
         workspace={workspace}
         resolveActor={(actorId) => actors.resolve(actorId)}
         actorsLoading={actors.isResolving}
+      />
+
+      <EditLotIdentityDialog
+        open={editingLot != null}
+        lot={editingLot}
+        productName={account.name}
+        locationName={branchLabel}
+        unitOfMeasure={account.unitOfMeasure}
+        busy={correctLotIdentityMutation.isPending}
+        errorMessage={editLotError}
+        onCancel={() => {
+          if (!correctLotIdentityMutation.isPending) {
+            setEditingLot(null);
+            setEditLotError(null);
+          }
+        }}
+        onSave={(values) => correctLotIdentityMutation.mutate(values)}
       />
     </div>
   );

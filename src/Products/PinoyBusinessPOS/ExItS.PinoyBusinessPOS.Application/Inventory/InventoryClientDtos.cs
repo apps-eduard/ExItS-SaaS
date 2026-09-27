@@ -129,7 +129,15 @@ public sealed record PosInventoryLotDto(
     decimal QuantityOnHand,
     string ExpiryStatus,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool CanEditIdentity = false,
+    string? IdentityLockReason = null);
+
+public sealed record CorrectInventoryLotIdentityRequest(
+    DateOnly ExpirationDate,
+    string? LotNumber,
+    string Reason,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record PosInventoryLotPagedResult(
     List<PosInventoryLotDto> Items,
