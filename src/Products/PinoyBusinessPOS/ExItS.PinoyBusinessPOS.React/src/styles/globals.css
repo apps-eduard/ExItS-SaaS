@@ -15804,6 +15804,11 @@ a.dashboard-metric-card:focus-visible {
   border-color: var(--exits-danger);
 }
 
+.stock-request-approve-qty-col .stock-request-approve-qty {
+  max-width: 10rem;
+  margin-inline: auto;
+}
+
 .quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn,
 .quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--minus,
 .quantity-stepper--outline.quantity-stepper--cart .quantity-stepper__btn--plus {

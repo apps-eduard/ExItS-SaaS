@@ -126,6 +126,12 @@ vi.mock("@/api/pos/pos-stock-requests-client", () => ({
     inTransitCount: 0,
     recent: [],
   })),
+  listIncomingStockRequests: vi.fn(async () => ({
+    items: [],
+    totalCount: 0,
+    page: 1,
+    pageSize: 50,
+  })),
 }));
 
 vi.mock("@/components/exits/ToastProvider", () => ({
@@ -303,6 +309,9 @@ describe("ManagerHomePage", () => {
     });
     expect(screen.queryByTestId("manager-action-sell")).not.toBeInTheDocument();
     expect(screen.queryByTestId("manager-today-sales")).not.toBeInTheDocument();
+    expect(screen.getByTestId("manager-today-branch-requests")).toBeInTheDocument();
+    expect(screen.getByTestId("manager-action-stock-requests")).toBeInTheDocument();
+    expect(screen.getByTestId("manager-action-branch-requests")).toBeInTheDocument();
     expect(canCreateSale(workspaceState.grant, "Warehouse")).toBe(false);
   });
 

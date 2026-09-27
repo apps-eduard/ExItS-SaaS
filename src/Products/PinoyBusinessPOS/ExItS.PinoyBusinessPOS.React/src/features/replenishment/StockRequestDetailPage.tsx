@@ -1,7 +1,8 @@
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, Ban, ClipboardCheck, FilePlus2, PackageCheck, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as XLSX from "xlsx";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   approveStockRequest,
@@ -16,8 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { LoadingState } from "@/components/exits/LoadingState";
-import { PageHeader } from "@/components/exits/PageHeader";
+import { ExitsDataRecordCard } from "@/components/exits/ExitsDataRecordCard";
+import { ExitsModal } from "@/components/exits/ExitsModal";
+import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
 import {
   ExitsTable,
   ExitsTableBody,
@@ -25,23 +27,30 @@ import {
   ExitsTableContainer,
   ExitsTableHead,
   ExitsTableHeader,
-  ExitsTableMobile,
-  ExitsTableMobileRow,
   ExitsTableRow,
 } from "@/components/exits/ExitsTable";
-import { usePageSmartBack } from "@/navigation/useSmartBack";
+import { LoadingState } from "@/components/exits/LoadingState";
+import { QuantityStepper } from "@/components/exits/MoneyQuantity";
+import { PageHeader } from "@/components/exits/PageHeader";
+import { RESPONSIVE_DATA_TABLE_MIN_LG } from "@/components/exits/responsive-data-view";
+import { SideDrawer } from "@/components/exits/SideDrawer";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
 import {
   formatTransferQty,
   inventoryTransferStatusLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { StockRequestActivityTimeline } from "@/features/replenishment/StockRequestActivityTimeline";
 import {
   canCancelStockRequestAsDestination,
   canPrepareTransfer,
   findLinkedDraftTransfer,
   findOpenCoveringTransfer,
+  normalizeStockRequestStatus,
   prepareTransferPrimaryLabelKey,
   stockRequestStatusLabelKey,
   stockRequestStatusTone,
@@ -49,23 +58,100 @@ import {
 } from "@/features/replenishment/stock-request-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download-blob";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+type Translate = (key: MessageKey) => string;
+
+function StockRequestApproveQtyStepper({
+  productId,
+  requestedQuantity,
+  unitOfMeasure,
+  value,
+  onChange,
+  t,
+}: {
+  productId: string;
+  requestedQuantity: number;
+  unitOfMeasure: string;
+  value: string | undefined;
+  onChange: (next: string) => void;
+  t: Translate;
+}) {
+  const qty = Number(value ?? requestedQuantity);
+  const safeQty = Number.isFinite(qty) ? qty : 0;
+  const isEmpty = !Number.isFinite(qty) || qty <= 0;
+  return (
+    <QuantityStepper
+      compact
+      variant="auto"
+      editOnClick
+      value={safeQty}
+      min={0}
+      max={requestedQuantity}
+      precision={4}
+      step={1}
+      unitOfMeasure={unitOfMeasure}
+      sellingMode="PerItem"
+      invalid={isEmpty}
+      decreaseLabel={t("transfer.decreaseQuantity")}
+      increaseLabel={t("transfer.increaseQuantity")}
+      ariaLabel={t("stockRequest.approvedQty")}
+      valueTestId={`stock-request-approve-qty-${productId}`}
+      className="stock-request-approve-qty justify-center"
+      onChange={(next) => onChange(String(next))}
+    />
+  );
+}
+
+function stockRequestStatusIcon(status: string) {
+  switch (normalizeStockRequestStatus(status)) {
+    case "InTransit":
+      return <Truck aria-hidden />;
+    case "Fulfilled":
+      return <PackageCheck aria-hidden />;
+    case "PartiallyFulfilled":
+      return <ClipboardCheck aria-hidden />;
+    case "Rejected":
+    case "Cancelled":
+      return <Ban aria-hidden />;
+    case "Approved":
+    case "Preparing":
+      return <ClipboardCheck aria-hidden />;
+    case "Pending":
+    default:
+      return <FilePlus2 aria-hidden />;
+  }
+}
 
 export function StockRequestDetailPage() {
   const { stockRequestId = "" } = useParams();
   const { t } = useI18n();
+  const location = useLocation();
+  const isWarehouseRequestPath = location.pathname.startsWith("/warehouse/");
   const smartBack = usePageSmartBack({
-    fallback: "stockRequests",
-    backLabel: t("stockRequest.listTitle"),
-    backTestId: "page-header-back-stock-requests",
+    fallback: isWarehouseRequestPath ? "/warehouse/my-requests" : "stockRequests",
+    backLabel: isWarehouseRequestPath
+      ? t("retailWarehouse.nav.myRequests")
+      : t("stockRequest.listTitle"),
+    backTestId: isWarehouseRequestPath
+      ? "page-header-back-warehouse-requests"
+      : "page-header-back-stock-requests",
   });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const { layout } = useResponsiveDataLayout({ tableMinWidthPx: RESPONSIVE_DATA_TABLE_MIN_LG });
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
   const [rejectReason, setRejectReason] = useState("");
+  const [declineOpen, setDeclineOpen] = useState(false);
   const [approvedQtys, setApprovedQtys] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
   const workspace = useMemo(
     () =>
@@ -186,7 +272,11 @@ export function StockRequestDetailPage() {
       setActionError(null);
       return rejectStockRequest(workspace, dto.stockRequestId, reason);
     },
-    onSuccess: () => void invalidate(),
+    onSuccess: () => {
+      setDeclineOpen(false);
+      setRejectReason("");
+      void invalidate();
+    },
     onError: (err) => {
       setActionError(
         err instanceof Error && err.message === "reason"
@@ -257,18 +347,218 @@ export function StockRequestDetailPage() {
   const showSourceFulfillmentSummary =
     allowManage && isSource && remainingDispatchQty > 0 && canPrepareTransferAction;
 
+  const sourceName = dto.requestedSourceLocationName ?? dto.requestedSourceLocationId;
+  const destName = dto.destinationLocationName ?? dto.destinationLocationId;
+  const statusLabel = t(stockRequestStatusLabelKey(dto.status) as MessageKey);
+  const statusTone = stockRequestStatusTone(dto.status);
+  const headerTitle = t("stockRequest.summaryTitle");
+  const documentTitle = dto.requestNumber?.trim() || t("stockRequest.detailTitle");
+  const activityEvents = activityQuery.data ?? [];
+
+  async function runStockRequestOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    try {
+      const stamp = new Date().toISOString().slice(0, 10);
+      const numberPart = sanitizeCsvFilenamePart(
+        dto.requestNumber?.trim() || dto.stockRequestId.slice(0, 8),
+      );
+      if (action === "csv") {
+        const csv = buildCsvWithMetadata(
+          [
+            ["Stock request", dto.requestNumber ?? dto.stockRequestId],
+            ["Status", statusLabel],
+            ["Route", `${sourceName} → ${destName}`],
+            ["Generated", stamp],
+          ],
+          {
+            headers: [
+              t("purchasing.colProduct"),
+              t("stockRequest.requested"),
+              t("transfer.sent"),
+              t("transfer.good"),
+              t("transfer.damaged"),
+              t("transfer.inTransit"),
+              t("transfer.needsFulfillment"),
+            ],
+            rows: dto.lines.map((line) => {
+              const sent =
+                line.sentQuantity > 0
+                  ? line.sentQuantity
+                  : (line.approvedQuantity ?? line.requestedQuantity);
+              return [
+                line.nameSnapshot,
+                formatTransferQty(line.requestedQuantity),
+                formatTransferQty(sent),
+                formatTransferQty(line.fulfilledQuantity),
+                formatTransferQty(line.damagedQuantity ?? 0),
+                formatTransferQty(line.inProgressQuantity),
+                formatTransferQty(line.remainingToDispatchQuantity),
+              ];
+            }),
+          },
+        );
+        downloadCsvFile(`stock-request-${numberPart}-${stamp}.csv`, csv);
+        return;
+      }
+      if (action === "xlsx") {
+        const sheet = XLSX.utils.aoa_to_sheet([
+          ["Stock request", dto.requestNumber ?? dto.stockRequestId],
+          ["Status", statusLabel],
+          ["Route", `${sourceName} → ${destName}`],
+          [],
+          [
+            t("purchasing.colProduct"),
+            t("stockRequest.requested"),
+            t("transfer.sent"),
+            t("transfer.good"),
+            t("transfer.damaged"),
+            t("transfer.inTransit"),
+            t("transfer.needsFulfillment"),
+          ],
+          ...dto.lines.map((line) => {
+            const sent =
+              line.sentQuantity > 0
+                ? line.sentQuantity
+                : (line.approvedQuantity ?? line.requestedQuantity);
+            return [
+              line.nameSnapshot,
+              formatTransferQty(line.requestedQuantity),
+              formatTransferQty(sent),
+              formatTransferQty(line.fulfilledQuantity),
+              formatTransferQty(line.damagedQuantity ?? 0),
+              formatTransferQty(line.inProgressQuantity),
+              formatTransferQty(line.remainingToDispatchQuantity),
+            ];
+          }),
+        ]);
+        const book = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(book, sheet, "Stock request");
+        const buffer = XLSX.write(book, { bookType: "xlsx", type: "array" });
+        downloadBlob(
+          `stock-request-${numberPart}-${stamp}.xlsx`,
+          buffer,
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        );
+        return;
+      }
+      window.print();
+    } catch {
+      showToast(t("exitsTable.outputFailed"), "error");
+    }
+  }
+
+  const printDocument = (
+    <div className="incoming-order-print-document">
+      <h1>{t("stockRequest.detailTitle")}</h1>
+      {dto.requestNumber?.trim() ? <p>{dto.requestNumber.trim()}</p> : null}
+      <p>
+        {sourceName} → {destName}
+      </p>
+      <p>
+        {t("purchasing.fieldStatus")}: {statusLabel}
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>{t("purchasing.colProduct")}</th>
+            <th>{t("stockRequest.requested")}</th>
+            <th>{t("transfer.sent")}</th>
+            <th>{t("transfer.good")}</th>
+            <th>{t("transfer.damaged")}</th>
+            <th>{t("transfer.inTransit")}</th>
+            <th>{t("transfer.needsFulfillment")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dto.lines.map((line) => {
+            const sent =
+              line.sentQuantity > 0
+                ? line.sentQuantity
+                : (line.approvedQuantity ?? line.requestedQuantity);
+            return (
+              <tr key={line.lineId}>
+                <td>{line.nameSnapshot}</td>
+                <td>
+                  {formatTransferQty(line.requestedQuantity)} {line.unitOfMeasure}
+                </td>
+                <td>
+                  {formatTransferQty(sent)} {line.unitOfMeasure}
+                </td>
+                <td>
+                  {formatTransferQty(line.fulfilledQuantity)} {line.unitOfMeasure}
+                </td>
+                <td>
+                  {formatTransferQty(line.damagedQuantity ?? 0)} {line.unitOfMeasure}
+                </td>
+                <td>
+                  {formatTransferQty(line.inProgressQuantity)} {line.unitOfMeasure}
+                </td>
+                <td>
+                  {formatTransferQty(line.remainingToDispatchQuantity)} {line.unitOfMeasure}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
-    <div className="exits-page flex flex-col gap-3" data-testid="stock-request-detail">
+    <div
+      className="inventory-transfer-detail-page exits-page flex min-w-0 flex-col gap-3 pb-4"
+      data-testid="stock-request-detail"
+      data-status={dto.status}
+    >
+      <div className="exits-bizdoc-print-host" aria-hidden>
+        {printDocument}
+      </div>
+
       <PageHeader
-        title={dto.requestNumber ?? t("stockRequest.detailTitle")}
-        description={`${dto.destinationLocationName ?? dto.destinationLocationId} ← ${dto.requestedSourceLocationName ?? dto.requestedSourceLocationId}`}
+        title={headerTitle}
         {...smartBack}
-        trailing={
-          <StatusChip tone={stockRequestStatusTone(dto.status)}>
-            {t(stockRequestStatusLabelKey(dto.status) as MessageKey)}
-          </StatusChip>
+        actions={
+          <PoProcessHeaderActions
+            statusLabel={statusLabel}
+            statusTone={statusTone}
+            statusIcon={stockRequestStatusIcon(dto.status)}
+            timelineEnabled={activityEvents.length > 0}
+            onTimeline={() => setTimelineOpen(true)}
+            onPreview={() => setDocumentPreviewOpen(true)}
+            onPrint={() => void runStockRequestOutput("print")}
+            onCsv={() => void runStockRequestOutput("csv")}
+            onXlsx={() => void runStockRequestOutput("xlsx")}
+            onPdf={() => void runStockRequestOutput("pdf")}
+            timelineTestId="stock-request-timeline-open"
+            previewTestId="stock-request-document-preview-open"
+          />
         }
       />
+
+      <Card
+        className="flex min-w-0 flex-col gap-3 p-3"
+        treatment="bordered"
+        data-testid="stock-request-route-summary"
+      >
+        <div className="flex min-w-0 flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3">
+          <span className="truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
+            {sourceName}
+          </span>
+          <ArrowRight className="size-4 shrink-0 text-primary" aria-hidden />
+          <span className="truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
+            {destName}
+          </span>
+        </div>
+        <div data-testid="stock-request-number-summary">
+          <Card className="flex flex-col gap-0.5 p-3" treatment="bordered">
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              {t("stockRequest.colNumber")}
+            </p>
+            <p className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
+              {dto.requestNumber?.trim() || "—"}
+            </p>
+          </Card>
+        </div>
+      </Card>
 
       {dto.notes ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{dto.notes}</p>
@@ -305,149 +595,214 @@ export function StockRequestDetailPage() {
         </Card>
       ) : null}
 
-      <ExitsTableContainer data-testid="stock-request-lines">
-        <ExitsTable data-testid="stock-request-lines-desktop">
-          <ExitsTableHeader>
-            <ExitsTableRow>
-              <ExitsTableHead cellAlign="text" colSize="flex">
-                {t("purchasing.colProduct")}
-              </ExitsTableHead>
-              <ExitsTableHead cellAlign="center" colSize="numeric">
-                {t("transfer.sent")}
-              </ExitsTableHead>
-              <ExitsTableHead cellAlign="center" colSize="numeric">
-                {t("transfer.good")}
-              </ExitsTableHead>
-              <ExitsTableHead cellAlign="center" colSize="numeric">
-                {t("transfer.damaged")}
-              </ExitsTableHead>
-              <ExitsTableHead cellAlign="center" colSize="numeric">
-                {t("transfer.inTransit")}
-              </ExitsTableHead>
-              <ExitsTableHead cellAlign="center" colSize="numeric">
-                {t("transfer.needsFulfillment")}
-              </ExitsTableHead>
-            </ExitsTableRow>
-          </ExitsTableHeader>
-          <ExitsTableBody>
-            {dto.lines.map((line) => {
-              const sent =
-                line.sentQuantity > 0
-                  ? line.sentQuantity
-                  : (line.approvedQuantity ?? line.requestedQuantity);
-              return (
-                <ExitsTableRow
-                  key={line.lineId}
-                  data-testid={`stock-request-line-${line.productId}`}
-                >
-                  <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
-                    <div>{line.nameSnapshot}</div>
-                    <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
-                      {line.unitOfMeasure}
-                      {pendingAtSource ? ` · ${t("stockRequest.requested")}: ${line.requestedQuantity}` : ""}
-                    </div>
+      <ExitsResponsiveDataView
+        layout={layout}
+        testId="stock-request-lines"
+        table={
+          layout === "table" ? (
+            <ExitsTableContainer data-testid="stock-request-lines-desktop">
+              <ExitsTable>
+                <ExitsTableHeader>
+                  <ExitsTableRow>
+                    <ExitsTableHead cellAlign="text" colSize="flex">
+                      {t("purchasing.colProduct")}
+                    </ExitsTableHead>
                     {pendingAtSource ? (
-                      <label className="mt-2 flex items-center gap-2 text-[length:var(--exits-text-sm)] font-normal">
-                        <span>{t("stockRequest.approvedQty")}</span>
-                        <input
-                          className="exits-input w-24 max-w-[6rem] shrink-0"
-                          inputMode="decimal"
-                          value={approvedQtys[line.productId] ?? String(line.requestedQuantity)}
-                          onChange={(e) =>
-                            setApprovedQtys((prev) => ({
-                              ...prev,
-                              [line.productId]: e.target.value,
-                            }))
-                          }
-                          data-testid={`stock-request-approve-qty-${line.productId}`}
-                        />
-                      </label>
+                      <ExitsTableHead
+                        cellAlign="center"
+                        className="stock-request-approve-qty-col whitespace-nowrap"
+                        colWidth="9.5rem"
+                      >
+                        {t("stockRequest.approvedQty")}
+                      </ExitsTableHead>
                     ) : null}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
-                    {formatTransferQty(sent)}
-                  </ExitsTableCell>
-                  <ExitsTableCell
-                    cellAlign="center"
-                    colSize="numeric"
-                    className="tabular-nums"
-                    data-testid={`stock-request-received-${line.productId}`}
-                  >
-                    {formatTransferQty(line.fulfilledQuantity)}
-                  </ExitsTableCell>
-                  <ExitsTableCell
-                    cellAlign="center"
-                    colSize="numeric"
-                    className="tabular-nums"
-                    data-testid={`stock-request-damaged-${line.productId}`}
-                  >
-                    {formatTransferQty(line.damagedQuantity ?? 0)}
-                  </ExitsTableCell>
-                  <ExitsTableCell
-                    cellAlign="center"
-                    colSize="numeric"
-                    className="tabular-nums"
-                    data-testid={`stock-request-in-transit-${line.productId}`}
-                  >
-                    {formatTransferQty(line.inProgressQuantity)}
-                  </ExitsTableCell>
-                  <ExitsTableCell
-                    cellAlign="center"
-                    colSize="numeric"
-                    className="tabular-nums"
-                    data-testid={`stock-request-remaining-dispatch-${line.productId}`}
-                  >
-                    {formatTransferQty(line.remainingToDispatchQuantity)}
-                  </ExitsTableCell>
-                </ExitsTableRow>
-              );
-            })}
-          </ExitsTableBody>
-        </ExitsTable>
-
-        <ExitsTableMobile data-testid="stock-request-lines-mobile">
-          {dto.lines.map((line) => {
-            const sent =
-              line.sentQuantity > 0
-                ? line.sentQuantity
-                : (line.approvedQuantity ?? line.requestedQuantity);
-            return (
-              <ExitsTableMobileRow
-                key={line.lineId}
-                data-testid={`stock-request-line-${line.productId}`}
-              >
-                <div className="exits-table-mobile__title-row">
-                  <span className="exits-table-mobile__title">{line.nameSnapshot}</span>
-                </div>
-                <p className="exits-table-mobile__math mt-1 mb-0">
-                  {t("transfer.sent")}: {formatTransferQty(sent)}
-                  {` · ${t("transfer.good")}: ${formatTransferQty(line.fulfilledQuantity)}`}
-                  {` · ${t("transfer.damaged")}: ${formatTransferQty(line.damagedQuantity ?? 0)}`}
-                  {` · ${t("transfer.inTransit")}: ${formatTransferQty(line.inProgressQuantity)}`}
-                  {` · ${t("transfer.needsFulfillment")}: ${formatTransferQty(line.remainingToDispatchQuantity)}`}
-                </p>
-                {pendingAtSource ? (
-                  <label className="mt-2 flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-                    <span>{t("stockRequest.approvedQty")}</span>
-                    <input
-                      className="exits-input w-24 max-w-[6rem] shrink-0"
-                      inputMode="decimal"
-                      value={approvedQtys[line.productId] ?? String(line.requestedQuantity)}
-                      onChange={(e) =>
-                        setApprovedQtys((prev) => ({
-                          ...prev,
-                          [line.productId]: e.target.value,
-                        }))
-                      }
-                      data-testid={`stock-request-approve-qty-${line.productId}`}
-                    />
-                  </label>
-                ) : null}
-              </ExitsTableMobileRow>
-            );
-          })}
-        </ExitsTableMobile>
-      </ExitsTableContainer>
+                    <ExitsTableHead cellAlign="center" colSize="numeric">
+                      {t("transfer.sent")}
+                    </ExitsTableHead>
+                    <ExitsTableHead cellAlign="center" colSize="numeric">
+                      {t("transfer.good")}
+                    </ExitsTableHead>
+                    <ExitsTableHead cellAlign="center" colSize="numeric">
+                      {t("transfer.damaged")}
+                    </ExitsTableHead>
+                    <ExitsTableHead cellAlign="center" colSize="numeric">
+                      {t("transfer.inTransit")}
+                    </ExitsTableHead>
+                    <ExitsTableHead cellAlign="center" colSize="numeric">
+                      {t("transfer.needsFulfillment")}
+                    </ExitsTableHead>
+                  </ExitsTableRow>
+                </ExitsTableHeader>
+                <ExitsTableBody>
+                  {dto.lines.map((line) => {
+                    const sent =
+                      line.sentQuantity > 0
+                        ? line.sentQuantity
+                        : (line.approvedQuantity ?? line.requestedQuantity);
+                    return (
+                      <ExitsTableRow
+                        key={line.lineId}
+                        data-testid={`stock-request-line-${line.productId}`}
+                      >
+                        <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
+                          <div>{line.nameSnapshot}</div>
+                          <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+                            {line.unitOfMeasure}
+                            {pendingAtSource
+                              ? ` · ${t("stockRequest.requested")}: ${line.requestedQuantity}`
+                              : ""}
+                          </div>
+                        </ExitsTableCell>
+                        {pendingAtSource ? (
+                          <ExitsTableCell
+                            cellAlign="center"
+                            className="stock-request-approve-qty-col"
+                          >
+                            <StockRequestApproveQtyStepper
+                              productId={line.productId}
+                              requestedQuantity={line.requestedQuantity}
+                              unitOfMeasure={line.unitOfMeasure}
+                              value={approvedQtys[line.productId]}
+                              onChange={(next) =>
+                                setApprovedQtys((prev) => ({
+                                  ...prev,
+                                  [line.productId]: next,
+                                }))
+                              }
+                              t={t}
+                            />
+                          </ExitsTableCell>
+                        ) : null}
+                        <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                          {formatTransferQty(sent)}
+                        </ExitsTableCell>
+                        <ExitsTableCell
+                          cellAlign="center"
+                          colSize="numeric"
+                          className="tabular-nums"
+                          data-testid={`stock-request-received-${line.productId}`}
+                        >
+                          {formatTransferQty(line.fulfilledQuantity)}
+                        </ExitsTableCell>
+                        <ExitsTableCell
+                          cellAlign="center"
+                          colSize="numeric"
+                          className="tabular-nums"
+                          data-testid={`stock-request-damaged-${line.productId}`}
+                        >
+                          {formatTransferQty(line.damagedQuantity ?? 0)}
+                        </ExitsTableCell>
+                        <ExitsTableCell
+                          cellAlign="center"
+                          colSize="numeric"
+                          className="tabular-nums"
+                          data-testid={`stock-request-in-transit-${line.productId}`}
+                        >
+                          {formatTransferQty(line.inProgressQuantity)}
+                        </ExitsTableCell>
+                        <ExitsTableCell
+                          cellAlign="center"
+                          colSize="numeric"
+                          className="tabular-nums"
+                          data-testid={`stock-request-remaining-dispatch-${line.productId}`}
+                        >
+                          {formatTransferQty(line.remainingToDispatchQuantity)}
+                        </ExitsTableCell>
+                      </ExitsTableRow>
+                    );
+                  })}
+                </ExitsTableBody>
+              </ExitsTable>
+            </ExitsTableContainer>
+          ) : null
+        }
+        list={
+          layout === "list" ? (
+            <ul className="exits-data-record-list" data-testid="stock-request-lines-mobile">
+              {dto.lines.map((line) => {
+                const sent =
+                  line.sentQuantity > 0
+                    ? line.sentQuantity
+                    : (line.approvedQuantity ?? line.requestedQuantity);
+                return (
+                  <ExitsDataRecordCard
+                    key={line.lineId}
+                    as="li"
+                    data-testid={`stock-request-line-${line.productId}`}
+                    title={line.nameSnapshot}
+                    subtitle={
+                      pendingAtSource
+                        ? `${line.unitOfMeasure} · ${t("stockRequest.requested")}: ${line.requestedQuantity}`
+                        : line.unitOfMeasure
+                    }
+                    fields={[
+                      ...(pendingAtSource
+                        ? [
+                            {
+                              label: t("stockRequest.approvedQty"),
+                              value: (
+                                <StockRequestApproveQtyStepper
+                                  productId={line.productId}
+                                  requestedQuantity={line.requestedQuantity}
+                                  unitOfMeasure={line.unitOfMeasure}
+                                  value={approvedQtys[line.productId]}
+                                  onChange={(next) =>
+                                    setApprovedQtys((prev) => ({
+                                      ...prev,
+                                      [line.productId]: next,
+                                    }))
+                                  }
+                                  t={t}
+                                />
+                              ),
+                              emphasize: true,
+                            },
+                          ]
+                        : []),
+                      {
+                        label: t("transfer.sent"),
+                        value: formatTransferQty(sent),
+                      },
+                      {
+                        label: t("transfer.good"),
+                        value: (
+                          <span data-testid={`stock-request-received-${line.productId}`}>
+                            {formatTransferQty(line.fulfilledQuantity)}
+                          </span>
+                        ),
+                      },
+                      {
+                        label: t("transfer.damaged"),
+                        value: (
+                          <span data-testid={`stock-request-damaged-${line.productId}`}>
+                            {formatTransferQty(line.damagedQuantity ?? 0)}
+                          </span>
+                        ),
+                      },
+                      {
+                        label: t("transfer.inTransit"),
+                        value: (
+                          <span data-testid={`stock-request-in-transit-${line.productId}`}>
+                            {formatTransferQty(line.inProgressQuantity)}
+                          </span>
+                        ),
+                      },
+                      {
+                        label: t("transfer.needsFulfillment"),
+                        value: (
+                          <span data-testid={`stock-request-remaining-dispatch-${line.productId}`}>
+                            {formatTransferQty(line.remainingToDispatchQuantity)}
+                          </span>
+                        ),
+                      },
+                    ]}
+                  />
+                );
+              })}
+            </ul>
+          ) : null
+        }
+      />
 
       {openCover ? (
         <div
@@ -465,21 +820,6 @@ export function StockRequestDetailPage() {
           </Link>
         </div>
       ) : null}
-
-      <section className="rounded-[var(--exits-radius-md)] border border-border p-3" data-testid="stock-request-activity">
-        <h2 className="exits-type-label m-0 mb-2">{t("stockRequest.activity")}</h2>
-        {activityQuery.isLoading ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("stockRequest.loading")}</p>
-        ) : activityQuery.isError ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-danger">{t("stockRequest.activity.loadError")}</p>
-        ) : (
-          <StockRequestActivityTimeline
-            events={activityQuery.data ?? []}
-            resolveActor={actors.resolve}
-            isResolving={actors.isResolving}
-          />
-        )}
-      </section>
 
       {dto.linkedTransfers.length > 0 || linkedTransferId ? (
         <section>
@@ -523,12 +863,30 @@ export function StockRequestDetailPage() {
       ) : null}
 
       {pendingAtSource ? (
-        <div className="flex flex-col gap-2" data-testid="stock-request-approve-actions">
-          <div className="flex flex-wrap gap-2">
+        <div className="po-document-actions" data-testid="stock-request-approve-actions">
+          <div className="po-document-actions__cluster">
+            <Button
+              type="button"
+              intent="danger"
+              appearance="outline"
+              onClick={() => {
+                setActionError(null);
+                setDeclineOpen(true);
+              }}
+              disabled={
+                approveMutation.isPending ||
+                rejectMutation.isPending ||
+                prepareMutation.isPending
+              }
+              data-testid="stock-request-decline"
+            >
+              <Ban className="size-4 shrink-0" aria-hidden />
+              {t("stockRequest.decline")}
+            </Button>
             <Button
               type="button"
               onClick={() => approveMutation.mutate(false)}
-              disabled={approveMutation.isPending}
+              disabled={approveMutation.isPending || rejectMutation.isPending}
               data-testid="stock-request-approve"
             >
               {t("stockRequest.approve")}
@@ -537,29 +895,12 @@ export function StockRequestDetailPage() {
               type="button"
               variant="secondary"
               onClick={() => approveMutation.mutate(true)}
-              disabled={approveMutation.isPending}
+              disabled={approveMutation.isPending || rejectMutation.isPending}
               data-testid="stock-request-approve-prepare"
             >
               {t("stockRequest.approveAndPrepare")}
             </Button>
           </div>
-          <textarea
-            className="exits-input max-h-20 resize-none"
-            rows={2}
-            placeholder={t("stockRequest.rejectReason")}
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            data-testid="stock-request-decline-reason"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => rejectMutation.mutate()}
-            disabled={rejectMutation.isPending}
-            data-testid="stock-request-decline"
-          >
-            {t("stockRequest.decline")}
-          </Button>
         </div>
       ) : null}
 
@@ -607,10 +948,122 @@ export function StockRequestDetailPage() {
         </Button>
       ) : null}
 
-      {actionError ? (
+      {actionError && !declineOpen ? (
         <p className="m-0 text-danger text-[length:var(--exits-text-sm)]" role="alert">
           {actionError}
         </p>
+      ) : null}
+
+      <SideDrawer
+        open={timelineOpen}
+        onClose={() => setTimelineOpen(false)}
+        title={t("stockRequest.timelineTitle")}
+        description={dto.requestNumber?.trim() || undefined}
+        testId="stock-request-timeline-drawer"
+        closeLabel={t("purchasing.timelineClose")}
+        closeTestId="stock-request-timeline-drawer-close"
+        panelClassName="exits-form-drawer__panel exits-form-drawer__panel--lg"
+      >
+        <div className="exits-form-drawer" data-testid="stock-request-timeline-drawer-content">
+          <div className="exits-form-drawer__body">
+            {activityQuery.isLoading ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("stockRequest.loading")}
+              </p>
+            ) : activityQuery.isError ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-danger">
+                {t("stockRequest.activity.loadError")}
+              </p>
+            ) : (
+              <StockRequestActivityTimeline
+                events={activityEvents}
+                resolveActor={actors.resolve}
+                isResolving={actors.isResolving}
+              />
+            )}
+          </div>
+        </div>
+      </SideDrawer>
+
+      <ExitsModal
+        open={declineOpen}
+        onOpenChange={(open) => {
+          if (!open && !rejectMutation.isPending) {
+            setDeclineOpen(false);
+            setRejectReason("");
+            setActionError(null);
+          }
+        }}
+        title={t("stockRequest.declineConfirmTitle")}
+        description={t("stockRequest.declineConfirmDetail")}
+        testId="stock-request-decline-dialog"
+        size="md"
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              intent="neutral"
+              appearance="outline"
+              disabled={rejectMutation.isPending}
+              onClick={() => {
+                setDeclineOpen(false);
+                setRejectReason("");
+                setActionError(null);
+              }}
+              data-testid="stock-request-decline-cancel"
+            >
+              {t("purchasing.cancel")}
+            </Button>
+            <Button
+              type="button"
+              intent="danger"
+              disabled={rejectMutation.isPending || !rejectReason.trim()}
+              onClick={() => rejectMutation.mutate()}
+              data-testid="stock-request-decline-confirm"
+            >
+              <Ban className="size-4 shrink-0" aria-hidden />
+              {rejectMutation.isPending
+                ? t("stockRequest.declining")
+                : t("stockRequest.decline")}
+            </Button>
+          </div>
+        }
+      >
+        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <span>{t("stockRequest.rejectReason")}</span>
+          <textarea
+            className="exits-input min-h-24 resize-y"
+            rows={3}
+            value={rejectReason}
+            onChange={(e) => {
+              setRejectReason(e.target.value);
+              if (actionError) setActionError(null);
+            }}
+            placeholder={t("stockRequest.rejectReasonPlaceholder")}
+            data-testid="stock-request-decline-reason"
+            data-exits-modal-autofocus="true"
+          />
+        </label>
+        {actionError ? (
+          <p className="m-0 mt-2 text-danger text-[length:var(--exits-text-sm)]" role="alert">
+            {actionError}
+          </p>
+        ) : null}
+      </ExitsModal>
+
+      {documentPreviewOpen ? (
+        <BusinessDocumentPreview
+          open={documentPreviewOpen}
+          onClose={() => setDocumentPreviewOpen(false)}
+          title={documentTitle}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("exitsTable.print")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          showPdf={false}
+          testId="stock-request-document-preview"
+        >
+          {printDocument}
+        </BusinessDocumentPreview>
       ) : null}
     </div>
   );

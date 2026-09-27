@@ -6063,10 +6063,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment Ã¢â‚¬â€ nayon",
-
-  "inventory.movementType.manualDecrease": "Stock adjustment Ã¢â‚¬â€ bawas",
-
+  "inventory.movementType.manualIncrease": "Stock adjustment — nayon",
+  "inventory.movementType.manualDecrease": "Stock adjustment — bawas",
   "inventory.movementType.sale": "Sale",
 
   "inventory.movementType.saleVoid": "Sale void restoration",
@@ -6104,10 +6102,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.exceptionReceivedBy": "Received by",
   "inventory.exceptionWhy": "Why",
 
-  "inventory.movementType.stockCountIncrease": "Stock count Ã¢â‚¬â€ nayon",
-
-  "inventory.movementType.stockCountDecrease": "Stock count Ã¢â‚¬â€ bawas",
-
+  "inventory.movementType.stockCountIncrease": "Stock count — nayon",
+  "inventory.movementType.stockCountDecrease": "Stock count — bawas",
   "inventory.movementType.stockUse": "Stock use",
 
   "inventory.movementType.stockUseVoid": "Stock use void restoration",
@@ -6961,6 +6957,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.more.receiveStock": "Awaten ti stock",
 
   "org.more.transfers": "Dagiti transfer",
+  "org.more.branchRequests": "Branch requests",
 
   "org.more.expiringLots": "Dagiti lot / expiry",
 
@@ -7231,6 +7228,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.nav.inventory": "Imbentario",
 
   "org.nav.transfers": "Dagiti transfer",
+  "org.nav.branchRequests": "Branch requests",
 
   "org.nav.purchasing": "Panaggalot",
 
@@ -11768,6 +11766,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "managerHome.warehouse.stockAlerts": "Stock alerts",
 
   "managerHome.warehouse.noIncoming": "No incoming transfers",
+  "managerHome.warehouse.branchRequests": "Branch requests",
+  "managerHome.warehouse.noBranchRequests": "No pending branch requests",
 
   "managerHome.warehouse.noReceivable": "No purchase orders ready",
 
@@ -13624,6 +13624,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.listLedeRetail": "Dagiti request a naipatulod ti branchmo iti supply warehouse.",
   "stockRequest.listLedeWarehouse": "Dagiti umay a request manipud iti retail branch.",
   "stockRequest.detailTitle": "Stock request",
+  "stockRequest.summaryTitle": "Request summary",
   "stockRequest.needBranch": "Agpili mona ti location workspace.",
   "stockRequest.denied": "Awan ti inventory permissionmo a mangikiddaw ti stock.",
   "stockRequest.loading": "Agload ti stock request...",
@@ -13675,7 +13676,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.createTransfer": "Agaramid ti transfer",
   "stockRequest.reject": "Ibabawi ti request",
   "stockRequest.decline": "Ibabawi",
+  "stockRequest.declineConfirmTitle": "Decline stock request",
+  "stockRequest.declineConfirmDetail": "Tell the requesting branch why this request cannot be fulfilled.",
+  "stockRequest.declining": "Declining…",
   "stockRequest.rejectReason": "Rason ti panangibabawi (masapul)",
+  "stockRequest.rejectReasonPlaceholder": "Enter decline reason",
   "stockRequest.rejectDefault": "Naibabawi",
   "stockRequest.declineReasonRequired": "Isurat ti rason sakbay nga ibabawi.",
   "stockRequest.cancel": "Ikansela ti request",
@@ -13704,6 +13709,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.startPreparing": "Rugian ti panagsagana",
   "stockRequest.dispatchStock": "Ipatulod ti stock",
   "stockRequest.receiveLinked": "Awaten ti stock",
+  "stockRequest.timelineTitle": "Request timeline",
+  "stockRequest.colNumber": "Request number",
   "stockRequest.activity": "Aktibidad",
   "stockRequest.activity.requested": "Naikiddaw",
   "stockRequest.activity.approved": "Naaprubahan",
@@ -13755,6 +13762,21 @@ export const iloPH: Record<keyof typeof en, string> = {
   "retailWarehouse.recentEmpty": "Awan ti nabiit a kiddaw",
   "retailWarehouse.recentEmptyDetail": "Agparang ditoy dagiti naisumite a stock request.",
   "retailWarehouse.request.supplyFrom": "Manipud iti {name}",
+  "retailWarehouse.request.detailsTitle": "Request details",
+  "retailWarehouse.request.fromWarehouse": "Supply warehouse",
+  "retailWarehouse.request.toBranch": "Requesting branch",
+  "retailWarehouse.request.items": "Items",
+  "retailWarehouse.request.addProducts": "Add products",
+  "retailWarehouse.request.findProducts": "Find products",
+  "retailWarehouse.request.closeFindProducts": "Close product finder",
+  "retailWarehouse.request.itemsEmpty": "No products yet",
+  "retailWarehouse.request.itemsEmptyDetail":
+    "Add products to request from the supply warehouse.",
+  "retailWarehouse.request.backOverview": "Back to warehouse",
+  "retailWarehouse.request.reset": "Reset",
+  "retailWarehouse.request.submitting": "Submitting…",
+  "retailWarehouse.request.colWarehouseAvailable": "Warehouse available",
+
   "retailWarehouse.request.basket": "Basket ti kiddaw",
   "retailWarehouse.request.cartLabel": "Kiddaw",
   "retailWarehouse.request.cartEmptyDetail": "I-tap ti produkto tapno mainayon iti daytoy a kiddaw.",

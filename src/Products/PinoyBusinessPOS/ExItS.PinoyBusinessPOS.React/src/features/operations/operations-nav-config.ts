@@ -433,6 +433,20 @@ export function buildOperationsSidebarGroups(input: {
       NAV_MANAGER,
       navWorkspace,
     );
+    pushItem(
+      stock,
+      {
+        id: "branch-requests",
+        to: "/inventory/stock-requests",
+        labelKey: "org.nav.branchRequests",
+        icon: ClipboardList,
+        testId: "ops-sidebar-branch-requests",
+        matchPrefixes: ["/inventory/stock-requests"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
   }
   pushItem(
     stock,

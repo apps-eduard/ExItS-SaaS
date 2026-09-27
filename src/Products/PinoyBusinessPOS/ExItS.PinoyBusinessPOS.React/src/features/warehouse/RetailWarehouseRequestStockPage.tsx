@@ -1,83 +1,58 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Package, ShoppingCart } from "lucide-react";
+import {
+  ArrowLeft,
+  Package,
+  PackagePlus,
+  RotateCcw,
+  Store,
+  Warehouse,
+} from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   createStockRequest,
   listReplenishmentCatalog,
   type ReplenishmentCatalogItemDto,
 } from "@/api/pos/pos-stock-requests-client";
-import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { listCatalogCategories } from "@/api/pos/pos-catalog-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
-import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { ExitsModal } from "@/components/exits/ExitsModal";
+import { ExitsSelect } from "@/components/exits/ExitsSelect";
+import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
+import { PageHeader } from "@/components/exits/PageHeader";
+import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView";
+import { SelectedItemsPanel } from "@/components/exits/ProductSelectionWorkspace";
+import { PRODUCT_SELECTION_TABLE_MIN_PX } from "@/components/exits/product-selection-view";
 import { SearchField } from "@/components/exits/SearchField";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { useToast } from "@/components/exits/ToastProvider";
-import {
-  formatQuantityDisplay,
-  isByWeightSellingMode,
-  roundQuantity,
-} from "@/cart/sell-cart-helpers";
-import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
-import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
-import { setOrgBottomNavHidden } from "@/features/sell/sell-org-bottom-nav-chrome";
+import { formatQuantityDisplay, roundQuantity } from "@/cart/sell-cart-helpers";
+import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import type { RetailWarehouseResolveState } from "@/features/warehouse/retail-warehouse-resolve";
-import { summarizeRequestBasket } from "@/features/warehouse/retail-warehouse-request-math";
+import {
+  requestStockDisplayUom,
+  summarizeRequestBasket,
+  type RequestStockBasketLine,
+} from "@/features/warehouse/retail-warehouse-request-math";
 import {
   findRequestAvailabilityIssues,
   isRequestQuantityAllowed,
 } from "@/features/warehouse/retail-warehouse-request-availability";
-import {
-  RequestStockCartPanel,
-  type RequestStockBasketLine,
-} from "@/features/warehouse/RequestStockCartPanel";
-import {
-  RequestStockProductCard,
-  requestStockDisplayUom,
-} from "@/features/warehouse/RequestStockProductCard";
+import { RequestStockItemsView } from "@/features/warehouse/RequestStockItemsView";
+import { RequestStockProductSelection } from "@/features/warehouse/RequestStockProductSelection";
 import { useRetailWarehouseResolve } from "@/features/warehouse/useRetailWarehouseResolve";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
+import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type StockFilter = "all" | "low" | "out";
 
-type WeightEntryTarget = {
-  product: ReplenishmentCatalogItemDto | RequestStockBasketLine;
-  initialKilograms?: number | null;
-  mode: "add" | "edit";
-};
-
 const PAGE_SIZE = 40;
-
-/** Weight dialog preview uses warehouse cost (request estimate), never branch SRP. */
-function toWeightDialogProduct(
-  item: ReplenishmentCatalogItemDto | RequestStockBasketLine,
-): PosCatalogProductDto {
-  const cost =
-    item.warehouseUnitCost != null && Number.isFinite(item.warehouseUnitCost)
-      ? item.warehouseUnitCost
-      : 0;
-  return {
-    productId: item.productId,
-    organizationId: "",
-    name: item.name,
-    sku: item.sku,
-    unitOfMeasure: item.unitOfMeasure,
-    sellingMode: item.sellingMode || "PerItem",
-    sellingPrice: cost,
-    effectiveSellingPrice: cost,
-    status: "Active",
-    createdAtUtc: "",
-    updatedAtUtc: "",
-    isTracked: true,
-    onHandQuantity: item.warehouseAvailableQuantity,
-  };
-}
 
 function useReadySupply(): Extract<RetailWarehouseResolveState, { kind: "ready" }> | null {
   const outlet = useOutletContext<RetailWarehouseResolveState | null>();
@@ -86,11 +61,15 @@ function useReadySupply(): Extract<RetailWarehouseResolveState, { kind: "ready" 
   return state?.kind === "ready" ? state : null;
 }
 
+function formatAvailable(qty: number, uom: string): string {
+  return `${formatQuantityDisplay(qty)} ${uom}`.trim();
+}
+
 export function RetailWarehouseRequestStockPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
   const { workspace } = useRetailWarehouseResolve();
   const supply = useReadySupply();
   const allowManage = canManageInventory(sessionGrant);
@@ -98,55 +77,17 @@ export function RetailWarehouseRequestStockPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
-  const [categoryId, setCategoryId] = useState<string>("");
+  const [categoryId, setCategoryId] = useState("");
   const [page, setPage] = useState(1);
   const [basket, setBasket] = useState<RequestStockBasketLine[]>([]);
   const [requestNotes, setRequestNotes] = useState("");
-  const [cartSheetOpen, setCartSheetOpen] = useState(false);
-  const [sideCartLayout, setSideCartLayout] = useState(false);
-  const [weightEntry, setWeightEntry] = useState<WeightEntryTarget | null>(null);
-  const [flashedProductId, setFlashedProductId] = useState<string | null>(null);
+  const [finderOpen, setFinderOpen] = useState(false);
   const [lineWarnings, setLineWarnings] = useState<Map<string, string>>(new Map());
   const [submitGuardMessage, setSubmitGuardMessage] = useState<string | null>(null);
-  const flashTimeoutRef = useRef<number | null>(null);
-
-  const flashProduct = useCallback((productId: string) => {
-    setFlashedProductId(productId);
-    if (flashTimeoutRef.current != null) {
-      window.clearTimeout(flashTimeoutRef.current);
-    }
-    flashTimeoutRef.current = window.setTimeout(() => {
-      flashTimeoutRef.current = null;
-      setFlashedProductId((current) => (current === productId ? null : current));
-    }, 450);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (flashTimeoutRef.current != null) {
-        window.clearTimeout(flashTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") {
-      return;
-    }
-    const media = window.matchMedia("(min-width: 900px)");
-    const sync = () => setSideCartLayout(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    const hideNav = cartSheetOpen && !sideCartLayout;
-    setOrgBottomNavHidden(hideNav);
-    return () => {
-      setOrgBottomNavHidden(false);
-    };
-  }, [cartSheetOpen, sideCartLayout]);
+  const finderPanelId = "request-product-finder-panel";
+  const { layout: pickerLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: PRODUCT_SELECTION_TABLE_MIN_PX,
+  });
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -159,7 +100,7 @@ export function RetailWarehouseRequestStockPage() {
 
   const categoriesQuery = useQuery({
     queryKey: ["catalog-categories-active", workspace?.organizationId],
-    enabled: Boolean(workspace),
+    enabled: Boolean(workspace) && finderOpen,
     staleTime: 60_000,
     queryFn: ({ signal }) =>
       listCatalogCategories(workspace!, { status: "Active", pageSize: 100 }, signal),
@@ -176,7 +117,7 @@ export function RetailWarehouseRequestStockPage() {
       categoryId,
       page,
     ],
-    enabled: Boolean(workspace && supply?.supplyWarehouseId),
+    enabled: Boolean(workspace && supply?.supplyWarehouseId && finderOpen),
     queryFn: ({ signal }) =>
       listReplenishmentCatalog(workspace!, {
         supplyWarehouseBranchId: supply!.supplyWarehouseId,
@@ -189,35 +130,12 @@ export function RetailWarehouseRequestStockPage() {
       }),
   });
 
-  // Keep basket actual-availability in sync when catalog refreshes (UI remaining only).
-  useEffect(() => {
-    const catalogItems = catalogQuery.data?.items;
-    if (!catalogItems?.length) return;
-    const byId = new Map(catalogItems.map((item) => [item.productId, item]));
-    setBasket((prev) => {
-      let changed = false;
-      const next = prev.map((line) => {
-        const match = byId.get(line.productId);
-        if (!match) return line;
-        if (match.warehouseAvailableQuantity === line.warehouseAvailableQuantity) {
-          return line;
-        }
-        changed = true;
-        return {
-          ...line,
-          warehouseAvailableQuantity: match.warehouseAvailableQuantity,
-          branchOnHandQuantity: match.branchOnHandQuantity,
-        };
-      });
-      return changed ? next : prev;
-    });
-  }, [catalogQuery.data?.items]);
-
   const basketById = useMemo(() => {
     const map = new Map<string, RequestStockBasketLine>();
     for (const line of basket) map.set(line.productId, line);
     return map;
   }, [basket]);
+
   const basketTotals = useMemo(() => summarizeRequestBasket(basket), [basket]);
   const warehouseLabel =
     supply?.supplyWarehouseName ?? t("retailWarehouse.request.supplyWarehouse");
@@ -262,94 +180,29 @@ export function RetailWarehouseRequestStockPage() {
       setRequestNotes("");
       setLineWarnings(new Map());
       setSubmitGuardMessage(null);
-      setCartSheetOpen(false);
       showToast(t("retailWarehouse.request.submitted"), "success");
       navigate(`/warehouse/requests/${dto.stockRequestId}`);
     },
   });
 
-  function upsertLine(
-    product: ReplenishmentCatalogItemDto | RequestStockBasketLine,
-    quantity: number,
-  ) {
-    const available = product.warehouseAvailableQuantity;
-    const qty = roundQuantity(quantity);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      removeLine(product.productId);
-      return;
-    }
-    if (!isRequestQuantityAllowed(qty, available)) {
-      const uom = requestStockDisplayUom(product.sellingMode || "PerItem", product.unitOfMeasure);
-      showToast(
-        t("retailWarehouse.request.onlyAvailableAtWarehouse")
-          .replace("{qty}", formatQuantityDisplay(Math.max(0, available)))
-          .replace("{uom}", uom)
-          .replace("{warehouse}", supply?.supplyWarehouseName ?? t("retailWarehouse.request.supplyWarehouse")),
-        "error",
-      );
-      return;
-    }
+  const upsertLine = useCallback((line: RequestStockBasketLine) => {
+    setBasket((prev) => {
+      const idx = prev.findIndex((l) => l.productId === line.productId);
+      if (idx < 0) return [...prev, line];
+      const next = [...prev];
+      next[idx] = line;
+      return next;
+    });
     setLineWarnings((prev) => {
-      if (!prev.has(product.productId)) return prev;
+      if (!prev.has(line.productId)) return prev;
       const next = new Map(prev);
-      next.delete(product.productId);
+      next.delete(line.productId);
       return next;
     });
     setSubmitGuardMessage(null);
-    setBasket((prev) => {
-      const existing = prev.find((l) => l.productId === product.productId);
-      const next: RequestStockBasketLine = {
-        productId: product.productId,
-        name: product.name,
-        sku: product.sku,
-        unitOfMeasure: product.unitOfMeasure,
-        sellingMode: product.sellingMode || "PerItem",
-        quantity: qty,
-        branchOnHandQuantity: product.branchOnHandQuantity,
-        warehouseAvailableQuantity: product.warehouseAvailableQuantity,
-        warehouseUnitCost:
-          product.warehouseUnitCost != null && Number.isFinite(product.warehouseUnitCost)
-            ? product.warehouseUnitCost
-            : null,
-      };
-      if (existing) {
-        return prev.map((l) => (l.productId === product.productId ? next : l));
-      }
-      return [...prev, next];
-    });
-    flashProduct(product.productId);
-  }
+  }, []);
 
-  function selectProduct(product: ReplenishmentCatalogItemDto) {
-    if (product.warehouseAvailableQuantity <= 0) {
-      return;
-    }
-    if (isByWeightSellingMode(product.sellingMode)) {
-      const existing = basketById.get(product.productId);
-      setWeightEntry({
-        product: existing ?? product,
-        mode: existing ? "edit" : "add",
-        initialKilograms: existing?.quantity ?? null,
-      });
-      return;
-    }
-    const existing = basketById.get(product.productId);
-    const nextQty = (existing?.quantity ?? 0) + 1;
-    if (!isRequestQuantityAllowed(nextQty, product.warehouseAvailableQuantity)) {
-      const uom = requestStockDisplayUom(product.sellingMode, product.unitOfMeasure);
-      showToast(
-        t("retailWarehouse.request.onlyAvailableAtWarehouse")
-          .replace("{qty}", formatQuantityDisplay(product.warehouseAvailableQuantity))
-          .replace("{uom}", uom)
-          .replace("{warehouse}", supply?.supplyWarehouseName ?? t("retailWarehouse.request.supplyWarehouse")),
-        "error",
-      );
-      return;
-    }
-    upsertLine(product, nextQty);
-  }
-
-  function removeLine(productId: string) {
+  const removeLine = useCallback((productId: string) => {
     setBasket((prev) => prev.filter((l) => l.productId !== productId));
     setLineWarnings((prev) => {
       if (!prev.has(productId)) return prev;
@@ -357,53 +210,97 @@ export function RetailWarehouseRequestStockPage() {
       next.delete(productId);
       return next;
     });
-  }
+    setSubmitGuardMessage(null);
+  }, []);
 
-  function updateQty(productId: string, quantity: number) {
-    const line = basketById.get(productId);
-    if (!line) return;
-    upsertLine(line, quantity);
+  const updateQty = useCallback(
+    (productId: string, quantity: number) => {
+      const existing = basketById.get(productId);
+      if (!existing) return;
+      const qty = roundQuantity(quantity);
+      if (qty <= 0) {
+        removeLine(productId);
+        return;
+      }
+      if (!isRequestQuantityAllowed(qty, existing.warehouseAvailableQuantity)) {
+        setLineWarnings((prev) => {
+          const next = new Map(prev);
+          next.set(
+            productId,
+            t("retailWarehouse.request.onlyAvailableAtWarehouse")
+              .replace("{qty}", formatQuantityDisplay(existing.warehouseAvailableQuantity))
+              .replace(
+                "{uom}",
+                requestStockDisplayUom(existing.sellingMode, existing.unitOfMeasure),
+              )
+              .replace("{warehouse}", warehouseLabel),
+          );
+          return next;
+        });
+        return;
+      }
+      upsertLine({ ...existing, quantity: qty });
+    },
+    [basketById, removeLine, t, upsertLine, warehouseLabel],
+  );
+
+  function addProduct(product: ReplenishmentCatalogItemDto) {
+    if (product.warehouseAvailableQuantity <= 0) return;
+    const existing = basketById.get(product.productId);
+    const nextQty = roundQuantity((existing?.quantity ?? 0) + 1);
+    if (!isRequestQuantityAllowed(nextQty, product.warehouseAvailableQuantity)) {
+      return;
+    }
+    upsertLine({
+      productId: product.productId,
+      name: product.name,
+      sku: product.sku,
+      unitOfMeasure: product.unitOfMeasure,
+      sellingMode: product.sellingMode || "PerItem",
+      quantity: nextQty,
+      branchOnHandQuantity: product.branchOnHandQuantity,
+      warehouseAvailableQuantity: product.warehouseAvailableQuantity,
+      warehouseUnitCost: product.warehouseUnitCost ?? null,
+      branchEffectiveSellingPrice: product.branchEffectiveSellingPrice ?? null,
+    });
   }
 
   async function revalidateAndSubmit() {
-    if (!workspace || !supply || basket.length === 0) return;
+    if (!workspace || !supply || basket.length === 0 || submitBlocked || mutation.isPending) {
+      return;
+    }
     setSubmitGuardMessage(null);
     try {
-      const freshById = new Map<string, number>();
-      await Promise.all(
-        basket.map(async (line) => {
-          const page = await listReplenishmentCatalog(workspace, {
-            supplyWarehouseBranchId: supply.supplyWarehouseId,
-            search: line.sku?.trim() || line.name,
-            stockFilter: "all",
-            page: 1,
-            pageSize: 20,
-          });
-          const match = page.items.find((item) => item.productId === line.productId);
-          if (match) {
-            freshById.set(line.productId, match.warehouseAvailableQuantity);
-          }
-        }),
-      );
-
+      const fresh = await listReplenishmentCatalog(workspace, {
+        supplyWarehouseBranchId: supply.supplyWarehouseId,
+        page: 1,
+        pageSize: Math.max(40, basket.length),
+        search: undefined,
+        stockFilter: "all",
+      });
+      const freshById = new Map(fresh.items.map((item) => [item.productId, item]));
       setBasket((prev) =>
         prev.map((line) => {
-          const fresh = freshById.get(line.productId);
-          if (fresh == null) return line;
-          return { ...line, warehouseAvailableQuantity: fresh };
+          const match = freshById.get(line.productId);
+          if (!match) return line;
+          return {
+            ...line,
+            warehouseAvailableQuantity: match.warehouseAvailableQuantity,
+            branchOnHandQuantity: match.branchOnHandQuantity,
+            warehouseUnitCost: match.warehouseUnitCost ?? line.warehouseUnitCost,
+          };
         }),
       );
-
-      const refreshed = basket.map((line) => ({
-        ...line,
-        warehouseAvailableQuantity:
-          freshById.get(line.productId) ?? line.warehouseAvailableQuantity,
-        unitOfMeasure: requestStockDisplayUom(line.sellingMode, line.unitOfMeasure),
-      }));
-      const issues = findRequestAvailabilityIssues(
-        refreshed,
-        supply.supplyWarehouseName,
-      );
+      const refreshed = basket.map((line) => {
+        const match = freshById.get(line.productId);
+        return {
+          ...line,
+          warehouseAvailableQuantity:
+            match?.warehouseAvailableQuantity ?? line.warehouseAvailableQuantity,
+          unitOfMeasure: requestStockDisplayUom(line.sellingMode, line.unitOfMeasure),
+        };
+      });
+      const issues = findRequestAvailabilityIssues(refreshed, supply.supplyWarehouseName);
       if (issues.length > 0) {
         setLineWarnings(new Map(issues.map((i) => [i.productId, i.message])));
         setSubmitGuardMessage(t("retailWarehouse.request.fixAvailabilityBeforeSubmit"));
@@ -416,95 +313,260 @@ export function RetailWarehouseRequestStockPage() {
     }
   }
 
-  if (!allowManage) {
-    return <EmptyState
-              align="center"
-              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockRequest.title")} detail={t("stockRequest.denied")} />;
+  function resetForm() {
+    setBasket([]);
+    setRequestNotes("");
+    setLineWarnings(new Map());
+    setSubmitGuardMessage(null);
+    setSearch("");
+    setDebouncedSearch("");
+    setStockFilter("all");
+    setCategoryId("");
+    setPage(1);
   }
 
-  if (!workspace || !supply) {
+  const pickerRows = useMemo(
+    () => (catalogQuery.data?.items ?? []).filter((row) => !basketById.has(row.productId)),
+    [catalogQuery.data?.items, basketById],
+  );
+  const totalCount = catalogQuery.data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const categories = categoriesQuery.data?.items ?? [];
+  const categoryOptions = useMemo(
+    () => [
+      { value: "", label: t("retailWarehouse.request.categoryAll") },
+      ...categories.map((cat) => ({ value: cat.categoryId, label: cat.name })),
+    ],
+    [categories, t],
+  );
+
+  const unitCount = useMemo(
+    () => basket.reduce((sum, line) => sum + line.quantity, 0),
+    [basket],
+  );
+  const estimatedDisplay = basketTotals.estimatedCostTotal;
+  const submitDisabled =
+    basket.length === 0 || submitBlocked || mutation.isPending || Boolean(submitGuardMessage);
+
+  if (!allowManage) {
     return (
-      <div className="p-4">
-        <LoadingSkeleton count={4} />
+      <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="retail-warehouse-request-denied">
+        <PageHeader
+          title={t("stockRequest.title")}
+          backTo="/warehouse"
+          backLabel={t("retailWarehouse.request.backOverview")}
+          backTestId="page-header-back-warehouse"
+        />
+        <ErrorState title={t("stockRequest.title")} detail={t("stockRequest.denied")} />
       </div>
     );
   }
 
-  const items = catalogQuery.data?.items ?? [];
-  const totalCount = catalogQuery.data?.totalCount ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const categories = categoriesQuery.data?.items ?? [];
-  const showMobileCartBar = !sideCartLayout && !cartSheetOpen;
-  const showFloatingCart = showMobileCartBar && basket.length > 0;
-  const showEmptyMobileCartBar = showMobileCartBar && basket.length === 0;
-  const estimatedDisplay = basketTotals.estimatedCostTotal ?? 0;
+  if (!workspace || !supply) {
+    return <LoadingState label={t("stockRequest.loading")} />;
+  }
 
-  const cartPanelProps = {
-    lines: basket,
-    productCount: basketTotals.productCount,
-    estimatedCostTotal: basketTotals.estimatedCostTotal,
-    requestNotes,
-    onRequestNotesChange: setRequestNotes,
-    onIncrement: (productId: string) => {
-      const line = basketById.get(productId);
-      if (line) updateQty(productId, line.quantity + 1);
-    },
-    onDecrement: (productId: string) => {
-      const line = basketById.get(productId);
-      if (line) updateQty(productId, Math.max(1, line.quantity - 1));
-    },
-    onRemove: removeLine,
-    onEditWeight: (line: RequestStockBasketLine) =>
-      setWeightEntry({
-        product: line,
-        mode: "edit",
-        initialKilograms: line.quantity,
-      }),
-    onSubmit: () => {
-      void revalidateAndSubmit();
-    },
-    submitPending: mutation.isPending,
-    submitError: mutation.isError,
-    submitBlocked,
-    lineWarnings: mergedWarnings,
-    warehouseName: supply.supplyWarehouseName,
-  };
+  const branchName = boundWorkspace?.branchName ?? t("stockRequest.forLocation");
 
   return (
     <div
-      className="request-stock-floor sell-floor-root flex min-h-0 min-w-0 flex-1 flex-col"
+      className="inventory-transfer-create-page exits-page flex min-w-0 flex-col gap-4"
       data-testid="retail-warehouse-request-stock"
     >
-      <p
-        className="m-0 mb-2 shrink-0 text-[length:var(--exits-text-xs)] text-muted"
-        data-testid="retail-warehouse-supply-from"
-      >
-        {t("retailWarehouse.request.supplyFrom").replace("{name}", supply.supplyWarehouseName)}
-      </p>
+      <PageHeader
+        title={t("stockRequest.title")}
+        description={t("stockRequest.lede")}
+        backTo="/warehouse"
+        backLabel={t("retailWarehouse.request.backOverview")}
+        backTestId="page-header-back-warehouse"
+      />
 
-      <div className="sell-floor-layout flex min-h-0 min-w-0 flex-1 flex-col">
-        <section
-          data-testid="retail-warehouse-browser"
-          className={cn(
-            "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-1 flex-col",
-            (showFloatingCart || showEmptyMobileCartBar) &&
-              "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
-          )}
-        >
-          <div className="sell-floor-workspace__search">
-            <SearchField
-              label={t("sell.searchLabel")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("sell.searchPlaceholder")}
-              data-testid="retail-warehouse-search"
-              onClear={() => setSearch("")}
-              autoComplete="off"
-              spellCheck={false}
+      {mutation.isError ? (
+        <Notice tone="danger" testId="retail-warehouse-submit-error">
+          {t("stockRequest.submitError")}
+        </Notice>
+      ) : null}
+
+      {submitGuardMessage ? (
+        <Notice tone="warning" testId="retail-warehouse-submit-guard">
+          {submitGuardMessage}
+        </Notice>
+      ) : null}
+
+      {mergedWarnings.size > 0 && !submitGuardMessage ? (
+        <Notice tone="warning" testId="retail-warehouse-line-warnings">
+          {[...mergedWarnings.values()][0]}
+        </Notice>
+      ) : null}
+
+      <PoDocumentSummary
+        className="po-document-summary--create transfer-create-summary"
+        title={t("retailWarehouse.request.detailsTitle")}
+        fields={[
+          {
+            key: "from",
+            label: t("retailWarehouse.request.fromWarehouse"),
+            value: (
+              <span
+                className="inline-flex min-w-0 items-center gap-2 font-semibold"
+                data-testid="retail-warehouse-supply-from"
+              >
+                <Warehouse className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 truncate">{supply.supplyWarehouseName}</span>
+              </span>
+            ),
+          },
+          {
+            key: "to",
+            label: t("retailWarehouse.request.toBranch"),
+            value: (
+              <span
+                className="inline-flex min-w-0 items-center gap-2 font-semibold"
+                data-testid="retail-warehouse-request-to"
+              >
+                <Store className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 truncate">{branchName}</span>
+              </span>
+            ),
+          },
+        ]}
+        testId="request-stock-details"
+        footer={
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>
+              {t("stockRequest.notes")}{" "}
+              <span className="font-normal text-muted">({t("transfer.notesOptional")})</span>
+            </span>
+            <textarea
+              className="min-h-16 rounded-md border border-border bg-background px-3 py-2"
+              value={requestNotes}
+              onChange={(e) => setRequestNotes(e.target.value)}
+              maxLength={512}
+              data-testid="retail-warehouse-notes"
             />
-          </div>
+          </label>
+        }
+      />
 
-          <div className="sell-floor-workspace__filters px-3 pb-0 pt-2">
+      <div
+        className="product-selection-workspace receive-stock-workspace transfer-create-workspace flex flex-col gap-3"
+        data-testid="request-order-cart"
+      >
+        <SelectedItemsPanel
+          title={t("retailWarehouse.request.items")}
+          count={basket.length}
+          headingId="request-draft-items-heading"
+          addLabel={t("retailWarehouse.request.addProducts")}
+          onAddClick={() => setFinderOpen(true)}
+          finderOpen={finderOpen}
+          finderPanelId={finderPanelId}
+          emptyTitle={t("retailWarehouse.request.itemsEmpty")}
+          emptyDetail={t("retailWarehouse.request.itemsEmptyDetail")}
+          emptyTestId="request-selected-items-empty"
+          addTestId="request-add-products-trigger"
+          testId="request-draft-lines"
+          summary={
+            <div className="receive-stock-receipt__summary" data-testid="request-order-summary">
+              <div className="receive-stock-receipt__summary-row">
+                <span className="text-[length:var(--exits-text-sm)] text-muted">
+                  {t("retailWarehouse.request.items")}
+                </span>
+                <span className="text-[length:var(--exits-text-sm)] tabular-nums">
+                  {basket.length}
+                </span>
+              </div>
+              <div className="receive-stock-receipt__summary-row">
+                <span className="text-[length:var(--exits-text-sm)] text-muted">
+                  {t("transfer.units")}
+                </span>
+                <span className="text-[length:var(--exits-text-md)] font-semibold tabular-nums">
+                  {formatQuantityDisplay(unitCount)}
+                </span>
+              </div>
+              {estimatedDisplay != null ? (
+                <div className="receive-stock-receipt__summary-row">
+                  <span className="text-[length:var(--exits-text-sm)] text-muted">
+                    {t("retailWarehouse.request.estimatedWarehouseCost")}
+                  </span>
+                  <span
+                    className="text-[length:var(--exits-text-md)] font-semibold tabular-nums"
+                    data-testid="retail-warehouse-estimated-cost"
+                  >
+                    {formatPeso(estimatedDisplay)}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          }
+        >
+          <RequestStockItemsView
+            lines={basket.map((line) => {
+              const uom = requestStockDisplayUom(line.sellingMode, line.unitOfMeasure);
+              return {
+                key: line.productId,
+                name: line.name,
+                sku: line.sku ?? null,
+                quantity: line.quantity,
+                unitOfMeasure: uom,
+                sellingMode: line.sellingMode,
+                maxQuantity: Math.max(0, line.warehouseAvailableQuantity),
+                unitCost: line.warehouseUnitCost,
+                hasIssue: mergedWarnings.has(line.productId),
+                onQtyChange: (next) => updateQty(line.productId, next),
+                onRemove: () => removeLine(line.productId),
+              };
+            })}
+            formatAvailable={formatAvailable}
+            t={t}
+          />
+        </SelectedItemsPanel>
+
+        <ExitsModal
+          open={finderOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setFinderOpen(false);
+            }
+          }}
+          title={t("retailWarehouse.request.findProducts")}
+          closeLabel={t("retailWarehouse.request.closeFindProducts")}
+          testId="request-add-products"
+          id={finderPanelId}
+          size="lg"
+          fullHeightOnCompact
+          className="lg:max-h-[min(92dvh,48rem)] lg:max-w-3xl"
+        >
+          <div className="flex flex-col gap-3">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("retailWarehouse.request.supplyFrom").replace(
+                "{name}",
+                supply.supplyWarehouseName,
+              )}
+            </p>
+            <ProductSelectionToolbar
+              className="transfer-product-selection__filters"
+              testId="request-product-filters"
+            >
+              <ExitsSelect
+                value={categoryId}
+                options={categoryOptions}
+                onChange={setCategoryId}
+                searchable={categoryOptions.length > 8}
+                searchPlaceholder={t("catalog.searchCategories")}
+                menuLabel={t("retailWarehouse.request.category")}
+                aria-label={t("retailWarehouse.request.category")}
+                testId="request-category-select"
+              />
+              <SearchField
+                label={t("stockRequest.search")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onClear={() => setSearch("")}
+                placeholder={t("stockRequest.search")}
+                data-testid="retail-warehouse-search"
+                containerClassName="transfer-product-selection__search"
+              />
+            </ProductSelectionToolbar>
             <ExitsChipBar
               ariaLabel={t("stockRequest.filterLabel")}
               variant="filter"
@@ -529,62 +591,33 @@ export function RetailWarehouseRequestStockPage() {
                 },
               ]}
             />
-          </div>
-
-          <div className="sell-floor-workspace__categories">
-            <SellCategoryFilter
-              categories={categories.map((cat) => ({
-                categoryId: cat.categoryId,
-                name: cat.name,
-              }))}
-              activeCategoryId={categoryId || "all"}
-              allLabel={t("sell.categoryAll")}
-              listLabel={t("sell.categoriesLabel")}
-              onSelect={(id) => setCategoryId(id === "all" ? "" : id)}
-            />
-          </div>
-
-          <div
-            data-testid="retail-warehouse-products"
-            className="sell-floor-product-pane sell-product-grid sell-product-grid--enter min-h-0 flex-1 content-start items-start overflow-y-auto overscroll-contain"
-            aria-label={t("stockRequest.search")}
-          >
-            {catalogQuery.isLoading ? (
-              <div className="col-span-full">
-                <LoadingSkeleton count={8} className="sell-product-grid__skeleton gap-[0.375rem]" />
-              </div>
-            ) : null}
-
-            {catalogQuery.isError ? (
-              <div className="col-span-full">
-                <ErrorState
-                  title={t("retailWarehouse.loadError")}
-                  detail={t("retailWarehouse.loadError")}
-                />
-              </div>
-            ) : null}
-
-            {!catalogQuery.isLoading && !catalogQuery.isError && items.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center gap-2 py-6 text-center">
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("stockRequest.emptyProducts")}
-                </p>
-              </div>
-            ) : null}
-
-            {items.map((product) => (
-              <RequestStockProductCard
-                key={product.productId}
-                product={product}
-                requestedQtyInBasket={basketById.get(product.productId)?.quantity ?? 0}
-                inBasket={basketById.has(product.productId)}
-                addedFlash={flashedProductId === product.productId}
-                onSelect={selectProduct}
+            {catalogQuery.isLoading ? <LoadingState label={t("stockRequest.loading")} /> : null}
+            {!catalogQuery.isLoading && catalogQuery.isError ? (
+              <ErrorState
+                title={t("retailWarehouse.loadError")}
+                detail={t("retailWarehouse.loadError")}
               />
-            ))}
-
+            ) : null}
+            {!catalogQuery.isLoading && !catalogQuery.isError && pickerRows.length === 0 ? (
+              <EmptyState
+                align="center"
+                size="compact"
+                icon={<Package className="size-5" strokeWidth={1.75} />}
+                title={t("stockRequest.emptyProducts")}
+                detail={t("stockRequest.emptyProductsDetail")}
+              />
+            ) : null}
+            {pickerRows.length > 0 ? (
+              <RequestStockProductSelection
+                layout={pickerLayout}
+                products={pickerRows}
+                formatAvailable={formatAvailable}
+                onAddProduct={addProduct}
+                t={t}
+              />
+            ) : null}
             {totalCount > PAGE_SIZE ? (
-              <div className="col-span-full flex items-center justify-between gap-2 pt-2">
+              <div className="flex items-center justify-between gap-2 pt-1">
                 <Button
                   type="button"
                   variant="outline"
@@ -601,7 +634,7 @@ export function RetailWarehouseRequestStockPage() {
                   type="button"
                   variant="outline"
                   disabled={page >= totalPages || catalogQuery.isFetching}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   data-testid="retail-warehouse-page-next"
                 >
                   {t("retailWarehouse.request.next")}
@@ -609,151 +642,46 @@ export function RetailWarehouseRequestStockPage() {
               </div>
             ) : null}
           </div>
-        </section>
+        </ExitsModal>
 
-        <aside
-          data-testid="retail-warehouse-basket-desktop"
-          className={cn(
-            "sell-cart-landscape sell-cart-shell min-h-0 min-w-0 flex-col overflow-hidden",
-            !sideCartLayout && "hidden",
-          )}
-          aria-label={t("retailWarehouse.request.cartLabel")}
-          aria-hidden={!sideCartLayout}
-        >
-          {sideCartLayout ? (
-            <RequestStockCartPanel {...cartPanelProps} panelId="landscape" />
-          ) : null}
-        </aside>
-      </div>
-
-      {showFloatingCart ? (
-        <button
-          type="button"
-          data-testid="retail-warehouse-view-request"
-          className="sell-cart-floating sell-cart-bar sell-cart-bar--filled"
-          onClick={() => setCartSheetOpen(true)}
-          aria-expanded={cartSheetOpen}
-          aria-controls="retail-warehouse-cart-sheet-panel"
-          aria-label={t("retailWarehouse.request.viewRequest").replace(
-            "{count}",
-            String(basketTotals.productCount),
-          )}
-        >
-          <span className="sell-cart-bar__summary">
-            <span className="sell-cart-bar__icon" aria-hidden>
-              <Package className="size-5" strokeWidth={2} />
-            </span>
-            <span className="sell-cart-bar__copy">
-              <span className="sell-cart-bar__count">
-                {t("retailWarehouse.request.productsCount").replace(
-                  "{count}",
-                  String(basketTotals.productCount),
-                )}
-              </span>
-              <span className="sell-cart-bar__total">₱{estimatedDisplay.toFixed(2)}</span>
-            </span>
-          </span>
-          <span className="sell-cart-bar__action" aria-hidden>
-            <span className="sell-cart-bar__action-label">{t("sell.floatingCartViewLabel")}</span>
-            <ShoppingCart className="size-4 shrink-0" strokeWidth={2} />
-          </span>
-        </button>
-      ) : null}
-
-      {showEmptyMobileCartBar ? (
-        <button
-          type="button"
-          data-testid="retail-warehouse-view-request"
-          className="sell-cart-floating sell-cart-bar sell-cart-bar--empty"
-          onClick={() => setCartSheetOpen(true)}
-          aria-expanded={cartSheetOpen}
-          aria-controls="retail-warehouse-cart-sheet-panel"
-          aria-label={t("retailWarehouse.request.viewRequest").replace("{count}", "0")}
-        >
-          <span className="sell-cart-bar__summary">
-            <span className="sell-cart-bar__icon" aria-hidden>
-              <Package className="size-5" strokeWidth={2} />
-            </span>
-            <span className="sell-cart-bar__copy sell-cart-bar__copy--amount-only">
-              <span className="sell-cart-bar__total">₱0.00</span>
-            </span>
-          </span>
-          <span className="sell-cart-bar__action" aria-hidden>
-            <span className="sell-cart-bar__action-label">{t("sell.floatingCartViewLabel")}</span>
-            <ShoppingCart className="size-4 shrink-0" strokeWidth={2} />
-          </span>
-        </button>
-      ) : null}
-
-      {!sideCartLayout && cartSheetOpen ? (
-        <>
-          <div
-            className="sell-cart-sheet-backdrop fixed inset-0 z-30 bg-black/40"
-            role="presentation"
-            onClick={() => setCartSheetOpen(false)}
-          />
-          <div
-            id="retail-warehouse-cart-sheet-panel"
-            data-testid="retail-warehouse-basket-sheet"
-            className="sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] max-h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] flex-col gap-2 overflow-hidden border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
-          >
-            <div className="sell-cart-sheet__handle" aria-hidden>
-              <span className="sell-cart-sheet__handle-bar" />
-            </div>
-            <RequestStockCartPanel
-              {...cartPanelProps}
-              panelId="sheet"
-              showClose
-              onClose={() => setCartSheetOpen(false)}
-            />
+        <div className="receive-stock-actions product-selection-workspace__actions">
+          <div className="receive-stock-actions__primary">
+            <Button
+              type="button"
+              intent="primary"
+              appearance="ghost"
+              className="font-semibold"
+              disabled={mutation.isPending}
+              onClick={() => navigate("/warehouse")}
+              data-testid="request-cancel"
+            >
+              <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+              {t("retailWarehouse.request.backOverview")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={mutation.isPending}
+              onClick={resetForm}
+              data-testid="request-reset"
+            >
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              {t("retailWarehouse.request.reset")}
+            </Button>
+            <Button
+              type="button"
+              disabled={submitDisabled}
+              onClick={() => void revalidateAndSubmit()}
+              data-testid="retail-warehouse-submit"
+            >
+              <PackagePlus className="size-4 shrink-0" aria-hidden />
+              {mutation.isPending
+                ? t("retailWarehouse.request.submitting")
+                : t("stockRequest.submit")}
+            </Button>
           </div>
-        </>
-      ) : null}
-
-      <SellWeightEntryDialog
-        open={weightEntry != null}
-        product={weightEntry ? toWeightDialogProduct(weightEntry.product) : null}
-        initialKilograms={weightEntry?.initialKilograms ?? null}
-        stockHint={{
-          isTracked: true,
-          onHandQuantity: weightEntry?.product.warehouseAvailableQuantity ?? null,
-        }}
-        maxKilograms={weightEntry?.product.warehouseAvailableQuantity ?? null}
-        maxAvailableLabel={
-          weightEntry
-            ? t("retailWarehouse.request.maximumAvailable")
-                .replace(
-                  "{qty}",
-                  formatQuantityDisplay(Math.max(0, weightEntry.product.warehouseAvailableQuantity)),
-                )
-                .replace("{uom}", "kg")
-            : null
-        }
-        confirmAddLabel={t("retailWarehouse.request.weightAdd")}
-        onConfirm={(kilograms) => {
-          if (!weightEntry) return;
-          upsertLine(weightEntry.product, kilograms);
-          setWeightEntry(null);
-        }}
-        onRemove={
-          weightEntry?.mode === "edit"
-            ? () => {
-                removeLine(weightEntry.product.productId);
-                setWeightEntry(null);
-              }
-            : undefined
-        }
-        onCancel={() => setWeightEntry(null)}
-      />
-      {submitGuardMessage ? (
-        <p
-          role="alert"
-          className="m-0 text-center text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-          data-testid="retail-warehouse-submit-guard"
-        >
-          {submitGuardMessage}
-        </p>
-      ) : null}
+        </div>
+      </div>
     </div>
   );
 }

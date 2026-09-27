@@ -229,6 +229,7 @@ export type OrgMoreLink = {
     | "org.more.finishSetup"
     | "org.more.receiveStock"
     | "org.more.transfers"
+    | "org.more.branchRequests"
     | "org.more.expiringLots"
     | "org.more.stockMovements";
   testId: string;
@@ -298,6 +299,12 @@ export function buildOrgMoreSections(
           labelKey: "org.more.transfers",
           testId: "org-more-transfers",
           icon: ArrowLeftRight,
+        });
+        operations.push({
+          to: "/inventory/stock-requests",
+          labelKey: "org.more.branchRequests",
+          testId: "org-more-branch-requests",
+          icon: ClipboardList,
         });
         operations.push({
           to: "/inventory",

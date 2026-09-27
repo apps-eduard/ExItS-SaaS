@@ -6063,10 +6063,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt / resibo sang PO",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ dugang",
-
-  "inventory.movementType.manualDecrease": "Stock adjustment ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ bawas",
-
+  "inventory.movementType.manualIncrease": "Stock adjustment — dugang",
+  "inventory.movementType.manualDecrease": "Stock adjustment — bawas",
   "inventory.movementType.sale": "Baligya",
 
   "inventory.movementType.saleVoid": "Sale void restoration / ginbalik",
@@ -6104,10 +6102,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.exceptionReceivedBy": "Received by",
   "inventory.exceptionWhy": "Why",
 
-  "inventory.movementType.stockCountIncrease": "Stock count ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ dugang",
-
-  "inventory.movementType.stockCountDecrease": "Stock count ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ bawas",
-
+  "inventory.movementType.stockCountIncrease": "Stock count — dugang",
+  "inventory.movementType.stockCountDecrease": "Stock count — bawas",
   "inventory.movementType.stockUse": "Paggamit sang stock",
 
   "inventory.movementType.stockUseVoid": "Pagbalik gikan sa voided stock use",
@@ -6961,6 +6957,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "org.more.receiveStock": "Batuna ang stock",
 
   "org.more.transfers": "Mga transfer",
+  "org.more.branchRequests": "Branch requests",
 
   "org.more.expiringLots": "Mga lot / expiry",
 
@@ -7231,6 +7228,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "org.nav.inventory": "Imbentaryo",
 
   "org.nav.transfers": "Mga transfer",
+  "org.nav.branchRequests": "Branch requests",
 
   "org.nav.purchasing": "Pagbakal",
 
@@ -11768,6 +11766,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "managerHome.warehouse.stockAlerts": "Stock alerts",
 
   "managerHome.warehouse.noIncoming": "No incoming transfers",
+  "managerHome.warehouse.branchRequests": "Branch requests",
+  "managerHome.warehouse.noBranchRequests": "No pending branch requests",
 
   "managerHome.warehouse.noReceivable": "No purchase orders ready",
 
@@ -13623,6 +13623,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "stockRequest.listLedeRetail": "Mga request nga ginpadala sang imo branch sa supply warehouse.",
   "stockRequest.listLedeWarehouse": "Mga nagaabot nga request halin sa retail branch.",
   "stockRequest.detailTitle": "Stock request",
+  "stockRequest.summaryTitle": "Request summary",
   "stockRequest.needBranch": "Pili anay sang location workspace.",
   "stockRequest.denied": "Wala ka inventory permission para mangayo sang stock.",
   "stockRequest.loading": "Nagaload sang stock request...",
@@ -13674,7 +13675,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "stockRequest.createTransfer": "Himoa ang transfer",
   "stockRequest.reject": "Balibaran ang request",
   "stockRequest.decline": "Balibaran",
+  "stockRequest.declineConfirmTitle": "Decline stock request",
+  "stockRequest.declineConfirmDetail": "Tell the requesting branch why this request cannot be fulfilled.",
+  "stockRequest.declining": "Declining…",
   "stockRequest.rejectReason": "Rason sang pagbalibad (kinahanglan)",
+  "stockRequest.rejectReasonPlaceholder": "Enter decline reason",
   "stockRequest.rejectDefault": "Gibalibaran",
   "stockRequest.declineReasonRequired": "Isulat ang rason antes magbalibad.",
   "stockRequest.cancel": "Kanselahon ang request",
@@ -13703,6 +13708,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "stockRequest.startPreparing": "Sugodi ang pag-andam",
   "stockRequest.dispatchStock": "Ipadala ang stock",
   "stockRequest.receiveLinked": "Batuna ang stock",
+  "stockRequest.timelineTitle": "Request timeline",
+  "stockRequest.colNumber": "Request number",
   "stockRequest.activity": "Aktibidad",
   "stockRequest.activity.requested": "Ginpangayo",
   "stockRequest.activity.approved": "Ginaaprubahan",
@@ -13754,6 +13761,21 @@ export const hilPH: Record<keyof typeof en, string> = {
   "retailWarehouse.recentEmpty": "Wala sing bag-o nga hangyo",
   "retailWarehouse.recentEmptyDetail": "Makita diri ang mga nasumite nga stock request.",
   "retailWarehouse.request.supplyFrom": "Halin sa {name}",
+  "retailWarehouse.request.detailsTitle": "Request details",
+  "retailWarehouse.request.fromWarehouse": "Supply warehouse",
+  "retailWarehouse.request.toBranch": "Requesting branch",
+  "retailWarehouse.request.items": "Items",
+  "retailWarehouse.request.addProducts": "Add products",
+  "retailWarehouse.request.findProducts": "Find products",
+  "retailWarehouse.request.closeFindProducts": "Close product finder",
+  "retailWarehouse.request.itemsEmpty": "No products yet",
+  "retailWarehouse.request.itemsEmptyDetail":
+    "Add products to request from the supply warehouse.",
+  "retailWarehouse.request.backOverview": "Back to warehouse",
+  "retailWarehouse.request.reset": "Reset",
+  "retailWarehouse.request.submitting": "Submitting…",
+  "retailWarehouse.request.colWarehouseAvailable": "Warehouse available",
+
   "retailWarehouse.request.basket": "Basket sang hangyo",
   "retailWarehouse.request.cartLabel": "Hangyo",
   "retailWarehouse.request.cartEmptyDetail": "I-tap ang produkto para idugang sa sini nga hangyo.",

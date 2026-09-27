@@ -112,6 +112,7 @@ describe("org bottom nav config", () => {
     expect(more.some((l) => l.to === "/dashboard")).toBe(false);
     expect(more.some((l) => l.to === "/inventory")).toBe(true);
     expect(more.some((l) => l.to === "/inventory/transfers")).toBe(true);
+    expect(more.some((l) => l.to === "/inventory/stock-requests")).toBe(true);
     expect(more.some((l) => l.to === "/purchasing")).toBe(true);
   });
 

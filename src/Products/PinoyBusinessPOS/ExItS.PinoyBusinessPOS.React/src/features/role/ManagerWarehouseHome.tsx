@@ -25,6 +25,7 @@ import {
   isReceivablePurchaseOrderStatus,
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
+import { listIncomingStockRequests } from "@/api/pos/pos-stock-requests-client";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -47,6 +48,7 @@ import {
   ManagerSnapshotLink,
   ManagerSnapshotTable,
 } from "@/features/role/ManagerHomeShared";
+import { stockRequestMatchesTab } from "@/features/replenishment/stock-request-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -146,6 +148,18 @@ export function ManagerWarehouseHome({
       ),
   });
 
+  const branchRequestsQuery = useQuery({
+    queryKey: [
+      "manager-home",
+      "warehouse-branch-requests",
+      workspace?.organizationId,
+      workspace?.branchId,
+    ],
+    enabled: Boolean(isWarehouse && workspace && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => listIncomingStockRequests(workspace!, 1, 50, signal),
+  });
+
   const purchaseOrdersQuery = useQuery({
     queryKey: [
       "manager-home",
@@ -170,6 +184,9 @@ export function ManagerWarehouseHome({
   const attention = attentionQuery.data;
   const incomingTransfers = (incomingTransfersQuery.data?.items ?? []).filter(
     (item) => item.status === "InTransit" || item.status === "PartiallyReceived",
+  );
+  const pendingBranchRequests = (branchRequestsQuery.data?.items ?? []).filter((item) =>
+    stockRequestMatchesTab(item.status, "incoming", "warehouse"),
   );
   const receivablePos = (purchaseOrdersQuery.data?.items ?? []).filter((po) =>
     isReceivablePurchaseOrderStatus(po.status),
@@ -240,6 +257,13 @@ export function ManagerWarehouseHome({
       to: "/inventory/stock-requests",
     });
     quickActions.push({
+      key: "branch-requests",
+      label: t("org.nav.branchRequests"),
+      icon: ClipboardList,
+      testId: "manager-action-branch-requests",
+      to: "/inventory/stock-requests",
+    });
+    quickActions.push({
       key: "inventory",
       label: t("warehouse.action.inventory"),
       icon: Boxes,
@@ -251,9 +275,13 @@ export function ManagerWarehouseHome({
   const loading =
     (canInventory && attentionQuery.isLoading) ||
     (canInventory && incomingTransfersQuery.isLoading) ||
+    (canInventory && branchRequestsQuery.isLoading) ||
     (canPurchasing && purchaseOrdersQuery.isLoading);
   const loadError =
-    attentionQuery.error ?? incomingTransfersQuery.error ?? purchaseOrdersQuery.error;
+    attentionQuery.error ??
+    incomingTransfersQuery.error ??
+    branchRequestsQuery.error ??
+    purchaseOrdersQuery.error;
 
   return (
     <div
@@ -293,6 +321,19 @@ export function ManagerWarehouseHome({
                 icon={ArrowLeftRight}
                 tone="info"
                 testId="manager-today-transfers"
+              />
+              <ManagerMetricCard
+                label={t("managerHome.warehouse.branchRequests")}
+                value={pendingBranchRequests.length}
+                hint={
+                  pendingBranchRequests.length === 0
+                    ? t("managerHome.warehouse.noBranchRequests")
+                    : undefined
+                }
+                icon={ClipboardList}
+                tone={pendingBranchRequests.length > 0 ? "attention" : "info"}
+                testId="manager-today-branch-requests"
+                to="/inventory/stock-requests"
               />
               <ManagerMetricCard
                 label={t("managerHome.warehouse.receivablePos")}

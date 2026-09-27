@@ -6032,10 +6032,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dagdag",
-
-  "inventory.movementType.manualDecrease": "Stock adjustment ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â bawas",
-
+  "inventory.movementType.manualIncrease": "Stock adjustment — dagdag",
+  "inventory.movementType.manualDecrease": "Stock adjustment — bawas",
   "inventory.movementType.sale": "Sale",
 
   "inventory.movementType.saleVoid": "Sale void restoration",
@@ -6073,10 +6071,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.exceptionReceivedBy": "Received by",
   "inventory.exceptionWhy": "Why",
 
-  "inventory.movementType.stockCountIncrease": "Stock count ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dagdag",
-
-  "inventory.movementType.stockCountDecrease": "Stock count ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â bawas",
-
+  "inventory.movementType.stockCountIncrease": "Stock count — dagdag",
+  "inventory.movementType.stockCountDecrease": "Stock count — bawas",
   "inventory.movementType.stockUse": "Stock use",
 
   "inventory.movementType.stockUseVoid": "Stock use void restoration",
@@ -6928,6 +6924,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "org.more.receiveStock": "Tanggapin ang stock",
 
   "org.more.transfers": "Mga transfer",
+  "org.more.branchRequests": "Branch requests",
 
   "org.more.expiringLots": "Mga lot / expiry",
 
@@ -7198,6 +7195,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "org.nav.inventory": "Imbentaryo",
 
   "org.nav.transfers": "Mga transfer",
+  "org.nav.branchRequests": "Branch requests",
 
   "org.nav.purchasing": "Pagbili",
 
@@ -11829,6 +11827,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "managerHome.warehouse.stockAlerts": "Alerto sa stock",
 
   "managerHome.warehouse.noIncoming": "Walang papasok na transfer",
+  "managerHome.warehouse.branchRequests": "Branch requests",
+  "managerHome.warehouse.noBranchRequests": "No pending branch requests",
 
   "managerHome.warehouse.noReceivable": "Walang handang PO",
 
@@ -13685,6 +13685,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.listLedeRetail": "Mga request na ipinadala ng branch mo sa supply warehouse.",
   "stockRequest.listLedeWarehouse": "Mga papasok na request mula sa retail branch.",
   "stockRequest.detailTitle": "Stock request",
+  "stockRequest.summaryTitle": "Request summary",
   "stockRequest.needBranch": "Pumili muna ng location workspace.",
   "stockRequest.denied": "Wala kang inventory permission para humingi ng stock.",
   "stockRequest.loading": "Naglo-load ng stock request...",
@@ -13736,7 +13737,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.createTransfer": "Gumawa ng transfer",
   "stockRequest.reject": "Tanggihan ang request",
   "stockRequest.decline": "Tanggihan",
+  "stockRequest.declineConfirmTitle": "Decline stock request",
+  "stockRequest.declineConfirmDetail": "Tell the requesting branch why this request cannot be fulfilled.",
+  "stockRequest.declining": "Declining…",
   "stockRequest.rejectReason": "Dahilan ng pagtanggi (kailangan)",
+  "stockRequest.rejectReasonPlaceholder": "Enter decline reason",
   "stockRequest.rejectDefault": "Tinanggihan",
   "stockRequest.declineReasonRequired": "Maglagay ng dahilan bago tanggihan.",
   "stockRequest.cancel": "Kanselahin ang request",
@@ -13765,6 +13770,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.startPreparing": "Simulan ang paghahanda",
   "stockRequest.dispatchStock": "Ipadala ang stock",
   "stockRequest.receiveLinked": "Tumanggap ng stock",
+  "stockRequest.timelineTitle": "Request timeline",
+  "stockRequest.colNumber": "Request number",
   "stockRequest.activity": "Aktibidad",
   "stockRequest.activity.requested": "Hiniling",
   "stockRequest.activity.approved": "Naaprubahan",
@@ -13816,6 +13823,21 @@ export const filPH: Record<keyof typeof en, string> = {
   "retailWarehouse.recentEmpty": "Walang kamakailang hiling",
   "retailWarehouse.recentEmptyDetail": "Lalabas dito ang mga naisumiteng stock request.",
   "retailWarehouse.request.supplyFrom": "Mula sa {name}",
+  "retailWarehouse.request.detailsTitle": "Request details",
+  "retailWarehouse.request.fromWarehouse": "Supply warehouse",
+  "retailWarehouse.request.toBranch": "Requesting branch",
+  "retailWarehouse.request.items": "Items",
+  "retailWarehouse.request.addProducts": "Add products",
+  "retailWarehouse.request.findProducts": "Find products",
+  "retailWarehouse.request.closeFindProducts": "Close product finder",
+  "retailWarehouse.request.itemsEmpty": "No products yet",
+  "retailWarehouse.request.itemsEmptyDetail":
+    "Add products to request from the supply warehouse.",
+  "retailWarehouse.request.backOverview": "Back to warehouse",
+  "retailWarehouse.request.reset": "Reset",
+  "retailWarehouse.request.submitting": "Submitting…",
+  "retailWarehouse.request.colWarehouseAvailable": "Warehouse available",
+
   "retailWarehouse.request.basket": "Basket ng hiling",
   "retailWarehouse.request.cartLabel": "Hiling",
   "retailWarehouse.request.cartEmptyDetail": "I-tap ang produkto para idagdag sa hiling na ito.",

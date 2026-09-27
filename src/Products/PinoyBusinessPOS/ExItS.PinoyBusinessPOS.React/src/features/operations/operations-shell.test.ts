@@ -171,6 +171,22 @@ describe("operations navigation", () => {
     expect(paths).not.toContain("/sell");
   });
 
+  it("Warehouse sidebar includes Branch requests after Transfers", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Warehouse",
+      experience: "operations",
+    });
+    const ids = flattenOperationsSidebarItems(groups).map((i) => i.id);
+    expect(ids).toContain("transfers");
+    expect(ids).toContain("branch-requests");
+    expect(ids.indexOf("branch-requests")).toBeGreaterThan(ids.indexOf("transfers"));
+    const branchRequests = flattenOperationsSidebarItems(groups).find(
+      (i) => i.id === "branch-requests",
+    );
+    expect(branchRequests?.to).toBe("/inventory/stock-requests");
+  });
+
   it("Warehouse sidebar has a single Stock movements entry and no CONTROL group", () => {
     const groups = buildOperationsSidebarGroups({
       grant: owner,
