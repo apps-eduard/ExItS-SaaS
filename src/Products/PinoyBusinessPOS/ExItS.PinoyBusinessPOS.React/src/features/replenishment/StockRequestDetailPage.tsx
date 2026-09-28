@@ -631,8 +631,9 @@ export function StockRequestDetailPage() {
                 </p>
                 <ul className="m-0 flex list-none flex-col gap-2 p-0">
                   {dto.linkedTransfers.map((tr) => {
-                    const transferLabel =
-                      tr.transferNumber?.trim() || tr.transferId.slice(0, 8);
+                    const transferNumber = tr.transferNumber?.trim() || "";
+                    const transferLabel = transferNumber || t("transfer.draftNumber");
+                    const showStatusSeparately = Boolean(transferNumber) || tr.status !== "Draft";
                     return (
                       <li
                         key={tr.transferId}
@@ -641,9 +642,13 @@ export function StockRequestDetailPage() {
                       >
                         <p className="m-0 text-[length:var(--exits-text-sm)]">
                           <span className="font-medium tabular-nums">{transferLabel}</span>
-                          <span className="text-muted">
-                            {" · "}
-                            {t(inventoryTransferStatusLabelKey(tr.status) as MessageKey)}
+                          <span>
+                            {showStatusSeparately ? (
+                              <>
+                                {" · "}
+                                {t(inventoryTransferStatusLabelKey(tr.status) as MessageKey)}
+                              </>
+                            ) : null}
                             {" · "}
                             {t("stockRequest.linkedTransfer.sent")}: {formatTransferQty(tr.totalSentQty)}
                             {" · "}
@@ -681,7 +686,7 @@ export function StockRequestDetailPage() {
                       data-testid={`stock-request-linked-transfer-${linkedTransferId}`}
                     >
                       <p className="m-0 text-[length:var(--exits-text-sm)] font-medium tabular-nums">
-                        {linkedTransferId.slice(0, 8)}
+                        {t("transfer.draftNumber")}
                       </p>
                       <Button
                         type="button"
