@@ -1711,6 +1711,37 @@ internal static class StockRequestDispatchCoverage
             remainingByProduct);
     }
 
+    /// <summary>
+    /// Prefer the in-memory transfer mutated by Receive/CloseRemainder over AsNoTracking
+    /// repository snapshots that still reflect pre-mutation DB state within the same UoW.
+    /// </summary>
+    internal static IReadOnlyList<InventoryTransfer> WithLiveTransfer(
+        IReadOnlyList<InventoryTransfer> listed,
+        InventoryTransfer live)
+    {
+        var replaced = false;
+        var result = new List<InventoryTransfer>(listed.Count + 1);
+        foreach (var item in listed)
+        {
+            if (item.Id == live.Id)
+            {
+                result.Add(live);
+                replaced = true;
+            }
+            else
+            {
+                result.Add(item);
+            }
+        }
+
+        if (!replaced)
+        {
+            result.Add(live);
+        }
+
+        return result;
+    }
+
     internal static List<InventoryTransferLineRequest> BuildRemainingDispatchLines(
         StockRequest stockRequest,
         IReadOnlyList<InventoryTransfer> linkedTransfers,

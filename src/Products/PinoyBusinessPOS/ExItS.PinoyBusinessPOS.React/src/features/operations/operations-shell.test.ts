@@ -185,6 +185,24 @@ describe("operations navigation", () => {
       (i) => i.id === "branch-requests",
     );
     expect(branchRequests?.to).toBe("/inventory/stock-requests");
+    expect(ids).not.toContain("warehouse");
+  });
+
+  it("Retail sidebar places Warehouse after Inventory and before Transfers", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Retail",
+      experience: "operations",
+    });
+    const items = flattenOperationsSidebarItems(groups);
+    const ids = items.map((i) => i.id);
+    expect(ids).toContain("inventory");
+    expect(ids).toContain("warehouse");
+    expect(ids).toContain("transfers");
+    expect(ids.indexOf("warehouse")).toBeGreaterThan(ids.indexOf("inventory"));
+    expect(ids.indexOf("transfers")).toBeGreaterThan(ids.indexOf("warehouse"));
+    expect(items.find((i) => i.id === "warehouse")?.to).toBe("/warehouse");
+    expect(ids).not.toContain("branch-requests");
   });
 
   it("Warehouse sidebar has a single Stock movements entry and no CONTROL group", () => {

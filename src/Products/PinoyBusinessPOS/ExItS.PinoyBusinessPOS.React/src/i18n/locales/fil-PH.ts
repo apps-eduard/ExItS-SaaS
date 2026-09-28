@@ -4543,6 +4543,14 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.addProduct": "Add",
 
   "transfer.addProducts": "Add products",
+  "transfer.editShipment": "Edit shipment",
+  "transfer.editTransfer": "Edit transfer",
+  "transfer.editShipmentTitle": "Edit shipment",
+  "transfer.editShipmentLede":
+    "Adjust how much of the approved stock request ships now. Products stay fixed to the request.",
+  "transfer.shipmentItemsEmpty": "No products in this shipment",
+  "transfer.shipmentItemsEmptyDetail":
+    "This shipment has no products. Cancel the draft or prepare the stock request again.",
 
   "transfer.backList": "Back to Transfers",
 
@@ -7193,6 +7201,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "org.nav.more": "More",
 
   "org.nav.inventory": "Imbentaryo",
+
+  "org.nav.warehouse": "Warehouse",
 
   "org.nav.transfers": "Mga transfer",
   "org.nav.branchRequests": "Branch requests",
@@ -13746,6 +13756,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.rejectDefault": "Tinanggihan",
   "stockRequest.declineReasonRequired": "Maglagay ng dahilan bago tanggihan.",
   "stockRequest.cancel": "Kanselahin ang request",
+  "stockRequest.editRequest": "I-edit ang request",
   "stockRequest.requestStock": "Humingi ng stock",
   "stockRequest.tabs": "Mga filter ng stock request",
   "stockRequest.tab.submitted": "Naisumite",
@@ -13902,6 +13913,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "warehouse.toast.noAssignment.action": "I-configure ang warehouse",
   "transfer.stockRequest": "Stock request",
   "transfer.requestedBy": "Requested by",
+  "transfer.fulfillsStockRequest": "Fulfills stock request",
+  "transfer.fulfillsStockRequestShort": "Fulfills {number}",
   "warehouseDashboard.title": "Dashboard",
   "warehouseDashboard.lede": "Inventory, replenishment, transfers and receiving performance.",
   "warehouseDashboard.typeBadge": "Warehouse",

@@ -586,6 +586,17 @@ export function InventoryTransferReceiveMode({
         <h2 className="po-document-summary__title m-0 text-[length:var(--exits-text-md)] font-semibold text-primary">
           {transfer.transferNumber?.trim() || t("transfer.draftNumber")}
         </h2>
+        {transfer.stockRequestId ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="transfer-receive-stock-request"
+          >
+            {t("transfer.fulfillsStockRequestShort").replace(
+              "{number}",
+              transfer.stockRequestNumber?.trim() || t("transfer.stockRequest"),
+            )}
+          </p>
+        ) : null}
         <dl className="po-document-summary__meta m-0">
           <div className="po-document-summary__field min-w-0">
             <dt className="text-[length:var(--exits-text-xs)] text-muted">{t("transfer.colRoute")}</dt>

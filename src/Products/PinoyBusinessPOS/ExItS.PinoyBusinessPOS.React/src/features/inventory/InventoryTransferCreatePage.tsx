@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
+  getInventoryProduct,
   listInventory,
   listProductLots,
   type PosInventoryAccountDto,
@@ -249,13 +250,18 @@ export function InventoryTransferCreatePage() {
   const [changeLotsProductId, setChangeLotsProductId] = useState<string | null>(null);
   const [editHydrated, setEditHydrated] = useState(!isEditMode);
   const [editLoadError, setEditLoadError] = useState<string | null>(null);
+  const [linkedStockRequestId, setLinkedStockRequestId] = useState<string | null>(null);
   const finderPanelId = "transfer-product-finder-panel";
   const operationIdRef = useRef<string | null>(null);
+  const isStockRequestShipment = Boolean(linkedStockRequestId);
   const { layout: pickerLayout } = useResponsiveDataLayout({
     tableMinWidthPx: PRODUCT_SELECTION_TABLE_MIN_PX,
   });
 
   function openFinder() {
+    if (isStockRequestShipment) {
+      return;
+    }
     setFinderOpen(true);
   }
 
@@ -538,6 +544,7 @@ export function InventoryTransferCreatePage() {
 
       setDestinationBranchId(transfer.destinationBranchId);
       setNotes(transfer.notes?.trim() ?? "");
+      setLinkedStockRequestId(transfer.stockRequestId?.trim() || null);
 
       const groups = groupTransferLinesByProduct(transfer.lines);
       const nextLots: Record<string, PosInventoryLotDto[]> = {};
@@ -555,7 +562,18 @@ export function InventoryTransferCreatePage() {
             nextLots[productId] = [];
           }
         }
-        drafts.push(draftFromTransferLines(productLines, lots, 0));
+
+        // Never leave edit lines at availableQuantity 0 by default — picker refresh only
+        // covers products on the current inventory page and can miss draft lines.
+        let availableQuantity = 0;
+        try {
+          const account = await getInventoryProduct(workspace!, productId);
+          availableQuantity = Math.max(0, resolveAvailableQuantity(account));
+        } catch {
+          availableQuantity = 0;
+        }
+
+        drafts.push(draftFromTransferLines(productLines, lots, availableQuantity));
       }
 
       if (cancelled) {
@@ -1083,15 +1101,24 @@ export function InventoryTransferCreatePage() {
 
   const pageBackTo =
     isEditMode && editTransferId ? `/inventory/transfers/${editTransferId}` : "/inventory/transfers";
+  const editPageTitle = isStockRequestShipment
+    ? t("transfer.editShipmentTitle")
+    : t("transfer.editTitle");
+  const editPageLede = isStockRequestShipment
+    ? t("transfer.editShipmentLede")
+    : t("transfer.editLede");
+  const pageTitle = isEditMode ? editPageTitle : t("transfer.newTitle");
+  const pageDescription = isEditMode ? editPageLede : t("transfer.newLede");
 
   return (
     <div
       className="inventory-transfer-create-page exits-page flex min-w-0 flex-col gap-4"
       data-testid={isEditMode ? "inventory-transfer-edit-page" : "inventory-transfer-create-page"}
+      data-edit-mode={isStockRequestShipment ? "stock-request-shipment" : isEditMode ? "direct" : undefined}
     >
       <PageHeader
-        title={isEditMode ? t("transfer.editTitle") : t("transfer.newTitle")}
-        description={isEditMode ? t("transfer.editLede") : t("transfer.newLede")}
+        title={pageTitle}
+        description={pageDescription}
         backTo={pageBackTo}
         backLabel={isEditMode ? t("transfer.backToTransfer") : t("transfer.backList")}
         backTestId="page-header-back-transfers"
@@ -1195,11 +1222,20 @@ export function InventoryTransferCreatePage() {
           onAddClick={openFinder}
           finderOpen={finderOpen}
           finderPanelId={finderPanelId}
-          emptyTitle={t("transfer.itemsEmpty")}
-          emptyDetail={t("transfer.itemsEmptyDetail")}
+          emptyTitle={
+            isStockRequestShipment
+              ? t("transfer.shipmentItemsEmpty")
+              : t("transfer.itemsEmpty")
+          }
+          emptyDetail={
+            isStockRequestShipment
+              ? t("transfer.shipmentItemsEmptyDetail")
+              : t("transfer.itemsEmptyDetail")
+          }
           emptyTestId="transfer-selected-items-empty"
           addTestId="transfer-add-products-trigger"
           testId="transfer-draft-lines"
+          hideAddButton={isStockRequestShipment}
           summary={
             <div className="receive-stock-receipt__summary" data-testid="transfer-order-summary">
               <div className="receive-stock-receipt__summary-row">
@@ -1243,9 +1279,11 @@ export function InventoryTransferCreatePage() {
             }))}
             formatAvailable={formatAvailable}
             t={t}
+            lineActionMode={isStockRequestShipment ? "none" : "remove"}
           />
         </SelectedItemsPanel>
 
+        {isStockRequestShipment ? null : (
         <ExitsModal
           open={finderOpen}
           onOpenChange={(open) => {
@@ -1318,6 +1356,7 @@ export function InventoryTransferCreatePage() {
             ) : null}
           </div>
         </ExitsModal>
+        )}
 
         {changeLotsLine ? (
           <TransferChangeLotsDialog

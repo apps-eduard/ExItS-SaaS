@@ -20,6 +20,8 @@ export type SelectedItemsPanelProps = {
   emptyTestId?: string;
   addTestId?: string;
   testId?: string;
+  /** When true, hide the Add products control (restricted editors). */
+  hideAddButton?: boolean;
   /** Feature-specific selected lines (table/cards). */
   children?: ReactNode;
   /** Totals / summary under lines. */
@@ -44,6 +46,7 @@ export function SelectedItemsPanel({
   emptyTestId,
   addTestId = "product-selection-add-trigger",
   testId = "product-selection-selected-items",
+  hideAddButton = false,
   children,
   summary,
   className,
@@ -67,16 +70,18 @@ export function SelectedItemsPanel({
           <span>{title}</span>
           <CountBadge count={count} tone="primary" />
         </h2>
-        <Button
-          type="button"
-          onClick={onAddClick}
-          aria-expanded={finderOpen}
-          aria-controls={finderPanelId}
-          data-testid={addTestId}
-        >
-          <Plus className="size-4" aria-hidden />
-          {addLabel}
-        </Button>
+        {hideAddButton ? null : (
+          <Button
+            type="button"
+            onClick={onAddClick}
+            aria-expanded={finderOpen}
+            aria-controls={finderPanelId}
+            data-testid={addTestId}
+          >
+            <Plus className="size-4" aria-hidden />
+            {addLabel}
+          </Button>
+        )}
       </div>
 
       {count === 0 ? (

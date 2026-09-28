@@ -36,10 +36,14 @@ export type InventoryTransferSelectedLine = {
 
 type Translate = (key: string) => string;
 
+export type InventoryTransferLineActionMode = "remove" | "none";
+
 type InventoryTransferItemsViewProps = {
   lines: readonly InventoryTransferSelectedLine[];
   formatAvailable: (qty: number, uom: string) => string;
   t: Translate;
+  /** Direct drafts: remove. SR-linked shipment: no row actions. */
+  lineActionMode?: InventoryTransferLineActionMode;
 };
 
 function formatExpiryShort(isoDate: string): string {
@@ -131,7 +135,9 @@ export function InventoryTransferItemsView({
   lines,
   formatAvailable,
   t,
+  lineActionMode = "remove",
 }: InventoryTransferItemsViewProps) {
+  const showActionColumn = lineActionMode !== "none";
   const tableBody = (
     <ExitsTableContainer className="po-order-items-table transfer-order-items-table">
       <ExitsTable>
@@ -159,9 +165,11 @@ export function InventoryTransferItemsView({
             <ExitsTableHead cellAlign="center" className="po-order-items-table__qty-col">
               {t("purchasing.qty")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" className="po-order-items-table__action-col">
-              {t("purchasing.colAction")}
-            </ExitsTableHead>
+            {showActionColumn ? (
+              <ExitsTableHead cellAlign="center" className="po-order-items-table__action-col">
+                {t("purchasing.colAction")}
+              </ExitsTableHead>
+            ) : null}
           </ExitsTableRow>
         </ExitsTableHeader>
         <ExitsTableBody>
@@ -305,21 +313,23 @@ export function InventoryTransferItemsView({
                     ) : null}
                   </div>
                 </ExitsTableCell>
-                <ExitsTableCell cellAlign="center" className="po-order-items-table__action-col">
-                  <ExitsTableActions className="po-order-items__row-actions justify-center">
-                    <Button
-                      type="button"
-                      intent="danger"
-                      appearance="outline"
-                      size="icon"
-                      aria-label={t("transfer.remove")}
-                      onClick={() => line.onRemove()}
-                      data-testid={`transfer-remove-${line.key}`}
-                    >
-                      <Trash2 className="size-4" aria-hidden />
-                    </Button>
-                  </ExitsTableActions>
-                </ExitsTableCell>
+                {showActionColumn ? (
+                  <ExitsTableCell cellAlign="center" className="po-order-items-table__action-col">
+                    <ExitsTableActions className="po-order-items__row-actions justify-center">
+                      <Button
+                        type="button"
+                        intent="danger"
+                        appearance="outline"
+                        size="icon"
+                        aria-label={t("transfer.remove")}
+                        onClick={() => line.onRemove()}
+                        data-testid={`transfer-remove-${line.key}`}
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                      </Button>
+                    </ExitsTableActions>
+                  </ExitsTableCell>
+                ) : null}
               </ExitsTableRow>
             );
           })}

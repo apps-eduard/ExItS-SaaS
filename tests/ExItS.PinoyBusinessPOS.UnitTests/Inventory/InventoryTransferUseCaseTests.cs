@@ -414,6 +414,75 @@ public sealed class InventoryTransferUseCaseTests
     }
 
     [Fact]
+    public async Task Update_stock_request_draft_rejects_products_not_on_request()
+    {
+        var fx = await SeedAsync(cokeOnHand: 50m, spriteOnHand: 40m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "260928-001");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(request);
+
+        var prepared = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(prepared.IsSuccess, $"{prepared.ErrorCode}: {prepared.ErrorMessage}");
+
+        var rejected = await fx.Update.ExecuteAsync(
+            OrgA,
+            prepared.Value!.TransferId,
+            new UpdateInventoryTransferRequest(
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 10m),
+                    new InventoryTransferLineRequest(fx.SpriteId, 5m),
+                ]),
+            ActorA,
+            BranchA);
+        Assert.False(rejected.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidStockRequestLine, rejected.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Update_stock_request_draft_allows_partial_qty_and_rejects_over_remaining()
+    {
+        var fx = await SeedAsync(cokeOnHand: 50m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "260928-002");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(request);
+
+        var prepared = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(prepared.IsSuccess, $"{prepared.ErrorCode}: {prepared.ErrorMessage}");
+
+        var partial = await fx.Update.ExecuteAsync(
+            OrgA,
+            prepared.Value!.TransferId,
+            new UpdateInventoryTransferRequest([new InventoryTransferLineRequest(fx.CokeId, 7m)]),
+            ActorA,
+            BranchA);
+        Assert.True(partial.IsSuccess, $"{partial.ErrorCode}: {partial.ErrorMessage}");
+        Assert.Equal(7m, partial.Value!.Lines.Single().SentQty);
+
+        var over = await fx.Update.ExecuteAsync(
+            OrgA,
+            prepared.Value.TransferId,
+            new UpdateInventoryTransferRequest([new InventoryTransferLineRequest(fx.CokeId, 11m)]),
+            ActorA,
+            BranchA);
+        Assert.False(over.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidStockRequestQuantity, over.ErrorCode);
+    }
+
+    [Fact]
     public async Task Create_rejects_duplicate_product_lines_that_collectively_exceed_stock()
     {
         var fx = await SeedAsync(cokeOnHand: 10m);
@@ -1438,6 +1507,52 @@ public sealed class InventoryTransferUseCaseTests
 
         var refreshed = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
         Assert.Equal(StockRequestStatus.Preparing, refreshed!.Status);
+    }
+
+    [Fact]
+    public async Task GetById_includes_stock_request_number_when_linked()
+    {
+        var fx = await SeedAsync(cokeOnHand: 40m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "SR-260927-003");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(request);
+
+        var prepared = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(prepared.IsSuccess, $"{prepared.ErrorCode}: {prepared.ErrorMessage}");
+        Assert.Equal(request.Id.Value, prepared.Value!.StockRequestId);
+        Assert.Equal("SR-260927-003", prepared.Value.StockRequestNumber);
+
+        var reloaded = await fx.Queries.GetByIdAsync(OrgA, prepared.Value.TransferId);
+        Assert.NotNull(reloaded);
+        Assert.Equal(request.Id.Value, reloaded!.StockRequestId);
+        Assert.Equal("SR-260927-003", reloaded.StockRequestNumber);
+    }
+
+    [Fact]
+    public async Task GetById_omits_stock_request_number_for_direct_transfer()
+    {
+        var fx = await SeedAsync(cokeOnHand: 40m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 5m)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess, $"{created.ErrorCode}: {created.ErrorMessage}");
+
+        var dto = await fx.Queries.GetByIdAsync(OrgA, created.Value!.Id.Value);
+        Assert.NotNull(dto);
+        Assert.Null(dto!.StockRequestId);
+        Assert.Null(dto.StockRequestNumber);
     }
 
     [Fact]
@@ -2762,8 +2877,19 @@ public sealed class InventoryTransferUseCaseTests
                 Branches,
                 SupplyRoutes,
                 UnitOfWork,
-                Clock);
-            Update = new UpdateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, expirationPolicies, Branches, UnitOfWork, Clock);
+                Clock,
+                StockRequests);
+            Update = new UpdateInventoryTransfer(
+                Transfers,
+                Inventory,
+                Balances,
+                Products,
+                Lots,
+                expirationPolicies,
+                Branches,
+                UnitOfWork,
+                Clock,
+                StockRequests);
             Dispatch = new DispatchInventoryTransfer(
                 Transfers,
                 Inventory,
@@ -2797,7 +2923,7 @@ public sealed class InventoryTransferUseCaseTests
                 Clock);
             CloseRemainder = new CloseRemainderInventoryTransfer(Transfers, Branches, StockRequests, UnitOfWork, Clock);
             Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, Branches, UnitOfWork, Clock);
-            Queries = new InventoryTransferQueryService(Transfers, DamageCustodies, ExceptionCustodies, Branches, Products);
+            Queries = new InventoryTransferQueryService(Transfers, DamageCustodies, ExceptionCustodies, StockRequests, Branches, Products);
             DispatchStockRequest = new DispatchStockRequest(
                 StockRequests,
                 Transfers,

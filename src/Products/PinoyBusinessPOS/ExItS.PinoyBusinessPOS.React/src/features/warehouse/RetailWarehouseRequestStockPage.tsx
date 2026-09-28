@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
+  cancelStockRequest,
   createStockRequest,
   listReplenishmentCatalog,
   type ReplenishmentCatalogItemDto,
@@ -52,6 +53,27 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type StockFilter = "all" | "low" | "out";
 
+type AmendFromStockRequestState = {
+  stockRequestId: string;
+  notes?: string | null;
+  lines: Array<{
+    productId: string;
+    name: string;
+    unitOfMeasure: string;
+    quantity: number;
+  }>;
+};
+
+function readAmendFromLocationState(state: unknown): AmendFromStockRequestState | null {
+  if (!state || typeof state !== "object") return null;
+  const amend = (state as { amendFromStockRequest?: unknown }).amendFromStockRequest;
+  if (!amend || typeof amend !== "object") return null;
+  const record = amend as AmendFromStockRequestState;
+  if (typeof record.stockRequestId !== "string" || !record.stockRequestId.trim()) return null;
+  if (!Array.isArray(record.lines) || record.lines.length === 0) return null;
+  return record;
+}
+
 const PAGE_SIZE = 40;
 
 function useReadySupply(): Extract<RetailWarehouseResolveState, { kind: "ready" }> | null {
@@ -68,6 +90,7 @@ function formatAvailable(qty: number, uom: string): string {
 export function RetailWarehouseRequestStockPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const { workspace } = useRetailWarehouseResolve();
@@ -84,10 +107,37 @@ export function RetailWarehouseRequestStockPage() {
   const [finderOpen, setFinderOpen] = useState(false);
   const [lineWarnings, setLineWarnings] = useState<Map<string, string>>(new Map());
   const [submitGuardMessage, setSubmitGuardMessage] = useState<string | null>(null);
+  const [amendFromStockRequestId, setAmendFromStockRequestId] = useState<string | null>(null);
+  const amendPrefillApplied = useRef(false);
   const finderPanelId = "request-product-finder-panel";
   const { layout: pickerLayout } = useResponsiveDataLayout({
     tableMinWidthPx: PRODUCT_SELECTION_TABLE_MIN_PX,
   });
+
+  useEffect(() => {
+    if (amendPrefillApplied.current) return;
+    const amend = readAmendFromLocationState(location.state);
+    if (!amend) return;
+    amendPrefillApplied.current = true;
+    setAmendFromStockRequestId(amend.stockRequestId);
+    setRequestNotes(amend.notes?.trim() || "");
+    setBasket(
+      amend.lines
+        .filter((line) => line.productId && line.quantity > 0)
+        .map((line) => ({
+          productId: line.productId,
+          name: line.name,
+          unitOfMeasure: line.unitOfMeasure || "pc",
+          sellingMode: "PerItem",
+          quantity: line.quantity,
+          branchOnHandQuantity: 0,
+          warehouseAvailableQuantity: line.quantity,
+          warehouseUnitCost: null,
+          branchEffectiveSellingPrice: null,
+        })),
+    );
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -168,18 +218,27 @@ export function RetailWarehouseRequestStockPage() {
         .filter((l) => l.quantity > 0)
         .map((l) => ({ productId: l.productId, requestedQuantity: l.quantity }));
       if (lines.length === 0) throw new Error("empty");
-      return createStockRequest(workspace, {
+      const created = await createStockRequest(workspace, {
         destinationLocationId: workspace.branchId,
         requestedSourceLocationId: supply.supplyWarehouseId,
         lines,
         notes: requestNotes.trim() || null,
       });
+      if (amendFromStockRequestId) {
+        try {
+          await cancelStockRequest(workspace, amendFromStockRequestId);
+        } catch {
+          // New request already created; leave superseded Pending for manual cancel.
+        }
+      }
+      return created;
     },
     onSuccess: (dto) => {
       setBasket([]);
       setRequestNotes("");
       setLineWarnings(new Map());
       setSubmitGuardMessage(null);
+      setAmendFromStockRequestId(null);
       showToast(t("retailWarehouse.request.submitted"), "success");
       navigate(`/warehouse/requests/${dto.stockRequestId}`);
     },
@@ -318,6 +377,7 @@ export function RetailWarehouseRequestStockPage() {
     setRequestNotes("");
     setLineWarnings(new Map());
     setSubmitGuardMessage(null);
+    setAmendFromStockRequestId(null);
     setSearch("");
     setDebouncedSearch("");
     setStockFilter("all");

@@ -12,7 +12,7 @@ import {
   FilePlus2,
   PackageCheck,
   PackageOpen,
-  Plus,
+  Pencil,
   Truck,
 } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -1037,28 +1037,42 @@ export function InventoryTransferDetailPage() {
 
         <div data-testid="transfer-qty-summary">
           <Card
-            className="flex flex-col gap-0.5 p-3"
+            className="flex flex-col gap-2 p-3"
             treatment="bordered"
             data-testid="transfer-number-summary"
           >
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-              {t("transfer.colNumber")}
-            </p>
-            <p className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
-              {transfer.transferNumber?.trim() || "—"}
-            </p>
+            <div className="flex flex-col gap-0.5">
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("transfer.colNumber")}
+              </p>
+              <p className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
+                {transfer.transferNumber?.trim() || "—"}
+              </p>
+            </div>
+            {transfer.stockRequestId ? (
+              <div
+                className="flex min-w-0 flex-col gap-0.5 border-t border-border pt-2 text-[length:var(--exits-text-sm)]"
+                data-testid="transfer-stock-request-link"
+              >
+                <p className="m-0 text-muted">
+                  {t("transfer.requestedBy")}:{" "}
+                  <span className="font-medium text-foreground">{destName}</span>
+                </p>
+                <p className="m-0">
+                  <span className="text-muted">{t("transfer.fulfillsStockRequest")}: </span>
+                  <Link
+                    className="font-medium text-primary underline underline-offset-2"
+                    to={`/inventory/stock-requests/${transfer.stockRequestId}`}
+                    data-testid="transfer-stock-request-number-link"
+                  >
+                    {transfer.stockRequestNumber?.trim() || t("transfer.stockRequest")}
+                  </Link>
+                </p>
+              </div>
+            ) : null}
           </Card>
         </div>
       </Card>
-
-      {transfer.stockRequestId ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="transfer-stock-request-link">
-          <span className="text-muted">{t("transfer.requestedBy")}: {destName}. </span>
-          <Link className="underline" to={`/inventory/stock-requests/${transfer.stockRequestId}`}>
-            {t("transfer.stockRequest")}
-          </Link>
-        </p>
-      ) : null}
 
       <div
         className="grid grid-cols-1 gap-3 lg:grid-cols-2"
@@ -1786,6 +1800,17 @@ export function InventoryTransferDetailPage() {
                       >
                         {member.transferNumber?.trim() || "—"}
                       </span>
+                      {transfer.stockRequestId ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                          data-testid={`transfer-family-member-sr-${member.transferId}`}
+                        >
+                          {t("transfer.fulfillsStockRequestShort").replace(
+                            "{number}",
+                            transfer.stockRequestNumber?.trim() || t("transfer.stockRequest"),
+                          )}
+                        </p>
+                      ) : null}
 
                       <div className="flex min-w-0 items-end justify-between gap-x-3 gap-y-2">
                         <div className="flex min-w-0 flex-col items-start gap-2">
@@ -1977,8 +2002,10 @@ export function InventoryTransferDetailPage() {
                 }}
                 data-testid="transfer-edit-draft"
               >
-                <Plus className="size-4 shrink-0" aria-hidden />
-                {t("transfer.addProducts")}
+                <Pencil className="size-4 shrink-0" aria-hidden />
+                {transfer.stockRequestId
+                  ? t("transfer.editShipment")
+                  : t("transfer.editTransfer")}
               </Button>
             ) : null}
             {canCancel ? (

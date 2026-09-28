@@ -16,6 +16,7 @@ public sealed class InventoryTransferQueryService
     private readonly IInventoryTransferRepository _transfers;
     private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
     private readonly IInventoryTransferExceptionCustodyRepository _exceptionCustodies;
+    private readonly IStockRequestRepository _stockRequests;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly ICatalogProductRepository _products;
 
@@ -23,12 +24,14 @@ public sealed class InventoryTransferQueryService
         IInventoryTransferRepository transfers,
         IInventoryTransferDamageCustodyRepository damageCustodies,
         IInventoryTransferExceptionCustodyRepository exceptionCustodies,
+        IStockRequestRepository stockRequests,
         IOrganizationBranchDirectory branches,
         ICatalogProductRepository products)
     {
         _transfers = transfers;
         _damageCustodies = damageCustodies;
         _exceptionCustodies = exceptionCustodies;
+        _stockRequests = stockRequests;
         _branches = branches;
         _products = products;
     }
@@ -94,6 +97,16 @@ public sealed class InventoryTransferQueryService
         var target = family.Where(t => t.RootTransferId is null).SelectMany(t => t.Lines).Sum(l => l.SentQty);
         var remaining = Math.Max(0m, target - goodReceived - openInTransit - waived);
 
+        // Single lookup for the linked stock-request document number (no per-family-member calls).
+        string? stockRequestNumber = null;
+        if (transfer.StockRequestId is StockRequestId stockRequestId)
+        {
+            var stockRequest = await _stockRequests
+                .GetByIdAsync(orgId, stockRequestId, cancellationToken)
+                .ConfigureAwait(false);
+            stockRequestNumber = stockRequest?.RequestNumber;
+        }
+
         return Map(
             transfer,
             names,
@@ -118,16 +131,13 @@ public sealed class InventoryTransferQueryService
             exceptionCustodies.Select(c =>
                 InventoryTransferExceptionCustodyMapping.Map(
                     c,
-                    nameByProduct.TryGetValue(c.ExpectedProductId.Value, out var expectedName)
-                        ? expectedName
-                        : null,
-                    nameByProduct.TryGetValue(c.ActualProductId.Value, out var actualName)
-                        ? actualName
-                        : null)).ToList(),
+                    nameByProduct.GetValueOrDefault(c.ExpectedProductId.Value),
+                    nameByProduct.GetValueOrDefault(c.ActualProductId.Value))).ToList(),
             goodReceived,
             openInTransit,
             remaining,
-            waived);
+            waived,
+            stockRequestNumber);
     }
 
     public async Task<PagedResult<InventoryTransferListItemDto>> ListAsync(
@@ -243,7 +253,8 @@ public sealed class InventoryTransferQueryService
         decimal satisfiedAtDestinationQty = 0,
         decimal openInTransitQty = 0,
         decimal remainingToDispatchQty = 0,
-        decimal waivedQty = 0) =>
+        decimal waivedQty = 0,
+        string? stockRequestNumber = null) =>
         new(
             transfer.Id.Value,
             transfer.OrganizationId.Value,
@@ -335,7 +346,8 @@ public sealed class InventoryTransferQueryService
             satisfiedAtDestinationQty,
             openInTransitQty,
             remainingToDispatchQty,
-            waivedQty);
+            waivedQty,
+            stockRequestNumber);
     private static InventoryTransferListItemDto MapListItem(
         InventoryTransfer transfer,
         IReadOnlyDictionary<Guid, string> names,
@@ -372,6 +384,7 @@ public sealed class InventoryTransferQueryService
 public sealed class CreateInventoryTransfer
 {
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IStockRequestRepository _stockRequests;
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
@@ -394,9 +407,11 @@ public sealed class CreateInventoryTransfer
         ISupplyRouteRepository supplyRoutes,
         IPosUnitOfWork unitOfWork,
         IClock clock,
+        IStockRequestRepository stockRequests,
         InventoryCostResolver? costs = null)
     {
         _transfers = transfers;
+        _stockRequests = stockRequests;
         _inventory = inventory;
         _balances = balances;
         _products = products;
@@ -479,6 +494,34 @@ public sealed class CreateInventoryTransfer
         var draftsWithCosts = drafts.Value!
             .Select(d => d with { UnitCostSnapshot = costByProduct.GetValueOrDefault(d.ProductId.Value) })
             .ToList();
+
+        if (request.StockRequestId is Guid linkedStockRequestId && linkedStockRequestId != Guid.Empty)
+        {
+            var stockRequest = await _stockRequests
+                .GetByIdAsync(orgId, StockRequestId.From(linkedStockRequestId), cancellationToken)
+                .ConfigureAwait(false);
+            if (stockRequest is null)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    "pos.inventory.stock_request.not_found",
+                    "Stock request was not found.");
+            }
+
+            var linkedTransfers = await _transfers
+                .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
+                .ConfigureAwait(false);
+            var srGuard = StockRequestLinkedTransferGuard.ValidateProposedLines(
+                stockRequest,
+                linkedTransfers,
+                editingDraft: null,
+                draftsWithCosts
+                    .Select(d => (d.ProductId.Value, d.Quantity, d.NameSnapshot))
+                    .ToList());
+            if (srGuard is not null)
+            {
+                return srGuard;
+            }
+        }
 
         try
         {
@@ -567,6 +610,7 @@ public sealed class CreateInventoryTransfer
 public sealed class UpdateInventoryTransfer
 {
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IStockRequestRepository _stockRequests;
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
@@ -587,9 +631,11 @@ public sealed class UpdateInventoryTransfer
         IOrganizationBranchDirectory branches,
         IPosUnitOfWork unitOfWork,
         IClock clock,
+        IStockRequestRepository stockRequests,
         InventoryCostResolver? costs = null)
     {
         _transfers = transfers;
+        _stockRequests = stockRequests;
         _inventory = inventory;
         _balances = balances;
         _products = products;
@@ -670,6 +716,34 @@ public sealed class UpdateInventoryTransfer
         var draftsWithCosts = drafts.Value!
             .Select(d => d with { UnitCostSnapshot = costByProduct.GetValueOrDefault(d.ProductId.Value) })
             .ToList();
+
+        if (transfer.StockRequestId is StockRequestId linkedStockRequestId)
+        {
+            var stockRequest = await _stockRequests
+                .GetByIdAsync(orgId, linkedStockRequestId, cancellationToken)
+                .ConfigureAwait(false);
+            if (stockRequest is null)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    "pos.inventory.stock_request.not_found",
+                    "Stock request was not found.");
+            }
+
+            var linkedTransfers = await _transfers
+                .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
+                .ConfigureAwait(false);
+            var srGuard = StockRequestLinkedTransferGuard.ValidateProposedLines(
+                stockRequest,
+                linkedTransfers,
+                editingDraft: transfer,
+                draftsWithCosts
+                    .Select(d => (d.ProductId.Value, d.Quantity, d.NameSnapshot))
+                    .ToList());
+            if (srGuard is not null)
+            {
+                return srGuard;
+            }
+        }
 
         try
         {
@@ -2168,9 +2242,11 @@ public sealed class ReceiveInventoryTransfer
                     .ConfigureAwait(false);
                 if (stockRequest is not null)
                 {
-                    var linkedTransfers = await _transfers
-                        .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
-                        .ConfigureAwait(false);
+                    var linkedTransfers = StockRequestDispatchCoverage.WithLiveTransfer(
+                        await _transfers
+                            .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
+                            .ConfigureAwait(false),
+                        transfer);
                     var coverage = StockRequestDispatchCoverage.Compute(stockRequest, linkedTransfers);
                     stockRequest.RecalculateStatusFromFulfillmentCoverage(
                         coverage.ReceivedByProduct,
@@ -2437,9 +2513,11 @@ public sealed class CloseRemainderInventoryTransfer
                             .ConfigureAwait(false);
                         if (stockRequest is not null)
                         {
-                            var linkedTransfers = await _transfers
-                                .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
-                                .ConfigureAwait(false);
+                            var linkedTransfers = StockRequestDispatchCoverage.WithLiveTransfer(
+                                await _transfers
+                                    .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
+                                    .ConfigureAwait(false),
+                                transfer);
                             var coverage = StockRequestDispatchCoverage.Compute(stockRequest, linkedTransfers);
                             stockRequest.RecalculateStatusFromFulfillmentCoverage(
                                 coverage.ReceivedByProduct,

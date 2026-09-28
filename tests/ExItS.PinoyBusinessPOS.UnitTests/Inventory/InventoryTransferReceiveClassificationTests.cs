@@ -196,6 +196,35 @@ public sealed class InventoryTransferReceiveClassificationTests
     }
 
     [Fact]
+    public void WithLiveTransfer_fulfills_request_when_asnotracking_list_misses_uncommitted_receive()
+    {
+        var live = DispatchSingleLine(10m);
+        var request = LinkedStockRequest(live, 10m);
+        live.Receive([Classify(Coke, good: 10m)], Actor, Utc.AddMinutes(2));
+        Assert.Equal(10m, live.Lines.Single().ReceivedQty);
+
+        // Simulate EF AsNoTracking ListByStockRequestIdAsync before SaveChanges:
+        // the DB snapshot still has ReceivedQty = 0 / omits the uncommitted mutation.
+        var staleListed = Array.Empty<InventoryTransfer>();
+        var staleCoverage = StockRequestDispatchCoverage.Compute(request, staleListed);
+        request.RecalculateStatusFromFulfillmentCoverage(
+            staleCoverage.ReceivedByProduct,
+            staleCoverage.WaivedByProduct,
+            Utc.AddMinutes(3));
+        Assert.Equal(StockRequestStatus.InTransit, request.Status);
+
+        var liveCoverage = StockRequestDispatchCoverage.Compute(
+            request,
+            StockRequestDispatchCoverage.WithLiveTransfer(staleListed, live));
+        request.RecalculateStatusFromFulfillmentCoverage(
+            liveCoverage.ReceivedByProduct,
+            liveCoverage.WaivedByProduct,
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.Fulfilled, request.Status);
+        Assert.Equal(10m, liveCoverage.ReceivedByProduct[Coke.Value]);
+    }
+
+    [Fact]
     public void I_missing_request_replacement_increases_stock_request_remaining()
     {
         var transfer = DispatchSingleLine(100m);

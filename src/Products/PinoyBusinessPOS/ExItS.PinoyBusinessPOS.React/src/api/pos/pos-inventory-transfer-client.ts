@@ -103,6 +103,7 @@ export const inventoryTransferDtoSchema = z.object({
   transferId: guidSchema,
   organizationId: guidSchema,
   stockRequestId: guidSchema.nullable().optional(),
+  stockRequestNumber: z.string().nullable().optional(),
   transferNumber: z.string().nullable().optional(),
   sourceBranchId: guidSchema,
   sourceBranchName: z.string().nullable().optional(),

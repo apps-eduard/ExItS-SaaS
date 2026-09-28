@@ -1,4 +1,14 @@
-import { ArrowLeftRight, ArrowRight, Ban, ClipboardCheck, FilePlus2, PackageCheck, Truck } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowLeftRight,
+  ArrowRight,
+  Ban,
+  ClipboardCheck,
+  FilePlus2,
+  PackageCheck,
+  Pencil,
+  Truck,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,11 +45,11 @@ import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { RESPONSIVE_DATA_TABLE_MIN_LG } from "@/components/exits/responsive-data-view";
 import { SideDrawer } from "@/components/exits/SideDrawer";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
+import { InventoryMovementTransactionDrawer } from "@/features/inventory/InventoryMovementTransactionDrawer";
 import {
   formatTransferQty,
   inventoryTransferStatusLabelKey,
@@ -49,8 +59,8 @@ import { StockRequestActivityTimeline } from "@/features/replenishment/StockRequ
 import {
   canCancelStockRequestAsDestination,
   canPrepareTransfer,
+  displayApprovedQuantity,
   findLinkedDraftTransfer,
-  findOpenCoveringTransfer,
   listReceivableTransfers,
   normalizeStockRequestStatus,
   prepareTransferPrimaryLabelKey,
@@ -175,6 +185,10 @@ export function StockRequestDetailPage() {
   }
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
+  const [transferDrawer, setTransferDrawer] = useState<{
+    transferId: string;
+    transferNumber?: string | null;
+  } | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -371,7 +385,6 @@ export function StockRequestDetailPage() {
     allowManage &&
     isSource &&
     (dto.status === "Approved" || dto.status === "Preparing" || dto.status === "InProgress");
-  const openCover = findOpenCoveringTransfer(dto.linkedTransfers);
   const linkedDraftId = findLinkedDraftTransfer(dto.linkedTransfers);
   const canPrepareTransferAction =
     allowManage &&
@@ -396,6 +409,8 @@ export function StockRequestDetailPage() {
     receivableTransfers.length === 1 ? receivableTransfers[0]!.transferId : null;
   const canCancel =
     allowManage && isDestination && canCancelStockRequestAsDestination(dto.status);
+  const canEditRequest =
+    allowManage && isDestination && dto.status === "Pending";
   const showSourceFulfillmentSummary =
     allowManage && isSource && remainingDispatchQty > 0 && canPrepareTransferAction;
 
@@ -432,7 +447,7 @@ export function StockRequestDetailPage() {
               t("transfer.needsFulfillment"),
             ],
             rows: dto.lines.map((line) => {
-              const approved = line.approvedQuantity ?? line.requestedQuantity;
+              const approved = displayApprovedQuantity(line.approvedQuantity);
               return [
                 line.nameSnapshot,
                 formatTransferQty(approved),
@@ -464,7 +479,7 @@ export function StockRequestDetailPage() {
             t("transfer.needsFulfillment"),
           ],
           ...dto.lines.map((line) => {
-            const approved = line.approvedQuantity ?? line.requestedQuantity;
+            const approved = displayApprovedQuantity(line.approvedQuantity);
             return [
               line.nameSnapshot,
               formatTransferQty(approved),
@@ -516,7 +531,7 @@ export function StockRequestDetailPage() {
         </thead>
         <tbody>
           {dto.lines.map((line) => {
-            const approved = line.approvedQuantity ?? line.requestedQuantity;
+            const approved = displayApprovedQuantity(line.approvedQuantity);
             return (
               <tr key={line.lineId}>
                 <td>
@@ -597,13 +612,96 @@ export function StockRequestDetailPage() {
           </span>
         </div>
         <div data-testid="stock-request-number-summary">
-          <Card className="flex flex-col gap-0.5 p-3" treatment="bordered">
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-              {t("stockRequest.colNumber")}
-            </p>
-            <p className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
-              {dto.requestNumber?.trim() || "—"}
-            </p>
+          <Card className="flex flex-col gap-2 p-3" treatment="bordered">
+            <div className="flex flex-col gap-0.5">
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("stockRequest.colNumber")}
+              </p>
+              <p className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
+                {dto.requestNumber?.trim() || "—"}
+              </p>
+            </div>
+            {dto.linkedTransfers.length > 0 || linkedTransferId ? (
+              <div
+                className="flex min-w-0 flex-col gap-2 border-t border-border pt-2"
+                data-testid="stock-request-linked-in-summary"
+              >
+                <p className="m-0 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                  {t("stockRequest.linkedTransfers")}
+                </p>
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {dto.linkedTransfers.map((tr) => {
+                    const transferLabel =
+                      tr.transferNumber?.trim() || tr.transferId.slice(0, 8);
+                    return (
+                      <li
+                        key={tr.transferId}
+                        className="flex min-w-0 flex-col gap-1.5"
+                        data-testid={`stock-request-linked-transfer-${tr.transferId}`}
+                      >
+                        <p className="m-0 text-[length:var(--exits-text-sm)]">
+                          <span className="font-medium tabular-nums">{transferLabel}</span>
+                          <span className="text-muted">
+                            {" · "}
+                            {t(inventoryTransferStatusLabelKey(tr.status) as MessageKey)}
+                            {" · "}
+                            {t("stockRequest.linkedTransfer.sent")}: {formatTransferQty(tr.totalSentQty)}
+                            {" · "}
+                            {t("stockRequest.linkedTransfer.received")}:{" "}
+                            {formatTransferQty(tr.totalReceivedQty)}
+                            {" · "}
+                            {t("stockRequest.linkedTransfer.closed")}:{" "}
+                            {formatTransferQty(tr.totalClosedQty ?? 0)}
+                            {" · "}
+                            {t("stockRequest.linkedTransfer.outstanding")}:{" "}
+                            {formatTransferQty(tr.totalOutstandingQty ?? 0)}
+                          </span>
+                        </p>
+                        <Button
+                          type="button"
+                          appearance="outline"
+                          className="w-fit"
+                          onClick={() =>
+                            setTransferDrawer({
+                              transferId: tr.transferId,
+                              transferNumber: tr.transferNumber,
+                            })
+                          }
+                          data-testid={`stock-request-view-transfer-${tr.transferId}`}
+                        >
+                          {t("inventory.viewTransfer")}
+                        </Button>
+                      </li>
+                    );
+                  })}
+                  {linkedTransferId &&
+                  !dto.linkedTransfers.some((tr) => tr.transferId === linkedTransferId) ? (
+                    <li
+                      className="flex min-w-0 flex-col gap-1.5"
+                      data-testid={`stock-request-linked-transfer-${linkedTransferId}`}
+                    >
+                      <p className="m-0 text-[length:var(--exits-text-sm)] font-medium tabular-nums">
+                        {linkedTransferId.slice(0, 8)}
+                      </p>
+                      <Button
+                        type="button"
+                        appearance="outline"
+                        className="w-fit"
+                        onClick={() =>
+                          setTransferDrawer({
+                            transferId: linkedTransferId,
+                            transferNumber: null,
+                          })
+                        }
+                        data-testid={`stock-request-view-transfer-${linkedTransferId}`}
+                      >
+                        {t("inventory.viewTransfer")}
+                      </Button>
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
           </Card>
         </div>
       </Card>
@@ -686,7 +784,7 @@ export function StockRequestDetailPage() {
                 </ExitsTableHeader>
                 <ExitsTableBody>
                   {dto.lines.map((line) => {
-                    const approved = line.approvedQuantity ?? line.requestedQuantity;
+                    const approved = displayApprovedQuantity(line.approvedQuantity);
                     return (
                       <ExitsTableRow
                         key={line.lineId}
@@ -723,7 +821,9 @@ export function StockRequestDetailPage() {
                               t={t}
                             />
                           ) : (
-                            formatTransferQty(approved)
+                            <span data-testid={`stock-request-approved-${line.productId}`}>
+                              {formatTransferQty(approved)}
+                            </span>
                           )}
                         </ExitsTableCell>
                         <ExitsTableCell
@@ -778,7 +878,7 @@ export function StockRequestDetailPage() {
           layout === "list" ? (
             <ul className="exits-data-record-list" data-testid="stock-request-lines-mobile">
               {dto.lines.map((line) => {
-                const approved = line.approvedQuantity ?? line.requestedQuantity;
+                const approved = displayApprovedQuantity(line.approvedQuantity);
                 return (
                   <ExitsDataRecordCard
                     key={line.lineId}
@@ -804,7 +904,9 @@ export function StockRequestDetailPage() {
                             t={t}
                           />
                         ) : (
-                          formatTransferQty(approved)
+                          <span data-testid={`stock-request-approved-${line.productId}`}>
+                            {formatTransferQty(approved)}
+                          </span>
                         ),
                         emphasize: true,
                       },
@@ -856,64 +958,6 @@ export function StockRequestDetailPage() {
           ) : null
         }
       />
-
-      {openCover ? (
-        <div
-          className="m-0 flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-muted/40 p-3 text-[length:var(--exits-text-sm)]"
-          data-testid="stock-request-open-transfer-guard"
-          role="status"
-        >
-          <p className="m-0">
-            {t("stockRequest.waitingForDestination")
-              .replace("{qty}", String(openCover.outstandingQty))
-              .replace("{transfer}", openCover.transferLabel)}
-          </p>
-          <Link className="underline w-fit" to={`/inventory/transfers/${openCover.transferId}`}>
-            {t("stockRequest.viewOpenTransfer")}
-          </Link>
-        </div>
-      ) : null}
-
-      {dto.linkedTransfers.length > 0 || linkedTransferId ? (
-        <section>
-          <h2 className="exits-type-label">{t("stockRequest.linkedTransfers")}</h2>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {dto.linkedTransfers.map((tr) => (
-              <li
-                key={tr.transferId}
-                className="text-[length:var(--exits-text-sm)]"
-                data-testid={`stock-request-linked-transfer-${tr.transferId}`}
-              >
-                <Link className="underline font-medium" to={`/inventory/transfers/${tr.transferId}`}>
-                  {tr.transferNumber ?? tr.transferId.slice(0, 8)}
-                </Link>
-                {" · "}
-                <StatusChip tone="neutral" shape="pill">
-                  {t(inventoryTransferStatusLabelKey(tr.status) as MessageKey)}
-                </StatusChip>
-                <span className="text-muted">
-                  {" · "}
-                  {t("stockRequest.linkedTransfer.sent")}: {tr.totalSentQty}
-                  {" · "}
-                  {t("stockRequest.linkedTransfer.received")}: {tr.totalReceivedQty}
-                  {" · "}
-                  {t("stockRequest.linkedTransfer.closed")}: {tr.totalClosedQty ?? 0}
-                  {" · "}
-                  {t("stockRequest.linkedTransfer.outstanding")}: {tr.totalOutstandingQty ?? 0}
-                </span>
-              </li>
-            ))}
-            {linkedTransferId &&
-            !dto.linkedTransfers.some((tr) => tr.transferId === linkedTransferId) ? (
-              <li>
-                <Link className="underline" to={`/inventory/transfers/${linkedTransferId}`}>
-                  {linkedTransferId.slice(0, 8)}
-                </Link>
-              </li>
-            ) : null}
-          </ul>
-        </section>
-      ) : null}
 
       {pendingAtSource ? (
         <div className="po-document-actions" data-testid="stock-request-approve-actions">
@@ -983,50 +1027,97 @@ export function StockRequestDetailPage() {
         </div>
       ) : null}
 
-      {canReceive ? (
-        singleReceiveTransferId ? (
-          <Button asChild data-testid="stock-request-receive">
-            <Link to={transferReceiveHref(singleReceiveTransferId)}>
-              {t("stockRequest.readyToReceive")}
-            </Link>
-          </Button>
-        ) : (
-          <div
-            className="flex min-w-0 flex-col gap-2"
-            data-testid="stock-request-receive-choices"
-          >
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-              {t("stockRequest.readyToReceive")}
-            </p>
-            <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
-              {receivableTransfers.map((tr) => (
-                <li key={tr.transferId}>
-                  <Button asChild variant="outline" data-testid={`stock-request-receive-${tr.transferId}`}>
-                    <Link to={transferReceiveHref(tr.transferId)}>
-                      {tr.transferNumber?.trim() || tr.transferId.slice(0, 8)}
-                      {tr.totalOutstandingQty != null
-                        ? ` · ${formatTransferQty(tr.totalOutstandingQty)}`
-                        : ""}
-                    </Link>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )
+      {canReceive && !singleReceiveTransferId ? (
+        <div
+          className="flex min-w-0 flex-col gap-2"
+          data-testid="stock-request-receive-choices"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+            {t("stockRequest.readyToReceive")}
+          </p>
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+            {receivableTransfers.map((tr) => (
+              <li key={tr.transferId}>
+                <Button
+                  asChild
+                  variant="outline"
+                  data-testid={`stock-request-receive-${tr.transferId}`}
+                >
+                  <Link to={transferReceiveHref(tr.transferId)}>
+                    {tr.transferNumber?.trim() || tr.transferId.slice(0, 8)}
+                    {tr.totalOutstandingQty != null
+                      ? ` · ${formatTransferQty(tr.totalOutstandingQty)}`
+                      : ""}
+                  </Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
 
-      {canCancel ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => cancelMutation.mutate()}
-          disabled={cancelMutation.isPending}
-          data-testid="stock-request-cancel"
-        >
-          {t("stockRequest.cancel")}
-        </Button>
-      ) : null}
+      <div className="receive-stock-actions" data-testid="stock-request-detail-actions">
+        <div className="receive-stock-actions__primary">
+          <Button
+            type="button"
+            intent="primary"
+            appearance="ghost"
+            className="font-semibold"
+            onClick={smartBack.onBack}
+            data-testid="stock-request-detail-back"
+          >
+            <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+            {smartBack.backLabel}
+          </Button>
+          {canEditRequest ? (
+            <Button
+              type="button"
+              appearance="outline"
+              disabled={cancelMutation.isPending}
+              onClick={() => {
+                navigate("/warehouse/request-stock", {
+                  state: {
+                    amendFromStockRequest: {
+                      stockRequestId: dto.stockRequestId,
+                      notes: dto.notes ?? null,
+                      lines: dto.lines.map((line) => ({
+                        productId: line.productId,
+                        name: line.nameSnapshot,
+                        unitOfMeasure: line.unitOfMeasure,
+                        quantity: line.requestedQuantity,
+                      })),
+                    },
+                  },
+                });
+              }}
+              data-testid="stock-request-edit"
+            >
+              <Pencil className="size-4 shrink-0" aria-hidden />
+              {t("stockRequest.editRequest")}
+            </Button>
+          ) : null}
+          {canCancel ? (
+            <Button
+              type="button"
+              intent="danger"
+              appearance="solid"
+              onClick={() => cancelMutation.mutate()}
+              disabled={cancelMutation.isPending}
+              data-testid="stock-request-cancel"
+            >
+              {t("stockRequest.cancel")}
+            </Button>
+          ) : null}
+          {canReceive && singleReceiveTransferId ? (
+            <Button asChild data-testid="stock-request-receive">
+              <Link to={transferReceiveHref(singleReceiveTransferId)}>
+                <PackageCheck className="size-4 shrink-0" aria-hidden />
+                {t("stockRequest.readyToReceive")}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      </div>
 
       {actionError && !declineOpen ? (
         <p className="m-0 text-danger text-[length:var(--exits-text-sm)]" role="alert">
@@ -1130,6 +1221,23 @@ export function StockRequestDetailPage() {
           </p>
         ) : null}
       </ExitsModal>
+
+      {transferDrawer ? (
+        <InventoryMovementTransactionDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setTransferDrawer(null);
+            }
+          }}
+          movement={null}
+          transferContext={transferDrawer}
+          unitOfMeasure=""
+          workspace={workspace}
+          resolveActor={actors.resolve}
+          actorsLoading={actors.isResolving}
+        />
+      ) : null}
 
       {documentPreviewOpen ? (
         <BusinessDocumentPreview

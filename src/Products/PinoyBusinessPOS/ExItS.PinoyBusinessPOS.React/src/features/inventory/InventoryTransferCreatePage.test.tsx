@@ -383,4 +383,78 @@ describe("InventoryTransferCreatePage stock guard", () => {
     });
     expect(screen.getByTestId(`transfer-line-${soapId}`)).toBeInTheDocument();
   });
+
+  it("edit draft loads real available qty instead of Out of stock", async () => {
+    const draftId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    // Picker page deliberately omits this product so availability refresh cannot rescue a 0 hydrate.
+    vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
+      items: [account(zeroId, "Zero Stock Item", 0)],
+      totalCount: 1,
+      page: 1,
+      pageSize: 40,
+    });
+    vi.spyOn(inventoryClient, "getInventoryProduct").mockResolvedValue(
+      account(soapId, "Bath Soap Bar", 140),
+    );
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      transferId: draftId,
+      organizationId: orgId,
+      transferNumber: "TR-DRAFT-1",
+      sourceBranchId: mainId,
+      sourceBranchName: "Main Branch",
+      destinationBranchId: branchBId,
+      destinationBranchName: "Iloilo Branch",
+      status: "Draft",
+      notes: null,
+      createdBy: "99999999-9999-9999-9999-999999999999",
+      createdAtUtc: "2026-09-28T08:00:00Z",
+      updatedAtUtc: "2026-09-28T08:00:00Z",
+      totalSentQty: 10,
+      totalReceivedQty: 0,
+      totalClosedQty: 0,
+      totalOutstandingQty: 10,
+      totalDifferenceQty: 0,
+      receiptCount: 0,
+      lines: [
+        {
+          lineId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          productId: soapId,
+          productName: "Bath Soap Bar",
+          sku: "SOAP",
+          unitOfMeasure: "Piece",
+          lineNumber: 1,
+          sentQty: 10,
+          receivedQty: 0,
+          differenceQty: 0,
+          lineStatus: "Open",
+          sourceLotId: null,
+          unitCostSnapshot: 10,
+        },
+      ],
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${draftId}/edit`]}>
+          <Routes>
+            <Route
+              path="/inventory/transfers/:transferId/edit"
+              element={<InventoryTransferCreatePage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("inventory-transfer-edit-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(inventoryClient.getInventoryProduct).toHaveBeenCalledWith(
+        expect.anything(),
+        soapId,
+      );
+    });
+    const available = await screen.findByTestId(`transfer-line-available-${soapId}`);
+    expect(available).toHaveTextContent(/140/);
+    expect(available).not.toHaveTextContent(/Out of stock/i);
+  });
 });

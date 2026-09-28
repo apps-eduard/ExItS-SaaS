@@ -4,6 +4,7 @@ import {
   canDispatchRemainingStockRequest,
   canFulfillRemaining,
   canPrepareTransfer,
+  displayApprovedQuantity,
   filterStockRequestsByTab,
   findOpenCoveringTransfer,
   hasConfiguredInternalSource,
@@ -20,6 +21,12 @@ import {
 } from "@/features/replenishment/stock-request-helpers";
 
 describe("stock-request-helpers", () => {
+  it("shows approved qty as zero until warehouse has approved", () => {
+    expect(displayApprovedQuantity(null)).toBe(0);
+    expect(displayApprovedQuantity(undefined)).toBe(0);
+    expect(displayApprovedQuantity(7.5)).toBe(7.5);
+  });
+
   it("prefers preferred active source and falls back to first active", () => {
     expect(
       pickPreferredSourceId([

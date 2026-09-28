@@ -4594,6 +4594,14 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.addProduct": "Add",
 
   "transfer.addProducts": "Add products",
+  "transfer.editShipment": "Edit shipment",
+  "transfer.editTransfer": "Edit transfer",
+  "transfer.editShipmentTitle": "Edit shipment",
+  "transfer.editShipmentLede":
+    "Adjust how much of the approved stock request ships now. Products stay fixed to the request.",
+  "transfer.shipmentItemsEmpty": "No products in this shipment",
+  "transfer.shipmentItemsEmptyDetail":
+    "This shipment has no products. Cancel the draft or prepare the stock request again.",
 
   "transfer.backList": "Back to Transfers",
 
@@ -7226,6 +7234,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "org.nav.more": "Dugang",
 
   "org.nav.inventory": "Imbentaryo",
+
+  "org.nav.warehouse": "Warehouse",
 
   "org.nav.transfers": "Mga transfer",
   "org.nav.branchRequests": "Branch requests",
@@ -13684,6 +13694,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.rejectDefault": "Gibalibaran",
   "stockRequest.declineReasonRequired": "Isulat ang rason una sa pagbalibad.",
   "stockRequest.cancel": "Kanselahon ang request",
+  "stockRequest.editRequest": "I-edit ang request",
   "stockRequest.requestStock": "Pangayo og stock",
   "stockRequest.tabs": "Mga filter sa stock request",
   "stockRequest.tab.submitted": "Naisumite",
@@ -13840,6 +13851,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "warehouse.toast.noAssignment.action": "I-configure ang warehouse",
   "transfer.stockRequest": "Stock request",
   "transfer.requestedBy": "Requested by",
+  "transfer.fulfillsStockRequest": "Fulfills stock request",
+  "transfer.fulfillsStockRequestShort": "Fulfills {number}",
   "warehouseDashboard.title": "Dashboard",
   "warehouseDashboard.lede": "Inventory, replenishment, transfers and receiving performance.",
   "warehouseDashboard.typeBadge": "Warehouse",

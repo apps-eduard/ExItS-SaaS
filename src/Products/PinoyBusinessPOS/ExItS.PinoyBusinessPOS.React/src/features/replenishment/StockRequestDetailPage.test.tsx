@@ -38,6 +38,24 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
     },
     workspaces: [],
   }),
+  useOptionalWorkspace: () => ({
+    boundWorkspace: {
+      organizationId: TEST_ORG_A_ID,
+      organizationDisplayName: "Kizy Store",
+      branchId: workspaceState.branchId,
+      branchName: workspaceState.branchName,
+      branchType: workspaceState.branchType,
+      experience: "operations",
+    },
+    sessionGrant: {
+      accessToken: "token",
+      productAccessAllowed: true,
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      organizationManagementAuthority: true,
+    },
+    workspaces: [],
+  }),
 }));
 
 function detailDto() {
@@ -127,6 +145,38 @@ describe("StockRequestDetailPage transfer-style header", () => {
     expect(screen.getByTestId("stock-request-activity-timeline")).toBeInTheDocument();
   });
 
+  it("shows footer back, edit, and cancel for pending destination request", async () => {
+    renderDetail();
+
+    expect(await screen.findByTestId("stock-request-detail-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("stock-request-detail-back")).toBeInTheDocument();
+    expect(screen.getByTestId("stock-request-edit")).toHaveTextContent(/Edit request/i);
+    expect(screen.getByTestId("stock-request-cancel")).toHaveTextContent(/Cancel request/i);
+  });
+
+  it("shows approved qty as zero before warehouse approval", async () => {
+    renderDetail();
+
+    expect(await screen.findByTestId("stock-request-detail")).toBeInTheDocument();
+    const approvedCells = screen.getAllByTestId(`stock-request-approved-${PRODUCT_A}`);
+    expect(approvedCells.length).toBeGreaterThan(0);
+    for (const cell of approvedCells) {
+      expect(cell).toHaveTextContent(/^0$/);
+    }
+  });
+
+  it("hides edit when request is no longer pending", async () => {
+    const dto = detailDto();
+    dto.status = "Approved";
+    vi.spyOn(stockRequestsClient, "getStockRequest").mockResolvedValue(dto as never);
+    renderDetail();
+
+    expect(await screen.findByTestId("stock-request-detail-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("stock-request-detail-back")).toBeInTheDocument();
+    expect(screen.queryByTestId("stock-request-edit")).not.toBeInTheDocument();
+    expect(screen.getByTestId("stock-request-cancel")).toBeInTheDocument();
+  });
+
   it("opens decline confirmation with reason before submitting decline", async () => {
     const user = userEvent.setup();
     workspaceState.branchId = WH_A;
@@ -186,11 +236,77 @@ describe("StockRequestDetailPage transfer-style header", () => {
     vi.spyOn(stockRequestsClient, "getStockRequest").mockResolvedValue(dto as never);
     renderDetail(`/inventory/stock-requests/${REQUEST_ID}`);
 
-    const receive = await screen.findByTestId("stock-request-receive");
+    expect(await screen.findByTestId("stock-request-linked-in-summary")).toBeInTheDocument();
+    expect(screen.getByTestId(`stock-request-linked-transfer-${transferId}`)).toHaveTextContent(
+      /TR-9/,
+    );
+    expect(screen.getByTestId(`stock-request-linked-transfer-${transferId}`)).toHaveTextContent(
+      /Sent:\s*10/,
+    );
+    expect(screen.getByTestId(`stock-request-linked-transfer-${transferId}`)).toHaveTextContent(
+      /Outstanding:\s*10/,
+    );
+    expect(screen.getByTestId(`stock-request-view-transfer-${transferId}`)).toBeInTheDocument();
+
+    const actions = screen.getByTestId("stock-request-detail-actions");
+    expect(actions).toContainElement(screen.getByTestId("stock-request-detail-back"));
+    const receive = screen.getByTestId("stock-request-receive");
+    expect(actions).toContainElement(receive);
     expect(receive).toHaveAttribute(
       "href",
       `/inventory/transfers/${transferId}?mode=receive`,
     );
+  });
+
+  it("opens linked transfer drawer from View transfer", async () => {
+    const user = userEvent.setup();
+    const transferId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    workspaceState.branchId = TEST_BRANCH_A_ID;
+    workspaceState.branchType = "Retail";
+    const dto = detailDto();
+    dto.status = "InTransit";
+    dto.linkedTransfers = [
+      {
+        transferId,
+        transferNumber: "TR-260928-001",
+        status: "InTransit",
+        totalSentQty: 20,
+        totalReceivedQty: 0,
+        totalOutstandingQty: 20,
+        totalClosedQty: 0,
+        createdAtUtc: "2026-09-27T00:00:00Z",
+        createdBy: ACTOR_ID,
+        updatedAtUtc: "2026-09-27T01:00:00Z",
+      },
+    ] as never;
+    vi.spyOn(stockRequestsClient, "getStockRequest").mockResolvedValue(dto as never);
+    const transferClient = await import("@/api/pos/pos-inventory-transfer-client");
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      transferId,
+      organizationId: TEST_ORG_A_ID,
+      transferNumber: "TR-260928-001",
+      sourceBranchId: WH_A,
+      sourceBranchName: "Panay Warehouse",
+      destinationBranchId: TEST_BRANCH_A_ID,
+      destinationBranchName: "Pac Passi",
+      status: "InTransit",
+      notes: null,
+      createdBy: ACTOR_ID,
+      createdAtUtc: "2026-09-27T00:00:00Z",
+      updatedAtUtc: "2026-09-27T01:00:00Z",
+      totalSentQty: 20,
+      totalReceivedQty: 0,
+      totalClosedQty: 0,
+      totalOutstandingQty: 20,
+      totalDifferenceQty: 0,
+      receiptCount: 0,
+      lines: [],
+    } as never);
+
+    renderDetail(`/inventory/stock-requests/${REQUEST_ID}`);
+
+    await user.click(await screen.findByTestId(`stock-request-view-transfer-${transferId}`));
+    expect(await screen.findByTestId("inventory-movement-transaction-drawer")).toBeInTheDocument();
   });
 
   it("lists multiple receivable transfers instead of picking one", async () => {

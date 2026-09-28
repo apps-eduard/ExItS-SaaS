@@ -303,6 +303,11 @@ export function canCancelStockRequestAsDestination(status: string): boolean {
   return status === "Pending" || status === "Approved" || status === "Preparing" || status === "InProgress";
 }
 
+/** Stored approved qty only — null means warehouse has not approved yet (display 0). */
+export function displayApprovedQuantity(approvedQuantity: number | null | undefined): number {
+  return approvedQuantity ?? 0;
+}
+
 export function isStockRequestOpenForSourceActions(status: string): boolean {
   return (
     status === "Pending" ||

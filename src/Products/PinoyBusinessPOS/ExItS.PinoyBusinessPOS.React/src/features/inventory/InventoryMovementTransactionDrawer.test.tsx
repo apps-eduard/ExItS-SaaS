@@ -122,6 +122,8 @@ describe("InventoryMovementTransactionDrawer", () => {
     expect(screen.getByTestId("inventory-movement-transaction-drawer")).toBeInTheDocument();
     expect(screen.queryByTestId("inventory-reservations-drawer")).not.toBeInTheDocument();
     expect(await screen.findByText("TR-260922-001")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-movement-transaction-stock-request")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-movement-view-stock-request")).not.toBeInTheDocument();
     expect(screen.getByTestId("inventory-movement-transaction-this-movement")).toHaveTextContent(
       /Transfer out/i,
     );
@@ -157,6 +159,80 @@ describe("InventoryMovementTransactionDrawer", () => {
     await user.click(trLink);
     await waitFor(() => {
       expect(screen.getByTestId("transfer-detail-route")).toBeInTheDocument();
+    });
+  });
+
+  it("shows stock-request fulfills line and View stock request action when linked", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      transferId,
+      organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      stockRequestId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      stockRequestNumber: "SR-260927-003",
+      transferNumber: "TR-260922-001",
+      sourceBranchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      sourceBranchName: "Main Branch",
+      destinationBranchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      destinationBranchName: "Iloilo Branch",
+      status: "InTransit",
+      notes: null,
+      createdBy: "actor-1",
+      createdAtUtc: "2026-09-22T18:00:00Z",
+      updatedAtUtc: "2026-09-22T19:00:00Z",
+      totalSentQty: 10,
+      totalReceivedQty: 0,
+      totalClosedQty: 0,
+      totalOutstandingQty: 10,
+      totalDifferenceQty: 0,
+      receiptCount: 0,
+      lines: [],
+      receipts: [],
+      familyMembers: [],
+      damageCustodies: [],
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={transferOutMovement()}
+                  unitOfMeasure="Piece"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+            <Route
+              path="/inventory/stock-requests/:stockRequestId"
+              element={<div data-testid="stock-request-detail-route">Stock request</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("inventory-movement-transaction-stock-request")).toHaveTextContent(
+      "Fulfills SR-260927-003",
+    );
+    const srAction = await screen.findByTestId("inventory-movement-view-stock-request");
+    expect(srAction).toHaveAttribute(
+      "href",
+      expect.stringContaining("/inventory/stock-requests/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+    );
+    expect(screen.getByTestId("inventory-movement-view-full-transfer")).toBeInTheDocument();
+    await user.click(srAction);
+    await waitFor(() => {
+      expect(screen.getByTestId("stock-request-detail-route")).toBeInTheDocument();
     });
   });
 

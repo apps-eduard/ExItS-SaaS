@@ -259,6 +259,17 @@ export function InventoryMovementTransactionDrawer({
                     />
                   ) : transfer ? (
                     <div className="mt-2 flex flex-col gap-2">
+                      {transfer.stockRequestId ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid="inventory-movement-transaction-stock-request"
+                        >
+                          {t("transfer.fulfillsStockRequestShort").replace(
+                            "{number}",
+                            transfer.stockRequestNumber?.trim() || t("transfer.stockRequest"),
+                          )}
+                        </p>
+                      ) : null}
                       <p className="m-0 text-[length:var(--exits-text-sm)]">
                         {branchLabel(transfer.sourceBranchName, transfer.sourceBranchId)}
                         {" → "}
@@ -892,11 +903,20 @@ export function InventoryMovementTransactionDrawer({
               ) : null}
 
               {transferId ? (
-                <Button asChild data-testid="inventory-movement-view-full-transfer">
-                  <AppLinkWithReturn to={inventoryTransferDetailPath(transferId)}>
-                    {t("inventory.viewFullTransfer")}
-                  </AppLinkWithReturn>
-                </Button>
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  {transfer?.stockRequestId ? (
+                    <Button asChild variant="outline" data-testid="inventory-movement-view-stock-request">
+                      <AppLinkWithReturn to={`/inventory/stock-requests/${transfer.stockRequestId}`}>
+                        {t("transfer.viewStockRequest")}
+                      </AppLinkWithReturn>
+                    </Button>
+                  ) : null}
+                  <Button asChild data-testid="inventory-movement-view-full-transfer">
+                    <AppLinkWithReturn to={inventoryTransferDetailPath(transferId)}>
+                      {t("inventory.viewFullTransfer")}
+                    </AppLinkWithReturn>
+                  </Button>
+                </div>
               ) : null}
             </>
           )}

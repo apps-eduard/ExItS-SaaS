@@ -396,7 +396,7 @@ export function buildOperationsSidebarGroups(input: {
       id: "inventory",
       to: "/inventory",
       labelKey: "org.nav.inventory",
-      icon: Warehouse,
+      icon: Boxes,
       testId: "ops-sidebar-inventory",
       matchPrefixes: ["/inventory"],
     },
@@ -404,6 +404,23 @@ export function buildOperationsSidebarGroups(input: {
     NAV_MANAGER,
     navWorkspace,
   );
+  if (!warehouse) {
+    // Retail replenishment hub (request stock / my requests) — not used on warehouse branches.
+    pushItem(
+      stock,
+      {
+        id: "warehouse",
+        to: "/warehouse",
+        labelKey: "org.nav.warehouse",
+        icon: Warehouse,
+        testId: "ops-sidebar-warehouse",
+        matchPrefixes: ["/warehouse"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+  }
   if (warehouse) {
     pushItem(
       stock,

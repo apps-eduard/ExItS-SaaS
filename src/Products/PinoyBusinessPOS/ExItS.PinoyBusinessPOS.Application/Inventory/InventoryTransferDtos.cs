@@ -144,7 +144,9 @@ public sealed record InventoryTransferDto(
     decimal SatisfiedAtDestinationQty = 0,
     decimal OpenInTransitQty = 0,
     decimal RemainingToDispatchQty = 0,
-    decimal WaivedQty = 0);
+    decimal WaivedQty = 0,
+    /// <summary>Document number of the linked stock request (null when not SR-linked).</summary>
+    string? StockRequestNumber = null);
 
 public sealed record InventoryTransferFamilyMemberDto(
     Guid TransferId,

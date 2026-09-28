@@ -228,7 +228,7 @@ describe("Inventory Transfer React flow", () => {
       "Draft",
     );
     expect(screen.getByTestId("transfer-dispatch")).toBeInTheDocument();
-    expect(screen.getByTestId("transfer-edit-draft")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-edit-draft")).toHaveTextContent("Edit transfer");
     expect(screen.queryByTestId("transfer-receive")).not.toBeInTheDocument();
     expect(screen.queryByText(/cannot be edited/i)).not.toBeInTheDocument();
 
@@ -259,6 +259,27 @@ describe("Inventory Transfer React flow", () => {
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ["inventory"] }),
     );
+  });
+
+  it("stock-request draft shows Edit shipment instead of Add products", async () => {
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...draftTransfer(),
+      stockRequestId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      stockRequestNumber: "SR-260928-003",
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("transfer-edit-draft")).toHaveTextContent("Edit shipment");
+    expect(screen.queryByText("Add products")).not.toBeInTheDocument();
   });
 
   it("failed dispatch remains Draft and surfaces exact server detail", async () => {
@@ -530,6 +551,7 @@ describe("Inventory Transfer React flow", () => {
       remainingToDispatchQty: 3,
       waivedQty: 0,
       stockRequestId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      stockRequestNumber: "SR-260927-003",
       receipts: [
         {
           receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
@@ -614,6 +636,22 @@ describe("Inventory Transfer React flow", () => {
     expect(screen.getByTestId("transfer-family-members")).toBeInTheDocument();
     expect(screen.getByText("Replacement R1")).toBeInTheDocument();
     expect(screen.getByText("260829-001-R1")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-number-summary")).toContainElement(
+      screen.getByTestId("transfer-stock-request-link"),
+    );
+    expect(screen.getByTestId("transfer-stock-request-link")).toHaveTextContent("Requested by");
+    expect(screen.getByTestId("transfer-stock-request-link")).toHaveTextContent(/Fulfills stock request/i);
+    expect(screen.getByTestId("transfer-stock-request-number-link")).toHaveAttribute(
+      "href",
+      "/inventory/stock-requests/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    );
+    expect(screen.getByTestId("transfer-stock-request-number-link")).toHaveTextContent("SR-260927-003");
+    expect(screen.getByTestId(`transfer-family-member-sr-${transferId}`)).toHaveTextContent(
+      "Fulfills SR-260927-003",
+    );
+    expect(
+      screen.getByTestId("transfer-family-member-sr-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+    ).toHaveTextContent("Fulfills SR-260927-003");
     expect(
       screen.getByTestId("transfer-family-member-link-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
     ).toHaveTextContent("Replacement R1");
@@ -1875,6 +1913,72 @@ describe("Inventory Transfer React flow", () => {
       </AppProviders>,
     );
     expect(await screen.findByTestId("inventory-transfer-receive-page")).toBeInTheDocument();
+  });
+
+  it("receive mode shows SR context for stock-request-linked transfers only", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    workspaceMock.sessionGrant = {
+      productAccessAllowed: true,
+      membershipRole: "OrganizationOwner",
+      productLocalRoleCode: "Owner",
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      stockRequestId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      stockRequestNumber: "SR-260927-003",
+    } as never);
+    const { unmount } = render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("transfer-receive-stock-request")).toHaveTextContent(
+      "Fulfills SR-260927-003",
+    );
+    unmount();
+
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      stockRequestId: null,
+      stockRequestNumber: null,
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}?mode=receive`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-receive-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("transfer-receive-stock-request")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("transfer-stock-request-link")).not.toBeInTheDocument();
+  });
+
+  it("direct transfer detail omits stock-request fulfills row", async () => {
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      stockRequestId: null,
+      stockRequestNumber: null,
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("transfer-stock-request-link")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Fulfills stock request/i)).not.toBeInTheDocument();
   });
 
   it("?mode=receive on source branch stays detail and strips query", async () => {
