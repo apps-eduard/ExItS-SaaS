@@ -436,7 +436,10 @@ public sealed class CreateInventoryTransfer
             var sourceType = await _branches
                 .GetBranchTypeAsync(organizationId, request.SourceBranchId, cancellationToken)
                 .ConfigureAwait(false);
-            if (SupplyRouteSourceRules.IsWarehouseBranchType(sourceType))
+            // Manual warehouse transfers require an active supply-coverage edge.
+            // Stock-request prepare already authorized this source→destination at request create.
+            if ((request.StockRequestId is null || request.StockRequestId == Guid.Empty)
+                && SupplyRouteSourceRules.IsWarehouseBranchType(sourceType))
             {
                 var orgForRoutes = PosOrganizationId.From(organizationId);
                 var routes = await _supplyRoutes
@@ -898,7 +901,10 @@ public sealed class PrepareInventoryTransferRemaining
                 "No remaining quantity is available to prepare. Outstanding quantity is already covered.");
         }
 
-        var reallocated = await ReallocateRemainingLinesWithCurrentFefoAsync(
+        var reallocated = await InventoryTransferFefoLineAllocator.ExpandWithCurrentFefoAsync(
+                _products,
+                _lots,
+                _expirationPolicies,
                 orgId,
                 root.SourceBranchId,
                 remainingLines,
@@ -987,69 +993,6 @@ public sealed class PrepareInventoryTransferRemaining
             .ToList();
     }
 
-    private async Task<ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>> ReallocateRemainingLinesWithCurrentFefoAsync(
-        PosOrganizationId organizationId,
-        PosBranchId sourceBranchId,
-        IReadOnlyList<InventoryTransferLineRequest> remainingLines,
-        DateTimeOffset utcNow,
-        CancellationToken cancellationToken)
-    {
-        var today = InventoryLot.BusinessDateOf(utcNow);
-        var productIds = remainingLines.Select(l => CatalogProductId.From(l.ProductId)).Distinct().ToList();
-        var catalog = (await _products.ListByIdsAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false))
-            .ToDictionary(p => p.Id.Value);
-        var sourcePolicies = await _expirationPolicies
-            .ResolveManyAsync(organizationId, sourceBranchId, productIds, cancellationToken)
-            .ConfigureAwait(false);
-
-        var expanded = new List<InventoryTransferLineRequest>();
-        foreach (var group in remainingLines.GroupBy(l => l.ProductId))
-        {
-            var quantity = group.Sum(l => l.Quantity);
-            if (!(quantity > 0m))
-            {
-                continue;
-            }
-
-            if (!catalog.TryGetValue(group.Key, out var product))
-            {
-                return ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>.Failure(
-                    ApplicationErrorCodes.InventoryProductNotFound,
-                    "Product was not found.");
-            }
-
-            if (!sourcePolicies.GetValueOrDefault(group.Key).TracksExpiration)
-            {
-                expanded.Add(new InventoryTransferLineRequest(group.Key, quantity, SourceLotId: null));
-                continue;
-            }
-
-            var onHand = await _lots
-                .ListOnHandAsync(organizationId, product.Id, sourceBranchId, includeDepleted: false, cancellationToken)
-                .ConfigureAwait(false);
-            try
-            {
-                var allocations = InventoryLotFefo.AllocateSellable(onHand, quantity, today);
-                foreach (var allocation in allocations)
-                {
-                    expanded.Add(new InventoryTransferLineRequest(
-                        group.Key,
-                        allocation.Quantity,
-                        allocation.Lot.Id.Value));
-                }
-            }
-            catch (DomainException ex)
-            {
-                return ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>.Failure(
-                    ex.ErrorCode,
-                    ex.Message);
-            }
-        }
-
-        return ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>.Success(expanded);
-    }
-
-    // Keep BuildRemainingFamilyLines + Reallocate as instance helpers above Execute paths.
 }
 
 public sealed class DispatchInventoryTransfer

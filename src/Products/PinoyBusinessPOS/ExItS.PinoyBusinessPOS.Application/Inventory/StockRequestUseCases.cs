@@ -1097,6 +1097,9 @@ public sealed class PrepareStockRequestTransfer
     private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
     private readonly CreateInventoryTransfer _createTransfer;
     private readonly InventoryTransferQueryService _transferQueries;
+    private readonly ICatalogProductRepository _products;
+    private readonly IInventoryLotRepository _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -1106,6 +1109,9 @@ public sealed class PrepareStockRequestTransfer
         IInventoryTransferDamageCustodyRepository damageCustodies,
         CreateInventoryTransfer createTransfer,
         InventoryTransferQueryService transferQueries,
+        ICatalogProductRepository products,
+        IInventoryLotRepository lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -1114,6 +1120,9 @@ public sealed class PrepareStockRequestTransfer
         _damageCustodies = damageCustodies;
         _createTransfer = createTransfer;
         _transferQueries = transferQueries;
+        _products = products;
+        _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -1177,16 +1186,11 @@ public sealed class PrepareStockRequestTransfer
                 "Stock request was not found.");
         }
 
-        if (stockRequest.Status == StockRequestStatus.Approved)
-        {
-            stockRequest.StartPreparing(actorId, _clock.UtcNow);
-            await _requests.UpdateAsync(stockRequest, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-
+        // InProgress is a legacy alias of Preparing (ToCode maps it); treat the same for prepare.
         if (stockRequest.Status is not (
             StockRequestStatus.Approved
             or StockRequestStatus.Preparing
+            or StockRequestStatus.InProgress
             or StockRequestStatus.InTransit
             or StockRequestStatus.PartiallyFulfilled))
         {
@@ -1205,6 +1209,7 @@ public sealed class PrepareStockRequestTransfer
         var existingDraft = linkedTransfers.FirstOrDefault(t => t.Status == InventoryTransferStatus.Draft);
         if (existingDraft is not null)
         {
+            await EnsurePreparingAsync(stockRequest, actorId, cancellationToken).ConfigureAwait(false);
             var existingDto = await _transferQueries
                 .GetByIdAsync(organizationId, existingDraft.Id.Value, cancellationToken)
                 .ConfigureAwait(false);
@@ -1261,6 +1266,25 @@ public sealed class PrepareStockRequestTransfer
                 "No remaining stock is available to prepare. Outstanding quantity is already covered by an open transfer.");
         }
 
+        var reallocated = await InventoryTransferFefoLineAllocator.ExpandWithCurrentFefoAsync(
+                _products,
+                _lots,
+                _expirationPolicies,
+                orgId,
+                stockRequest.RequestedSourceLocationId,
+                remainingLines,
+                utcNow,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (!reallocated.IsSuccess)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(
+                reallocated.ErrorCode!,
+                reallocated.ErrorMessage!);
+        }
+
+        remainingLines = reallocated.Value!.ToList();
+
         var root = linkedTransfers
             .Where(t => t.RootTransferId is null)
             .OrderBy(t => t.CreatedAtUtc)
@@ -1294,8 +1318,12 @@ public sealed class PrepareStockRequestTransfer
             .ConfigureAwait(false);
         if (!created.IsSuccess)
         {
+            // Do not StartPreparing before a draft exists — returning Failure still commits the
+            // outer serializable transaction, which previously left requests stuck in Preparing.
             return ApplicationResult<InventoryTransferDto>.Failure(created.ErrorCode!, created.ErrorMessage!);
         }
+
+        await EnsurePreparingAsync(stockRequest, actorId, cancellationToken).ConfigureAwait(false);
 
         var dto = await _transferQueries
             .GetByIdAsync(organizationId, created.Value!.Id.Value, cancellationToken)
@@ -1305,6 +1333,21 @@ public sealed class PrepareStockRequestTransfer
                 ApplicationErrorCodes.InventoryTransferNotFound,
                 "Inventory transfer was not found.")
             : ApplicationResult<InventoryTransferDto>.Success(dto);
+    }
+
+    private async Task EnsurePreparingAsync(
+        StockRequest stockRequest,
+        Guid actorId,
+        CancellationToken cancellationToken)
+    {
+        if (stockRequest.Status != StockRequestStatus.Approved)
+        {
+            return;
+        }
+
+        stockRequest.StartPreparing(actorId, _clock.UtcNow);
+        await _requests.UpdateAsync(stockRequest, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }
 
@@ -1320,6 +1363,9 @@ public sealed class DispatchStockRequest
     private readonly CreateInventoryTransfer _createTransfer;
     private readonly DispatchInventoryTransfer _dispatchTransfer;
     private readonly InventoryTransferQueryService _transferQueries;
+    private readonly ICatalogProductRepository _products;
+    private readonly IInventoryLotRepository _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -1331,6 +1377,9 @@ public sealed class DispatchStockRequest
         CreateInventoryTransfer createTransfer,
         DispatchInventoryTransfer dispatchTransfer,
         InventoryTransferQueryService transferQueries,
+        ICatalogProductRepository products,
+        IInventoryLotRepository lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock)
@@ -1341,6 +1390,9 @@ public sealed class DispatchStockRequest
         _createTransfer = createTransfer;
         _dispatchTransfer = dispatchTransfer;
         _transferQueries = transferQueries;
+        _products = products;
+        _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -1474,6 +1526,25 @@ public sealed class DispatchStockRequest
                 }
                 else
                 {
+                    var reallocated = await InventoryTransferFefoLineAllocator.ExpandWithCurrentFefoAsync(
+                            _products,
+                            _lots,
+                            _expirationPolicies,
+                            orgId,
+                            stockRequest.RequestedSourceLocationId,
+                            remainingLines,
+                            _clock.UtcNow,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!reallocated.IsSuccess)
+                    {
+                        return ApplicationResult<InventoryTransferDto>.Failure(
+                            reallocated.ErrorCode!,
+                            reallocated.ErrorMessage!);
+                    }
+
+                    remainingLines = reallocated.Value!.ToList();
+
                     var root = linkedTransfers
                         .Where(t => t.RootTransferId is null)
                         .OrderBy(t => t.CreatedAtUtc)

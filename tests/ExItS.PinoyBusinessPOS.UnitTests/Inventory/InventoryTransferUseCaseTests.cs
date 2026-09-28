@@ -1368,6 +1368,79 @@ public sealed class InventoryTransferUseCaseTests
     }
 
     [Fact]
+    public async Task Prepare_transfer_keeps_Approved_when_create_fails_for_insufficient_stock()
+    {
+        var fx = await SeedAsync(cokeOnHand: 0m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "260922-303");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(request);
+
+        var prepared = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.False(prepared.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, prepared.ErrorCode);
+
+        var refreshed = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
+        Assert.NotNull(refreshed);
+        Assert.Equal(StockRequestStatus.Approved, refreshed!.Status);
+        Assert.Empty(fx.Transfers.Items);
+    }
+
+    [Fact]
+    public async Task Prepare_transfer_assigns_fefo_source_lots_for_expiration_tracked_product()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        await fx.EnableBranchExpirationAsync(fx.CokeId, BranchA);
+        var earlierLot = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2026, 10, 1),
+            6m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-EARLY");
+        var laterLot = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2027, 1, 1),
+            14m,
+            Utc.AddMinutes(1),
+            PosBranchId.From(BranchA),
+            "LOT-LATE");
+        fx.Lots.Items.Add(earlierLot);
+        fx.Lots.Items.Add(laterLot);
+
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "260922-304");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(request);
+
+        var prepared = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(prepared.IsSuccess, $"{prepared.ErrorCode}: {prepared.ErrorMessage}");
+        Assert.Equal(2, prepared.Value!.Lines.Count);
+        Assert.Equal(earlierLot.Id.Value, prepared.Value.Lines[0].SourceLotId);
+        Assert.Equal(6m, prepared.Value.Lines[0].SentQty);
+        Assert.Equal(laterLot.Id.Value, prepared.Value.Lines[1].SourceLotId);
+        Assert.Equal(4m, prepared.Value.Lines[1].SentQty);
+
+        var refreshed = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
+        Assert.Equal(StockRequestStatus.Preparing, refreshed!.Status);
+    }
+
+    [Fact]
     public async Task Stock_request_activity_allows_source_and_destination_only()
     {
         var fx = await SeedAsync(cokeOnHand: 40m);
@@ -2732,6 +2805,9 @@ public sealed class InventoryTransferUseCaseTests
                 Create,
                 Dispatch,
                 Queries,
+                Products,
+                Lots,
+                expirationPolicies,
                 Notifications,
                 UnitOfWork,
                 Clock);
@@ -2741,6 +2817,9 @@ public sealed class InventoryTransferUseCaseTests
                 DamageCustodies,
                 Create,
                 Queries,
+                Products,
+                Lots,
+                expirationPolicies,
                 UnitOfWork,
                 Clock);
             StockRequestActivity = new GetStockRequestActivity(StockRequests, Transfers);

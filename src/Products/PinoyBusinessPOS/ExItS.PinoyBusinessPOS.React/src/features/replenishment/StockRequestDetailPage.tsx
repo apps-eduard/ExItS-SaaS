@@ -13,6 +13,7 @@ import {
   prepareStockRequestTransfer,
   rejectStockRequest,
 } from "@/api/pos/pos-stock-requests-client";
+import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -152,6 +153,26 @@ export function StockRequestDetailPage() {
   const [declineOpen, setDeclineOpen] = useState(false);
   const [approvedQtys, setApprovedQtys] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+
+  function resolveStockRequestActionError(err: unknown): string {
+    if (err instanceof PosApiError) {
+      const detail = err.problem.detail?.trim();
+      if (detail) {
+        return detail;
+      }
+      const title = err.problem.title?.trim();
+      if (title) {
+        return title;
+      }
+      if (err.message.trim()) {
+        return err.message.trim();
+      }
+    }
+    if (err instanceof Error && err.message.trim() && err.message !== "missing" && err.message !== "qty") {
+      return err.message.trim();
+    }
+    return t("stockRequest.actionError");
+  }
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
@@ -251,9 +272,12 @@ export function StockRequestDetailPage() {
       try {
         const transfer = await prepareStockRequestTransfer(workspace, dto.stockRequestId);
         return { phase: "prepared" as const, transfer };
-      } catch {
+      } catch (err) {
         // Approval already committed — surface Approved + prepare retry; do not roll back.
-        return { phase: "prepareFailed" as const };
+        return {
+          phase: "prepareFailed" as const,
+          prepareError: resolveStockRequestActionError(err),
+        };
       }
     },
     onSuccess: async (result) => {
@@ -263,10 +287,15 @@ export function StockRequestDetailPage() {
         return;
       }
       if (result.phase === "prepareFailed") {
-        setActionError(t("stockRequest.approvedButPrepareFailed"));
+        const detail = result.prepareError?.trim();
+        setActionError(
+          detail && detail !== t("stockRequest.actionError")
+            ? `${t("stockRequest.approvedButPrepareFailed")} ${detail}`
+            : t("stockRequest.approvedButPrepareFailed"),
+        );
       }
     },
-    onError: () => setActionError(t("stockRequest.actionError")),
+    onError: (err) => setActionError(resolveStockRequestActionError(err)),
   });
 
   const prepareMutation = useMutation({
@@ -276,7 +305,7 @@ export function StockRequestDetailPage() {
       return prepareStockRequest(workspace, dto.stockRequestId);
     },
     onSuccess: () => void invalidate(),
-    onError: () => setActionError(t("stockRequest.actionError")),
+    onError: (err) => setActionError(resolveStockRequestActionError(err)),
   });
 
   const prepareTransferMutation = useMutation({
@@ -289,7 +318,7 @@ export function StockRequestDetailPage() {
       await invalidate();
       navigate(`/inventory/transfers/${transfer.transferId}`);
     },
-    onError: () => setActionError(t("stockRequest.actionError")),
+    onError: (err) => setActionError(resolveStockRequestActionError(err)),
   });
 
   const rejectMutation = useMutation({
@@ -309,7 +338,7 @@ export function StockRequestDetailPage() {
       setActionError(
         err instanceof Error && err.message === "reason"
           ? t("stockRequest.declineReasonRequired")
-          : t("stockRequest.actionError"),
+          : resolveStockRequestActionError(err),
       );
     },
   });
@@ -321,7 +350,7 @@ export function StockRequestDetailPage() {
       return cancelStockRequest(workspace, dto.stockRequestId);
     },
     onSuccess: () => void invalidate(),
-    onError: () => setActionError(t("stockRequest.actionError")),
+    onError: (err) => setActionError(resolveStockRequestActionError(err)),
   });
 
   if (!workspace) {
