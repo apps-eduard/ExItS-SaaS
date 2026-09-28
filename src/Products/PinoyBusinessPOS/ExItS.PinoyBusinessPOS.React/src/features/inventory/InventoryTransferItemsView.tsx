@@ -24,6 +24,8 @@ export type InventoryTransferSelectedLine = {
   unitOfMeasure: string;
   availableQuantity: number;
   maxQuantity: number;
+  /** Minimum editable qty (0 for multi-line SR shipment skip). Default 1. */
+  minQuantity?: number;
   unitCost: number | null;
   tracksExpiration: boolean;
   allocationMode: "auto" | "manual";
@@ -175,8 +177,10 @@ export function InventoryTransferItemsView({
         <ExitsTableBody>
           {lines.map((line) => {
             const maxQty = line.maxQuantity;
-            const outOfStock = maxQty <= 0;
-            const canDecrease = line.quantity > 1;
+            const minQty = line.minQuantity ?? 1;
+            const outOfStock = maxQty <= 0 && line.quantity > 0;
+            const notInShipment = line.quantity <= 0;
+            const canDecrease = line.quantity > minQty;
             const canIncrease = line.quantity < maxQty;
             const availableLabel = outOfStock
               ? t("transfer.outOfStock")
@@ -188,7 +192,12 @@ export function InventoryTransferItemsView({
                 : null;
 
             return (
-              <ExitsTableRow key={line.key} data-testid={`transfer-line-${line.key}`}>
+              <ExitsTableRow
+                key={line.key}
+                data-testid={`transfer-line-${line.key}`}
+                data-not-in-shipment={notInShipment ? "true" : undefined}
+                className={cn(notInShipment && "opacity-55")}
+              >
                 <ExitsTableCell
                   cellAlign="text"
                   colSize="flex"
@@ -200,7 +209,15 @@ export function InventoryTransferItemsView({
                   {line.sku ? (
                     <div className="text-[length:var(--exits-text-xs)] text-muted">{line.sku}</div>
                   ) : null}
-                  {line.tracksExpiration ? (
+                  {notInShipment ? (
+                    <div
+                      className="mt-1 text-[length:var(--exits-text-xs)] text-muted"
+                      data-testid={`transfer-line-not-in-shipment-${line.key}`}
+                    >
+                      {t("transfer.notInThisShipment")}
+                    </div>
+                  ) : null}
+                  {line.tracksExpiration && !notInShipment ? (
                     <div
                       className="mt-1 text-[length:var(--exits-text-xs)] text-muted"
                       data-testid={`transfer-line-tracks-expiry-${line.key}`}
@@ -293,12 +310,15 @@ export function InventoryTransferItemsView({
                       variant="auto"
                       editOnClick
                       value={line.quantity}
-                      min={0}
+                      min={minQty}
                       precision={4}
                       step={1}
                       unitOfMeasure={line.unitOfMeasure}
                       sellingMode="PerItem"
-                      invalid={Boolean(line.hasIssue) || !(line.quantity > 0)}
+                      invalid={
+                        Boolean(line.hasIssue) ||
+                        (minQty > 0 ? !(line.quantity > 0) : line.quantity < 0)
+                      }
                       decreaseLabel={t("transfer.decreaseQuantity")}
                       increaseLabel={t("transfer.increaseQuantity")}
                       incrementDisabled={!canIncrease}

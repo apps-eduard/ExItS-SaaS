@@ -4599,6 +4599,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.editShipmentTitle": "Edit shipment",
   "transfer.editShipmentLede":
     "Adjust how much of the approved stock request ships now. Products stay fixed to the request.",
+  "transfer.notInThisShipment": "Not in this shipment",
+  "transfer.shipmentRequiresPositiveLine":
+    "Keep at least one product with quantity greater than zero in this shipment.",
   "transfer.shipmentItemsEmpty": "No products in this shipment",
   "transfer.shipmentItemsEmptyDetail":
     "This shipment has no products. Cancel the draft or prepare the stock request again.",

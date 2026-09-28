@@ -480,6 +480,122 @@ public sealed class InventoryTransferUseCaseTests
             BranchA);
         Assert.False(over.IsSuccess);
         Assert.Equal(DomainErrorCodes.InvalidStockRequestQuantity, over.ErrorCode);
+
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prepared.Value.TransferId, ActorA, BranchA);
+        Assert.True(dispatched.IsSuccess, $"{dispatched.ErrorCode}: {dispatched.ErrorMessage}");
+
+        var linked = await fx.Transfers.ListByStockRequestIdAsync(
+            PosOrganizationId.From(OrgA),
+            request.Id);
+        var coverage = StockRequestDispatchCoverage.Compute(request, linked);
+        Assert.Equal(3m, coverage.RemainingToDispatchByProduct[fx.CokeId]);
+        Assert.Equal(7m, coverage.OpenInTransitByProduct[fx.CokeId]);
+    }
+
+    [Fact]
+    public async Task Update_stock_request_draft_omits_zero_qty_lines_and_rejects_all_zero()
+    {
+        var fx = await SeedAsync(cokeOnHand: 50m, spriteOnHand: 40m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [
+                new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece),
+                new StockRequestLineDraft(CatalogProductId.From(fx.SpriteId), 5m, "Sprite", UnitOfMeasure.Piece),
+            ],
+            ActorA,
+            Utc,
+            "260928-003");
+        request.Approve(
+            ActorA,
+            Utc.AddMinutes(1),
+            new Dictionary<Guid, decimal> { [fx.CokeId] = 10m, [fx.SpriteId] = 5m });
+        await fx.StockRequests.AddAsync(request);
+
+        var prepared = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(prepared.IsSuccess, $"{prepared.ErrorCode}: {prepared.ErrorMessage}");
+
+        var skipped = await fx.Update.ExecuteAsync(
+            OrgA,
+            prepared.Value!.TransferId,
+            new UpdateInventoryTransferRequest(
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 7m),
+                    new InventoryTransferLineRequest(fx.SpriteId, 0m),
+                ]),
+            ActorA,
+            BranchA);
+        Assert.True(skipped.IsSuccess, $"{skipped.ErrorCode}: {skipped.ErrorMessage}");
+        Assert.Single(skipped.Value!.Lines);
+        Assert.Equal(fx.CokeId, skipped.Value.Lines.Single().ProductId.Value);
+        Assert.Equal(7m, skipped.Value.Lines.Single().SentQty);
+
+        var allZero = await fx.Update.ExecuteAsync(
+            OrgA,
+            prepared.Value.TransferId,
+            new UpdateInventoryTransferRequest(
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 0m),
+                    new InventoryTransferLineRequest(fx.SpriteId, 0m),
+                ]),
+            ActorA,
+            BranchA);
+        Assert.False(allZero.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidStockRequestQuantity, allZero.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Update_stock_request_single_line_rejects_empty_shipment()
+    {
+        var fx = await SeedAsync(cokeOnHand: 50m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "260928-004");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(request);
+
+        var prepared = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(prepared.IsSuccess, $"{prepared.ErrorCode}: {prepared.ErrorMessage}");
+
+        var empty = await fx.Update.ExecuteAsync(
+            OrgA,
+            prepared.Value!.TransferId,
+            new UpdateInventoryTransferRequest([new InventoryTransferLineRequest(fx.CokeId, 0m)]),
+            ActorA,
+            BranchA);
+        Assert.False(empty.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidStockRequestQuantity, empty.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Update_direct_draft_can_still_add_product()
+    {
+        var fx = await SeedAsync(cokeOnHand: 50m, spriteOnHand: 40m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess);
+
+        var updated = await fx.Update.ExecuteAsync(
+            OrgA,
+            created.Value!.Id.Value,
+            new UpdateInventoryTransferRequest(
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 8m),
+                    new InventoryTransferLineRequest(fx.SpriteId, 4m),
+                ]),
+            ActorA,
+            BranchA);
+        Assert.True(updated.IsSuccess);
+        Assert.Equal(2, updated.Value!.Lines.Count);
     }
 
     [Fact]

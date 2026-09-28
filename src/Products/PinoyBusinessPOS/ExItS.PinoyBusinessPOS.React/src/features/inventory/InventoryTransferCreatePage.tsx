@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -24,6 +24,7 @@ import {
   type InventoryTransferDto,
   type InventoryTransferLineDto,
 } from "@/api/pos/pos-inventory-transfer-client";
+import { getStockRequest } from "@/api/pos/pos-stock-requests-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -84,6 +85,8 @@ type DraftProduct = {
   isTracked: boolean;
   availableQuantity: number;
   eligibleLotQuantity: number | null;
+  /** Cap from SR remaining fulfillment (edit shipment). */
+  shipmentCap: number | null;
   allocationMode: AllocationMode;
   allocations: TransferLotAllocationSlice[];
 };
@@ -124,6 +127,9 @@ function toStockProduct(draft: DraftProduct): TransferDraftStockProduct {
 function expandDraftToRequestLines(drafts: readonly DraftProduct[]) {
   const lines: { productId: string; quantity: number; sourceLotId: string | null }[] = [];
   for (const draft of drafts) {
+    if (!(draft.quantity > 0)) {
+      continue;
+    }
     if (draft.tracksExpiration) {
       for (const slice of draft.allocations) {
         if (!(slice.quantity > 0)) {
@@ -165,6 +171,7 @@ function draftFromTransferLines(
   productLines: readonly InventoryTransferLineDto[],
   lots: readonly PosInventoryLotDto[],
   availableQuantity: number,
+  shipmentCap: number | null = null,
 ): DraftProduct {
   const first = productLines[0]!;
   const tracksExpiration = productLines.some((line) => Boolean(line.sourceLotId));
@@ -197,10 +204,51 @@ function draftFromTransferLines(
     isTracked: true,
     availableQuantity,
     eligibleLotQuantity: tracksExpiration ? eligibleLotQtyFromLots(lots) : null,
+    shipmentCap,
     // Preserve saved lot picks; auto would re-FEFO and may diverge from the draft.
     allocationMode: tracksExpiration ? "manual" : "auto",
     allocations,
   };
+}
+
+function draftFromStockRequestLine(args: {
+  productId: string;
+  name: string;
+  unitOfMeasure: string;
+  quantity: number;
+  availableQuantity: number;
+  shipmentCap: number;
+  lots: readonly PosInventoryLotDto[];
+  tracksExpiration: boolean;
+}): DraftProduct {
+  const allocations =
+    args.tracksExpiration && args.quantity > 0
+      ? (allocateAuto(args.lots, args.quantity) ?? [])
+      : [];
+  return {
+    key: args.productId,
+    productId: args.productId,
+    name: args.name,
+    sku: null,
+    unitOfMeasure: args.unitOfMeasure,
+    quantity: args.quantity,
+    unitCost: null,
+    tracksExpiration: args.tracksExpiration,
+    isTracked: true,
+    availableQuantity: args.availableQuantity,
+    eligibleLotQuantity: args.tracksExpiration ? eligibleLotQtyFromLots(args.lots) : null,
+    shipmentCap: args.shipmentCap,
+    allocationMode: "auto",
+    allocations,
+  };
+}
+
+function shipmentMaxQuantity(line: DraftProduct): number {
+  const stockMax = maxTransferableQuantity(line);
+  if (line.shipmentCap == null) {
+    return stockMax;
+  }
+  return Math.max(0, Math.min(stockMax, line.shipmentCap));
 }
 
 function allocateAuto(
@@ -251,9 +299,11 @@ export function InventoryTransferCreatePage() {
   const [editHydrated, setEditHydrated] = useState(!isEditMode);
   const [editLoadError, setEditLoadError] = useState<string | null>(null);
   const [linkedStockRequestId, setLinkedStockRequestId] = useState<string | null>(null);
+  const [linkedStockRequestNumber, setLinkedStockRequestNumber] = useState<string | null>(null);
   const finderPanelId = "transfer-product-finder-panel";
   const operationIdRef = useRef<string | null>(null);
   const isStockRequestShipment = Boolean(linkedStockRequestId);
+  const allowZeroShipmentQty = isStockRequestShipment;
   const { layout: pickerLayout } = useResponsiveDataLayout({
     tableMinWidthPx: PRODUCT_SELECTION_TABLE_MIN_PX,
   });
@@ -544,36 +594,106 @@ export function InventoryTransferCreatePage() {
 
       setDestinationBranchId(transfer.destinationBranchId);
       setNotes(transfer.notes?.trim() ?? "");
-      setLinkedStockRequestId(transfer.stockRequestId?.trim() || null);
+      const stockRequestId = transfer.stockRequestId?.trim() || null;
+      setLinkedStockRequestId(stockRequestId);
+      setLinkedStockRequestNumber(transfer.stockRequestNumber?.trim() || null);
 
       const groups = groupTransferLinesByProduct(transfer.lines);
       const nextLots: Record<string, PosInventoryLotDto[]> = {};
       const drafts: DraftProduct[] = [];
-      for (const [, productLines] of groups) {
-        const tracksExpiration = productLines.some((line) => Boolean(line.sourceLotId));
-        const productId = productLines[0]!.productId;
-        let lots: PosInventoryLotDto[] = [];
-        if (tracksExpiration) {
+
+      if (stockRequestId) {
+        let stockRequest;
+        try {
+          stockRequest = await getStockRequest(workspace!, stockRequestId);
+        } catch {
+          setEditLoadError(t("transfer.loadFailed"));
+          return;
+        }
+        setLinkedStockRequestNumber(
+          stockRequest.requestNumber?.trim() || transfer.stockRequestNumber?.trim() || null,
+        );
+
+        for (const srLine of stockRequest.lines) {
+          const productId = srLine.productId;
+          const onTransfer = groups.get(productId) ?? [];
+          const transferQty = onTransfer.reduce((sum, line) => sum + line.sentQty, 0);
+          // Draft does not reduce RemainingToDispatch — remaining is already the editable max.
+          const remaining = Math.max(0, srLine.remainingToDispatchQuantity ?? 0);
+          const shipmentCap = remaining;
+          if (shipmentCap <= 0 && transferQty <= 0) {
+            continue;
+          }
+
+          const tracksExpiration =
+            onTransfer.some((line) => Boolean(line.sourceLotId)) || false;
+          let lots: PosInventoryLotDto[] = [];
+          // Prefer transfer lot presence; also load lots when product tracks expiry on account.
+          let availableQuantity = 0;
+          let accountTracksExpiration = tracksExpiration;
           try {
-            const result = await listProductLots(workspace!, productId, { pageSize: 50 });
-            lots = result.items;
-            nextLots[productId] = lots;
+            const account = await getInventoryProduct(workspace!, productId);
+            availableQuantity = Math.max(0, resolveAvailableQuantity(account));
+            accountTracksExpiration = account.tracksExpiration === true;
           } catch {
-            nextLots[productId] = [];
+            availableQuantity = 0;
+          }
+
+          const needsLots = tracksExpiration || accountTracksExpiration;
+          if (needsLots) {
+            try {
+              const result = await listProductLots(workspace!, productId, { pageSize: 50 });
+              lots = result.items;
+              nextLots[productId] = lots;
+            } catch {
+              nextLots[productId] = [];
+            }
+          }
+
+          if (onTransfer.length > 0) {
+            drafts.push(
+              draftFromTransferLines(onTransfer, lots, availableQuantity, shipmentCap),
+            );
+          } else {
+            drafts.push(
+              draftFromStockRequestLine({
+                productId,
+                name: srLine.nameSnapshot,
+                unitOfMeasure: srLine.unitOfMeasure,
+                quantity: 0,
+                availableQuantity,
+                shipmentCap,
+                lots,
+                tracksExpiration: accountTracksExpiration,
+              }),
+            );
           }
         }
+      } else {
+        for (const [, productLines] of groups) {
+          const tracksExpiration = productLines.some((line) => Boolean(line.sourceLotId));
+          const productId = productLines[0]!.productId;
+          let lots: PosInventoryLotDto[] = [];
+          if (tracksExpiration) {
+            try {
+              const result = await listProductLots(workspace!, productId, { pageSize: 50 });
+              lots = result.items;
+              nextLots[productId] = lots;
+            } catch {
+              nextLots[productId] = [];
+            }
+          }
 
-        // Never leave edit lines at availableQuantity 0 by default — picker refresh only
-        // covers products on the current inventory page and can miss draft lines.
-        let availableQuantity = 0;
-        try {
-          const account = await getInventoryProduct(workspace!, productId);
-          availableQuantity = Math.max(0, resolveAvailableQuantity(account));
-        } catch {
-          availableQuantity = 0;
+          let availableQuantity = 0;
+          try {
+            const account = await getInventoryProduct(workspace!, productId);
+            availableQuantity = Math.max(0, resolveAvailableQuantity(account));
+          } catch {
+            availableQuantity = 0;
+          }
+
+          drafts.push(draftFromTransferLines(productLines, lots, availableQuantity));
         }
-
-        drafts.push(draftFromTransferLines(productLines, lots, availableQuantity));
       }
 
       if (cancelled) {
@@ -719,6 +839,7 @@ export function InventoryTransferCreatePage() {
           isTracked: row.isTracked,
           availableQuantity,
           eligibleLotQuantity,
+          shipmentCap: null,
           allocationMode: "auto",
           allocations,
         },
@@ -727,16 +848,29 @@ export function InventoryTransferCreatePage() {
   }
 
   function removeLine(key: string) {
+    if (isStockRequestShipment) {
+      return;
+    }
     setLines((prev) => prev.filter((l) => l.key !== key));
   }
 
   function updateLineQuantity(key: string, raw: string) {
     const parsed = parseTransferQuantity(raw);
     if (parsed === "empty" || parsed === "invalid") {
-      setLines((prev) =>
-        prev.map((line) => (line.key === key ? { ...line, quantity: 0, allocations: [] } : line)),
-      );
-      setError(t("transfer.invalidQuantity"));
+      setLines((prev) => {
+        const target = prev.find((l) => l.key === key);
+        if (!target) {
+          return prev;
+        }
+        if (!allowZeroShipmentQty) {
+          setError(t("transfer.invalidQuantity"));
+          return prev;
+        }
+        setError(null);
+        return prev.map((line) =>
+          line.key === key ? { ...line, quantity: 0, allocations: [] } : line,
+        );
+      });
       return;
     }
     setLines((prev) => {
@@ -744,12 +878,15 @@ export function InventoryTransferCreatePage() {
       if (!target) {
         return prev;
       }
+      const nextQty = allowZeroShipmentQty ? Math.max(0, parsed) : Math.max(1, parsed);
       let nextAllocations = target.allocations;
       let nextMode = target.allocationMode;
-      if (target.tracksExpiration) {
+      if (nextQty <= 0) {
+        nextAllocations = [];
+      } else if (target.tracksExpiration) {
         if (target.allocationMode === "auto") {
           const lots = lotsCache[target.productId] ?? [];
-          const auto = allocateAuto(lots, parsed);
+          const auto = allocateAuto(lots, nextQty);
           nextAllocations = auto ?? [];
           nextMode = "auto";
         }
@@ -757,14 +894,21 @@ export function InventoryTransferCreatePage() {
       }
       const nextLine: DraftProduct = {
         ...target,
-        quantity: parsed,
+        quantity: nextQty,
         allocations: nextAllocations,
         allocationMode: nextMode,
       };
-      const issue = evaluateTransferDraftProduct(toStockProduct(nextLine));
-      if (issue) {
-        const cap = maxTransferableQuantity(nextLine);
-        setError(stockIssueMessage(issue, cap, nextLine.unitOfMeasure));
+      const issue =
+        nextQty > 0 ? evaluateTransferDraftProduct(toStockProduct(nextLine)) : null;
+      const overShipmentCap =
+        nextQty > 0 &&
+        nextLine.shipmentCap != null &&
+        nextQty > nextLine.shipmentCap;
+      if (issue || overShipmentCap) {
+        const cap = shipmentMaxQuantity(nextLine);
+        setError(
+          stockIssueMessage(issue ?? "over_stock", cap, nextLine.unitOfMeasure),
+        );
       } else {
         setError(null);
       }
@@ -823,33 +967,47 @@ export function InventoryTransferCreatePage() {
   const lineIssues = useMemo(() => {
     const map = new Map<string, TransferLineStockIssue>();
     for (const line of lines) {
+      if (!(line.quantity > 0)) {
+        continue;
+      }
       const issue = evaluateTransferDraftProduct(toStockProduct(line));
       if (issue) {
         map.set(line.key, issue);
+      } else if (line.shipmentCap != null && line.quantity > line.shipmentCap) {
+        map.set(line.key, "over_stock");
       }
     }
     return map;
   }, [lines]);
 
   const createBlockedReason = useMemo(() => {
-    if (lines.length === 0) {
-      return t("transfer.draftEmpty");
+    const positiveCount = lines.filter((line) => line.quantity > 0).length;
+    if (lines.length === 0 || positiveCount === 0) {
+      return isStockRequestShipment
+        ? t("transfer.shipmentRequiresPositiveLine")
+        : t("transfer.draftEmpty");
+    }
+    if (isStockRequestShipment && lines.length === 1 && !(lines[0]!.quantity > 0)) {
+      return t("transfer.shipmentRequiresPositiveLine");
     }
     if (!destinationBranchId) {
       return t("transfer.destinationRequired");
     }
     for (const line of lines) {
+      if (!(line.quantity > 0)) {
+        continue;
+      }
       const issue = lineIssues.get(line.key);
       if (!issue) {
         continue;
       }
-      const cap = maxTransferableQuantity(line);
+      const cap = shipmentMaxQuantity(line);
       return stockIssueMessage(issue, cap, line.unitOfMeasure);
     }
     return null;
     // stockIssueMessage uses t/sourceName; intentional.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines, lineIssues, destinationBranchId, sourceName, t]);
+  }, [lines, lineIssues, destinationBranchId, sourceName, t, isStockRequestShipment]);
 
   async function refreshAvailability() {
     await queryClient.invalidateQueries({ queryKey: ["inventory", "transfer-picker"] });
@@ -1096,8 +1254,13 @@ export function InventoryTransferCreatePage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
+  const positiveLineCount = lines.filter((line) => line.quantity > 0).length;
   const createDisabled =
-    !online || saving || Boolean(createBlockedReason) || lines.length === 0 || !destinationBranchId;
+    !online ||
+    saving ||
+    Boolean(createBlockedReason) ||
+    positiveLineCount === 0 ||
+    !destinationBranchId;
 
   const pageBackTo =
     isEditMode && editTransferId ? `/inventory/transfers/${editTransferId}` : "/inventory/transfers";
@@ -1191,6 +1354,23 @@ export function InventoryTransferCreatePage() {
               />
             ),
           },
+          ...(isStockRequestShipment && linkedStockRequestId
+            ? [
+                {
+                  key: "stock-request",
+                  label: t("transfer.fulfillsStockRequest"),
+                  value: (
+                    <Link
+                      to={`/inventory/stock-requests/${linkedStockRequestId}`}
+                      className="font-semibold text-primary underline-offset-2 hover:underline"
+                      data-testid="transfer-edit-fulfills-stock-request"
+                    >
+                      {linkedStockRequestNumber ?? linkedStockRequestId.slice(0, 8)}
+                    </Link>
+                  ),
+                },
+              ]
+            : []),
         ]}
         testId="transfer-create-details"
         footer={
@@ -1265,7 +1445,8 @@ export function InventoryTransferCreatePage() {
               quantity: line.quantity,
               unitOfMeasure: line.unitOfMeasure,
               availableQuantity: line.availableQuantity,
-              maxQuantity: maxTransferableQuantity(line),
+              maxQuantity: shipmentMaxQuantity(line),
+              minQuantity: allowZeroShipmentQty ? 0 : 1,
               unitCost: line.unitCost,
               tracksExpiration: line.tracksExpiration,
               allocationMode: line.allocationMode,
@@ -1273,9 +1454,10 @@ export function InventoryTransferCreatePage() {
               hasIssue: Boolean(lineIssues.get(line.key)),
               onQtyChange: (next) => updateLineQuantity(line.key, String(next)),
               onRemove: () => removeLine(line.key),
-              onChangeLots: line.tracksExpiration
-                ? () => setChangeLotsProductId(line.productId)
-                : null,
+              onChangeLots:
+                line.tracksExpiration && line.quantity > 0
+                  ? () => setChangeLotsProductId(line.productId)
+                  : null,
             }))}
             formatAvailable={formatAvailable}
             t={t}

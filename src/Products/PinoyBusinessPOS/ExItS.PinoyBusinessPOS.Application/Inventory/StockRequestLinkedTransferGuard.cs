@@ -7,11 +7,21 @@ namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 /// <summary>
 /// Stock-request-linked draft transfers may only ship approved SR products,
 /// at quantities not exceeding remaining needs.
+/// Callers must omit zero-qty lines before invoking (those mean "not in this shipment").
 /// Draft transfers do not reduce <see cref="StockRequestDispatchCoverage"/> remaining
 /// (only InTransit/PartiallyReceived do); other drafts' qty are reserved explicitly.
 /// </summary>
 internal static class StockRequestLinkedTransferGuard
 {
+    /// <summary>
+    /// Drops non-positive quantities. Empty result means the shipment has no lines to keep.
+    /// </summary>
+    internal static IReadOnlyList<InventoryTransferLineRequest> OmitZeroQuantityLines(
+        IReadOnlyList<InventoryTransferLineRequest>? lines) =>
+        (lines ?? Array.Empty<InventoryTransferLineRequest>())
+            .Where(l => l.Quantity > 0m)
+            .ToList();
+
     internal static ApplicationResult<InventoryTransfer>? ValidateProposedLines(
         StockRequest stockRequest,
         IReadOnlyList<InventoryTransfer> linkedTransfers,

@@ -472,6 +472,18 @@ public sealed class CreateInventoryTransfer
         }
 
         var orgId = PosOrganizationId.From(organizationId);
+        var isStockRequestLinked =
+            request.StockRequestId is Guid linkedId && linkedId != Guid.Empty;
+        var linesForDraft = isStockRequestLinked
+            ? StockRequestLinkedTransferGuard.OmitZeroQuantityLines(request.Lines)
+            : request.Lines;
+        if (isStockRequestLinked && linesForDraft.Count == 0)
+        {
+            return ApplicationResult<InventoryTransfer>.Failure(
+                DomainErrorCodes.InvalidStockRequestQuantity,
+                "At least one shipment line with quantity greater than zero is required.");
+        }
+
         var drafts = await InventoryTransferLineFactory
             .CreateDraftsAsync(
                 _products,
@@ -479,7 +491,7 @@ public sealed class CreateInventoryTransfer
                 _expirationPolicies,
                 orgId,
                 PosBranchId.From(request.SourceBranchId),
-                request.Lines,
+                linesForDraft,
                 _clock.UtcNow,
                 cancellationToken)
             .ConfigureAwait(false);
@@ -694,6 +706,16 @@ public sealed class UpdateInventoryTransfer
             return branchGuard;
         }
 
+        var linesForDraft = transfer.StockRequestId is not null
+            ? StockRequestLinkedTransferGuard.OmitZeroQuantityLines(request.Lines)
+            : request.Lines;
+        if (transfer.StockRequestId is not null && linesForDraft.Count == 0)
+        {
+            return ApplicationResult<InventoryTransfer>.Failure(
+                DomainErrorCodes.InvalidStockRequestQuantity,
+                "At least one shipment line with quantity greater than zero is required.");
+        }
+
         var drafts = await InventoryTransferLineFactory
             .CreateDraftsAsync(
                 _products,
@@ -701,7 +723,7 @@ public sealed class UpdateInventoryTransfer
                 _expirationPolicies,
                 orgId,
                 transfer.SourceBranchId,
-                request.Lines,
+                linesForDraft,
                 _clock.UtcNow,
                 cancellationToken)
             .ConfigureAwait(false);
