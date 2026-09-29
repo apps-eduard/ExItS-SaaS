@@ -883,6 +883,16 @@ public sealed class StockRequestWorkflowUseCaseTests
                 Items.Where(t => transferIds.Contains(t.Id.Value))
                     .ToDictionary(t => t.Id.Value, t => t.TransferNumber));
 
+        public Task<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>> GetTransferQueueHintsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>>(
+                Items.Where(t => transferIds.Contains(t.Id.Value))
+                    .ToDictionary(
+                        t => t.Id.Value,
+                        t => new InventoryTransferQueueHint(t.TransferNumber, t.DestinationBranchId.Value)));
+
         public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
         {
             Items.Add(transfer);

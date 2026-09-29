@@ -651,6 +651,14 @@ public sealed class InventoryQueryService
 
         var lotsByProduct = lots.GroupBy(l => l.ProductId.Value).ToDictionary(g => g.Key, g => g.ToList());
         var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
+        var warningByProduct = new Dictionary<Guid, int>();
+        foreach (var account in tracked)
+        {
+            if (account.ExpirationWarningDays is int days && days > 0)
+            {
+                warningByProduct[account.ProductId] = days;
+            }
+        }
 
         return accounts.Select(account =>
         {
@@ -666,6 +674,10 @@ public sealed class InventoryQueryService
                 ? policy.StopSellingDaysBeforeExpiry
                 : InventoryLotSaleEligibility.DefaultStopSellingDays;
             var buckets = InventoryLotFefo.ProjectSaleBuckets(productLots, today, stopDays);
+            var warningDays = warningByProduct.TryGetValue(account.ProductId, out var days)
+                ? days
+                : InventoryLot.DefaultWarningDays;
+            var nearExpiry = InventoryLotFefo.NearExpiryQuantity(productLots, today, warningDays);
             var saleEligible = Math.Min(account.AvailableQuantity, buckets.Sellable);
             var stockStatus = string.Equals(
                     account.MonitoringMode,
@@ -680,6 +692,7 @@ public sealed class InventoryQueryService
                 AvailableQuantity = saleEligible,
                 SellableQuantity = buckets.Sellable,
                 ExpiredQuantity = buckets.Expired,
+                NearExpiryQuantity = nearExpiry,
                 SalePolicyBlockedQuantity = buckets.PolicyBlocked,
                 StockStatus = stockStatus,
             };

@@ -11,6 +11,7 @@ describe("inventory-detail-helpers stock exceptions", () => {
       inspectionHoldQuantity: 0,
       pendingReturnQuantity: 2,
       expiredQuantity: 0,
+      nearExpiryQuantity: 3,
       salePolicyBlockedQuantity: 1,
       inTransitOutboundQuantity: 0,
       inTransitInboundQuantity: 4,
@@ -18,6 +19,7 @@ describe("inventory-detail-helpers stock exceptions", () => {
     expect(rows.map((r) => r.kind)).toEqual([
       "damaged",
       "pendingReturn",
+      "nearExpiry",
       "saleBlocked",
       "inTransitInbound",
     ]);
@@ -30,6 +32,7 @@ describe("inventory-detail-helpers stock exceptions", () => {
         availableQuantity: 31,
         damagedQuantity: 5,
         pendingReturnQuantity: 0,
+        nearExpiryQuantity: 8,
       },
       {
         onHand: "on hand",
@@ -39,12 +42,13 @@ describe("inventory-detail-helpers stock exceptions", () => {
           inspectionHold: "Inspection hold",
           pendingReturn: "Pending return",
           expired: "Expired",
+          nearExpiry: "Near expiry",
           saleBlocked: "Expiry blocked",
           inTransitOutbound: "Transit out",
           inTransitInbound: "In transit in",
         },
       },
     );
-    expect(line).toBe("40 on hand · 31 available · 5 damaged");
+    expect(line).toBe("40 on hand · 31 available · 5 damaged · 8 near expiry");
   });
 });

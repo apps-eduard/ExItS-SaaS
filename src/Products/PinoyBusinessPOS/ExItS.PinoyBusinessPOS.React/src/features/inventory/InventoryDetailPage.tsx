@@ -982,6 +982,7 @@ export function InventoryDetailPage() {
                                               "inventory.productSummary.pendingReturn",
                                             ),
                                             expired: t("inventory.expiredQty"),
+                                            nearExpiry: t("inventory.nearExpiryQty"),
                                             saleBlocked: t("inventory.saleBlocked"),
                                             inTransitOutbound: t("inventory.inTransitOutbound"),
                                             inTransitInbound: t("inventory.inTransitInbound"),

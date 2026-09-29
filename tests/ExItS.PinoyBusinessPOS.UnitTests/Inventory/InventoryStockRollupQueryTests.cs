@@ -429,14 +429,90 @@ public sealed class InventoryStockRollupQueryTests
         Assert.Equal(90m, main.OnHandQuantity);
         Assert.Equal(0m, main.ReservedQuantity);
         Assert.Equal(40m, main.AvailableQuantity);
+        Assert.Equal(50m, main.ExpiredQuantity);
+        Assert.Equal(40m, main.NearExpiryQuantity);
+        Assert.Equal(40m, main.SellableQuantity);
 
         var iloilo = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == IloiloBranch);
         Assert.Equal(60m, iloilo.AvailableQuantity);
+        Assert.Null(iloilo.NearExpiryQuantity);
+        Assert.Null(iloilo.ExpiredQuantity);
 
         Assert.Equal(150m, rollup.OrganizationOnHandQuantity);
         Assert.Equal(0m, rollup.OrganizationReservedQuantity);
         Assert.Equal(100m, rollup.OrganizationAvailableQuantity);
         Assert.Equal(100m, rollup.AccessibleAvailableQuantity);
+    }
+
+    [Fact]
+    public async Task Rollup_exposes_near_expiry_per_branch_when_viewing_from_another_branch()
+    {
+        // Iloilo has near-expiry lots; Main has none. Branch breakdown must still show
+        // Iloilo near-expiry so Main viewers see it under "other branches".
+        var clockUtc = new DateTimeOffset(2026, 9, 27, 12, 0, 0, TimeSpan.Zero);
+        var settings = new InMemoryBranchExpirationSettings();
+        settings.Items.Add(InventoryBranchExpirationSetting.CreateEnabled(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(IloiloBranch),
+            CatalogProductId.From(Product),
+            expirationWarningDays: 7,
+            actorId: Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            utcNow: clockUtc));
+        settings.Items.Add(InventoryBranchExpirationSetting.CreateEnabled(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(MainBranch),
+            CatalogProductId.From(Product),
+            expirationWarningDays: 7,
+            actorId: Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            utcNow: clockUtc));
+
+        var lots = new RollupLots(
+        [
+            InventoryLot.Create(
+                PosOrganizationId.From(Org),
+                CatalogProductId.From(Product),
+                new DateOnly(2026, 9, 30),
+                25m,
+                clockUtc,
+                PosBranchId.From(IloiloBranch),
+                "ILO-NEAR"),
+            InventoryLot.Create(
+                PosOrganizationId.From(Org),
+                CatalogProductId.From(Product),
+                new DateOnly(2026, 12, 1),
+                40m,
+                clockUtc,
+                PosBranchId.From(MainBranch),
+                "MAIN-GOOD"),
+        ]);
+
+        var harness = Harness.WithAreas(
+            authorized:
+            [
+                new AuthorizedBranchGrouping(MainBranch, "Main Branch", Panay, "PANAY"),
+                new AuthorizedBranchGrouping(IloiloBranch, "Iloilo", Panay, "PANAY"),
+            ],
+            accountOnHand: 65m,
+            accountReserved: 0m,
+            balances:
+            [
+                Balance(MainBranch, 40m, 0m),
+                Balance(IloiloBranch, 25m, 0m),
+            ],
+            lots: lots,
+            expirationPolicies: new BranchExpirationPolicyResolver(settings),
+            clock: new RollupClock(clockUtc));
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        var main = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == MainBranch);
+        Assert.Equal(0m, main.NearExpiryQuantity);
+        Assert.Equal(40m, main.SellableQuantity);
+
+        var iloilo = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == IloiloBranch);
+        Assert.Equal(25m, iloilo.NearExpiryQuantity);
+        Assert.Equal(25m, iloilo.SellableQuantity);
+        Assert.Equal(0m, iloilo.ExpiredQuantity);
     }
 
     private sealed class Harness

@@ -268,6 +268,7 @@ export type PosInventoryBranchRollupDto = {
   damagedQuantity?: number;
   sellableQuantity?: number | null;
   expiredQuantity?: number | null;
+  nearExpiryQuantity?: number | null;
   salePolicyBlockedQuantity?: number | null;
   inTransitOutboundQuantity?: number;
   inTransitInboundQuantity?: number;

@@ -3855,6 +3855,16 @@ public sealed class InventoryTransferUseCaseTests
                 _items.Where(t => transferIds.Contains(t.Id.Value))
                     .ToDictionary(t => t.Id.Value, t => t.TransferNumber));
 
+        public Task<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>> GetTransferQueueHintsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>>(
+                _items.Where(t => transferIds.Contains(t.Id.Value))
+                    .ToDictionary(
+                        t => t.Id.Value,
+                        t => new InventoryTransferQueueHint(t.TransferNumber, t.DestinationBranchId.Value)));
+
         public Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
             PosOrganizationId organizationId,
             InventoryTransferId rootTransferId,

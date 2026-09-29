@@ -49,7 +49,8 @@ public sealed record PosInventoryBranchRollupDto(
     decimal? ExpiredQuantity = null,
     decimal? SalePolicyBlockedQuantity = null,
     decimal InTransitOutboundQuantity = 0m,
-    decimal InTransitInboundQuantity = 0m);
+    decimal InTransitInboundQuantity = 0m,
+    decimal? NearExpiryQuantity = null);
 
 /// <summary>
 /// Derived area subtotal. Never persisted: moving a branch between areas changes this projection only.
@@ -231,6 +232,7 @@ public sealed class InventoryStockRollupQuery
                 decimal? sellable = null;
                 decimal? expired = null;
                 decimal? saleBlocked = null;
+                decimal? nearExpiry = null;
                 expirationByBranch.TryGetValue(branch.BranchId, out var expirationPolicy);
                 if (expirationPolicy.TracksExpiration)
                 {
@@ -247,6 +249,10 @@ public sealed class InventoryStockRollupQuery
                         sellable = buckets.Sellable;
                         expired = buckets.Expired;
                         saleBlocked = buckets.PolicyBlocked;
+                        nearExpiry = InventoryLotFefo.NearExpiryQuantity(
+                            branchLots,
+                            today,
+                            expirationPolicy.EffectiveWarningDays);
                         available = Math.Min(available, buckets.Sellable);
                     }
                 }
@@ -266,7 +272,8 @@ public sealed class InventoryStockRollupQuery
                         damaged,
                         sellable,
                         expired,
-                        saleBlocked)
+                        saleBlocked,
+                        NearExpiryQuantity: nearExpiry)
                 };
             })
             .ToList();

@@ -48,6 +48,7 @@ export type StockExceptionKind =
   | "inspectionHold"
   | "pendingReturn"
   | "expired"
+  | "nearExpiry"
   | "saleBlocked"
   | "inTransitOutbound"
   | "inTransitInbound";
@@ -69,6 +70,7 @@ export function listNonZeroStockExceptions(quantities: {
   inspectionHoldQuantity?: number | null;
   pendingReturnQuantity?: number | null;
   expiredQuantity?: number | null;
+  nearExpiryQuantity?: number | null;
   salePolicyBlockedQuantity?: number | null;
   saleBlockedQuantity?: number | null;
   inTransitOutboundQuantity?: number | null;
@@ -96,6 +98,11 @@ export function listNonZeroStockExceptions(quantities: {
       kind: "expired",
       quantity: nonNegative(quantities.expiredQuantity ?? resolveExpiredQuantity(quantities)),
       testId: "inventory-exception-expired",
+    },
+    {
+      kind: "nearExpiry",
+      quantity: nonNegative(quantities.nearExpiryQuantity),
+      testId: "inventory-exception-near-expiry",
     },
     {
       kind: "saleBlocked",
@@ -132,6 +139,7 @@ export function stockExceptionLabelKey(
   | "inventory.bucketInspectionHold"
   | "inventory.productSummary.pendingReturn"
   | "inventory.expiredQty"
+  | "inventory.nearExpiryQty"
   | "inventory.saleBlocked"
   | "inventory.inTransitOutbound"
   | "inventory.inTransitInbound" {
@@ -144,6 +152,8 @@ export function stockExceptionLabelKey(
       return "inventory.productSummary.pendingReturn";
     case "expired":
       return "inventory.expiredQty";
+    case "nearExpiry":
+      return "inventory.nearExpiryQty";
     case "saleBlocked":
       return "inventory.saleBlocked";
     case "inTransitOutbound":
@@ -177,6 +187,7 @@ export function formatBranchRollupMetricsLine(
     | "inspectionHoldQuantity"
     | "pendingReturnQuantity"
     | "expiredQuantity"
+    | "nearExpiryQuantity"
     | "salePolicyBlockedQuantity"
     | "inTransitOutboundQuantity"
     | "inTransitInboundQuantity"
