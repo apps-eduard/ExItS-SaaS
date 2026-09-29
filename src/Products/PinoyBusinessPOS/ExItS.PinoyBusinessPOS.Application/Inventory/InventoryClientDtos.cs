@@ -52,7 +52,12 @@ public sealed record PosInventoryAccountDto(
     /// </summary>
     decimal? SalePolicyBlockedQuantity = null,
     decimal InspectionHoldQuantity = 0m,
-    decimal DamagedQuantity = 0m);
+    decimal DamagedQuantity = 0m,
+    /// <summary>
+    /// Derived SUM of RemainingToDispatch for open stock requests sourced from this branch.
+    /// Not a sales/customer <see cref="ReservedQuantity"/> ledger hold.
+    /// </summary>
+    decimal StockRequestCommittedQuantity = 0m);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,

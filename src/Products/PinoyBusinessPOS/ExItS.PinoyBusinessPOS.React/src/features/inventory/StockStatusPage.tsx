@@ -27,6 +27,8 @@ import {
   ExitsTablePagination,
   ExitsTableRow,
   ExitsTableToolbar,
+  cycleExitsTableSort,
+  type ExitsTableSortDirection,
 } from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -61,6 +63,103 @@ const STOCK_STATES: InventoryStockStatusState[] = [
 ];
 
 type BranchScope = "current" | "all";
+
+type StockStatusSortKey =
+  | "product"
+  | "category"
+  | "branch"
+  | "onHand"
+  | "sellable"
+  | "reserved"
+  | "committed"
+  | "available"
+  | "damaged"
+  | "hold"
+  | "pendingReturn"
+  | "expired"
+  | "saleBlocked"
+  | "incoming"
+  | "inTransitOut";
+
+function compareText(a: string | null | undefined, b: string | null | undefined): number {
+  return (a ?? "").localeCompare(b ?? "", undefined, { sensitivity: "base" });
+}
+
+function compareNumber(a: number, b: number): number {
+  return a - b;
+}
+
+function sortStockStatusRows(
+  rows: ReadonlyArray<InventoryStockStatusRowDto>,
+  sortKey: StockStatusSortKey | null,
+  sortDirection: ExitsTableSortDirection,
+): InventoryStockStatusRowDto[] {
+  if (!sortKey || !sortDirection) {
+    return [...rows];
+  }
+  const factor = sortDirection === "asc" ? 1 : -1;
+  return [...rows].sort((left, right) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case "product":
+        cmp = compareText(left.productName, right.productName);
+        break;
+      case "category":
+        cmp = compareText(left.categoryName, right.categoryName);
+        break;
+      case "branch":
+        cmp = compareText(left.branchName, right.branchName);
+        break;
+      case "onHand":
+        cmp = compareNumber(left.onHandQuantity, right.onHandQuantity);
+        break;
+      case "sellable":
+        cmp = compareNumber(left.sellableQuantity, right.sellableQuantity);
+        break;
+      case "reserved":
+        cmp = compareNumber(left.reservedQuantity, right.reservedQuantity);
+        break;
+      case "committed":
+        cmp = compareNumber(
+          left.stockRequestCommittedQuantity,
+          right.stockRequestCommittedQuantity,
+        );
+        break;
+      case "available":
+        cmp = compareNumber(left.availableQuantity, right.availableQuantity);
+        break;
+      case "damaged":
+        cmp = compareNumber(left.damagedQuantity, right.damagedQuantity);
+        break;
+      case "hold":
+        cmp = compareNumber(left.inspectionHoldQuantity, right.inspectionHoldQuantity);
+        break;
+      case "pendingReturn":
+        cmp = compareNumber(left.pendingReturnQuantity, right.pendingReturnQuantity);
+        break;
+      case "expired":
+        cmp = compareNumber(left.expiredQuantity, right.expiredQuantity);
+        break;
+      case "saleBlocked":
+        cmp = compareNumber(left.saleBlockedQuantity, right.saleBlockedQuantity);
+        break;
+      case "incoming":
+        cmp = compareNumber(left.inTransitInboundQuantity, right.inTransitInboundQuantity);
+        break;
+      case "inTransitOut":
+        cmp = compareNumber(left.inTransitOutboundQuantity, right.inTransitOutboundQuantity);
+        break;
+    }
+    if (cmp !== 0) {
+      return cmp * factor;
+    }
+    cmp = compareText(left.productName, right.productName);
+    if (cmp !== 0) {
+      return cmp;
+    }
+    return compareText(left.branchName, right.branchName);
+  });
+}
 
 function stockStateLabelKey(state: InventoryStockStatusState): MessageKey {
   switch (state) {
@@ -114,6 +213,8 @@ export function StockStatusPage() {
   const [branchScope, setBranchScope] = useState<BranchScope>("current");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const [sortKey, setSortKey] = useState<StockStatusSortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<ExitsTableSortDirection>(null);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -185,7 +286,31 @@ export function StockStatusPage() {
       ),
   });
 
-  const rows = query.data?.rows ?? [];
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const category of categoriesQuery.data?.items ?? []) {
+      const name = category.name?.trim();
+      if (name) {
+        map.set(category.categoryId, name);
+      }
+    }
+    return map;
+  }, [categoriesQuery.data?.items]);
+
+  const rows = useMemo(() => {
+    const source = query.data?.rows ?? [];
+    const withCategory = source.map((row) => {
+      if (row.categoryName?.trim()) {
+        return row;
+      }
+      if (!row.categoryId) {
+        return row;
+      }
+      const resolved = categoryNameById.get(row.categoryId);
+      return resolved ? { ...row, categoryName: resolved } : row;
+    });
+    return sortStockStatusRows(withCategory, sortKey, sortDirection);
+  }, [categoryNameById, query.data?.rows, sortDirection, sortKey]);
   const totalCount = query.data?.totalCount ?? 0;
   const generatedAtUtc = query.data?.generatedAtUtc ?? new Date().toISOString();
 
@@ -223,6 +348,12 @@ export function StockStatusPage() {
     setSearchParams(nextParams, { replace: true });
   }
 
+  function onSort(nextKey: StockStatusSortKey) {
+    const next = cycleExitsTableSort(sortKey, sortDirection, nextKey);
+    setSortKey((next.key as StockStatusSortKey | null) ?? null);
+    setSortDirection(next.direction);
+  }
+
   async function runOutput(action: "csv" | "xlsx" | "print") {
     try {
       const exportArgs = {
@@ -253,6 +384,7 @@ export function StockStatusPage() {
 
   const toolbar = (
     <ExitsTableToolbar
+      className="stock-status-toolbar"
       search={
         <SearchField
           label={t("stockStatus.search")}
@@ -264,37 +396,33 @@ export function StockStatusPage() {
         />
       }
       filter={
-        <div className="flex min-w-0 flex-wrap items-end gap-2">
-          <label className="flex min-w-[10rem] flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span className="text-muted">{t("stockStatus.branchFilter")}</span>
-            <select
-              className="exits-select h-9 rounded-[var(--exits-radius-md)] border border-border bg-background px-2"
-              value={branchScope}
-              onChange={(e) => setBranchScope(e.target.value as BranchScope)}
-              data-testid="stock-status-branch-filter"
-            >
-              <option value="current">{t("stockStatus.scopeCurrentBranch")}</option>
-              {canSelectAllBranches ? (
-                <option value="all">{t("stockStatus.scopeAllBranches")}</option>
-              ) : null}
-            </select>
-          </label>
-          <label className="flex min-w-[10rem] flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span className="text-muted">{t("stockStatus.categoryFilter")}</span>
-            <select
-              className="exits-select h-9 rounded-[var(--exits-radius-md)] border border-border bg-background px-2"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              data-testid="stock-status-category-filter"
-            >
-              <option value="">{t("stockStatus.allCategories")}</option>
-              {(categoriesQuery.data?.items ?? []).map((category) => (
-                <option key={category.categoryId} value={category.categoryId}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="stock-status-toolbar__filters">
+          <select
+            className="exits-select stock-status-toolbar__select"
+            value={branchScope}
+            onChange={(e) => setBranchScope(e.target.value as BranchScope)}
+            aria-label={t("stockStatus.branchFilter")}
+            data-testid="stock-status-branch-filter"
+          >
+            <option value="current">{t("stockStatus.scopeCurrentBranch")}</option>
+            {canSelectAllBranches ? (
+              <option value="all">{t("stockStatus.scopeAllBranches")}</option>
+            ) : null}
+          </select>
+          <select
+            className="exits-select stock-status-toolbar__select"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            aria-label={t("stockStatus.categoryFilter")}
+            data-testid="stock-status-category-filter"
+          >
+            <option value="">{t("stockStatus.allCategories")}</option>
+            {(categoriesQuery.data?.items ?? []).map((category) => (
+              <option key={category.categoryId} value={category.categoryId}>
+                {category.name}
+              </option>
+            ))}
+          </select>
         </div>
       }
       output={
@@ -318,44 +446,164 @@ export function StockStatusPage() {
       <ExitsTable>
         <ExitsTableHeader>
           <ExitsTableRow>
-            <ExitsTableHead cellAlign="text" colSize="flex">
+            <ExitsTableHead
+              cellAlign="text"
+              colSize="flex"
+              sortable
+              sortDirection={sortKey === "product" ? sortDirection : null}
+              onSort={() => onSort("product")}
+              title={t("stockStatus.colProductHint")}
+            >
               {t("stockStatus.colProduct")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="text" className="hidden lg:table-cell">
+            <ExitsTableHead
+              cellAlign="text"
+              className="stock-status-col--category hidden lg:table-cell"
+              sortable
+              sortDirection={sortKey === "category" ? sortDirection : null}
+              onSort={() => onSort("category")}
+              title={t("stockStatus.colCategoryHint")}
+            >
               {t("stockStatus.colCategory")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="text">{t("stockStatus.colBranch")}</ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric">
+            <ExitsTableHead
+              cellAlign="text"
+              className="stock-status-col--branch"
+              sortable
+              sortDirection={sortKey === "branch" ? sortDirection : null}
+              onSort={() => onSort("branch")}
+              title={t("stockStatus.colBranchHint")}
+            >
+              {t("stockStatus.colBranch")}
+            </ExitsTableHead>
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              sortable
+              sortDirection={sortKey === "onHand" ? sortDirection : null}
+              onSort={() => onSort("onHand")}
+              title={t("stockStatus.colOnHandHint")}
+            >
               {t("stockStatus.colOnHand")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden md:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden md:table-cell"
+              sortable
+              sortDirection={sortKey === "sellable" ? sortDirection : null}
+              onSort={() => onSort("sellable")}
+              title={t("stockStatus.colSellableHint")}
+            >
               {t("stockStatus.colSellable")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden lg:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden lg:table-cell"
+              sortable
+              sortDirection={sortKey === "reserved" ? sortDirection : null}
+              onSort={() => onSort("reserved")}
+              title={t("stockStatus.colReservedHint")}
+            >
               {t("stockStatus.colReserved")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden lg:table-cell"
+              sortable
+              sortDirection={sortKey === "committed" ? sortDirection : null}
+              onSort={() => onSort("committed")}
+              title={t("stockStatus.colCommittedHint")}
+            >
+              {t("stockStatus.colCommittedToBranchRequests")}
+            </ExitsTableHead>
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              sortable
+              sortDirection={sortKey === "available" ? sortDirection : null}
+              onSort={() => onSort("available")}
+              title={t("stockStatus.colAvailableHint")}
+            >
               {t("stockStatus.colAvailable")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden xl:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden xl:table-cell"
+              sortable
+              sortDirection={sortKey === "damaged" ? sortDirection : null}
+              onSort={() => onSort("damaged")}
+              title={t("stockStatus.colDamagedHint")}
+            >
               {t("stockStatus.colDamaged")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden xl:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden xl:table-cell"
+              sortable
+              sortDirection={sortKey === "hold" ? sortDirection : null}
+              onSort={() => onSort("hold")}
+              title={t("stockStatus.colHoldHint")}
+            >
               {t("stockStatus.colHold")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden xl:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden xl:table-cell"
+              sortable
+              sortDirection={sortKey === "pendingReturn" ? sortDirection : null}
+              onSort={() => onSort("pendingReturn")}
+              title={t("stockStatus.colPendingReturnHint")}
+            >
               {t("stockStatus.colPendingReturn")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden xl:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden xl:table-cell"
+              sortable
+              sortDirection={sortKey === "expired" ? sortDirection : null}
+              onSort={() => onSort("expired")}
+              title={t("stockStatus.colExpiredHint")}
+            >
               {t("stockStatus.colExpired")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden xl:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden xl:table-cell"
+              sortable
+              sortDirection={sortKey === "saleBlocked" ? sortDirection : null}
+              onSort={() => onSort("saleBlocked")}
+              title={t("stockStatus.colSaleBlockedHint")}
+            >
               {t("stockStatus.colSaleBlocked")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden xl:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden xl:table-cell"
+              sortable
+              sortDirection={sortKey === "incoming" ? sortDirection : null}
+              onSort={() => onSort("incoming")}
+              title={t("stockStatus.colIncomingHint")}
+            >
               {t("stockStatus.colIncoming")}
             </ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="numeric" className="hidden xl:table-cell">
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="numeric"
+              className="hidden xl:table-cell"
+              sortable
+              sortDirection={sortKey === "inTransitOut" ? sortDirection : null}
+              onSort={() => onSort("inTransitOut")}
+              title={t("stockStatus.colInTransitOutHint")}
+            >
               {t("stockStatus.colInTransitOut")}
             </ExitsTableHead>
           </ExitsTableRow>
@@ -392,9 +640,22 @@ export function StockStatusPage() {
           <p className="exits-table-mobile__math mt-1 mb-0 tabular-nums">
             {t("stockStatus.mobileMetrics")
               .replace("{onHand}", qtyCell(row.onHandQuantity))
+              .replace("{committed}", qtyCell(row.stockRequestCommittedQuantity))
               .replace("{available}", qtyCell(row.availableQuantity))
               .replace("{uom}", row.unitOfMeasure)}
           </p>
+          {row.stockRequestCommittedQuantity > 0 ? (
+            <p className="exits-table-mobile__meta mt-1 mb-0">
+              <Link
+                to="/inventory/stock-requests"
+                className="text-foreground underline-offset-2 hover:underline"
+                data-testid={`stock-status-committed-link-${row.productId}-${row.branchId}`}
+              >
+                {t("stockStatus.colCommittedToBranchRequests")}:{" "}
+                {qtyCell(row.stockRequestCommittedQuantity)} {row.unitOfMeasure}
+              </Link>
+            </p>
+          ) : null}
         </ExitsTableMobileRow>
       ))}
     </ExitsTableMobile>
@@ -487,6 +748,7 @@ export function StockStatusPage() {
       {!query.isLoading && !query.isError && rows.length > 0 ? (
         <ExitsResponsiveDataView
           layout={layout}
+          allowHorizontalScroll
           toolbar={toolbar}
           table={table}
           list={list}
@@ -519,8 +781,9 @@ export function StockStatusPage() {
               <th>{t("stockStatus.colProduct")}</th>
               <th>{t("stockStatus.colBranch")}</th>
               <th>{t("stockStatus.colOnHand")}</th>
-              <th>{t("stockStatus.colAvailable")}</th>
               <th>{t("stockStatus.colReserved")}</th>
+              <th>{t("stockStatus.colCommittedToBranchRequests")}</th>
+              <th>{t("stockStatus.colAvailable")}</th>
             </tr>
           </thead>
           <tbody>
@@ -532,10 +795,13 @@ export function StockStatusPage() {
                   {qtyCell(row.onHandQuantity)} {row.unitOfMeasure}
                 </td>
                 <td>
-                  {qtyCell(row.availableQuantity)} {row.unitOfMeasure}
+                  {qtyCell(row.reservedQuantity)} {row.unitOfMeasure}
                 </td>
                 <td>
-                  {qtyCell(row.reservedQuantity)} {row.unitOfMeasure}
+                  {qtyCell(row.stockRequestCommittedQuantity)} {row.unitOfMeasure}
+                </td>
+                <td>
+                  {qtyCell(row.availableQuantity)} {row.unitOfMeasure}
                 </td>
               </tr>
             ))}
@@ -547,25 +813,31 @@ export function StockStatusPage() {
 }
 
 function StockStatusDesktopRow({ row }: { row: InventoryStockStatusRowDto }) {
+  const { t } = useI18n();
   return (
     <ExitsTableRow data-testid={`stock-status-row-${row.productId}-${row.branchId}`}>
       <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
         <Link
           to={`/inventory/${row.productId}`}
-          className="text-foreground underline-offset-2 hover:underline"
+          className="stock-status-col--product-link text-foreground underline-offset-2 hover:underline"
         >
           {row.productName}
         </Link>
         {row.sku?.trim() ? (
-          <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
+          <span className="mt-0.5 block truncate text-[length:var(--exits-text-xs)] text-muted">
             {row.sku.trim()}
           </span>
         ) : null}
       </ExitsTableCell>
-      <ExitsTableCell cellAlign="text" className="hidden text-muted lg:table-cell">
+      <ExitsTableCell
+        cellAlign="text"
+        className="stock-status-col--category hidden text-muted lg:table-cell"
+      >
         {row.categoryName?.trim() || "—"}
       </ExitsTableCell>
-      <ExitsTableCell cellAlign="text">{row.branchName}</ExitsTableCell>
+      <ExitsTableCell cellAlign="text" className="stock-status-col--branch">
+        {row.branchName}
+      </ExitsTableCell>
       <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
         {qtyCell(row.onHandQuantity)}
       </ExitsTableCell>
@@ -582,6 +854,24 @@ function StockStatusDesktopRow({ row }: { row: InventoryStockStatusRowDto }) {
         className="hidden tabular-nums lg:table-cell"
       >
         {qtyCell(row.reservedQuantity)}
+      </ExitsTableCell>
+      <ExitsTableCell
+        cellAlign="center"
+        colSize="numeric"
+        className="hidden tabular-nums lg:table-cell"
+        data-testid={`stock-status-committed-${row.productId}-${row.branchId}`}
+      >
+        {row.stockRequestCommittedQuantity > 0 ? (
+          <Link
+            to="/inventory/stock-requests"
+            className="text-foreground underline-offset-2 hover:underline"
+            title={t("stockStatus.colCommittedHint")}
+          >
+            {qtyCell(row.stockRequestCommittedQuantity)}
+          </Link>
+        ) : (
+          qtyCell(row.stockRequestCommittedQuantity)
+        )}
       </ExitsTableCell>
       <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums font-medium">
         {qtyCell(row.availableQuantity)}

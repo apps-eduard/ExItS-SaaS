@@ -43,6 +43,15 @@ public interface IInventoryTransferExceptionCustodyRepository
         IReadOnlyCollection<Guid> transferIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Exception custodies held at the branch that still need source inspection
+    /// (ReceivedAtSource or AwaitingInspection).
+    /// </summary>
+    Task<IReadOnlyList<InventoryTransferExceptionCustody>> ListAwaitingInspectionByHeldBranchAsync(
+        PosOrganizationId organizationId,
+        PosBranchId heldBranchId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(InventoryTransferExceptionCustody custody, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(InventoryTransferExceptionCustody custody, CancellationToken cancellationToken = default);

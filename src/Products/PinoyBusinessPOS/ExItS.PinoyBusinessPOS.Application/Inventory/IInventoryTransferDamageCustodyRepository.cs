@@ -43,6 +43,15 @@ public interface IInventoryTransferDamageCustodyRepository
         IReadOnlyCollection<Guid> transferIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Damage custodies held at the branch that still need source inspection
+    /// (ReceivedAtSource or AwaitingInspection).
+    /// </summary>
+    Task<IReadOnlyList<InventoryTransferDamageCustody>> ListAwaitingInspectionByHeldBranchAsync(
+        PosOrganizationId organizationId,
+        PosBranchId heldBranchId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default);

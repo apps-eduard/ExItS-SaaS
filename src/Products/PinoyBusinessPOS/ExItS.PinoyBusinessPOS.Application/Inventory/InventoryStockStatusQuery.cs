@@ -88,6 +88,7 @@ public sealed record InventoryStockStatusRowDto(
     decimal SaleBlockedQuantity,
     decimal InTransitInboundQuantity,
     decimal InTransitOutboundQuantity,
+    decimal StockRequestCommittedQuantity,
     decimal? ReorderLevel,
     bool IsLowStock);
 
@@ -105,10 +106,12 @@ public sealed class InventoryStockStatusQuery
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IProductCategoryRepository _categories;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly IAuthorizedBranchGroupingDirectory _grouping;
     private readonly IInventoryLotRepository _lots;
     private readonly IInventoryTransferRepository _transfers;
+    private readonly StockRequestCommitmentQuery _stockRequestCommitments;
     private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly ExpirySalePolicyResolver _expirySalePolicies;
     private readonly IInventoryBranchReorderRepository _reorder;
@@ -117,10 +120,12 @@ public sealed class InventoryStockStatusQuery
     public InventoryStockStatusQuery(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
+        IProductCategoryRepository categories,
         IInventoryBranchBalanceRepository balances,
         IAuthorizedBranchGroupingDirectory grouping,
         IInventoryLotRepository lots,
         IInventoryTransferRepository transfers,
+        StockRequestCommitmentQuery stockRequestCommitments,
         BranchExpirationPolicyResolver expirationPolicies,
         ExpirySalePolicyResolver expirySalePolicies,
         IInventoryBranchReorderRepository reorder,
@@ -128,10 +133,12 @@ public sealed class InventoryStockStatusQuery
     {
         _inventory = inventory;
         _products = products;
+        _categories = categories;
         _balances = balances;
         _grouping = grouping;
         _lots = lots;
         _transfers = transfers;
+        _stockRequestCommitments = stockRequestCommitments;
         _expirationPolicies = expirationPolicies;
         _expirySalePolicies = expirySalePolicies;
         _reorder = reorder;
@@ -226,6 +233,18 @@ public sealed class InventoryStockStatusQuery
             return ApplicationResult<InventoryStockStatusResultDto>.Success(EmptyResult());
         }
 
+        var categoryIds = filteredProducts
+            .Where(p => p.CategoryId is not null)
+            .Select(p => p.CategoryId!)
+            .GroupBy(id => id.Value)
+            .Select(g => g.First())
+            .ToList();
+        var categoryNameById = categoryIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : (await _categories.ListByIdsAsync(orgId, categoryIds, cancellationToken).ConfigureAwait(false))
+                .Where(c => !string.IsNullOrWhiteSpace(c.Name))
+                .ToDictionary(c => c.Id.Value, c => c.Name);
+
         var filteredIds = filteredProducts.Select(p => p.Id).ToList();
         var accountByProduct = tracked
             .Where(a => filteredIds.Contains(a.ProductId))
@@ -308,12 +327,14 @@ public sealed class InventoryStockStatusQuery
 
         // In-transit: one commitment query per authorized branch (not per product).
         var commitmentsByBranchProduct = new Dictionary<(Guid BranchId, Guid ProductId), (decimal In, decimal Out)>();
+        var srCommittedByBranchProduct = new Dictionary<(Guid BranchId, Guid ProductId), decimal>();
         foreach (var branch in authorized)
         {
+            var branchId = PosBranchId.From(branch.BranchId);
             var commitments = await _transfers
                 .ListOpenCommitmentsForBranchAsync(
                     orgId,
-                    PosBranchId.From(branch.BranchId),
+                    branchId,
                     filteredIds,
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -322,6 +343,17 @@ public sealed class InventoryStockStatusQuery
                 var inbound = group.Where(c => c.Direction == "Inbound").Sum(c => c.OutstandingQuantity);
                 var outbound = group.Where(c => c.Direction == "Outbound").Sum(c => c.OutstandingQuantity);
                 commitmentsByBranchProduct[(branch.BranchId, group.Key)] = (inbound, outbound);
+            }
+
+            var srCommitted = await _stockRequestCommitments
+                .SumRemainingToDispatchByProductAsync(orgId, branchId, filteredIds, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var (productId, qty) in srCommitted)
+            {
+                if (qty > 0m)
+                {
+                    srCommittedByBranchProduct[(branch.BranchId, productId)] = qty;
+                }
             }
         }
 
@@ -363,9 +395,13 @@ public sealed class InventoryStockStatusQuery
                     branchId,
                     productBalances,
                     product.Id);
-                var available = BranchStockResolver.ResolveAvailable(onHand, reserved, pending, hold, damaged);
+                var branchAvailable = BranchStockResolver.ResolveAvailable(onHand, reserved, pending, hold, damaged);
+                var srCommitted = srCommittedByBranchProduct.GetValueOrDefault((branch.BranchId, product.Id.Value));
+                // Commitment before expiry/sellable cap (do not subtract after the cap).
+                var operationalAvailable = Math.Max(0m, branchAvailable - srCommitted);
+                var available = operationalAvailable;
 
-                decimal sellable = available;
+                decimal sellable = operationalAvailable;
                 decimal expired = 0m;
                 decimal saleBlocked = 0m;
                 expirationByProductBranch.TryGetValue((product.Id.Value, branch.BranchId), out var expPolicy);
@@ -382,7 +418,7 @@ public sealed class InventoryStockStatusQuery
                     sellable = buckets.Sellable;
                     expired = buckets.Expired;
                     saleBlocked = buckets.PolicyBlocked;
-                    available = Math.Min(available, buckets.Sellable);
+                    available = Math.Min(operationalAvailable, buckets.Sellable);
                 }
 
                 commitmentsByBranchProduct.TryGetValue((branch.BranchId, product.Id.Value), out var transit);
@@ -412,7 +448,9 @@ public sealed class InventoryStockStatusQuery
                     product.Name,
                     product.Sku,
                     product.CategoryId?.Value,
-                    null,
+                    product.CategoryId is ProductCategoryId catId
+                        ? categoryNameById.GetValueOrDefault(catId.Value)
+                        : null,
                     UnitOfMeasures.ToCode(product.UnitOfMeasure),
                     branch.BranchId,
                     branch.BranchName,
@@ -429,6 +467,7 @@ public sealed class InventoryStockStatusQuery
                     saleBlocked,
                     transit.In,
                     transit.Out,
+                    srCommitted,
                     reorderLevel,
                     isLow));
             }

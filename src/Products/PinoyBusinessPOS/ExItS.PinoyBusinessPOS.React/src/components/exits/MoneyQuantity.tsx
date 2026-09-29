@@ -126,8 +126,9 @@ function numericValue(value: number | string): number {
 /** Default / compact ch clamps for auto-width quantity input (buttons stay fixed). */
 export const QUANTITY_STEPPER_INPUT_MIN_CH = 12;
 export const QUANTITY_STEPPER_INPUT_MAX_CH = 20;
-export const QUANTITY_STEPPER_INPUT_COMPACT_MIN_CH = 12;
-export const QUANTITY_STEPPER_INPUT_COMPACT_MAX_CH = 20;
+/** Compact (side-by-side allocate rows): keep middle narrow so columns do not collide. */
+export const QUANTITY_STEPPER_INPUT_COMPACT_MIN_CH = 6;
+export const QUANTITY_STEPPER_INPUT_COMPACT_MAX_CH = 10;
 export const QUANTITY_STEPPER_INPUT_PILL_MIN_CH = 7;
 export const QUANTITY_STEPPER_INPUT_PILL_MAX_CH = 12;
 const QUANTITY_STEPPER_INPUT_PAD_CH = 0.5;

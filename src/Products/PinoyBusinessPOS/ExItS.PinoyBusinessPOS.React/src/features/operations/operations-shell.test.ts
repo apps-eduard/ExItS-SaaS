@@ -171,6 +171,20 @@ describe("operations navigation", () => {
     expect(paths).not.toContain("/sell");
   });
 
+  it("Warehouse sidebar includes Inspection after Stock status", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Warehouse",
+      experience: "operations",
+    });
+    const ids = flattenOperationsSidebarItems(groups).map((i) => i.id);
+    expect(ids).toContain("stock-status");
+    expect(ids).toContain("awaiting-inspection");
+    expect(ids.indexOf("awaiting-inspection")).toBeGreaterThan(ids.indexOf("stock-status"));
+    const item = flattenOperationsSidebarItems(groups).find((i) => i.id === "awaiting-inspection");
+    expect(item?.to).toBe("/inventory/awaiting-inspection");
+  });
+
   it("Warehouse sidebar includes Branch requests after Transfers", () => {
     const groups = buildOperationsSidebarGroups({
       grant: owner,

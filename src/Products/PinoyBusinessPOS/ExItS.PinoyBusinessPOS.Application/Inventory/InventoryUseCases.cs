@@ -20,6 +20,7 @@ public sealed class InventoryQueryService
     private readonly BranchInventoryReadService _branchReads;
     private readonly BranchInventoryContextResolver _branchContext;
     private readonly IInventoryTransferRepository _transfers;
+    private readonly StockRequestCommitmentQuery _stockRequestCommitments;
     private readonly IDirectPurchaseReceiptRepository _directPurchases;
     private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly ExpirySalePolicyResolver _expirySalePolicies;
@@ -36,6 +37,7 @@ public sealed class InventoryQueryService
         BranchInventoryReadService branchReads,
         BranchInventoryContextResolver branchContext,
         IInventoryTransferRepository transfers,
+        StockRequestCommitmentQuery stockRequestCommitments,
         IDirectPurchaseReceiptRepository directPurchases,
         BranchExpirationPolicyResolver expirationPolicies,
         ExpirySalePolicyResolver expirySalePolicies,
@@ -51,6 +53,7 @@ public sealed class InventoryQueryService
         _branchReads = branchReads;
         _branchContext = branchContext;
         _transfers = transfers;
+        _stockRequestCommitments = stockRequestCommitments;
         _directPurchases = directPurchases;
         _expirationPolicies = expirationPolicies;
         _expirySalePolicies = expirySalePolicies;
@@ -158,6 +161,13 @@ public sealed class InventoryQueryService
             branchRead,
             policy,
             salePolicyBlocked);
+        var withSr = await EnrichWithStockRequestCommitmentsAsync(
+                organizationId,
+                context.BranchId,
+                [mapped],
+                cancellationToken)
+            .ConfigureAwait(false);
+        mapped = withSr is [var afterSr] ? afterSr : mapped;
         if (policy.TracksExpiration && sellable is decimal sellableQty)
         {
             var saleEligible = Math.Min(mapped.AvailableQuantity, sellableQty);
@@ -210,9 +220,15 @@ public sealed class InventoryQueryService
             .ListAsync(context, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
-        var dtos = await EnrichWithExpirySaleProjectionAsync(
-                context,
+        var dtos = await EnrichWithStockRequestCommitmentsAsync(
+                context.OrganizationId,
+                context.BranchId,
                 rows.Select(MapFromBranchRow).ToList(),
+                cancellationToken)
+            .ConfigureAwait(false);
+        dtos = await EnrichWithExpirySaleProjectionAsync(
+                context,
+                dtos,
                 cancellationToken)
             .ConfigureAwait(false);
         dtos = await EnrichWithTransferCommitmentsAsync(
@@ -260,7 +276,12 @@ public sealed class InventoryQueryService
                                     context.BranchId,
                                     await EnrichWithExpirySaleProjectionAsync(
                                             context,
-                                            rows.Select(MapFromBranchRow).ToList(),
+                                            await EnrichWithStockRequestCommitmentsAsync(
+                                                    context.OrganizationId,
+                                                    context.BranchId,
+                                                    rows.Select(MapFromBranchRow).ToList(),
+                                                    cancellationToken)
+                                                .ConfigureAwait(false),
                                             cancellationToken)
                                         .ConfigureAwait(false),
                                     cancellationToken)
@@ -302,7 +323,12 @@ public sealed class InventoryQueryService
                                     context.BranchId,
                                     await EnrichWithExpirySaleProjectionAsync(
                                             context,
-                                            rows.Select(MapFromBranchRow).ToList(),
+                                            await EnrichWithStockRequestCommitmentsAsync(
+                                                    context.OrganizationId,
+                                                    context.BranchId,
+                                                    rows.Select(MapFromBranchRow).ToList(),
+                                                    cancellationToken)
+                                                .ConfigureAwait(false),
                                             cancellationToken)
                                         .ConfigureAwait(false),
                                     cancellationToken)
@@ -534,6 +560,52 @@ public sealed class InventoryQueryService
         }
 
         return lotById.TryGetValue(lotId.Value, out var lot) ? lot : null;
+    }
+
+    private async Task<IReadOnlyList<PosInventoryAccountDto>> EnrichWithStockRequestCommitmentsAsync(
+        Guid organizationId,
+        Guid branchId,
+        IReadOnlyList<PosInventoryAccountDto> accounts,
+        CancellationToken cancellationToken)
+    {
+        if (accounts.Count == 0)
+        {
+            return accounts;
+        }
+
+        var productIds = accounts.Select(a => CatalogProductId.From(a.ProductId)).Distinct().ToList();
+        var committedByProduct = await _stockRequestCommitments
+            .SumRemainingToDispatchByProductAsync(
+                PosOrganizationId.From(organizationId),
+                PosBranchId.From(branchId),
+                productIds,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return accounts.Select(account =>
+        {
+            var committed = committedByProduct.GetValueOrDefault(account.ProductId);
+            if (committed <= 0m)
+            {
+                return account with { StockRequestCommittedQuantity = 0m };
+            }
+
+            var operationalAvailable = Math.Max(0m, account.AvailableQuantity - committed);
+            var stockStatus = string.Equals(
+                    account.MonitoringMode,
+                    InventoryReorderMonitoringModes.NotMonitored,
+                    StringComparison.Ordinal)
+                ? account.StockStatus
+                : InventoryStockStatuses.ToCode(
+                    InventoryStockStatuses.Derive(account.IsTracked, operationalAvailable, account.ReorderLevel));
+
+            return account with
+            {
+                StockRequestCommittedQuantity = committed,
+                AvailableQuantity = operationalAvailable,
+                StockStatus = stockStatus,
+            };
+        }).ToList();
     }
 
     private async Task<IReadOnlyList<PosInventoryAccountDto>> EnrichWithExpirySaleProjectionAsync(

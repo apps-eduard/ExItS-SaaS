@@ -1,5 +1,5 @@
 ---
-description: PinoyBusinessPOS React ExItS Button standard — reuse shared Button; follow Docs/UI/exits-button-standard.md
+description: PinoyBusinessPOS React ExItS Button — readable defaults; reuse shared Button; follow exits-button-standard.md
 globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
 alwaysApply: false
 ---
@@ -11,13 +11,28 @@ For PinoyBusinessPOS React button / CTA / icon-control work:
 1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-button-standard.md` (authoritative contract).
 2. Reuse the shared ExItS `Button` in `ExItS.PinoyBusinessPOS.React/src/components/ui/button.tsx`.
 3. Do **not** invent local visual button systems or third-party visual button skins when shared `Button` can express the action.
-4. Use Cursor shorthand mapped to the real API (`PRIMARY` → `variant="default"`, `MUTED` → `secondary`, `DANGER` → `destructive`, etc.).
+4. Map Cursor shorthand to the real API (`PRIMARY` → `intent="primary" appearance="solid"`, secondary → `intent="neutral"`, etc.). Prefer canonical `intent` / `appearance` over legacy `variant` / `treatment`.
 5. Style through ExItS semantic tokens — not hardcoded brand greens or page-local palettes.
 6. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort).
 7. Icon-only controls need `size="icon"`, `aria-label`, and `title`/tooltip; `shape="round"` is for circular icon-only.
 8. Respect `prefers-reduced-motion` (no unnecessary lift / scale / rotate).
 9. Cancel → `CircleX`; Cancel & return → `CornerUpLeft`; Close-only → `X`; Back → `ArrowLeft`.
 10. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
+
+## Default look (mandatory — agents get this wrong)
+
+When creating a button, **defaults must look finished and readable**, not washed or clipped.
+
+| Rule | Do | Do not |
+|------|----|--------|
+| Primary CTA | `intent="primary" appearance="solid"` (enabled = filled brand + `primary-foreground`) | Soft/tinted primary fill with white label; custom pastel backgrounds |
+| Size | Always pass a **valid** size: `sm` · `default` · `large` · `icon` | Omit sizing or invent sizes the CVA does not define (missing height/padding → cramped/clipped) |
+| Disabled | Rely on shared `Button` disabled chrome (muted surface + muted text, full opacity) | Extra `opacity-*` / `className` fades that wash white text on faded primary |
+| Gated confirm | Keep primary solid; `disabled` until valid — label stays readable | Leave Confirm looking like a pale unreadable pill as the “default” state |
+| Secondary chips | `appearance="outline"` (or ghost Cancel); do not compete with Confirm | Multiple solid primaries in one row |
+| Contrast | Enabled primary must meet readable contrast for the active primary palette | White text on light/washed blue (or any low-contrast primary) |
+
+**Anti-pattern (forbidden):** primary solid + blanket opacity fade → white label on faded brand. That is the “Confirm inspection” bad default.
 
 Keep detailed rules in the markdown standard — do not invent conflicting variants, motion APIs, or colors here.
 Visual reference: `/ui-standards` → Buttons.

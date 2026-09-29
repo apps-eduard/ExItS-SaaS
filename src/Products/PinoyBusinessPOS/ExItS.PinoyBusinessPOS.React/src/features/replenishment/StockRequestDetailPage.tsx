@@ -62,6 +62,8 @@ import {
   canPrepareTransfer,
   displayApprovedQuantity,
   findLinkedDraftTransfer,
+  formatCommittedRemainingLabel,
+  isWarehousePreparingOrDispatchedStatus,
   listReceivableTransfers,
   normalizeStockRequestStatus,
   prepareTransferPrimaryLabelKey,
@@ -392,6 +394,17 @@ export function StockRequestDetailPage() {
     isSource &&
     canPrepareTransfer(dto.status, dto.lines);
   const remainingDispatchQty = totalRemainingToDispatch(dto.lines);
+  const committedRemainingLabel =
+    isSource && isWarehousePreparingOrDispatchedStatus(dto.status)
+      ? formatCommittedRemainingLabel(
+          remainingDispatchQty,
+          t("stockRequest.committedRemaining"),
+          formatTransferQty,
+        )
+      : null;
+  const remainingDispatchColumnLabel = isSource
+    ? t("stockRequest.colRemainingToDispatchCommitted")
+    : t("transfer.needsFulfillment");
   const prepareTransferLabelKey = prepareTransferPrimaryLabelKey(
     dto.status,
     Boolean(linkedDraftId),
@@ -445,7 +458,7 @@ export function StockRequestDetailPage() {
               t("stockRequest.goodReceived"),
               t("transfer.discrepancy"),
               t("transfer.inTransit"),
-              t("transfer.needsFulfillment"),
+              remainingDispatchColumnLabel,
             ],
             rows: dto.lines.map((line) => {
               const approved = displayApprovedQuantity(line.approvedQuantity);
@@ -477,7 +490,7 @@ export function StockRequestDetailPage() {
             t("stockRequest.goodReceived"),
             t("transfer.discrepancy"),
             t("transfer.inTransit"),
-            t("transfer.needsFulfillment"),
+            remainingDispatchColumnLabel,
           ],
           ...dto.lines.map((line) => {
             const approved = displayApprovedQuantity(line.approvedQuantity);
@@ -527,7 +540,7 @@ export function StockRequestDetailPage() {
             <th>{t("stockRequest.goodReceived")}</th>
             <th>{t("transfer.discrepancy")}</th>
             <th>{t("transfer.inTransit")}</th>
-            <th>{t("transfer.needsFulfillment")}</th>
+            <th>{remainingDispatchColumnLabel}</th>
           </tr>
         </thead>
         <tbody>
@@ -717,6 +730,15 @@ export function StockRequestDetailPage() {
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{dto.notes}</p>
       ) : null}
 
+      {committedRemainingLabel && !showSourceFulfillmentSummary ? (
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground"
+          data-testid="stock-request-committed-remaining"
+        >
+          {committedRemainingLabel}
+        </p>
+      ) : null}
+
       {showSourceFulfillmentSummary ? (
         <Card
           className="flex min-w-0 flex-col gap-2 p-3"
@@ -730,10 +752,15 @@ export function StockRequestDetailPage() {
             className="m-0 text-[length:var(--exits-text-sm)]"
             data-testid="stock-request-needs-fulfillment"
           >
-            {t("stockRequest.needsFulfillmentSummary").replace(
-              "{qty}",
-              formatTransferQty(remainingDispatchQty),
-            )}
+            {formatCommittedRemainingLabel(
+              remainingDispatchQty,
+              t("stockRequest.committedRemaining"),
+              formatTransferQty,
+            ) ??
+              t("stockRequest.needsFulfillmentSummary").replace(
+                "{qty}",
+                formatTransferQty(remainingDispatchQty),
+              )}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -785,13 +812,16 @@ export function StockRequestDetailPage() {
                       {t("transfer.inTransit")}
                     </ExitsTableHead>
                     <ExitsTableHead cellAlign="center" colSize="numeric">
-                      {t("transfer.needsFulfillment")}
+                      {remainingDispatchColumnLabel}
                     </ExitsTableHead>
                   </ExitsTableRow>
                 </ExitsTableHeader>
                 <ExitsTableBody>
                   {dto.lines.map((line) => {
                     const approved = displayApprovedQuantity(line.approvedQuantity);
+                    const approveDraftQty = Number(
+                      approvedQtys[line.productId] ?? line.requestedQuantity,
+                    );
                     return (
                       <ExitsTableRow
                         key={line.lineId}
@@ -802,6 +832,16 @@ export function StockRequestDetailPage() {
                           <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
                             {line.unitOfMeasure}
                             {` · ${t("stockRequest.requested")}: ${formatTransferQty(line.requestedQuantity)}`}
+                            {pendingAtSource
+                              ? ` · ${t("stockRequest.approved")}: ${formatTransferQty(
+                                  Number.isFinite(approveDraftQty) ? approveDraftQty : 0,
+                                )}`
+                              : null}
+                            {!pendingAtSource && isSource
+                              ? ` · ${t("stockRequest.remainingToDispatch")}: ${formatTransferQty(
+                                  line.remainingToDispatchQuantity,
+                                )}`
+                              : null}
                           </div>
                         </ExitsTableCell>
                         <ExitsTableCell
@@ -886,13 +926,33 @@ export function StockRequestDetailPage() {
             <ul className="exits-data-record-list" data-testid="stock-request-lines-mobile">
               {dto.lines.map((line) => {
                 const approved = displayApprovedQuantity(line.approvedQuantity);
+                const approveDraftQty = Number(
+                  approvedQtys[line.productId] ?? line.requestedQuantity,
+                );
+                const subtitleParts = [
+                  line.unitOfMeasure,
+                  `${t("stockRequest.requested")}: ${formatTransferQty(line.requestedQuantity)}`,
+                ];
+                if (pendingAtSource) {
+                  subtitleParts.push(
+                    `${t("stockRequest.approved")}: ${formatTransferQty(
+                      Number.isFinite(approveDraftQty) ? approveDraftQty : 0,
+                    )}`,
+                  );
+                } else if (isSource) {
+                  subtitleParts.push(
+                    `${t("stockRequest.remainingToDispatch")}: ${formatTransferQty(
+                      line.remainingToDispatchQuantity,
+                    )}`,
+                  );
+                }
                 return (
                   <ExitsDataRecordCard
                     key={line.lineId}
                     as="li"
                     data-testid={`stock-request-line-${line.productId}`}
                     title={line.nameSnapshot}
-                    subtitle={`${line.unitOfMeasure} · ${t("stockRequest.requested")}: ${formatTransferQty(line.requestedQuantity)}`}
+                    subtitle={subtitleParts.join(" · ")}
                     fields={[
                       {
                         label: t("stockRequest.approved"),
@@ -950,7 +1010,7 @@ export function StockRequestDetailPage() {
                         ),
                       },
                       {
-                        label: t("transfer.needsFulfillment"),
+                        label: remainingDispatchColumnLabel,
                         value: (
                           <span data-testid={`stock-request-remaining-dispatch-${line.productId}`}>
                             {formatTransferQty(line.remainingToDispatchQuantity)}

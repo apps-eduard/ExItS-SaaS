@@ -69,6 +69,32 @@ export function totalRemainingToDispatch(
   return lines.reduce((sum, line) => sum + (line.remainingToDispatchQuantity ?? 0), 0);
 }
 
+/**
+ * Warehouse preparing / dispatched tabs: label remaining-to-dispatch as commitment when > 0.
+ * Returns null when there is nothing left to dispatch.
+ */
+export function formatCommittedRemainingLabel(
+  remainingQty: number,
+  template: string,
+  formatQty: (qty: number) => string = (qty) => String(qty),
+): string | null {
+  if (remainingQty <= 0) {
+    return null;
+  }
+  return template.replace("{qty}", formatQty(remainingQty));
+}
+
+/** Statuses shown on warehouse Preparing or Dispatched tabs. */
+export function isWarehousePreparingOrDispatchedStatus(status: string): boolean {
+  const normalized = normalizeStockRequestStatus(status);
+  return (
+    IN_PROGRESS_STATUSES.has(status) ||
+    IN_PROGRESS_STATUSES.has(normalized) ||
+    normalized === "InTransit" ||
+    normalized === "PartiallyFulfilled"
+  );
+}
+
 function sourceMayPrepareTransfer(
   status: string,
   lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,

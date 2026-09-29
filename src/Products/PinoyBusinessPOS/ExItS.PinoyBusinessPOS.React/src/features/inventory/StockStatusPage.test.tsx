@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -84,6 +84,7 @@ function sampleRow(
     onHandQuantity: 40,
     sellableQuantity: 36,
     reservedQuantity: 4,
+    stockRequestCommittedQuantity: 0,
     availableQuantity: 32,
     damagedQuantity: 0,
     inspectionHoldQuantity: 0,
@@ -187,5 +188,56 @@ describe("StockStatusPage", () => {
     renderPage();
     await screen.findByTestId("stock-status-current-only");
     expect(screen.queryByLabelText(/as of/i)).not.toBeInTheDocument();
+  });
+
+  it("renders category name and sorts by product header", async () => {
+    vi.mocked(inventoryClient.getInventoryStockStatus).mockResolvedValue({
+      generatedAtUtc: "2026-09-29T08:00:00Z",
+      isCurrentOnly: true,
+      totalCount: 2,
+      rows: [
+        sampleRow({ productName: "Banana", categoryName: "Produce", productId: "p1" }),
+        sampleRow({ productName: "Apple", categoryName: "Produce", productId: "p2" }),
+      ],
+    });
+    renderPage();
+    await screen.findByTestId("stock-status-data");
+    expect(screen.getAllByText("Produce").length).toBeGreaterThan(0);
+
+    const productHead = screen.getByRole("button", { name: /product/i });
+    await userEvent.click(productHead);
+    const rows = screen.getAllByTestId(/stock-status-row-/);
+    expect(rows[0]).toHaveTextContent("Apple");
+    expect(rows[1]).toHaveTextContent("Banana");
+  });
+
+  it("fills missing category name from the category filter list", async () => {
+    vi.mocked(inventoryClient.getInventoryStockStatus).mockResolvedValue({
+      generatedAtUtc: "2026-09-29T08:00:00Z",
+      isCurrentOnly: true,
+      totalCount: 1,
+      rows: [sampleRow({ categoryId: "cat-1", categoryName: null })],
+    });
+    renderPage();
+    const data = await screen.findByTestId("stock-status-data");
+    expect(within(data).getAllByText("Dairy").length).toBeGreaterThan(0);
+    expect(screen.getByTestId(`stock-status-row-${productId}-${branchId}`)).toHaveTextContent(
+      "Dairy",
+    );
+  });
+
+  it("renders Committed column", async () => {
+    vi.mocked(inventoryClient.getInventoryStockStatus).mockResolvedValue({
+      generatedAtUtc: "2026-09-29T08:00:00Z",
+      isCurrentOnly: true,
+      totalCount: 1,
+      rows: [sampleRow({ stockRequestCommittedQuantity: 3 })],
+    });
+    renderPage();
+    await screen.findByTestId("stock-status-data");
+    expect(screen.getAllByText("Committed").length).toBeGreaterThan(0);
+    expect(screen.getByTestId(`stock-status-committed-${productId}-${branchId}`)).toHaveTextContent(
+      "3",
+    );
   });
 });

@@ -4,6 +4,7 @@ import {
   ArrowUpDown,
   Boxes,
   CalendarClock,
+  ClipboardCheck,
   ClipboardList,
   Clock3,
   FileText,
@@ -413,6 +414,20 @@ export function buildOperationsSidebarGroups(input: {
       icon: ClipboardList,
       testId: "ops-sidebar-stock-status",
       matchPrefixes: ["/inventory/stock-status"],
+    },
+    canViewInventory(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  pushItem(
+    stock,
+    {
+      id: "awaiting-inspection",
+      to: "/inventory/awaiting-inspection",
+      labelKey: "org.nav.awaitingInspection",
+      icon: ClipboardCheck,
+      testId: "ops-sidebar-awaiting-inspection",
+      matchPrefixes: ["/inventory/awaiting-inspection"],
     },
     canViewInventory(grant),
     NAV_MANAGER,

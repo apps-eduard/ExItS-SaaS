@@ -149,6 +149,52 @@ internal sealed class StockRequestRepository : IStockRequestRepository
         return (records.Select(r => StockRequestEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : [])).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<StockRequest>> ListOpenCommittingBySourceAndProductIdsAsync(
+        PosOrganizationId organizationId,
+        PosBranchId sourceLocationId,
+        IReadOnlyCollection<Domain.Catalog.CatalogProductId> productIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        var productFilter = productIds.Select(p => p.Value).ToHashSet();
+        var openStatusCodes = StockRequestCommitmentQuery.OpenCommittingStatuses
+            .Select(StockRequestStatuses.ToCode)
+            .Concat([nameof(StockRequestStatus.InProgress)])
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var requestIds = await (
+                from request in _db.StockRequests.AsNoTracking()
+                join line in _db.StockRequestLines.AsNoTracking() on request.Id equals line.StockRequestId
+                where request.OrganizationId == organizationId.Value
+                    && request.RequestedSourceLocationId == sourceLocationId.Value
+                    && openStatusCodes.Contains(request.Status)
+                    && productFilter.Contains(line.ProductId)
+                select request.Id)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (requestIds.Count == 0)
+        {
+            return [];
+        }
+
+        var records = await _db.StockRequests.AsNoTracking()
+            .Where(r => requestIds.Contains(r.Id))
+            .OrderBy(r => r.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        return records
+            .Select(r => StockRequestEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .ToList();
+    }
+
     public async Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
         PosOrganizationId organizationId,
         PosBranchId destinationLocationId,

@@ -265,6 +265,14 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
         return SendAsync<PagedResult<InventoryTransferListItemDto>>(HttpMethod.Get, query.ToString(), null, ct);
     }
 
+    public Task<ApiResult<InventoryTransferAwaitingInspectionResultDto>> ListAwaitingInspectionAsync(
+        CancellationToken ct = default) =>
+        SendAsync<InventoryTransferAwaitingInspectionResultDto>(
+            HttpMethod.Get,
+            $"{InventoryPath}/transfers/awaiting-inspection",
+            null,
+            ct);
+
     public Task<ApiResult<InventoryTransferDto>> GetTransferAsync(Guid transferId, CancellationToken ct = default) =>
         SendAsync<InventoryTransferDto>(HttpMethod.Get, $"{InventoryPath}/transfers/{transferId:D}", null, ct);
 

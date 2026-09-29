@@ -8,6 +8,7 @@ import {
   Ban,
   Check,
   ChevronRight,
+  ClipboardCheck,
   Clock3,
   FilePlus2,
   PackageCheck,
@@ -94,6 +95,11 @@ import {
   resolveExceptionCustodyItemLabel,
   looksLikeTransferProductIdFragment,
 } from "@/features/inventory/inventory-transfer-summary-presentation";
+import { InventoryInspectDispositionPanel } from "@/features/inventory/InventoryInspectDispositionPanel";
+import {
+  emptyInspectDraft,
+  parseInspectDisposition,
+} from "@/features/inventory/inventory-inspect-disposition";
 import { restoresDirectlyToSellableOnSourceReceive } from "@/features/inventory/transfer-exception-custody-policy";
 import { TransferCloseRemainderDialog } from "@/features/inventory/TransferCloseRemainderDialog";
 import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
@@ -221,11 +227,11 @@ export function InventoryTransferDetailPage() {
   } | null>(null);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
   const [inspectCustodyId, setInspectCustodyId] = useState<string | null>(null);
-  const [inspectRecoveredText, setInspectRecoveredText] = useState("0");
-  const [inspectConfirmedText, setInspectConfirmedText] = useState("0");
+  const [inspectDamageDraft, setInspectDamageDraft] = useState(emptyInspectDraft());
   const [inspectExceptionCustodyId, setInspectExceptionCustodyId] = useState<string | null>(null);
-  const [inspectExceptionRecoveredText, setInspectExceptionRecoveredText] = useState("0");
-  const [inspectExceptionNonSellableText, setInspectExceptionNonSellableText] = useState("0");
+  const [inspectExceptionDraft, setInspectExceptionDraft] = useState(emptyInspectDraft());
+  const [inspectDamageQty, setInspectDamageQty] = useState(0);
+  const [inspectExceptionQty, setInspectExceptionQty] = useState(0);
 
   const workspace = useMemo(
     () =>
@@ -378,6 +384,9 @@ export function InventoryTransferDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["stock-request-activity"] });
       await queryClient.invalidateQueries({ queryKey: ["stock-requests"] });
       await queryClient.invalidateQueries({ queryKey: ["wh-dash"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["inventory-transfers", "awaiting-inspection"],
+      });
       showToast(successMessage, "success");
       setMode("detail");
       if (searchParams.get("mode") === "receive") {
@@ -474,6 +483,9 @@ export function InventoryTransferDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["stock-request-activity"] });
       await queryClient.invalidateQueries({ queryKey: ["stock-requests"] });
       await queryClient.invalidateQueries({ queryKey: ["wh-dash"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["inventory-transfers", "awaiting-inspection"],
+      });
       const dest = branchDisplayName(updated.destinationBranchName, updated.destinationBranchId);
       showToast(
         updated.status === "Received"
@@ -545,44 +557,44 @@ export function InventoryTransferDetailPage() {
     if (!workspace || !inspectExceptionCustodyId || busyRef.current) {
       return;
     }
-    const recovered = Number(inspectExceptionRecoveredText);
-    const confirmed = Number(inspectExceptionNonSellableText);
-    if (!Number.isFinite(recovered) || recovered < 0 || !Number.isFinite(confirmed) || confirmed < 0) {
+    const parsed = parseInspectDisposition(inspectExceptionDraft, inspectExceptionQty);
+    if (!parsed.ok) {
       showToast(t("transfer.exceptionInspectInvalidQty"), "error");
       return;
     }
     await refreshAfter(
       () =>
         inspectInventoryTransferExceptionCustody(workspace, inspectExceptionCustodyId, {
-          recoveredSellableQty: recovered,
-          confirmedNonSellableQty: confirmed,
+          recoveredSellableQty: parsed.recovered,
+          confirmedNonSellableQty: parsed.confirmed,
         }),
       t("transfer.exceptionInspected"),
       t("transfer.actionFailed"),
     );
     setInspectExceptionCustodyId(null);
+    setInspectExceptionDraft(emptyInspectDraft());
   }
 
   async function onInspectDamageCustody() {
     if (!workspace || !inspectCustodyId || busyRef.current) {
       return;
     }
-    const recovered = Number(inspectRecoveredText);
-    const confirmed = Number(inspectConfirmedText);
-    if (!Number.isFinite(recovered) || recovered < 0 || !Number.isFinite(confirmed) || confirmed < 0) {
-      showToast("Enter valid inspection quantities", "error");
+    const parsed = parseInspectDisposition(inspectDamageDraft, inspectDamageQty);
+    if (!parsed.ok) {
+      showToast(t("transfer.damageInspectInvalidQty"), "error");
       return;
     }
     await refreshAfter(
       () =>
         inspectInventoryTransferDamageCustody(workspace, inspectCustodyId, {
-          recoveredSellableQty: recovered,
-          confirmedDamagedQty: confirmed,
+          recoveredSellableQty: parsed.recovered,
+          confirmedDamagedQty: parsed.confirmed,
         }),
-      "Damage custody inspected",
+      t("transfer.damageInspected"),
       t("transfer.actionFailed"),
     );
     setInspectCustodyId(null);
+    setInspectDamageDraft(emptyInspectDraft());
   }
 
   async function onFulfillRemaining() {
@@ -1139,175 +1151,6 @@ export function InventoryTransferDetailPage() {
           </div>
         </Card>
 
-        {thisTransferCustodies.length > 0 || thisTransferExceptionCustodies.length > 0 ? (
-          <div className="flex min-w-0 flex-col gap-2" data-testid="transfer-custody-actions">
-            {thisTransferCustodies.length > 0 ? (
-              <ul className="m-0 list-none p-0" data-testid="transfer-damage-custodies">
-                {inspectCustodyId ? (
-                  <li className="mb-2 flex flex-col gap-2 rounded-md border border-border p-2">
-                    <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-                      Inspect damage custody
-                    </p>
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                      Recovered sellable
-                      <input
-                        className="rounded-md border border-border px-2 py-1"
-                        inputMode="decimal"
-                        value={inspectRecoveredText}
-                        onChange={(e) => setInspectRecoveredText(e.target.value)}
-                        data-testid="transfer-custody-inspect-recovered"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                      Confirmed damaged
-                      <input
-                        className="rounded-md border border-border px-2 py-1"
-                        inputMode="decimal"
-                        value={inspectConfirmedText}
-                        onChange={(e) => setInspectConfirmedText(e.target.value)}
-                        data-testid="transfer-custody-inspect-confirmed"
-                      />
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void onInspectDamageCustody()}
-                        data-testid="transfer-custody-inspect-confirm"
-                      >
-                        Confirm inspection
-                      </Button>
-                      <Button
-                        type="button"
-                        appearance="ghost"
-                        disabled={busy}
-                        onClick={() => setInspectCustodyId(null)}
-                        data-testid="transfer-custody-inspect-cancel"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </li>
-                ) : null}
-                {thisTransferCustodies.map((c) => {
-                  const canInspect =
-                    canMutate &&
-                    isSource &&
-                    c.decision === "ReturnToSource" &&
-                    (c.status === "ReceivedAtSource" || c.status === "AwaitingInspection");
-                  if (!canInspect) {
-                    return null;
-                  }
-                  return (
-                    <li
-                      key={c.custodyId}
-                      className="flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)]"
-                    >
-                      <Button
-                        type="button"
-                        appearance="ghost"
-                        disabled={busy}
-                        onClick={() => {
-                          setInspectCustodyId(c.custodyId);
-                          setInspectRecoveredText("0");
-                          setInspectConfirmedText(String(c.quantity));
-                        }}
-                        data-testid={`transfer-custody-inspect-${c.custodyId}`}
-                      >
-                        Inspect
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-            {thisTransferExceptionCustodies.length > 0 ? (
-              <ul className="m-0 list-none p-0" data-testid="transfer-exception-custodies">
-                {inspectExceptionCustodyId ? (
-                  <li className="mb-2 flex flex-col gap-2 rounded-md border border-border p-2">
-                    <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-                      {t("transfer.exceptionInspectTitle")}
-                    </p>
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                      {t("transfer.exceptionRecoveredSellable")}
-                      <input
-                        className="rounded-md border border-border px-2 py-1"
-                        inputMode="decimal"
-                        value={inspectExceptionRecoveredText}
-                        onChange={(e) => setInspectExceptionRecoveredText(e.target.value)}
-                        data-testid="transfer-exception-custody-inspect-recovered"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                      {t("transfer.exceptionConfirmedNonSellable")}
-                      <input
-                        className="rounded-md border border-border px-2 py-1"
-                        inputMode="decimal"
-                        value={inspectExceptionNonSellableText}
-                        onChange={(e) => setInspectExceptionNonSellableText(e.target.value)}
-                        data-testid="transfer-exception-custody-inspect-non-sellable"
-                      />
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void onInspectExceptionCustody()}
-                        data-testid="transfer-exception-custody-inspect-confirm"
-                      >
-                        {t("transfer.exceptionInspectConfirm")}
-                      </Button>
-                      <Button
-                        type="button"
-                        appearance="ghost"
-                        disabled={busy}
-                        onClick={() => setInspectExceptionCustodyId(null)}
-                        data-testid="transfer-exception-custody-inspect-cancel"
-                      >
-                        {t("transfer.dialogCancel")}
-                      </Button>
-                    </div>
-                  </li>
-                ) : null}
-                {thisTransferExceptionCustodies.map((c) => {
-                  const pendingInspect =
-                    c.decision === "ReturnToSource" &&
-                    !restoresDirectlyToSellableOnSourceReceive(c.reasonCode) &&
-                    (c.status === "ReceivedAtSource" || c.status === "AwaitingInspection");
-                  if (!pendingInspect) {
-                    return null;
-                  }
-
-                  const canInspect = canMutate && isSource && pendingInspect;
-
-                  return (
-                    <li
-                      key={c.custodyId}
-                      className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-                      data-testid={`transfer-exception-custody-actions-${c.custodyId}`}
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          type="button"
-                          appearance="ghost"
-                          disabled={!canInspect || busy}
-                          onClick={() => {
-                            setInspectExceptionCustodyId(c.custodyId);
-                            setInspectExceptionRecoveredText("0");
-                            setInspectExceptionNonSellableText(String(c.quantity));
-                          }}
-                          data-testid={`transfer-exception-custody-inspect-${c.custodyId}`}
-                        >
-                          {t("transfer.exceptionInspect")}
-                        </Button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
       </div>
 
       {showFulfillmentCoverage ? (
@@ -1593,15 +1436,107 @@ export function InventoryTransferDetailPage() {
                       ) : null}
                       {isSource && received ? (
                         <div
-                          className="flex min-w-0 flex-col gap-0.5"
+                          className="flex min-w-0 flex-col items-start gap-2"
                           data-testid={`transfer-family-member-return-status-${c.custodyId}`}
                         >
-                          <span className="font-medium text-foreground">
-                            {t("transfer.exceptionReturnedToSource")}
-                          </span>
-                          {receivedFromLine ? (
-                            <span className="text-muted">{receivedFromLine}</span>
-                          ) : null}
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <span className="font-medium text-foreground">
+                              {destName
+                                ? t("transfer.custody.returnedFromBranch").replace(
+                                    "{branch}",
+                                    destName,
+                                  )
+                                : t("transfer.exceptionReturnedToSource")}
+                            </span>
+                            {receivedFromLine ? (
+                              <span className="text-muted">{receivedFromLine}</span>
+                            ) : null}
+                          </div>
+                          {(() => {
+                            const pendingInspect =
+                              !restoresDirectlyToSellableOnSourceReceive(c.reasonCode) &&
+                              (c.status === "ReceivedAtSource" ||
+                                c.status === "AwaitingInspection");
+                            const canInspect = canMutate && pendingInspect;
+                            const inspecting = inspectExceptionCustodyId === c.custodyId;
+                            if (!pendingInspect) {
+                              return null;
+                            }
+                            if (inspecting) {
+                              const ready = parseInspectDisposition(
+                                inspectExceptionDraft,
+                                inspectExceptionQty,
+                              ).ok;
+                              return (
+                                <div
+                                  className="flex w-full min-w-0 flex-col gap-2 rounded-md border border-border p-2"
+                                  data-testid={`transfer-exception-custody-actions-${c.custodyId}`}
+                                >
+                                  <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                                    {t("transfer.exceptionInspectTitle")}
+                                  </p>
+                                  <InventoryInspectDispositionPanel
+                                    totalQty={inspectExceptionQty}
+                                    draft={inspectExceptionDraft}
+                                    onChange={setInspectExceptionDraft}
+                                    recoveredLabel={t("transfer.exceptionRecoveredSellable")}
+                                    confirmedLabel={t("transfer.exceptionConfirmedNonSellable")}
+                                    helpText={t("transfer.exceptionInspectHelp")}
+                                    allSellableLabel={t("transfer.exceptionAllSellable")}
+                                    allDamagedLabel={t("transfer.exceptionAllNonSellable")}
+                                    mustEqualLabel={t("transfer.exceptionMustEqualQty")}
+                                    disabled={busy}
+                                    testIdPrefix="transfer-exception-custody-inspect"
+                                  />
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button
+                                      type="button"
+                                      intent="primary"
+                                      appearance="solid"
+                                      disabled={busy || !ready}
+                                      onClick={() => void onInspectExceptionCustody()}
+                                      data-testid="transfer-exception-custody-inspect-confirm"
+                                    >
+                                      <ClipboardCheck className="size-4 shrink-0" aria-hidden />
+                                      {t("transfer.exceptionInspectConfirm")}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      intent="danger"
+                                      appearance="solid"
+                                      emphasis="soft"
+                                      disabled={busy}
+                                      onClick={() => {
+                                        setInspectExceptionCustodyId(null);
+                                        setInspectExceptionDraft(emptyInspectDraft());
+                                      }}
+                                      data-testid="transfer-exception-custody-inspect-cancel"
+                                    >
+                                      {t("transfer.dialogCancel")}
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return (
+                              <Button
+                                type="button"
+                                intent="primary"
+                                appearance="solid"
+                                className="w-auto self-start"
+                                disabled={!canInspect || busy}
+                                onClick={() => {
+                                  setInspectExceptionCustodyId(c.custodyId);
+                                  setInspectExceptionQty(c.quantity);
+                                  setInspectExceptionDraft(emptyInspectDraft());
+                                }}
+                                data-testid={`transfer-exception-custody-inspect-${c.custodyId}`}
+                              >
+                                <ClipboardCheck className="size-4 shrink-0" aria-hidden />
+                                {t("transfer.exceptionInspect")}
+                              </Button>
+                            );
+                          })()}
                         </div>
                       ) : null}
                     </div>
@@ -1723,20 +1658,111 @@ export function InventoryTransferDetailPage() {
                       ) : null}
                       {isSource && received ? (
                         <div
-                          className="flex min-w-0 flex-col gap-0.5"
+                          className="flex min-w-0 flex-col items-start gap-2"
                           data-testid={`transfer-family-member-damage-return-status-${c.custodyId}`}
                         >
-                          <span className="font-medium text-foreground">
-                            {t("transfer.exceptionReturnedToSource")}
-                          </span>
-                          {qtyProduct && hasProduct ? (
-                            <span className="text-muted">
-                              {t("transfer.exceptionReceivedFromBranch")
-                                .replace("{qty}", formatTransferQty(c.quantity))
-                                .replace("{product}", productName)
-                                .replace("{branch}", destName)}
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <span className="font-medium text-foreground">
+                              {destName
+                                ? t("transfer.custody.returnedFromBranch").replace(
+                                    "{branch}",
+                                    destName,
+                                  )
+                                : t("transfer.exceptionReturnedToSource")}
                             </span>
-                          ) : null}
+                            {qtyProduct && hasProduct ? (
+                              <span className="text-muted">
+                                {t("transfer.exceptionReceivedFromBranch")
+                                  .replace("{qty}", formatTransferQty(c.quantity))
+                                  .replace("{product}", productName)
+                                  .replace("{branch}", destName)}
+                              </span>
+                            ) : null}
+                          </div>
+                          {(() => {
+                            const pendingInspect =
+                              c.status === "ReceivedAtSource" ||
+                              c.status === "AwaitingInspection";
+                            const canInspect = canMutate && pendingInspect;
+                            const inspecting = inspectCustodyId === c.custodyId;
+                            if (!pendingInspect) {
+                              return null;
+                            }
+                            if (inspecting) {
+                              const ready = parseInspectDisposition(
+                                inspectDamageDraft,
+                                inspectDamageQty,
+                              ).ok;
+                              return (
+                                <div
+                                  className="flex w-full min-w-0 flex-col gap-2 rounded-md border border-border p-2"
+                                  data-testid="transfer-damage-custodies"
+                                >
+                                  <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                                    {t("transfer.damageInspectTitle")}
+                                  </p>
+                                  <InventoryInspectDispositionPanel
+                                    totalQty={inspectDamageQty}
+                                    draft={inspectDamageDraft}
+                                    onChange={setInspectDamageDraft}
+                                    recoveredLabel={t("transfer.damageRecoveredSellable")}
+                                    confirmedLabel={t("transfer.damageConfirmedDamaged")}
+                                    helpText={t("transfer.damageInspectHelp")}
+                                    allSellableLabel={t("transfer.damageAllSellable")}
+                                    allDamagedLabel={t("transfer.damageAllDamaged")}
+                                    mustEqualLabel={t("transfer.damageMustEqualQty")}
+                                    disabled={busy}
+                                    testIdPrefix="transfer-custody-inspect"
+                                  />
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button
+                                      type="button"
+                                      intent="primary"
+                                      appearance="solid"
+                                      disabled={busy || !ready}
+                                      onClick={() => void onInspectDamageCustody()}
+                                      data-testid="transfer-custody-inspect-confirm"
+                                    >
+                                      <ClipboardCheck className="size-4 shrink-0" aria-hidden />
+                                      {t("transfer.damageInspectConfirm")}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      intent="danger"
+                                      appearance="solid"
+                                      emphasis="soft"
+                                      disabled={busy}
+                                      onClick={() => {
+                                        setInspectCustodyId(null);
+                                        setInspectDamageDraft(emptyInspectDraft());
+                                      }}
+                                      data-testid="transfer-custody-inspect-cancel"
+                                    >
+                                      {t("transfer.dialogCancel")}
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return (
+                              <Button
+                                type="button"
+                                intent="primary"
+                                appearance="solid"
+                                className="w-auto self-start"
+                                disabled={!canInspect || busy}
+                                onClick={() => {
+                                  setInspectCustodyId(c.custodyId);
+                                  setInspectDamageQty(c.quantity);
+                                  setInspectDamageDraft(emptyInspectDraft());
+                                }}
+                                data-testid={`transfer-custody-inspect-${c.custodyId}`}
+                              >
+                                <ClipboardCheck className="size-4 shrink-0" aria-hidden />
+                                {t("transfer.damageInspect")}
+                              </Button>
+                            );
+                          })()}
                         </div>
                       ) : null}
                     </div>

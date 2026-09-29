@@ -217,5 +217,11 @@ describe("Button shape and treatment (locked standard)", () => {
     expect(screen.getByRole("button", { name: "Disabled" }).className).toContain(
       "disabled:scale-100",
     );
+    expect(screen.getByRole("button", { name: "Disabled" }).className).toContain(
+      "disabled:!bg-[var(--exits-surface-muted)]",
+    );
+    expect(screen.getByRole("button", { name: "Disabled" }).className).not.toContain(
+      "disabled:opacity-50",
+    );
   });
 });

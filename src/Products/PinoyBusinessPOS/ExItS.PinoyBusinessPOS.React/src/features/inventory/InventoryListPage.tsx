@@ -16,10 +16,8 @@ import { ProductBrandMultiSelect } from "@/components/exits/ProductBrandMultiSel
 import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
 import { SearchField } from "@/components/exits/SearchField";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
-import {
-  formatInventoryQty,
-  resolveAvailableQuantity,
-} from "@/features/inventory/inventory-reservation-display";
+import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
+import { InventoryAvailableQtyPill } from "@/features/inventory/InventoryAvailableQtyPill";
 import { InventoryListDesktopTable } from "@/features/inventory/InventoryListDesktopTable";
 import { InventoryProductSummaryDrawer } from "@/features/inventory/InventoryProductSummaryDrawer";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
@@ -459,16 +457,12 @@ export function InventoryListPage() {
                       </AppLinkWithReturn>
                       <div className="inventory-row__aside shrink-0 flex items-center gap-1">
                         {tracked ? (
-                          <span
-                            className={cn(
-                              "inventory-row__qty tabular-nums",
-                              lowStock && "inventory-row__qty--warn",
-                              outOfStock && "inventory-row__qty--danger",
-                            )}
-                            data-testid={`inventory-row-available-${item.productId}`}
-                          >
-                            {formatInventoryQty(availableQty)}
-                          </span>
+                          <InventoryAvailableQtyPill
+                            quantity={availableQty}
+                            lowStock={lowStock}
+                            outOfStock={outOfStock}
+                            testId={`inventory-row-available-${item.productId}`}
+                          />
                         ) : (
                           <span className="inventory-row__qty inventory-row__qty--muted" aria-hidden>
                             —

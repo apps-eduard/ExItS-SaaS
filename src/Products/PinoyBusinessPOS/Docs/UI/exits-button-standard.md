@@ -165,7 +165,7 @@ That Full sample **is** the ExItS Button visual standard for appearance coverage
 
 | Diamond / Prime section | ExItS |
 |-------------------------|-------|
-| Default (Submit / Disabled / Link) | Primary+Solid · disabled · Primary+Ghost |
+| Default (Submit / Disabled / Link) | Primary+Solid · disabled (muted chrome, readable label) · Primary+Ghost |
 | Icons | `size="icon"` · icon children leading/trailing |
 | Severities | Solid × each of the **8 locked** intents (Secondary = Neutral; Warn = Warning) |
 | Raised | `appearance="elevated"` |
@@ -267,9 +267,14 @@ Do **not** use ROUND for normal labeled text buttons.
 
 | API | Use |
 |-----|-----|
+| `size="sm"` | Compact labeled control (toolbar / inline actions) |
 | `size="default"` | Density-aware labeled control |
 | `size="icon"` | Square / round icon-only |
 | `size="large"` | Exceptional CTA only |
+
+### Disabled contrast (locked)
+
+Disabled buttons **MUST NOT** use whole-control opacity fade on solid fills (white / `primary-foreground` on washed brand fails contrast). Shared `Button` disabled chrome uses muted surface + muted text at full opacity so the label stays readable while clearly non-interactive.
 
 ---
 

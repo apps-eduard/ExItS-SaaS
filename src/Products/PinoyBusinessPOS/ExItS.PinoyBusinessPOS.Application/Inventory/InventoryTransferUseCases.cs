@@ -140,6 +140,119 @@ public sealed class InventoryTransferQueryService
             stockRequestNumber);
     }
 
+    public async Task<InventoryTransferAwaitingInspectionResultDto> ListAwaitingInspectionAsync(
+        Guid organizationId,
+        Guid heldBranchId,
+        CancellationToken cancellationToken = default)
+    {
+        if (heldBranchId == Guid.Empty)
+        {
+            return new InventoryTransferAwaitingInspectionResultDto([], 0);
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var branchId = PosBranchId.From(heldBranchId);
+        var damage = await _damageCustodies
+            .ListAwaitingInspectionByHeldBranchAsync(orgId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        var exceptions = await _exceptionCustodies
+            .ListAwaitingInspectionByHeldBranchAsync(orgId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (damage.Count == 0 && exceptions.Count == 0)
+        {
+            return new InventoryTransferAwaitingInspectionResultDto([], 0);
+        }
+
+        var transferIds = damage.Select(c => c.TransferId.Value)
+            .Concat(exceptions.Select(c => c.TransferId.Value))
+            .Distinct()
+            .ToList();
+        var transferHints = await _transfers
+            .GetTransferQueueHintsAsync(orgId, transferIds, cancellationToken)
+            .ConfigureAwait(false);
+        var destinationBranchIds = transferHints.Values
+            .Select(h => h.DestinationBranchId)
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var branchNames = destinationBranchIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _branches
+                .GetNamesAsync(organizationId, destinationBranchIds, cancellationToken)
+                .ConfigureAwait(false);
+
+        var productIds = damage.Select(c => c.ProductId)
+            .Concat(exceptions.Select(c => c.ActualProductId))
+            .Concat(exceptions.Select(c => c.ExpectedProductId))
+            .GroupBy(id => id.Value)
+            .Select(g => g.First())
+            .ToList();
+        var catalogProducts = productIds.Count == 0
+            ? Array.Empty<CatalogProduct>()
+            : await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+        var nameByProduct = catalogProducts
+            .Where(p => !string.IsNullOrWhiteSpace(p.Name))
+            .ToDictionary(p => p.Id.Value, p => p.Name);
+
+        string? ReturnedFromName(Guid transferId)
+        {
+            if (!transferHints.TryGetValue(transferId, out var hint))
+            {
+                return null;
+            }
+
+            return branchNames.TryGetValue(hint.DestinationBranchId, out var name)
+                   && !string.IsNullOrWhiteSpace(name)
+                ? name
+                : null;
+        }
+
+        var items = new List<InventoryTransferAwaitingInspectionItemDto>(damage.Count + exceptions.Count);
+        foreach (var c in damage)
+        {
+            transferHints.TryGetValue(c.TransferId.Value, out var hint);
+            nameByProduct.TryGetValue(c.ProductId.Value, out var productName);
+            items.Add(new InventoryTransferAwaitingInspectionItemDto(
+                c.Id.Value,
+                InventoryTransferAwaitingInspectionKinds.Damage,
+                c.TransferId.Value,
+                hint?.TransferNumber,
+                c.ProductId.Value,
+                productName,
+                c.Quantity,
+                InventoryTransferDamageCustodyStatuses.ToCode(c.Status),
+                c.HeldBranchId.Value,
+                c.UpdatedAtUtc,
+                c.ReturnReceivedAtUtc,
+                ReturnedFromBranchName: ReturnedFromName(c.TransferId.Value)));
+        }
+
+        foreach (var c in exceptions)
+        {
+            transferHints.TryGetValue(c.TransferId.Value, out var hint);
+            nameByProduct.TryGetValue(c.ActualProductId.Value, out var productName);
+            nameByProduct.TryGetValue(c.ExpectedProductId.Value, out var expectedName);
+            items.Add(new InventoryTransferAwaitingInspectionItemDto(
+                c.Id.Value,
+                InventoryTransferAwaitingInspectionKinds.Exception,
+                c.TransferId.Value,
+                hint?.TransferNumber,
+                c.ActualProductId.Value,
+                productName,
+                c.Quantity,
+                InventoryTransferExceptionCustodyStatuses.ToCode(c.Status),
+                c.HeldBranchId.Value,
+                c.UpdatedAtUtc,
+                c.ReturnReceivedAtUtc,
+                c.ExpectedProductId.Value,
+                expectedName,
+                ReturnedFromName(c.TransferId.Value)));
+        }
+
+        items.Sort((a, b) => b.UpdatedAtUtc.CompareTo(a.UpdatedAtUtc));
+        return new InventoryTransferAwaitingInspectionResultDto(items, items.Count);
+    }
+
     public async Task<PagedResult<InventoryTransferListItemDto>> ListAsync(
         Guid organizationId,
         InventoryTransferFilter filter,

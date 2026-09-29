@@ -16,6 +16,7 @@ import {
   resolvePendingReturnQuantity,
   resolveReservedQuantity,
   resolveSalePolicyBlockedQuantity,
+  resolveStockRequestCommittedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -166,6 +167,7 @@ export function InventoryProductSummaryDrawer({
   const uom = account.unitOfMeasure;
   const availableQty = resolveAvailableQuantity(account);
   const reservedQty = resolveReservedQuantity(account);
+  const committedQty = resolveStockRequestCommittedQuantity(account);
   const pendingReturnQty = resolvePendingReturnQuantity(account);
   const inTransitOutQty = resolveInTransitOutboundQuantity(account);
   const inTransitInQty = resolveInTransitInboundQuantity(account);
@@ -214,6 +216,11 @@ export function InventoryProductSummaryDrawer({
               label={t("inventory.reserved")}
               value={qtyLabel(reservedQty, uom)}
               testId="inventory-product-summary-reserved"
+            />
+            <SummaryRow
+              label={t("inventory.committed")}
+              value={qtyLabel(committedQty, uom)}
+              testId="inventory-product-summary-committed"
             />
             {pendingReturnQty > 0 ? (
               <SummaryRow

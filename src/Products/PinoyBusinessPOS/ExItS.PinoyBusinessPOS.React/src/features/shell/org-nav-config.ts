@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Boxes,
+  ClipboardCheck,
   ClipboardList,
   LayoutDashboard,
   ListChecks,
@@ -229,6 +230,7 @@ export type OrgMoreLink = {
     | "org.more.finishSetup"
     | "org.more.receiveStock"
     | "org.more.transfers"
+    | "org.more.awaitingInspection"
     | "org.more.branchRequests"
     | "org.more.expiringLots"
     | "org.more.stockMovements";
@@ -301,6 +303,12 @@ export function buildOrgMoreSections(
           icon: ArrowLeftRight,
         });
         operations.push({
+          to: "/inventory/awaiting-inspection",
+          labelKey: "org.more.awaitingInspection",
+          testId: "org-more-awaiting-inspection",
+          icon: ClipboardCheck,
+        });
+        operations.push({
           to: "/inventory/stock-requests",
           labelKey: "org.more.branchRequests",
           testId: "org-more-branch-requests",
@@ -349,6 +357,12 @@ export function buildOrgMoreSections(
         labelKey: "org.more.inventory",
         testId: "org-more-inventory",
         icon: Boxes,
+      });
+      operations.push({
+        to: "/inventory/awaiting-inspection",
+        labelKey: "org.more.awaitingInspection",
+        testId: "org-more-awaiting-inspection",
+        icon: ClipboardCheck,
       });
     }
     if (!cashierWorkspace && canViewCustomers(grant)) {

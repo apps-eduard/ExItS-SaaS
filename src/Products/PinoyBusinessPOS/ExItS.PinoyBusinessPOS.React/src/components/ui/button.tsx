@@ -54,11 +54,13 @@ const GRADIENT_MOTION =
 
 export const buttonVariantsCva = cva(
   [
-    "group/button exits-motion-press exits-motion-interaction inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
+    "group/button exits-motion-press exits-motion-interaction inline-flex items-center justify-center gap-2 whitespace-nowrap text-[length:var(--exits-text-sm)] font-medium leading-none",
     "transition-[background-color,color,box-shadow,border-color,transform,filter] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
     "active:scale-[0.985] motion-reduce:active:scale-100",
     "focus-visible:outline-none focus-visible:border-[var(--exits-primary)] focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_28%,transparent)]",
-    "disabled:pointer-events-none disabled:opacity-50 disabled:translate-y-0 disabled:scale-100 disabled:shadow-none",
+    // Disabled: muted chrome with readable label — never wash the whole solid (white-on-faded-primary).
+    "disabled:pointer-events-none disabled:translate-y-0 disabled:scale-100 disabled:shadow-none disabled:!opacity-100",
+    "disabled:!border disabled:!border-[var(--exits-border)] disabled:!bg-[var(--exits-surface-muted)] disabled:!text-[var(--exits-text-muted)]",
   ].join(" "),
   {
     variants: {
@@ -80,6 +82,7 @@ export const buttonVariantsCva = cva(
         gradient: GRADIENT_MOTION,
       },
       size: {
+        sm: "h-8 min-h-8 gap-1.5 px-2.5 text-[length:var(--exits-text-xs)]",
         default:
           "h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] px-[var(--exits-control-padding-x)]",
         icon: "size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)] p-0",

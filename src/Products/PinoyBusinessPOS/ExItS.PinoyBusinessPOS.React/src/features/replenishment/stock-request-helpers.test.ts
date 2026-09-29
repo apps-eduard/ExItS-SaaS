@@ -18,6 +18,8 @@ import {
   stockRequestStatusTone,
   totalRemainingToDispatch,
   transferReceiveHref,
+  formatCommittedRemainingLabel,
+  isWarehousePreparingOrDispatchedStatus,
 } from "@/features/replenishment/stock-request-helpers";
 
 describe("stock-request-helpers", () => {
@@ -82,6 +84,16 @@ describe("stock-request-helpers", () => {
     expect(prepareTransferPrimaryLabelKey("PartiallyFulfilled", true)).toBe(
       "stockRequest.continueTransferPreparation",
     );
+  });
+
+  it("formats committed remaining label for warehouse preparing/dispatched", () => {
+    expect(
+      formatCommittedRemainingLabel(12, "Committed remaining: {qty}", (n) => String(n)),
+    ).toBe("Committed remaining: 12");
+    expect(formatCommittedRemainingLabel(0, "Committed remaining: {qty}")).toBeNull();
+    expect(isWarehousePreparingOrDispatchedStatus("Approved")).toBe(true);
+    expect(isWarehousePreparingOrDispatchedStatus("InTransit")).toBe(true);
+    expect(isWarehousePreparingOrDispatchedStatus("Pending")).toBe(false);
   });
 
   it("findOpenCoveringTransfer exposes transfer id for view link", () => {

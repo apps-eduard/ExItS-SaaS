@@ -138,13 +138,25 @@ describe("InventoryListPage desktop table", () => {
       /Kilogram/,
     );
     expect(screen.getByTestId("inventory-table-available-prod-apple")).toHaveTextContent("90");
+    expect(screen.getByTestId("inventory-table-available-prod-apple")).toHaveAttribute(
+      "data-appearance",
+      "elevated",
+    );
+    expect(screen.getByTestId("inventory-table-available-prod-apple")).toHaveAttribute(
+      "data-shape",
+      "pill",
+    );
+    expect(screen.getByTestId("inventory-table-available-prod-apple")).toHaveAttribute(
+      "data-intent",
+      "primary",
+    );
     expect(screen.getByTestId("inventory-table-available-prod-apple")).not.toHaveTextContent(
       /Kilogram/,
     );
     expect(screen.getByTestId("inventory-table-unit-cost-value-prod-apple")).toHaveTextContent(/45/);
   });
 
-  it("shows reserved quantity in product summary drawer, not as a table chip", async () => {
+  it("shows reserved and committed quantity in product summary drawer", async () => {
     const user = userEvent.setup();
     vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
       items: [
@@ -153,6 +165,7 @@ describe("InventoryListPage desktop table", () => {
           name: "Banana Lakatan",
           availableQuantity: 100,
           reservedQuantity: 5,
+          stockRequestCommittedQuantity: 12,
           sellingPrice: 95,
           effectiveSellingPrice: 95,
         }),
@@ -168,6 +181,7 @@ describe("InventoryListPage desktop table", () => {
     await user.click(await screen.findByTestId("inventory-table-summary-prod-banana"));
     expect(await screen.findByTestId("inventory-product-summary-drawer")).toBeInTheDocument();
     expect(screen.getByTestId("inventory-product-summary-reserved")).toHaveTextContent(/5/);
+    expect(screen.getByTestId("inventory-product-summary-committed")).toHaveTextContent(/12/);
   });
 
   it("opens product summary drawer from action ellipsis with stock and config", async () => {

@@ -662,12 +662,12 @@ describe("Inventory Transfer React flow", () => {
     expect(
       screen.getByTestId("transfer-family-member-open-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("transfer-damage-custodies")).toBeInTheDocument();
-    expect(screen.queryByTestId("transfer-receiving-decision")).not.toBeInTheDocument();
-    // Keep-at-destination damage is already classified; destination must not re-inspect.
     expect(
       screen.queryByTestId("transfer-custody-inspect-ffffffff-ffff-ffff-ffff-ffffffffffff"),
     ).not.toBeInTheDocument();
+    // Keep-at-destination damage is already classified; destination must not re-inspect.
+    expect(screen.queryByTestId("transfer-damage-custodies")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("transfer-receiving-decision")).not.toBeInTheDocument();
     expect(screen.queryByText("KeepAtDestination")).not.toBeInTheDocument();
     expect(screen.queryByText("HeldAtDestination")).not.toBeInTheDocument();
     expect(screen.queryByText("RequestReplacement")).not.toBeInTheDocument();
@@ -1206,7 +1206,7 @@ describe("Inventory Transfer React flow", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows Returned to source completed state after receive", async () => {
+  it("shows Return from branch completed state after receive", async () => {
     workspaceMock.boundWorkspace.branchId = mainId;
     workspaceMock.boundWorkspace.branchName = "Main Store";
     const custodyId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
@@ -1293,7 +1293,7 @@ describe("Inventory Transfer React flow", () => {
     const status = await screen.findByTestId(
       `transfer-family-member-return-status-${custodyId}`,
     );
-    expect(status).toHaveTextContent(/Returned to source/);
+    expect(status).toHaveTextContent(/Return from Branch B/);
     expect(status).toHaveTextContent(/5 Pepsi 330ml received from Branch B/);
     expect(
       screen.queryByTestId(`transfer-family-member-receive-return-${custodyId}`),
@@ -1303,7 +1303,7 @@ describe("Inventory Transfer React flow", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("hides Receive return after source receive succeeds and shows Returned to source", async () => {
+  it("hides Receive return after source receive succeeds and shows Return from branch", async () => {
     const user = userEvent.setup();
     workspaceMock.boundWorkspace.branchId = mainId;
     workspaceMock.boundWorkspace.branchName = "Main Store";
@@ -1389,7 +1389,7 @@ describe("Inventory Transfer React flow", () => {
 
     expect(
       await screen.findByTestId(`transfer-family-member-return-status-${custodyId}`),
-    ).toHaveTextContent(/Returned to source/);
+    ).toHaveTextContent("Return from Branch B");
     expect(
       screen.queryByTestId(`transfer-family-member-receive-return-${custodyId}`),
     ).not.toBeInTheDocument();

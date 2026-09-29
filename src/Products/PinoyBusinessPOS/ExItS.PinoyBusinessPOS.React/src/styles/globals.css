@@ -2028,6 +2028,120 @@ html {
   flex: 0 0 auto;
 }
 
+/* Stock status toolbar: search | branch | category | export — one aligned row. */
+.stock-status-toolbar {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stock-status-toolbar .exits-table-toolbar__controls {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.stock-status-toolbar .exits-table-toolbar__search {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+  max-width: 22rem;
+}
+
+.stock-status-toolbar .exits-table-toolbar__filter {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.stock-status-toolbar__filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stock-status-toolbar__select,
+select.exits-select.stock-status-toolbar__select {
+  width: 11rem;
+  min-width: 9.5rem;
+  max-width: 14rem;
+  flex: 0 0 auto;
+}
+
+.stock-status-toolbar .exits-table-toolbar__end {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  width: auto;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+/*
+ * Stock Status has many metric columns. Default exits-table min-width (44rem) +
+ * table-layout:fixed crushes Product/Category/Branch/On hand into overlapping text.
+ * Keep identity columns readable and scroll horizontally instead.
+ */
+[data-testid="stock-status-table-desktop"] .exits-table {
+  min-width: 108rem;
+  width: max(100%, 108rem);
+}
+
+[data-testid="stock-status-table-desktop"] .exits-table__col--flex {
+  width: 12rem;
+  min-width: 11rem;
+  max-width: 16rem;
+}
+
+[data-testid="stock-status-table-desktop"] .stock-status-col--category,
+[data-testid="stock-status-table-desktop"] .stock-status-col--branch {
+  width: 9rem;
+  min-width: 8rem;
+  max-width: 12rem;
+}
+
+[data-testid="stock-status-table-desktop"] td.exits-table__col--flex {
+  overflow: hidden;
+}
+
+[data-testid="stock-status-table-desktop"] .stock-status-col--product-link {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .stock-status-toolbar {
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stock-status-toolbar .exits-table-toolbar__controls {
+    flex-wrap: nowrap;
+  }
+
+  .stock-status-toolbar .exits-table-toolbar__search {
+    flex: 1 1 9rem;
+    min-width: 8rem;
+    max-width: none;
+  }
+
+  .stock-status-toolbar .exits-table-toolbar__end {
+    width: auto;
+    margin-left: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .stock-status-toolbar__select,
+  select.exits-select.stock-status-toolbar__select {
+    width: 9.5rem;
+    min-width: 8.5rem;
+  }
+}
+
 .exits-table-output {
   display: inline-flex;
   align-items: center;

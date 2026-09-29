@@ -71,6 +71,8 @@ export type PosInventoryAccountDto = {
   monitoringMode?: "BranchDefault" | "Custom" | "NotMonitored" | string;
   reservedQuantity?: number;
   availableQuantity?: number;
+  /** Qty still committed to open branch stock requests (remaining to dispatch). */
+  stockRequestCommittedQuantity?: number;
   pendingReturnQuantity?: number;
   inspectionHoldQuantity?: number;
   damagedQuantity?: number;
@@ -297,6 +299,8 @@ export type InventoryStockStatusRowDto = {
   onHandQuantity: number;
   sellableQuantity: number;
   reservedQuantity: number;
+  /** Qty still committed to open branch stock requests (remaining to dispatch). */
+  stockRequestCommittedQuantity: number;
   availableQuantity: number;
   damagedQuantity: number;
   inspectionHoldQuantity: number;

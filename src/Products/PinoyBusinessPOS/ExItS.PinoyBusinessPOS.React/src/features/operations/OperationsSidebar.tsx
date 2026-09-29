@@ -17,6 +17,7 @@ import {
   preferencesNavigationState,
 } from "@/features/preferences/preferences-return";
 import { usePurchasingNavigationBadge } from "@/features/purchasing/usePurchasingNavigationBadge";
+import { useInventoryAwaitingInspectionBadge } from "@/features/inventory/useInventoryAwaitingInspectionBadge";
 import { findActiveGroupId } from "@/features/shell/sidebar-nav-group-accordion";
 import { isAccordionNavGroup } from "@/features/shell/sidebar-nav-group-helpers";
 import { useSidebarNavGroupAccordion } from "@/features/shell/useSidebarNavGroupAccordion";
@@ -31,6 +32,7 @@ export function OperationsSidebar() {
   const location = useLocation();
   const { sessionGrant, boundWorkspace } = useWorkspace();
   const purchasingBadge = usePurchasingNavigationBadge();
+  const inspectionBadge = useInventoryAwaitingInspectionBadge();
   const tooltipEnabled = useSidebarNavTooltipEnabled();
   const groups = buildOperationsSidebarGroups({
     grant: sessionGrant,
@@ -62,10 +64,21 @@ export function OperationsSidebar() {
     const preferencesState = isPreferencesDestination(item.to)
       ? preferencesNavigationState(location.pathname, location.search)
       : undefined;
-    const badgeDisplay = item.id === "purchasing" ? purchasingBadge.display : null;
+    const badgeDisplay =
+      item.id === "purchasing"
+        ? purchasingBadge.display
+        : item.id === "awaiting-inspection"
+          ? inspectionBadge.display
+          : null;
+    const badgeCount =
+      item.id === "purchasing"
+        ? purchasingBadge.count
+        : item.id === "awaiting-inspection"
+          ? inspectionBadge.count
+          : null;
     const label = t(item.labelKey);
     const ariaLabel =
-      badgeDisplay != null ? `${label}, ${purchasingBadge.count} items` : label;
+      badgeDisplay != null && badgeCount != null ? `${label}, ${badgeCount} items` : label;
     const link = (
       <NavLink
         to={item.to}

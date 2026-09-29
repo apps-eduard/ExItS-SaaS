@@ -216,6 +216,35 @@ public sealed record InspectInventoryTransferExceptionCustodyRequest(
     decimal RecoveredSellableQty,
     decimal ConfirmedNonSellableQty);
 
+/// <summary>Custody kinds for the awaiting-inspection queue.</summary>
+public static class InventoryTransferAwaitingInspectionKinds
+{
+    public const string Damage = "Damage";
+    public const string Exception = "Exception";
+}
+
+/// <summary>Returned custody awaiting inspection at the acting (held) branch.</summary>
+public sealed record InventoryTransferAwaitingInspectionItemDto(
+    Guid CustodyId,
+    string CustodyKind,
+    Guid TransferId,
+    string? TransferNumber,
+    Guid ProductId,
+    string? ProductName,
+    decimal Quantity,
+    string Status,
+    Guid HeldBranchId,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? ReturnReceivedAtUtc = null,
+    Guid? ExpectedProductId = null,
+    string? ExpectedProductName = null,
+    /// <summary>Destination branch that returned stock (for "Return from {branch}" status).</summary>
+    string? ReturnedFromBranchName = null);
+
+public sealed record InventoryTransferAwaitingInspectionResultDto(
+    IReadOnlyList<InventoryTransferAwaitingInspectionItemDto> Items,
+    int TotalCount);
+
 public sealed record InventoryTransferListItemDto(
     Guid TransferId,
     Guid? StockRequestId,

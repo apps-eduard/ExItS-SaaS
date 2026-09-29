@@ -54,6 +54,18 @@ export function resolveReservedQuantity(item: {
   return 0;
 }
 
+export function resolveStockRequestCommittedQuantity(item: {
+  stockRequestCommittedQuantity?: number | null;
+}): number {
+  if (
+    item.stockRequestCommittedQuantity != null &&
+    Number.isFinite(item.stockRequestCommittedQuantity)
+  ) {
+    return Math.max(0, item.stockRequestCommittedQuantity);
+  }
+  return 0;
+}
+
 export function resolvePendingReturnQuantity(item: {
   pendingReturnQuantity?: number | null;
 }): number {

@@ -259,6 +259,39 @@ export type InventoryTransferDto = z.infer<typeof inventoryTransferDtoSchema>;
 export type InventoryTransferListItemDto = z.infer<typeof inventoryTransferListItemDtoSchema>;
 export type InventoryTransferPagedResult = z.infer<typeof inventoryTransferPagedResultSchema>;
 
+export const INVENTORY_TRANSFER_AWAITING_INSPECTION_KINDS = ["Damage", "Exception"] as const;
+export type InventoryTransferAwaitingInspectionKind =
+  (typeof INVENTORY_TRANSFER_AWAITING_INSPECTION_KINDS)[number];
+
+export const inventoryTransferAwaitingInspectionItemDtoSchema = z.object({
+  custodyId: guidSchema,
+  custodyKind: z.string(),
+  transferId: guidSchema,
+  transferNumber: z.string().nullable().optional(),
+  productId: guidSchema,
+  productName: z.string().nullable().optional(),
+  quantity: z.number(),
+  status: z.string(),
+  heldBranchId: guidSchema,
+  updatedAtUtc: z.string(),
+  returnReceivedAtUtc: z.string().nullable().optional(),
+  expectedProductId: guidSchema.nullable().optional(),
+  expectedProductName: z.string().nullable().optional(),
+  returnedFromBranchName: z.string().nullable().optional(),
+});
+
+export const inventoryTransferAwaitingInspectionResultDtoSchema = z.object({
+  items: z.array(inventoryTransferAwaitingInspectionItemDtoSchema),
+  totalCount: z.number(),
+});
+
+export type InventoryTransferAwaitingInspectionItemDto = z.infer<
+  typeof inventoryTransferAwaitingInspectionItemDtoSchema
+>;
+export type InventoryTransferAwaitingInspectionResultDto = z.infer<
+  typeof inventoryTransferAwaitingInspectionResultDtoSchema
+>;
+
 export type InventoryTransferLineRequest = {
   productId: string;
   quantity: number;
@@ -375,6 +408,19 @@ export async function listInventoryTransfers(
     }),
   });
   return inventoryTransferPagedResultSchema.parse(raw);
+}
+
+export async function listInventoryTransfersAwaitingInspection(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<InventoryTransferAwaitingInspectionResultDto> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/awaiting-inspection`,
+  });
+  return inventoryTransferAwaitingInspectionResultDtoSchema.parse(raw);
 }
 
 export async function getInventoryTransfer(

@@ -3833,6 +3833,28 @@ public sealed class InventoryTransferUseCaseTests
             Task.FromResult<IReadOnlyList<InventoryTransfer>>(
                 _items.Where(t => t.OrganizationId == organizationId && t.StockRequestId == stockRequestId).ToList());
 
+        public Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<StockRequestId> stockRequestIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = stockRequestIds.ToHashSet();
+            return Task.FromResult<IReadOnlyList<InventoryTransfer>>(
+                _items.Where(t =>
+                        t.OrganizationId == organizationId
+                        && t.StockRequestId is StockRequestId sid
+                        && ids.Contains(sid))
+                    .ToList());
+        }
+
+        public Task<IReadOnlyDictionary<Guid, string?>> GetTransferNumbersAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string?>>(
+                _items.Where(t => transferIds.Contains(t.Id.Value))
+                    .ToDictionary(t => t.Id.Value, t => t.TransferNumber));
+
         public Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
             PosOrganizationId organizationId,
             InventoryTransferId rootTransferId,
@@ -4088,6 +4110,17 @@ public sealed class InventoryTransferUseCaseTests
                 Items.Where(c => c.OrganizationId == organizationId && transferIds.Contains(c.TransferId)).ToList());
         }
 
+        public Task<IReadOnlyList<InventoryTransferDamageCustody>> ListAwaitingInspectionByHeldBranchAsync(
+            PosOrganizationId organizationId,
+            PosBranchId heldBranchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferDamageCustody>>(
+                Items.Where(c =>
+                        c.OrganizationId == organizationId
+                        && c.HeldBranchId == heldBranchId
+                        && c.Status == InventoryTransferDamageCustodyStatus.AwaitingInspection)
+                    .ToList());
+
         public Task<IReadOnlySet<Guid>> ListTransferIdsWithRequestReplacementAsync(
             PosOrganizationId organizationId,
             IReadOnlyCollection<Guid> transferIds,
@@ -4174,6 +4207,17 @@ public sealed class InventoryTransferUseCaseTests
                 Items.Where(c => c.OrganizationId == organizationId && transferIds.Contains(c.TransferId)).ToList());
         }
 
+        public Task<IReadOnlyList<InventoryTransferExceptionCustody>> ListAwaitingInspectionByHeldBranchAsync(
+            PosOrganizationId organizationId,
+            PosBranchId heldBranchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferExceptionCustody>>(
+                Items.Where(c =>
+                        c.OrganizationId == organizationId
+                        && c.HeldBranchId == heldBranchId
+                        && c.Status == InventoryTransferExceptionCustodyStatus.AwaitingInspection)
+                    .ToList());
+
         public Task<IReadOnlySet<Guid>> ListTransferIdsWithRequestReplacementAsync(
             PosOrganizationId organizationId,
             IReadOnlyCollection<Guid> transferIds,
@@ -4253,6 +4297,13 @@ public sealed class InventoryTransferUseCaseTests
             int take,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<StockRequest>, int)>(([], 0));
+
+        public Task<IReadOnlyList<StockRequest>> ListOpenCommittingBySourceAndProductIdsAsync(
+            PosOrganizationId organizationId,
+            PosBranchId sourceLocationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<StockRequest>>([]);
 
         public Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
             PosOrganizationId organizationId,

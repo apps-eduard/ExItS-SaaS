@@ -15,13 +15,13 @@ import { PosApiError, type PosWorkspaceScope } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import {
+  resolveAvailableQuantity,
+} from "@/features/inventory/inventory-reservation-display";
+import { InventoryAvailableQtyPill } from "@/features/inventory/InventoryAvailableQtyPill";
+import {
   comparePurchaseCostToSellingPrice,
   resolveEffectiveSellingPriceView,
 } from "@/features/inventory/inventory-opening-price-feedback";
-import {
-  formatInventoryQty,
-  resolveAvailableQuantity,
-} from "@/features/inventory/inventory-reservation-display";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import {
@@ -385,16 +385,12 @@ export function InventoryListDesktopTable({
 
                 <td className="px-3 py-2.5 align-middle text-center">
                   {tracked ? (
-                    <span
-                      className={cn(
-                        "tabular-nums font-semibold",
-                        lowStock && "text-[var(--exits-warning,#b45309)]",
-                        outOfStock && "text-danger",
-                      )}
-                      data-testid={`inventory-table-available-${item.productId}`}
-                    >
-                      {formatInventoryQty(availableQty)}
-                    </span>
+                    <InventoryAvailableQtyPill
+                      quantity={availableQty}
+                      lowStock={lowStock}
+                      outOfStock={outOfStock}
+                      testId={`inventory-table-available-${item.productId}`}
+                    />
                   ) : (
                     <span className="text-muted" aria-hidden>
                       —

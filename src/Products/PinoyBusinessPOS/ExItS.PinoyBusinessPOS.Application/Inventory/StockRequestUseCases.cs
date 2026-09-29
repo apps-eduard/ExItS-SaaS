@@ -937,6 +937,9 @@ public sealed class CreateStockRequest
 public sealed class ApproveStockRequest
 {
     private readonly IStockRequestRepository _requests;
+    private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _balances;
+    private readonly StockRequestCommitmentQuery _commitments;
     private readonly StockRequestQueryService _queries;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -944,12 +947,18 @@ public sealed class ApproveStockRequest
 
     public ApproveStockRequest(
         IStockRequestRepository requests,
+        IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository balances,
+        StockRequestCommitmentQuery commitments,
         StockRequestQueryService queries,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _requests = requests;
+        _inventory = inventory;
+        _balances = balances;
+        _commitments = commitments;
         _queries = queries;
         _notifications = notifications;
         _unitOfWork = unitOfWork;
@@ -964,9 +973,16 @@ public sealed class ApproveStockRequest
         Guid actingBranchId,
         CancellationToken cancellationToken = default)
     {
-        var request = await _requests
-            .GetByIdAsync(PosOrganizationId.From(organizationId), StockRequestId.From(stockRequestId), cancellationToken)
-            .ConfigureAwait(false);
+        if (body.LineApprovals is null || body.LineApprovals.Count == 0)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                DomainErrorCodes.StockRequestRequiresLines,
+                "At least one line approval is required.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var requestId = StockRequestId.From(stockRequestId);
+        var request = await _requests.GetByIdAsync(orgId, requestId, cancellationToken).ConfigureAwait(false);
         if (request is null)
         {
             return ApplicationResult<StockRequestDto>.Failure(
@@ -981,36 +997,12 @@ public sealed class ApproveStockRequest
                 "Only the requested source warehouse can approve this stock request.");
         }
 
-        if (body.LineApprovals is null || body.LineApprovals.Count == 0)
-        {
-            return ApplicationResult<StockRequestDto>.Failure(
-                DomainErrorCodes.StockRequestRequiresLines,
-                "At least one line approval is required.");
-        }
-
         try
         {
-            var approvals = body.LineApprovals.ToDictionary(l => l.ProductId, l => l.ApprovedQuantity);
-            request.Approve(actorId, _clock.UtcNow, approvals);
-            await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            await StockRequestNotificationHelper
-                .PublishAsync(
-                    _notifications,
-                    organizationId,
-                    StockRequestNotificationTypes.Approved,
-                    request,
-                    request.DestinationLocationId.Value,
-                    "Stock request approved",
-                    $"{request.RequestNumber ?? request.Id.Value.ToString("D")} was approved.",
+            return await _unitOfWork.ExecuteInSerializableTransactionAsync(
+                    ct => ApproveCoreAsync(organizationId, orgId, requestId, body, actorId, actingBranchId, ct),
                     cancellationToken)
                 .ConfigureAwait(false);
-
-            var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, cancellationToken).ConfigureAwait(false);
-            return dto is null
-                ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
-                : ApplicationResult<StockRequestDto>.Success(dto);
         }
         catch (DomainException ex)
         {
@@ -1020,6 +1012,116 @@ public sealed class ApproveStockRequest
         {
             return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private async Task<ApplicationResult<StockRequestDto>> ApproveCoreAsync(
+        Guid organizationId,
+        PosOrganizationId orgId,
+        StockRequestId requestId,
+        ApproveStockRequestRequest body,
+        Guid actorId,
+        Guid actingBranchId,
+        CancellationToken cancellationToken)
+    {
+        var approvals = body.LineApprovals!.ToDictionary(l => l.ProductId, l => l.ApprovedQuantity);
+        var productIds = approvals.Keys.Select(CatalogProductId.From).Distinct().OrderBy(p => p.Value).ToList();
+        var sourceBranchId = PosBranchId.From(actingBranchId);
+
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
+                orgId,
+                productIds,
+                async (_, ct) =>
+                {
+                    var request = await _requests.GetByIdAsync(orgId, requestId, ct).ConfigureAwait(false);
+                    if (request is null)
+                    {
+                        throw new PersistenceConflictException(
+                            "pos.inventory.stock_request.not_found",
+                            "Stock request was not found.");
+                    }
+
+                    if (actingBranchId != request.RequestedSourceLocationId.Value)
+                    {
+                        throw new DomainException(
+                            ApplicationErrorCodes.InventoryTransferBranchForbidden,
+                            "Only the requested source warehouse can approve this stock request.");
+                    }
+
+                    var balances = await _balances
+                        .ListByBranchAndProductIdsAsync(orgId, sourceBranchId, productIds, ct)
+                        .ConfigureAwait(false);
+                    var otherCommitted = await _commitments
+                        .SumRemainingToDispatchByProductAsync(
+                            orgId,
+                            sourceBranchId,
+                            productIds,
+                            excludeStockRequestId: request.Id.Value,
+                            cancellationToken: ct)
+                        .ConfigureAwait(false);
+
+                    foreach (var (productId, approvedQty) in approvals.OrderBy(kv => kv.Key))
+                    {
+                        if (approvedQty <= 0m)
+                        {
+                            continue;
+                        }
+
+                        var catalogProductId = CatalogProductId.From(productId);
+                        var onHand = BranchStockResolver.ResolveOnHand(
+                            sourceBranchId,
+                            primaryBranchId: null,
+                            organizationOnHand: 0m,
+                            balances,
+                            catalogProductId);
+                        var reserved = BranchStockResolver.ResolveReserved(sourceBranchId, balances, catalogProductId);
+                        var operational = BranchStockResolver.ResolveAvailable(
+                            sourceBranchId,
+                            balances,
+                            catalogProductId,
+                            onHand,
+                            reserved);
+                        var alreadyCommitted = otherCommitted.GetValueOrDefault(productId);
+                        var availableForApproval = Math.Max(0m, operational - alreadyCommitted);
+                        if (approvedQty > availableForApproval)
+                        {
+                            throw new DomainException(
+                                ApplicationErrorCodes.InsufficientStock,
+                                $"Insufficient available warehouse stock to approve this stock request. Available for approval: {availableForApproval}, approved quantity: {approvedQty}.");
+                        }
+                    }
+
+                    request.Approve(actorId, _clock.UtcNow, approvals);
+                    await _requests.UpdateAsync(request, ct).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        var reloaded = await _requests.GetByIdAsync(orgId, requestId, cancellationToken).ConfigureAwait(false);
+        if (reloaded is null)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                "pos.inventory.stock_request.not_found",
+                "Stock request was not found.");
+        }
+
+        await StockRequestNotificationHelper
+            .PublishAsync(
+                _notifications,
+                organizationId,
+                StockRequestNotificationTypes.Approved,
+                reloaded,
+                reloaded.DestinationLocationId.Value,
+                "Stock request approved",
+                $"{reloaded.RequestNumber ?? reloaded.Id.Value.ToString("D")} was approved.",
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        var dto = await _queries.GetByIdAsync(organizationId, reloaded.Id.Value, cancellationToken).ConfigureAwait(false);
+        return dto is null
+            ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
+            : ApplicationResult<StockRequestDto>.Success(dto);
     }
 }
 

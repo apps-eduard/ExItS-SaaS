@@ -23,9 +23,27 @@ public interface IInventoryTransferRepository
         StockRequestId stockRequestId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Linked transfers for many stock requests (batch; used by commitment SUM).</summary>
+    Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<StockRequestId> stockRequestIds,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
         PosOrganizationId organizationId,
         InventoryTransferId rootTransferId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Lightweight transfer number lookup for queue / badge surfaces.</summary>
+    Task<IReadOnlyDictionary<Guid, string?>> GetTransferNumbersAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Transfer number + destination branch for inspection-queue "return from" labels.</summary>
+    Task<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>> GetTransferQueueHintsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -63,6 +81,11 @@ public interface IInventoryTransferRepository
 public sealed record InventoryTransferTransactionRef(
     Guid TransferId,
     string? TransferNumber);
+
+/// <summary>Lightweight transfer fields for awaiting-inspection / queue rows.</summary>
+public sealed record InventoryTransferQueueHint(
+    string? TransferNumber,
+    Guid DestinationBranchId);
 
 /// <summary>Open transfer commitment for inventory badge / reservation drawer.</summary>
 public sealed record InventoryTransferOpenCommitment(

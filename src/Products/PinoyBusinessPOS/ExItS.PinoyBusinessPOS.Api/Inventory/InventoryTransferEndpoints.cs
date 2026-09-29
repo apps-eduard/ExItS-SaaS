@@ -13,6 +13,7 @@ internal static class InventoryTransferEndpoints
     public static void Map(RouteGroupBuilder group)
     {
         group.MapGet("/transfers", ListTransfers);
+        group.MapGet("/transfers/awaiting-inspection", ListAwaitingInspection);
         group.MapPost("/transfers", CreateTransfer);
         group.MapGet("/transfers/{transferId:guid}", GetTransfer);
         group.MapPut("/transfers/{transferId:guid}", UpdateTransfer);
@@ -58,6 +59,24 @@ internal static class InventoryTransferEndpoints
             direction,
             actingBranch);
         var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> ListAwaitingInspection(
+        HttpRequest request,
+        InventoryTransferQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await queries
+            .ListAwaitingInspectionAsync(organizationId, branchId, ct)
+            .ConfigureAwait(false);
         return Results.Ok(result);
     }
 
