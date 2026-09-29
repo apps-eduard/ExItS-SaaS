@@ -4025,7 +4025,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockStatus.colBranchHint": "Branch where this stock is held.",
   "stockStatus.colOnHandHint": "Physical quantity currently at this branch.",
   "stockStatus.colSellableHint": "Quantity eligible to sell after expiry and policy rules.",
-  "stockStatus.colReservedHint": "Held for sales and customer orders — not free to sell again.",
+  "stockStatus.colReservedHint": "Held for sales and customer orders ï¿½ not free to sell again.",
   "stockStatus.colCommittedHint": "Committed to approved branch stock requests still remaining to dispatch.",
   "stockStatus.colAvailableHint": "Free to sell or allocate after reserved, committed, and non-sellable quantities.",
   "stockStatus.colDamagedHint": "Damaged quantity set aside from sellable stock.",
@@ -9603,6 +9603,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.todo.filterUpcoming": "Paparating",
 
   "personal.todo.filters": "Mga filter ng gawain",
+  "personal.todo.filterAll": "Lahat ng gawain",
+  "personal.todo.cardTitle": "Mga gawain",
+  "personal.todo.newTask": "Bagong gawain",
+  "personal.todo.railSection": "Gawain",
+  "personal.todo.groupHeader": "{count} Tasks {label}",
+  "personal.todo.closeDetail": "Isara",
+  "personal.todo.openFullDetail": "Buksan ang buong detalye",
+  "personal.todo.emptyAllTitle": "Wala pang gawain",
+  "personal.todo.emptyAllDetail": "Gumawa ng gawain para magsimula.",
 
   "personal.todo.genericError": "May nangyaring mali. Subukan muli.",
 

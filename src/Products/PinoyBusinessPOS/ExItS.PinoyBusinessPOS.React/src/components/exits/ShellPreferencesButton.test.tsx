@@ -2,13 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
+import { PreferencesOverlayProvider } from "@/features/preferences/PreferencesOverlay";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 
 function renderButton() {
   return render(
-    <MemoryRouter initialEntries={["/role/manager"]}>
-      <ShellPreferencesButton label="Preferences" />
-    </MemoryRouter>,
+    <PreferencesOverlayProvider>
+      <MemoryRouter initialEntries={["/role/manager"]}>
+        <ShellPreferencesButton label="Preferences" />
+      </MemoryRouter>
+    </PreferencesOverlayProvider>,
   );
 }
 
@@ -36,15 +39,15 @@ describe("ShellPreferencesButton ambient settings gear", () => {
     delete document.documentElement.dataset.motion;
   });
 
-  it("links to Preferences without changing data-primary or storage", async () => {
+  it("opens Preferences overlay control without changing data-primary or storage", async () => {
     renderButton();
-    const link = screen.getByTestId("shell-preferences-button");
-    expect(link).toHaveAttribute("href", "/settings/preferences");
-    expect(link).toHaveAttribute("aria-label", "Preferences");
-    expect(link).toHaveAttribute("title", "Preferences");
+    const control = screen.getByTestId("shell-preferences-button");
+    expect(control.tagName).toBe("BUTTON");
+    expect(control).toHaveAttribute("aria-label", "Preferences");
+    expect(control).toHaveAttribute("title", "Preferences");
 
     await waitFor(() => {
-      expect(link).toHaveAttribute("data-ambient-settings", "on");
+      expect(control).toHaveAttribute("data-ambient-settings", "on");
     });
 
     expect(document.documentElement.dataset.primary).toBe("blue");

@@ -16,6 +16,7 @@ import {
   isPreferencesDestination,
   preferencesNavigationState,
 } from "@/features/preferences/preferences-return";
+import { usePreferencesDestinationClick } from "@/features/preferences/usePreferencesDestinationClick";
 import { findActiveGroupId } from "@/features/shell/sidebar-nav-group-accordion";
 import { isAccordionNavGroup } from "@/features/shell/sidebar-nav-group-helpers";
 import { useSidebarNavGroupAccordion } from "@/features/shell/useSidebarNavGroupAccordion";
@@ -29,6 +30,7 @@ export function AdminSidebar() {
   const { t } = useI18n();
   const location = useLocation();
   const { sessionGrant, boundWorkspace, workspaces } = useWorkspace();
+  const openPreferencesDestination = usePreferencesDestinationClick();
   const fulfillmentBranchId = resolveConfigureFulfillmentBranchId({
     boundBranchId: boundWorkspace?.branchId,
     organizationId: boundWorkspace?.organizationId,
@@ -73,11 +75,14 @@ export function AdminSidebar() {
         to={item.to}
         end={item.end}
         state={preferencesState}
-        onClick={
-          preferencesState
-            ? () => capturePreferencesReturnFrom(location.pathname, location.search)
-            : undefined
-        }
+        onClick={(event) => {
+          if (openPreferencesDestination(item.to, event)) {
+            return;
+          }
+          if (preferencesState) {
+            capturePreferencesReturnFrom(location.pathname, location.search);
+          }
+        }}
         data-testid={item.testId}
         aria-label={accessibleLabel}
         aria-current={isActive ? "page" : undefined}

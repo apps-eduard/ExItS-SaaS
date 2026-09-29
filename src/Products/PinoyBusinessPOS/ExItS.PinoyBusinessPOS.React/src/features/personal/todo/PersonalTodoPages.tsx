@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronDown, ChevronRight, ListPlus, Loader2, Pencil, RefreshCw, RotateCcw, Save, Search, SlidersHorizontal, Users, X } from "lucide-react";
+import { Check, ListPlus, Loader2, Pencil, Plus, RefreshCw, RotateCcw, Save, Search, SlidersHorizontal, Users, X } from "lucide-react";
 import {
   cancelPersonalTodo,
   completePersonalTodo,
   createPersonalTodo,
+  buildPersonalTodoListGroups,
   filterAndSortTodosForTab,
   getPersonalTodo,
   isTodoConcurrencyConflict,
@@ -41,6 +42,14 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
+import {
+  PersonalTodoFilterRail,
+  PersonalTodoTasklistGroup,
+  PersonalTodoTaskRow,
+  PERSONAL_TODO_FILTER_TABS,
+} from "@/features/personal/todo/PersonalTodoTasklistUi";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import {
@@ -52,14 +61,7 @@ import {
 } from "@/offline/personal-todo-cache";
 import { type PersonalTodoTransition } from "@/offline/personal-todo-offline";
 
-const TABS: { id: TodoAgendaTab; labelKey: MessageKey }[] = [
-  { id: "today", labelKey: "personal.todo.filterToday" },
-  { id: "upcoming", labelKey: "personal.todo.filterUpcoming" },
-  { id: "overdue", labelKey: "personal.todo.filterOverdue" },
-  { id: "open", labelKey: "personal.todo.filterOpen" },
-  { id: "completed", labelKey: "personal.todo.filterCompleted" },
-  { id: "cancelled", labelKey: "personal.todo.filterCancelled" },
-];
+const TABS = PERSONAL_TODO_FILTER_TABS;
 
 function priorityLabelKey(priority: string): MessageKey {
   switch (priority) {
@@ -210,6 +212,7 @@ export function PersonalTodoHubPage() {
   const [cachedTodos, setCachedTodos] = useState<CachedPersonalTodo[]>([]);
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
   const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
 
   useEffect(() => {
     setTab(parseTodoAgendaTab(searchParams.get("tab")));
@@ -396,6 +399,10 @@ export function PersonalTodoHubPage() {
       : (todosQuery.data ?? [])
     : (todosQuery.data ?? []);
 
+  const listGroups = useMemo(
+    () => buildPersonalTodoListGroups([...todos], tab, { search: searchQuery }),
+    [todos, tab, searchQuery],
+  );
   const filtered = useMemo(
     () => filterAndSortTodosForTab([...todos], tab, { search: searchQuery }),
     [todos, tab, searchQuery],
@@ -410,7 +417,6 @@ export function PersonalTodoHubPage() {
   if (online && todosQuery.isPending) {
     return <LoadingSkeleton label={t("personal.todo.loading")} />;
   }
-  const activeTabLabel = t(TABS.find((item) => item.id === tab)?.labelKey ?? "personal.todo.title");
   const offlineBlocked = !online;
 
   if (online && todosQuery.isError && cachedTodos.length === 0) {
@@ -444,6 +450,27 @@ export function PersonalTodoHubPage() {
     );
   }
 
+  function renderTodoRow(item: PersonalTodoDto) {
+    const isActing = actionMutation.isPending && activeTodoId === item.id;
+    const isExiting = exitingIds.has(item.id);
+    return (
+      <PersonalTodoTaskRow
+        key={item.id}
+        item={item}
+        isActing={isActing}
+        isExiting={isExiting}
+        pendingLocal={pendingById.has(item.id)}
+        offlineBlocked={offlineBlocked}
+        peekMode={false}
+        selected={false}
+        onSelect={() => undefined}
+        onComplete={() => actionMutation.mutate({ action: "complete", todo: item })}
+        onCancel={() => actionMutation.mutate({ action: "cancel", todo: item })}
+        onReopen={() => actionMutation.mutate({ action: "reopen", todo: item })}
+      />
+    );
+  }
+
   return (
     <div
       className="personal-page personal-todo-hub exits-page flex min-w-0 flex-col gap-3"
@@ -468,364 +495,221 @@ export function PersonalTodoHubPage() {
         />
       ) : null}
 
-      <div className="exits-animate-toolbar">
-        <UnderlineTabBar
-          items={TABS.map((item) => {
-            const count =
-              counts == null
-                ? null
-                : item.id === "today"
-                  ? counts.today
-                  : item.id === "upcoming"
-                    ? counts.upcoming
-                    : item.id === "overdue"
-                      ? counts.overdue
-                    : item.id === "open"
-                      ? counts.open
-                      : item.id === "completed"
-                        ? counts.completed
-                        : counts.cancelled;
-            return {
-              key: item.id,
-              label: t(item.labelKey),
-              count,
-              testId: `todo-tab-${item.id}`,
-            };
-          })}
-          activeKey={tab}
-          onChange={(key) => changeTab(key as TodoAgendaTab)}
-          ariaLabel={t("personal.todo.filters")}
-          testId="personal-todo-filters"
-        />
-      </div>
-
-      <label className="personal-todo-search exits-animate-toolbar flex flex-col gap-1">
-        <span className="sr-only">{t("personal.todo.searchLabel")}</span>
-        <span className="personal-todo-search__field">
-          <Search className="personal-todo-search__icon size-4 shrink-0" aria-hidden />
-          <input
-            type="search"
-            className="personal-todo-search__input"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t("personal.todo.searchPlaceholder")}
-            data-testid="todo-search"
-          />
-        </span>
-      </label>
-
-      <section
-        className="personal-todo-create-shell catalog-form-section exits-animate-panel personal-section"
-        data-testid="todo-create-shell"
+      <div
+        className={cn(
+          "personal-todo-tasklist-layout",
+          isDesktop && "personal-todo-tasklist-layout--desktop",
+        )}
+        data-testid="personal-todo-tasklist-layout"
       >
-        <button
-          type="button"
-          className={cn(
-            "personal-todo-create-toggle",
-            createFormOpen && "personal-todo-create-toggle--open",
-          )}
-          data-testid="todo-create-toggle"
-          aria-expanded={createFormOpen}
-          aria-controls="todo-create-panel"
-          onClick={() => setCreateFormOpen((open) => !open)}
+        <aside
+          className="personal-todo-tasklist-rail catalog-form-section exits-animate-panel"
+          data-testid="personal-todo-tasklist-rail"
         >
-          <span className="personal-todo-create-toggle__lead">
-            <ListPlus
-              className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
-              aria-hidden
-            />
-            <span className="personal-todo-create-toggle__label">{t("personal.todo.createTitle")}</span>
-          </span>
-          <ChevronDown
-            className={cn(
-              "personal-todo-create-toggle__chevron size-4 shrink-0",
-              createFormOpen && "personal-todo-create-toggle__chevron--open",
-            )}
-            aria-hidden
-          />
-        </button>
+          <Button
+            type="button"
+            appearance="outline"
+            className="personal-todo-tasklist-rail__new w-full"
+            data-testid="todo-new-task"
+            onClick={() => {
+              setCreateFormOpen(true);
+              setCreateAdvancedOpen(false);
+            }}
+          >
+            <Plus className="size-4 shrink-0" aria-hidden />
+            {t("personal.todo.newTask")}
+          </Button>
+          <PersonalTodoFilterRail activeTab={tab} counts={counts} onChange={changeTab} />
+        </aside>
 
-        <div
-          id="todo-create-panel"
-          className={cn(
-            "personal-todo-create-collapse",
-            createFormOpen && "personal-todo-create-collapse--open",
-          )}
-          aria-hidden={!createFormOpen}
+        <section
+          className="personal-todo-tasklist-card catalog-form-section exits-animate-panel"
+          data-testid="personal-todo-tasklist-card"
+          aria-label={t("personal.todo.cardTitle")}
         >
-          <div className="personal-todo-create-collapse__inner">
-            <form
-              className="personal-todo-create-form flex flex-col gap-2"
-              data-testid="todo-create-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!form.title.trim()) {
-                  setFormError(t("personal.todo.titleRequired"));
-                  return;
-                }
-                createMutation.mutate();
-              }}
+          {!isDesktop ? (
+            <header className="personal-todo-tasklist-card__header">
+              <h2 className="personal-todo-tasklist-card__title m-0">{t("personal.todo.cardTitle")}</h2>
+              <Button
+                type="button"
+                appearance="outline"
+                className="personal-todo-tasklist-card__new"
+                data-testid="todo-new-task-mobile"
+                onClick={() => setCreateFormOpen(true)}
+              >
+                <Plus className="size-4 shrink-0" aria-hidden />
+                {t("personal.todo.newTask")}
+              </Button>
+            </header>
+          ) : null}
+
+          {!isDesktop ? (
+            <div className="personal-todo-tasklist-card__filters exits-animate-toolbar">
+              <UnderlineTabBar
+                className="personal-todo-tasklist-filters"
+                items={TABS.map((item) => {
+                  const count = counts == null ? null : counts[item.id];
+                  return {
+                    key: item.id,
+                    label: t(item.labelKey),
+                    count,
+                    testId: `todo-mobile-tab-${item.id}`,
+                  };
+                })}
+                activeKey={tab}
+                onChange={(key) => changeTab(key as TodoAgendaTab)}
+                ariaLabel={t("personal.todo.filters")}
+                testId="personal-todo-mobile-filters"
+              />
+            </div>
+          ) : null}
+
+          <label className="personal-todo-search personal-todo-tasklist-card__search flex flex-col gap-1">
+            <span className="sr-only">{t("personal.todo.searchLabel")}</span>
+            <span className="personal-todo-search__field personal-todo-tasklist-card__search-field">
+              <Search className="personal-todo-search__icon size-4 shrink-0" aria-hidden />
+              <input
+                type="search"
+                className="personal-todo-search__input"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={t("personal.todo.searchPlaceholder")}
+                data-testid="todo-search"
+              />
+            </span>
+          </label>
+
+          {createFormOpen ? (
+            <section
+              className="personal-todo-create-shell personal-todo-tasklist-card__create"
+              data-testid="todo-create-shell"
             >
-              <div className="personal-todo-quick-add flex flex-col gap-2 sm:flex-row sm:items-end">
-                <label
-                  className="flex min-w-0 flex-1 flex-col gap-1 text-[length:var(--exits-text-sm)]"
-                  htmlFor="todo-create-title"
-                >
-                  {t("personal.todo.titleField")}
-                  <input
-                    id="todo-create-title"
-                    data-testid="todo-create-title"
-                    className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                    value={form.title}
-                    onChange={(event) => setForm({ ...form, title: event.target.value })}
-                    required
+              <div className="personal-todo-create-toggle personal-todo-create-toggle--open">
+                <span className="personal-todo-create-toggle__lead">
+                  <ListPlus
+                    className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+                    aria-hidden
                   />
-                </label>
+                  <span className="personal-todo-create-toggle__label">
+                    {t("personal.todo.createTitle")}
+                  </span>
+                </span>
                 <Button
-                  type="submit"
-                  className="personal-todo-submit w-full sm:w-auto"
-                  disabled={createMutation.isPending || offlineBlocked}
-                  data-testid="todo-create-submit"
-                  tabIndex={createFormOpen ? undefined : -1}
+                  type="button"
+                  appearance="ghost"
+                  size="icon"
+                  aria-label={t("personal.todo.closeDetail")}
+                  data-testid="todo-create-close"
+                  onClick={() => {
+                    setCreateFormOpen(false);
+                    setCreateAdvancedOpen(false);
+                    setFormError(null);
+                  }}
                 >
-                  <TodoActionIcon pending={createMutation.isPending}>
-                    <ListPlus className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                  </TodoActionIcon>
-                  {t("personal.todo.add")}
+                  <X className="size-4" aria-hidden />
                 </Button>
               </div>
-
-              <button
-                type="button"
-                className="personal-todo-advanced-toggle"
-                data-testid="todo-create-advanced-toggle"
-                aria-expanded={createAdvancedOpen}
-                onClick={() => setCreateAdvancedOpen((open) => !open)}
-              >
-                <SlidersHorizontal className="size-4 shrink-0" aria-hidden />
-                {createAdvancedOpen
-                  ? t("personal.todo.hideMoreOptions")
-                  : t("personal.todo.moreOptions")}
-              </button>
-
-              {createAdvancedOpen ? (
-                <TodoFormFields
-                  form={form}
-                  setForm={setForm}
-                  idPrefix="todo-create-advanced"
-                  includeTitle={false}
-                />
-              ) : null}
-
-              {!online ? (
-                <>
-                  <OfflineNotice message={t("offline.requiredPersonalTodo")} />
-                  {form.reminderAtLocal ? (
-                    <OfflineNotice message={t("offline.todoNoReminders")} />
-                  ) : null}
-                </>
-              ) : null}
-              {formError ? (
-                <p
-                  role="alert"
-                  className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-                >
-                  {formError}
-                </p>
-              ) : null}
-            </form>
-          </div>
-        </div>
-      </section>
-
-      {filtered.length === 0 ? (
-        <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />} title={t(emptyState.titleKey)} detail={t(emptyState.detailKey)} />
-      ) : (
-        <section
-          className="personal-todo-list-section catalog-form-section exits-animate-panel personal-section gap-2"
-          aria-label={activeTabLabel}
-        >
-          <h2 className="catalog-form-section__title text-muted">{activeTabLabel}</h2>
-          <ul className="exits-list personal-todo-list m-0 grid list-none gap-2 p-0" data-testid="todo-list">
-            {filtered.map((item) => {
-              const hasActions =
-                item.status === "Open" ||
-                item.status === "Completed" ||
-                item.status === "Cancelled";
-              const isActing = actionMutation.isPending && activeTodoId === item.id;
-              const isExiting = exitingIds.has(item.id);
-              return (
-                <li
-                  key={item.id}
-                  className={cn(isExiting && "personal-todo-list__item--exit")}
-                >
-                  <div
-                    className={cn(
-                      "exits-list__card personal-todo-row",
-                      item.priority === "High" && "personal-todo-row--priority-high",
-                      isExiting && "personal-todo-row--exit",
-                    )}
-                    data-testid={`todo-item-${item.id}`}
+              <div className="personal-todo-create-collapse personal-todo-create-collapse--open">
+                <div className="personal-todo-create-collapse__inner">
+                  <form
+                    className="personal-todo-create-form flex flex-col gap-2"
+                    data-testid="todo-create-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (!form.title.trim()) {
+                        setFormError(t("personal.todo.titleRequired"));
+                        return;
+                      }
+                      createMutation.mutate();
+                    }}
                   >
-                    <div className="personal-todo-row__body">
-                      <div className="personal-todo-row__lead">
-                        {item.status === "Open" ? (
-                          <button
-                            type="button"
-                            className="personal-todo-row__check"
-                            data-testid={`todo-check-${item.id}`}
-                            aria-label={t("personal.todo.complete")}
-                            disabled={actionMutation.isPending || offlineBlocked}
-                            onClick={() =>
-                              actionMutation.mutate({ action: "complete", todo: item })
-                            }
-                          >
-                            {isActing ? (
-                              <Loader2 className="size-4 animate-spin" aria-hidden />
-                            ) : (
-                              <span className="personal-todo-row__check-box" aria-hidden />
-                            )}
-                          </button>
-                        ) : (
-                          <span
-                            className={cn(
-                              "personal-todo-row__check personal-todo-row__check--done",
-                              item.status === "Completed" && "personal-todo-row__check--completed",
-                            )}
-                            aria-hidden
-                          />
-                        )}
-                        <Link
-                          to={`/personal/todo/${item.id}`}
-                          className="personal-todo-row__content min-w-0 flex-1 text-foreground no-underline"
-                        >
-                          <p className="exits-list__name m-0 truncate font-semibold">{item.title}</p>
-                          <TodoMetaLine todo={item} />
-                          {item.notes ? (
-                            <p className="m-0 mt-1 line-clamp-2 text-[length:var(--exits-text-sm)] text-muted">
-                              {item.notes}
-                            </p>
-                          ) : null}
-                        </Link>
-                      </div>
-                      <WaitingChip pending={pendingById.has(item.id)} />
-                      {hasActions ? (
-                        <div
-                          className={cn(
-                            "personal-todo-row__actions",
-                            item.status === "Open" && "personal-todo-row__actions--open",
-                            item.status === "Completed" && "personal-todo-row__actions--completed",
-                            item.status === "Cancelled" && "personal-todo-row__actions--solo",
-                          )}
-                        >
-                          {item.status === "Open" ? (
-                            <>
-                              <Button
-                                type="button"
-                                className="personal-todo-row__action"
-                                data-testid={`todo-complete-${item.id}`}
-                                disabled={actionMutation.isPending || offlineBlocked}
-                                onClick={() =>
-                                  actionMutation.mutate({ action: "complete", todo: item })
-                                }
-                              >
-                                <TodoActionIcon pending={isActing}>
-                                  <Check className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                                </TodoActionIcon>
-                                {t("personal.todo.complete")}
-                              </Button>
-                              <Button
-                                asChild
-                                variant="outline"
-                                className="personal-todo-row__action"
-                                data-testid={`todo-edit-${item.id}`}
-                              >
-                                <Link to={`/personal/todo/${item.id}?edit=1`}>
-                                  <Pencil className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                                  {t("personal.todo.edit")}
-                                </Link>
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="personal-todo-row__action"
-                                data-testid={`todo-cancel-${item.id}`}
-                                disabled={actionMutation.isPending || offlineBlocked}
-                                onClick={() =>
-                                  actionMutation.mutate({ action: "cancel", todo: item })
-                                }
-                              >
-                                <TodoActionIcon pending={isActing}>
-                                  <X className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                                </TodoActionIcon>
-                                {t("personal.todo.cancel")}
-                              </Button>
-                            </>
-                          ) : null}
-                          {item.status === "Completed" ? (
-                            <>
-                              <Button
-                                type="button"
-                                className="personal-todo-row__action"
-                                data-testid={`todo-reopen-${item.id}`}
-                                disabled={actionMutation.isPending || offlineBlocked}
-                                onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
-                              >
-                                <TodoActionIcon pending={isActing}>
-                                  <RotateCcw className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                                </TodoActionIcon>
-                                {t("personal.todo.reopen")}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="personal-todo-row__action"
-                                data-testid={`todo-cancel-${item.id}`}
-                                disabled={actionMutation.isPending || offlineBlocked}
-                                onClick={() =>
-                                  actionMutation.mutate({ action: "cancel", todo: item })
-                                }
-                              >
-                                <TodoActionIcon pending={isActing}>
-                                  <X className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                                </TodoActionIcon>
-                                {t("personal.todo.cancel")}
-                              </Button>
-                            </>
-                          ) : null}
-                          {item.status === "Cancelled" ? (
-                            <Button
-                              type="button"
-                              className="personal-todo-reactivate personal-todo-row__action"
-                              data-testid={`todo-reactivate-${item.id}`}
-                              disabled={actionMutation.isPending || offlineBlocked}
-                              onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
-                            >
-                              <TodoActionIcon pending={isActing}>
-                                <RotateCcw className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                              </TodoActionIcon>
-                              {t("personal.todo.reactivate")}
-                            </Button>
-                          ) : null}
-                        </div>
-                      ) : null}
+                    <div className="personal-todo-quick-add flex flex-col gap-2 sm:flex-row sm:items-end">
+                      <label
+                        className="flex min-w-0 flex-1 flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                        htmlFor="todo-create-title"
+                      >
+                        {t("personal.todo.titleField")}
+                        <input
+                          id="todo-create-title"
+                          data-testid="todo-create-title"
+                          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                          value={form.title}
+                          onChange={(event) => setForm({ ...form, title: event.target.value })}
+                          required
+                        />
+                      </label>
+                      <Button
+                        type="submit"
+                        className="personal-todo-submit w-full sm:w-auto"
+                        disabled={createMutation.isPending || offlineBlocked}
+                        data-testid="todo-create-submit"
+                      >
+                        <TodoActionIcon pending={createMutation.isPending}>
+                          <ListPlus className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                        </TodoActionIcon>
+                        {t("personal.todo.add")}
+                      </Button>
                     </div>
-                    <Link
-                      to={`/personal/todo/${item.id}`}
-                      className="personal-todo-row__nav"
-                      aria-label={`${t("personal.todo.detailTitle")}: ${item.title}`}
+                    <button
+                      type="button"
+                      className="personal-todo-advanced-toggle"
+                      data-testid="todo-create-advanced-toggle"
+                      aria-expanded={createAdvancedOpen}
+                      onClick={() => setCreateAdvancedOpen((open) => !open)}
                     >
-                      <ChevronRight className="personal-todo-row__chevron size-4 shrink-0" aria-hidden />
-                    </Link>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                      <SlidersHorizontal className="size-4 shrink-0" aria-hidden />
+                      {createAdvancedOpen
+                        ? t("personal.todo.hideMoreOptions")
+                        : t("personal.todo.moreOptions")}
+                    </button>
+                    {createAdvancedOpen ? (
+                      <TodoFormFields
+                        form={form}
+                        setForm={setForm}
+                        idPrefix="todo-create-advanced"
+                        includeTitle={false}
+                      />
+                    ) : null}
+                    {!online ? (
+                      <>
+                        <OfflineNotice message={t("offline.requiredPersonalTodo")} />
+                        {form.reminderAtLocal ? (
+                          <OfflineNotice message={t("offline.todoNoReminders")} />
+                        ) : null}
+                      </>
+                    ) : null}
+                    {formError ? (
+                      <p
+                        role="alert"
+                        className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+                      >
+                        {formError}
+                      </p>
+                    ) : null}
+                  </form>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
+              title={t(emptyState.titleKey)}
+              detail={t(emptyState.detailKey)}
+            />
+          ) : (
+            <div className="personal-todo-tasklist-card__groups" data-testid="todo-list">
+              {listGroups.map((group) => (
+                <PersonalTodoTasklistGroup key={group.id} group={group}>
+                  {group.items.map((item) => renderTodoRow(item))}
+                </PersonalTodoTasklistGroup>
+              ))}
+            </div>
+          )}
         </section>
-      )}
+      </div>
     </div>
   );
 }

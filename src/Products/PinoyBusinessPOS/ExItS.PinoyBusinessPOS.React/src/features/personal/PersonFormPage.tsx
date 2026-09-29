@@ -196,7 +196,7 @@ export function PersonCreateForm({
     <form
       className={cn(
         "person-form-page flex min-w-0 flex-col gap-3",
-        !embedded && "exits-page mx-auto w-full max-w-3xl",
+        !embedded && "exits-page personal-page w-full min-w-0",
       )}
       data-testid="person-form-page"
       onSubmit={(event) => void onSubmit(event)}

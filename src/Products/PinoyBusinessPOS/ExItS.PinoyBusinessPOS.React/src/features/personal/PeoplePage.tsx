@@ -112,7 +112,7 @@ export function PeoplePage() {
   }
 
   return (
-    <section className="personal-page people-page exits-page mx-auto flex w-full max-w-3xl flex-col gap-4">
+    <section className="personal-page people-page exits-page flex w-full min-w-0 flex-col gap-4">
       <header className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" className="shrink-0" aria-label={t("shell.back")}>
           <Link to="/personal">

@@ -3,6 +3,8 @@ import { useState, type ReactNode } from "react";
 import { ConnectivityProvider } from "@/connectivity/ConnectivityProvider";
 import { ToastProvider } from "@/components/exits/ToastProvider";
 import { attachGlobalQueryErrorHandlers } from "@/diagnostics/attach-global-query-error-handlers";
+import { NotificationsOverlayProvider } from "@/features/personal/NotificationsOverlay";
+import { PreferencesOverlayProvider } from "@/features/preferences/PreferencesOverlay";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { OfflineSyncProvider } from "@/offline/OfflineSyncProvider";
@@ -20,7 +22,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
           /**
            * React Query's default is to pause a mutation while the browser reports offline and
            * fire it on reconnect. This app must not do that: the offline-capable writes decide
-           * for themselves whether to reach the network or queue an encrypted operation, and a
+           * for themselves whether to reach the network or enqueue an encrypted operation, and a
            * paused mutation never runs that decision — it leaves the person watching a spinner
            * while nothing is saved, then posts later outside the outbox that guards replay.
            * Running always means an offline write reaches its own offline branch, and a write
@@ -42,7 +44,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
             <ConnectivityProvider>
               <OfflineSyncProvider>
                 <OutboxSyncHost />
-                {children}
+                <PreferencesOverlayProvider>
+                  <NotificationsOverlayProvider>{children}</NotificationsOverlayProvider>
+                </PreferencesOverlayProvider>
               </OfflineSyncProvider>
             </ConnectivityProvider>
           </ToastProvider>

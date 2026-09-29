@@ -4069,7 +4069,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "stockStatus.colBranchHint": "Branch where this stock is held.",
   "stockStatus.colOnHandHint": "Physical quantity currently at this branch.",
   "stockStatus.colSellableHint": "Quantity eligible to sell after expiry and policy rules.",
-  "stockStatus.colReservedHint": "Held for sales and customer orders — not free to sell again.",
+  "stockStatus.colReservedHint": "Held for sales and customer orders ï¿½ not free to sell again.",
   "stockStatus.colCommittedHint": "Committed to approved branch stock requests still remaining to dispatch.",
   "stockStatus.colAvailableHint": "Free to sell or allocate after reserved, committed, and non-sellable quantities.",
   "stockStatus.colDamagedHint": "Damaged quantity set aside from sellable stock.",
@@ -9636,6 +9636,15 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.todo.filterUpcoming": "Nagaabot",
 
   "personal.todo.filters": "Mga filter sang ihimo",
+  "personal.todo.filterAll": "Tanan nga ihimo",
+  "personal.todo.cardTitle": "Mga ihimo",
+  "personal.todo.newTask": "Bag-o nga ihimo",
+  "personal.todo.railSection": "Ihimo",
+  "personal.todo.groupHeader": "{count} Tasks {label}",
+  "personal.todo.closeDetail": "Sirado",
+  "personal.todo.openFullDetail": "Ablihi ang bug-os nga detalye",
+  "personal.todo.emptyAllTitle": "Wala pa sang ihimo",
+  "personal.todo.emptyAllDetail": "Himoa ang ihimo agud magsugod.",
 
   "personal.todo.genericError": "May sala. Tilawi liwat.",
 

@@ -412,7 +412,7 @@ describe("Preferences icon top navigation", () => {
     );
     expect(globalsCss).not.toMatch(/\.exits-side-drawer__panel--preferences\s*\{[^}]*38rem/);
     expect(globalsCss).not.toMatch(/\.exits-side-drawer__panel--preferences\s*\{[^}]*50rem/);
-    expect(block ?? globalsCss).toMatch(/width:\s*100%/);
+    expect(block ?? globalsCss).toMatch(/width:\s*min\(calc\(100%/);
     expect(settingsSelectSource).toContain("@min-[20rem]:grid-cols-2");
   });
 

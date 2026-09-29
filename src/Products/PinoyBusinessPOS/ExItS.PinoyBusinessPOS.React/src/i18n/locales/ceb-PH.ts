@@ -4069,7 +4069,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockStatus.colBranchHint": "Branch where this stock is held.",
   "stockStatus.colOnHandHint": "Physical quantity currently at this branch.",
   "stockStatus.colSellableHint": "Quantity eligible to sell after expiry and policy rules.",
-  "stockStatus.colReservedHint": "Held for sales and customer orders — not free to sell again.",
+  "stockStatus.colReservedHint": "Held for sales and customer orders ï¿½ not free to sell again.",
   "stockStatus.colCommittedHint": "Committed to approved branch stock requests still remaining to dispatch.",
   "stockStatus.colAvailableHint": "Free to sell or allocate after reserved, committed, and non-sellable quantities.",
   "stockStatus.colDamagedHint": "Damaged quantity set aside from sellable stock.",
@@ -9636,6 +9636,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.filterUpcoming": "Umaabot",
 
   "personal.todo.filters": "Mga filter sa buhaton",
+  "personal.todo.filterAll": "Tanang buhaton",
+  "personal.todo.cardTitle": "Mga buhaton",
+  "personal.todo.newTask": "Bag-ong buhaton",
+  "personal.todo.railSection": "Buhaton",
+  "personal.todo.groupHeader": "{count} Tasks {label}",
+  "personal.todo.closeDetail": "Sirado",
+  "personal.todo.openFullDetail": "Ablihi ang tibuok detalye",
+  "personal.todo.emptyAllTitle": "Wala pay buhaton",
+  "personal.todo.emptyAllDetail": "Paghimo og buhaton aron magsugod.",
 
   "personal.todo.genericError": "Adunay sayop. Sulayi pag-usab.",
 

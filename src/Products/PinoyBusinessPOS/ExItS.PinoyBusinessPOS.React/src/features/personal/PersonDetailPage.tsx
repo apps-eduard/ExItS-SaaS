@@ -326,7 +326,7 @@ export function PersonDetailPage() {
 
   return (
 
-    <section className="mx-auto flex w-full max-w-lg flex-col gap-4">
+    <section className="personal-page exits-page flex w-full min-w-0 flex-col gap-4">
 
       <PageHeader
         title={contact.displayName}

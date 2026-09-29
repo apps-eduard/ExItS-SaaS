@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  isNotificationsDestination,
   isNotificationsReturnPath,
   peekNotificationsReturnTo,
   rememberNotificationsReturnTo,
@@ -20,6 +21,13 @@ describe("notifications-return", () => {
     expect(isNotificationsReturnPath("https://evil.example")).toBe(false);
     expect(isNotificationsReturnPath("/org/products")).toBe(true);
     expect(isNotificationsReturnPath("/personal/utang")).toBe(true);
+  });
+
+  it("identifies notifications overlay destinations", () => {
+    expect(isNotificationsDestination("/personal/notifications")).toBe(true);
+    expect(isNotificationsDestination("/personal/notifications?x=1")).toBe(true);
+    expect(isNotificationsDestination("/personal/notifications/archived")).toBe(false);
+    expect(isNotificationsDestination("/personal/more")).toBe(false);
   });
 
   it("remembers and resolves personal return path", () => {

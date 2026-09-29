@@ -246,7 +246,7 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
             <Notice
               tone="info"
               testId="explore-simulated-payments-notice"
-              className="max-w-3xl"
+              className="w-full min-w-0"
             >
               {t("personal.explore.simulatedPaymentsNotice")}
             </Notice>

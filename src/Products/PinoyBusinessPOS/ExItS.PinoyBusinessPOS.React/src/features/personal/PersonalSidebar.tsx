@@ -2,23 +2,21 @@ import { useMemo } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { ArrowLeftRight } from "lucide-react";
 import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
-import { NavActivityCountBadge } from "@/components/exits/NavActivityCountBadge";
 import { SidebarBrandHeader } from "@/components/exits/SidebarBrandHeader";
 import { SidebarNavGroup } from "@/components/exits/SidebarNavGroup";
 import {
-  buildOperationsSidebarGroups,
-  flattenOperationsSidebarItems,
-  matchOperationsSidebarItem,
-  type OperationsSidebarItem,
-} from "@/features/operations/operations-nav-config";
+  buildPersonalSidebarGroups,
+  flattenPersonalNavItems,
+  matchPersonalNavItem,
+  type PersonalNavItem,
+} from "@/features/personal/personal-nav-config";
 import {
   capturePreferencesReturnFrom,
   isPreferencesDestination,
   preferencesNavigationState,
 } from "@/features/preferences/preferences-return";
 import { usePreferencesDestinationClick } from "@/features/preferences/usePreferencesDestinationClick";
-import { usePurchasingNavigationBadge } from "@/features/purchasing/usePurchasingNavigationBadge";
-import { useInventoryAwaitingInspectionBadge } from "@/features/inventory/useInventoryAwaitingInspectionBadge";
+import { useNotificationsDestinationClick } from "@/features/personal/useNotificationsDestinationClick";
 import { findActiveGroupId } from "@/features/shell/sidebar-nav-group-accordion";
 import { isAccordionNavGroup } from "@/features/shell/sidebar-nav-group-helpers";
 import { useSidebarNavGroupAccordion } from "@/features/shell/useSidebarNavGroupAccordion";
@@ -27,66 +25,53 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-/** Desktop (lg+) Operations sidebar — group accordion; full-width labels retained. */
-export function OperationsSidebar() {
+/** Desktop (lg+) Personal sidebar — primary tabs + More destinations as groups. */
+export function PersonalSidebar() {
   const { t } = useI18n();
   const location = useLocation();
-  const { sessionGrant, boundWorkspace } = useWorkspace();
+  const { workspaces } = useWorkspace();
   const openPreferencesDestination = usePreferencesDestinationClick();
-  const purchasingBadge = usePurchasingNavigationBadge();
-  const inspectionBadge = useInventoryAwaitingInspectionBadge();
-  const tooltipEnabled = useSidebarNavTooltipEnabled();
-  const groups = buildOperationsSidebarGroups({
-    grant: sessionGrant,
-    branchType: boundWorkspace?.branchType,
-    experience: boundWorkspace?.experience ?? "operations",
-  });
-  const items = flattenOperationsSidebarItems(groups);
-  const activeId = matchOperationsSidebarItem(location.pathname, items);
-  const accordionGroups = useMemo(() => groups.filter(isAccordionNavGroup), [groups]);
+  const openNotificationsDestination = useNotificationsDestinationClick();
+  const groups = buildPersonalSidebarGroups();
+  const items = flattenPersonalNavItems(groups);
+  const activeId = matchPersonalNavItem(location.pathname, items);
+  const accordionGroups = useMemo(
+    () => groups.filter((g) => g.id !== "primary" && isAccordionNavGroup(g)),
+    [groups],
+  );
   const activeGroupId = useMemo(
     () => findActiveGroupId(accordionGroups, activeId),
     [accordionGroups, activeId],
   );
   const groupIds = useMemo(() => accordionGroups.map((g) => g.id), [accordionGroups]);
   const accordion = useSidebarNavGroupAccordion({
-    scope: "operations",
+    scope: "personal",
     groupIds,
     activeGroupId,
   });
+  const tooltipEnabled = useSidebarNavTooltipEnabled();
   const switchLabel = t("workspace.switch");
+  const showWorkspaceFooter = workspaces.length > 0;
 
-  if (groups.length === 0) {
-    return null;
-  }
-
-  const renderItem = (item: OperationsSidebarItem) => {
+  const renderItem = (item: PersonalNavItem) => {
     const Icon = item.icon;
     const isActive = activeId === item.id;
     const preferencesState = isPreferencesDestination(item.to)
       ? preferencesNavigationState(location.pathname, location.search)
       : undefined;
-    const badgeDisplay =
-      item.id === "purchasing"
-        ? purchasingBadge.display
-        : item.id === "awaiting-inspection"
-          ? inspectionBadge.display
-          : null;
-    const badgeCount =
-      item.id === "purchasing"
-        ? purchasingBadge.count
-        : item.id === "awaiting-inspection"
-          ? inspectionBadge.count
-          : null;
     const label = t(item.labelKey);
-    const ariaLabel =
-      badgeDisplay != null && badgeCount != null ? `${label}, ${badgeCount} items` : label;
+    const sidebarTestId = item.testId.startsWith("personal-nav-")
+      ? item.testId.replace("personal-nav-", "personal-sidebar-")
+      : item.testId;
     const link = (
       <NavLink
         to={item.to}
         end={item.end}
         state={preferencesState}
         onClick={(event) => {
+          if (openNotificationsDestination(item.to, event)) {
+            return;
+          }
           if (openPreferencesDestination(item.to, event)) {
             return;
           }
@@ -94,24 +79,13 @@ export function OperationsSidebar() {
             capturePreferencesReturnFrom(location.pathname, location.search);
           }
         }}
-        data-testid={item.testId}
-        aria-label={ariaLabel}
+        data-testid={sidebarTestId}
+        aria-label={label}
         aria-current={isActive ? "page" : undefined}
-        className={cn(
-          "admin-sidebar__link",
-          isActive && "admin-sidebar__link--active",
-        )}
+        className={cn("admin-sidebar__link", isActive && "admin-sidebar__link--active")}
       >
         <Icon className="admin-sidebar__icon size-4 shrink-0" aria-hidden />
         <span className="admin-sidebar__label min-w-0 flex-1 truncate">{label}</span>
-        {badgeDisplay != null ? (
-          <NavActivityCountBadge
-            display={badgeDisplay}
-            selected={isActive}
-            className="admin-sidebar__badge"
-            testId={`${item.testId}-badge`}
-          />
-        ) : null}
       </NavLink>
     );
     return (
@@ -125,35 +99,36 @@ export function OperationsSidebar() {
 
   return (
     <aside
-      className={cn("admin-sidebar", "admin-sidebar--expanded", "operations-sidebar")}
-      data-testid="operations-sidebar"
-      aria-label={t("operations.nav.aria")}
+      className={cn("admin-sidebar", "admin-sidebar--expanded", "personal-sidebar")}
+      data-testid="personal-sidebar"
+      aria-label={t("personal.nav.aria")}
     >
       <SidebarBrandHeader
-        testId="operations-sidebar-brand"
+        testId="personal-sidebar-brand"
         allGroupsExpanded={accordion.allExpanded}
         onToggleAllGroups={accordion.toggleAll}
       />
 
       <nav className="admin-sidebar__nav">
         {groups.map((group, index) => {
-          if (!isAccordionNavGroup(group)) {
+          if (group.id === "primary") {
             return (
               <ul
                 key={group.id}
-                className={cn(
-                  "admin-sidebar__solo m-0 list-none p-0",
-                  index > 0 && "admin-sidebar__solo--after",
-                )}
-                data-testid={`sidebar-nav-solo-${group.id}`}
+                className="admin-sidebar__solo m-0 list-none p-0"
+                data-testid="sidebar-nav-solo-primary"
               >
                 {group.items.map(renderItem)}
               </ul>
             );
           }
 
+          if (!isAccordionNavGroup(group)) {
+            return null;
+          }
+
           const prev = groups[index - 1];
-          const showRule = prev != null && !isAccordionNavGroup(prev);
+          const showRule = prev != null;
 
           return (
             <div key={group.id} className="admin-sidebar__group-block">
@@ -173,19 +148,21 @@ export function OperationsSidebar() {
         })}
       </nav>
 
-      <div className="admin-sidebar__footer">
-        <ExitsTooltip content={switchLabel} disabled={!tooltipEnabled}>
-          <Link
-            to="/workspace"
-            className="admin-sidebar__switch"
-            data-testid="operations-sidebar-switch-workspace"
-            aria-label={switchLabel}
-          >
-            <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
-            <span className="admin-sidebar__label">{switchLabel}</span>
-          </Link>
-        </ExitsTooltip>
-      </div>
+      {showWorkspaceFooter ? (
+        <div className="admin-sidebar__footer">
+          <ExitsTooltip content={switchLabel} disabled={!tooltipEnabled}>
+            <Link
+              to="/workspace"
+              className="admin-sidebar__switch"
+              data-testid="personal-sidebar-switch-workspace"
+              aria-label={switchLabel}
+            >
+              <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
+              <span className="admin-sidebar__label">{switchLabel}</span>
+            </Link>
+          </ExitsTooltip>
+        </div>
+      ) : null}
     </aside>
   );
 }

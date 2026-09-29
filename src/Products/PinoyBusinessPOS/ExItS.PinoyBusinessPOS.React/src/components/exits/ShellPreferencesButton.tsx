@@ -1,10 +1,8 @@
 import { Settings } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import {
-  capturePreferencesReturnFrom,
-  preferencesNavigationState,
-} from "@/features/preferences/preferences-return";
+import { useLocation } from "react-router-dom";
+import { usePreferencesOverlay } from "@/features/preferences/PreferencesOverlay";
+import { PREFERENCES_DEFAULT_SECTION } from "@/features/preferences/preferences-sections";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import {
@@ -15,6 +13,7 @@ import {
 import type { PrimaryColorPreference } from "@/lib/preferences/ui-preferences";
 
 export type ShellPreferencesButtonProps = {
+  /** @deprecated Overlay opens in place; kept for call-site compatibility. */
   to?: string;
   label: string;
   testId?: string;
@@ -25,18 +24,18 @@ const COLOR_CYCLE_MS = 4000;
 const COLOR_TRANSITION_MS = 600;
 
 /**
- * Compact shell preferences control — icon only; opens the preferences drawer route.
+ * Compact shell preferences control — icon only; opens the preferences overlay
+ * on the current page (does not navigate away).
  * Ambient gear (category AMBIENT): slow rotation + decorative Primary cycle.
  * Does not mutate data-primary or Preferences storage. Pauses when document is hidden.
  */
 export function ShellPreferencesButton({
-  to = "/settings/preferences",
   label,
   testId = "shell-preferences-button",
   className,
 }: ShellPreferencesButtonProps) {
   const location = useLocation();
-  const preferencesState = preferencesNavigationState(location.pathname, location.search);
+  const { openPreferences } = usePreferencesOverlay();
   const reducedMotion = usePrefersReducedMotion();
   const [ambientColor, setAmbientColor] = useState<PrimaryColorPreference | null>(null);
   const [darkSurface, setDarkSurface] = useState(false);
@@ -98,22 +97,22 @@ export function ShellPreferencesButton({
     : undefined;
 
   return (
-    <Link
-      to={to}
-      state={preferencesState}
-      onClick={
-        preferencesState
-          ? () => capturePreferencesReturnFrom(location.pathname, location.search)
-          : undefined
-      }
+    <button
+      type="button"
       data-testid={testId}
       data-ambient-settings={ambientEnabled ? "on" : "off"}
       aria-label={label}
       title={label}
       className={cn(
-        "group/settings relative inline-flex size-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "group/settings relative inline-flex size-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
+      onClick={() =>
+        openPreferences({
+          section: PREFERENCES_DEFAULT_SECTION,
+          returnTo: `${location.pathname}${location.search}`,
+        })
+      }
     >
       <Settings
         className={cn(
@@ -134,6 +133,6 @@ export function ShellPreferencesButton({
         aria-hidden
       />
       <span className="sr-only">{label}</span>
-    </Link>
+    </button>
   );
 }

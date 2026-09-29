@@ -128,7 +128,7 @@ export function PersonalProfilePage() {
   const profile = profileQuery.data;
 
   return (
-    <div className="mx-auto flex w-full max-w-lg min-w-0 flex-col gap-5">
+    <div className="personal-page exits-page flex w-full min-w-0 flex-col gap-5">
       <PageHeader
         title={t("personal.profile.title")}
         description={t("personal.profile.lede")}

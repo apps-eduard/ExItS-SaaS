@@ -41,11 +41,11 @@ export function ShellSidebarModeButton({ className }: { className?: string }) {
       onClick={() => setNavigationMode(next)}
     >
       {mode === "compact" ? (
-        <PanelLeftClose aria-hidden="true" className="size-4.5" strokeWidth={2.15} />
+        <PanelLeftClose aria-hidden="true" className="size-5" strokeWidth={2.15} />
       ) : mode === "hidden" ? (
-        <PanelLeftOpen aria-hidden="true" className="size-4.5" strokeWidth={2.15} />
+        <PanelLeftOpen aria-hidden="true" className="size-5" strokeWidth={2.15} />
       ) : (
-        <PanelLeft aria-hidden="true" className="size-4.5" strokeWidth={2.15} />
+        <PanelLeft aria-hidden="true" className="size-5" strokeWidth={2.15} />
       )}
     </IconButton>
   );

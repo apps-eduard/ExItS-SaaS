@@ -315,6 +315,8 @@
   --exits-sidebar-label-slide: -0.25rem;
   /* Authoritative desktop shell sidebar track (Standard / Compact / Reveal). */
   --exits-shell-sidebar-width: 15.5rem;
+  /* Shared height for sidenav brand strip + content top bar (desktop shells). */
+  --exits-shell-chrome-height: 4rem;
   /* Table defaults (balance / when density unset) */
   --exits-table-cell-x: 0.75rem;
   --exits-table-cell-y: 0.625rem;
@@ -3666,7 +3668,8 @@ body {
 
 /* Viewport-locked shells own vertical scroll. Prevent a second document scrollbar. */
 html:has(.operations-shell--viewport-lock),
-html:has(.admin-shell) {
+html:has(.admin-shell),
+html:has(.personal-shell) {
   height: 100%;
   max-height: 100dvh;
   overflow: hidden;
@@ -3674,8 +3677,10 @@ html:has(.admin-shell) {
 
 html:has(.operations-shell--viewport-lock) body,
 html:has(.admin-shell) body,
+html:has(.personal-shell) body,
 html:has(.operations-shell--viewport-lock) #root,
-html:has(.admin-shell) #root {
+html:has(.admin-shell) #root,
+html:has(.personal-shell) #root {
   height: 100%;
   max-height: 100dvh;
   overflow: hidden;
@@ -10453,6 +10458,439 @@ html:has(.admin-shell) #root {
   margin-top: 0.1rem;
 }
 
+/* Personal to-do — Atlantis Task List inspired layout */
+.personal-todo-hub {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.personal-todo-tasklist-layout {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.personal-todo-tasklist-rail {
+  display: none;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+@media (min-width: 1024px) {
+  .personal-todo-tasklist-layout--desktop {
+    display: grid;
+    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .personal-todo-tasklist-rail {
+    display: flex;
+    position: sticky;
+    top: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .personal-todo-tasklist-rail__nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .personal-todo-tasklist-card {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .personal-todo-tasklist-card__groups {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+.personal-todo-tasklist-rail__new {
+  justify-content: center;
+}
+
+.personal-todo-tasklist-rail__section {
+  padding-inline: 0.55rem;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--exits-text-muted);
+}
+
+.personal-todo-tasklist-rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.personal-todo-tasklist-rail__item {
+  display: flex;
+  width: 100%;
+  min-height: 2.55rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: var(--exits-radius-md);
+  background: transparent;
+  color: var(--exits-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    background-color var(--exits-motion-fast) ease,
+    border-color var(--exits-motion-fast) ease,
+    color var(--exits-motion-fast) ease;
+}
+
+.personal-todo-tasklist-rail__item:hover {
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, transparent);
+}
+
+.personal-todo-tasklist-rail__item--active {
+  background: var(--exits-primary);
+  border-color: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+}
+
+.personal-todo-tasklist-rail__item--active:hover {
+  background: var(--exits-primary);
+}
+
+.personal-todo-tasklist-rail__icon {
+  opacity: 0.9;
+}
+
+.personal-todo-tasklist-rail__label {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-medium);
+}
+
+.personal-todo-tasklist-rail__count {
+  display: inline-flex;
+  min-width: 1.5rem;
+  height: 1.35rem;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, transparent);
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-semibold);
+  color: var(--exits-text-muted);
+}
+
+.personal-todo-tasklist-rail__item--active .personal-todo-tasklist-rail__count {
+  background: color-mix(in srgb, #fff 88%, transparent);
+  color: var(--exits-primary);
+}
+
+.personal-todo-tasklist-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1rem 1.1rem;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.personal-todo-tasklist-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.personal-todo-tasklist-card__title {
+  font-size: var(--exits-text-xl);
+  font-weight: var(--exits-font-weight-semibold);
+  letter-spacing: var(--exits-tracking-tight);
+}
+
+.personal-todo-tasklist-card__new {
+  flex-shrink: 0;
+}
+
+.personal-todo-tasklist-card__filters {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 85%, transparent);
+}
+
+.personal-todo-tasklist-filters .exits-chip-bar {
+  flex-wrap: nowrap;
+  min-width: min-content;
+}
+
+.personal-todo-tasklist-filters .exits-chip-bar__chip[data-state="active"] {
+  background: color-mix(in srgb, var(--exits-primary) 16%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  color: var(--exits-primary);
+  box-shadow: inset 0 -2px 0 var(--exits-primary);
+}
+
+.personal-todo-tasklist-card__search-field {
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+}
+
+.personal-todo-tasklist-card__create {
+  border: 1px solid color-mix(in srgb, var(--exits-border) 90%, transparent);
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-surface-muted) 35%, transparent);
+}
+
+.personal-todo-tasklist-card__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.personal-todo-tasklist-group {
+  min-width: 0;
+}
+
+.personal-todo-tasklist-group__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.15rem;
+  border: none;
+  background: transparent;
+  color: var(--exits-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.personal-todo-tasklist-group__title {
+  font-size: var(--exits-text-lg);
+  font-weight: var(--exits-font-weight-semibold);
+}
+
+.personal-todo-tasklist-group__chevron {
+  color: var(--exits-text-muted);
+  transition: transform var(--exits-motion-fast) ease;
+}
+
+.personal-todo-tasklist-group__chevron--open {
+  transform: rotate(180deg);
+}
+
+.personal-todo-tasklist-group__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.personal-todo-tasklist-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 0.15rem;
+  border-top: 1px dashed color-mix(in srgb, var(--exits-border) 72%, transparent);
+  min-width: 0;
+}
+
+.personal-todo-tasklist-row--selected {
+  background: color-mix(in srgb, var(--exits-primary) 6%, transparent);
+  border-radius: var(--exits-radius-sm);
+}
+
+.personal-todo-tasklist-row--priority-high {
+  border-inline-start: 3px solid color-mix(in srgb, var(--exits-danger) 55%, transparent);
+  padding-inline-start: 0.5rem;
+}
+
+.personal-todo-tasklist-row__main {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.personal-todo-tasklist-row__check {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.personal-todo-tasklist-row__check--static {
+  cursor: default;
+}
+
+.personal-todo-tasklist-row__check-box {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid color-mix(in srgb, var(--exits-border) 88%, var(--exits-text-muted));
+  border-radius: 0.3rem;
+  background: var(--exits-surface);
+  transition:
+    border-color var(--exits-motion-fast) ease,
+    background-color var(--exits-motion-fast) ease;
+}
+
+.personal-todo-tasklist-row__check:hover:not(:disabled) .personal-todo-tasklist-row__check-box {
+  border-color: var(--exits-primary);
+}
+
+.personal-todo-tasklist-row__check--completed .personal-todo-tasklist-row__check-box,
+.personal-todo-tasklist-row__check--completed.personal-todo-tasklist-row__check--static::before {
+  background: color-mix(in srgb, var(--exits-success) 22%, var(--exits-surface));
+  border-color: var(--exits-success);
+}
+
+.personal-todo-tasklist-row__check--cancelled .personal-todo-tasklist-row__check-box {
+  opacity: 0.45;
+}
+
+.personal-todo-tasklist-row__title {
+  display: block;
+  font-size: var(--exits-text-base);
+  font-weight: var(--exits-font-weight-semibold);
+  line-height: var(--exits-leading-snug);
+}
+
+.personal-todo-tasklist-row__title--done {
+  text-decoration: line-through;
+  color: var(--exits-text-muted);
+}
+
+.personal-todo-tasklist-row__title-link,
+.personal-todo-tasklist-row__title-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.personal-todo-tasklist-row__notes {
+  margin-top: 0.35rem;
+  font-size: var(--exits-text-sm);
+  line-height: var(--exits-leading-normal);
+  color: var(--exits-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.personal-todo-tasklist-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.55rem;
+}
+
+.personal-todo-tasklist-row__date-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+  background: color-mix(in srgb, var(--exits-surface-muted) 50%, var(--exits-surface));
+  font-size: var(--exits-text-xs);
+  color: var(--exits-text-muted);
+}
+
+.personal-todo-tasklist-row__date-pill--muted {
+  border-style: dashed;
+}
+
+.personal-todo-tasklist-row__date-sep {
+  opacity: 0.6;
+}
+
+.personal-todo-tasklist-row__priority {
+  margin: 0;
+}
+
+.personal-todo-tasklist-row__actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.15rem;
+  padding-top: 0.1rem;
+}
+
+.personal-todo-tasklist-row__icon-action,
+.personal-todo-tasklist-row__icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--exits-radius-sm);
+  color: var(--exits-text-muted);
+  text-decoration: none;
+  transition:
+    color var(--exits-motion-fast) ease,
+    background-color var(--exits-motion-fast) ease;
+}
+
+.personal-todo-tasklist-row__icon-link:hover,
+.personal-todo-tasklist-row__icon-link:focus-visible,
+.personal-todo-tasklist-row__icon-action:hover:not(:disabled),
+.personal-todo-tasklist-row__icon-action:focus-visible:not(:disabled) {
+  color: var(--exits-text);
+  background: color-mix(in srgb, var(--exits-surface-muted) 65%, transparent);
+}
+
+@media (max-width: 1023px) {
+  .personal-todo-tasklist-row {
+    flex-direction: column;
+  }
+
+  .personal-todo-tasklist-row__actions {
+    padding-inline-start: 2rem;
+  }
+}
+
 @media (max-width: 520px) {
   .personal-todo-row__actions--open {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
@@ -15346,6 +15784,98 @@ a.dashboard-metric-card:focus-visible {
   .app-top-bar--shell-desktop {
     /* Content-column topbar: no bleed past sidebar edge. */
     margin-inline-start: 0;
+    box-sizing: border-box;
+    height: var(--exits-shell-chrome-height);
+    min-height: var(--exits-shell-chrome-height);
+    max-height: var(--exits-shell-chrome-height);
+    padding-block: 0;
+    justify-content: center;
+  }
+
+  .app-top-bar--shell-desktop .app-top-bar__row {
+    height: 100%;
+    min-height: 0;
+  }
+
+  /*
+   * Personal shell: sidenav brand strip and top bar share one chrome height.
+   * Top bar spans the content column; page body hosts the floating content panel.
+   */
+  .personal-shell .app-top-bar--personal {
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--exits-shell-chrome-height);
+    min-height: var(--exits-shell-chrome-height);
+    max-height: var(--exits-shell-chrome-height);
+    margin-inline: 0;
+    padding-block: 0;
+    padding-inline: 0.35rem;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__brand--personal {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__actions--personal {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+    gap: 0.15rem;
+  }
+
+  /* Compact, consistent hit targets that fit the shared chrome height. */
+  .personal-shell .app-top-bar--personal .app-top-bar__action,
+  .personal-shell .app-top-bar--personal .app-top-bar__avatar,
+  .personal-shell .app-top-bar--personal .shell-connection-trigger,
+  .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
+  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
+  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+    box-sizing: border-box;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0;
+    border-radius: var(--exits-radius-md) !important;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__action svg,
+  .personal-shell .app-top-bar--personal .shell-connection-trigger svg,
+  .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"] svg,
+  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] svg,
+  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__workspace-org,
+  .personal-shell .app-top-bar--personal .app-top-bar__workspace-branch {
+    line-height: 1.2;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__workspace-branch {
+    font-size: var(--exits-text-xs);
+  }
+
+  .personal-shell .personal-sidebar .admin-sidebar__brand {
+    border-bottom-color: color-mix(in srgb, var(--exits-border) 72%, transparent);
+  }
+
+  /* Personal keeps its brand label in the top bar (not hidden like org shell-desktop). */
+  .personal-shell .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand {
+    display: flex;
   }
 
   /*
@@ -20755,7 +21285,7 @@ a.exits-chip--primary:hover {
 .exits-side-drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: color-mix(in srgb, #0f172a 45%, transparent);
+  background: color-mix(in srgb, #0f172a 52%, transparent);
   opacity: 0;
   /* Hit-testing is gated by data-interactive (open && entered), not opacity alone. */
   pointer-events: none;
@@ -20772,33 +21302,33 @@ a.exits-chip--primary:hover {
 
 .exits-side-drawer__panel {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  width: min(100%, 26rem);
-  max-width: 100%;
+  width: min(calc(100% - (2 * 0.75rem)), 26rem);
+  max-width: calc(100% - (2 * 0.75rem));
+  height: auto;
+  max-height: none;
   pointer-events: none;
-  border: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
+  border-radius: 1rem;
   background: var(--exits-surface);
-  box-shadow: var(--exits-shadow-lg);
+  box-shadow:
+    0 4px 16px color-mix(in srgb, #0f172a 10%, transparent),
+    0 16px 48px color-mix(in srgb, #0f172a 16%, transparent);
   transition: transform var(--exits-motion-slow) var(--exits-ease-emphasized);
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .exits-side-drawer__panel[data-side="right"] {
-  right: 0;
-  border-left: 1px solid var(--exits-border);
-  transform: translateX(100%);
-  padding-right: env(safe-area-inset-right);
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  transform: translateX(calc(100% + 1.25rem));
 }
 
 .exits-side-drawer__panel[data-side="left"] {
-  left: 0;
-  border-right: 1px solid var(--exits-border);
-  transform: translateX(-100%);
-  padding-left: env(safe-area-inset-left);
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  transform: translateX(calc(-100% - 1.25rem));
 }
 
 .exits-side-drawer__panel[data-open="true"] {
@@ -20844,9 +21374,9 @@ a.exits-chip--primary:hover {
 }
 
 .exits-side-drawer__panel--preferences {
-  /* Mobile: full viewport width — never force 440px overflow */
-  width: 100%;
-  max-width: 100%;
+  /* Mobile: nearly full width inside float inset */
+  width: min(calc(100% - (2 * 0.75rem)), 26rem);
+  max-width: calc(100% - (2 * 0.75rem));
 }
 
 @media (min-width: 40rem) {
@@ -20869,13 +21399,38 @@ a.exits-chip--primary:hover {
   padding-inline: 1rem;
 }
 
+.exits-side-drawer__panel--notifications {
+  width: min(calc(100% - (2 * 0.75rem)), 26rem);
+  max-width: calc(100% - (2 * 0.75rem));
+}
+
+@media (min-width: 40rem) {
+  .exits-side-drawer__panel--notifications {
+    width: min(28rem, 70vw);
+    max-width: min(28rem, 70vw);
+  }
+}
+
+@media (min-width: 64rem) {
+  .exits-side-drawer__panel--notifications {
+    width: 27.5rem;
+    max-width: 27.5rem;
+  }
+}
+
+.exits-side-drawer__panel--notifications .exits-side-drawer__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-block-end: 1rem;
+}
+
 .exits-side-drawer__panel--customer-edit {
-  width: 100%;
-  max-width: 100%;
-  /* Mobile: near full viewport height with safe areas */
-  height: 100dvh;
-  max-height: 100dvh;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  width: min(calc(100% - (2 * 0.75rem)), 26rem);
+  max-width: calc(100% - (2 * 0.75rem));
+  height: auto;
+  max-height: none;
 }
 
 @media (min-width: 40rem) {
@@ -20945,11 +21500,10 @@ a.exits-chip--primary:hover {
 
 /* Canonical FormDrawer / EntityEditDrawer shell (uses SideDrawer primitive). */
 .exits-form-drawer__panel {
-  width: 100%;
-  max-width: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  width: min(calc(100% - (2 * 0.75rem)), 26rem);
+  max-width: calc(100% - (2 * 0.75rem));
+  height: auto;
+  max-height: none;
   overflow-x: hidden;
 }
 
@@ -22299,6 +22853,130 @@ a.exits-chip--primary:hover {
   width: 100%;
   max-width: 52rem;
   margin-inline: auto;
+}
+
+/* Personal shell: every page root uses the full content column. */
+.personal-shell .personal-page,
+.personal-shell .personal-commerce-page,
+.personal-shell .personal-commerce-page.personal-page,
+.personal-shell .admin-shell__content > .exits-page,
+.personal-shell .personal-shell__content > .exits-page {
+  max-width: none;
+  margin-inline: 0;
+  width: 100%;
+}
+
+/* Personal shell fills the viewport — override Admin shell content caps. */
+.personal-shell .admin-shell__body {
+  max-width: none;
+  margin-inline: 0;
+  width: 100%;
+}
+
+.personal-shell .admin-shell__content,
+.personal-shell__content {
+  max-width: none;
+  width: 100%;
+}
+
+/* Page canvas inside personal content: no grey --exits-bg wash between cards. */
+.personal-shell .admin-shell__content.personal-shell__content {
+  background: var(--exits-surface);
+}
+
+.personal-shell .personal-shell__content .exits-page,
+.personal-shell .personal-shell__content .personal-page {
+  background: transparent;
+}
+
+/*
+ * Personal desktop — Gmail-style floating content:
+ * large radius on all four corners, clear gap from top bar / sidebar / edges.
+ */
+@media (min-width: 1024px) {
+  .personal-shell .personal-sidebar.admin-sidebar {
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
+    border-block: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
+    border-inline-start: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
+    border-inline-end: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
+    box-shadow: var(--exits-shadow-sm);
+    height: 100%;
+    max-height: none;
+  }
+
+  .personal-shell .admin-sidebar-rail {
+    height: auto;
+    max-height: none;
+    align-self: stretch;
+  }
+
+  .personal-shell .app-top-bar--personal {
+    border-bottom: none;
+    background: transparent;
+    backdrop-filter: none;
+    padding-inline: 0.35rem 0.35rem;
+  }
+
+  .personal-shell .admin-shell__content.personal-shell__content {
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
+    background: var(--exits-surface);
+    box-shadow: var(--exits-shadow-sm);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+.personal-shell .personal-todo-hub {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.personal-home-page {
+  width: 100%;
+}
+
+.personal-home-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .personal-home-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .personal-home-layout__aside {
+    position: sticky;
+    top: 0;
+  }
+
+  .personal-home-page .personal-summary-grid--balances {
+    max-width: none;
+  }
+}
+
+.personal-shell .personal-sidebar.admin-sidebar {
+  position: relative;
+  top: auto;
+  align-self: stretch;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .personal-page .personal-section.catalog-form-section:nth-of-type(1) {
@@ -24141,13 +24819,15 @@ html[data-motion="reduced"] .exits-tooltip {
 /* Compact + Reveal icon-rail modes — desktop (lg+) only; mobile bottom nav unchanged. */
 @media (min-width: 1024px) {
   .admin-shell__column,
-  .operations-shell__column {
+  .operations-shell__column,
+  .personal-shell .admin-shell__column {
     min-width: 0;
     min-height: 0;
   }
 
   .admin-shell .admin-sidebar,
-  .operations-shell .admin-sidebar {
+  .operations-shell .admin-sidebar,
+  .personal-shell .admin-sidebar {
     border-radius: 0;
     border-block: none;
     border-inline-start: none;
@@ -24158,7 +24838,8 @@ html[data-motion="reduced"] .exits-tooltip {
   }
 
   .admin-shell .admin-sidebar-rail,
-  .operations-shell .admin-sidebar-rail {
+  .operations-shell .admin-sidebar-rail,
+  .personal-shell .admin-sidebar-rail {
     height: 100%;
     max-height: 100dvh;
     align-self: stretch;
@@ -24190,6 +24871,25 @@ html[data-motion="reduced"] .exits-tooltip {
     padding-inline-start: max(var(--exits-page-gutter-inline), env(safe-area-inset-left));
   }
 
+  /*
+   * Personal (hidden sidenav): equal float gutters; top bar still full column width;
+   * content keeps the Gmail-style rounded panel.
+   */
+  [data-navigation-mode="hidden"] .personal-shell .admin-shell__column {
+    padding-inline: 0;
+  }
+
+  [data-navigation-mode="hidden"] .personal-shell .app-top-bar--personal {
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: 0.25rem
+      max(0.25rem, env(safe-area-inset-right));
+  }
+
+  [data-navigation-mode="hidden"] .personal-shell .admin-shell__body {
+    padding-inline: 0;
+  }
+
   /* —— COMPACT: permanent icon rail (no hover/focus expand) —— */
   [data-navigation-mode="compact"] .admin-sidebar-rail {
     width: var(--exits-shell-sidebar-width);
@@ -24208,8 +24908,10 @@ html[data-motion="reduced"] .exits-tooltip {
     justify-content: center;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.55rem 0.35rem 0.45rem;
-    min-height: 0;
+    padding: 0.35rem;
+    height: var(--exits-shell-chrome-height);
+    min-height: var(--exits-shell-chrome-height);
+    max-height: var(--exits-shell-chrome-height);
   }
 
   [data-navigation-mode="compact"] .admin-sidebar__brand-main {
@@ -24387,8 +25089,10 @@ html[data-motion="reduced"] .exits-tooltip {
     justify-content: center;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.55rem 0.35rem 0.45rem;
-    min-height: 0;
+    padding: 0.35rem;
+    height: var(--exits-shell-chrome-height);
+    min-height: var(--exits-shell-chrome-height);
+    max-height: var(--exits-shell-chrome-height);
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar__brand-main {
@@ -24489,9 +25193,11 @@ html[data-motion="reduced"] .exits-tooltip {
     flex-direction: row;
     justify-content: flex-start;
     align-items: center;
-    padding: 0.75rem 0.55rem 0.75rem 0.85rem;
+    padding: 0 0.55rem 0 0.85rem;
     gap: 0.35rem;
-    min-height: 4rem;
+    height: var(--exits-shell-chrome-height);
+    min-height: var(--exits-shell-chrome-height);
+    max-height: var(--exits-shell-chrome-height);
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__brand-main,
@@ -24598,9 +25304,11 @@ html[data-motion="reduced"] .exits-tooltip {
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 0.55rem 0.35rem 0.45rem;
+      padding: 0.35rem;
       gap: 0.25rem;
-      min-height: 0;
+      height: var(--exits-shell-chrome-height);
+      min-height: var(--exits-shell-chrome-height);
+      max-height: var(--exits-shell-chrome-height);
     }
 
     [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) .admin-sidebar__brand-main {
@@ -24637,8 +25345,11 @@ html[data-motion="reduced"] .exits-tooltip {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  min-height: 4rem;
-  padding: 0.75rem 0.55rem 0.75rem 0.85rem;
+  box-sizing: border-box;
+  height: var(--exits-shell-chrome-height);
+  min-height: var(--exits-shell-chrome-height);
+  max-height: var(--exits-shell-chrome-height);
+  padding: 0 0.55rem 0 0.85rem;
   border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
   flex-shrink: 0;
 }
