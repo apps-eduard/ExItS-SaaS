@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { ManagementDashboardPage } from "@/features/reports/ManagementDashboardPage";
 import * as posReportingClient from "@/api/pos/pos-reporting-client";
+import * as posInventoryClient from "@/api/pos/pos-inventory-client";
 import * as platformAuthClient from "@/api/platform/platform-auth-client";
 import {
   TEST_BRANCH_A_ID,
@@ -17,6 +18,10 @@ const getDashboard = vi.spyOn(posReportingClient, "getDashboard");
 const getSalesByProductReport = vi.spyOn(posReportingClient, "getSalesByProductReport");
 const getProfitabilityReport = vi.spyOn(posReportingClient, "getProfitabilityReport");
 const getUtangReport = vi.spyOn(posReportingClient, "getUtangReport");
+const getInventoryAttentionSummary = vi.spyOn(
+  posInventoryClient,
+  "getInventoryAttentionSummary",
+);
 const listOrganizationBranches = vi.spyOn(platformAuthClient, "listOrganizationBranches");
 
 function makeOverviewPayload(overrides: Partial<ReturnType<typeof emptyOverview>> = {}) {
@@ -188,6 +193,12 @@ describe("ManagementDashboardPage V2 visual composition", () => {
     vi.clearAllMocks();
     mockBranches();
     mockUnavailableProfit();
+    getInventoryAttentionSummary.mockResolvedValue({
+      lowStockProductCount: 0,
+      outOfStockProductCount: 0,
+      expiredLotCount: 0,
+      nearExpiryLotCount: 0,
+    });
     getUtangReport.mockResolvedValue({
       fromDate: "2026-08-30",
       toDate: "2026-08-30",
@@ -253,6 +264,12 @@ describe("ManagementDashboardPage V2 visual composition", () => {
         activeRegisterCount: 3,
       }),
     );
+    getInventoryAttentionSummary.mockResolvedValue({
+      lowStockProductCount: 12,
+      outOfStockProductCount: 0,
+      expiredLotCount: 2,
+      nearExpiryLotCount: 0,
+    });
     getDashboard.mockResolvedValue(activeDashboard());
     getSalesByProductReport.mockResolvedValue({
       fromDate: "2026-08-24",
@@ -334,6 +351,13 @@ describe("ManagementDashboardPage V2 visual composition", () => {
     expect(screen.getByTestId("dashboard-payment-mix")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-utang-radial")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-inventory-health")).toBeInTheDocument();
+    expect(screen.getByTestId("scope-inventory-health")).toHaveTextContent("Main Branch");
+    expect(screen.queryByTestId("inventory-health-near-expiry")).not.toBeInTheDocument();
+    expect(screen.getByTestId("inventory-health-low-stock")).toHaveTextContent("12");
+    expect(getInventoryAttentionSummary).toHaveBeenCalledWith(
+      expect.objectContaining({ branchId: TEST_BRANCH_A_ID }),
+      expect.any(AbortSignal),
+    );
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-gross-profit")).toBeInTheDocument();
       expect(screen.getByTestId("dashboard-gross-profit-complete")).toBeInTheDocument();
@@ -408,6 +432,39 @@ describe("ManagementDashboardPage V2 visual composition", () => {
       "organization",
     );
     expect(screen.getByTestId("dashboard-scope-filter-note")).toBeInTheDocument();
+  });
+
+  it("refetches branch inventory health when branch scope changes", async () => {
+    getManagementOverview.mockResolvedValue(
+      makeOverviewPayload({ nearExpiryLotCount: 5, expiredLotCount: 1 }),
+    );
+    getInventoryAttentionSummary.mockImplementation(async (workspace) => ({
+      lowStockProductCount: 0,
+      outOfStockProductCount: 0,
+      expiredLotCount: workspace.branchId === TEST_BRANCH_B_ID ? 0 : 0,
+      nearExpiryLotCount: workspace.branchId === TEST_BRANCH_B_ID ? 2 : 0,
+    }));
+    getDashboard.mockResolvedValue(makeDashboardPayload(1000));
+
+    renderDashboardPage();
+
+    await waitFor(() => {
+      expect(getInventoryAttentionSummary).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: TEST_BRANCH_A_ID }),
+        expect.any(AbortSignal),
+      );
+    });
+    expect(screen.queryByTestId("inventory-health-near-expiry")).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByTestId("report-scope-select"), TEST_BRANCH_B_ID);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("inventory-health-near-expiry")).toHaveTextContent("2");
+    });
+    expect(getInventoryAttentionSummary).toHaveBeenCalledWith(
+      expect.objectContaining({ branchId: TEST_BRANCH_B_ID }),
+      expect.any(AbortSignal),
+    );
   });
 
   it("uses compact branch comparison CTA instead of instructional analytics slot", async () => {
