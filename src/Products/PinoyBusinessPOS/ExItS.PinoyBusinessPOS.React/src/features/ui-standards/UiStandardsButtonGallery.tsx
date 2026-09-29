@@ -21,11 +21,14 @@ import {
 } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { PlaygroundLabel } from "@/features/ui-standards/UiStandardsSnippetBlock";
+import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
 
 /**
- * Full Diamond PrimeNG Button UI Kit sample gallery.
+ * Locked ExItS Button visual standard — Diamond PrimeNG Button Full sample layout.
  * @see https://diamond.primeng.dev/uikit/button
- * Severity fills use `--exits-severity-*` (separate from brand `--exits-primary`).
+ * Primary uses Preferences brand tokens; other severities use locked `--exits-severity-*`.
+ * Cursor shorthand: Diamond “Text” = ExItS **Ghost**
+ * Example: `EXITS BUTTON + GHOST + SUCCESS`
  */
 type GallerySeverityId =
   | "primary"
@@ -57,21 +60,19 @@ const GALLERY_SEVERITIES: ReadonlyArray<GallerySeverityDef> = [
   { id: "success", label: "Success", intent: "success", Icon: Search, iconLabel: "Search" },
   { id: "info", label: "Info", intent: "info", Icon: User, iconLabel: "User" },
   { id: "warn", label: "Warn", intent: "warning", Icon: Bell, iconLabel: "Bell" },
-  { id: "help", label: "Help", intent: "info", Icon: Heart, iconLabel: "Heart" },
+  { id: "help", label: "Help", intent: "help", Icon: Heart, iconLabel: "Heart" },
   { id: "danger", label: "Danger", intent: "danger", Icon: X, iconLabel: "Close" },
   {
     id: "contrast",
     label: "Contrast",
-    intent: "neutral",
+    intent: "contrast",
     Icon: Moon,
     iconLabel: "Moon",
   },
 ];
 
-/** Solid / Raised / Rounded — Diamond severity fills via theme tokens. */
-const SEVERITY_SOLID_CLASS: Record<GallerySeverityId, string> = {
-  primary:
-    "!border-[var(--exits-severity-primary)] !bg-[var(--exits-severity-primary)] !text-[var(--exits-severity-primary-foreground)] hover:!border-[var(--exits-severity-primary-hover)] hover:!bg-[var(--exits-severity-primary-hover)]",
+/** Non-primary severities — locked Diamond fills via `--exits-severity-*`. */
+const SEVERITY_SOLID_CLASS: Record<Exclude<GallerySeverityId, "primary">, string> = {
   secondary:
     "!border-[var(--exits-severity-secondary)] !bg-[var(--exits-severity-secondary)] !text-[var(--exits-severity-secondary-foreground)] hover:!border-[var(--exits-severity-secondary-hover)] hover:!bg-[var(--exits-severity-secondary-hover)]",
   success:
@@ -88,9 +89,7 @@ const SEVERITY_SOLID_CLASS: Record<GallerySeverityId, string> = {
     "!border-[var(--exits-severity-contrast)] !bg-[var(--exits-severity-contrast)] !text-[var(--exits-severity-contrast-foreground)] hover:!border-[var(--exits-severity-contrast-hover)] hover:!bg-[var(--exits-severity-contrast-hover)]",
 };
 
-const SEVERITY_OUTLINE_CLASS: Record<GallerySeverityId, string> = {
-  primary:
-    "!border-[var(--exits-severity-primary)] !bg-transparent !text-[var(--exits-severity-primary)] hover:!bg-[color-mix(in_srgb,var(--exits-severity-primary)_12%,transparent)]",
+const SEVERITY_OUTLINE_CLASS: Record<Exclude<GallerySeverityId, "primary">, string> = {
   secondary:
     "!border-[color-mix(in_srgb,var(--exits-severity-secondary-foreground)_35%,transparent)] !bg-transparent !text-[var(--exits-severity-secondary-foreground)] hover:!bg-[var(--exits-severity-secondary)]",
   success:
@@ -107,9 +106,7 @@ const SEVERITY_OUTLINE_CLASS: Record<GallerySeverityId, string> = {
     "!border-[var(--exits-severity-contrast)] !bg-transparent !text-[var(--exits-severity-contrast)] hover:!bg-[color-mix(in_srgb,var(--exits-severity-contrast)_8%,transparent)]",
 };
 
-const SEVERITY_TEXT_CLASS: Record<GallerySeverityId, string> = {
-  primary:
-    "!border-transparent !bg-transparent !text-[var(--exits-severity-primary)] hover:!bg-[color-mix(in_srgb,var(--exits-severity-primary)_12%,transparent)]",
+const SEVERITY_TEXT_CLASS: Record<Exclude<GallerySeverityId, "primary">, string> = {
   secondary:
     "!border-transparent !bg-transparent !text-[var(--exits-severity-secondary-foreground)] hover:!bg-[var(--exits-severity-secondary)]",
   success:
@@ -135,7 +132,12 @@ const GALLERY_ICON_BASE =
 
 const PRIMENG_LOGO_SRC = "https://primefaces.org/cdn/primeng/images/logo.svg";
 
-function severityAppearanceClass(id: GallerySeverityId, appearance: ButtonAppearance): string {
+/**
+ * Primary uses Preferences brand tokens (`--exits-primary`) — user-selectable.
+ * Other severities use locked Diamond `--exits-severity-*` fills.
+ */
+function severityAppearanceClass(id: GallerySeverityId, appearance: ButtonAppearance): string | null {
+  if (id === "primary") return null;
   if (appearance === "outline") return SEVERITY_OUTLINE_CLASS[id];
   if (appearance === "ghost") return SEVERITY_TEXT_CLASS[id];
   return SEVERITY_SOLID_CLASS[id];
@@ -146,11 +148,22 @@ function GallerySection({
   children,
   testId,
   note,
+  command,
+  commandContext,
+  composeAppearance,
 }: {
   title: string;
   children: ReactNode;
   testId: string;
   note?: string;
+  /** Base Cursor shorthand for this gallery card. */
+  command?: string;
+  commandContext?: string;
+  /**
+   * When set, shows one sample compose command:
+   * `EXITS BUTTON + {composeAppearance} + PRIMARY`
+   */
+  composeAppearance?: string;
 }) {
   return (
     <div
@@ -161,6 +174,18 @@ function GallerySection({
       <div className="flex flex-wrap items-center gap-2">{children}</div>
       {note ? (
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{note}</p>
+      ) : null}
+      {command ? (
+        <UiStandardsCopyCommand standard="Button" command={command} context={commandContext} />
+      ) : null}
+      {composeAppearance ? (
+        <div data-testid={`${testId}-compose-commands`}>
+          <UiStandardsCopyCommand
+            standard="Button"
+            command={`EXITS BUTTON + ${composeAppearance} + PRIMARY`}
+            context="Compose with severity: swap PRIMARY for SECONDARY · SUCCESS · INFO · WARN · HELP · DANGER · CONTRAST."
+          />
+        </div>
       ) : null}
     </div>
   );
@@ -189,6 +214,7 @@ function SeverityRow({
     <>
       {GALLERY_SEVERITIES.map(({ id, label, intent, Icon, iconLabel }) => {
         const textLabel = labelOverride?.(id, label) ?? label;
+        const severityClass = severityAppearanceClass(id, appearance);
         return (
           <Button
             key={`${testIdPrefix}-${id}`}
@@ -204,8 +230,8 @@ function SeverityRow({
               shapeClass,
               (appearance === "elevated" || raisedText) &&
                 "!shadow-[0_1px_3px_color-mix(in_srgb,#0f172a_18%,transparent)] hover:!-translate-y-px",
-              severityAppearanceClass(id, appearance),
-              "exits-severity-btn",
+              severityClass,
+              severityClass ? "exits-severity-btn" : null,
             )}
             data-testid={`${testIdPrefix}-${id}`}
             data-gallery-severity={id}
@@ -219,6 +245,7 @@ function SeverityRow({
 }
 
 function GallerySplitButton({ id }: { id: GallerySeverityId }) {
+  const severityClass = severityAppearanceClass(id, "solid");
   return (
     <div
       className="inline-flex overflow-hidden rounded-[6px]"
@@ -227,14 +254,14 @@ function GallerySplitButton({ id }: { id: GallerySeverityId }) {
     >
       <Button
         type="button"
-        intent="primary"
+        intent={id === "primary" ? "primary" : GALLERY_SEVERITIES.find((s) => s.id === id)!.intent}
         appearance="solid"
         emphasis="strong"
         className={cn(
           GALLERY_BUTTON_BASE,
           "!rounded-none !rounded-l-[6px]",
-          SEVERITY_SOLID_CLASS[id],
-          "exits-severity-btn",
+          severityClass,
+          severityClass ? "exits-severity-btn" : null,
         )}
         data-testid={`ui-standard-btn-gallery-split-${id}-main`}
       >
@@ -242,7 +269,7 @@ function GallerySplitButton({ id }: { id: GallerySeverityId }) {
       </Button>
       <Button
         type="button"
-        intent="primary"
+        intent={id === "primary" ? "primary" : GALLERY_SEVERITIES.find((s) => s.id === id)!.intent}
         appearance="solid"
         emphasis="strong"
         size="icon"
@@ -252,8 +279,8 @@ function GallerySplitButton({ id }: { id: GallerySeverityId }) {
         className={cn(
           GALLERY_ICON_BASE,
           "!rounded-none !rounded-r-[6px] !border-l !border-l-[color-mix(in_srgb,#fff_22%,transparent)]",
-          SEVERITY_SOLID_CLASS[id],
-          "exits-severity-btn",
+          severityClass,
+          severityClass ? "exits-severity-btn" : null,
         )}
         data-testid={`ui-standard-btn-gallery-split-${id}-menu`}
       >
@@ -273,8 +300,8 @@ function GalleryLoadingButtons() {
     }, 2000);
   };
 
-  const solidPrimary = cn(GALLERY_BUTTON_BASE, SEVERITY_SOLID_CLASS.primary, "exits-severity-btn");
-  const solidIcon = cn(GALLERY_ICON_BASE, SEVERITY_SOLID_CLASS.primary, "exits-severity-btn");
+  const solidPrimary = GALLERY_BUTTON_BASE;
+  const solidIcon = GALLERY_ICON_BASE;
 
   return (
     <>
@@ -354,16 +381,18 @@ function GalleryLoadingButtons() {
 }
 
 /**
- * Button gallery matching the full Diamond PrimeNG UI Kit Button sample.
+ * Button gallery — locked ExItS Button visual standard (Diamond Full sample layout).
+ * Severity fills are showcase-only; product chrome keeps brand tokens.
  * @see https://diamond.primeng.dev/uikit/button
+ * @see Docs/UI/exits-button-standard.md
  */
 export function UiStandardsButtonGallery() {
   return (
     <div className="flex flex-col gap-3" data-testid="ui-standard-button-gallery">
       <div className="flex flex-col gap-1">
-        <PlaygroundLabel>Gallery</PlaygroundLabel>
+        <PlaygroundLabel>Gallery — locked standard</PlaygroundLabel>
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-          Full sample cards from{" "}
+          ExItS Button standard = Full sample cards from{" "}
           <a
             href="https://diamond.primeng.dev/uikit/button"
             target="_blank"
@@ -372,18 +401,27 @@ export function UiStandardsButtonGallery() {
           >
             Diamond PrimeNG → Button
           </a>
-          . Severity colors are showcase-only; product chrome keeps ExItS brand tokens.
+          . All{" "}
+          <strong className="font-medium text-foreground">8 severities</strong> are locked
+          (Primary · Secondary · Success · Info · Warn · Help · Danger · Contrast). Product Primary
+          keeps ExItS brand tokens; Help / Contrast use severity tokens.
         </p>
       </div>
 
       <div className="grid min-w-0 gap-3 md:grid-cols-2">
-        <GallerySection title="Default" testId="ui-standard-btn-gallery-default">
+        <GallerySection
+          title="Default"
+          testId="ui-standard-btn-gallery-default"
+          note="Submit / Disabled = Solid Primary. Link = Ghost Primary."
+          command="EXITS BUTTON + SOLID + PRIMARY"
+          commandContext="Link control: EXITS BUTTON + GHOST + PRIMARY"
+        >
           <Button
             type="button"
             intent="primary"
             appearance="solid"
             emphasis="strong"
-            className={cn(GALLERY_BUTTON_BASE, SEVERITY_SOLID_CLASS.primary, "exits-severity-btn")}
+            className={GALLERY_BUTTON_BASE}
             data-testid="ui-standard-btn-gallery-submit"
             data-gallery-severity="primary"
           >
@@ -395,7 +433,7 @@ export function UiStandardsButtonGallery() {
             appearance="solid"
             emphasis="strong"
             disabled
-            className={cn(GALLERY_BUTTON_BASE, SEVERITY_SOLID_CLASS.primary, "exits-severity-btn")}
+            className={GALLERY_BUTTON_BASE}
             data-testid="ui-standard-btn-gallery-disabled"
             data-gallery-severity="primary"
           >
@@ -405,7 +443,7 @@ export function UiStandardsButtonGallery() {
             type="button"
             intent="primary"
             appearance="ghost"
-            className={cn(GALLERY_BUTTON_BASE, SEVERITY_TEXT_CLASS.primary, "exits-severity-btn")}
+            className={GALLERY_BUTTON_BASE}
             data-testid="ui-standard-btn-gallery-link"
             data-gallery-severity="primary"
           >
@@ -413,15 +451,33 @@ export function UiStandardsButtonGallery() {
           </Button>
         </GallerySection>
 
-        <GallerySection title="Severities" testId="ui-standard-btn-gallery-severities">
+        <GallerySection
+          title="Severities"
+          testId="ui-standard-btn-gallery-severities"
+          note="Primary follows Preferences primary palette. Secondary–Contrast use locked Diamond severity colors."
+          command="EXITS BUTTON + SOLID"
+          composeAppearance="SOLID"
+        >
           <SeverityRow appearance="solid" testIdPrefix="ui-standard-btn-gallery-severity" />
         </GallerySection>
 
-        <GallerySection title="Text" testId="ui-standard-btn-gallery-text">
+        <GallerySection
+          title="Text (Ghost)"
+          testId="ui-standard-btn-gallery-text"
+          note="Diamond “Text” = ExItS Ghost appearance."
+          command="EXITS BUTTON + GHOST"
+          composeAppearance="GHOST"
+        >
           <SeverityRow appearance="ghost" testIdPrefix="ui-standard-btn-gallery-text" />
         </GallerySection>
 
-        <GallerySection title="Outlined" testId="ui-standard-btn-gallery-outlined">
+        <GallerySection
+          title="Outlined"
+          testId="ui-standard-btn-gallery-outlined"
+          note="Outline appearance × 8 locked severities."
+          command="EXITS BUTTON + OUTLINE"
+          composeAppearance="OUTLINE"
+        >
           <SeverityRow
             appearance="outline"
             testIdPrefix="ui-standard-btn-gallery-outlined"
@@ -429,7 +485,11 @@ export function UiStandardsButtonGallery() {
           />
         </GallerySection>
 
-        <GallerySection title="Group" testId="ui-standard-btn-gallery-group">
+        <GallerySection
+          title="Group"
+          testId="ui-standard-btn-gallery-group"
+          command="EXITS BUTTON + GROUP"
+        >
           <div
             className="inline-flex overflow-hidden rounded-[6px]"
             data-testid="ui-standard-btn-gallery-group-bar"
@@ -439,12 +499,7 @@ export function UiStandardsButtonGallery() {
               intent="primary"
               appearance="solid"
               emphasis="strong"
-              className={cn(
-                GALLERY_BUTTON_BASE,
-                "!rounded-none !rounded-l-[6px]",
-                SEVERITY_SOLID_CLASS.primary,
-                "exits-severity-btn",
-              )}
+              className={cn(GALLERY_BUTTON_BASE, "!rounded-none !rounded-l-[6px]")}
               data-testid="ui-standard-btn-gallery-group-save"
             >
               <Check className="size-4" aria-hidden strokeWidth={2} />
@@ -458,8 +513,6 @@ export function UiStandardsButtonGallery() {
               className={cn(
                 GALLERY_BUTTON_BASE,
                 "!rounded-none !border-l !border-l-[color-mix(in_srgb,#fff_22%,transparent)]",
-                SEVERITY_SOLID_CLASS.primary,
-                "exits-severity-btn",
               )}
               data-testid="ui-standard-btn-gallery-group-delete"
             >
@@ -474,8 +527,6 @@ export function UiStandardsButtonGallery() {
               className={cn(
                 GALLERY_BUTTON_BASE,
                 "!rounded-none !rounded-r-[6px] !border-l !border-l-[color-mix(in_srgb,#fff_22%,transparent)]",
-                SEVERITY_SOLID_CLASS.primary,
-                "exits-severity-btn",
               )}
               data-testid="ui-standard-btn-gallery-group-cancel"
             >
@@ -485,13 +536,21 @@ export function UiStandardsButtonGallery() {
           </div>
         </GallerySection>
 
-        <GallerySection title="SplitButton" testId="ui-standard-btn-gallery-splitbutton">
+        <GallerySection
+          title="SplitButton"
+          testId="ui-standard-btn-gallery-splitbutton"
+          command="EXITS BUTTON + SPLIT"
+        >
           {GALLERY_SEVERITIES.map(({ id }) => (
             <GallerySplitButton key={id} id={id} />
           ))}
         </GallerySection>
 
-        <GallerySection title="Templating" testId="ui-standard-btn-gallery-templating">
+        <GallerySection
+          title="Templating"
+          testId="ui-standard-btn-gallery-templating"
+          command="EXITS BUTTON + TEMPLATE"
+        >
           <Button
             type="button"
             intent="primary"
@@ -499,11 +558,7 @@ export function UiStandardsButtonGallery() {
             emphasis="strong"
             size="icon"
             aria-label="PrimeNG logo"
-            className={cn(
-              "!h-[38px] !min-h-[38px] !min-w-[38px] !rounded-[6px] !p-0 !shadow-none",
-              SEVERITY_SOLID_CLASS.primary,
-              "exits-severity-btn",
-            )}
+            className="!h-[38px] !min-h-[38px] !min-w-[38px] !rounded-[6px] !p-0 !shadow-none"
             data-testid="ui-standard-btn-gallery-template-logo"
           >
             <img src={PRIMENG_LOGO_SRC} alt="" className="size-6" width={24} height={24} />
@@ -525,7 +580,12 @@ export function UiStandardsButtonGallery() {
           </Button>
         </GallerySection>
 
-        <GallerySection title="Icons" testId="ui-standard-btn-gallery-icons">
+        <GallerySection
+          title="Icons"
+          testId="ui-standard-btn-gallery-icons"
+          command="EXITS BUTTON + ICON"
+          commandContext="Icon-only: EXITS BUTTON + ICON ONLY. Leading/trailing icon children on labeled buttons."
+        >
           <Button
             type="button"
             intent="primary"
@@ -533,7 +593,7 @@ export function UiStandardsButtonGallery() {
             emphasis="strong"
             size="icon"
             aria-label="Favorite"
-            className={cn(GALLERY_ICON_BASE, SEVERITY_SOLID_CLASS.primary, "exits-severity-btn")}
+            className={GALLERY_ICON_BASE}
             data-testid="ui-standard-btn-gallery-icon-only"
             data-gallery-severity="primary"
           >
@@ -544,7 +604,7 @@ export function UiStandardsButtonGallery() {
             intent="primary"
             appearance="solid"
             emphasis="strong"
-            className={cn(GALLERY_BUTTON_BASE, SEVERITY_SOLID_CLASS.primary, "exits-severity-btn")}
+            className={GALLERY_BUTTON_BASE}
             data-testid="ui-standard-btn-gallery-icon-leading"
             data-gallery-severity="primary"
           >
@@ -556,7 +616,7 @@ export function UiStandardsButtonGallery() {
             intent="primary"
             appearance="solid"
             emphasis="strong"
-            className={cn(GALLERY_BUTTON_BASE, SEVERITY_SOLID_CLASS.primary, "exits-severity-btn")}
+            className={GALLERY_BUTTON_BASE}
             data-testid="ui-standard-btn-gallery-icon-trailing"
             data-gallery-severity="primary"
           >
@@ -565,11 +625,23 @@ export function UiStandardsButtonGallery() {
           </Button>
         </GallerySection>
 
-        <GallerySection title="Raised" testId="ui-standard-btn-gallery-raised">
+        <GallerySection
+          title="Raised"
+          testId="ui-standard-btn-gallery-raised"
+          note="Elevated appearance × 8 locked severities."
+          command="EXITS BUTTON + ELEVATED"
+          composeAppearance="ELEVATED"
+        >
           <SeverityRow appearance="elevated" testIdPrefix="ui-standard-btn-gallery-raised" />
         </GallerySection>
 
-        <GallerySection title="Rounded" testId="ui-standard-btn-gallery-rounded">
+        <GallerySection
+          title="Rounded"
+          testId="ui-standard-btn-gallery-rounded"
+          note="Pill shape + Solid."
+          command="EXITS BUTTON + SOLID + PILL"
+          composeAppearance="SOLID + PILL"
+        >
           <SeverityRow
             appearance="solid"
             shape="pill"
@@ -577,7 +649,12 @@ export function UiStandardsButtonGallery() {
           />
         </GallerySection>
 
-        <GallerySection title="Rounded Icons" testId="ui-standard-btn-gallery-rounded-icons">
+        <GallerySection
+          title="Rounded Icons"
+          testId="ui-standard-btn-gallery-rounded-icons"
+          note="Round icon-only + Solid."
+          command="EXITS BUTTON + SOLID + ROUND + ICON ONLY"
+        >
           <SeverityRow
             appearance="solid"
             shape="round"
@@ -586,7 +663,12 @@ export function UiStandardsButtonGallery() {
           />
         </GallerySection>
 
-        <GallerySection title="Rounded Text" testId="ui-standard-btn-gallery-rounded-text">
+        <GallerySection
+          title="Rounded Text (Ghost)"
+          testId="ui-standard-btn-gallery-rounded-text"
+          note="Diamond Rounded Text = Ghost + Round icon-only."
+          command="EXITS BUTTON + GHOST + ROUND + ICON ONLY"
+        >
           <SeverityRow
             appearance="ghost"
             shape="round"
@@ -596,7 +678,11 @@ export function UiStandardsButtonGallery() {
           />
         </GallerySection>
 
-        <GallerySection title="Rounded Outlined" testId="ui-standard-btn-gallery-rounded-outlined">
+        <GallerySection
+          title="Rounded Outlined"
+          testId="ui-standard-btn-gallery-rounded-outlined"
+          command="EXITS BUTTON + OUTLINE + ROUND + ICON ONLY"
+        >
           <SeverityRow
             appearance="outline"
             shape="round"
@@ -605,7 +691,11 @@ export function UiStandardsButtonGallery() {
           />
         </GallerySection>
 
-        <GallerySection title="Loading" testId="ui-standard-btn-gallery-loading">
+        <GallerySection
+          title="Loading"
+          testId="ui-standard-btn-gallery-loading"
+          command="EXITS BUTTON + LOADING"
+        >
           <GalleryLoadingButtons />
         </GallerySection>
       </div>

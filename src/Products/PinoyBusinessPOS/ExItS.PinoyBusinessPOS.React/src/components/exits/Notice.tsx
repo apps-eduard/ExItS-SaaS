@@ -26,8 +26,9 @@ const TONE_ICON: Record<NoticeTone, typeof Info> = {
 };
 
 /**
- * Compact contextual notice (APPROVED / LOCKED).
+ * Compact contextual notice (APPROVED / LOCKED — ExItS Message Standard).
  * INFO / WARNING / DANGER / SUCCESS — not an EmptyState and not a page ErrorState.
+ * @see Docs/UI/exits-message-standard.md
  */
 export function Notice({
   children,

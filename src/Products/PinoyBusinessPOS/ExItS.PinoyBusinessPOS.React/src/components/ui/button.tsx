@@ -12,14 +12,16 @@ import { cn } from "@/lib/cn";
  * @see /ui-standards → Buttons
  */
 
-/** Semantic meaning (why). */
+/** Semantic meaning (why). Locked set of 8 (Diamond Severities). Secondary → `neutral`. */
 export type ButtonIntentTone =
   | "primary"
   | "neutral"
   | "success"
   | "info"
   | "warning"
-  | "danger";
+  | "help"
+  | "danger"
+  | "contrast";
 
 /** Visual rendering (how). Elevated/Gradient are not intents. */
 export type ButtonAppearance =
@@ -66,7 +68,9 @@ export const buttonVariantsCva = cva(
         success: "",
         info: "",
         warning: "",
+        help: "",
         danger: "",
+        contrast: "",
       },
       appearance: {
         solid: "",
@@ -369,6 +373,114 @@ export const buttonVariantsCva = cva(
         emphasis: "strong",
         class:
           "bg-gradient-to-b from-[var(--exits-danger)] to-[color-mix(in_srgb,var(--exits-danger)_78%,#000)] text-white hover:brightness-100 focus-visible:ring-[var(--exits-danger)]",
+      },
+      {
+        intent: "help",
+        appearance: "solid",
+        emphasis: "soft",
+        class:
+          "border border-border bg-[color-mix(in_srgb,var(--exits-severity-help)_12%,var(--exits-surface))] text-[var(--exits-severity-help)] hover:border-[var(--exits-severity-help)]",
+      },
+      {
+        intent: "help",
+        appearance: "elevated",
+        emphasis: "soft",
+        class:
+          "border border-border bg-[color-mix(in_srgb,var(--exits-severity-help)_12%,var(--exits-surface))] text-[var(--exits-severity-help)] hover:border-[var(--exits-severity-help)]",
+      },
+      {
+        intent: "help",
+        appearance: "solid",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-severity-help)] text-[var(--exits-severity-help-foreground)] hover:bg-[var(--exits-severity-help-hover)] focus-visible:ring-[var(--exits-severity-help)]",
+      },
+      {
+        intent: "help",
+        appearance: "elevated",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-severity-help)] text-[var(--exits-severity-help-foreground)] hover:bg-[var(--exits-severity-help-hover)] focus-visible:ring-[var(--exits-severity-help)]",
+      },
+      {
+        intent: "help",
+        appearance: "outline",
+        class:
+          "border border-[var(--exits-severity-help)] bg-surface text-[var(--exits-severity-help)] hover:bg-[color-mix(in_srgb,var(--exits-severity-help)_12%,var(--exits-surface))]",
+      },
+      {
+        intent: "help",
+        appearance: "ghost",
+        class:
+          "bg-transparent text-[var(--exits-severity-help)] hover:bg-[color-mix(in_srgb,var(--exits-severity-help)_12%,transparent)]",
+      },
+      {
+        intent: "help",
+        appearance: "gradient",
+        emphasis: "soft",
+        class:
+          "border border-border bg-gradient-to-b from-[color-mix(in_srgb,var(--exits-severity-help)_12%,var(--exits-surface))] to-[color-mix(in_srgb,var(--exits-severity-help)_22%,var(--exits-surface))] text-[var(--exits-severity-help)]",
+      },
+      {
+        intent: "help",
+        appearance: "gradient",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-gradient-to-b from-[var(--exits-severity-help)] to-[color-mix(in_srgb,var(--exits-severity-help)_78%,#000)] text-[var(--exits-severity-help-foreground)]",
+      },
+      {
+        intent: "contrast",
+        appearance: "solid",
+        emphasis: "soft",
+        class:
+          "border border-border bg-[color-mix(in_srgb,var(--exits-severity-contrast)_8%,var(--exits-surface))] text-foreground hover:border-[var(--exits-severity-contrast)]",
+      },
+      {
+        intent: "contrast",
+        appearance: "elevated",
+        emphasis: "soft",
+        class:
+          "border border-border bg-[color-mix(in_srgb,var(--exits-severity-contrast)_8%,var(--exits-surface))] text-foreground hover:border-[var(--exits-severity-contrast)]",
+      },
+      {
+        intent: "contrast",
+        appearance: "solid",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-severity-contrast)] text-[var(--exits-severity-contrast-foreground)] hover:bg-[var(--exits-severity-contrast-hover)] focus-visible:ring-[var(--exits-severity-contrast)]",
+      },
+      {
+        intent: "contrast",
+        appearance: "elevated",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-[var(--exits-severity-contrast)] text-[var(--exits-severity-contrast-foreground)] hover:bg-[var(--exits-severity-contrast-hover)] focus-visible:ring-[var(--exits-severity-contrast)]",
+      },
+      {
+        intent: "contrast",
+        appearance: "outline",
+        class:
+          "border border-[var(--exits-severity-contrast)] bg-surface text-[var(--exits-severity-contrast)] hover:bg-[color-mix(in_srgb,var(--exits-severity-contrast)_8%,var(--exits-surface))]",
+      },
+      {
+        intent: "contrast",
+        appearance: "ghost",
+        class:
+          "bg-transparent text-[var(--exits-severity-contrast)] hover:bg-[color-mix(in_srgb,var(--exits-severity-contrast)_8%,transparent)]",
+      },
+      {
+        intent: "contrast",
+        appearance: "gradient",
+        emphasis: "soft",
+        class:
+          "border border-border bg-gradient-to-b from-[color-mix(in_srgb,var(--exits-severity-contrast)_8%,var(--exits-surface))] to-[color-mix(in_srgb,var(--exits-severity-contrast)_16%,var(--exits-surface))] text-foreground",
+      },
+      {
+        intent: "contrast",
+        appearance: "gradient",
+        emphasis: "strong",
+        class:
+          "border border-transparent bg-gradient-to-b from-[var(--exits-severity-contrast)] to-[color-mix(in_srgb,var(--exits-severity-contrast)_78%,#000)] text-[var(--exits-severity-contrast-foreground)]",
       },
     ],
     defaultVariants: {

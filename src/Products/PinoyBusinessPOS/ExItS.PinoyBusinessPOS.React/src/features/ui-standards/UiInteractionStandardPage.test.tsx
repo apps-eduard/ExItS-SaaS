@@ -60,7 +60,10 @@ describe("ui-standard-catalog filters", () => {
 
   it("Messages category isolates message gallery", () => {
     expect(filterLiveCards("messages", "").map((c) => c.id)).toEqual(["messages"]);
-    expect(filterCatalogRows("messages", "").map((r) => r.id)).toEqual(["message-gallery"]);
+    const rows = filterCatalogRows("messages", "");
+    expect(rows.map((r) => r.id)).toEqual(["message-gallery"]);
+    expect(rows[0]?.standard).toBe("Message");
+    expect(rows[0]?.status).toBe("Locked");
   });
 
   it("Forms category includes Form Controls and QuantityStepper cards", () => {

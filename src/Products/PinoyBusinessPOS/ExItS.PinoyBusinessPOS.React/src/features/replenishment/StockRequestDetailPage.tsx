@@ -53,6 +53,7 @@ import { InventoryMovementTransactionDrawer } from "@/features/inventory/Invento
 import {
   formatTransferQty,
   inventoryTransferStatusLabelKey,
+  stockRequestLinkedTransferQtyLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
 import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { StockRequestActivityTimeline } from "@/features/replenishment/StockRequestActivityTimeline";
@@ -650,7 +651,8 @@ export function StockRequestDetailPage() {
                               </>
                             ) : null}
                             {" · "}
-                            {t("stockRequest.linkedTransfer.sent")}: {formatTransferQty(tr.totalSentQty)}
+                            {t(stockRequestLinkedTransferQtyLabelKey(tr.status))}:{" "}
+                            {formatTransferQty(tr.totalSentQty)}
                             {" · "}
                             {t("stockRequest.linkedTransfer.received")}:{" "}
                             {formatTransferQty(tr.totalReceivedQty)}

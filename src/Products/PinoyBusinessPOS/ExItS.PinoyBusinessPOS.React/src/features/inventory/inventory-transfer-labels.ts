@@ -21,6 +21,21 @@ export function inventoryTransferStatusLabelKey(status: string): MessageKey {
   }
 }
 
+/**
+ * Draft line qty is planned for dispatch — not yet physically sent.
+ * After dispatch, the same field means Sent.
+ */
+export function transferShipmentQuantityLabelKey(status: string): MessageKey {
+  return status === "Draft" ? "transfer.prepared" : "transfer.sent";
+}
+
+/** Linked-transfer chip on Stock Request detail: Prepared vs Sent. */
+export function stockRequestLinkedTransferQtyLabelKey(status: string): MessageKey {
+  return status === "Draft"
+    ? "stockRequest.linkedTransfer.prepared"
+    : "stockRequest.linkedTransfer.sent";
+}
+
 /** Discrepancy chip phase for ClosedWithDiscrepancy (closed vs open follow-up). */
 export type InventoryTransferDiscrepancyPhase = "closed" | "open";
 

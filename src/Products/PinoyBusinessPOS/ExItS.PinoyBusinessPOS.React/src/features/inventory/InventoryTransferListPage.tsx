@@ -34,6 +34,7 @@ import {
   formatTransferQty,
   formatTransferTimestamp,
   inventoryTransferExecutor,
+  transferShipmentQuantityLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
 import {
   InventoryTransferStatusChip,
@@ -342,7 +343,7 @@ export function InventoryTransferListPage() {
                   className="whitespace-nowrap"
                   colWidth="3.5rem"
                 >
-                  {t("transfer.sent")}
+                  {t("transfer.qty")}
                 </ExitsTableHead>
                 <ExitsTableHead
                   cellAlign="center"
@@ -458,7 +459,8 @@ export function InventoryTransferListPage() {
                     {t("transfer.linesCount").replace("{count}", String(item.lineCount))}
                   </p>
                   <p className="exits-table-mobile__math mt-1 mb-0">
-                    {t("transfer.sent")}: {formatTransferQty(item.totalSentQty)}
+                    {t(transferShipmentQuantityLabelKey(item.status))}:{" "}
+                    {formatTransferQty(item.totalSentQty)}
                     {" · "}
                     {t("transfer.received")}: {formatTransferQty(item.totalReceivedQty)}
                   </p>

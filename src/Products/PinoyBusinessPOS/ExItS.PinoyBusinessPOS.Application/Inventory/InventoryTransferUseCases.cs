@@ -1182,6 +1182,36 @@ public sealed class DispatchInventoryTransfer
             return branchGuard;
         }
 
+        if (transfer.StockRequestId is StockRequestId dispatchStockRequestId)
+        {
+            var stockRequest = await _stockRequests
+                .GetByIdAsync(orgId, dispatchStockRequestId, ct)
+                .ConfigureAwait(false);
+            if (stockRequest is null)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    "pos.inventory.stock_request.not_found",
+                    "Stock request was not found.");
+            }
+
+            if (stockRequest.Status is StockRequestStatus.Cancelled
+                or StockRequestStatus.Rejected
+                or StockRequestStatus.Fulfilled)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    DomainErrorCodes.InvalidStockRequestStatusTransition,
+                    $"Cannot dispatch a transfer for a stock request in status {StockRequestStatuses.ToCode(stockRequest.Status)}.");
+            }
+
+            if (stockRequest.RequestedSourceLocationId != transfer.SourceBranchId
+                || stockRequest.DestinationLocationId != transfer.DestinationBranchId)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InventoryTransferBranchForbidden,
+                    "This transfer no longer matches the stock request source and destination.");
+            }
+        }
+
         var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
         var accounts = (await _inventory.ListByProductIdsAsync(orgId, productIds, ct).ConfigureAwait(false))
             .ToDictionary(a => a.ProductId.Value);
@@ -2273,6 +2303,7 @@ public sealed class ReceiveInventoryTransfer
                     stockRequest.RecalculateStatusFromFulfillmentCoverage(
                         coverage.ReceivedByProduct,
                         coverage.WaivedByProduct,
+                        coverage.OpenInTransitByProduct,
                         utcNow);
                     await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
 
@@ -2544,6 +2575,7 @@ public sealed class CloseRemainderInventoryTransfer
                             stockRequest.RecalculateStatusFromFulfillmentCoverage(
                                 coverage.ReceivedByProduct,
                                 coverage.WaivedByProduct,
+                                coverage.OpenInTransitByProduct,
                                 utcNow);
                             await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
                         }
@@ -2582,6 +2614,7 @@ public sealed class CancelInventoryTransfer
     private readonly ICatalogProductRepository _products;
     private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
+    private readonly IStockRequestRepository _stockRequests;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -2592,6 +2625,7 @@ public sealed class CancelInventoryTransfer
         ICatalogProductRepository products,
         InventoryLotStockService lots,
         IOrganizationBranchDirectory branches,
+        IStockRequestRepository stockRequests,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -2601,6 +2635,7 @@ public sealed class CancelInventoryTransfer
         _products = products;
         _lots = lots;
         _branches = branches;
+        _stockRequests = stockRequests;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -2719,6 +2754,26 @@ public sealed class CancelInventoryTransfer
             }
 
             await _transfers.UpdateAsync(transfer, ct).ConfigureAwait(false);
+
+            if (transfer.StockRequestId is StockRequestId cancelledStockRequestId)
+            {
+                var stockRequest = await _stockRequests
+                    .GetByIdAsync(orgId, cancelledStockRequestId, ct)
+                    .ConfigureAwait(false);
+                if (stockRequest is not null)
+                {
+                    await StockRequestStatusSync
+                        .SyncFromLinkedTransfersAsync(
+                            _stockRequests,
+                            _transfers,
+                            stockRequest,
+                            liveTransfer: transfer,
+                            utcNow,
+                            ct)
+                        .ConfigureAwait(false);
+                }
+            }
+
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
             return ApplicationResult<InventoryTransfer>.Success(transfer);
         }

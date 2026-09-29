@@ -87,10 +87,12 @@ describe("UiStandardsPage", () => {
   it("keeps Intent separate from Appearance on the Buttons live card", () => {
     renderPage();
     const buttons = screen.getByTestId("ui-standard-card-buttons");
-    expect(within(buttons).getByText("Intent / Tone")).toBeInTheDocument();
+    expect(within(buttons).getByText("Intent / Tone (8 locked)")).toBeInTheDocument();
     expect(within(buttons).getByText("Appearance / Treatment")).toBeInTheDocument();
     expect(within(buttons).queryByTestId("ui-standard-intent-outline")).not.toBeInTheDocument();
     expect(within(buttons).queryByTestId("ui-standard-intent-ghost")).not.toBeInTheDocument();
+    expect(within(buttons).getByTestId("ui-standard-intent-help")).toBeInTheDocument();
+    expect(within(buttons).getByTestId("ui-standard-intent-contrast")).toBeInTheDocument();
     expect(within(buttons).getByTestId("ui-standard-appearance-outline")).toBeInTheDocument();
     expect(within(buttons).getByTestId("ui-standard-appearance-ghost")).toBeInTheDocument();
     expect(within(buttons).getByTestId("ui-standard-appearance-elevated")).toBeInTheDocument();
@@ -103,6 +105,21 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-btn-gallery-default")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-btn-gallery-severities")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-btn-gallery-text")).toBeInTheDocument();
+    expect(within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText("Text (Ghost)")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-btn-gallery-text-compose-commands")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText("EXITS BUTTON + GHOST"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText(
+        "EXITS BUTTON + GHOST + PRIMARY",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-btn-gallery-text")).queryByText(
+        "EXITS BUTTON + GHOST + SUCCESS",
+      ),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-btn-gallery-outlined")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-btn-gallery-group")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-btn-gallery-splitbutton")).toBeInTheDocument();
@@ -131,14 +148,20 @@ describe("UiStandardsPage", () => {
       "data-gallery-severity",
       "contrast",
     );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).toContain(
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).not.toContain(
       "exits-severity-btn",
     );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).toContain(
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).not.toContain(
       "var(--exits-severity-primary)",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).toContain(
+      "bg-primary",
     );
     expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary").className).toContain(
       "var(--exits-severity-secondary)",
+    );
+    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary").className).toContain(
+      "exits-severity-btn",
     );
     expect(screen.getByTestId("ui-standard-btn-gallery-severities").textContent).not.toMatch(
       /Primary · Secondary · Success/,
@@ -617,18 +640,24 @@ describe("UiStandardsPage", () => {
       "true",
     );
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-button-pilot-badge")).toHaveTextContent(
+      "BUTTON STANDARD — APPROVED / LOCKED",
+    );
     expect(screen.getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-upload")).not.toBeInTheDocument();
   });
 
-  it("opens Messages filter from category=messages with full Diamond message gallery", () => {
+  it("opens Messages filter from category=messages with locked message gallery", () => {
     renderPage("/ui-standards?category=messages");
     expect(screen.getByTestId("ui-standards-filter-messages")).toHaveAttribute(
       "data-selected",
       "true",
     );
     expect(screen.getByTestId("ui-standard-card-messages")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-message-pilot-badge")).toHaveTextContent(
+      "MESSAGE STANDARD — APPROVED / LOCKED",
+    );
     expect(screen.getByTestId("ui-standard-message-gallery")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-msg-gallery-toast")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-msg-gallery-severity")).toBeInTheDocument();

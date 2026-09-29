@@ -219,6 +219,7 @@ public sealed class InventoryTransferReceiveClassificationTests
         request.RecalculateStatusFromFulfillmentCoverage(
             liveCoverage.ReceivedByProduct,
             liveCoverage.WaivedByProduct,
+            liveCoverage.OpenInTransitByProduct,
             Utc.AddMinutes(4));
         Assert.Equal(StockRequestStatus.Fulfilled, request.Status);
         Assert.Equal(10m, liveCoverage.ReceivedByProduct[Coke.Value]);

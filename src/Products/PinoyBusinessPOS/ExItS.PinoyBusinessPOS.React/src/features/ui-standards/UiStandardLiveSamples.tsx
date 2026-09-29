@@ -75,6 +75,7 @@ import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-setting
 import { UiStandardsDoDont } from "@/features/ui-standards/UiStandardsDoDont";
 import { UiStandardsButtonGallery } from "@/features/ui-standards/UiStandardsButtonGallery";
 import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
+import { useI18n } from "@/i18n/I18nProvider";
 import {
   UiStandardsButtonPlayground,
   UiStandardsSelectPlayground,
@@ -168,6 +169,7 @@ export type UiStandardLiveSamplesProps = {
  * Demo-only: no backend calls.
  */
 export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesProps) {
+  const { t } = useI18n();
   const toast = useExitsToast();
   const [confirmVariant, setConfirmVariant] = useState<"default" | "warning" | "danger" | null>(
     null,
@@ -352,7 +354,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
             data-testid="ui-standard-card-buttons"
           >
-            <CardTitle>Buttons</CardTitle>
+            <CardTitle>{t("uiStandards.buttonPilotTitle")}</CardTitle>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground"
+              data-testid="ui-standard-button-pilot-badge"
+            >
+              {t("uiStandards.buttonPilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-button-pilot-lede">
+              {t("uiStandards.buttonPilotLede")}
+            </p>
             <UiStandardsButtonGallery />
             <UiStandardsButtonPlayground />
             <div className="flex flex-col gap-2">
@@ -416,16 +427,18 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               </div>
             </div>
             <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Intent / Tone</SectionLabel>
+              <SectionLabel>Intent / Tone (8 locked)</SectionLabel>
               <div className="flex flex-wrap gap-2">
                 {(
                   [
                     ["Primary", "primary"],
-                    ["Neutral", "neutral"],
+                    ["Secondary", "neutral"],
                     ["Success", "success"],
                     ["Info", "info"],
-                    ["Warning", "warning"],
+                    ["Warn", "warning"],
+                    ["Help", "help"],
                     ["Danger", "danger"],
+                    ["Contrast", "contrast"],
                   ] as const
                 ).map(([label, intent]) => (
                   <Button
@@ -433,6 +446,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                     type="button"
                     intent={intent}
                     appearance="solid"
+                    emphasis="strong"
                     data-testid={`ui-standard-intent-${intent}`}
                   >
                     {label}
@@ -440,7 +454,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 ))}
               </div>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Intent = semantic meaning. All samples use Solid appearance.
+                Locked Diamond severities (strong solid). Secondary → intent=&quot;neutral&quot;. Help and
+                Contrast are first-class intents.
               </p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border pt-3">
@@ -548,7 +563,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
             data-testid="ui-standard-card-messages"
           >
-            <CardTitle>Messages</CardTitle>
+            <CardTitle>{t("uiStandards.messagePilotTitle")}</CardTitle>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground"
+              data-testid="ui-standard-message-pilot-badge"
+            >
+              {t("uiStandards.messagePilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-message-pilot-lede">
+              {t("uiStandards.messagePilotLede")}
+            </p>
             <UiStandardsMessageGallery />
           </Card>
         ) : null}

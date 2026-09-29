@@ -131,7 +131,10 @@ public sealed class BranchInventoryReadService
                 reorderQuantity,
                 isLow,
                 isSuggested,
-                suggested);
+                suggested,
+                pendingReturn,
+                inspectionHold,
+                damaged);
         }
 
         return result;

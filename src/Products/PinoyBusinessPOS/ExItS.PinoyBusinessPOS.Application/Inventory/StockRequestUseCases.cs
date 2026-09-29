@@ -1765,6 +1765,7 @@ internal static class StockRequestDispatchCoverage
 public sealed class RejectStockRequest
 {
     private readonly IStockRequestRepository _requests;
+    private readonly IInventoryTransferRepository _transfers;
     private readonly StockRequestQueryService _queries;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -1772,12 +1773,14 @@ public sealed class RejectStockRequest
 
     public RejectStockRequest(
         IStockRequestRepository requests,
+        IInventoryTransferRepository transfers,
         StockRequestQueryService queries,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _requests = requests;
+        _transfers = transfers;
         _queries = queries;
         _notifications = notifications;
         _unitOfWork = unitOfWork;
@@ -1811,26 +1814,33 @@ public sealed class RejectStockRequest
 
         try
         {
-            request.Reject(actorId, _clock.UtcNow, body.Reason);
-            await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
+            {
+                var utcNow = _clock.UtcNow;
+                await StockRequestStatusSync
+                    .CancelLinkedDraftsAsync(_transfers, request, actorId, utcNow, ct)
+                    .ConfigureAwait(false);
+                request.Reject(actorId, utcNow, body.Reason);
+                await _requests.UpdateAsync(request, ct).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
-            await StockRequestNotificationHelper
-                .PublishAsync(
-                    _notifications,
-                    organizationId,
-                    StockRequestNotificationTypes.Declined,
-                    request,
-                    request.DestinationLocationId.Value,
-                    "Stock request declined",
-                    $"{request.RequestNumber ?? request.Id.Value.ToString("D")}: {request.RejectionReason}",
-                    cancellationToken)
-                .ConfigureAwait(false);
+                await StockRequestNotificationHelper
+                    .PublishAsync(
+                        _notifications,
+                        organizationId,
+                        StockRequestNotificationTypes.Declined,
+                        request,
+                        request.DestinationLocationId.Value,
+                        "Stock request declined",
+                        $"{request.RequestNumber ?? request.Id.Value.ToString("D")}: {request.RejectionReason}",
+                        ct)
+                    .ConfigureAwait(false);
 
-            var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, cancellationToken).ConfigureAwait(false);
-            return dto is null
-                ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
-                : ApplicationResult<StockRequestDto>.Success(dto);
+                var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, ct).ConfigureAwait(false);
+                return dto is null
+                    ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
+                    : ApplicationResult<StockRequestDto>.Success(dto);
+            }, cancellationToken).ConfigureAwait(false);
         }
         catch (DomainException ex)
         {
@@ -1846,17 +1856,20 @@ public sealed class RejectStockRequest
 public sealed class CancelStockRequest
 {
     private readonly IStockRequestRepository _requests;
+    private readonly IInventoryTransferRepository _transfers;
     private readonly StockRequestQueryService _queries;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CancelStockRequest(
         IStockRequestRepository requests,
+        IInventoryTransferRepository transfers,
         StockRequestQueryService queries,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _requests = requests;
+        _transfers = transfers;
         _queries = queries;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -1888,15 +1901,26 @@ public sealed class CancelStockRequest
 
         try
         {
-            request.Cancel(actorId, _clock.UtcNow);
-            await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, cancellationToken).ConfigureAwait(false);
-            return dto is null
-                ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
-                : ApplicationResult<StockRequestDto>.Success(dto);
+            return await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
+            {
+                var utcNow = _clock.UtcNow;
+                await StockRequestStatusSync
+                    .CancelLinkedDraftsAsync(_transfers, request, actorId, utcNow, ct)
+                    .ConfigureAwait(false);
+                request.Cancel(actorId, utcNow);
+                await _requests.UpdateAsync(request, ct).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, ct).ConfigureAwait(false);
+                return dto is null
+                    ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
+                    : ApplicationResult<StockRequestDto>.Success(dto);
+            }, cancellationToken).ConfigureAwait(false);
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
         }

@@ -353,7 +353,7 @@ public sealed class StockRequestWorkflowUseCaseTests
             fx.Approve = new ApproveStockRequest(
                 fx.Requests, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
             fx.Reject = new RejectStockRequest(
-                fx.Requests, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
+                fx.Requests, fx.Transfers, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
             return fx;
         }
     }

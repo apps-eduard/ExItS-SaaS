@@ -424,6 +424,7 @@ builder.Services.AddScoped<VoidProductionRun>();
 builder.Services.AddScoped<InventoryReconciliationQuery>();
 builder.Services.AddScoped<OrganizationInventoryQuery>();
 builder.Services.AddScoped<InventoryStockRollupQuery>();
+builder.Services.AddScoped<InventoryStockStatusQuery>();
 builder.Services.AddScoped<StockCountQueryService>();
 builder.Services.AddScoped<CreateStockCount>();
 builder.Services.AddScoped<UpdateStockCountDraft>();

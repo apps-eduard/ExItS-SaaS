@@ -134,8 +134,8 @@ describe("Diamond LIGHT severity tokens", () => {
     expect(readToken(light, "--exits-primary")).not.toBe(readToken(light, "--exits-severity-primary"));
   });
 
-  it("wires UI Standards gallery solids to severity CSS variables (no scattered hex)", () => {
-    expect(gallerySrc).toContain("var(--exits-severity-primary)");
+  it("wires UI Standards gallery non-primary solids to severity CSS variables (Primary uses brand)", () => {
+    expect(gallerySrc).not.toContain("var(--exits-severity-primary)");
     expect(gallerySrc).toContain("var(--exits-severity-secondary)");
     expect(gallerySrc).toContain("var(--exits-severity-success)");
     expect(gallerySrc).toContain("var(--exits-severity-info)");

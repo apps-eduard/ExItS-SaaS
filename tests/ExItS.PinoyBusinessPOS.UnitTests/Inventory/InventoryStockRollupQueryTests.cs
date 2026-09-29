@@ -59,7 +59,7 @@ public sealed class InventoryStockRollupQueryTests
     }
 
     [Fact]
-    public async Task AREA02_07_available_is_on_hand_minus_reserved_at_every_level()
+    public async Task AREA02_07_available_subtracts_reserved_and_non_sellable_buckets()
     {
         var harness = Harness.WithAreas();
 
@@ -67,12 +67,65 @@ public sealed class InventoryStockRollupQueryTests
 
         foreach (var area in rollup.Areas)
         {
-            Assert.Equal(area.OnHandQuantity - area.ReservedQuantity, area.AvailableQuantity);
+            Assert.Equal(
+                area.Branches.Sum(b => b.AvailableQuantity),
+                area.AvailableQuantity);
             foreach (var branch in area.Branches)
             {
-                Assert.Equal(branch.OnHandQuantity - branch.ReservedQuantity, branch.AvailableQuantity);
+                Assert.Equal(
+                    Math.Max(
+                        0m,
+                        branch.OnHandQuantity
+                        - branch.ReservedQuantity
+                        - branch.PendingReturnQuantity
+                        - branch.InspectionHoldQuantity
+                        - branch.DamagedQuantity),
+                    branch.AvailableQuantity);
             }
         }
+    }
+
+    [Fact]
+    public async Task Available_matches_branch_stock_resolver_when_damaged_present()
+    {
+        var balances = new[]
+        {
+            InventoryBranchBalance.Rehydrate(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(MainBranch),
+                CatalogProductId.From(Product),
+                onHandQuantity: 1480m,
+                updatedAtUtc: Utc,
+                reservedQuantity: 0m,
+                pendingReturnQuantity: 0m,
+                inspectionHoldQuantity: 0m,
+                damagedQuantity: 5m),
+            InventoryBranchBalance.Rehydrate(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(IloiloBranch),
+                CatalogProductId.From(Product),
+                onHandQuantity: 20m,
+                updatedAtUtc: Utc,
+                reservedQuantity: 0m),
+        };
+        var harness = Harness.WithAreas(
+            authorized:
+            [
+                new AuthorizedBranchGrouping(MainBranch, "Panay warehouse", Panay, "PANAY"),
+                new AuthorizedBranchGrouping(IloiloBranch, "Iloilo branch", Panay, "PANAY"),
+            ],
+            balances: balances,
+            accountOnHand: 1500m,
+            accountReserved: 0m);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+        var panay = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == MainBranch);
+        Assert.Equal(1480m, panay.OnHandQuantity);
+        Assert.Equal(5m, panay.DamagedQuantity);
+        Assert.Equal(1475m, panay.AvailableQuantity);
+        Assert.Equal(
+            BranchStockResolver.ResolveAvailable(1480m, 0m, 0m, 0m, 5m),
+            panay.AvailableQuantity);
     }
 
     [Fact]

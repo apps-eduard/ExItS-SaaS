@@ -230,7 +230,11 @@ public sealed class StockRequest
                 "Only an approved or preparing stock request can be dispatched.");
         }
 
-        if (LinkedInventoryTransferId is Guid existing && existing != transferId)
+        // Preparing/Approved may still hold a stale LinkedInventoryTransferId after a prior
+        // transfer was cancelled; allow replacement dispatch to re-link.
+        if (LinkedInventoryTransferId is Guid existing
+            && existing != transferId
+            && Status is not (StockRequestStatus.Approved or StockRequestStatus.Preparing))
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidStockRequestStatusTransition,
@@ -291,15 +295,29 @@ public sealed class StockRequest
         RecalculateStatusFromFulfillmentCoverage(
             receivedByProduct,
             waivedByProduct: new Dictionary<Guid, decimal>(),
+            openInTransitByProduct: null,
             utcNow);
 
     /// <summary>
     /// Recalculates status from good received + waived (accepted shortage/damage/other).
     /// Damaged physical inventory never counts as good received.
+    /// When <paramref name="openInTransitByProduct"/> is provided, InTransit vs Preparing
+    /// is derived from physical open qty (Draft does not count).
     /// </summary>
     public void RecalculateStatusFromFulfillmentCoverage(
         IReadOnlyDictionary<Guid, decimal> goodReceivedByProduct,
         IReadOnlyDictionary<Guid, decimal> waivedByProduct,
+        DateTimeOffset utcNow) =>
+        RecalculateStatusFromFulfillmentCoverage(
+            goodReceivedByProduct,
+            waivedByProduct,
+            openInTransitByProduct: null,
+            utcNow);
+
+    public void RecalculateStatusFromFulfillmentCoverage(
+        IReadOnlyDictionary<Guid, decimal> goodReceivedByProduct,
+        IReadOnlyDictionary<Guid, decimal> waivedByProduct,
+        IReadOnlyDictionary<Guid, decimal>? openInTransitByProduct,
         DateTimeOffset utcNow)
     {
         SaleMoney.EnsureUtc(utcNow);
@@ -334,11 +352,35 @@ public sealed class StockRequest
         }
         else if (anyProgress)
         {
+            // Keep PartiallyFulfilled even when a replacement shipment is in transit.
             Status = StockRequestStatus.PartiallyFulfilled;
+        }
+        else if (openInTransitByProduct is not null)
+        {
+            var anyOpenInTransit = openInTransitByProduct.Values.Any(v => v > 0m);
+            if (anyOpenInTransit)
+            {
+                Status = StockRequestStatus.InTransit;
+            }
+            else if (Status == StockRequestStatus.Pending)
+            {
+                Status = StockRequestStatus.Pending;
+            }
+            else if (Status == StockRequestStatus.Approved)
+            {
+                Status = StockRequestStatus.Approved;
+            }
+            else
+            {
+                // InTransit cancelled / Draft cancelled / needs another shipment — not Pending.
+                Status = StockRequestStatus.Preparing;
+                // Stale single-link pointer must not block replacement dispatch.
+                LinkedInventoryTransferId = null;
+            }
         }
         else if (Status == StockRequestStatus.InTransit)
         {
-            // Keep InTransit when nothing has been received/waived yet.
+            // Legacy callers without open-in-transit: keep InTransit when nothing received/waived yet.
         }
         else if (Status == StockRequestStatus.Pending)
         {

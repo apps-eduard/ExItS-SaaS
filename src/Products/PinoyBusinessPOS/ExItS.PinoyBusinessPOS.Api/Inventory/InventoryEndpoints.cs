@@ -20,6 +20,7 @@ internal static class InventoryEndpoints
         var group = app.MapGroup("/api/v1/pos/inventory");
 
         group.MapGet("/", ListInventory);
+        group.MapGet("/stock-status", ListStockStatus);
         group.MapGet("/attention-summary", GetAttentionSummary);
         group.MapGet("/low-stock", ListLowStock);
         group.MapGet("/reorder-suggestions", ListReorderSuggestions);
@@ -264,6 +265,38 @@ internal static class InventoryEndpoints
             BrandIds: resolvedBrandIds);
         var result = await queries.ListAsync(branchResolved.Context!, filter, page, pageSize, ct).ConfigureAwait(false);
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> ListStockStatus(
+        HttpRequest request,
+        Guid? branchId,
+        Guid? areaId,
+        Guid? categoryId,
+        Guid? productId,
+        string? search,
+        string? stockState,
+        int? page,
+        int? pageSize,
+        InventoryStockStatusQuery query,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var filter = new InventoryStockStatusFilter(
+            branchId,
+            areaId,
+            categoryId,
+            productId,
+            search,
+            stockState ?? InventoryStockStatusStates.All);
+        var result = await query
+            .ExecuteAsync(organizationId, filter, page, pageSize, ct)
+            .ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
     }
 
     private static async Task<IResult> GetAttentionSummary(

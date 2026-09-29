@@ -97,7 +97,9 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 row.BranchAvailable,
                 row.BranchPendingReturn,
                 row.SellingPrice,
-                opening.Quantity);
+                opening.Quantity,
+                row.BranchInspectionHold,
+                row.BranchDamaged);
         }).ToList();
 
         return (items, total);
@@ -277,6 +279,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 BranchReserved = branchReserved,
                 BranchAvailable = branchAvailable,
                 BranchPendingReturn = branchPendingReturn,
+                BranchInspectionHold = branchInspectionHold,
+                BranchDamaged = branchDamaged,
                 OrgOnHand = orgOnHand,
                 ReorderLevel = reorderLevel,
                 ReorderQuantity = reorderQuantity,
@@ -420,6 +424,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         public decimal BranchReserved { get; set; }
         public decimal BranchAvailable { get; set; }
         public decimal BranchPendingReturn { get; set; }
+        public decimal BranchInspectionHold { get; set; }
+        public decimal BranchDamaged { get; set; }
         public decimal OrgOnHand { get; set; }
         public decimal? ReorderLevel { get; set; }
         public decimal? ReorderQuantity { get; set; }

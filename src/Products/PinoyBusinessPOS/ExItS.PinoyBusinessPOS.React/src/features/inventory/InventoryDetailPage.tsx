@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ChevronDown, ChevronRight, PackageMinus, Trash2 } from "lucide-react";
@@ -33,7 +33,11 @@ import {
   canAddOpeningStock,
   canDisableExpirationTracking,
   computeGoodQuantity,
+  formatBranchRollupMetricsLine,
+  listNonZeroStockExceptions,
   sortLotsByExpiry,
+  stockExceptionLabelKey,
+  type StockExceptionKind,
 } from "@/features/inventory/inventory-detail-helpers";
 import { computeOpeningStockValue } from "@/features/catalog/opening-stock-helpers";
 import {
@@ -806,58 +810,83 @@ export function InventoryDetailPage() {
                   className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]"
                   data-testid="inventory-stock-breakdown"
                 >
+                  <dt className="text-muted">{t("inventory.onHand")}</dt>
+                  <dd
+                    className="m-0 justify-self-end tabular-nums font-medium"
+                    data-testid="inventory-breakdown-on-hand"
+                  >
+                    {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
+                  </dd>
                   {account.tracksExpiration ? (
                     <>
-                      <dt className="text-muted">{t("inventory.physicalOnHand")}</dt>
-                      <dd className="m-0 justify-self-end tabular-nums font-medium">
-                        {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
-                      </dd>
                       <dt className="text-muted">{t("inventory.sellable")}</dt>
-                      <dd className="m-0 justify-self-end tabular-nums font-medium">
+                      <dd
+                        className="m-0 justify-self-end tabular-nums font-medium"
+                        data-testid="inventory-breakdown-sellable"
+                      >
                         {formatInventoryQty(
-                          account.sellableQuantity != null && Number.isFinite(account.sellableQuantity)
+                          account.sellableQuantity != null &&
+                            Number.isFinite(account.sellableQuantity)
                             ? Math.max(0, account.sellableQuantity)
                             : resolveAvailableQuantity(account),
                         )}{" "}
                         {account.unitOfMeasure}
                       </dd>
-                      <dt className="text-muted">{t("inventory.saleBlocked")}</dt>
-                      <dd className="m-0 justify-self-end tabular-nums font-medium">
-                        {formatInventoryQty(resolveSalePolicyBlockedQuantity(account))}{" "}
-                        {account.unitOfMeasure}
-                      </dd>
-                      <dt className="text-muted">{t("inventory.expiredQty")}</dt>
-                      <dd className="m-0 justify-self-end tabular-nums font-medium">
-                        {formatInventoryQty(resolveExpiredQuantity(account))} {account.unitOfMeasure}
-                      </dd>
                     </>
-                  ) : (
-                    <>
-                      <dt className="text-muted">{t("inventory.onHand")}</dt>
-                      <dd className="m-0 justify-self-end tabular-nums font-medium">
-                        {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
-                      </dd>
-                    </>
-                  )}
+                  ) : null}
                   <dt className="text-muted">{t("inventory.reserved")}</dt>
-                  <dd className="m-0 justify-self-end tabular-nums font-medium">
+                  <dd
+                    className="m-0 justify-self-end tabular-nums font-medium"
+                    data-testid="inventory-breakdown-reserved"
+                  >
                     {formatInventoryQty(resolveReservedQuantity(account))} {account.unitOfMeasure}
                   </dd>
                   <dt className="font-semibold">{t("inventory.available")}</dt>
-                  <dd className="m-0 justify-self-end tabular-nums font-semibold">
+                  <dd
+                    className="m-0 justify-self-end tabular-nums font-semibold"
+                    data-testid="inventory-breakdown-available"
+                  >
                     {formatInventoryQty(resolveAvailableQuantity(account))} {account.unitOfMeasure}
                   </dd>
+                  {listNonZeroStockExceptions(account).map((row) => (
+                    <Fragment key={row.kind}>
+                      <dt className="text-muted">{t(stockExceptionLabelKey(row.kind))}</dt>
+                      <dd
+                        className="m-0 justify-self-end tabular-nums font-medium"
+                        data-testid={row.testId}
+                      >
+                        {formatInventoryQty(row.quantity)} {account.unitOfMeasure}
+                      </dd>
+                    </Fragment>
+                  ))}
                 </dl>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-fit"
-                  onClick={() => setReservationsOpen(true)}
-                  data-testid="inventory-view-reservations"
-                >
-                  {t("inventory.viewReservations")}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    intent="info"
+                    appearance="outline"
+                    shape="standard"
+                    className="w-fit"
+                    onClick={() => setReservationsOpen(true)}
+                    data-testid="inventory-view-reservations"
+                  >
+                    {t("inventory.viewReservations")}
+                  </Button>
+                  <Button
+                    asChild
+                    intent="primary"
+                    appearance="outline"
+                    shape="standard"
+                    className="w-fit"
+                  >
+                    <Link
+                      to={`/inventory/stock-status?productId=${encodeURIComponent(productId)}`}
+                      data-testid="inventory-view-stock-details"
+                    >
+                      {t("inventory.viewStockDetails")}
+                    </Link>
+                  </Button>
+                </div>
                 {rollup?.isTracked ? (
                   <div
                     className="flex flex-col gap-2"
@@ -939,11 +968,25 @@ export function InventoryDetailPage() {
                                           </span>
                                         ) : null}
                                       </p>
-                                      <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                                        {t("inventory.branchBreakdownMetrics")
-                                          .replace("{onHand}", String(row.onHandQuantity))
-                                          .replace("{reserved}", String(row.reservedQuantity))
-                                          .replace("{available}", String(row.availableQuantity))}
+                                      <p
+                                        className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                                        data-testid={`inventory-branch-metrics-${row.branchId}`}
+                                      >
+                                        {formatBranchRollupMetricsLine(row, {
+                                          onHand: t("inventory.branchMetricOnHand"),
+                                          available: t("inventory.branchMetricAvailable"),
+                                          exceptions: {
+                                            damaged: t("inventory.bucketDamaged"),
+                                            inspectionHold: t("inventory.bucketInspectionHold"),
+                                            pendingReturn: t(
+                                              "inventory.productSummary.pendingReturn",
+                                            ),
+                                            expired: t("inventory.expiredQty"),
+                                            saleBlocked: t("inventory.saleBlocked"),
+                                            inTransitOutbound: t("inventory.inTransitOutbound"),
+                                            inTransitInbound: t("inventory.inTransitInbound"),
+                                          } satisfies Record<StockExceptionKind, string>,
+                                        })}
                                       </p>
                                     </li>
                                   );

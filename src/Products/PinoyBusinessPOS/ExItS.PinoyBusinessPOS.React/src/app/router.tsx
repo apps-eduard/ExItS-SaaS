@@ -148,6 +148,7 @@ import { InventoryTransferListPage } from "@/features/inventory/InventoryTransfe
 import { StockCountCreatePage } from "@/features/inventory/StockCountCreatePage";
 import { StockCountDetailPage } from "@/features/inventory/StockCountDetailPage";
 import { StockCountListPage } from "@/features/inventory/StockCountListPage";
+import { StockStatusPage } from "@/features/inventory/StockStatusPage";
 import { StockUseCreatePage } from "@/features/inventory/StockUseCreatePage";
 import { StockUseDetailPage } from "@/features/inventory/StockUseDetailPage";
 import { StockUseListPage } from "@/features/inventory/StockUseListPage";
@@ -785,6 +786,7 @@ export const appRoutes = [
               { index: true, element: <InventoryListPage /> },
               { path: "low-stock-settings", element: <LowStockSettingsPage /> },
               { path: "expiration", element: <InventoryExpirationPage /> },
+              { path: "stock-status", element: <StockStatusPage /> },
               { path: "stock-counts", element: <StockCountListPage /> },
               { path: "stock-counts/new", element: <StockCountCreatePage /> },
               { path: "stock-counts/:stockCountId", element: <StockCountDetailPage /> },

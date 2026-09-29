@@ -39,6 +39,7 @@ import { useDirectPurchaseMovementDisplayRef } from "@/features/inventory/useDir
 import {
   formatTransferQty,
   inventoryTransferStatusLabelKey,
+  transferShipmentQuantityLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
 import {
   buildOverallFulfillmentView,
@@ -561,7 +562,9 @@ export function InventoryMovementTransactionDrawer({
                   </h3>
                   <dl className="m-0 grid grid-cols-2 gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-3">
                     <div>
-                      <dt className="text-muted">{t("transfer.sent")}</dt>
+                      <dt className="text-muted">
+                        {t(transferShipmentQuantityLabelKey(transfer.status))}
+                      </dt>
                       <dd className="m-0 font-semibold tabular-nums">
                         {formatTransferQty(thisShipment.sent)}
                       </dd>
@@ -881,7 +884,7 @@ export function InventoryMovementTransactionDrawer({
                                   "{n}",
                                   String(member.replacementSequence ?? ""),
                                 )}
-                          {` · ${t("transfer.sent")} ${formatTransferQty(member.totalSentQty)} · ${t("transfer.goodReceived")} ${formatTransferQty(member.totalReceivedQty)}`}
+                          {` · ${t(transferShipmentQuantityLabelKey(member.status))} ${formatTransferQty(member.totalSentQty)} · ${t("transfer.goodReceived")} ${formatTransferQty(member.totalReceivedQty)}`}
                         </li>
                       ))}
                     </ul>

@@ -280,6 +280,9 @@ describe("Inventory Transfer React flow", () => {
 
     expect(await screen.findByTestId("transfer-edit-draft")).toHaveTextContent("Edit shipment");
     expect(screen.queryByText("Add products")).not.toBeInTheDocument();
+    expect(screen.getByTestId("transfer-this-shipment")).toHaveTextContent(/Prepared/);
+    expect(screen.getByTestId("this-shipment-sent")).toHaveTextContent("24");
+    expect(screen.getByTestId("transfer-this-shipment")).not.toHaveTextContent(/^Sent$/);
   });
 
   it("failed dispatch remains Draft and surfaces exact server detail", async () => {

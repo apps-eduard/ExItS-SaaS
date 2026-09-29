@@ -1,9 +1,9 @@
 # ExItS Button Standard
 
-**Status:** APPROVED / LOCKED  
-**Scope:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`  
-**Canonical component:** `ExItS.PinoyBusinessPOS.React/src/components/ui/button.tsx`  
-**Visual authority:** `/ui-standards` → **Buttons**  
+**Status:** APPROVED / LOCKED
+**Scope:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`
+**Canonical component:** `ExItS.PinoyBusinessPOS.React/src/components/ui/button.tsx`
+**Visual authority:** `/ui-standards` → **Buttons**
 (`ExItS.PinoyBusinessPOS.React/src/features/ui-standards/`)
 
 **Interaction semantics (Save / Edit / Delete / Primary hierarchy):** see [EXITS_UI_STANDARD.md](./EXITS_UI_STANDARD.md) and `/ui-standards`.
@@ -24,13 +24,15 @@ Semantic meaning and visual treatment are **separate axes**. They compose. Do **
 
 ```
 Button
-├─ Intent / Tone          (WHY — semantic meaning)
+├─ Intent / Tone          (WHY — semantic meaning) — 8 locked
 │  ├─ Primary
-│  ├─ Neutral
+│  ├─ Neutral (Secondary)
 │  ├─ Success
 │  ├─ Info
-│  ├─ Warning
-│  └─ Danger
+│  ├─ Warning (Warn)
+│  ├─ Help
+│  ├─ Danger
+│  └─ Contrast
 │
 ├─ Appearance / Treatment (HOW — visual rendering)
 │  ├─ Solid
@@ -56,13 +58,15 @@ Button
 
 | Axis | Meaning | Values |
 |------|---------|--------|
-| **Intent** | Why the button looks that way | `primary` · `neutral` · `success` · `info` · `warning` · `danger` |
+| **Intent** | Why the button looks that way | `primary` · `neutral` · `success` · `info` · `warning` · `help` · `danger` · `contrast` |
 | **Appearance** | How it is drawn | `solid` · `outline` · `ghost` · `elevated` · `gradient` |
-| **Emphasis** | Fill strength (solid/elevated/gradient) | `soft` (default) · `strong` (Prime Severities) |
+| **Emphasis** | Fill strength (solid/elevated/gradient) | `soft` (default) · `strong` (Severities / filled) |
 | **Shape** | Geometry | `auto` · `standard` · `soft` · `pill` · `round` |
 | **State** | Interaction | normal / hover / focus / disabled / loading |
 
 **Elevated, Outline, Ghost, and Gradient are NOT intents.**
+
+The locked intent set is the Diamond **8 severities**. Gallery label **Secondary** = API `neutral`. Gallery **Warn** = API `warning`.
 
 ### Recommended defaults
 
@@ -90,16 +94,25 @@ Prefer `getActionButtonStyle(action)` from `action-semantics.ts` for common verb
 
 ## Intent / Tone
 
-| Intent | Meaning |
-|--------|---------|
-| **Primary** | Main / brand action |
-| **Neutral** | Normal non-semantic action |
-| **Success** | Positive / activate / complete |
-| **Info** | Informational |
-| **Warning** | Caution / reversible risky action |
-| **Danger** | Destructive / error / severe |
+| Intent | Gallery label | Meaning |
+|--------|---------------|---------|
+| **Primary** | Primary | Main / brand action |
+| **Neutral** | Secondary | Normal non-semantic action |
+| **Success** | Success | Positive / activate / complete |
+| **Info** | Info | Informational |
+| **Warning** | Warn | Caution / reversible risky action |
+| **Help** | Help | Help / assistive guidance |
+| **Danger** | Danger | Destructive / error / severe |
+| **Contrast** | Contrast | High-contrast / inverse chrome |
 
-PRIMARY does **not** mean hardcoded green — it means ExItS primary tokens (`--exits-primary`, etc.). SUCCESS / WARNING / DANGER / INFO stay semantic colors independent of brand primary.
+All **8** are **APPROVED / LOCKED**. Do not drop Help or Contrast from the standard.
+
+PRIMARY does **not** mean hardcoded green — product Primary uses ExItS primary tokens (`--exits-primary`, etc.). SUCCESS / WARNING / DANGER / INFO use `--exits-*` semantic tokens. HELP / CONTRAST use `--exits-severity-help` / `--exits-severity-contrast` (canonical for those intents).
+
+```tsx
+<Button intent="help" appearance="solid" emphasis="strong" />
+<Button intent="contrast" appearance="outline" />
+```
 
 Danger solid has two strengths via legacy alias:
 
@@ -144,20 +157,32 @@ Keep legacy `variant="secondary"` working via alias; do not introduce `intent="m
 
 ## Gallery mapping (UI Standards)
 
-`/ui-standards` → **Buttons** → **Gallery** shows a Prime-style layout. Map Prime labels to ExItS axes — do not add Prime-only variants to the component API.
+**Locked visual authority:** `/ui-standards` → **Buttons** → **Gallery** (`UiStandardsButtonGallery`) mirrors the **Diamond PrimeNG Button Full sample** layout (Default, Icons, Severities, Raised, Rounded, Text, Outlined, Rounded Icons, Loading, Button Group).
 
-| Prime section | ExItS |
-|---------------|-------|
+Reference: https://diamond.primeng.dev/uikit/button
+
+That Full sample **is** the ExItS Button visual standard for appearance coverage. Semantic API remains ExItS `intent` + `appearance` on the shared `Button` — map Diamond / Prime labels to ExItS axes; do **not** add Prime-only variants to the component API.
+
+| Diamond / Prime section | ExItS |
+|-------------------------|-------|
 | Default (Submit / Disabled / Link) | Primary+Solid · disabled · Primary+Ghost |
 | Icons | `size="icon"` · icon children leading/trailing |
-| Severities | Solid × each intent (Secondary = Neutral) |
+| Severities | Solid × each of the **8 locked** intents (Secondary = Neutral; Warn = Warning) |
 | Raised | `appearance="elevated"` |
 | Text | `appearance="ghost"` |
 | Rounded | `shape="pill"` |
 | Outlined | `appearance="outline"` |
 | Rounded Icons | `size="icon"` + `shape="round"` |
 
-**Not locked intents:** Help and Contrast. Use Info for help-like tone; Contrast in the gallery is a one-off foreground sample only.
+### Severity colors
+
+**Primary** follows the user’s Preferences primary palette (`--exits-primary` / brand tokens) — it is **not** a fixed Diamond emerald.
+
+**Secondary · Success · Info · Warn · Help · Danger · Contrast** use locked `--exits-severity-*` Diamond fills (gallery + Help/Contrast product intents).
+
+Product Success / Info / Warning / Danger also keep `--exits-*` semantic tokens on the shared `Button` when not using strong severity showcase fills.
+
+Locking this gallery does **not** require rewriting existing product buttons. Migrate call sites incrementally; reuse shared `Button` + action semantics.
 
 ---
 
@@ -280,15 +305,53 @@ Buttons **MUST** inherit Preferences: theme, density, control shape, motion, pri
 
 ---
 
+## Cursor shorthand (locked)
+
+Paste into Cursor tasks. Diamond **Text** = ExItS **Ghost**.
+
+### Base
+
+`EXITS BUTTON`
+
+### Appearance
+
+`SOLID` · `OUTLINE` · `GHOST` · `ELEVATED` · `GRADIENT`
+
+### Severity (intent)
+
+`PRIMARY` · `SECONDARY` · `SUCCESS` · `INFO` · `WARN` · `HELP` · `DANGER` · `CONTRAST`
+
+Secondary → `intent="neutral"`. Warn → `intent="warning"`.
+
+### Shape / options
+
+`PILL` · `ROUND` · `ICON ONLY` · `GROUP` · `SPLIT` · `LOADING`
+
+### Examples
+
+| Phrase | Meaning |
+|--------|---------|
+| `EXITS BUTTON + GHOST + SUCCESS` | Ghost (Text) + Success |
+| `EXITS BUTTON + OUTLINE + DANGER` | Outline + Danger |
+| `EXITS BUTTON + SOLID + PRIMARY` | Default filled primary |
+| `EXITS BUTTON + ELEVATED + INFO` | Raised + Info |
+| `EXITS BUTTON + SOLID + PILL + WARN` | Rounded (pill) + Warn |
+| `EXITS BUTTON + GHOST + ROUND + ICON ONLY` | Rounded Text |
+
+UI Standards → Buttons gallery cards include copyable Cursor commands. Severity sections show one compose sample (`EXITS BUTTON + GHOST + PRIMARY`); swap PRIMARY for other severities.
+
+---
+
 ## UI Standards page
 
 `/ui-standards` → **Buttons** shows:
 
-1. Common actions  
-2. One Primary per group  
-3. Intent / Tone (all Solid)  
-4. Appearance / Treatment (all Primary)  
-5. States  
+1. **Gallery** — locked Diamond Full sample + Cursor copy commands
+2. Common actions
+3. One Primary per group
+4. Intent / Tone (8 locked)
+5. Appearance / Treatment (all Primary)
+6. States
 
 Outline / Ghost / Elevated / Gradient appear only under Appearance — never under Intent.
 
@@ -296,9 +359,9 @@ Outline / Ghost / Elevated / Gradient appear only under Appearance — never und
 
 ## Explicit prompt overrides
 
-1. Explicit task instruction  
-2. ExItS Button Standard (this document)  
-3. Existing page presentation  
+1. Explicit task instruction
+2. ExItS Button Standard (this document)
+3. Existing page presentation
 
 Domain correctness and accessibility always remain mandatory.
 

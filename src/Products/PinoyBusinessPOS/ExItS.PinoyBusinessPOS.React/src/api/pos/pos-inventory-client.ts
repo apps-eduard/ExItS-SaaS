@@ -72,6 +72,8 @@ export type PosInventoryAccountDto = {
   reservedQuantity?: number;
   availableQuantity?: number;
   pendingReturnQuantity?: number;
+  inspectionHoldQuantity?: number;
+  damagedQuantity?: number;
   inTransitOutboundQuantity?: number;
   inTransitOutboundBranchName?: string | null;
   inTransitInboundQuantity?: number;
@@ -259,6 +261,59 @@ export type PosInventoryBranchRollupDto = {
   onHandQuantity: number;
   reservedQuantity: number;
   availableQuantity: number;
+  pendingReturnQuantity?: number;
+  inspectionHoldQuantity?: number;
+  damagedQuantity?: number;
+  sellableQuantity?: number | null;
+  expiredQuantity?: number | null;
+  salePolicyBlockedQuantity?: number | null;
+  inTransitOutboundQuantity?: number;
+  inTransitInboundQuantity?: number;
+};
+
+export type InventoryStockStatusState =
+  | "All"
+  | "Available"
+  | "LowStock"
+  | "OutOfStock"
+  | "Reserved"
+  | "Damaged"
+  | "InspectionHold"
+  | "PendingReturn"
+  | "Expired"
+  | "SaleBlocked";
+
+export type InventoryStockStatusRowDto = {
+  productId: string;
+  productName: string;
+  sku?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  unitOfMeasure: string;
+  branchId: string;
+  branchName: string;
+  areaId?: string | null;
+  areaName?: string | null;
+  onHandQuantity: number;
+  sellableQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  damagedQuantity: number;
+  inspectionHoldQuantity: number;
+  pendingReturnQuantity: number;
+  expiredQuantity: number;
+  saleBlockedQuantity: number;
+  inTransitInboundQuantity: number;
+  inTransitOutboundQuantity: number;
+  reorderLevel?: number | null;
+  isLowStock: boolean;
+};
+
+export type InventoryStockStatusResultDto = {
+  generatedAtUtc: string;
+  isCurrentOnly: boolean;
+  totalCount: number;
+  rows: InventoryStockStatusRowDto[];
 };
 
 /** Derived area subtotal. The server owns the math; no area holds stock authority. */
@@ -464,6 +519,38 @@ export function getInventoryStockRollup(
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}/stock-rollup`,
+  });
+}
+
+/** Current-stock snapshot across authorized branches (no historical as-of). */
+export function getInventoryStockStatus(
+  workspace: PosWorkspaceScope,
+  options: {
+    branchId?: string;
+    areaId?: string;
+    categoryId?: string;
+    productId?: string;
+    search?: string;
+    stockState?: InventoryStockStatusState | string;
+    page?: number;
+    pageSize?: number;
+  } = {},
+  signal?: AbortSignal,
+): Promise<InventoryStockStatusResultDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${INVENTORY_PATH}/stock-status`, {
+      branchId: options.branchId,
+      areaId: options.areaId,
+      categoryId: options.categoryId,
+      productId: options.productId,
+      search: options.search,
+      stockState: options.stockState,
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? 50,
+    }),
   });
 }
 

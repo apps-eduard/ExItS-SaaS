@@ -50,7 +50,9 @@ public sealed record PosInventoryAccountDto(
     /// On-hand lot quantity blocked from normal sale by stop-selling-days policy (not yet calendar-expired).
     /// Null when the product does not track expiration.
     /// </summary>
-    decimal? SalePolicyBlockedQuantity = null);
+    decimal? SalePolicyBlockedQuantity = null,
+    decimal InspectionHoldQuantity = 0m,
+    decimal DamagedQuantity = 0m);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,

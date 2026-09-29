@@ -827,7 +827,9 @@ public sealed class InventoryQueryService
             EffectiveSellingPrice: row.SellingPrice,
             HasBranchPriceOverride: false,
             UnitCost: null,
-            OpeningQuantity: row.OpeningQuantity);
+            OpeningQuantity: row.OpeningQuantity,
+            InspectionHoldQuantity: row.BranchInspectionHold,
+            DamagedQuantity: row.BranchDamaged);
     }
 
     public static PosInventoryAccountDto Map(
@@ -900,11 +902,13 @@ public sealed class InventoryQueryService
             "BranchDefault",
             reserved,
             available,
-            0m,
+            branchRead?.BranchPendingReturn ?? 0m,
             SellingPrice: product.SellingPrice,
             EffectiveSellingPrice: product.SellingPrice,
             HasBranchPriceOverride: false,
-            SalePolicyBlockedQuantity: salePolicyBlockedQuantity);
+            SalePolicyBlockedQuantity: salePolicyBlockedQuantity,
+            InspectionHoldQuantity: branchRead?.BranchInspectionHold ?? 0m,
+            DamagedQuantity: branchRead?.BranchDamaged ?? 0m);
     }
 
     public static PosStockMovementDto MapMovement(

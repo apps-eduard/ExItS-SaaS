@@ -15,9 +15,9 @@ import { cn } from "@/lib/cn";
 import { PlaygroundLabel } from "@/features/ui-standards/UiStandardsSnippetBlock";
 
 /**
- * Full Diamond PrimeNG Message UI Kit sample gallery.
+ * Locked ExItS Message visual standard — Diamond PrimeNG Message Full sample layout.
  * @see https://diamond.primeng.dev/uikit/message
- * Showcase-only — does not change product Notice / Toast APIs.
+ * Severity showcase-only — product Notice / Toast keep ExItS APIs.
  */
 
 type MessageSeverity = "success" | "info" | "warn" | "error" | "secondary" | "contrast";
@@ -337,8 +337,10 @@ function DemoToastStack({
 }
 
 /**
- * Button gallery matching the full Diamond Message sample.
+ * Message gallery — locked ExItS Message visual standard (Diamond Full sample layout).
+ * Showcase-only; product Notice / Toast keep ExItS APIs and semantic tokens.
  * @see https://diamond.primeng.dev/uikit/message
+ * @see Docs/UI/exits-message-standard.md
  */
 export function UiStandardsMessageGallery() {
   const [toasts, setToasts] = useState<DemoToast[]>([]);
@@ -366,9 +368,9 @@ export function UiStandardsMessageGallery() {
       <DemoToastStack toasts={toasts} onDismiss={dismissToast} />
 
       <div className="flex flex-col gap-1">
-        <PlaygroundLabel>Gallery</PlaygroundLabel>
+        <PlaygroundLabel>Gallery — locked standard</PlaygroundLabel>
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-          Full sample cards from{" "}
+          ExItS Message standard = Full sample cards from{" "}
           <a
             href="https://diamond.primeng.dev/uikit/message"
             target="_blank"
@@ -377,7 +379,8 @@ export function UiStandardsMessageGallery() {
           >
             Diamond PrimeNG → Message
           </a>
-          . Showcase-only; product Notice / Toast keep ExItS APIs.
+          . Locked severity row includes Secondary and Contrast. Product Notice / Toast keep ExItS
+          APIs (info / success / warning / danger · success / info / warning / error).
         </p>
       </div>
 

@@ -53,6 +53,33 @@ describe("Button intent + appearance (locked standard)", () => {
     );
   });
 
+  it("locks help and contrast as first-class severities", () => {
+    expect(resolveButtonVisual({ intent: "help", appearance: "solid", emphasis: "strong" })).toEqual(
+      {
+        intent: "help",
+        appearance: "solid",
+        emphasis: "strong",
+      },
+    );
+    expect(resolveButtonVisual({ intent: "contrast", appearance: "outline" })).toEqual({
+      intent: "contrast",
+      appearance: "outline",
+      emphasis: "soft",
+    });
+    const helpStrong = buttonVariants({
+      intent: "help",
+      appearance: "solid",
+      emphasis: "strong",
+    });
+    expect(helpStrong).toContain("bg-[var(--exits-severity-help)]");
+    const contrastStrong = buttonVariants({
+      intent: "contrast",
+      appearance: "solid",
+      emphasis: "strong",
+    });
+    expect(contrastStrong).toContain("bg-[var(--exits-severity-contrast)]");
+  });
+
   it("maps muted secondary alias to neutral + solid", () => {
     expect(resolveButtonVisual({ variant: "secondary" })).toEqual({
       intent: "neutral",

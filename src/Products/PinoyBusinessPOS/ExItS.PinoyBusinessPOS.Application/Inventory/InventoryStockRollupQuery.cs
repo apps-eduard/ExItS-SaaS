@@ -41,7 +41,15 @@ public sealed record PosInventoryBranchRollupDto(
     string BranchName,
     decimal OnHandQuantity,
     decimal ReservedQuantity,
-    decimal AvailableQuantity);
+    decimal AvailableQuantity,
+    decimal PendingReturnQuantity = 0m,
+    decimal InspectionHoldQuantity = 0m,
+    decimal DamagedQuantity = 0m,
+    decimal? SellableQuantity = null,
+    decimal? ExpiredQuantity = null,
+    decimal? SalePolicyBlockedQuantity = null,
+    decimal InTransitOutboundQuantity = 0m,
+    decimal InTransitInboundQuantity = 0m);
 
 /// <summary>
 /// Derived area subtotal. Never persisted: moving a branch between areas changes this projection only.
@@ -211,8 +219,18 @@ public sealed class InventoryStockRollupQuery
                 balanceByBranchId.TryGetValue(branch.BranchId, out var balance);
                 var onHand = balance?.OnHandQuantity ?? 0m;
                 var reserved = balance?.ReservedQuantity ?? 0m;
-                var operational = Math.Max(0m, onHand - reserved);
-                var available = operational;
+                var pendingReturn = balance?.PendingReturnQuantity ?? 0m;
+                var inspectionHold = balance?.InspectionHoldQuantity ?? 0m;
+                var damaged = balance?.DamagedQuantity ?? 0m;
+                var available = BranchStockResolver.ResolveAvailable(
+                    onHand,
+                    reserved,
+                    pendingReturn,
+                    inspectionHold,
+                    damaged);
+                decimal? sellable = null;
+                decimal? expired = null;
+                decimal? saleBlocked = null;
                 expirationByBranch.TryGetValue(branch.BranchId, out var expirationPolicy);
                 if (expirationPolicy.TracksExpiration)
                 {
@@ -226,7 +244,10 @@ public sealed class InventoryStockRollupQuery
                         salePolicyByBranch.TryGetValue(branch.BranchId, out var salePolicy);
                         var stopDays = salePolicy.StopSellingDaysBeforeExpiry;
                         var buckets = InventoryLotFefo.ProjectSaleBuckets(branchLots, today, stopDays);
-                        available = Math.Min(operational, buckets.Sellable);
+                        sellable = buckets.Sellable;
+                        expired = buckets.Expired;
+                        saleBlocked = buckets.PolicyBlocked;
+                        available = Math.Min(available, buckets.Sellable);
                     }
                 }
 
@@ -239,7 +260,13 @@ public sealed class InventoryStockRollupQuery
                         branch.BranchName,
                         onHand,
                         reserved,
-                        available)
+                        available,
+                        pendingReturn,
+                        inspectionHold,
+                        damaged,
+                        sellable,
+                        expired,
+                        saleBlocked)
                 };
             })
             .ToList();

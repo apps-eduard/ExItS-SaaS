@@ -404,6 +404,20 @@ export function buildOperationsSidebarGroups(input: {
     NAV_MANAGER,
     navWorkspace,
   );
+  pushItem(
+    stock,
+    {
+      id: "stock-status",
+      to: "/inventory/stock-status",
+      labelKey: "org.nav.stockStatus",
+      icon: ClipboardList,
+      testId: "ops-sidebar-stock-status",
+      matchPrefixes: ["/inventory/stock-status"],
+    },
+    canViewInventory(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
   if (!warehouse) {
     // Retail replenishment hub (request stock / my requests) — not used on warehouse branches.
     pushItem(

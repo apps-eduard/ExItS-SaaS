@@ -9,9 +9,23 @@ import {
   isReceiveLineReady,
   parseReceivedQuantity,
   parseTransferQuantity,
+  stockRequestLinkedTransferQtyLabelKey,
+  transferShipmentQuantityLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
 
 describe("inventory-transfer-labels", () => {
+  it("labels draft shipment qty as Prepared, not Sent", () => {
+    expect(transferShipmentQuantityLabelKey("Draft")).toBe("transfer.prepared");
+    expect(transferShipmentQuantityLabelKey("InTransit")).toBe("transfer.sent");
+    expect(transferShipmentQuantityLabelKey("Received")).toBe("transfer.sent");
+    expect(stockRequestLinkedTransferQtyLabelKey("Draft")).toBe(
+      "stockRequest.linkedTransfer.prepared",
+    );
+    expect(stockRequestLinkedTransferQtyLabelKey("InTransit")).toBe(
+      "stockRequest.linkedTransfer.sent",
+    );
+  });
+
   it("maps status and discrepancy reason keys from backend codes", () => {
     expect(inventoryTransferStatusLabelKey("InTransit")).toBe("transfer.status.inTransit");
     expect(inventoryTransferStatusLabelKey("PartiallyReceived")).toBe(

@@ -68,6 +68,7 @@ import {
   branchDisplayName,
   formatTransferQty,
   inventoryTransferStatusPresentation,
+  transferShipmentQuantityLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
 import {
   InventoryTransferStatusChip,
@@ -687,6 +688,7 @@ export function InventoryTransferDetailPage() {
   });
   const statusLabel = t(statusPresentation.labelKey);
   const statusTone = statusPresentation.tone;
+  const shipmentQtyLabel = t(transferShipmentQuantityLabelKey(transfer.status));
   const transferTitle =
     transfer.transferNumber?.trim() || t("transfer.summaryTitle");
 
@@ -707,7 +709,7 @@ export function InventoryTransferDetailPage() {
           {
             headers: [
               t("purchasing.colProduct"),
-              t("transfer.sent"),
+              shipmentQtyLabel,
               t("transfer.good"),
               t("transfer.damaged"),
               t("transfer.inTransit"),
@@ -734,7 +736,7 @@ export function InventoryTransferDetailPage() {
           [],
           [
             t("purchasing.colProduct"),
-            t("transfer.sent"),
+            shipmentQtyLabel,
             t("transfer.good"),
             t("transfer.damaged"),
             t("transfer.inTransit"),
@@ -779,7 +781,7 @@ export function InventoryTransferDetailPage() {
         <thead>
           <tr>
             <th>{t("purchasing.colProduct")}</th>
-            <th>{t("transfer.sent")}</th>
+            <th>{shipmentQtyLabel}</th>
             <th>{t("transfer.good")}</th>
             <th>{t("transfer.damaged")}</th>
             <th>{t("transfer.inTransit")}</th>
@@ -1091,7 +1093,7 @@ export function InventoryTransferDetailPage() {
               [
                 {
                   key: "sent",
-                  label: t("transfer.sent"),
+                  label: shipmentQtyLabel,
                   value: thisShipment.sent,
                   testId: "this-shipment-sent",
                 },
@@ -1440,7 +1442,7 @@ export function InventoryTransferDetailPage() {
                 );
                 const otherQty = member.totalOtherQty ?? 0;
                 const qtyParts = [
-                  `${t("transfer.sent")} ${formatTransferQty(member.totalSentQty)}`,
+                  `${t(transferShipmentQuantityLabelKey(member.status))} ${formatTransferQty(member.totalSentQty)}`,
                   `${t("transfer.good")} ${formatTransferQty(member.totalReceivedQty)}`,
                 ];
                 if (damaged > 1e-9) {
@@ -1849,7 +1851,7 @@ export function InventoryTransferDetailPage() {
                   {t("purchasing.colProduct")}
                 </ExitsTableHead>
                 <ExitsTableHead cellAlign="center" colSize="numeric">
-                  {t("transfer.sent")}
+                  {shipmentQtyLabel}
                 </ExitsTableHead>
                 <ExitsTableHead cellAlign="center" colSize="numeric">
                   {t("transfer.good")}
@@ -1945,7 +1947,7 @@ export function InventoryTransferDetailPage() {
                     <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{otherSecondary}</p>
                   ) : null}
                   <p className="exits-table-mobile__math mt-1 mb-0">
-                    {t("transfer.sent")}: {formatTransferQty(line.sentQty)}
+                    {shipmentQtyLabel}: {formatTransferQty(line.sentQty)}
                     {` · ${t("transfer.good")}: ${formatTransferQty(line.receivedQty)}`}
                     {` · ${t("transfer.damaged")}: ${formatTransferQty(damaged)}`}
                     {` · ${t("transfer.missing")}: ${formatTransferQty(missing)}`}

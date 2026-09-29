@@ -154,6 +154,56 @@ public sealed class SupplyRouteAndStockRequestDomainTests
         Assert.Equal("Preparing", StockRequestStatuses.ToCode(StockRequestStatus.InProgress));
     }
 
+    [Fact]
+    public void Recompute_with_open_in_transit_moves_cancelled_in_transit_to_preparing()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.NewGuid());
+        Assert.Equal(StockRequestStatus.InTransit, request.Status);
+
+        request.RecalculateStatusFromFulfillmentCoverage(
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal> { [Rice.Value] = 0m },
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.Preparing, request.Status);
+        Assert.Null(request.LinkedInventoryTransferId);
+    }
+
+    [Fact]
+    public void Recompute_keeps_partially_fulfilled_when_replacement_is_in_transit()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.NewGuid());
+
+        request.RecalculateStatusFromFulfillmentCoverage(
+            new Dictionary<Guid, decimal> { [Rice.Value] = 6m },
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal> { [Rice.Value] = 4m },
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.PartiallyFulfilled, request.Status);
+    }
+
+    [Fact]
+    public void Recompute_good_plus_waived_reaches_fulfilled()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.NewGuid());
+
+        request.RecalculateStatusFromFulfillmentCoverage(
+            new Dictionary<Guid, decimal> { [Rice.Value] = 6m },
+            new Dictionary<Guid, decimal> { [Rice.Value] = 4m },
+            new Dictionary<Guid, decimal>(),
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.Fulfilled, request.Status);
+    }
+
     private static StockRequest CreatePending() =>
         StockRequest.Create(
             Org,
