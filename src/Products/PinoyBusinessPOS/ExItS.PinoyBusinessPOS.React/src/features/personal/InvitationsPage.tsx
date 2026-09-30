@@ -134,20 +134,23 @@ function ConnectionRequestCard({
         <div className="customer-link-card__actions grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button
             type="button"
-            variant="outline"
+            intent="danger"
+            appearance="solid"
+            emphasis="soft"
             className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onDecline}
           >
             {isDeclining ? (
               <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : (
-              <X className="size-4 shrink-0" aria-hidden />
-            )}
+            ) : null}
             {t("invitations.decline")}
           </Button>
           <Button
             type="button"
+            intent="primary"
+            appearance="solid"
+            emphasis="soft"
             className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onAccept}

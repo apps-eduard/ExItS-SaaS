@@ -1,26 +1,15 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { SideDrawer } from "@/components/exits/SideDrawer";
 import { PersonalNotificationsPanel } from "@/features/personal/PersonalNotificationsPanel";
+import {
+  NotificationsOverlayContext,
+  type NotificationsOverlayContextValue,
+} from "@/features/personal/notifications-overlay-context";
 import {
   clearNotificationsReturnTo,
   rememberNotificationsReturnTo,
 } from "@/features/personal/notifications-return";
 import { useI18n } from "@/i18n/I18nProvider";
-
-type NotificationsOverlayContextValue = {
-  open: boolean;
-  openNotifications: (options?: { returnTo?: string }) => void;
-  closeNotifications: () => void;
-};
-
-const NotificationsOverlayContext = createContext<NotificationsOverlayContextValue | null>(null);
 
 export function NotificationsOverlayProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);

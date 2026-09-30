@@ -26,6 +26,7 @@ import {
   listPersonalContacts,
 } from "@/api/platform/personal-utang-client";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { CountChip } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -160,7 +161,8 @@ export function PersonalUtangHubPage() {
         >
           <div className="flex min-w-0 flex-col gap-3">
             <div className="flex min-w-0 flex-col gap-2" data-testid="utang-hub-owed-to-me">
-              <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+                <HandCoins className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
                 {t("personal.home.owedToMe")}
               </h3>
               <div className="personal-summary-grid personal-summary-grid--balances" role="list">
@@ -212,8 +214,12 @@ export function PersonalUtangHubPage() {
                 </DashboardMetricCard>
               </div>
             </div>
-            <div className="flex min-w-0 flex-col gap-2" data-testid="utang-hub-i-owe">
-              <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+            <div
+              className="flex min-w-0 flex-col gap-2 border-t border-border pt-3"
+              data-testid="utang-hub-i-owe"
+            >
+              <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+                <Wallet className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
                 {t("personal.home.iOwe")}
               </h3>
               <div className="personal-summary-grid personal-summary-grid--balances" role="list">
@@ -266,18 +272,32 @@ export function PersonalUtangHubPage() {
               </div>
             </div>
           </div>
-          {dashboard.activeRelationshipCount > 0 ||
-          dashboard.contactCount > 0 ||
-          (dashboard.sharedWithMeActiveCount ?? 0) > 0 ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="utang-hub-meta">
-              {t("personal.utang.workspaceMeta")
-                .replace("{active}", String(dashboard.activeRelationshipCount))
-                .replace("{people}", String(dashboard.contactCount))}
-              {(dashboard.sharedWithMeActiveCount ?? 0) > 0
-                ? ` · ${t("personal.home.activeShared")}: ${dashboard.sharedWithMeActiveCount}`
-                : ""}
-            </p>
-          ) : null}
+          <div
+            className="flex flex-wrap items-center gap-2 border-t border-border pt-3"
+            data-testid="utang-hub-meta"
+          >
+            <Link to="/personal/people" className="inline-flex no-underline">
+              <CountChip
+                label={t("personal.home.people")}
+                count={dashboard.contactCount}
+                tone="info"
+              />
+            </Link>
+            <Link to="/personal/utang" className="inline-flex no-underline">
+              <CountChip
+                label={t("personal.home.activeMine")}
+                count={dashboard.activeRelationshipCount}
+                tone="primary"
+              />
+            </Link>
+            <Link to="/personal/utang" className="inline-flex no-underline">
+              <CountChip
+                label={t("personal.home.activeShared")}
+                count={dashboard.sharedWithMeActiveCount ?? 0}
+                tone="info"
+              />
+            </Link>
+          </div>
         </section>
       ) : null}
 
@@ -591,7 +611,7 @@ export function PersonalMorePage() {
               label: t("personal.social.invitationsTitle"),
               icon: UserPlus,
               testId: "more-open-invitations",
-              to: "/personal/utang/invitations",
+              to: "/personal/invitations",
             },
             {
               key: "notifications",

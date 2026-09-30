@@ -11,6 +11,26 @@ type State = {
 export class GlobalErrorBoundary extends Component<Props, State> {
   state: State = { report: null };
 
+  private recoverAfterHotUpdate = () => {
+    if (this.state.report) {
+      this.setState({ report: null });
+    }
+  };
+
+  componentDidMount() {
+    const hot = import.meta.hot;
+    if (hot && typeof hot.on === "function") {
+      hot.on("vite:afterUpdate", this.recoverAfterHotUpdate);
+    }
+  }
+
+  componentWillUnmount() {
+    const hot = import.meta.hot;
+    if (hot && typeof hot.off === "function") {
+      hot.off("vite:afterUpdate", this.recoverAfterHotUpdate);
+    }
+  }
+
   static getDerivedStateFromError(error: Error): State {
     return {
       report: normalizeReactClientError({

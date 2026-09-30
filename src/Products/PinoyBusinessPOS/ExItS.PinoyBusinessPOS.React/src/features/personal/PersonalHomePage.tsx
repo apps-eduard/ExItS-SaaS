@@ -12,7 +12,6 @@ import {
   Store,
   UserPlus,
   Wallet,
-  WalletCards,
   Zap,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
@@ -28,6 +27,7 @@ import {
 } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { CountChip } from "@/components/exits/CountChip";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -198,15 +198,12 @@ export function PersonalHomePage() {
         data-testid="personal-utang-summary"
       >
         <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <WalletCards
-            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
-            aria-hidden
-          />
           {t("personal.home.personalTracker")}
         </h2>
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex min-w-0 flex-col gap-2" data-testid="personal-utang-owed-to-me">
-            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+            <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              <HandCoins className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
               {t("personal.home.owedToMe")}
             </h3>
             <div className="personal-summary-grid personal-summary-grid--balances" role="list">
@@ -258,8 +255,12 @@ export function PersonalHomePage() {
               </DashboardMetricCard>
             </div>
           </div>
-          <div className="flex min-w-0 flex-col gap-2" data-testid="personal-utang-i-owe">
-            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+          <div
+            className="flex min-w-0 flex-col gap-2 border-t border-border pt-3"
+            data-testid="personal-utang-i-owe"
+          >
+            <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              <Wallet className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
               {t("personal.home.iOwe")}
             </h3>
             <div className="personal-summary-grid personal-summary-grid--balances" role="list">
@@ -313,26 +314,36 @@ export function PersonalHomePage() {
           </div>
         </div>
         <div
-          className="personal-home-meta flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)] text-muted"
+          className="personal-home-meta flex flex-wrap items-center gap-2 border-t border-border pt-3"
           data-testid="personal-home-meta"
         >
-          <Link to="/personal/people" className="text-muted no-underline hover:underline">
+          <Link to="/personal/people" className="inline-flex no-underline">
             <span data-testid="personal-stat-people">
-              {t("personal.home.people")}: {dashboard.contactCount}
+              <CountChip
+                label={t("personal.home.people")}
+                count={dashboard.contactCount}
+                tone="info"
+              />
             </span>
           </Link>
-          <Link to="/personal/utang" className="text-muted no-underline hover:underline">
+          <Link to="/personal/utang" className="inline-flex no-underline">
             <span data-testid="personal-stat-active">
-              {t("personal.home.activeMine")}: {dashboard.activeRelationshipCount}
+              <CountChip
+                label={t("personal.home.activeMine")}
+                count={dashboard.activeRelationshipCount}
+                tone="primary"
+              />
             </span>
           </Link>
-          {(dashboard.sharedWithMeActiveCount ?? 0) > 0 ? (
-            <Link to="/personal/utang" className="text-muted no-underline hover:underline">
-              <span data-testid="personal-stat-active-shared">
-                {t("personal.home.activeShared")}: {dashboard.sharedWithMeActiveCount}
-              </span>
-            </Link>
-          ) : null}
+          <Link to="/personal/utang" className="inline-flex no-underline">
+            <span data-testid="personal-stat-active-shared">
+              <CountChip
+                label={t("personal.home.activeShared")}
+                count={dashboard.sharedWithMeActiveCount ?? 0}
+                tone="info"
+              />
+            </span>
+          </Link>
         </div>
       </section>
 
