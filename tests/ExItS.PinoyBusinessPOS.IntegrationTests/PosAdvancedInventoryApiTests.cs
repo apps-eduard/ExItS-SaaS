@@ -89,7 +89,7 @@ public sealed class PosAdvancedInventoryApiTests(PosPostgreSqlFixture fixture)
         using var startResponse = await client.SendAsync(start);
         startResponse.EnsureSuccessStatusCode();
         var started = await startResponse.Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
-        Assert.Matches(@"^CNT-\d{8}-01$", started!.CountNumber);
+        Assert.Matches(@"^SC-\d{6}-\d{3,}$", started!.CountNumber);
         Assert.Equal("Weekly count", started.Title);
 
         using var update = Scoped(HttpMethod.Put, $"{Inventory}/stock-counts/{draft.StockCountId:D}", org);
@@ -233,10 +233,10 @@ public sealed class PosAdvancedInventoryApiTests(PosPostgreSqlFixture fixture)
         var firstStarted = await started[0].Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
         var secondStarted = await started[1].Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
         var numbers = new[] { firstStarted!.CountNumber, secondStarted!.CountNumber };
-        Assert.All(numbers, n => Assert.Matches(@"^CNT-\d{8}-\d{2,}$", n));
+        Assert.All(numbers, n => Assert.Matches(@"^SC-\d{6}-\d{3,}$", n));
         Assert.Equal(2, numbers.Distinct(StringComparer.Ordinal).Count());
-        Assert.Contains(numbers, n => n!.EndsWith("-01", StringComparison.Ordinal));
-        Assert.Contains(numbers, n => n!.EndsWith("-02", StringComparison.Ordinal));
+        Assert.Contains(numbers, n => n!.EndsWith("-001", StringComparison.Ordinal));
+        Assert.Contains(numbers, n => n!.EndsWith("-002", StringComparison.Ordinal));
         Assert.Equal("Freezer inventory check", firstStarted.Title);
         Assert.Equal("Counted after Friday closing.", firstStarted.Notes);
         Assert.Equal("Monthly count", secondStarted.Title);

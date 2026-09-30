@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   formatInventoryQty,
   resolveAvailableQuantity,
+  resolveExpiredQuantity,
   resolvePendingReturnQuantity,
   resolveReservedQuantity,
+  resolveSalePolicyBlockedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 
 describe("inventory-reservation-display", () => {
@@ -53,6 +55,18 @@ describe("inventory-reservation-display", () => {
     ).toBe(5);
   });
 
+  it("excludes damaged and inspection hold from sellable fallback", () => {
+    expect(
+      resolveAvailableQuantity({
+        isTracked: true,
+        onHandQuantity: 20,
+        reservedQuantity: 0,
+        damagedQuantity: 10,
+        inspectionHoldQuantity: 0,
+      }),
+    ).toBe(10);
+  });
+
   it("formats weighted quantities with precision", () => {
     expect(formatInventoryQty(1.25)).toBe("1.25");
     expect(formatInventoryQty(2)).toBe("2");
@@ -62,5 +76,25 @@ describe("inventory-reservation-display", () => {
     expect(formatInventoryQty(1000)).toBe("1,000");
     expect(formatInventoryQty(12500)).toBe("12,500");
     expect(formatInventoryQty(1000.5)).toBe("1,000.5");
+  });
+
+  it("resolves expired and sale-policy-blocked quantities", () => {
+    expect(resolveExpiredQuantity({ expiredQuantity: 3 })).toBe(3);
+    expect(resolveExpiredQuantity({ expiredQuantity: -1 })).toBe(0);
+    expect(resolveExpiredQuantity({})).toBe(0);
+    expect(resolveSalePolicyBlockedQuantity({ salePolicyBlockedQuantity: 2.5 })).toBe(2.5);
+    expect(resolveSalePolicyBlockedQuantity({ salePolicyBlockedQuantity: null })).toBe(0);
+    expect(resolveSalePolicyBlockedQuantity({})).toBe(0);
+  });
+
+  it("prefers server availableQuantity when sale locks reduce sellable stock", () => {
+    expect(
+      resolveAvailableQuantity({
+        isTracked: true,
+        onHandQuantity: 10,
+        reservedQuantity: 1,
+        availableQuantity: 4,
+      }),
+    ).toBe(4);
   });
 });

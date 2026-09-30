@@ -9,7 +9,8 @@ namespace ExItS.PinoyBusinessPOS.Api.Inventory;
 
 /// <summary>
 /// Platform organization branch directory for POS (transfers, inventory context, reporting).
-/// Operational branch existence/active checks use caller-access-filtered branch lists.
+/// <see cref="GetNamesAsync"/> resolves org-wide display labels (not staff-access filtered) for history UI.
+/// Operational pickers and <see cref="ListAuthorizedAsync"/> stay on caller-access-filtered branch lists.
 /// <see cref="GetPrimaryBranchIdAsync"/> uses structural primary lookup (not assignment-filtered).
 /// </summary>
 internal sealed class PosOrganizationBranchDirectory(
@@ -57,10 +58,111 @@ internal sealed class PosOrganizationBranchDirectory(
             return wanted.ToDictionary(id => id, id => "Branch");
         }
 
-        var branches = await FetchBranchesAsync(organizationId, cancellationToken).ConfigureAwait(false);
-        return branches
-            .Where(b => wanted.Contains(b.Id))
-            .ToDictionary(b => b.Id, b => string.IsNullOrWhiteSpace(b.Name) ? b.Code : b.Name);
+        // Display labels for history/routes — not filtered by staff branch access.
+        // Operational pickers still use FetchBranchesAsync / ListAuthorizedAsync.
+        var displayNames = await FetchBranchDisplayNamesAsync(organizationId, wanted, cancellationToken)
+            .ConfigureAwait(false);
+        var result = new Dictionary<Guid, string>(displayNames);
+        var missing = wanted.Where(id => !result.ContainsKey(id)).ToList();
+        if (missing.Count > 0)
+        {
+            // Merge any access-filtered names (owner/admin) for ids the directory call missed.
+            var branches = await FetchBranchesAsync(organizationId, cancellationToken).ConfigureAwait(false);
+            foreach (var branch in branches.Where(b => missing.Contains(b.Id)))
+            {
+                result[branch.Id] = string.IsNullOrWhiteSpace(branch.Name) ? branch.Code : branch.Name;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Org-wide branch display names for transfer/history UI. Does not grant operational access.
+    /// Uses GET so cookie-forwarded POS→Platform calls are not blocked by browser antiforgery.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<Guid, string>> FetchBranchDisplayNamesAsync(
+        Guid organizationId,
+        IReadOnlyList<Guid> branchIds,
+        CancellationToken cancellationToken)
+    {
+        if (!TryEnsureBaseAddress() || branchIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var query = string.Join(
+            "&",
+            branchIds.Select(id => "branchId=" + Uri.EscapeDataString(id.ToString("D"))));
+        using var platformRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"api/v1/platform/organizations/{organizationId:D}/branch-display-names?{query}");
+        ApplyCallerCredentials(platformRequest);
+
+        try
+        {
+            using var response = await client.SendAsync(platformRequest, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return new Dictionary<Guid, string>();
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            return ParseBranchDisplayNames(document.RootElement);
+        }
+        catch (HttpRequestException)
+        {
+            return new Dictionary<Guid, string>();
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<Guid, string>();
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return new Dictionary<Guid, string>();
+        }
+    }
+
+    internal static IReadOnlyDictionary<Guid, string> ParseBranchDisplayNames(JsonElement root)
+    {
+        JsonElement items = root;
+        if (root.ValueKind == JsonValueKind.Object
+            && (root.TryGetProperty("items", out items) || root.TryGetProperty("Items", out items)))
+        {
+            // wrapped { items: [...] }
+        }
+
+        if (items.ValueKind != JsonValueKind.Array)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var result = new Dictionary<Guid, string>();
+        foreach (var element in items.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            if (!TryReadGuid(element, "branchId", out var id) && !TryReadGuid(element, "BranchId", out id))
+            {
+                continue;
+            }
+
+            var name = ReadString(element, "displayName") ?? ReadString(element, "DisplayName");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            result[id] = name.Trim();
+        }
+
+        return result;
     }
 
     public async Task<bool> IsActiveInOrganizationAsync(

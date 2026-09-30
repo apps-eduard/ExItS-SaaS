@@ -293,6 +293,7 @@ public static class PlatformAuditActions
     public const string PersonalTodoCompleted = "platform.personal.todo.completed";
     public const string PersonalTodoReopened = "platform.personal.todo.reopened";
     public const string PersonalTodoCancelled = "platform.personal.todo.cancelled";
+    public const string PersonalTodoDeleted = "platform.personal.todo.deleted";
     public const string PersonalTodoReminderDelivered = "platform.personal.todo.reminder.delivered";
 
     public const string BusinessUpgradeStarted = "platform.business_upgrade.started";

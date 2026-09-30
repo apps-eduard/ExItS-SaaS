@@ -1,4 +1,30 @@
-import { roundMoney, roundQuantity } from "@/cart/sell-cart-helpers";
+import { roundMoney, roundQuantity, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
+
+/** Basket line for retail → warehouse stock request compose. */
+export type RequestStockBasketLine = {
+  productId: string;
+  name: string;
+  sku?: string | null;
+  unitOfMeasure: string;
+  sellingMode: string;
+  quantity: number;
+  branchOnHandQuantity: number;
+  warehouseAvailableQuantity: number;
+  warehouseUnitCost: number | null;
+  branchEffectiveSellingPrice?: number | null;
+};
+
+/** Display UOM for request lines (ByWeight → kg). */
+export function requestStockDisplayUom(sellingMode: string, unitOfMeasure: string): string {
+  if (isByWeightSellingMode(sellingMode)) {
+    return "kg";
+  }
+  const trimmed = unitOfMeasure.trim();
+  if (trimmed.toLowerCase() === "kilogram") {
+    return "kg";
+  }
+  return trimmed || "pc";
+}
 
 /** Basket line fields used for request-time cost / retail estimates. */
 export type RequestEstimateLine = {

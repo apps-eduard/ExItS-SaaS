@@ -57,9 +57,57 @@ public static class BranchStockResolver
         return explicitBalance?.ReservedQuantity ?? 0m;
     }
 
-    /// <summary>Branch available = physical on-hand minus branch reservations.</summary>
-    public static decimal ResolveAvailable(decimal branchOnHand, decimal branchReserved) =>
-        Math.Max(0m, branchOnHand - branchReserved);
+    /// <summary>
+    /// Branch sellable available = physical on-hand minus reserved, pending return,
+    /// inspection hold, and damaged (non-sellable buckets).
+    /// </summary>
+    public static decimal ResolveAvailable(
+        decimal branchOnHand,
+        decimal branchReserved,
+        decimal pendingReturnQuantity = 0m,
+        decimal inspectionHoldQuantity = 0m,
+        decimal damagedQuantity = 0m) =>
+        Math.Max(
+            0m,
+            branchOnHand
+            - branchReserved
+            - pendingReturnQuantity
+            - inspectionHoldQuantity
+            - damagedQuantity);
+
+    public static decimal ResolveAvailable(
+        PosBranchId targetBranchId,
+        IEnumerable<InventoryBranchBalance> balances,
+        CatalogProductId productId,
+        decimal branchOnHand,
+        decimal branchReserved)
+    {
+        var (pendingReturn, inspectionHold, damaged) = ResolveNonSellableBuckets(
+            targetBranchId,
+            balances,
+            productId);
+        return ResolveAvailable(branchOnHand, branchReserved, pendingReturn, inspectionHold, damaged);
+    }
+
+    /// <summary>Non-sellable carve-outs on an explicit branch balance row (excluding reservations).</summary>
+    public static (decimal PendingReturn, decimal InspectionHold, decimal Damaged) ResolveNonSellableBuckets(
+        PosBranchId targetBranchId,
+        IEnumerable<InventoryBranchBalance> balances,
+        CatalogProductId productId)
+    {
+        ArgumentNullException.ThrowIfNull(balances);
+        var explicitBalance = balances.FirstOrDefault(b =>
+            b.ProductId == productId && b.BranchId == targetBranchId);
+        if (explicitBalance is null)
+        {
+            return (0m, 0m, 0m);
+        }
+
+        return (
+            explicitBalance.PendingReturnQuantity,
+            explicitBalance.InspectionHoldQuantity,
+            explicitBalance.DamagedQuantity);
+    }
 
     public static InventoryBranchBalance EnsureBalance(
         PosOrganizationId organizationId,

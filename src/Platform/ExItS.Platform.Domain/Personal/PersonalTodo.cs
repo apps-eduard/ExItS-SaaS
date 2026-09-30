@@ -280,6 +280,20 @@ public sealed class PersonalTodo
         Version++;
     }
 
+    /// <summary>
+    /// Permanent delete is allowed only for cancelled to-dos (hard remove from persistence).
+    /// </summary>
+    public void EnsureCanPermanentlyDelete(int? expectedVersion = null)
+    {
+        EnsureVersion(expectedVersion);
+        if (Status is not PersonalTodoStatus.Cancelled)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalTodoStatusTransition,
+                "Only cancelled to-dos can be permanently deleted.");
+        }
+    }
+
     public bool IsReminderDue(DateTimeOffset asOfUtc)
     {
         EnsureUtc(asOfUtc);

@@ -15,6 +15,7 @@ public sealed class GetCustomerStorefront
     private readonly IInventoryRepository _inventory;
     private readonly ICustomerOrderBranchDirectory _branches;
     private readonly ICatalogProductImageRepository _images;
+    private readonly PersonalOnlineCommerceAuthorization? _shoppingAuth;
     private readonly IPlatformMerchantCatalogClient? _platform;
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly ICatalogProductAvailabilityResolver? _availability;
@@ -27,6 +28,7 @@ public sealed class GetCustomerStorefront
         IInventoryRepository inventory,
         ICustomerOrderBranchDirectory branches,
         ICatalogProductImageRepository images,
+        PersonalOnlineCommerceAuthorization? shoppingAuth = null,
         IPlatformMerchantCatalogClient? platform = null,
         IInventoryBranchBalanceRepository? branchBalances = null,
         ICatalogProductAvailabilityResolver? availability = null,
@@ -38,6 +40,7 @@ public sealed class GetCustomerStorefront
         _inventory = inventory;
         _branches = branches;
         _images = images;
+        _shoppingAuth = shoppingAuth;
         _platform = platform;
         _branchBalances = branchBalances;
         _availability = availability;
@@ -51,13 +54,54 @@ public sealed class GetCustomerStorefront
         int? page,
         int? pageSize,
         CancellationToken cancellationToken = default,
-        Guid? fulfillmentBranchId = null)
+        Guid? fulfillmentBranchId = null,
+        Guid? personalPlatformUserId = null,
+        Guid? platformBusinessCustomerId = null)
     {
         if (sellerOrganizationId == Guid.Empty)
         {
             return ApplicationResult<CustomerStorefrontDto>.Failure(
                 ApplicationErrorCodes.OrganizationRequired,
                 "Seller organization id is required.");
+        }
+
+        if (_shoppingAuth is not null)
+        {
+            if (personalPlatformUserId is not Guid personalUserId
+                || personalUserId == Guid.Empty
+                || platformBusinessCustomerId is not Guid pbcId
+                || pbcId == Guid.Empty)
+            {
+                return ApplicationResult<CustomerStorefrontDto>.Failure(
+                    ApplicationErrorCodes.LinkedCustomerNotFound,
+                    "Linked customer was not found.");
+            }
+
+            var shopping = await _shoppingAuth
+                .AuthorizeShoppingAsync(
+                    sellerOrganizationId,
+                    personalUserId,
+                    pbcId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!shopping.IsSuccess)
+            {
+                return ApplicationResult<CustomerStorefrontDto>.Failure(
+                    shopping.ErrorCode!,
+                    shopping.ErrorMessage!);
+            }
+        }
+        else
+        {
+            var capabilityGate = await _capability
+                .ResolveAsync(sellerOrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (!capabilityGate.CanCustomerOrder)
+            {
+                return ApplicationResult<CustomerStorefrontDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                    CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage);
+            }
         }
 
         var capability = await _capability
@@ -67,7 +111,29 @@ public sealed class GetCustomerStorefront
         {
             return ApplicationResult<CustomerStorefrontDto>.Failure(
                 ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
-                "This merchant is not accepting customer orders.");
+                CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage);
+        }
+
+        // Connected Commerce Online OFF (or paused) ⇒ no catalog, no ordering.
+        // Fail before reading products so entitlement-only masters cannot leak the catalog.
+        var branches = await _branches
+            .ListBranchesAsync(sellerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!IsOnlineOrderingAccepting(branches, fulfillmentBranchId))
+        {
+            return ApplicationResult<CustomerStorefrontDto>.Failure(
+                ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage);
+        }
+
+        var selectedBranchId = ResolveStorefrontBranchId(branches, fulfillmentBranchId);
+        if (fulfillmentBranchId is Guid requested
+            && requested != Guid.Empty
+            && selectedBranchId is null)
+        {
+            return ApplicationResult<CustomerStorefrontDto>.Failure(
+                ApplicationErrorCodes.CustomerOrderBranchNotFound,
+                "The selected fulfillment branch was not found for this merchant.");
         }
 
         var orgId = PosOrganizationId.From(sellerOrganizationId);
@@ -89,19 +155,6 @@ public sealed class GetCustomerStorefront
             .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(p => p.Id.Value)
             .ToList();
-
-        var branches = await _branches
-            .ListBranchesAsync(sellerOrganizationId, cancellationToken)
-            .ConfigureAwait(false);
-        var selectedBranchId = ResolveStorefrontBranchId(branches, fulfillmentBranchId);
-        if (fulfillmentBranchId is Guid requested
-            && requested != Guid.Empty
-            && selectedBranchId is null)
-        {
-            return ApplicationResult<CustomerStorefrontDto>.Failure(
-                ApplicationErrorCodes.CustomerOrderBranchNotFound,
-                "The selected fulfillment branch was not found for this merchant.");
-        }
 
         if (_availability is not null && selectedBranchId is Guid offerBranchId && sellable.Count > 0)
         {
@@ -198,7 +251,9 @@ public sealed class GetCustomerStorefront
             .ToList();
 
         var branchDtos = branches
-            .Where(b => b.CustomerOrderingEnabled && (b.PickupEnabled || b.DeliveryEnabled))
+            .Where(b => b.CustomerOrderingEnabled
+                && !b.OnlineOrdersPaused
+                && (b.PickupEnabled || b.DeliveryEnabled))
             .Select(b => new CustomerStorefrontBranchDto(
                 b.BranchId,
                 b.Name,
@@ -232,6 +287,22 @@ public sealed class GetCustomerStorefront
             branchDtos));
     }
 
+    private static bool IsOnlineOrderingAccepting(
+        IReadOnlyList<CustomerOrderBranchSnapshot> branches,
+        Guid? fulfillmentBranchId)
+    {
+        static bool AcceptsOnline(CustomerOrderBranchSnapshot b) =>
+            b.CustomerOrderingEnabled && !b.OnlineOrdersPaused;
+
+        if (fulfillmentBranchId is Guid id && id != Guid.Empty)
+        {
+            var selected = branches.FirstOrDefault(b => b.BranchId == id);
+            return selected is not null && AcceptsOnline(selected);
+        }
+
+        return branches.Any(AcceptsOnline);
+    }
+
     private static Guid? ResolveStorefrontBranchId(
         IReadOnlyList<CustomerOrderBranchSnapshot> branches,
         Guid? requested)
@@ -242,14 +313,16 @@ public sealed class GetCustomerStorefront
         }
 
         var eligible = branches
-            .Where(b => b.CustomerOrderingEnabled && (b.PickupEnabled || b.DeliveryEnabled))
+            .Where(b => b.CustomerOrderingEnabled
+                && !b.OnlineOrdersPaused
+                && (b.PickupEnabled || b.DeliveryEnabled))
             .ToList();
         if (eligible.Count == 1)
         {
             return eligible[0].BranchId;
         }
 
-        return branches.FirstOrDefault(b => b.IsPrimary)?.BranchId
+        return eligible.FirstOrDefault(b => b.IsPrimary)?.BranchId
             ?? eligible.FirstOrDefault()?.BranchId;
     }
 
@@ -275,7 +348,12 @@ public sealed class GetCustomerStorefront
             PosBranchId.From(branchId),
             balances,
             productId);
-        var available = BranchStockResolver.ResolveAvailable(onHand, reserved);
+        var available = BranchStockResolver.ResolveAvailable(
+            PosBranchId.From(branchId),
+            balances,
+            productId,
+            onHand,
+            reserved);
         return CustomerStorefrontAvailability.FromTrackedQuantity(available);
     }
 }

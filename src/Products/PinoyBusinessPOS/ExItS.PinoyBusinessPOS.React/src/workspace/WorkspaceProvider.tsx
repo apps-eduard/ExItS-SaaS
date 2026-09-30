@@ -549,13 +549,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshWorkspaces = useCallback(async () => {
+    // If a load is already running, wait for it — then load again so callers that
+    // mutate branches (create/archive) never join a stale in-flight snapshot.
     const existing = loadInFlightRef.current;
     if (existing) {
       await existing;
+    }
+    const coalesced = loadInFlightRef.current;
+    if (coalesced) {
+      await coalesced;
       return;
     }
-    // Read session from a ref so isomorphic session object replacements do not
-    // recreate this callback and re-trigger the bootstrap effect on every nav.
     const run = loadWorkspaces(sessionRef.current).finally(() => {
       if (loadInFlightRef.current === run) {
         loadInFlightRef.current = null;
@@ -1134,4 +1138,9 @@ export function useWorkspace(): WorkspaceContextValue {
     throw new Error("useWorkspace must be used within WorkspaceProvider");
   }
   return context;
+}
+
+/** Returns null outside WorkspaceProvider (for optional enrichment hooks). */
+export function useOptionalWorkspace(): WorkspaceContextValue | null {
+  return useContext(WorkspaceContext);
 }

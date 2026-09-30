@@ -63,6 +63,40 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
         return records.Select(InventoryEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<InventoryLot>> ListOnHandForProductsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        PosBranchId? branchId,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = productIds.Select(p => p.Value).Distinct().ToList();
+        var query = _db.InventoryLots.Where(l =>
+            l.OrganizationId == organizationId.Value && ids.Contains(l.ProductId));
+        if (branchId is not null)
+        {
+            query = query.Where(l => l.BranchId == branchId.Value);
+        }
+
+        if (!includeDepleted)
+        {
+            query = query.Where(l => l.QuantityOnHand > 0m);
+        }
+
+        var records = await query
+            .OrderBy(l => l.ProductId)
+            .ThenBy(l => l.ExpirationDate)
+            .ThenBy(l => l.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
@@ -80,6 +114,36 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
 
         var records = await query
             .OrderBy(l => l.ExpirationDate)
+            .ThenBy(l => l.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryEntityMapper.ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandForProductsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = productIds.Select(p => p.Value).Distinct().ToList();
+        var query = _db.InventoryLots.Where(l =>
+            l.OrganizationId == organizationId.Value
+            && ids.Contains(l.ProductId)
+            && l.BranchId == null);
+        if (!includeDepleted)
+        {
+            query = query.Where(l => l.QuantityOnHand > 0m);
+        }
+
+        var records = await query
+            .OrderBy(l => l.ProductId)
+            .ThenBy(l => l.ExpirationDate)
             .ThenBy(l => l.CreatedAtUtc)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -132,31 +196,44 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
     public async Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
         PosOrganizationId organizationId,
         DateOnly today,
+        PosBranchId? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var org = organizationId.Value;
         var defaultWarning = InventoryLot.DefaultWarningDays;
+        var branch = branchId?.Value;
+
+        var lots = _db.InventoryLots.AsNoTracking()
+            .Where(lot => lot.OrganizationId == org && lot.QuantityOnHand > 0m);
+        if (branch is Guid exactBranch)
+        {
+            // Exact branch only — never treat BranchId-null legacy lots as belonging to every branch.
+            lots = lots.Where(lot => lot.BranchId == exactBranch);
+        }
+
+        // Only lots with a concrete branch and an enabled branch expiration setting count.
+        lots = lots.Where(lot => lot.BranchId != null);
 
         var onHand =
-            from lot in _db.InventoryLots.AsNoTracking()
-            join product in _db.CatalogProducts.AsNoTracking()
-                on new { Org = lot.OrganizationId, Id = lot.ProductId }
-                equals new { Org = product.OrganizationId, Id = product.Id }
-            where lot.OrganizationId == org && lot.QuantityOnHand > 0m
-            select new { lot.ExpirationDate, product.TracksExpiration, product.ExpirationWarningDays };
+            from lot in lots
+            join setting in _db.InventoryBranchExpirationSettings.AsNoTracking()
+                on new { Org = lot.OrganizationId, Branch = lot.BranchId!.Value, Id = lot.ProductId }
+                equals new { Org = setting.OrganizationId, Branch = setting.BranchId, Id = setting.ProductId }
+            where setting.TracksExpiration
+            select new { lot.ExpirationDate, setting.ExpirationWarningDays };
 
         var expired = await onHand
             .CountAsync(row => row.ExpirationDate < today, cancellationToken)
             .ConfigureAwait(false);
 
-        // Near-expiry window is per product (EffectiveExpirationWarningDays). DateOnly.AddDays with a
+        // Near-expiry window is per branch setting (EffectiveWarningDays). DateOnly.AddDays with a
         // column does not reliably translate; project warning days then evaluate the window in-memory.
         var candidates = await onHand
             .Where(row => row.ExpirationDate >= today)
             .Select(row => new
             {
                 row.ExpirationDate,
-                WarningDays = row.TracksExpiration && row.ExpirationWarningDays != null
+                WarningDays = row.ExpirationWarningDays != null
                     ? row.ExpirationWarningDays.Value
                     : defaultWarning
             })

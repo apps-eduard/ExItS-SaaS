@@ -103,6 +103,11 @@ export function resolvePreferencesReturnTo(
   return returnToFromLocationState(locationState) ?? readStoredReturnTo() ?? fallback;
 }
 
+/** Return path from location state or session storage, if any. */
+export function peekPreferencesReturnTo(locationState: unknown): string | null {
+  return returnToFromLocationState(locationState) ?? readStoredReturnTo();
+}
+
 /** Resolve and clear stored return path (call when leaving preferences). */
 export function takePreferencesReturnTo(locationState: unknown, fallback: string): string {
   const resolved = resolvePreferencesReturnTo(locationState, fallback);

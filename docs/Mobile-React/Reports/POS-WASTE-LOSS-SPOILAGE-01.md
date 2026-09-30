@@ -13,7 +13,7 @@ Durable **Waste / Loss** inventory document for intentional write-off of unusabl
 | EXISTING_LOT_WRITE_OFF_MODEL | NO (explicit lot consume added here) |
 | EXISTING_COST_LOSS_MODEL | NO (snapshots added here) |
 | EXISTING_REVERSAL_MODEL | PARTIAL (StockUse / Production void patterns reused) |
-| WASTE_LOSS_DOMAIN_MODEL | `WasteLoss` + `WasteLossLine` (Posted/Voided); number `WL-YYYYMMDD-NNNNNN` |
+| WASTE_LOSS_DOMAIN_MODEL | `WasteLoss` + `WasteLossLine` (Posted/Voided); number `WL-YYMMDD-NNN` (see [pos-transaction-reference-numbering.md](../../engineering/pos-transaction-reference-numbering.md)) |
 | WASTE_LOSS_REASON_MODEL | `Spoiled` / `Expired` / `Damaged` / `Broken` / `Spillage` / `MissingOrShrinkage` / `Other` (Other requires notes) |
 | WASTE_LOSS_PRODUCT_ELIGIBILITY | Active + inventory-tracked; any `ProductBusinessUsage` (Resale, Ingredient, InternalUse, ProducedItem) |
 | WASTE_LOSS_DATE_MODEL | `OccurredAtUtc` (optional; defaults to posting time) + immutable `CreatedAtUtc` |

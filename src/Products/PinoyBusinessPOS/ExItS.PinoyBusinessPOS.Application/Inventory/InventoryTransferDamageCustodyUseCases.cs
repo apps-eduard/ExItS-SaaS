@@ -130,7 +130,8 @@ public sealed class DispatchInventoryTransferDamageReturn
                     custody.ProductId,
                     balances,
                     utcNow);
-                dest.DecreaseInspectionHold(custody.Quantity, utcNow);
+                // Damaged was parked in DamagedQuantity at destination; return clears that bucket.
+                dest.DecreaseDamaged(custody.Quantity, utcNow);
                 dest.Apply(movement.QuantityEffect, utcNow);
 
                 await _custodies.UpdateAsync(custody, ct).ConfigureAwait(false);
@@ -262,6 +263,13 @@ public sealed class ReceiveInventoryTransferDamageReturn
                             ct)
                         .ConfigureAwait(false))
                 {
+                    if (custody.Status == InventoryTransferDamageCustodyStatus.ReturnInTransit)
+                    {
+                        custody.MarkReturnReceivedAtSource(actorId, utcNow);
+                        await _custodies.UpdateAsync(custody, ct).ConfigureAwait(false);
+                        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                    }
+
                     return ApplicationResult<InventoryTransferDamageCustodyDto>.Success(
                         InventoryTransferDamageCustodyMapping.Map(custody));
                 }
@@ -391,6 +399,13 @@ public sealed class InspectInventoryTransferDamageCustody
                 var expectedBranch = custody.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
                     ? transfer.DestinationBranchId.Value
                     : transfer.SourceBranchId.Value;
+                if (custody.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination)
+                {
+                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferDamageCustodyStatus,
+                        "Destination-received damaged goods are already classified as damaged. Only source inspects returned damage.");
+                }
+
                 if (actingBranchId != expectedBranch)
                 {
                     return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
@@ -435,13 +450,8 @@ public sealed class InspectInventoryTransferDamageCustody
                     followUpOverride = parsed;
                 }
 
-                if (custody.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
-                    && custody.Status == InventoryTransferDamageCustodyStatus.HeldAtDestination)
-                {
-                    custody.MarkReadyForDestinationInspection(actorId, utcNow);
-                }
-                else if (custody.Decision == InventoryTransferDamagedCustodyDecision.ReturnToSource
-                         && custody.Status == InventoryTransferDamageCustodyStatus.ReceivedAtSource)
+                if (custody.Decision == InventoryTransferDamagedCustodyDecision.ReturnToSource
+                    && custody.Status == InventoryTransferDamageCustodyStatus.ReceivedAtSource)
                 {
                     custody.MarkReadyForSourceInspection(actorId, utcNow);
                 }

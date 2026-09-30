@@ -100,8 +100,9 @@ Helper: `responsiveDataMultiSelectAllowed(layout, pageOptInOnList)`.
 
 ## Toolbar & pagination
 
-- **One** shared toolbar for both layouts (search + filters wrap; avoid fixed wide rows on mobile).
-- **One** shared `ExitsTablePagination` (or equivalent) under both layouts.
+- Toolbar is **optional**. Default Responsive Data View sample has **no search**.
+- When a page needs search/filters: **one** shared toolbar for both layouts (wrap; avoid fixed wide rows on mobile).
+- **One** shared `ExitsTablePagination` (or equivalent) under both layouts when pagination is ON.
 - Empty / loading / error stay page-owned via existing state components.
 
 ---
@@ -128,7 +129,8 @@ const { layout } = useResponsiveDataLayout({ tableMinWidthPx: 1024 });
 
 <ExitsResponsiveDataView
   layout={layout}
-  toolbar={<ExitsTableToolbar search={...} filter={...} />}
+  // toolbar optional — default has no search
+  // toolbar={<ExitsTableToolbar search={...} filter={...} />}
   table={<ExitsTableContainer><ExitsTable>...</ExitsTable></ExitsTableContainer>}
   list={
     <ul className="exits-data-record-list">

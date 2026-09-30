@@ -1,25 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
 import { getOnboardingProgress } from "@/api/pos/pos-onboarding-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { shouldShowFinishSetupEntry } from "@/features/onboarding/onboarding-steps";
-import {
-  capturePreferencesReturnFrom,
-  isPreferencesDestination,
-  preferencesNavigationState,
-} from "@/features/preferences/preferences-return";
+import { usePreferencesDestinationClick } from "@/features/preferences/usePreferencesDestinationClick";
+import { isPreferencesDestination } from "@/features/preferences/preferences-return";
 import { buildOrgMoreSections } from "@/features/shell/org-nav-config";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function OrgMorePage() {
   const { t } = useI18n();
-  const location = useLocation();
+  const openPreferencesDestination = usePreferencesDestinationClick();
   const { sessionGrant, boundWorkspace } = useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
-  const preferencesState = preferencesNavigationState(location.pathname, location.search);
 
   const progressQuery = useQuery({
     queryKey: ["pos", "onboarding", "progress", organizationId, "more-entry"],
@@ -78,14 +73,11 @@ export function OrgMorePage() {
                 label: t(link.labelKey),
                 icon: link.icon,
                 testId: link.testId,
-                to: link.to,
-                ...(preferences && preferencesState
+                ...(preferences
                   ? {
-                      state: preferencesState,
-                      onClick: () =>
-                        capturePreferencesReturnFrom(location.pathname, location.search),
+                      onClick: () => openPreferencesDestination(link.to),
                     }
-                  : {}),
+                  : { to: link.to }),
               };
             })}
           />

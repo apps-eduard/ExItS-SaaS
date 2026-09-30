@@ -4,6 +4,8 @@ import { SessionCartProvider } from "@/cart/SessionCartProvider";
 import { ToastNavigateBridge } from "@/components/exits/ToastNavigateBridge";
 import { ConnectivityHost } from "@/connectivity/ConnectivityHost";
 import { OnboardingResumeGate } from "@/features/onboarding/OnboardingResumeGate";
+import { NotificationsOverlayHost } from "@/features/personal/NotificationsOverlay";
+import { PreferencesOverlayHost } from "@/features/preferences/PreferencesOverlay";
 import { ShiftContextProvider } from "@/features/shifts/ShiftContextProvider";
 import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 import { SellingModeLifecycle } from "@/selling/SellingModeLifecycle";
@@ -26,6 +28,9 @@ export function SessionWorkspaceRoot() {
                 <PwaUpdateHost />
                 <OnboardingResumeGate />
                 <Outlet />
+                {/* Overlay hosts need Router context (useNavigate / Link inside panels). */}
+                <PreferencesOverlayHost />
+                <NotificationsOverlayHost />
               </SellingModeProvider>
             </SessionCartProvider>
           </ShiftContextProvider>

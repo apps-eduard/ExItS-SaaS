@@ -40,7 +40,7 @@ public sealed class PosCashierShiftApiTests(PosPostgreSqlFixture fixture)
         using var openResponse = await client.SendAsync(open);
         openResponse.EnsureSuccessStatusCode();
         var shift = await openResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
-        Assert.StartsWith("SHIFT-", shift!.ShiftNumber, StringComparison.Ordinal);
+        Assert.StartsWith("SH-", shift!.ShiftNumber, StringComparison.Ordinal);
         Assert.Equal(register.RegisterId, shift.RegisterId);
 
         using var duplicateOpen = Scoped(HttpMethod.Post, Shifts, org);

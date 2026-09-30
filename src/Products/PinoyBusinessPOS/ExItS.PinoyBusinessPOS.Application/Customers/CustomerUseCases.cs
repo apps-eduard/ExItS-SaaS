@@ -26,7 +26,10 @@ public sealed record POSCustomerDto(
     string? LinkedPersonalPublicUserId = null,
     Guid? LinkedBuyerOrganizationId = null,
     string? LinkedBuyerPublicOrganizationId = null,
-    string? PartyKind = null);
+    string? PartyKind = null,
+    string OnlineOrderingAccess = nameof(CustomerOnlineOrderingAccess.Default),
+    Guid? OnlineOrderingAccessUpdatedByUserId = null,
+    DateTimeOffset? OnlineOrderingAccessUpdatedAtUtc = null);
 
 public sealed record CustomerSyncPageDto(
     List<POSCustomerDto> Items,
@@ -591,7 +594,72 @@ public sealed class POSCustomerQueryService
             customer.LinkedPersonalPublicUserId,
             customer.LinkedBuyerOrganizationId,
             customer.LinkedBuyerPublicOrganizationId,
-            customer.PartyKind.ToString());
+            customer.PartyKind.ToString(),
+            customer.OnlineOrderingAccess.ToString(),
+            customer.OnlineOrderingAccessUpdatedByUserId,
+            customer.OnlineOrderingAccessUpdatedAtUtc);
+}
+
+public sealed record SetCustomerOnlineOrderingAccessRequest(string Access);
+
+public sealed class SetCustomerOnlineOrderingAccess
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public SetCustomerOnlineOrderingAccess(
+        IPOSCustomerRepository customers,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<POSCustomer>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        string access,
+        Guid actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Enum.TryParse<CustomerOnlineOrderingAccess>(access, ignoreCase: true, out var parsed)
+            || !Enum.IsDefined(parsed))
+        {
+            return ApplicationResult<POSCustomer>.Failure(
+                DomainErrorCodes.InvalidCustomerOnlineOrderingAccess,
+                "Online ordering access value is invalid.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var customer = await _customers
+            .GetByIdAsync(orgId, POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<POSCustomer>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        try
+        {
+            customer.SetOnlineOrderingAccess(parsed, actorUserId, _clock.UtcNow);
+            await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<POSCustomer>.Success(customer);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
 }
 
 public sealed class CreatePOSCustomer

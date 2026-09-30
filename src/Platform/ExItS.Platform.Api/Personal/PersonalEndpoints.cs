@@ -569,6 +569,41 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        personal.MapGet("/shared-utang-preferences/{counterpartyUserIdentityId:guid}", async (
+            HttpContext http,
+            Guid counterpartyUserIdentityId,
+            GetPersonalSharedUtangPreference getPreference,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getPreference
+                .ExecuteAsync(PlatformUserId.From(userId), counterpartyUserIdentityId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        personal.MapPut("/shared-utang-preferences/{counterpartyUserIdentityId:guid}", async (
+            HttpContext http,
+            Guid counterpartyUserIdentityId,
+            UpdatePersonalSharedUtangPreferenceRequest body,
+            UpdatePersonalSharedUtangPreference updatePreference,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await updatePreference
+                .ExecuteAsync(PlatformUserId.From(userId), counterpartyUserIdentityId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         personal.MapPost("/start-business", async (
             HttpContext http,
             StartBusinessRequest body,
@@ -825,6 +860,37 @@ internal static class PersonalEndpoints
                 .ExecuteAsync(PlatformUserId.From(userId), todoId, body?.ExpectedVersion, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        todos.MapDelete("/{todoId:guid}", async (
+            HttpContext http,
+            Guid todoId,
+            int? expectedVersion,
+            DeletePersonalTodo deleteTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await deleteTodo
+                .ExecuteAsync(PlatformUserId.From(userId), todoId, expectedVersion, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                return Results.NoContent();
+            }
+
+            return PlatformApiResults.Problem(
+                result.ErrorCode!,
+                result.ErrorMessage!,
+                PlatformApiResults.MapStatusCode(result.ErrorCode!));
         });
     }
 

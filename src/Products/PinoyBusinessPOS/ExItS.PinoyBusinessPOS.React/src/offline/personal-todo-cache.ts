@@ -133,6 +133,12 @@ export async function cachePersonalTodo(
   await cachePersonalTodos(db, scopeBinding, [todo]);
 }
 
+/** Remove a permanently deleted to-do from the local cache. */
+export async function removeCachedPersonalTodo(db: OfflineDb, todoId: string): Promise<void> {
+  await requirePersonalScope(db);
+  await db.delete("personalTodos", todoId);
+}
+
 /** Optimistic row for a To-do created on this device — no server id yet. */
 export async function cacheLocalPersonalTodo(
   db: OfflineDb,

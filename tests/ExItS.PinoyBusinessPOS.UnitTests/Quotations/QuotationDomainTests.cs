@@ -19,7 +19,7 @@ public sealed class QuotationDomainTests
     public void Quotation_numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 9, 14);
-        Assert.Equal("260914-001", QuotationNumbers.Format(date, 1));
+        Assert.Equal("QUO-260914-001", QuotationNumbers.Format(date, 1));
         Assert.Equal("260914-001", QuotationNumbers.Normalize(" 260914-001 "));
     }
 
@@ -32,7 +32,7 @@ public sealed class QuotationDomainTests
         Assert.Null(quotation.IssuedAtUtc);
 
         quotation.Issue(
-            "260914-007",
+            "QUO-260914-007",
             [
                 new QuotationLineSnapshotInput(
                     CatalogProductId.From(ProductA),
@@ -46,7 +46,7 @@ public sealed class QuotationDomainTests
             Now);
 
         Assert.Equal(QuotationStatus.Sent, quotation.Status);
-        Assert.Equal("260914-007", quotation.QuotationNumber);
+        Assert.Equal("QUO-260914-007", quotation.QuotationNumber);
         Assert.Equal(Now, quotation.IssuedAtUtc);
         var line = Assert.Single(quotation.Lines);
         Assert.Equal("Bigas Premium", line.NameSnapshot);
@@ -143,7 +143,7 @@ public sealed class QuotationDomainTests
     {
         var quotation = CreateDraft();
         quotation.Issue(
-            "260914-099",
+            "QUO-260914-099",
             [
                 new QuotationLineSnapshotInput(
                     CatalogProductId.From(ProductA),

@@ -123,6 +123,21 @@ internal sealed class PersonalUtangEntryRecord
     public string? DisputeReason { get; set; }
     public string Intent { get; set; } = "Regular";
     public decimal? SettlementBalanceSnapshot { get; set; }
+    public string ConfirmationSource { get; set; } = "None";
+}
+
+internal sealed class PersonalSharedUtangPreferenceRecord
+{
+    public Guid Id { get; set; }
+    public Guid OwnerUserIdentityId { get; set; }
+    public Guid CounterpartyUserIdentityId { get; set; }
+    public bool ReceiveSharedUtang { get; set; } = true;
+    public bool AutoAcceptSharedUtang { get; set; }
+    public bool SharedUtangNotifications { get; set; } = true;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public int Version { get; set; }
+    public uint Xmin { get; set; }
 }
 
 internal sealed class PersonalUtangInvitationRecord

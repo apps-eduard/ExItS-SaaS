@@ -64,6 +64,7 @@ public sealed class CreateProductionRun
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -76,6 +77,7 @@ public sealed class CreateProductionRun
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBranchDirectory? branches = null)
@@ -87,6 +89,7 @@ public sealed class CreateProductionRun
         _inventory = inventory;
         _branchBalances = branchBalances;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
@@ -230,16 +233,26 @@ public sealed class CreateProductionRun
                                 "Output product is not eligible for production.");
                         }
 
-                        if (outputProduct.TracksExpiration && request.OutputExpirationDate is null)
+                        PosBranchId? branchEarly = request.BranchId is Guid branchGuidEarly && branchGuidEarly != Guid.Empty
+                            ? PosBranchId.From(branchGuidEarly)
+                            : null;
+
+                        IReadOnlyDictionary<Guid, BranchExpirationPolicy> branchPolicies =
+                            new Dictionary<Guid, BranchExpirationPolicy>();
+                        if (branchEarly is PosBranchId policyBranch)
+                        {
+                            branchPolicies = await _expirationPolicies
+                                .ResolveManyAsync(orgId, policyBranch, allProductIds, ct)
+                                .ConfigureAwait(false);
+                        }
+
+                        if (branchPolicies.GetValueOrDefault(definition.OutputProductId.Value).TracksExpiration
+                            && request.OutputExpirationDate is null)
                         {
                             return ApplicationResult<ProductionRunDto>.Failure(
                                 DomainErrorCodes.InventoryExpirationRequired,
                                 "Expiration date is required for expiration-tracked produced items.");
                         }
-
-                        PosBranchId? branchEarly = request.BranchId is Guid branchGuidEarly && branchGuidEarly != Guid.Empty
-                            ? PosBranchId.From(branchGuidEarly)
-                            : null;
 
                         IReadOnlyDictionary<Guid, InventoryBranchBalance> branchBalancesByProduct =
                             new Dictionary<Guid, InventoryBranchBalance>();
@@ -297,7 +310,8 @@ public sealed class CreateProductionRun
                                             branchEarly,
                                             branchBalancesByProduct);
 
-                                        if (!material.TracksExpiration && available < actualBase)
+                                        if (!branchPolicies.GetValueOrDefault(material.Id.Value).TracksExpiration
+                                            && available < actualBase)
                                         {
                                             shortages.Add(
                                                 $"'{material.Name}' required {actualBase}, available {available}.");
@@ -505,7 +519,7 @@ public sealed class CreateProductionRun
                                         }
 
                                         var material = productsById[line.MaterialProductId.Value];
-                                        if (material.TracksExpiration)
+                                        if (branchPolicies.GetValueOrDefault(line.MaterialProductId.Value).TracksExpiration)
                                         {
                                             var today = InventoryLot.BusinessDateOf(utcNow);
                                             try
@@ -616,7 +630,7 @@ public sealed class CreateProductionRun
                                                 lockCt)
                                             .ConfigureAwait(false);
 
-                                        if (outputProduct.TracksExpiration)
+                                        if (branchPolicies.GetValueOrDefault(run.OutputProductId.Value).TracksExpiration)
                                         {
                                             await _lots
                                                 .ReceiveAsync(
@@ -735,6 +749,7 @@ public sealed class VoidProductionRun
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -745,6 +760,7 @@ public sealed class VoidProductionRun
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBranchDirectory? branches = null)
@@ -754,6 +770,7 @@ public sealed class VoidProductionRun
         _inventory = inventory;
         _branchBalances = branchBalances;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
@@ -827,7 +844,11 @@ public sealed class VoidProductionRun
                                         return;
                                     }
 
-                                    if (outputProduct.TracksExpiration)
+                                    var outputTracksExpiration = run.BranchId is PosBranchId voidBranch
+                                        && (await _expirationPolicies
+                                            .ResolveAsync(orgId, voidBranch, run.OutputProductId, lockCt)
+                                            .ConfigureAwait(false)).TracksExpiration;
+                                    if (outputTracksExpiration)
                                     {
                                         try
                                         {

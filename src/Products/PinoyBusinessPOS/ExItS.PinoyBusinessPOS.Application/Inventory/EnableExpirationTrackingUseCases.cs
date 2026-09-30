@@ -10,31 +10,41 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 
 /// <summary>
-/// Atomically enables catalog expiration tracking. When authoritative on-hand is greater than
-/// zero, existing stock must be allocated into lots whose quantities sum exactly to on-hand.
-/// Does not change product on-hand (no product stock movement / ApplyMovementEffect).
+/// Atomically enables <em>branch-scoped</em> expiration tracking for the current workspace branch.
+/// Authoritative on-hand is the current branch physical quantity (not organization total).
+/// Does not mutate CatalogProduct.TracksExpiration (legacy compatibility field).
+/// Does not change product on-hand (no ApplyMovementEffect).
 /// </summary>
 public sealed class EnableExpirationTracking
 {
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _balances;
     private readonly IInventoryLotRepository _lots;
+    private readonly IInventoryBranchExpirationSettingRepository _expirationSettings;
     private readonly InventoryLotStockService _lotStock;
+    private readonly IOrganizationBranchDirectory _branches;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public EnableExpirationTracking(
         ICatalogProductRepository products,
         IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository balances,
         IInventoryLotRepository lots,
+        IInventoryBranchExpirationSettingRepository expirationSettings,
         InventoryLotStockService lotStock,
+        IOrganizationBranchDirectory branches,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
         _inventory = inventory;
+        _balances = balances;
         _lots = lots;
+        _expirationSettings = expirationSettings;
         _lotStock = lotStock;
+        _branches = branches;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -56,9 +66,16 @@ public sealed class EnableExpirationTracking
                 "An actor identifier is required to enable expiration tracking.");
         }
 
+        if (branchId is null || branchId.Value == Guid.Empty)
+        {
+            return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
+                DomainErrorCodes.InventoryExpirationBranchRequired,
+                "A selected branch is required to enable expiration tracking.");
+        }
+
         var orgId = PosOrganizationId.From(organizationId);
         var catalogProductId = CatalogProductId.From(productId);
-        var branch = ResolveBranch(branchId);
+        var branch = PosBranchId.From(branchId.Value);
         var lines = existingStockLots ?? [];
 
         try
@@ -67,6 +84,18 @@ public sealed class EnableExpirationTracking
                 .ExecuteInSerializableTransactionAsync(
                     async ct =>
                     {
+                        if (!await _branches
+                                .ExistsInOrganizationAsync(organizationId, branch.Value, ct)
+                                .ConfigureAwait(false)
+                            || !await _branches
+                                .IsActiveInOrganizationAsync(organizationId, branch.Value, ct)
+                                .ConfigureAwait(false))
+                        {
+                            return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
+                                DomainErrorCodes.InvalidBranchId,
+                                "The selected branch is not active for inventory operations.");
+                        }
+
                         var product = await _products
                             .GetByIdAsync(orgId, catalogProductId, ct)
                             .ConfigureAwait(false);
@@ -80,57 +109,79 @@ public sealed class EnableExpirationTracking
                         var account = await _inventory
                             .GetByProductIdAsync(orgId, catalogProductId, ct)
                             .ConfigureAwait(false);
-                        var onHand = ResolveAuthoritativeOnHand(account);
+                        var primaryBranchId = await _branches
+                            .GetPrimaryBranchIdAsync(organizationId, ct)
+                            .ConfigureAwait(false);
+                        var branchOnHand = await ResolveBranchOnHandAsync(
+                                orgId,
+                                catalogProductId,
+                                branch,
+                                primaryBranchId,
+                                account,
+                                ct)
+                            .ConfigureAwait(false);
 
-                        if (branch is not null)
-                        {
-                            await _lots
-                                .AdoptOrgLevelLotsForBranchAsync(orgId, catalogProductId, branch, ct)
-                                .ConfigureAwait(false);
-                        }
+                        await _lots
+                            .AdoptOrgLevelLotsForBranchAsync(orgId, catalogProductId, branch, ct)
+                            .ConfigureAwait(false);
 
-                        if (product.TracksExpiration)
+                        var existingSetting = await _expirationSettings
+                            .GetAsync(orgId, branch, catalogProductId, ct)
+                            .ConfigureAwait(false);
+                        var policy = BranchExpirationPolicyResolver.FromSetting(existingSetting);
+
+                        if (policy.TracksExpiration)
                         {
                             return await BuildAlreadyEnabledAsync(
                                     orgId,
                                     product,
                                     account,
-                                    onHand,
+                                    branchOnHand,
                                     actorId,
                                     expirationWarningDays,
                                     lines,
                                     expectedOnHandQuantity,
                                     branch,
+                                    primaryBranchId,
+                                    existingSetting!,
                                     ct)
                                 .ConfigureAwait(false);
                         }
 
-                        if (expectedOnHandQuantity is decimal expected && expected != onHand)
+                        if (expectedOnHandQuantity is decimal expected && expected != branchOnHand)
                         {
                             return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                                 ApplicationErrorCodes.ExpirationAllocationStockChanged,
-                                "On-hand quantity changed before expiration tracking could be enabled. Reload and retry.");
+                                "Branch on-hand quantity changed before expiration tracking could be enabled. Reload and retry.");
                         }
 
                         var utcNow = _clock.UtcNow;
 
-                        if (onHand == 0m)
+                        if (branchOnHand == 0m)
                         {
                             if (lines.Count > 0 && lines.Sum(l => l.Quantity) != 0m)
                             {
                                 return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                                     ApplicationErrorCodes.ExpirationAllocationMismatch,
-                                    "Existing-stock lot quantities must sum exactly to on-hand (currently zero).");
+                                    "Existing-stock lot quantities must sum exactly to branch on-hand (currently zero).");
                             }
 
-                            product.SetExpirationTracking(true, expirationWarningDays, utcNow);
-                            await _products.UpdateAsync(product, ct).ConfigureAwait(false);
+                            await PersistEnabledSettingAsync(
+                                    orgId,
+                                    branch,
+                                    catalogProductId,
+                                    existingSetting,
+                                    expirationWarningDays,
+                                    actorId,
+                                    utcNow,
+                                    ct)
+                                .ConfigureAwait(false);
                             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                             return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                                await MapResponseAsync(orgId, product, account, branch, ct).ConfigureAwait(false));
+                                await MapResponseAsync(orgId, product, account, branch, primaryBranchId, ct)
+                                    .ConfigureAwait(false));
                         }
 
-                        // OnHand > 0 requires tracked inventory account and exact lot allocation.
                         if (account is null || !account.IsTracked)
                         {
                             return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
@@ -142,27 +193,33 @@ public sealed class EnableExpirationTracking
                         {
                             return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                                 ApplicationErrorCodes.ExpirationInitializationRequired,
-                                "Existing stock must be allocated into lots before enabling expiration tracking.");
+                                "Existing branch stock must be allocated into lots before enabling expiration tracking.");
                         }
 
                         var allocatedSum = lines.Sum(l => l.Quantity);
-                        if (allocatedSum != onHand)
+                        if (allocatedSum != branchOnHand)
                         {
                             return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                                 ApplicationErrorCodes.ExpirationAllocationMismatch,
-                                $"Existing-stock lot quantities ({allocatedSum}) must sum exactly to on-hand ({onHand}).");
+                                $"Existing-stock lot quantities ({allocatedSum}) must sum exactly to branch on-hand ({branchOnHand}).");
                         }
 
-                        // Reload on-hand after validation to catch concurrent stock changes.
                         account = await _inventory
                             .GetByProductIdAsync(orgId, catalogProductId, ct)
                             .ConfigureAwait(false);
-                        var reloadedOnHand = ResolveAuthoritativeOnHand(account);
-                        if (reloadedOnHand != onHand || reloadedOnHand != allocatedSum)
+                        var reloadedBranchOnHand = await ResolveBranchOnHandAsync(
+                                orgId,
+                                catalogProductId,
+                                branch,
+                                primaryBranchId,
+                                account,
+                                ct)
+                            .ConfigureAwait(false);
+                        if (reloadedBranchOnHand != branchOnHand || reloadedBranchOnHand != allocatedSum)
                         {
                             return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                                 ApplicationErrorCodes.ExpirationAllocationStockChanged,
-                                "On-hand quantity changed before expiration lots could be allocated. Reload and retry.");
+                                "Branch on-hand quantity changed before expiration lots could be allocated. Reload and retry.");
                         }
 
                         await _lotStock
@@ -176,12 +233,21 @@ public sealed class EnableExpirationTracking
                                 ct)
                             .ConfigureAwait(false);
 
-                        product.SetExpirationTracking(true, expirationWarningDays, utcNow);
-                        await _products.UpdateAsync(product, ct).ConfigureAwait(false);
+                        await PersistEnabledSettingAsync(
+                                orgId,
+                                branch,
+                                catalogProductId,
+                                existingSetting,
+                                expirationWarningDays,
+                                actorId,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
                         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
                         return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                            await MapResponseAsync(orgId, product, account, branch, ct).ConfigureAwait(false));
+                            await MapResponseAsync(orgId, product, account, branch, primaryBranchId, ct)
+                                .ConfigureAwait(false));
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -194,24 +260,22 @@ public sealed class EnableExpirationTracking
         {
             return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                 ApplicationErrorCodes.ExpirationAllocationStockChanged,
-                "On-hand quantity changed before expiration lots could be allocated. Reload and retry.");
+                "Branch on-hand quantity changed before expiration lots could be allocated. Reload and retry.");
         }
     }
 
-    /// <summary>
-    /// Already tracking: idempotent when lots match on-hand; allow one-time repair when
-    /// OnHand &gt; 0 and lot total is still 0 (legacy enable-without-init).
-    /// </summary>
     private async Task<ApplicationResult<EnableExpirationTrackingResponse>> BuildAlreadyEnabledAsync(
         PosOrganizationId orgId,
         CatalogProduct product,
         InventoryAccount? account,
-        decimal onHand,
+        decimal branchOnHand,
         Guid actorId,
         int? expirationWarningDays,
         IReadOnlyList<ExistingStockLotInput> lines,
         decimal? expectedOnHandQuantity,
-        PosBranchId? branch,
+        PosBranchId branch,
+        Guid? primaryBranchId,
+        InventoryBranchExpirationSetting setting,
         CancellationToken cancellationToken)
     {
         var lots = await _lots
@@ -219,28 +283,29 @@ public sealed class EnableExpirationTracking
             .ConfigureAwait(false);
         var lotTotal = InventoryLotFefo.TotalOnHand(lots);
 
-        if (onHand == 0m || lotTotal == onHand)
+        if (branchOnHand == 0m || lotTotal == branchOnHand)
         {
             if (expirationWarningDays is not null
-                && expirationWarningDays != product.ExpirationWarningDays)
+                && expirationWarningDays != setting.ExpirationWarningDays)
             {
-                product.SetExpirationTracking(true, expirationWarningDays, _clock.UtcNow);
-                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+                setting.SetWarningDays(expirationWarningDays, actorId, _clock.UtcNow);
+                await _expirationSettings.UpsertAsync(setting, cancellationToken).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                await MapResponseAsync(orgId, product, account, branch, cancellationToken).ConfigureAwait(false));
+                await MapResponseAsync(orgId, product, account, branch, primaryBranchId, cancellationToken)
+                    .ConfigureAwait(false));
         }
 
-        // Legacy: tracking ON, positive on-hand, no (or zero) lot coverage — allocate without flipping tracking.
-        if (lotTotal == 0m && onHand > 0m)
+        // Repair: setting ON, positive branch on-hand, no lot coverage.
+        if (lotTotal == 0m && branchOnHand > 0m)
         {
-            if (expectedOnHandQuantity is decimal expected && expected != onHand)
+            if (expectedOnHandQuantity is decimal expected && expected != branchOnHand)
             {
                 return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                     ApplicationErrorCodes.ExpirationAllocationStockChanged,
-                    "On-hand quantity changed before expiration lots could be allocated. Reload and retry.");
+                    "Branch on-hand quantity changed before expiration lots could be allocated. Reload and retry.");
             }
 
             if (account is null || !account.IsTracked)
@@ -254,26 +319,33 @@ public sealed class EnableExpirationTracking
             {
                 return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                     ApplicationErrorCodes.ExpirationInitializationRequired,
-                    "Existing stock must be allocated into lots before expiration setup is complete.");
+                    "Existing branch stock must be allocated into lots before expiration setup is complete.");
             }
 
             var allocatedSum = lines.Sum(l => l.Quantity);
-            if (allocatedSum != onHand)
+            if (allocatedSum != branchOnHand)
             {
                 return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                     ApplicationErrorCodes.ExpirationAllocationMismatch,
-                    $"Existing-stock lot quantities ({allocatedSum}) must sum exactly to on-hand ({onHand}).");
+                    $"Existing-stock lot quantities ({allocatedSum}) must sum exactly to branch on-hand ({branchOnHand}).");
             }
 
             account = await _inventory
                 .GetByProductIdAsync(orgId, product.Id, cancellationToken)
                 .ConfigureAwait(false);
-            var reloadedOnHand = ResolveAuthoritativeOnHand(account);
-            if (reloadedOnHand != onHand || reloadedOnHand != allocatedSum)
+            var reloaded = await ResolveBranchOnHandAsync(
+                    orgId,
+                    product.Id,
+                    branch,
+                    primaryBranchId,
+                    account,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (reloaded != branchOnHand || reloaded != allocatedSum)
             {
                 return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
                     ApplicationErrorCodes.ExpirationAllocationStockChanged,
-                    "On-hand quantity changed before expiration lots could be allocated. Reload and retry.");
+                    "Branch on-hand quantity changed before expiration lots could be allocated. Reload and retry.");
             }
 
             var utcNow = _clock.UtcNow;
@@ -290,47 +362,102 @@ public sealed class EnableExpirationTracking
 
             if (expirationWarningDays is not null)
             {
-                product.SetExpirationTracking(true, expirationWarningDays, utcNow);
-                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+                setting.SetWarningDays(expirationWarningDays, actorId, utcNow);
+                await _expirationSettings.UpsertAsync(setting, cancellationToken).ConfigureAwait(false);
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                await MapResponseAsync(orgId, product, account, branch, cancellationToken).ConfigureAwait(false));
+                await MapResponseAsync(orgId, product, account, branch, primaryBranchId, cancellationToken)
+                    .ConfigureAwait(false));
         }
 
         return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
             ApplicationErrorCodes.ExpirationTrackingAlreadyEnabled,
-            "Expiration tracking is already enabled but lot quantities do not match on-hand.");
+            "Expiration tracking is already enabled for this branch but lot quantities do not match branch on-hand.");
+    }
+
+    private async Task PersistEnabledSettingAsync(
+        PosOrganizationId orgId,
+        PosBranchId branch,
+        CatalogProductId productId,
+        InventoryBranchExpirationSetting? existing,
+        int? expirationWarningDays,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (existing is null)
+        {
+            var created = InventoryBranchExpirationSetting.CreateEnabled(
+                orgId,
+                branch,
+                productId,
+                expirationWarningDays,
+                actorId,
+                utcNow);
+            await _expirationSettings.UpsertAsync(created, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        existing.Enable(expirationWarningDays, actorId, utcNow);
+        await _expirationSettings.UpsertAsync(existing, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<decimal> ResolveBranchOnHandAsync(
+        PosOrganizationId orgId,
+        CatalogProductId productId,
+        PosBranchId branch,
+        Guid? primaryBranchId,
+        InventoryAccount? account,
+        CancellationToken cancellationToken)
+    {
+        var orgOnHand = account is { IsTracked: true } ? account.OnHandQuantity : 0m;
+        var balances = await _balances
+            .ListByProductIdsAsync(orgId, [productId], cancellationToken)
+            .ConfigureAwait(false);
+        return BranchStockResolver.ResolveOnHand(
+            branch,
+            primaryBranchId,
+            orgOnHand,
+            balances,
+            productId);
     }
 
     private async Task<EnableExpirationTrackingResponse> MapResponseAsync(
         PosOrganizationId orgId,
         CatalogProduct product,
         InventoryAccount? account,
-        PosBranchId? branch,
+        PosBranchId branch,
+        Guid? primaryBranchId,
         CancellationToken cancellationToken)
     {
         var utcNow = _clock.UtcNow;
         var today = InventoryLot.BusinessDateOf(utcNow);
-        var warning = product.EffectiveExpirationWarningDays;
+        var setting = await _expirationSettings
+            .GetAsync(orgId, branch, product.Id, cancellationToken)
+            .ConfigureAwait(false);
+        var policy = BranchExpirationPolicyResolver.FromSetting(setting);
+        var warning = policy.EffectiveWarningDays;
         var lots = await _lots
             .ListOnHandAsync(orgId, product.Id, branch, includeDepleted: true, cancellationToken)
+            .ConfigureAwait(false);
+        var branchOnHand = await ResolveBranchOnHandAsync(
+                orgId,
+                product.Id,
+                branch,
+                primaryBranchId,
+                account,
+                cancellationToken)
             .ConfigureAwait(false);
 
         return new EnableExpirationTrackingResponse(
             product.Id.Value,
             product.OrganizationId.Value,
-            product.TracksExpiration,
-            product.ExpirationWarningDays,
+            policy.TracksExpiration,
+            policy.ExpirationWarningDays,
             account?.IsTracked ?? false,
-            ResolveAuthoritativeOnHand(account),
+            branchOnHand,
             lots.Select(l => InventoryLotQueryService.Map(l, today, warning)).ToList());
     }
-
-    private static decimal ResolveAuthoritativeOnHand(InventoryAccount? account) =>
-        account is { IsTracked: true } ? account.OnHandQuantity : 0m;
-
-    private static PosBranchId? ResolveBranch(Guid? branchId) =>
-        branchId is { } id && id != Guid.Empty ? PosBranchId.From(id) : null;
 }

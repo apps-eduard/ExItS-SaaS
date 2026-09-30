@@ -234,11 +234,15 @@ export function ExpirationSettingsPage() {
   }
 
   const disableAllowed = canDisableExpirationTracking(account);
+  const branchName = boundWorkspace?.branchName?.trim() || null;
+  const pageTitle = branchName
+    ? t("inventory.expirationSettingsTitleWithBranch").replace("{branchName}", branchName)
+    : t("inventory.expirationSettingsTitle");
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="expiration-settings-page">
       <PageHeader
-        title={t("inventory.expirationSettingsTitle")}
+        title={pageTitle}
         description={account.name}
         backTo={`/inventory/${productId}`}
         backLabel={account.name}
@@ -267,6 +271,9 @@ export function ExpirationSettingsPage() {
       <Card className="flex flex-col gap-3 p-3" data-testid="expiration-settings-status">
         <p className="m-0 font-semibold">
           {t("inventory.onHand")}: {account.onHandQuantity} {account.unitOfMeasure}
+        </p>
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("inventory.expirationSettingsBranchStockHint")}
         </p>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("inventory.stockLots")}: {tracksExpiration ? lotTotal : "—"}

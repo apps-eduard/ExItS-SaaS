@@ -1,14 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Package } from "lucide-react";
-import { listOutgoingStockRequests } from "@/api/pos/pos-stock-requests-client";
+import {
+  listOutgoingStockRequests,
+  type StockRequestListItemDto,
+} from "@/api/pos/pos-stock-requests-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { formatTransferTimestamp } from "@/features/inventory/inventory-transfer-labels";
 import {
   retailTabStatuses,
@@ -71,10 +85,16 @@ const MODE_CONFIG: Record<
   },
 };
 
+function requestNumberLabel(item: StockRequestListItemDto): string {
+  return item.requestNumber ?? item.stockRequestId.slice(0, 8);
+}
+
 export function RetailWarehouseRequestsListPage({ mode }: { mode: ListMode }) {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { workspace } = useRetailWarehouseResolve();
+  const { layout } = useResponsiveDataLayout();
   const config = MODE_CONFIG[mode];
   const [tab, setTab] = useState<RetailStockRequestTab>(
     config.defaultTab ?? parseTab(searchParams.get("tab")),
@@ -147,6 +167,124 @@ export function RetailWarehouseRequestsListPage({ mode }: { mode: ListMode }) {
   }));
 
   const totalPages = Math.max(1, Math.ceil((query.data?.totalCount ?? 0) / 40));
+  const showPagination = (query.data?.totalCount ?? 0) > 40;
+
+  const requestsTable = (
+    <ExitsTableContainer data-testid={`${config.testId}-desktop`}>
+      <ExitsTable>
+        <ExitsTableHeader>
+          <ExitsTableRow>
+            <ExitsTableHead cellAlign="text">{t("stockRequest.colNumber")}</ExitsTableHead>
+            <ExitsTableHead cellAlign="text" colSize="flex">
+              {t("retailWarehouse.request.fromWarehouse")}
+            </ExitsTableHead>
+            <ExitsTableHead cellAlign="center" className="whitespace-nowrap" colWidth="3.5rem">
+              {t("transfer.colLines")}
+            </ExitsTableHead>
+            <ExitsTableHead cellAlign="center" className="whitespace-nowrap" colWidth="7.5rem">
+              {t("purchasing.fieldStatus")}
+            </ExitsTableHead>
+            <ExitsTableHead cellAlign="text">{t("transfer.colUpdated")}</ExitsTableHead>
+          </ExitsTableRow>
+        </ExitsTableHeader>
+        <ExitsTableBody>
+          {items.map((item) => (
+            <ExitsTableRow
+              key={item.stockRequestId}
+              interactive
+              data-testid={`retail-warehouse-request-row-${item.stockRequestId}`}
+              data-status={item.status}
+              onClick={() => navigate(`/warehouse/requests/${item.stockRequestId}`)}
+            >
+              <ExitsTableCell cellAlign="text" className="font-medium tabular-nums">
+                {requestNumberLabel(item)}
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
+                {item.requestedSourceLocationName ?? item.requestedSourceLocationId}
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="center" className="whitespace-nowrap tabular-nums">
+                {item.lineCount}
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="center" className="whitespace-nowrap">
+                <StatusChip tone={stockRequestStatusTone(item.status)}>
+                  {t(stockRequestStatusLabelKey(item.status) as MessageKey)}
+                </StatusChip>
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="text" className="text-muted">
+                {formatTransferTimestamp(item.updatedAtUtc)}
+                {mode === "incoming" ? (
+                  <div className="mt-0.5 text-[length:var(--exits-text-xs)] font-medium text-[var(--exits-primary)]">
+                    {t("retailWarehouse.incoming.receiveHint")}
+                  </div>
+                ) : null}
+              </ExitsTableCell>
+            </ExitsTableRow>
+          ))}
+        </ExitsTableBody>
+      </ExitsTable>
+    </ExitsTableContainer>
+  );
+
+  const requestsList = (
+    <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid={`${config.testId}-mobile`}>
+      {items.map((item) => (
+        <li key={item.stockRequestId}>
+          <Link
+            to={`/warehouse/requests/${item.stockRequestId}`}
+            className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border p-3 no-underline"
+            data-testid={`retail-warehouse-request-row-${item.stockRequestId}`}
+            data-status={item.status}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-foreground">{requestNumberLabel(item)}</span>
+                <StatusChip tone={stockRequestStatusTone(item.status)}>
+                  {t(stockRequestStatusLabelKey(item.status) as MessageKey)}
+                </StatusChip>
+              </div>
+              <div className="mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                {item.requestedSourceLocationName ?? item.requestedSourceLocationId}
+                {" · "}
+                {item.lineCount} {t("stockRequest.items")}
+                {" · "}
+                {formatTransferTimestamp(item.updatedAtUtc)}
+              </div>
+              {mode === "incoming" ? (
+                <div className="mt-1 text-[length:var(--exits-text-sm)] font-medium text-[var(--exits-primary)]">
+                  {t("retailWarehouse.incoming.receiveHint")}
+                </div>
+              ) : null}
+            </div>
+            <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
+  const pagination = showPagination ? (
+    <div className="flex items-center justify-between gap-2">
+      <button
+        type="button"
+        className="exits-button-outline"
+        disabled={page <= 1}
+        onClick={() => setPage((p) => Math.max(1, p - 1))}
+      >
+        {t("retailWarehouse.request.prev")}
+      </button>
+      <span className="text-[length:var(--exits-text-sm)] text-muted">
+        {page} / {totalPages}
+      </span>
+      <button
+        type="button"
+        className="exits-button-outline"
+        disabled={page >= totalPages}
+        onClick={() => setPage((p) => p + 1)}
+      >
+        {t("retailWarehouse.request.next")}
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="flex flex-col gap-3" data-testid={config.testId}>
@@ -177,71 +315,21 @@ export function RetailWarehouseRequestsListPage({ mode }: { mode: ListMode }) {
 
       {!query.isLoading && !query.isError && items.length === 0 ? (
         <EmptyState
-              align="center"
-              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockRequest.empty")} detail={t("stockRequest.emptyDetail")} />
+          align="center"
+          icon={<Package className="size-5" strokeWidth={1.75} />}
+          title={t("stockRequest.empty")}
+          detail={t("stockRequest.emptyDetail")}
+        />
       ) : null}
 
       {!query.isLoading && items.length > 0 ? (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {items.map((item) => (
-            <li key={item.stockRequestId}>
-              <Link
-                to={`/warehouse/requests/${item.stockRequestId}`}
-                className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border p-3 no-underline"
-                data-testid={`retail-warehouse-request-row-${item.stockRequestId}`}
-                data-status={item.status}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-foreground">
-                      {item.requestNumber ?? item.stockRequestId.slice(0, 8)}
-                    </span>
-                    <StatusChip tone={stockRequestStatusTone(item.status)}>
-                      {t(stockRequestStatusLabelKey(item.status) as MessageKey)}
-                    </StatusChip>
-                  </div>
-                  <div className="mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                    {item.requestedSourceLocationName ?? item.requestedSourceLocationId}
-                    {" · "}
-                    {item.lineCount} {t("stockRequest.items")}
-                    {" · "}
-                    {formatTransferTimestamp(item.updatedAtUtc)}
-                  </div>
-                  {mode === "incoming" ? (
-                    <div className="mt-1 text-[length:var(--exits-text-sm)] font-medium text-[var(--exits-primary)]">
-                      {t("retailWarehouse.incoming.receiveHint")}
-                    </div>
-                  ) : null}
-                </div>
-                <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {(query.data?.totalCount ?? 0) > 40 ? (
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            className="exits-button-outline"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            {t("retailWarehouse.request.prev")}
-          </button>
-          <span className="text-[length:var(--exits-text-sm)] text-muted">
-            {page} / {totalPages}
-          </span>
-          <button
-            type="button"
-            className="exits-button-outline"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            {t("retailWarehouse.request.next")}
-          </button>
-        </div>
+        <ExitsResponsiveDataView
+          layout={layout}
+          testId={`${config.testId}-responsive`}
+          table={layout === "table" ? requestsTable : null}
+          list={layout === "list" ? requestsList : null}
+          pagination={pagination}
+        />
       ) : null}
     </div>
   );

@@ -117,6 +117,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryTransferReceiptLineRecord> InventoryTransferReceiptLines => Set<InventoryTransferReceiptLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
     internal DbSet<InventoryTransferDamageCustodyRecord> InventoryTransferDamageCustodies => Set<InventoryTransferDamageCustodyRecord>();
+    internal DbSet<InventoryTransferExceptionCustodyRecord> InventoryTransferExceptionCustodies => Set<InventoryTransferExceptionCustodyRecord>();
     internal DbSet<DirectPurchaseReceiptRecord> DirectPurchaseReceipts => Set<DirectPurchaseReceiptRecord>();
     internal DbSet<DirectPurchaseReceiptLineRecord> DirectPurchaseReceiptLines => Set<DirectPurchaseReceiptLineRecord>();
     internal DbSet<DirectPurchaseReceiptNumberSequenceRecord> DirectPurchaseReceiptNumberSequences => Set<DirectPurchaseReceiptNumberSequenceRecord>();
@@ -134,8 +135,18 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<InventoryBranchReorderSettingRecord> InventoryBranchReorderSettings => Set<InventoryBranchReorderSettingRecord>();
     internal DbSet<InventoryBranchReorderDefaultRecord> InventoryBranchReorderDefaults => Set<InventoryBranchReorderDefaultRecord>();
+    internal DbSet<InventoryBranchExpirationSettingRecord> InventoryBranchExpirationSettings => Set<InventoryBranchExpirationSettingRecord>();
+    internal DbSet<OrganizationExpirySalePolicySettingRecord> OrganizationExpirySalePolicySettings =>
+        Set<OrganizationExpirySalePolicySettingRecord>();
+    internal DbSet<OrganizationCategoryExpirySalePolicyRecord> OrganizationCategoryExpirySalePolicies =>
+        Set<OrganizationCategoryExpirySalePolicyRecord>();
+    internal DbSet<BranchExpirySalePolicySettingRecord> BranchExpirySalePolicySettings =>
+        Set<BranchExpirySalePolicySettingRecord>();
+    internal DbSet<BranchCategoryExpirySalePolicyRecord> BranchCategoryExpirySalePolicies =>
+        Set<BranchCategoryExpirySalePolicyRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
+    internal DbSet<InventoryLotIdentityCorrectionRecord> InventoryLotIdentityCorrections => Set<InventoryLotIdentityCorrectionRecord>();
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
     internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
@@ -201,6 +212,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_customers_party_kind",
                     "party_kind IN ('Person', 'Business')");
+                tb.HasCheckConstraint(
+                    "ck_customers_online_ordering_access",
+                    "online_ordering_access IN ('Default', 'Allowed', 'Blocked')");
             });
 
             entity.HasKey(e => e.Id);
@@ -227,6 +241,15 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LinkedBuyerPublicOrganizationId)
                 .HasColumnName("linked_buyer_public_organization_id")
                 .HasMaxLength(9);
+            entity.Property(e => e.OnlineOrderingAccess)
+                .HasColumnName("online_ordering_access")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue(nameof(CustomerOnlineOrderingAccess.Default));
+            entity.Property(e => e.OnlineOrderingAccessUpdatedByUserId)
+                .HasColumnName("online_ordering_access_updated_by_user_id");
+            entity.Property(e => e.OnlineOrderingAccessUpdatedAtUtc)
+                .HasColumnName("online_ordering_access_updated_at_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -3067,6 +3090,41 @@ public sealed class PosDbContext : DbContext
                 .HasConstraintName("fk_inventory_reorder_changes_accounts");
         });
 
+        modelBuilder.Entity<InventoryLotIdentityCorrectionRecord>(entity =>
+        {
+            entity.ToTable("inventory_lot_identity_corrections");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.InventoryLotId).HasColumnName("inventory_lot_id").IsRequired();
+            entity.Property(e => e.OldExpirationDate).HasColumnName("old_expiration_date").IsRequired();
+            entity.Property(e => e.NewExpirationDate).HasColumnName("new_expiration_date").IsRequired();
+            entity.Property(e => e.OldLotNumber)
+                .HasColumnName("old_lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength);
+            entity.Property(e => e.NewLotNumber)
+                .HasColumnName("new_lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength);
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(InventoryLotIdentityCorrection.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.CorrectedBy).HasColumnName("corrected_by").IsRequired();
+            entity.Property(e => e.CorrectedAtUtc).HasColumnName("corrected_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.InventoryLotId, e.CorrectedAtUtc })
+                .HasDatabaseName("ix_inventory_lot_identity_corrections_org_lot_corrected");
+
+            entity.HasOne<InventoryLotRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.InventoryLotId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_lot_identity_corrections_lots");
+        });
+
         modelBuilder.Entity<StockCountRecord>(entity =>
         {
             entity.ToTable("stock_counts", tb =>
@@ -3571,6 +3629,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Note)
                 .HasColumnName("note")
                 .HasMaxLength(InventoryTransferLine.DiscrepancyNoteMaxLength);
+            entity.Property(e => e.ActualReceivedProductId).HasColumnName("actual_received_product_id");
+            entity.Property(e => e.OtherCustodyDecision)
+                .HasColumnName("other_custody_decision")
+                .HasMaxLength(InventoryTransferExceptionCustodyDecisions.CodeMaxLength);
 
             entity.HasIndex(e => new { e.ReceiptId, e.TransferLineId })
                 .IsUnique()
@@ -4510,6 +4572,91 @@ public sealed class PosDbContext : DbContext
                 .HasConstraintName("fk_itdc_receipt_line");
         });
 
+        modelBuilder.Entity<InventoryTransferExceptionCustodyRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_exception_custodies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_itec_quantity_positive",
+                    "quantity > 0");
+                tb.HasCheckConstraint(
+                    "ck_itec_decision",
+                    $"decision IN ({string.Join(", ", InventoryTransferExceptionCustodyDecisions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itec_follow_up",
+                    $"follow_up_intent IN ({string.Join(", ", InventoryTransferDiscrepancyFollowUps.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itec_status",
+                    $"status IN ({string.Join(", ", InventoryTransferExceptionCustodyStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itec_inspection_split",
+                    "recovered_sellable_qty >= 0 AND confirmed_non_sellable_qty >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.TransferId).HasColumnName("transfer_id").IsRequired();
+            entity.Property(e => e.RootTransferId).HasColumnName("root_transfer_id").IsRequired();
+            entity.Property(e => e.ReceiptLineId).HasColumnName("receipt_line_id").IsRequired();
+            entity.Property(e => e.ExpectedProductId).HasColumnName("expected_product_id").IsRequired();
+            entity.Property(e => e.ActualProductId).HasColumnName("actual_product_id").IsRequired();
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.ReasonCode)
+                .HasColumnName("reason_code")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Decision)
+                .HasColumnName("decision")
+                .HasMaxLength(InventoryTransferExceptionCustodyDecisions.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.FollowUpIntent)
+                .HasColumnName("follow_up_intent")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(InventoryTransferExceptionCustodyStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.HeldBranchId).HasColumnName("held_branch_id").IsRequired();
+            entity.Property(e => e.RecoveredSellableQty)
+                .HasColumnName("recovered_sellable_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ConfirmedNonSellableQty)
+                .HasColumnName("confirmed_non_sellable_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ReturnDispatchedAtUtc).HasColumnName("return_dispatched_at_utc");
+            entity.Property(e => e.ReturnDispatchedBy).HasColumnName("return_dispatched_by");
+            entity.Property(e => e.ReturnReceivedAtUtc).HasColumnName("return_received_at_utc");
+            entity.Property(e => e.ReturnReceivedBy).HasColumnName("return_received_by");
+            entity.Property(e => e.InspectedAtUtc).HasColumnName("inspected_at_utc");
+            entity.Property(e => e.InspectedBy).HasColumnName("inspected_by");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.TransferId })
+                .HasDatabaseName("ix_itec_org_transfer");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId })
+                .HasDatabaseName("ix_itec_org_root");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReceiptLineId })
+                .IsUnique()
+                .HasDatabaseName("ux_itec_org_receipt_line");
+
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_itec_transfer");
+            entity.HasOne<InventoryTransferReceiptLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReceiptLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_itec_receipt_line");
+        });
+
         modelBuilder.Entity<InventoryBranchReorderSettingRecord>(entity =>
         {
             entity.ToTable("inventory_branch_reorder_settings");
@@ -4553,6 +4700,129 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
             entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+        });
+
+        modelBuilder.Entity<InventoryBranchExpirationSettingRecord>(entity =>
+        {
+            entity.ToTable("inventory_branch_expiration_settings", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_expiration_settings_warning_days",
+                    "expiration_warning_days IS NULL OR (expiration_warning_days >= 1 AND expiration_warning_days <= 365)");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId })
+                .HasName("pk_inventory_branch_expiration_settings");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.TracksExpiration).HasColumnName("tracks_expiration");
+            entity.Property(e => e.ExpirationWarningDays).HasColumnName("expiration_warning_days");
+            entity.Property(e => e.EnabledAtUtc).HasColumnName("enabled_at_utc");
+            entity.Property(e => e.EnabledBy).HasColumnName("enabled_by");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId, e.TracksExpiration })
+                .HasDatabaseName("ix_inventory_branch_expiration_settings_org_branch_enabled");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_branch_expiration_settings_products");
+        });
+
+        modelBuilder.Entity<OrganizationExpirySalePolicySettingRecord>(entity =>
+        {
+            entity.ToTable("organization_expiry_sale_policy_settings", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_organization_expiry_sale_policy_settings_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => e.OrganizationId)
+                .HasName("pk_organization_expiry_sale_policy_settings");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+        });
+
+        modelBuilder.Entity<OrganizationCategoryExpirySalePolicyRecord>(entity =>
+        {
+            entity.ToTable("organization_category_expiry_sale_policies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_organization_category_expiry_sale_policies_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.CategoryId })
+                .HasName("pk_organization_category_expiry_sale_policies");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+
+            entity.HasOne<ProductCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_organization_category_expiry_sale_policies_categories");
+        });
+
+        modelBuilder.Entity<BranchExpirySalePolicySettingRecord>(entity =>
+        {
+            entity.ToTable("branch_expiry_sale_policy_settings", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_branch_expiry_sale_policy_settings_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId })
+                .HasName("pk_branch_expiry_sale_policy_settings");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+        });
+
+        modelBuilder.Entity<BranchCategoryExpirySalePolicyRecord>(entity =>
+        {
+            entity.ToTable("branch_category_expiry_sale_policies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_branch_category_expiry_sale_policies_days",
+                    "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.CategoryId })
+                .HasName("pk_branch_category_expiry_sale_policies");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.StopSellingDaysBeforeExpiry).HasColumnName("stop_selling_days_before_expiry");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_branch_category_expiry_sale_policies_org_branch");
+
+            entity.HasOne<ProductCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_branch_category_expiry_sale_policies_categories");
         });
 
         modelBuilder.Entity<ExpenseCategoryRecord>(entity =>

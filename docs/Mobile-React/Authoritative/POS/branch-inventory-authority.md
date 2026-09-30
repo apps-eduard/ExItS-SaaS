@@ -51,6 +51,7 @@
 - `InventoryBranchReorderSetting` per `(OrganizationId, BranchId, ProductId)`; primary legacy reorder fallback from org account only.
 - Low-stock and reorder-suggestion pagination filters branch membership in SQL before `Count`/`Skip`/`Take`.
 - Reconciliation endpoint returns explicit org aggregate fields (not branch `onHandQuantity`).
+- **Branch inventory attention:** `GET /api/v1/pos/inventory/attention-summary` returns bound-branch `LowStockProductCount`, `OutOfStockProductCount`, `ExpiredLotCount`, `NearExpiryLotCount` using the same branch inventory filters + `CountExpiryAsync`. Distinct from organization-wide `GET /api/v1/pos/management/overview`. Operational manager/warehouse/shell attention must use attention-summary only — never mix org overview expiry with branch low-stock.
 
 **Report:** [POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md)
 

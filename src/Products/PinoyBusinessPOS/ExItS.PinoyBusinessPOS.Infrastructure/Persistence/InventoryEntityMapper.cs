@@ -114,6 +114,9 @@ internal static class InventoryEntityMapper
 
     public static void ApplyToRecord(InventoryLot lot, InventoryLotRecord record)
     {
+        record.LotNumber = lot.LotNumber;
+        record.NormalizedLotNumber = lot.NormalizedLotNumber;
+        record.ExpirationDate = lot.ExpirationDate;
         record.QuantityOnHand = lot.QuantityOnHand;
         record.UpdatedAtUtc = lot.UpdatedAtUtc;
     }

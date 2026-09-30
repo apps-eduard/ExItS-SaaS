@@ -33,14 +33,15 @@ Do **not** create a new Button system, modal/drawer shell, confirmation dialog, 
 | Data | `ExitsTable`, `ExitsResponsiveDataView`, `ExitsDataRecordCard` |
 | Tabs | `ExitsTabs` / `UnderlineTabBar` |
 | States | `EmptyState`, `LoadingState`, `ErrorState` |
-| Quantity | `QuantityStepper` (`components/exits/MoneyQuantity.tsx`) — **default `variant="auto"`** |
+| Quantity | `QuantityStepper` (`components/exits/MoneyQuantity.tsx`) — **default `variant="outline"`** |
 | Forms | existing canonical form / select / search / upload controls |
 
 ### QuantityStepper
 
-- **Default for new / unspecified qty UI:** `variant="auto"` (primary capsule; adopts Preferences → Control Shape).
+- **Default for new / unspecified qty UI:** `variant="outline"` (surface capsule + primary border; adopts Preferences → Control Shape).
 - Prefer controlled `onChange` + `min` / `step` / `precision` (or `unitOfMeasure` + `sellingMode`) — do not pair raw `<input type="number">` with a separate ± control.
 - Use `editOnClick` when the middle should start as a tap target (cart / compact lines).
+- Use `variant="auto"` when a solid primary capsule is intentionally required (e.g. sell cart).
 - Explicit `variant="default"` only when the form field group chrome (`[ neutral − ][ qty ][ primary + ]`) is intentionally required.
 - Do not invent a feature-local ± qty control.
 
@@ -112,7 +113,7 @@ Use canonical FormDrawer / ExitsModal responsive behavior — do not recreate pe
 | record payment | `ExitsModal` |
 | delete quotation | `ConfirmActionDialog` + Danger |
 | add button | global `Button` + canonical icon/semantic + Primary hierarchy |
-| quantity / ± qty / stepper | `QuantityStepper` with `variant="auto"` (+ `onChange`) |
+| quantity / ± qty / stepper | `QuantityStepper` with `variant="outline"` (+ `onChange`) |
 | similar to existing feature | search/reuse first |
 
 ## Exceptions
@@ -121,6 +122,6 @@ Strong defaults — do not damage domain UX. If another presentation is required
 
 ## Do / Don't
 
-**Do:** reuse globals · one Primary per group · Auto shape · `QuantityStepper` `variant="auto"` · ResponsiveDataView · share same-domain UI · semantic tokens · canonical icons · preserve a11y
+**Do:** reuse globals · one Primary per group · Auto shape · `QuantityStepper` `variant="outline"` · ResponsiveDataView · share same-domain UI · semantic tokens · canonical icons · preserve a11y
 
 **Don't:** random button styles · hardcode semantic colors · force desktop tables on mobile · duplicate Personal/Business financial UI · custom modal/confirm/toast systems · feature-local ± qty controls · cards-inside-cards without hierarchy need

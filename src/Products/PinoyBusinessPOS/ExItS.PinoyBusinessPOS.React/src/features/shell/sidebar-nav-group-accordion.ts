@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const SIDEBAR_NAV_GROUPS_STORAGE_KEY = "exits.pos-client.sidebar-nav-groups.v1";
 
-export type SidebarNavGroupScope = "admin" | "operations";
+export type SidebarNavGroupScope = "admin" | "operations" | "personal";
 
 /** true = group expanded (children visible). */
 export type SidebarNavGroupExpandedMap = Record<string, boolean>;
@@ -10,6 +10,7 @@ export type SidebarNavGroupExpandedMap = Record<string, boolean>;
 const storeSchema = z.object({
   admin: z.record(z.string(), z.boolean()).default({}),
   operations: z.record(z.string(), z.boolean()).default({}),
+  personal: z.record(z.string(), z.boolean()).default({}),
 });
 
 export type SidebarNavGroupStore = z.infer<typeof storeSchema>;
@@ -17,6 +18,7 @@ export type SidebarNavGroupStore = z.infer<typeof storeSchema>;
 const defaultStore: SidebarNavGroupStore = {
   admin: {},
   operations: {},
+  personal: {},
 };
 
 export function readSidebarNavGroupStore(): SidebarNavGroupStore {

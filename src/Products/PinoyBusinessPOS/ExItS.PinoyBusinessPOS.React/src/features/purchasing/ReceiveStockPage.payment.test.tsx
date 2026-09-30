@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEffect } from "react";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -29,6 +29,8 @@ const listCatalogProducts = vi.fn();
 const listCatalogCategories = vi.fn();
 const createDirectPurchaseReceipt = vi.fn();
 const listDirectPurchases = vi.fn();
+const getInventoryProduct = vi.fn();
+const enableExpirationTracking = vi.fn();
 
 const workspaceMock = {
   boundWorkspace: {
@@ -95,6 +97,34 @@ vi.mock("@/api/pos/pos-direct-purchases-client", async (importOriginal) => {
     listDirectPurchases: (...args: unknown[]) => listDirectPurchases(...args),
   };
 });
+
+vi.mock("@/api/pos/pos-inventory-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/api/pos/pos-inventory-client")>();
+  return {
+    ...actual,
+    getInventoryProduct: (...args: unknown[]) => getInventoryProduct(...args),
+    enableExpirationTracking: (...args: unknown[]) => enableExpirationTracking(...args),
+  };
+});
+
+function inventoryAccount(overrides: Record<string, unknown> = {}) {
+  return {
+    productId,
+    organizationId: orgId,
+    name: "Rice 25kg",
+    unitOfMeasure: "bag",
+    productStatus: "Active",
+    isTracked: true,
+    onHandQuantity: 0,
+    stockStatus: "InStock",
+    isLowStock: false,
+    createdAtUtc: "2026-08-01T00:00:00Z",
+    updatedAtUtc: "2026-08-01T00:00:00Z",
+    tracksExpiration: false,
+    expirationWarningDays: 7,
+    ...overrides,
+  };
+}
 
 function productDto(overrides: Partial<PosCatalogProductDto> = {}): PosCatalogProductDto {
   return {
@@ -225,6 +255,11 @@ async function addLine(
   await user.type(qty, opts?.qty ?? "10");
 }
 
+/** jsdom date inputs are unreliable with user.type — set value via change. */
+function setDateInput(testId: string, value: string) {
+  fireEvent.change(screen.getByTestId(testId), { target: { value } });
+}
+
 describe("ReceiveStockPage payment at receipt", () => {
   beforeEach(() => {
     listSuppliers.mockResolvedValue({
@@ -261,6 +296,16 @@ describe("ReceiveStockPage payment at receipt", () => {
       totalCount: 0,
       page: 1,
       pageSize: 8,
+    });
+    getInventoryProduct.mockResolvedValue(inventoryAccount());
+    enableExpirationTracking.mockResolvedValue({
+      productId,
+      organizationId: orgId,
+      tracksExpiration: true,
+      expirationWarningDays: 7,
+      isTracked: true,
+      onHandQuantity: 0,
+      lots: [],
     });
     createDirectPurchaseReceipt.mockResolvedValue({
       directPurchaseReceiptId: receiptId,
@@ -335,7 +380,7 @@ describe("ReceiveStockPage payment at receipt", () => {
   });
 });
 
-describe("ReceiveStockPage receipt-first collapsible picker", () => {
+describe("ReceiveStockPage receipt-first product dialog", () => {
   beforeEach(() => {
     listSuppliers.mockResolvedValue({
       items: [],
@@ -419,7 +464,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     renderPage();
     await openFinder(user);
     expect(screen.getByTestId("direct-receipt-items")).toBeInTheDocument();
-    await user.click(screen.getByTestId("direct-close-finder"));
+    await user.click(screen.getByTestId("direct-add-products-close"));
     await waitFor(() => {
       expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
     });
@@ -515,7 +560,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
         "1 selected",
       );
     });
-    await user.click(screen.getByTestId("direct-close-finder"));
+    await user.click(screen.getByTestId("direct-add-products-close"));
     await openFinder(user);
     expect(screen.getByTestId("direct-category-multiselect")).toHaveTextContent(
       "1 selected",
@@ -728,6 +773,16 @@ describe("ReceiveStockPage cost vs selling price margin warning", () => {
       page: 1,
       pageSize: 8,
     });
+    getInventoryProduct.mockResolvedValue(inventoryAccount());
+    enableExpirationTracking.mockResolvedValue({
+      productId,
+      organizationId: orgId,
+      tracksExpiration: true,
+      expirationWarningDays: 7,
+      isTracked: true,
+      onHandQuantity: 0,
+      lots: [],
+    });
     createDirectPurchaseReceipt.mockResolvedValue({
       directPurchaseReceiptId: receiptId,
       receiptNumber: "DPR-1",
@@ -898,5 +953,366 @@ describe("ReceiveStockPage cost vs selling price margin warning", () => {
     const action = await screen.findByTestId("exits-toast-action");
     expect(action).toHaveTextContent("Review price");
     expect(action).toHaveAttribute("href", `/catalog/products/${productId}/edit`);
+  });
+});
+
+describe("ReceiveStockPage optional expiry and lot", () => {
+  beforeEach(() => {
+    listSuppliers.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 100,
+    });
+    listCatalogCategories.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+    listCatalogProducts.mockResolvedValue({
+      items: [productDto()],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    });
+    listDirectPurchases.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 8,
+    });
+    getInventoryProduct.mockResolvedValue(inventoryAccount());
+    enableExpirationTracking.mockResolvedValue({
+      productId,
+      organizationId: orgId,
+      tracksExpiration: true,
+      expirationWarningDays: 7,
+      isTracked: true,
+      onHandQuantity: 0,
+      lots: [],
+    });
+    createDirectPurchaseReceipt.mockResolvedValue({
+      directPurchaseReceiptId: receiptId,
+      receiptNumber: "DPR-1",
+      organizationId: orgId,
+      branchId,
+      purchaseDate: "2026-09-01",
+      supplierId: null,
+      sourceName: null,
+      referenceNumber: null,
+      notes: null,
+      status: "Posted",
+      totalCost: 1000,
+      createdAtUtc: "2026-09-01T00:00:00Z",
+      lines: [],
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("always shows optional expiry and lot inputs for non-tracked products", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-lot-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).not.toHaveAttribute(
+      "aria-required",
+    );
+  });
+
+  it("shows enable-tracking info notice above the receipt table when expiry is entered", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-01-15");
+    const hint = screen.getByTestId("direct-receipt-expiry-hint");
+    expect(hint).toHaveAttribute("data-tone", "info");
+    expect(hint).toHaveTextContent(
+      "Expiry tracking will be enabled when this receipt is saved.",
+    );
+    expect(screen.getByTestId("direct-receipt-table")).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-expiry-clear-${productId}`)).toBeInTheDocument();
+    await user.click(screen.getByTestId("direct-receipt-expiry-hint-close"));
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+  });
+
+  it("clears expiry from the notice Clear date action and from the date clear control", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-01-15");
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("2027-01-15");
+    await user.click(screen.getByTestId("direct-receipt-expiry-hint-clear"));
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("");
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-02-01");
+    expect(screen.getByTestId("direct-receipt-expiry-hint")).toBeInTheDocument();
+    await user.click(screen.getByTestId(`direct-line-expiry-clear-${productId}`));
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("");
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+  });
+
+  it("serializes blank expiry/lot as omitted and lot-only without forcing expiry", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-lot-${productId}`), "LOT-A");
+    await user.click(screen.getByTestId("direct-review"));
+    await user.click(screen.getByTestId("direct-confirm"));
+    await waitFor(() => {
+      expect(createDirectPurchaseReceipt).toHaveBeenCalled();
+    });
+    const body = createDirectPurchaseReceipt.mock.calls[0]![1] as {
+      lines: Array<{ expiryDate?: string | null; lotNumber?: string | null }>;
+    };
+    expect(body.lines[0]?.lotNumber).toBe("LOT-A");
+    expect(body.lines[0]?.expiryDate == null || body.lines[0]?.expiryDate === "").toBe(true);
+  });
+
+  it("requires expiry for already-tracked products", async () => {
+    const user = userEvent.setup();
+    listCatalogProducts.mockResolvedValue({
+      items: [productDto({ tracksExpiration: true })],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    });
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveAttribute(
+      "aria-required",
+    );
+    expect(screen.getByTestId("direct-receipt-expiry-required-notice")).toHaveTextContent(
+      "Expiry date is required because this product uses expiry tracking.",
+    );
+    expect(screen.getByTestId("direct-review")).toBeDisabled();
+
+    await user.click(screen.getByTestId("direct-receipt-expiry-required-notice-close"));
+    expect(screen.queryByTestId("direct-receipt-expiry-required-notice")).not.toBeInTheDocument();
+    expect(screen.getByTestId("direct-review")).toBeDisabled();
+  });
+
+  it("does not open setup dialog when expiry is selected with zero on-hand", async () => {
+    const user = userEvent.setup();
+    getInventoryProduct.mockResolvedValue(inventoryAccount({ onHandQuantity: 0 }));
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-06-30");
+    await waitFor(() => {
+      expect(getInventoryProduct).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId("receive-stock-expiry-setup-dialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("2027-06-30");
+    expect(screen.getByTestId("direct-receipt-expiry-hint")).toBeInTheDocument();
+  });
+
+  it("opens in-place setup dialog for existing on-hand and enables tracking without submitting receipt", async () => {
+    const user = userEvent.setup();
+    getInventoryProduct.mockResolvedValue(
+      inventoryAccount({ onHandQuantity: 100, name: "Apple", unitOfMeasure: "kg" }),
+    );
+    enableExpirationTracking.mockResolvedValue({
+      productId,
+      organizationId: orgId,
+      tracksExpiration: true,
+      expirationWarningDays: 7,
+      isTracked: true,
+      onHandQuantity: 100,
+      lots: [],
+    });
+    renderPage();
+    await addLine(user, { qty: "100", cost: "45" });
+    expect(screen.getByTestId(`direct-line-cost-${productId}`)).toHaveValue("45.00");
+
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-06-30");
+    await waitFor(() => {
+      expect(screen.getByTestId("receive-stock-expiry-setup-dialog")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("enable-expiration-current-stock")).toHaveTextContent("100");
+    expect(screen.getByTestId("enable-expiration-qty-0")).toHaveValue("100");
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("");
+    expect(createDirectPurchaseReceipt).not.toHaveBeenCalled();
+
+    await user.clear(screen.getByTestId("enable-expiration-qty-0"));
+    await user.type(screen.getByTestId("enable-expiration-qty-0"), "50");
+    await user.type(screen.getByTestId("enable-expiration-expiry-0"), "2026-12-31");
+    await user.click(screen.getByTestId("enable-expiration-add-row"));
+    expect(screen.getByTestId("enable-expiration-qty-1")).toHaveValue("50");
+    await user.clear(screen.getByTestId("enable-expiration-qty-1"));
+    await user.type(screen.getByTestId("enable-expiration-qty-1"), "25");
+    await user.type(screen.getByTestId("enable-expiration-expiry-1"), "2027-01-31");
+    await user.click(screen.getByTestId("enable-expiration-add-row"));
+    expect(screen.getByTestId("enable-expiration-qty-2")).toHaveValue("25");
+    await user.type(screen.getByTestId("enable-expiration-expiry-2"), "2027-03-31");
+
+    expect(screen.getByTestId("enable-expiration-submit")).not.toBeDisabled();
+    await user.click(screen.getByTestId("enable-expiration-submit"));
+
+    await waitFor(() => {
+      expect(enableExpirationTracking).toHaveBeenCalled();
+    });
+    const enableBody = enableExpirationTracking.mock.calls[0]![2] as {
+      expectedOnHandQuantity: number;
+      existingStockLots: Array<{ quantity: number; expiryDate: string }>;
+    };
+    expect(enableBody.expectedOnHandQuantity).toBe(100);
+    expect(enableBody.existingStockLots).toHaveLength(3);
+    expect(enableBody.existingStockLots.map((lot) => lot.quantity)).toEqual([50, 25, 25]);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("receive-stock-expiry-setup-dialog")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Expiration tracking enabled.")).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveAttribute("aria-required");
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("2027-06-30");
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveFocus();
+    });
+    expect(screen.getByTestId(`direct-line-cost-${productId}`)).toHaveValue("45.00");
+    expect(screen.getByTestId(`direct-line-qty-${productId}`)).toHaveValue("100");
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+    expect(createDirectPurchaseReceipt).not.toHaveBeenCalled();
+  });
+
+  it("after setup, clearing new expiry keeps tracking on and blocks review", async () => {
+    const user = userEvent.setup();
+    getInventoryProduct.mockResolvedValue(inventoryAccount({ onHandQuantity: 40 }));
+    enableExpirationTracking.mockResolvedValue({
+      productId,
+      organizationId: orgId,
+      tracksExpiration: true,
+      expirationWarningDays: 7,
+      isTracked: true,
+      onHandQuantity: 40,
+      lots: [],
+    });
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-06-30");
+    await waitFor(() => {
+      expect(screen.getByTestId("receive-stock-expiry-setup-dialog")).toBeInTheDocument();
+    });
+    setDateInput("enable-expiration-expiry-0", "2026-12-31");
+    await waitFor(() => {
+      expect(screen.getByTestId("enable-expiration-submit")).not.toBeDisabled();
+    });
+    await user.click(screen.getByTestId("enable-expiration-submit"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("receive-stock-expiry-setup-dialog")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("2027-06-30");
+    expect(screen.getByTestId("direct-review")).not.toBeDisabled();
+
+    await user.click(screen.getByTestId(`direct-line-expiry-clear-${productId}`));
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("");
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveAttribute("aria-required");
+    expect(screen.getByTestId("direct-receipt-expiry-required-notice")).toHaveTextContent(
+      "Expiry date is required because this product uses expiry tracking.",
+    );
+    expect(screen.getByTestId("direct-review")).toBeDisabled();
+    expect(screen.queryByTestId("direct-receipt-expiry-hint")).not.toBeInTheDocument();
+    expect(screen.queryByText(/turn off expiry/i)).not.toBeInTheDocument();
+
+    setDateInput(`direct-line-expiry-${productId}`, "2027-07-15");
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("2027-07-15");
+    });
+    expect(screen.queryByTestId("direct-receipt-expiry-required-notice")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("receive-stock-expiry-setup-dialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("direct-review")).not.toBeDisabled();
+  });
+
+  it("cancels setup dialog without mutating tracking or applying expiry", async () => {
+    const user = userEvent.setup();
+    getInventoryProduct.mockResolvedValue(inventoryAccount({ onHandQuantity: 100 }));
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-06-30");
+    await waitFor(() => {
+      expect(screen.getByTestId("receive-stock-expiry-setup-dialog")).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("receive-stock-expiry-setup-cancel"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("receive-stock-expiry-setup-dialog")).not.toBeInTheDocument();
+    });
+    expect(enableExpirationTracking).not.toHaveBeenCalled();
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).toHaveValue("");
+    expect(screen.getByTestId(`direct-line-expiry-${productId}`)).not.toHaveAttribute(
+      "aria-required",
+    );
+    expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
+  });
+
+  it("keeps setup dialog open on Escape and preserves in-progress allocation rows", async () => {
+    const user = userEvent.setup();
+    getInventoryProduct.mockResolvedValue(inventoryAccount({ onHandQuantity: 100 }));
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-06-30");
+    await waitFor(() => {
+      expect(screen.getByTestId("receive-stock-expiry-setup-dialog")).toBeInTheDocument();
+    });
+
+    await user.clear(screen.getByTestId("enable-expiration-qty-0"));
+    await user.type(screen.getByTestId("enable-expiration-qty-0"), "50");
+    await user.type(screen.getByTestId("enable-expiration-expiry-0"), "2026-12-31");
+    await user.click(screen.getByTestId("enable-expiration-add-row"));
+    expect(screen.getByTestId("enable-expiration-qty-1")).toHaveValue("50");
+
+    await user.keyboard("{Escape}");
+    expect(screen.getByTestId("receive-stock-expiry-setup-dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("enable-expiration-qty-0")).toHaveValue("50");
+    expect(screen.getByTestId("enable-expiration-expiry-0")).toHaveValue("2026-12-31");
+    expect(screen.getByTestId("enable-expiration-qty-1")).toHaveValue("50");
+    expect(enableExpirationTracking).not.toHaveBeenCalled();
+  });
+
+  it("uses organization on-hand for setup allocation when branch display differs", async () => {
+    const user = userEvent.setup();
+    getInventoryProduct.mockResolvedValue(
+      inventoryAccount({
+        onHandQuantity: 40,
+        organizationOnHandQuantity: 100,
+        name: "Apple",
+        unitOfMeasure: "kg",
+      }),
+    );
+    enableExpirationTracking.mockResolvedValue({
+      productId,
+      organizationId: orgId,
+      tracksExpiration: true,
+      expirationWarningDays: 7,
+      isTracked: true,
+      onHandQuantity: 100,
+      lots: [],
+    });
+    renderPage();
+    await addLine(user, { qty: "2", cost: "50" });
+    await user.type(screen.getByTestId(`direct-line-expiry-${productId}`), "2027-06-30");
+    await waitFor(() => {
+      expect(screen.getByTestId("receive-stock-expiry-setup-dialog")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("enable-expiration-current-stock")).toHaveTextContent("100");
+    expect(screen.getByTestId("enable-expiration-qty-0")).toHaveValue("100");
+
+    setDateInput("enable-expiration-expiry-0", "2026-12-31");
+    await waitFor(() => {
+      expect(screen.getByTestId("enable-expiration-submit")).not.toBeDisabled();
+    });
+    await user.click(screen.getByTestId("enable-expiration-submit"));
+    await waitFor(() => {
+      expect(enableExpirationTracking).toHaveBeenCalled();
+    });
+    const enableBody = enableExpirationTracking.mock.calls[0]![2] as {
+      expectedOnHandQuantity: number;
+    };
+    expect(enableBody.expectedOnHandQuantity).toBe(100);
   });
 });

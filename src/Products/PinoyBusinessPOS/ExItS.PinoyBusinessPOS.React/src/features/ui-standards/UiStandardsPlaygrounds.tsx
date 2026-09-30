@@ -18,11 +18,13 @@ import {
 
 const BUTTON_INTENTS: ReadonlyArray<{ label: string; value: ButtonIntentTone }> = [
   { label: "Primary", value: "primary" },
-  { label: "Neutral", value: "neutral" },
+  { label: "Secondary", value: "neutral" },
   { label: "Success", value: "success" },
   { label: "Info", value: "info" },
-  { label: "Warning", value: "warning" },
+  { label: "Warn", value: "warning" },
+  { label: "Help", value: "help" },
   { label: "Danger", value: "danger" },
+  { label: "Contrast", value: "contrast" },
 ];
 
 const BUTTON_APPEARANCES: ReadonlyArray<{ label: string; value: ButtonAppearance }> = [

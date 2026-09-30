@@ -2771,6 +2771,39 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("organization_compliance_profiles", "platform");
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("Disabled")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UpdatedByActorReference")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("updated_by_actor_reference");
+
+                    b.HasKey("OrganizationId");
+
+                    b.ToTable("organization_online_supplier_payments_capabilities", "platform");
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationSalesDocumentAcknowledgmentRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2851,39 +2884,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasKey("OrganizationId");
 
                     b.ToTable("organization_sales_document_capabilities", "platform");
-                });
-
-            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", b =>
-                {
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("reason");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasDefaultValue("Disabled")
-                        .HasColumnName("status");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<string>("UpdatedByActorReference")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("updated_by_actor_reference");
-
-                    b.HasKey("OrganizationId");
-
-                    b.ToTable("organization_online_supplier_payments_capabilities", "platform");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.BranchDeliveryPolicyRecord", b =>
@@ -4013,7 +4013,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnName("department");
 
                     b.Property<bool>("IsBusinessContact")
-                        .IsRequired()
                         .HasColumnType("boolean")
                         .HasColumnName("is_business_contact");
 
@@ -5736,6 +5735,63 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("personal_reward_transactions", "platform");
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalSharedUtangPreferenceRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AutoAcceptSharedUtang")
+                        .HasColumnType("boolean")
+                        .HasColumnName("auto_accept_shared_utang");
+
+                    b.Property<Guid>("CounterpartyUserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("counterparty_user_identity_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("OwnerUserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_identity_id");
+
+                    b.Property<bool>("ReceiveSharedUtang")
+                        .HasColumnType("boolean")
+                        .HasColumnName("receive_shared_utang");
+
+                    b.Property<bool>("SharedUtangNotifications")
+                        .HasColumnType("boolean")
+                        .HasColumnName("shared_utang_notifications");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CounterpartyUserIdentityId");
+
+                    b.HasIndex("OwnerUserIdentityId", "CounterpartyUserIdentityId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_personal_shared_utang_preferences_owner_counterparty");
+
+                    b.ToTable("personal_shared_utang_preferences", "platform");
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalTodoRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5846,6 +5902,14 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("BalanceAfter")
                         .HasColumnType("decimal(18,4)")
                         .HasColumnName("balance_after");
+
+                    b.Property<string>("ConfirmationSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("None")
+                        .HasColumnName("confirmation_source");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -7123,6 +7187,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
+                        .WithOne()
+                        .HasForeignKey("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationSalesDocumentAcknowledgmentRecord", b =>
                 {
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
@@ -7143,15 +7216,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
                         .WithOne()
                         .HasForeignKey("ExItS.Platform.Infrastructure.Persistence.OrganizationSalesDocumentCapabilityRecord", "OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", b =>
-                {
-                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
-                        .WithOne()
-                        .HasForeignKey("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", "OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -7670,6 +7734,21 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
                         .WithMany()
                         .HasForeignKey("PersonalUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalSharedUtangPreferenceRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CounterpartyUserIdentityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserIdentityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -119,6 +119,7 @@ export function DirectPurchasesListPage() {
     queryKey: [
       "direct-purchases-history",
       workspace?.organizationId,
+      workspace?.branchId,
       page,
       debounced,
       dateFilter,
@@ -153,6 +154,7 @@ export function DirectPurchasesListPage() {
   const hasLoaded = query.isSuccess;
   const showTrueEmpty = hasLoaded && totalCount === 0;
   const showResults = hasLoaded && items.length > 0;
+  const branchLabel = boundWorkspace?.branchName?.trim() || null;
 
   return (
     <div
@@ -161,6 +163,7 @@ export function DirectPurchasesListPage() {
     >
       <PageHeader
         title={t("purchasing.directPurchases")}
+        subtitle={branchLabel ?? undefined}
         description={t("purchasing.directPurchasesLede")}
         backTo={pageBackNav.purchasing.to}
         backLabel={t(pageBackNav.purchasing.labelKey)}

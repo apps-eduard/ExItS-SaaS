@@ -21,12 +21,10 @@ export const PO_LINKED_PRODUCT_COLUMNS: readonly ResponsiveColumnMeta[] = [
   { id: "actions", label: "Qty", priority: "hiddenOnCompact" },
 ] as const;
 
-/** Branch Transfer product picker column priorities. */
+/** Branch Transfer product picker column priorities. SKU is under product name; available includes unit. */
 export const TRANSFER_FIND_PRODUCT_COLUMNS: readonly ResponsiveColumnMeta[] = [
   { id: "product", label: "Product", priority: "primary" },
-  { id: "sku", label: "SKU", priority: "secondary" },
   { id: "category", label: "Category", priority: "secondary" },
-  { id: "available", label: "Available at source", priority: "status" },
-  { id: "unit", label: "Unit", priority: "secondary" },
+  { id: "available", label: "Available", priority: "status" },
   { id: "actions", label: "Action", priority: "hiddenOnCompact" },
 ] as const;

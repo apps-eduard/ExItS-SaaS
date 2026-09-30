@@ -480,7 +480,7 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             PosOrganizationId organizationId,
             CreditEntryId entryId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<CreditEntry?>(null);
+            Task.FromResult(Added.FirstOrDefault(c => c.OrganizationId == organizationId && c.Id == entryId));
 
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
             PosOrganizationId organizationId,

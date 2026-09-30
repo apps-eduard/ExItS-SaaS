@@ -251,6 +251,7 @@ export function PurchaseOrdersListPage() {
 
       <PageHeader
         title={t("purchasing.orders")}
+        subtitle={boundWorkspace?.branchName?.trim() || undefined}
         description={t("purchasing.ordersLede")}
         backTo={pageBackNav.purchasing.to}
         backLabel={t(pageBackNav.purchasing.labelKey)}

@@ -48,8 +48,26 @@ vi.mock("@/features/customer-ordering/useLinkedMerchantShopContext", () => ({
     data: {
       organizationDisplayName: "mica store",
       customerDisplayName: "Toto Uy",
+      businessCustomerId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
       statementTo: null,
     },
+  }),
+}));
+
+vi.mock("@/features/customer-ordering/useLinkedMerchantsOrderingProbes", () => ({
+  useLinkedMerchantsOrderingProbes: () => ({
+    byOrganizationId: new Map([
+      [
+        "11111111-1111-1111-1111-111111111111",
+        {
+          canCustomerOrder: false,
+          canCustomerDelivery: false,
+          pending: false,
+          resolved: true,
+        },
+      ],
+    ]),
+    anyPending: false,
   }),
 }));
 

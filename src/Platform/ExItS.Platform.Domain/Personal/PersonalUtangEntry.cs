@@ -20,10 +20,14 @@ public sealed class PersonalUtangEntry
     public PlatformUserId? ResolvedByUserIdentityId { get; private set; }
     public DateTimeOffset? ResolvedAtUtc { get; private set; }
     public string? DisputeReason { get; private set; }
+    public PersonalUtangConfirmationSource ConfirmationSource { get; private set; }
     public PersonalUtangEntryIntent Intent { get; }
     public decimal? SettlementBalanceSnapshot { get; }
 
     public bool IsSettlement => Intent == PersonalUtangEntryIntent.Settlement;
+    public bool WasAutoSynced =>
+        Status is PersonalUtangEntryStatus.Confirmed
+        && ConfirmationSource is PersonalUtangConfirmationSource.RecipientAutoAccept;
 
     /// <summary>Max stored length for Purpose / Note (and optional payment notes).</summary>
     public const int NotesMaxLength = 512;
@@ -43,6 +47,7 @@ public sealed class PersonalUtangEntry
         PlatformUserId? resolvedByUserIdentityId,
         DateTimeOffset? resolvedAtUtc,
         string? disputeReason,
+        PersonalUtangConfirmationSource confirmationSource,
         PersonalUtangEntryIntent intent,
         decimal? settlementBalanceSnapshot)
     {
@@ -60,6 +65,7 @@ public sealed class PersonalUtangEntry
         ResolvedByUserIdentityId = resolvedByUserIdentityId;
         ResolvedAtUtc = resolvedAtUtc;
         DisputeReason = disputeReason;
+        ConfirmationSource = confirmationSource;
         Intent = intent;
         SettlementBalanceSnapshot = settlementBalanceSnapshot;
     }
@@ -106,6 +112,7 @@ public sealed class PersonalUtangEntry
             resolvedByUserIdentityId: null,
             resolvedAtUtc: null,
             disputeReason: null,
+            PersonalUtangConfirmationSource.None,
             intent,
             settlementBalanceSnapshot);
     }
@@ -150,7 +157,8 @@ public sealed class PersonalUtangEntry
         DateTimeOffset? resolvedAtUtc = null,
         string? disputeReason = null,
         PersonalUtangEntryIntent intent = PersonalUtangEntryIntent.Regular,
-        decimal? settlementBalanceSnapshot = null) =>
+        decimal? settlementBalanceSnapshot = null,
+        PersonalUtangConfirmationSource confirmationSource = PersonalUtangConfirmationSource.None) =>
         new(
             id,
             relationshipId,
@@ -166,11 +174,16 @@ public sealed class PersonalUtangEntry
             resolvedByUserIdentityId,
             resolvedAtUtc,
             disputeReason,
+            confirmationSource,
             intent,
             settlementBalanceSnapshot);
 
     /// <summary>Applies confirmation metadata and the post-confirmation balance snapshot.</summary>
-    internal void MarkConfirmed(PlatformUserId resolvedBy, DateTimeOffset utcNow, decimal balanceAfter)
+    internal void MarkConfirmed(
+        PlatformUserId resolvedBy,
+        DateTimeOffset utcNow,
+        decimal balanceAfter,
+        PersonalUtangConfirmationSource confirmationSource = PersonalUtangConfirmationSource.Manual)
     {
         ArgumentNullException.ThrowIfNull(resolvedBy);
         EnsureUtc(utcNow);
@@ -178,6 +191,7 @@ public sealed class PersonalUtangEntry
         ResolvedByUserIdentityId = resolvedBy;
         ResolvedAtUtc = utcNow;
         DisputeReason = null;
+        ConfirmationSource = confirmationSource;
         BalanceAfter = balanceAfter;
     }
 
@@ -189,6 +203,7 @@ public sealed class PersonalUtangEntry
         ResolvedByUserIdentityId = resolvedBy;
         ResolvedAtUtc = utcNow;
         DisputeReason = NormalizeDisputeReason(disputeReason);
+        ConfirmationSource = PersonalUtangConfirmationSource.None;
     }
 
     internal void MarkCancelled(PlatformUserId resolvedBy, DateTimeOffset utcNow)
@@ -199,6 +214,7 @@ public sealed class PersonalUtangEntry
         ResolvedByUserIdentityId = resolvedBy;
         ResolvedAtUtc = utcNow;
         DisputeReason = null;
+        ConfirmationSource = PersonalUtangConfirmationSource.None;
     }
 
     private static void ValidateSettlementIntent(

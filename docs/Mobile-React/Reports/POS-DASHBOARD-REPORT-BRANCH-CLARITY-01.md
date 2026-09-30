@@ -63,19 +63,27 @@ UI expresses scope via text badges (`Organization-wide`, `Branch: {name}`, `All 
 
 ## DASHBOARD_QUERY_MODEL
 
-Unchanged aggregated model:
+Unchanged aggregated model for organization management:
 
-- `GET /api/v1/pos/management/overview` — org-wide snapshot (no `branchId`)
+- `GET /api/v1/pos/management/overview` — **organization-wide** management snapshot (no implicit branch filter from `X-Pos-Branch-Id`)
 - `GET /api/v1/pos/dashboard?fromDate&toDate&branchId?` — mixed DTO; sales honor optional `branchId`; expenses/utang/low-stock remain org-wide in service
 
-Two TanStack Query keys (unchanged count):
+Branch operational inventory attention (manager home, warehouse home, shell Needs Attention):
 
-- `["management-overview", organizationId]`
+- `GET /api/v1/pos/inventory/attention-summary` — **bound-branch only** (`LowStockProductCount`, `OutOfStockProductCount`, `ExpiredLotCount`, `NearExpiryLotCount`)
+- Branch comes only from authoritative workspace / `X-Pos-Branch-Id`
+- Reuses branch inventory list filters for low/out-of-stock and `CountExpiryAsync` for lot expiry
+- **Invariant:** One operational attention surface must not combine inventory metrics from different scopes
+
+TanStack Query keys:
+
+- `["management-overview", organizationId]` — org-wide (do not key by branch)
+- `["inventory", "attention-summary", organizationId, branchId]` — branch attention; switch Main → Iloilo → Warehouse must refetch
 - `["pos-dashboard", organizationId, reportBranchId ?? "all", fromDate, toDate]`
 
 ## QUERY_KEY_BRANCH_SAFETY
 
-Branch identity included in dashboard period query key. Overview query intentionally excludes branch (org-only). Branch switch refetches period sales only.
+Branch identity included in dashboard period query key and inventory attention-summary key. Overview query intentionally excludes branch (org-only). Branch switch refetches period sales and branch attention separately.
 
 ## N_PLUS_ONE
 

@@ -42,9 +42,11 @@ import { MoneyInput, QuantityInput } from "@/components/exits/MoneyQuantityInput
 import { ExitsModal } from "@/components/exits/ExitsModal";
 import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { SearchField } from "@/components/exits/SearchField";
+import { FilterChip } from "@/components/exits/FilterChip";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Input } from "@/components/ui/input";
 import { UiStandardsSection } from "@/features/ui-standards/UiStandardsSection";
+import { PlaygroundLabel } from "@/features/ui-standards/UiStandardsSnippetBlock";
 import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
@@ -64,6 +66,31 @@ import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLay
 
 type DemoSkuFilter = "all" | "hasSku" | "noSku";
 type DemoSortKey = "product" | "sku" | "quantity" | "unitCost" | "lineTotal";
+
+const SIMPLE_SORT_COLUMNS: ReadonlyArray<{ key: DemoSortKey; label: string }> = [
+  { key: "product", label: "Product" },
+  { key: "sku", label: "SKU" },
+  { key: "quantity", label: "Qty" },
+  { key: "unitCost", label: "Unit cost" },
+  { key: "lineTotal", label: "Line total" },
+];
+
+function compareDemoLines(a: DemoLine, b: DemoLine, key: DemoSortKey, dir: 1 | -1): number {
+  switch (key) {
+    case "product":
+      return a.name.localeCompare(b.name) * dir;
+    case "sku":
+      return a.sku.localeCompare(b.sku) * dir;
+    case "quantity":
+      return (a.qty - b.qty) * dir;
+    case "unitCost":
+      return (a.unitCost - b.unitCost) * dir;
+    case "lineTotal":
+      return (a.lineTotal - b.lineTotal) * dir;
+    default:
+      return 0;
+  }
+}
 
 type DemoLine = {
   id: string;
@@ -102,6 +129,159 @@ const DEMO_LINES_SEED: DemoLine[] = [
     unitOfMeasureCode: "Pack",
     unitCost: 61.75,
     lineTotal: 61.75,
+  },
+  {
+    id: "mango",
+    name: "Mango Carabao",
+    sku: "PH-FRU-MANGO",
+    qty: 5,
+    unitOfMeasureCode: "Kilogram",
+    unitCost: 120,
+    lineTotal: 600,
+  },
+  {
+    id: "rice",
+    name: "Rice Sinandomeng 25kg",
+    sku: "PH-STAPLE-RICE-25",
+    qty: 2,
+    unitOfMeasureCode: "Sack",
+    unitCost: 1450,
+    lineTotal: 2900,
+  },
+  {
+    id: "egg",
+    name: "Egg Tray Medium",
+    sku: "PH-DAIRY-EGG-M",
+    qty: 4,
+    unitOfMeasureCode: "Tray",
+    unitCost: 210,
+    lineTotal: 840,
+  },
+  {
+    id: "milk",
+    name: "Fresh Milk 1L",
+    sku: "PH-DAIRY-MILK-1L",
+    qty: 12,
+    unitOfMeasureCode: "Bottle",
+    unitCost: 95,
+    lineTotal: 1140,
+  },
+  {
+    id: "bread",
+    name: "Pandésal Pack",
+    sku: "PH-BAKERY-PANDESAL",
+    qty: 8,
+    unitOfMeasureCode: "Pack",
+    unitCost: 45,
+    lineTotal: 360,
+  },
+  {
+    id: "coffee",
+    name: "Barako Coffee Ground",
+    sku: "PH-BEV-COFFEE-BRK",
+    qty: 3,
+    unitOfMeasureCode: "Pack",
+    unitCost: 280,
+    lineTotal: 840,
+  },
+  {
+    id: "sugar",
+    name: "Brown Sugar 1kg",
+    sku: "PH-STAPLE-SUGAR-BR",
+    qty: 6,
+    unitOfMeasureCode: "Kilogram",
+    unitCost: 78,
+    lineTotal: 468,
+  },
+  {
+    id: "oil",
+    name: "Cooking Oil 1L",
+    sku: "PH-STAPLE-OIL-1L",
+    qty: 10,
+    unitOfMeasureCode: "Bottle",
+    unitCost: 115,
+    lineTotal: 1150,
+  },
+  {
+    id: "soap",
+    name: "Laundry Soap Bar",
+    sku: "PH-HOME-SOAP-BAR",
+    qty: 24,
+    unitOfMeasureCode: "Piece",
+    unitCost: 18,
+    lineTotal: 432,
+  },
+  {
+    id: "tissue",
+    name: "Tissue Roll Twin Pack",
+    sku: "PH-HOME-TISSUE-2",
+    qty: 15,
+    unitOfMeasureCode: "Pack",
+    unitCost: 52,
+    lineTotal: 780,
+  },
+  {
+    id: "onion",
+    name: "Onion Red",
+    sku: "PH-VEG-ONION-RED",
+    qty: 7,
+    unitOfMeasureCode: "Kilogram",
+    unitCost: 95,
+    lineTotal: 665,
+  },
+  {
+    id: "garlic",
+    name: "Garlic Local",
+    sku: "PH-VEG-GARLIC",
+    qty: 4,
+    unitOfMeasureCode: "Kilogram",
+    unitCost: 160,
+    lineTotal: 640,
+  },
+  {
+    id: "tomato",
+    name: "Tomato Salad",
+    sku: "PH-VEG-TOMATO",
+    qty: 5,
+    unitOfMeasureCode: "Kilogram",
+    unitCost: 85,
+    lineTotal: 425,
+  },
+  {
+    id: "noodles",
+    name: "Instant Noodles Beef",
+    sku: "PH-FOOD-NOODLE-BF",
+    qty: 48,
+    unitOfMeasureCode: "Piece",
+    unitCost: 14,
+    lineTotal: 672,
+  },
+  {
+    id: "soda",
+    name: "Soda 1.5L",
+    sku: "PH-BEV-SODA-15",
+    qty: 12,
+    unitOfMeasureCode: "Bottle",
+    unitCost: 68,
+    lineTotal: 816,
+  },
+  {
+    id: "water",
+    name: "Purified Water 5GAL",
+    sku: "PH-BEV-WATER-5G",
+    qty: 6,
+    unitOfMeasureCode: "Gallon",
+    unitCost: 35,
+    lineTotal: 210,
+  },
+  {
+    id: "detergent",
+    name: "Powder Detergent 1kg",
+    sku: "PH-HOME-DET-1KG",
+    qty: 9,
+    unitOfMeasureCode: "Pack",
+    unitCost: 125,
+    lineTotal: 1125,
   },
 ];
 
@@ -289,7 +469,14 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
   const [sortDirection, setSortDirection] = useState<ExitsTableSortDirection>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
+  const [simplePage, setSimplePage] = useState(1);
+  const [simplePageSize, setSimplePageSize] = useState(10);
+  const [simpleSortable, setSimpleSortable] = useState<ReadonlySet<DemoSortKey>>(
+    () => new Set<DemoSortKey>(["product", "sku"]),
+  );
+  const [simpleSortKey, setSimpleSortKey] = useState<DemoSortKey | null>(null);
+  const [simpleSortDirection, setSimpleSortDirection] = useState<ExitsTableSortDirection>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingFields, setEditingFields] = useState<ReadonlySet<DemoEditFieldKey>>(
     () => new Set(),
@@ -373,6 +560,39 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
     return filteredSortedLines.slice(start, start + pageSize);
   }, [filteredSortedLines, safePage, pageSize]);
 
+  const simpleSortedLines = useMemo(() => {
+    if (!simpleSortKey || !simpleSortDirection || !simpleSortable.has(simpleSortKey)) {
+      return DEMO_LINES_SEED;
+    }
+    const dir = simpleSortDirection === "asc" ? 1 : -1;
+    return [...DEMO_LINES_SEED].sort((a, b) => compareDemoLines(a, b, simpleSortKey, dir));
+  }, [simpleSortKey, simpleSortDirection, simpleSortable]);
+
+  const simplePageCount = Math.max(1, Math.ceil(simpleSortedLines.length / simplePageSize) || 1);
+  const safeSimplePage = Math.min(simplePage, simplePageCount);
+  const simplePagedLines = useMemo(() => {
+    const start = (safeSimplePage - 1) * simplePageSize;
+    return simpleSortedLines.slice(start, start + simplePageSize);
+  }, [simpleSortedLines, safeSimplePage, simplePageSize]);
+
+  const simpleSortCommand = useMemo(() => {
+    const on = SIMPLE_SORT_COLUMNS.filter((col) => simpleSortable.has(col.key)).map((col) =>
+      col.key === "product"
+        ? "PRODUCT"
+        : col.key === "sku"
+          ? "SKU"
+          : col.key === "quantity"
+            ? "QUANTITY"
+            : col.key === "unitCost"
+              ? "UNIT COST"
+              : "LINE TOTAL",
+    );
+    if (on.length === 0) {
+      return "SIMPLE TABLE + SEARCH OFF + PAGINATION ON + SORT OFF";
+    }
+    return `SIMPLE TABLE + SEARCH OFF + PAGINATION ON + SORT ON · COLUMNS: ${on.join(", ")}`;
+  }, [simpleSortable]);
+
   const visibleIds = pagedLines.map((line) => line.id);
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
@@ -441,6 +661,33 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
     setSortKey(next.key as DemoSortKey | null);
     setSortDirection(next.direction);
     setPage(1);
+  }
+
+  function toggleSimpleSort(key: DemoSortKey) {
+    if (!simpleSortable.has(key)) {
+      return;
+    }
+    const next = cycleExitsTableSort(simpleSortKey, simpleSortDirection, key);
+    setSimpleSortKey(next.key as DemoSortKey | null);
+    setSimpleSortDirection(next.direction);
+    setSimplePage(1);
+  }
+
+  function toggleSimpleSortableColumn(key: DemoSortKey) {
+    setSimpleSortable((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+    if (simpleSortKey === key) {
+      setSimpleSortKey(null);
+      setSimpleSortDirection(null);
+    }
+    setSimplePage(1);
   }
 
   function toggleSelectAllVisible() {
@@ -655,6 +902,154 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       </p>
 
       <UiStandardsSection
+        id="tables.simple"
+        title={t("uiStandards.tableSimpleTitle")}
+        description={t("uiStandards.tableSimpleLede")}
+        summary="SIMPLE TABLE · SEARCH OFF · STICKY HEADER · PAGINATION ON · SORT PREVIEW · APPROVED / LOCKED"
+        open={isOpen("tables.simple")}
+        onOpenChange={(open) => setOpen("tables.simple", open)}
+        testId="ui-standards-table-simple"
+      >
+        <UiStandardsCopyCommand standard="Table" command="SIMPLE TABLE" />
+        <UiStandardsCopyCommand standard="Table" command={simpleSortCommand} />
+
+        <div
+          className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-3"
+          data-testid="ui-standards-table-simple-sort-preview"
+        >
+          <PlaygroundLabel>Sort preview — choose sortable columns</PlaygroundLabel>
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            Toggle which headers show sort. Click an enabled header to cycle none → ascending →
+            descending → none.
+          </p>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Sortable columns"
+            data-testid="ui-standards-table-simple-sort-columns"
+          >
+            {SIMPLE_SORT_COLUMNS.map((col) => {
+              const selected = simpleSortable.has(col.key);
+              return (
+                <FilterChip
+                  key={col.key}
+                  selected={selected}
+                  onClick={() => toggleSimpleSortableColumn(col.key)}
+                  data-testid={`ui-standards-table-simple-sort-col-${col.key}`}
+                >
+                  {col.label}
+                </FilterChip>
+              );
+            })}
+          </div>
+          <p
+            className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+            data-testid="ui-standards-table-simple-sort-status"
+          >
+            {simpleSortKey && simpleSortDirection && simpleSortable.has(simpleSortKey)
+              ? `Active: ${simpleSortKey} · ${simpleSortDirection}`
+              : "Active: none"}
+          </p>
+        </div>
+
+        <ExitsTableContainer data-testid="ui-standards-table-simple-grid">
+          <ExitsTable stickyHeader data-testid="ui-standards-table-simple-table">
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead
+                  cellAlign="text"
+                  colSize="flex"
+                  sortable={simpleSortable.has("product")}
+                  sortDirection={simpleSortKey === "product" ? simpleSortDirection : null}
+                  onSort={() => toggleSimpleSort("product")}
+                  data-testid="ui-standards-simple-head-product"
+                >
+                  {t("purchasing.colProduct")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="text"
+                  colSize="sku"
+                  sortable={simpleSortable.has("sku")}
+                  sortDirection={simpleSortKey === "sku" ? simpleSortDirection : null}
+                  onSort={() => toggleSimpleSort("sku")}
+                  data-testid="ui-standards-simple-head-sku"
+                >
+                  {t("catalog.sku")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="numeric"
+                  colSize="numeric"
+                  sortable={simpleSortable.has("quantity")}
+                  sortDirection={simpleSortKey === "quantity" ? simpleSortDirection : null}
+                  onSort={() => toggleSimpleSort("quantity")}
+                  data-testid="ui-standards-simple-head-quantity"
+                >
+                  {t("purchasing.qty")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="money"
+                  colSize="money"
+                  sortable={simpleSortable.has("unitCost")}
+                  sortDirection={simpleSortKey === "unitCost" ? simpleSortDirection : null}
+                  onSort={() => toggleSimpleSort("unitCost")}
+                  data-testid="ui-standards-simple-head-unitCost"
+                >
+                  {t("purchasing.unitCost")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="money"
+                  colSize="money"
+                  sortable={simpleSortable.has("lineTotal")}
+                  sortDirection={simpleSortKey === "lineTotal" ? simpleSortDirection : null}
+                  onSort={() => toggleSimpleSort("lineTotal")}
+                  data-testid="ui-standards-simple-head-lineTotal"
+                >
+                  {t("purchasing.lineTotal")}
+                </ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              {simplePagedLines.map((line) => (
+                <ExitsTableRow key={line.id} data-testid={`ui-standards-simple-row-${line.id}`}>
+                  <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
+                    {line.name}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="text" colSize="sku">
+                    {line.sku}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="numeric" colSize="numeric" className="tabular-nums">
+                    {line.qty} {formatUnitOfMeasureLabel(line.unitOfMeasureCode)}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="money" colSize="money" className="tabular-nums">
+                    <MoneyDisplay amount={line.unitCost} />
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="money" colSize="money" className="tabular-nums">
+                    <MoneyDisplay amount={line.lineTotal} />
+                  </ExitsTableCell>
+                </ExitsTableRow>
+              ))}
+            </ExitsTableBody>
+          </ExitsTable>
+          <ExitsTablePagination
+            page={safeSimplePage}
+            pageSize={simplePageSize}
+            total={simpleSortedLines.length}
+            pageSizeOptions={[10, 25, 50]}
+            onPageChange={setSimplePage}
+            onPageSizeChange={(size) => {
+              setSimplePageSize(size);
+              setSimplePage(1);
+            }}
+            rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+            previousLabel={t("exitsTable.previous")}
+            nextLabel={t("exitsTable.next")}
+            rangeLabel={t("exitsTable.range")}
+            data-testid="ui-standards-table-simple-pagination"
+          />
+        </ExitsTableContainer>
+      </UiStandardsSection>
+
+      <UiStandardsSection
         id="tables.demo"
         title={t("uiStandards.tabTables")}
         description={t("uiStandards.tableDemoLede")}
@@ -750,7 +1145,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
             }
           />
 
-          <ExitsTable data-testid="ui-standards-table-grid">
+          <ExitsTable stickyHeader data-testid="ui-standards-table-grid">
             <ExitsTableHeader>
               <ExitsTableRow>
                 <ExitsTableHead cellAlign="center" colSize="checkbox">

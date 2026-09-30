@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { buildExpiredWasteQuickFlowHref } from "@/features/inventory/expired-waste-quick-flow";
+import { BranchExpirySalePolicyCard } from "@/features/inventory/BranchExpirySalePolicyCard";
 import {
   EXPIRY_WINDOWS,
   addLocalDays,
@@ -77,6 +78,7 @@ export function InventoryExpirationPage() {
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowWriteOff = canManageInventory(sessionGrant);
+  const allowManagePolicy = canManageInventory(sessionGrant);
   const [windowCode, setWindowCode] = useState<ExpiryWindowCode>("Days30");
   const [customFrom, setCustomFrom] = useState(() => formatLocalDateOnly());
   const [customTo, setCustomTo] = useState(() => addLocalDays(formatLocalDateOnly(), 30));
@@ -95,6 +97,7 @@ export function InventoryExpirationPage() {
         : null,
     [boundWorkspace],
   );
+  const branchLabel = boundWorkspace?.branchName?.trim() || null;
 
   const customRangeValid =
     windowCode !== "Custom" ||
@@ -160,11 +163,14 @@ export function InventoryExpirationPage() {
     >
       <PageHeader
         title={t("inventory.expirationTitle")}
+        subtitle={branchLabel ?? undefined}
         description={t("inventory.expirationLede")}
         backTo={pageBackNav.inventory.to}
         backLabel={t(pageBackNav.inventory.labelKey)}
         backTestId="page-header-back-inventory"
       />
+
+      <BranchExpirySalePolicyCard workspace={workspace} canEdit={allowManagePolicy} />
 
       <div className="inventory-expiry-window flex min-w-0 flex-col gap-1.5">
         <span
@@ -233,10 +239,16 @@ export function InventoryExpirationPage() {
           className="inventory-expiry-counts flex min-w-0 flex-wrap gap-2"
           data-testid="inventory-expiry-counts"
         >
-          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--expired">
+          <span
+            className="inventory-expiry-counts__stat inventory-expiry-counts__stat--expired"
+            data-testid="inventory-expiry-expired-count"
+          >
             {t("inventory.expiryCountExpired").replace("{count}", String(counts.expiredCount))}
           </span>
-          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--near">
+          <span
+            className="inventory-expiry-counts__stat inventory-expiry-counts__stat--near"
+            data-testid="inventory-expiry-near-count"
+          >
             {t("inventory.expiryCountNear").replace("{count}", String(counts.nearExpiryCount))}
           </span>
         </div>

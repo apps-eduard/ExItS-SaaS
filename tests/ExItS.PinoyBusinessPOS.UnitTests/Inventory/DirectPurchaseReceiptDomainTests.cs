@@ -20,7 +20,7 @@ public sealed class DirectPurchaseReceiptDomainTests
     public void Numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 8, 17);
-        Assert.Equal("260817-001", DirectPurchaseReceiptNumbers.Format(date, 1));
+        Assert.Equal("DP-260817-001", DirectPurchaseReceiptNumbers.Format(date, 1));
         Assert.Equal("260817-001", DirectPurchaseReceiptNumbers.Normalize(" 260817-001 "));
     }
 
@@ -135,11 +135,15 @@ public sealed class DirectPurchaseReceiptDomainTests
             UnitOfMeasure.Piece,
             Guid.NewGuid(),
             Actor,
-            Now);
+            Now,
+            receiptNumber: "DP-260926-001");
         Assert.Equal(StockMovementType.DirectPurchaseReceipt, movement.MovementType);
         Assert.Equal(StockMovementSourceType.DirectPurchase, movement.SourceType);
         Assert.Equal(5m, movement.QuantityEffect);
-        Assert.Equal(StockMovement.DirectPurchaseReceiptReason, movement.Reason);
+        Assert.Equal("Direct purchase receipt DP-260926-001", movement.Reason);
+        Assert.Equal(
+            "DP-260926-001",
+            StockMovement.TryParseDirectPurchaseReceiptNumberFromReason(movement.Reason));
     }
 
     [Fact]

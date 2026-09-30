@@ -18,10 +18,10 @@ public sealed class InventoryTransferDomainTests
     [Fact]
     public void Transfer_number_formats()
     {
-        Assert.Equal("260813-001", InventoryTransferNumbers.Format(new DateOnly(2026, 8, 13), 1));
+        Assert.Equal("TR-260813-001", InventoryTransferNumbers.Format(new DateOnly(2026, 8, 13), 1));
         Assert.Equal("260813-001", InventoryTransferNumbers.Normalize(" 260813-001 "));
-        Assert.Equal("260813-001-R1", InventoryTransferNumbers.FormatReplacement("260813-001", 1));
-        Assert.Equal("260813-001-R1", InventoryTransferNumbers.Normalize(" 260813-001-r1 "));
+        Assert.Equal("TR-260813-001-R1", InventoryTransferNumbers.FormatReplacement("TR-260813-001", 1));
+        Assert.Equal("TR-260813-001-R1", InventoryTransferNumbers.Normalize(" tr-260813-001-r1 "));
     }
 
     [Fact]

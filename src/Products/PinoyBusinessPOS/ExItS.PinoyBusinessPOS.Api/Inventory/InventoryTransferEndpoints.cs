@@ -13,17 +13,23 @@ internal static class InventoryTransferEndpoints
     public static void Map(RouteGroupBuilder group)
     {
         group.MapGet("/transfers", ListTransfers);
+        group.MapGet("/transfers/awaiting-inspection", ListAwaitingInspection);
         group.MapPost("/transfers", CreateTransfer);
         group.MapGet("/transfers/{transferId:guid}", GetTransfer);
+        group.MapPut("/transfers/{transferId:guid}", UpdateTransfer);
         group.MapPost("/transfers/{transferId:guid}/dispatch", DispatchTransfer);
         // Receive-now: body line quantities apply to this wave only (not cumulative totals).
         group.MapPost("/transfers/{transferId:guid}/receive", ReceiveTransfer);
         group.MapPost("/transfers/{transferId:guid}/close-remainder", CloseRemainderTransfer);
         group.MapPost("/transfers/{transferId:guid}/cancel", CancelTransfer);
+        group.MapPost("/transfers/{transferId:guid}/prepare-remaining", PrepareRemainingTransfer);
         group.MapPost("/transfers/{transferId:guid}/damage-handling-policy", SetDamageHandlingPolicy);
         group.MapPost("/transfers/damage-custodies/{custodyId:guid}/dispatch-return", DispatchDamageReturn);
         group.MapPost("/transfers/damage-custodies/{custodyId:guid}/receive-return", ReceiveDamageReturn);
         group.MapPost("/transfers/damage-custodies/{custodyId:guid}/inspect", InspectDamageCustody);
+        group.MapPost("/transfers/exception-custodies/{custodyId:guid}/dispatch-return", DispatchExceptionReturn);
+        group.MapPost("/transfers/exception-custodies/{custodyId:guid}/receive-return", ReceiveExceptionReturn);
+        group.MapPost("/transfers/exception-custodies/{custodyId:guid}/inspect", InspectExceptionCustody);
     }
 
     private static async Task<IResult> ListTransfers(
@@ -56,6 +62,24 @@ internal static class InventoryTransferEndpoints
         return Results.Ok(result);
     }
 
+    private static async Task<IResult> ListAwaitingInspection(
+        HttpRequest request,
+        InventoryTransferQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await queries
+            .ListAwaitingInspectionAsync(organizationId, branchId, ct)
+            .ConfigureAwait(false);
+        return Results.Ok(result);
+    }
+
     private static async Task<IResult> GetTransfer(
         HttpRequest request,
         Guid transferId,
@@ -69,12 +93,28 @@ internal static class InventoryTransferEndpoints
         }
 
         var dto = await queries.GetByIdAsync(organizationId, transferId, ct).ConfigureAwait(false);
-        return dto is null
-            ? PosApiResults.Problem(
+        if (dto is null)
+        {
+            return PosApiResults.Problem(
                 ApplicationErrorCodes.InventoryTransferNotFound,
                 "Inventory transfer was not found.",
-                StatusCodes.Status404NotFound)
-            : Results.Ok(dto);
+                StatusCodes.Status404NotFound);
+        }
+
+        // Bound operational workspace: only transfers involving the current branch.
+        if (PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch)
+            && actingBranch is Guid branch
+            && branch != Guid.Empty
+            && dto.SourceBranchId != branch
+            && dto.DestinationBranchId != branch)
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.InventoryTransferNotFound,
+                "Inventory transfer was not found.",
+                StatusCodes.Status404NotFound);
+        }
+
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> CreateTransfer(
@@ -109,6 +149,39 @@ internal static class InventoryTransferEndpoints
             .ConfigureAwait(false);
     }
 
+    private static async Task<IResult> UpdateTransfer(
+        HttpRequest request,
+        Guid transferId,
+        UpdateInventoryTransferRequest body,
+        UpdateInventoryTransfer useCase,
+        InventoryTransferQueryService queries,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferUpdate,
+                idempotency,
+                ct2 => ToDtoAsync(
+                    useCase.ExecuteAsync(organizationId, transferId, body, actorId, branchId, ct2),
+                    organizationId,
+                    queries,
+                    ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
     private static async Task<IResult> DispatchTransfer(
         HttpRequest request,
         Guid transferId,
@@ -135,6 +208,33 @@ internal static class InventoryTransferEndpoints
                     organizationId,
                     queries,
                     ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> PrepareRemainingTransfer(
+        HttpRequest request,
+        Guid transferId,
+        PrepareInventoryTransferRemaining useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferCreate,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, transferId, actorId, branchId, ct2),
                 dto => dto,
                 Results.Ok,
                 ct)
@@ -290,7 +390,7 @@ internal static class InventoryTransferEndpoints
         return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                 request,
                 organizationId,
-                OfflineOperationTypes.InventoryTransferReceive,
+                OfflineOperationTypes.InventoryTransferDamageDispatchReturn,
                 idempotency,
                 ct2 => useCase.ExecuteAsync(organizationId, custodyId, actorId, branchId, ct2),
                 dto => dto,
@@ -317,9 +417,91 @@ internal static class InventoryTransferEndpoints
         return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                 request,
                 organizationId,
-                OfflineOperationTypes.InventoryTransferReceive,
+                OfflineOperationTypes.InventoryTransferDamageReceiveReturn,
                 idempotency,
                 ct2 => useCase.ExecuteAsync(organizationId, custodyId, actorId, branchId, ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> DispatchExceptionReturn(
+        HttpRequest request,
+        Guid custodyId,
+        DispatchInventoryTransferExceptionReturn useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferExceptionDispatchReturn,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, custodyId, actorId, branchId, ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> ReceiveExceptionReturn(
+        HttpRequest request,
+        Guid custodyId,
+        ReceiveInventoryTransferExceptionReturn useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferExceptionReceiveReturn,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, custodyId, actorId, branchId, ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> InspectExceptionCustody(
+        HttpRequest request,
+        Guid custodyId,
+        InspectInventoryTransferExceptionCustodyRequest body,
+        InspectInventoryTransferExceptionCustody useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferExceptionInspect,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, custodyId, body, actorId, branchId, ct2),
                 dto => dto,
                 Results.Ok,
                 ct)
@@ -345,7 +527,7 @@ internal static class InventoryTransferEndpoints
         return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                 request,
                 organizationId,
-                OfflineOperationTypes.InventoryTransferReceive,
+                OfflineOperationTypes.InventoryTransferDamageInspect,
                 idempotency,
                 ct2 => useCase.ExecuteAsync(organizationId, custodyId, body, actorId, branchId, ct2),
                 dto => dto,

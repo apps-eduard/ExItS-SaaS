@@ -130,6 +130,7 @@ public static class DependencyInjection
         services.AddScoped<IProcessingSystemRepository, ProcessingSystemRepository>();
         services.AddScoped<IPrivacyCompliancePdfExporter, PrivacyCompliancePdfExporter>();
         services.AddScoped<IPersonalAccountSettingsRepository, PersonalAccountSettingsRepository>();
+        services.AddScoped<IPersonalSharedUtangPreferenceRepository, PersonalSharedUtangPreferenceRepository>();
         services.AddScoped<IPlatformSettingsRepository, PlatformSettingsRepository>();
         services.AddScoped<IPlatformSettingsSecretProtector, PlatformSettingsSecretProtector>();
         services.AddScoped<IPlatformEmailDeliveryResolver, PlatformEmailDeliveryResolver>();

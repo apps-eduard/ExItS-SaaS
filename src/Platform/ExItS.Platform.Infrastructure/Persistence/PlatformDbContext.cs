@@ -123,6 +123,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationSalesDocumentAcknowledgmentRecord> OrganizationSalesDocumentAcknowledgments =>
         Set<OrganizationSalesDocumentAcknowledgmentRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
+    internal DbSet<PersonalSharedUtangPreferenceRecord> PersonalSharedUtangPreferences =>
+        Set<PersonalSharedUtangPreferenceRecord>();
     internal DbSet<PlatformSettingsRecord> PlatformSettings => Set<PlatformSettingsRecord>();
     internal DbSet<PersonalContactRecord> PersonalContacts => Set<PersonalContactRecord>();
     internal DbSet<PersonalConnectionRequestRecord> PersonalConnectionRequests => Set<PersonalConnectionRequestRecord>();
@@ -2089,6 +2091,11 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.SettlementBalanceSnapshot)
                 .HasColumnName("settlement_balance_snapshot")
                 .HasColumnType("decimal(18,4)");
+            entity.Property(e => e.ConfirmationSource)
+                .HasColumnName("confirmation_source")
+                .HasMaxLength(32)
+                .IsRequired()
+                .HasDefaultValue("None");
             entity.HasIndex(e => e.RelationshipId);
             entity.HasIndex(e => new { e.RelationshipId, e.Status });
 
@@ -2105,6 +2112,40 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.ResolvedByUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalSharedUtangPreferenceRecord>(entity =>
+        {
+            entity.ToTable("personal_shared_utang_preferences");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OwnerUserIdentityId).HasColumnName("owner_user_identity_id");
+            entity.Property(e => e.CounterpartyUserIdentityId).HasColumnName("counterparty_user_identity_id");
+            entity.Property(e => e.ReceiveSharedUtang).HasColumnName("receive_shared_utang");
+            entity.Property(e => e.AutoAcceptSharedUtang).HasColumnName("auto_accept_shared_utang");
+            entity.Property(e => e.SharedUtangNotifications).HasColumnName("shared_utang_notifications");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OwnerUserIdentityId, e.CounterpartyUserIdentityId })
+                .IsUnique()
+                .HasDatabaseName("ix_personal_shared_utang_preferences_owner_counterparty");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OwnerUserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CounterpartyUserIdentityId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

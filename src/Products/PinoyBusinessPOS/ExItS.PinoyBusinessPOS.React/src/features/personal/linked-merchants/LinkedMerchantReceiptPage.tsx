@@ -252,7 +252,7 @@ export function LinkedMerchantReceiptPage() {
       />
 
       <div
-        className="linked-merchant-receipt-document mx-auto w-full min-w-0 max-w-[52rem] overflow-x-hidden"
+        className="linked-merchant-receipt-document w-full min-w-0 overflow-x-hidden"
         data-testid="linked-merchant-receipt-document"
       >
         <CustomerPurchaseSummaryDocument

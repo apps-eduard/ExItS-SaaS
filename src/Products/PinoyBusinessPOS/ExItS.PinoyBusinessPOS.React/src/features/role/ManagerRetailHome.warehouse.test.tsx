@@ -48,6 +48,27 @@ vi.mock("@/components/exits/ToastProvider", () => ({
   useToast: () => ({ showToast: showToastMock }),
 }));
 
+vi.mock("@/session/SessionProvider", () => ({
+  useSession: () => ({
+    session: { accountClass: "Organization" },
+    refreshSession: vi.fn(),
+  }),
+}));
+
+vi.mock("@/selling/SellingModeProvider", () => ({
+  useSellingMode: () => ({ enter: vi.fn() }),
+}));
+
+vi.mock("@/features/shifts/ShiftContextProvider", () => ({
+  useShiftContext: () => ({
+    currentShift: null,
+    hasOpenShift: false,
+    loading: false,
+    errorMessage: null,
+    denied: false,
+  }),
+}));
+
 vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({
     t: (key: string) => key,
@@ -142,11 +163,11 @@ vi.mock("@/api/pos/pos-customer-orders-client", () => ({
 }));
 
 vi.mock("@/api/pos/pos-inventory-client", () => ({
-  listInventory: vi.fn(async () => ({
-    items: [],
-    page: 1,
-    pageSize: 1,
-    totalCount: 0,
+  getInventoryAttentionSummary: vi.fn(async () => ({
+    lowStockProductCount: 0,
+    outOfStockProductCount: 0,
+    expiredLotCount: 0,
+    nearExpiryLotCount: 0,
   })),
 }));
 

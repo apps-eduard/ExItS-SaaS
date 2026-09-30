@@ -6,8 +6,13 @@ using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.Returns;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Inventory;
 
@@ -241,6 +246,248 @@ public sealed class StockRequestWorkflowUseCaseTests
     }
 
     [Fact]
+    public async Task Pending_stock_request_has_zero_commitment()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 100m);
+        var created = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 40m)]),
+            Actor,
+            Branch);
+        Assert.True(created.IsSuccess);
+
+        var committed = await fx.Commitments.SumRemainingToDispatchByProductAsync(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(Warehouse),
+            [CatalogProductId.From(fx.ProductId)]);
+        Assert.Equal(0m, committed.GetValueOrDefault(fx.ProductId));
+    }
+
+    [Fact]
+    public async Task Approve_commits_approved_qty_without_changing_reserved_or_on_hand()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 100m);
+        var balance = fx.Balances.Items.Single(b =>
+            b.ProductId.Value == fx.ProductId && b.BranchId.Value == Warehouse);
+        balance.Reserve(10m, Utc);
+
+        var created = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 70m)]),
+            Actor,
+            Branch);
+        Assert.True(created.IsSuccess);
+
+        var approved = await fx.Approve.ExecuteAsync(
+            Org,
+            created.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 70m)]),
+            Actor,
+            Warehouse);
+        Assert.True(approved.IsSuccess, $"{approved.ErrorCode}: {approved.ErrorMessage}");
+
+        var after = fx.Balances.Items.Single(b =>
+            b.ProductId.Value == fx.ProductId && b.BranchId.Value == Warehouse);
+        Assert.Equal(100m, after.OnHandQuantity);
+        Assert.Equal(10m, after.ReservedQuantity);
+
+        var committed = await fx.Commitments.SumRemainingToDispatchByProductAsync(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(Warehouse),
+            [CatalogProductId.From(fx.ProductId)]);
+        Assert.Equal(70m, committed[fx.ProductId]);
+        Assert.Equal(20m, after.AvailableQuantity - committed[fx.ProductId]);
+    }
+
+    [Fact]
+    public async Task Multiple_open_requests_aggregate_commitment_by_product()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 100m);
+
+        var first = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 30m)]),
+            Actor,
+            Branch);
+        var second = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 25m)]),
+            Actor,
+            Branch);
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+
+        Assert.True((await fx.Approve.ExecuteAsync(
+            Org,
+            first.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 30m)]),
+            Actor,
+            Warehouse)).IsSuccess);
+        Assert.True((await fx.Approve.ExecuteAsync(
+            Org,
+            second.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 25m)]),
+            Actor,
+            Warehouse)).IsSuccess);
+
+        var committed = await fx.Commitments.SumRemainingToDispatchByProductAsync(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(Warehouse),
+            [CatalogProductId.From(fx.ProductId)]);
+        Assert.Equal(55m, committed[fx.ProductId]);
+    }
+
+    [Fact]
+    public async Task Commitment_is_isolated_by_source_warehouse()
+    {
+        var fx = await Fixture.CreateAsync();
+        var otherWarehouse = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        fx.Branches.ExtraWarehouseIds.Add(otherWarehouse);
+        fx.SeedWarehouseStock(fx.ProductId, 100m);
+        fx.SeedWarehouseStock(fx.ProductId, 100m, PosBranchId.From(otherWarehouse));
+        await fx.Routes.AddAsync(
+            SupplyRoute.Create(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(otherWarehouse),
+                PosBranchId.From(Branch),
+                Utc,
+                isPreferred: false));
+
+        var created = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 40m)]),
+            Actor,
+            Branch);
+        Assert.True(created.IsSuccess);
+        Assert.True((await fx.Approve.ExecuteAsync(
+            Org,
+            created.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 40m)]),
+            Actor,
+            Warehouse)).IsSuccess);
+
+        var atWarehouse = await fx.Commitments.SumRemainingToDispatchByProductAsync(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(Warehouse),
+            [CatalogProductId.From(fx.ProductId)]);
+        var atOther = await fx.Commitments.SumRemainingToDispatchByProductAsync(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(otherWarehouse),
+            [CatalogProductId.From(fx.ProductId)]);
+        Assert.Equal(40m, atWarehouse[fx.ProductId]);
+        Assert.Equal(0m, atOther.GetValueOrDefault(fx.ProductId));
+    }
+
+    [Fact]
+    public async Task Approve_rejects_when_over_available_after_other_commitments_and_sales_reserved()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 100m);
+        fx.Balances.Items.Single(b =>
+            b.ProductId.Value == fx.ProductId && b.BranchId.Value == Warehouse).Reserve(10m, Utc);
+
+        var other = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 30m)]),
+            Actor,
+            Branch);
+        Assert.True(other.IsSuccess);
+        Assert.True((await fx.Approve.ExecuteAsync(
+            Org,
+            other.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 30m)]),
+            Actor,
+            Warehouse)).IsSuccess);
+
+        // Available for new approval = 100 - 10 reserved - 30 committed = 60
+        var over = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 70m)]),
+            Actor,
+            Branch);
+        Assert.True(over.IsSuccess);
+        var approved = await fx.Approve.ExecuteAsync(
+            Org,
+            over.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 70m)]),
+            Actor,
+            Warehouse);
+        Assert.False(approved.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, approved.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Sequential_approvals_cannot_overcommit_same_product()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 50m);
+
+        var a = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 40m)]),
+            Actor,
+            Branch);
+        var b = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 40m)]),
+            Actor,
+            Branch);
+        Assert.True(a.IsSuccess);
+        Assert.True(b.IsSuccess);
+
+        Assert.True((await fx.Approve.ExecuteAsync(
+            Org,
+            a.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 40m)]),
+            Actor,
+            Warehouse)).IsSuccess);
+
+        var second = await fx.Approve.ExecuteAsync(
+            Org,
+            b.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 40m)]),
+            Actor,
+            Warehouse);
+        Assert.False(second.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, second.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Reject_releases_commitment()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 80m);
+        var created = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 50m)]),
+            Actor,
+            Branch);
+        Assert.True(created.IsSuccess);
+        Assert.True((await fx.Approve.ExecuteAsync(
+            Org,
+            created.Value!.StockRequestId,
+            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 50m)]),
+            Actor,
+            Warehouse)).IsSuccess);
+
+        Assert.True((await fx.Reject.ExecuteAsync(
+            Org,
+            created.Value.StockRequestId,
+            new RejectStockRequestRequest("No longer needed"),
+            Actor,
+            Warehouse)).IsSuccess);
+
+        var committed = await fx.Commitments.SumRemainingToDispatchByProductAsync(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(Warehouse),
+            [CatalogProductId.From(fx.ProductId)]);
+        Assert.Equal(0m, committed.GetValueOrDefault(fx.ProductId));
+    }
+
+    [Fact]
     public async Task Decline_notifies_destination()
     {
         var fx = await Fixture.CreateAsync();
@@ -300,6 +547,7 @@ public sealed class StockRequestWorkflowUseCaseTests
         public InMemoryRoutes Routes { get; } = new();
         public InMemoryTransfers Transfers { get; } = new();
         public InMemoryBalances Balances { get; } = new();
+        public InMemoryInventory Inventory { get; } = new();
         public CapturingNotifications Notifications { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
@@ -307,6 +555,7 @@ public sealed class StockRequestWorkflowUseCaseTests
         public CreateStockRequest Create { get; private set; } = null!;
         public ApproveStockRequest Approve { get; private set; } = null!;
         public RejectStockRequest Reject { get; private set; } = null!;
+        public StockRequestCommitmentQuery Commitments { get; private set; } = null!;
 
         public void SeedWarehouseStock(Guid productId, decimal available, PosBranchId? branchId = null)
         {
@@ -340,6 +589,7 @@ public sealed class StockRequestWorkflowUseCaseTests
                     isPreferred: true));
 
             var queries = new StockRequestQueryService(fx.Requests, fx.Transfers, fx.Branches);
+            fx.Commitments = new StockRequestCommitmentQuery(fx.Requests, fx.Transfers);
             fx.Create = new CreateStockRequest(
                 fx.Requests,
                 fx.Routes,
@@ -351,9 +601,16 @@ public sealed class StockRequestWorkflowUseCaseTests
                 fx.UnitOfWork,
                 fx.Clock);
             fx.Approve = new ApproveStockRequest(
-                fx.Requests, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
+                fx.Requests,
+                fx.Inventory,
+                fx.Balances,
+                fx.Commitments,
+                queries,
+                fx.Notifications,
+                fx.UnitOfWork,
+                fx.Clock);
             fx.Reject = new RejectStockRequest(
-                fx.Requests, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
+                fx.Requests, fx.Transfers, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
             return fx;
         }
     }
@@ -375,21 +632,29 @@ public sealed class StockRequestWorkflowUseCaseTests
 
     private sealed class FakeBranches : IOrganizationBranchDirectory
     {
+        public HashSet<Guid> ExtraWarehouseIds { get; } = [];
+
         public Task<bool> ExistsInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(organizationId == Org && (branchId == Warehouse || branchId == Branch));
+            Task.FromResult(organizationId == Org && (branchId == Warehouse || branchId == Branch || ExtraWarehouseIds.Contains(branchId)));
 
         public Task<bool> IsActiveInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
             ExistsInOrganizationAsync(organizationId, branchId, cancellationToken);
 
         public Task<string> GetBranchTypeAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(branchId == Warehouse ? "Warehouse" : "Retail");
+            Task.FromResult(branchId == Branch ? "Retail" : "Warehouse");
 
         public Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
             Guid organizationId,
             IReadOnlyCollection<Guid> branchIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, string>>(
-                branchIds.ToDictionary(id => id, id => id == Warehouse ? "Iloilo Jaro Warehouse" : "Pac Passi"));
+                branchIds.ToDictionary(
+                    id => id,
+                    id => id == Warehouse
+                        ? "Iloilo Jaro Warehouse"
+                        : id == Branch
+                            ? "Pac Passi"
+                            : "Other Warehouse"));
 
         public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<Guid?>(Warehouse);
@@ -497,6 +762,25 @@ public sealed class StockRequestWorkflowUseCaseTests
             return Task.FromResult<(IReadOnlyList<StockRequest>, int)>((q.Skip(skip).Take(take).ToList(), q.Count));
         }
 
+        public Task<IReadOnlyList<StockRequest>> ListOpenCommittingBySourceAndProductIdsAsync(
+            PosOrganizationId organizationId,
+            PosBranchId sourceLocationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var productSet = productIds.Select(p => p.Value).ToHashSet();
+            var open = StockRequestCommitmentQuery.OpenCommittingStatuses.ToHashSet();
+            var list = Items
+                .Where(r =>
+                    r.OrganizationId == organizationId
+                    && r.RequestedSourceLocationId == sourceLocationId
+                    && (open.Contains(r.Status)
+                        || r.Status is StockRequestStatus.InProgress or StockRequestStatus.Preparing)
+                    && r.Lines.Any(l => productSet.Contains(l.ProductId.Value)))
+                .ToList();
+            return Task.FromResult<IReadOnlyList<StockRequest>>(list);
+        }
+
         public Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
             PosOrganizationId organizationId,
             PosBranchId destinationLocationId,
@@ -574,12 +858,40 @@ public sealed class StockRequestWorkflowUseCaseTests
             Task.FromResult<IReadOnlyList<InventoryTransfer>>(
                 Items.Where(t => t.StockRequestId == stockRequestId).ToList());
 
+        public Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<StockRequestId> stockRequestIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = stockRequestIds.ToHashSet();
+            return Task.FromResult<IReadOnlyList<InventoryTransfer>>(
+                Items.Where(t => t.StockRequestId is StockRequestId sid && ids.Contains(sid)).ToList());
+        }
+
         public Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
             PosOrganizationId organizationId,
             InventoryTransferId rootTransferId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<InventoryTransfer>>(
                 Items.Where(t => t.Id == rootTransferId || t.RootTransferId == rootTransferId).ToList());
+
+        public Task<IReadOnlyDictionary<Guid, string?>> GetTransferNumbersAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string?>>(
+                Items.Where(t => transferIds.Contains(t.Id.Value))
+                    .ToDictionary(t => t.Id.Value, t => t.TransferNumber));
+
+        public Task<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>> GetTransferQueueHintsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>>(
+                Items.Where(t => transferIds.Contains(t.Id.Value))
+                    .ToDictionary(
+                        t => t.Id.Value,
+                        t => new InventoryTransferQueueHint(t.TransferNumber, t.DestinationBranchId.Value)));
 
         public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
         {
@@ -588,6 +900,20 @@ public sealed class StockRequestWorkflowUseCaseTests
         }
 
         public Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>> ResolveStockMovementTransactionRefsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyList<StockMovement> movements,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>>(
+                new Dictionary<Guid, InventoryTransferTransactionRef>());
+
+        public Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            IReadOnlyCollection<CatalogProductId>? productIds = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferOpenCommitment>>([]);
 
         public Task<string> AllocateNextNumberAsync(
             PosOrganizationId organizationId,
@@ -624,6 +950,274 @@ public sealed class StockRequestWorkflowUseCaseTests
             Items.Add(balance);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class InMemoryInventory : IInventoryRepository
+    {
+        public Task<InventoryAccount?> GetByProductIdAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<InventoryAccount?>(null);
+
+        public Task<IReadOnlyList<InventoryAccount>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryAccount>>([]);
+
+        public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListAsync(
+            PosOrganizationId organizationId,
+            InventoryAccountFilter filter,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<InventoryAccount>, int)>(([], 0));
+
+        public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListLowStockAsync(
+            PosOrganizationId organizationId,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<InventoryAccount>, int)>(([], 0));
+
+        public Task<IReadOnlyList<InventoryAccount>> ListAllAccountsAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryAccount>>([]);
+
+        public Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task ExecuteWithProductReservationLocksAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
+            CancellationToken cancellationToken = default) =>
+            action([], cancellationToken);
+
+        public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<StockMovement?> GetMovementByIdAsync(
+            PosOrganizationId organizationId,
+            StockMovementId movementId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<StockMovement?>(null);
+
+        public Task<bool> HasAnyMovementAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasOpeningStockAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<(IReadOnlyList<StockMovement> Items, int TotalCount)> ListMovementsAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            StockMovementFilter filter,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<StockMovement>, int)>(([], 0));
+
+        public Task<decimal> SumMovementEffectsAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListReorderSuggestionsAsync(
+            PosOrganizationId organizationId,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<InventoryAccount>, int)>(([], 0));
+
+        public Task<bool> HasStockCountVarianceAsync(
+            PosOrganizationId organizationId,
+            StockCountId stockCountId,
+            CatalogProductId productId,
+            StockMovementType movementType,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlyList<StockMovement>> ListMovementsForReportAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<StockMovement>>([]);
+
+        public Task<IReadOnlyList<StockMovement>> ListSaleDeductionsAsync(
+            PosOrganizationId organizationId,
+            SaleId saleId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<StockMovement>>([]);
+
+        public Task<bool> HasSaleDeductionAsync(
+            PosOrganizationId organizationId,
+            SaleId saleId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasCustomerOrderDeductionAsync(
+            PosOrganizationId organizationId,
+            CustomerOrderId orderId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasSaleVoidRestorationAsync(
+            PosOrganizationId organizationId,
+            SaleId saleId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasPurchaseReceiptAsync(
+            PosOrganizationId organizationId,
+            GoodsReceiptId goodsReceiptId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasDirectPurchaseReceiptAsync(
+            PosOrganizationId organizationId,
+            DirectPurchaseReceiptId receiptId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasStockUseAsync(
+            PosOrganizationId organizationId,
+            StockUseId stockUseId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasStockUseVoidRestorationAsync(
+            PosOrganizationId organizationId,
+            StockUseId stockUseId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasProductionMaterialConsumptionAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasProductionMaterialRestorationAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasProductionOutputAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasProductionOutputReversalAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasWasteLossAsync(
+            PosOrganizationId organizationId,
+            WasteLossId wasteLossId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasWasteLossVoidRestorationAsync(
+            PosOrganizationId organizationId,
+            WasteLossId wasteLossId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasPurchaseReceiptReversalAsync(
+            PosOrganizationId organizationId,
+            GoodsReceiptId goodsReceiptId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasDirectPurchaseReceiptReversalAsync(
+            PosOrganizationId organizationId,
+            DirectPurchaseReceiptId receiptId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasConnectedPurchaseFulfillmentAsync(
+            PosOrganizationId organizationId,
+            ConnectedPurchaseOrderId connectedPurchaseOrderId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<decimal?> GetLatestAcquisitionUnitCostAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<decimal?>(null);
+
+        public Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal?>>(new Dictionary<Guid, decimal?>());
+
+        public Task<bool> HasSaleReturnRestockAsync(
+            PosOrganizationId organizationId,
+            SaleReturnId saleReturnId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasInventoryTransferMovementAsync(
+            PosOrganizationId organizationId,
+            InventoryTransferId transferId,
+            CatalogProductId productId,
+            StockMovementType movementType,
+            InventoryLotId? lotId = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(DateTimeOffset?, int)>((null, 0));
+
+        public Task<IReadOnlyDictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> GetMovementSummariesAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, (DateTimeOffset?, int)>>(
+                new Dictionary<Guid, (DateTimeOffset?, int)>());
     }
 
     private sealed class InMemoryCatalog : ICatalogProductRepository

@@ -17,6 +17,9 @@ internal sealed class POSCustomerRecord
     public string? LinkedPersonalPublicUserId { get; set; }
     public Guid? LinkedBuyerOrganizationId { get; set; }
     public string? LinkedBuyerPublicOrganizationId { get; set; }
+    public string OnlineOrderingAccess { get; set; } = nameof(CustomerOnlineOrderingAccess.Default);
+    public Guid? OnlineOrderingAccessUpdatedByUserId { get; set; }
+    public DateTimeOffset? OnlineOrderingAccessUpdatedAtUtc { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

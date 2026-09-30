@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { jsonResponse } from "@/test/session-context";
 import {
   classifyTodoDue,
+  buildPersonalTodoListGroups,
   filterAndSortTodosForTab,
   filterTodosBySearch,
   filterTodosByTab,
@@ -125,6 +126,7 @@ describe("personal-todo-client", () => {
     expect(filterTodosByTab(items, "cancelled", now).map((t) => t.title)).toEqual(["F"]);
 
     expect(summarizeTodoCounts(items, now)).toEqual({
+      all: 5,
       today: 1,
       upcoming: 2,
       overdue: 1,
@@ -136,11 +138,12 @@ describe("personal-todo-client", () => {
 });
 
 describe("todo agenda tab routing", () => {
-  it("parses known tabs and defaults to today", () => {
+  it("parses known tabs and defaults to all", () => {
     expect(parseTodoAgendaTab("upcoming")).toBe("upcoming");
     expect(parseTodoAgendaTab("overdue")).toBe("overdue");
-    expect(parseTodoAgendaTab(null)).toBe("today");
-    expect(parseTodoAgendaTab("invalid")).toBe("today");
+    expect(parseTodoAgendaTab("all")).toBe("all");
+    expect(parseTodoAgendaTab(null)).toBe("all");
+    expect(parseTodoAgendaTab("invalid")).toBe("all");
   });
 
   it("builds todo hub hrefs", () => {
@@ -213,5 +216,34 @@ describe("todo enterprise helpers", () => {
     expect(quickDueLocalDateTime("today", now)).toMatch(/2026-08-21T17:00/);
     expect(quickDueLocalDateTime("tomorrow", now)).toMatch(/2026-08-22T09:00/);
     expect(quickDueLocalDateTime("none", now)).toBe("");
+  });
+
+  it("groups open todos by due bucket for Atlantis-style sections", () => {
+    const now = new Date("2026-08-21T12:00:00");
+    const items = [
+      todo({
+        id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        title: "Overdue",
+        dueAtUtc: "2026-08-20T09:00:00Z",
+      }),
+      todo({
+        id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        title: "Today",
+        dueAtUtc: "2026-08-21T17:00:00Z",
+      }),
+      todo({
+        id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        title: "Later",
+        dueAtUtc: "2026-08-25T09:00:00Z",
+      }),
+      todo({
+        id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        title: "No due",
+      }),
+    ];
+    const groups = buildPersonalTodoListGroups(items, "open", { now });
+    expect(groups.map((group) => group.id)).toEqual(["overdue", "today", "upcoming"]);
+    expect(groups[0]?.items.map((row) => row.title)).toEqual(["Overdue"]);
+    expect(groups[2]?.items.map((row) => row.title)).toEqual(["Later", "No due"]);
   });
 });

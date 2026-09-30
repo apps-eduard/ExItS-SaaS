@@ -27,7 +27,6 @@ import {
 } from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import {
@@ -35,14 +34,35 @@ import {
   formatTransferQty,
   formatTransferTimestamp,
   inventoryTransferExecutor,
-  inventoryTransferStatusLabelKey,
-  inventoryTransferStatusTone,
+  transferShipmentQuantityLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
+import {
+  InventoryTransferStatusChip,
+  inventoryTransferHasOpenDiscrepancyFollowUp,
+} from "@/features/inventory/InventoryTransferStatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE = 20;
+
+function listItemHasOpenDiscrepancyFollowUp(item: InventoryTransferListItemDto): boolean {
+  // Prefer server flag (includes pending return custody + incomplete family fulfillment).
+  if (item.hasOpenDiscrepancyFollowUp === true) {
+    return true;
+  }
+  // Fallback for older payloads: Clock while RequestReplacement family still open.
+  if (item.hasRequestReplacementFollowUp) {
+    return inventoryTransferHasOpenDiscrepancyFollowUp(
+      [{ followUpIntent: "RequestReplacement" }],
+      {
+        remainingToDispatchQty: item.remainingToDispatchQty ?? 0,
+        openInTransitQty: item.openInTransitQty ?? 0,
+      },
+    );
+  }
+  return false;
+}
 
 const STATUS_FILTERS = [
   { value: "", labelKey: "transfer.filter.all" as const },
@@ -311,16 +331,34 @@ export function InventoryTransferListPage() {
                 <ExitsTableHead cellAlign="text" colSize="flex">
                   {t("transfer.colRoute")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="numeric" colSize="numeric">
-                  {t("transfer.lines")}
+                <ExitsTableHead
+                  cellAlign="center"
+                  className="whitespace-nowrap"
+                  colWidth="3.5rem"
+                >
+                  {t("transfer.colLines")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="numeric" colSize="numeric">
-                  {t("transfer.sent")}
+                <ExitsTableHead
+                  cellAlign="center"
+                  className="whitespace-nowrap"
+                  colWidth="3.5rem"
+                >
+                  {t("transfer.qty")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                <ExitsTableHead
+                  cellAlign="center"
+                  className="whitespace-nowrap"
+                  colWidth="4.75rem"
+                >
                   {t("transfer.received")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="text">{t("purchasing.fieldStatus")}</ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="center"
+                  className="whitespace-nowrap"
+                  colWidth="7.5rem"
+                >
+                  {t("purchasing.fieldStatus")}
+                </ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("transfer.colUpdated")}</ExitsTableHead>
               </ExitsTableRow>
             </ExitsTableHeader>
@@ -355,19 +393,30 @@ export function InventoryTransferListPage() {
                         {t(executor.labelKey).replace("{name}", executorName)}
                       </div>
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="numeric" colSize="numeric" className="tabular-nums">
+                    <ExitsTableCell
+                      cellAlign="center"
+                      className="whitespace-nowrap tabular-nums"
+                    >
                       {item.lineCount}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="numeric" colSize="numeric" className="tabular-nums">
+                    <ExitsTableCell
+                      cellAlign="center"
+                      className="whitespace-nowrap tabular-nums"
+                    >
                       {formatTransferQty(item.totalSentQty)}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="numeric" colSize="numeric" className="tabular-nums">
+                    <ExitsTableCell
+                      cellAlign="center"
+                      className="whitespace-nowrap tabular-nums"
+                    >
                       {formatTransferQty(item.totalReceivedQty)}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="text">
-                      <StatusChip tone={inventoryTransferStatusTone(item.status)}>
-                        {t(inventoryTransferStatusLabelKey(item.status))}
-                      </StatusChip>
+                    <ExitsTableCell cellAlign="center" className="whitespace-nowrap">
+                      <InventoryTransferStatusChip
+                        status={item.status}
+                        hasOpenDiscrepancyFollowUp={listItemHasOpenDiscrepancyFollowUp(item)}
+                        data-testid={`transfer-status-${item.transferId}`}
+                      />
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text" className="text-muted">
                       {formatTransferTimestamp(item.updatedAtUtc)}
@@ -398,9 +447,11 @@ export function InventoryTransferListPage() {
                 >
                   <div className="exits-table-mobile__title-row">
                     <span className="exits-table-mobile__title">{route}</span>
-                    <StatusChip tone={inventoryTransferStatusTone(item.status)}>
-                      {t(inventoryTransferStatusLabelKey(item.status))}
-                    </StatusChip>
+                    <InventoryTransferStatusChip
+                      status={item.status}
+                      hasOpenDiscrepancyFollowUp={listItemHasOpenDiscrepancyFollowUp(item)}
+                      data-testid={`transfer-status-mobile-${item.transferId}`}
+                    />
                   </div>
                   <p className="exits-table-mobile__meta m-0">
                     {transferNumber}
@@ -408,7 +459,8 @@ export function InventoryTransferListPage() {
                     {t("transfer.linesCount").replace("{count}", String(item.lineCount))}
                   </p>
                   <p className="exits-table-mobile__math mt-1 mb-0">
-                    {t("transfer.sent")}: {formatTransferQty(item.totalSentQty)}
+                    {t(transferShipmentQuantityLabelKey(item.status))}:{" "}
+                    {formatTransferQty(item.totalSentQty)}
                     {" · "}
                     {t("transfer.received")}: {formatTransferQty(item.totalReceivedQty)}
                   </p>

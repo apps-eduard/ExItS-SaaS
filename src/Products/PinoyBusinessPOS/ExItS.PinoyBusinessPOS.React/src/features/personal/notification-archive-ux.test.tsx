@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArchivedNotificationsPage } from "@/features/personal/ArchivedNotificationsPage";
+import { NotificationsOverlayProvider } from "@/features/personal/NotificationsOverlay";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { PreferencesProvider } from "@/hooks/usePreferences";
@@ -110,14 +111,16 @@ describe("notification archive UX", () => {
       <PreferencesProvider>
         <I18nProvider>
           <QueryClientProvider client={client}>
-            <MemoryRouter initialEntries={[path]}>
-              <Routes>
-                <Route path="/personal/notifications" element={<NotificationsPage />} />
-                <Route path="/personal/notifications/archived" element={<ArchivedNotificationsPage />} />
-                <Route path="/personal/invitations" element={<div>invitations</div>} />
-                <Route path="/personal/todo" element={<div>todo</div>} />
-              </Routes>
-            </MemoryRouter>
+            <NotificationsOverlayProvider>
+              <MemoryRouter initialEntries={[path]}>
+                <Routes>
+                  <Route path="/personal/notifications" element={<NotificationsPage />} />
+                  <Route path="/personal/notifications/archived" element={<ArchivedNotificationsPage />} />
+                  <Route path="/personal/invitations" element={<div>invitations</div>} />
+                  <Route path="/personal/todo" element={<div>todo</div>} />
+                </Routes>
+              </MemoryRouter>
+            </NotificationsOverlayProvider>
           </QueryClientProvider>
         </I18nProvider>
       </PreferencesProvider>,

@@ -19,6 +19,11 @@ public sealed record CreateInventoryTransferRequest(
     string? ReplacementReason = null,
     string? DamageHandlingPolicy = null);
 
+/// <summary>Replace draft lines/notes. Source and destination stay fixed.</summary>
+public sealed record UpdateInventoryTransferRequest(
+    IReadOnlyList<InventoryTransferLineRequest> Lines,
+    string? Notes = null);
+
 public sealed record InventoryTransferReceiveLineRequest(
     Guid ProductId,
     decimal ReceivedQty = 0,
@@ -34,7 +39,9 @@ public sealed record InventoryTransferReceiveLineRequest(
     string? MissingDisposition = null,
     string? DamagedFollowUp = null,
     string? OtherFollowUp = null,
-    string? DamagedCustodyDecision = null);
+    string? DamagedCustodyDecision = null,
+    string? OtherCustodyDecision = null,
+    Guid? ActualReceivedProductId = null);
 
 public sealed record ReceiveInventoryTransferRequest(
     IReadOnlyList<InventoryTransferReceiveLineRequest> Lines);
@@ -64,7 +71,9 @@ public sealed record InventoryTransferReceiptLineDto(
     string? DamagedFollowUp = null,
     string? OtherFollowUp = null,
     decimal QuantityWaived = 0,
-    string? Note = null);
+    string? Note = null,
+    Guid? ActualReceivedProductId = null,
+    string? OtherCustodyDecision = null);
 
 public sealed record InventoryTransferReceiptDto(
     Guid ReceiptId,
@@ -131,10 +140,13 @@ public sealed record InventoryTransferDto(
     string DamageHandlingPolicy = nameof(InventoryTransferDamageHandlingPolicy.ReceiverMayDecide),
     IReadOnlyList<InventoryTransferFamilyMemberDto>? FamilyMembers = null,
     IReadOnlyList<InventoryTransferDamageCustodyDto>? DamageCustodies = null,
+    IReadOnlyList<InventoryTransferExceptionCustodyDto>? ExceptionCustodies = null,
     decimal SatisfiedAtDestinationQty = 0,
     decimal OpenInTransitQty = 0,
     decimal RemainingToDispatchQty = 0,
-    decimal WaivedQty = 0);
+    decimal WaivedQty = 0,
+    /// <summary>Document number of the linked stock request (null when not SR-linked).</summary>
+    string? StockRequestNumber = null);
 
 public sealed record InventoryTransferFamilyMemberDto(
     Guid TransferId,
@@ -144,7 +156,10 @@ public sealed record InventoryTransferFamilyMemberDto(
     bool IsRoot,
     decimal TotalSentQty,
     decimal TotalReceivedQty,
-    decimal TotalOutstandingQty);
+    decimal TotalOutstandingQty,
+    decimal TotalDamagedQty = 0,
+    decimal TotalMissingQty = 0,
+    decimal TotalOtherQty = 0);
 
 public sealed record InventoryTransferDamageCustodyDto(
     Guid CustodyId,
@@ -173,6 +188,63 @@ public sealed record InspectInventoryTransferDamageCustodyRequest(
     decimal ConfirmedDamagedQty,
     string? FollowUpOverride = null);
 
+public sealed record InventoryTransferExceptionCustodyDto(
+    Guid CustodyId,
+    Guid TransferId,
+    Guid RootTransferId,
+    Guid ReceiptLineId,
+    Guid ExpectedProductId,
+    Guid ActualProductId,
+    decimal Quantity,
+    string ReasonCode,
+    string Decision,
+    string FollowUpIntent,
+    string Status,
+    Guid HeldBranchId,
+    decimal RecoveredSellableQty,
+    decimal ConfirmedNonSellableQty,
+    decimal ReplacementDemandQty,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? ReturnDispatchedAtUtc = null,
+    DateTimeOffset? ReturnReceivedAtUtc = null,
+    DateTimeOffset? InspectedAtUtc = null,
+    string? ExpectedProductName = null,
+    string? ActualProductName = null);
+
+public sealed record InspectInventoryTransferExceptionCustodyRequest(
+    decimal RecoveredSellableQty,
+    decimal ConfirmedNonSellableQty);
+
+/// <summary>Custody kinds for the awaiting-inspection queue.</summary>
+public static class InventoryTransferAwaitingInspectionKinds
+{
+    public const string Damage = "Damage";
+    public const string Exception = "Exception";
+}
+
+/// <summary>Returned custody awaiting inspection at the acting (held) branch.</summary>
+public sealed record InventoryTransferAwaitingInspectionItemDto(
+    Guid CustodyId,
+    string CustodyKind,
+    Guid TransferId,
+    string? TransferNumber,
+    Guid ProductId,
+    string? ProductName,
+    decimal Quantity,
+    string Status,
+    Guid HeldBranchId,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? ReturnReceivedAtUtc = null,
+    Guid? ExpectedProductId = null,
+    string? ExpectedProductName = null,
+    /// <summary>Destination branch that returned stock (for "Return from {branch}" status).</summary>
+    string? ReturnedFromBranchName = null);
+
+public sealed record InventoryTransferAwaitingInspectionResultDto(
+    IReadOnlyList<InventoryTransferAwaitingInspectionItemDto> Items,
+    int TotalCount);
+
 public sealed record InventoryTransferListItemDto(
     Guid TransferId,
     Guid? StockRequestId,
@@ -192,7 +264,15 @@ public sealed record InventoryTransferListItemDto(
     Guid? ReceivedBy = null,
     Guid? CancelledBy = null,
     DateTimeOffset? ClosedAtUtc = null,
-    Guid? ClosedBy = null);
+    Guid? ClosedBy = null,
+    /// <summary>True when this transfer chose RequestReplacement follow-up.</summary>
+    bool HasRequestReplacementFollowUp = false,
+    /// <summary>Family-level remaining to dispatch (Needs fulfillment).</summary>
+    decimal RemainingToDispatchQty = 0,
+    /// <summary>Family-level still in transit.</summary>
+    decimal OpenInTransitQty = 0,
+    /// <summary>True while RequestReplacement family fulfillment is still outstanding.</summary>
+    bool HasOpenDiscrepancyFollowUp = false);
 
 public sealed record InventoryTransferFilter(
     string? Status = null,

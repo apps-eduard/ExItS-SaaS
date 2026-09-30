@@ -70,7 +70,23 @@ public enum StockMovementType
     /// <summary>Source receives returned damaged custody into inspection hold.</summary>
     TransferDamageReturnIn = 33,
     /// <summary>Inspection confirms non-sellable damaged qty (hold → damaged bucket).</summary>
-    TransferDamageWriteOff = 34
+    TransferDamageWriteOff = 34,
+    /// <summary>Non-damage transfer exception qty placed into branch inspection hold after receive.</summary>
+    TransferExceptionHold = 35,
+    /// <summary>Source restores expected SKU qty after wrong item/variant receive.</summary>
+    TransferExceptionExpectedRestore = 36,
+    /// <summary>Source removes actual SKU qty after wrong item/variant receive.</summary>
+    TransferExceptionActualOut = 37,
+    /// <summary>Destination ships exception custody back toward source.</summary>
+    TransferExceptionReturnOut = 38,
+    /// <summary>Source receives returned exception custody into inspection hold.</summary>
+    TransferExceptionReturnIn = 39,
+    /// <summary>Inspection recovers sellable qty from exception hold.</summary>
+    TransferExceptionRecovery = 40,
+    /// <summary>Inspection confirms non-sellable exception qty (hold → damaged bucket).</summary>
+    TransferExceptionWriteOff = 41,
+    /// <summary>Wrong item/variant return received at source directly into sellable stock (no inspection).</summary>
+    TransferExceptionReturnRestock = 42
 }
 
 public static class StockMovementTypes
@@ -114,7 +130,15 @@ public static class StockMovementTypes
         nameof(StockMovementType.TransferDamageRecovery),
         nameof(StockMovementType.TransferDamageReturnOut),
         nameof(StockMovementType.TransferDamageReturnIn),
-        nameof(StockMovementType.TransferDamageWriteOff)
+        nameof(StockMovementType.TransferDamageWriteOff),
+        nameof(StockMovementType.TransferExceptionHold),
+        nameof(StockMovementType.TransferExceptionExpectedRestore),
+        nameof(StockMovementType.TransferExceptionActualOut),
+        nameof(StockMovementType.TransferExceptionReturnOut),
+        nameof(StockMovementType.TransferExceptionReturnIn),
+        nameof(StockMovementType.TransferExceptionRecovery),
+        nameof(StockMovementType.TransferExceptionWriteOff),
+        nameof(StockMovementType.TransferExceptionReturnRestock)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

@@ -14,17 +14,23 @@ public sealed class CatalogBranchStockResolver
     private readonly IInventoryRepository _inventory;
     private readonly BranchInventoryReadService _branchReads;
     private readonly IInventoryLotRepository _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
+    private readonly ExpirySalePolicyResolver _expirySalePolicies;
     private readonly IClock _clock;
 
     public CatalogBranchStockResolver(
         IInventoryRepository inventory,
         BranchInventoryReadService branchReads,
         IInventoryLotRepository lots,
+        BranchExpirationPolicyResolver expirationPolicies,
+        ExpirySalePolicyResolver expirySalePolicies,
         IClock clock)
     {
         _inventory = inventory;
         _branchReads = branchReads;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
+        _expirySalePolicies = expirySalePolicies;
         _clock = clock;
     }
 
@@ -47,11 +53,16 @@ public sealed class CatalogBranchStockResolver
         var branchReads = await _branchReads
             .ResolveAsync(context, accounts, cancellationToken)
             .ConfigureAwait(false);
+        var branch = PosBranchId.From(context.BranchId);
+        var policies = await _expirationPolicies
+            .ResolveManyAsync(orgId, branch, productIds, cancellationToken)
+            .ConfigureAwait(false);
 
         var expirationProducts = products
-            .Where(p => p.TracksExpiration && accountByProduct.TryGetValue(p.ProductId, out var a) && a.IsTracked)
-            .Select(p => CatalogProductId.From(p.ProductId))
-            .Distinct()
+            .Where(p =>
+                policies.GetValueOrDefault(p.ProductId).TracksExpiration
+                && accountByProduct.TryGetValue(p.ProductId, out var a)
+                && a.IsTracked)
             .ToList();
 
         var sellableByProduct = await ResolveSellableByProductAsync(
@@ -89,32 +100,54 @@ public sealed class CatalogBranchStockResolver
     private async Task<IReadOnlyDictionary<Guid, decimal>> ResolveSellableByProductAsync(
         PosOrganizationId organizationId,
         BranchInventoryContext context,
-        IReadOnlyList<CatalogProductId> productIds,
+        IReadOnlyList<PosCatalogProductDto> products,
         CancellationToken cancellationToken)
     {
-        if (productIds.Count == 0)
+        if (products.Count == 0)
         {
             return new Dictionary<Guid, decimal>();
         }
 
         var branchId = PosBranchId.From(context.BranchId);
         var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
-        var result = new Dictionary<Guid, decimal>(productIds.Count);
-        foreach (var productId in productIds)
-        {
-            var lots = await _lots
-                .ListOnHandAsync(organizationId, productId, branchId, includeDepleted: false, cancellationToken)
-                .ConfigureAwait(false);
-            if (context.PrimaryBranchId is not null
-                && context.PrimaryBranchId.Value == context.BranchId)
-            {
-                var legacyLots = await _lots
-                    .ListOrgLevelOnHandAsync(organizationId, productId, includeDepleted: false, cancellationToken)
-                    .ConfigureAwait(false);
-                lots = InventoryLotCompatibility.UnionByLotId(lots, legacyLots).ToList();
-            }
+        var productIds = products.Select(p => CatalogProductId.From(p.ProductId)).Distinct().ToList();
+        var categoryKeys = products.Select(p => p.CategoryId).Distinct().ToList();
+        var salePolicies = await _expirySalePolicies
+            .ResolveManyAsync(organizationId, branchId, categoryKeys, cancellationToken)
+            .ConfigureAwait(false);
 
-            result[productId.Value] = InventoryLotFefo.SellableQuantity(lots, today);
+        var lots = await _lots
+            .ListOnHandForProductsAsync(
+                organizationId,
+                productIds,
+                branchId,
+                includeDepleted: false,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (context.PrimaryBranchId is not null
+            && context.PrimaryBranchId.Value == context.BranchId)
+        {
+            var legacyLots = await _lots
+                .ListOrgLevelOnHandForProductsAsync(
+                    organizationId,
+                    productIds,
+                    includeDepleted: false,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            lots = InventoryLotCompatibility.UnionByLotId(lots, legacyLots);
+        }
+
+        var lotsByProduct = lots.GroupBy(l => l.ProductId.Value).ToDictionary(g => g.Key, g => g.ToList());
+        var result = new Dictionary<Guid, decimal>(products.Count);
+        foreach (var product in products)
+        {
+            lotsByProduct.TryGetValue(product.ProductId, out var productLots);
+            productLots ??= [];
+            var categoryKey = product.CategoryId ?? Guid.Empty;
+            var stopDays = salePolicies.TryGetValue(categoryKey, out var policy)
+                ? policy.StopSellingDaysBeforeExpiry
+                : InventoryLotSaleEligibility.DefaultStopSellingDays;
+            result[product.ProductId] = InventoryLotFefo.SellableQuantity(productLots, today, stopDays);
         }
 
         return result;

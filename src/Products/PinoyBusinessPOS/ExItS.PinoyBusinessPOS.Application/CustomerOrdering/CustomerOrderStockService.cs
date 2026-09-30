@@ -49,17 +49,29 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly IOrganizationBranchDirectory? _branches;
     private readonly InventoryLotStockService? _lots;
+    private readonly BranchExpirationPolicyResolver? _expirationPolicies;
+    private readonly ExpirySalePolicyResolver? _expirySalePolicies;
+    private readonly ICatalogProductRepository? _products;
+    private readonly IInventoryLotRepository? _lotReads;
 
     public CustomerOrderStockService(
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository? branchBalances = null,
         IOrganizationBranchDirectory? branches = null,
-        InventoryLotStockService? lots = null)
+        InventoryLotStockService? lots = null,
+        BranchExpirationPolicyResolver? expirationPolicies = null,
+        ExpirySalePolicyResolver? expirySalePolicies = null,
+        ICatalogProductRepository? products = null,
+        IInventoryLotRepository? lotReads = null)
     {
         _inventory = inventory;
         _branchBalances = branchBalances;
         _branches = branches;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
+        _expirySalePolicies = expirySalePolicies;
+        _products = products;
+        _lotReads = lotReads;
     }
 
     public Task<ApplicationResult> EnsureAvailableAsync(
@@ -82,6 +94,16 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
         var balances = await LoadBalancesAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false);
         var primaryId = await ResolvePrimaryAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
         var branchId = fulfillmentBranchId == Guid.Empty ? (PosBranchId?)null : PosBranchId.From(fulfillmentBranchId);
+        var productsById = await LoadProductsAsync(organizationId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, BranchExpirationPolicy> expirationByProduct =
+            new Dictionary<Guid, BranchExpirationPolicy>();
+        if (branchId is not null && _expirationPolicies is not null)
+        {
+            expirationByProduct = await _expirationPolicies
+                .ResolveManyAsync(organizationId, branchId, productIds, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         foreach (var group in lines.GroupBy(l => l.ProductId.Value))
         {
@@ -102,7 +124,29 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                     balances,
                     productId);
                 var reserved = BranchStockResolver.ResolveReserved(branchId, balances, productId);
-                available = BranchStockResolver.ResolveAvailable(onHand, reserved);
+                available = BranchStockResolver.ResolveAvailable(
+                    branchId,
+                    balances,
+                    productId,
+                    onHand,
+                    reserved);
+            }
+
+            var tracksExpiration = expirationByProduct.TryGetValue(group.Key, out var expPolicy)
+                && expPolicy.TracksExpiration;
+            if (tracksExpiration && branchId is not null)
+            {
+                productsById.TryGetValue(group.Key, out var catalogProduct);
+                available = await CapAvailableBySellableLotsAsync(
+                        organizationId,
+                        CatalogProductId.From(group.Key),
+                        catalogProduct?.CategoryId?.Value,
+                        available,
+                        branchId,
+                        primaryId,
+                        DateTimeOffset.UtcNow,
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             if (available < needed)
@@ -110,7 +154,9 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                 var first = group.First();
                 return ApplicationResult.Failure(
                     ApplicationErrorCodes.InsufficientStock,
-                    "Stock changed for one or more products.",
+                    tracksExpiration
+                        ? $"Insufficient sellable stock for '{first.NameSnapshot}'. Required: {needed}, sellable available: {available}."
+                        : "Stock changed for one or more products.",
                     new Dictionary<string, string>
                     {
                         ["productId"] = group.Key.ToString("D"),
@@ -166,7 +212,12 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                                 balances,
                                 line.ProductId);
                             var reserved = BranchStockResolver.ResolveReserved(branchId, balances, line.ProductId);
-                            if (BranchStockResolver.ResolveAvailable(onHand, reserved) < line.Quantity)
+                            if (BranchStockResolver.ResolveAvailable(
+                                    branchId,
+                                    balances,
+                                    line.ProductId,
+                                    onHand,
+                                    reserved) < line.Quantity)
                             {
                                 throw new DomainException(
                                     ApplicationErrorCodes.InsufficientStock,
@@ -286,6 +337,11 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                     var primaryId = await ResolvePrimaryAsync(order.SellerOrganizationId.Value, ct)
                         .ConfigureAwait(false);
                     var branchId = PosBranchId.From(order.FulfillmentBranchId);
+                    var orderPolicies = _expirationPolicies is null
+                        ? (IReadOnlyDictionary<Guid, BranchExpirationPolicy>)new Dictionary<Guid, BranchExpirationPolicy>()
+                        : await _expirationPolicies
+                            .ResolveManyAsync(order.SellerOrganizationId, branchId, productIds, ct)
+                            .ConfigureAwait(false);
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -311,9 +367,16 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                                 "One or more products on the order were not found.");
                         }
 
-                        if (product.TracksExpiration && _lots is not null)
+                        if (orderPolicies.GetValueOrDefault(line.ProductId.Value).TracksExpiration
+                            && _lots is not null)
                         {
                             var today = InventoryLot.BusinessDateOf(utcNow);
+                            var stopDays = await ResolveStopSellingDaysAsync(
+                                    order.SellerOrganizationId,
+                                    branchId,
+                                    product.CategoryId?.Value,
+                                    ct)
+                                .ConfigureAwait(false);
                             try
                             {
                                 await _lots
@@ -329,14 +392,15 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                                         branchId: branchId,
                                         sourceId: order.Id.Value,
                                         cancellationToken: cancellationToken,
-                                        primaryBranchId: primaryId)
+                                        primaryBranchId: primaryId,
+                                        stopSellingDaysBeforeExpiry: stopDays)
                                     .ConfigureAwait(false);
                             }
                             catch (DomainException)
                             {
                                 throw new DomainException(
                                     ApplicationErrorCodes.InsufficientStock,
-                                    $"Insufficient non-expired stock for '{product.Name}'. Required: {line.Quantity}.");
+                                    $"Insufficient sellable stock for '{product.Name}'. Required: {line.Quantity}.");
                             }
                         }
 
@@ -451,5 +515,75 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
         }
 
         await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, CatalogProduct>> LoadProductsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        CancellationToken cancellationToken)
+    {
+        if (_products is null || productIds.Count == 0)
+        {
+            return new Dictionary<Guid, CatalogProduct>();
+        }
+
+        var loaded = await _products
+            .ListByIdsAsync(organizationId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+        return loaded.ToDictionary(p => p.Id.Value);
+    }
+
+    private async Task<int> ResolveStopSellingDaysAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        Guid? categoryId,
+        CancellationToken cancellationToken)
+    {
+        if (_expirySalePolicies is null)
+        {
+            return InventoryLotSaleEligibility.DefaultStopSellingDays;
+        }
+
+        var policy = await _expirySalePolicies
+            .ResolveAsync(organizationId, branchId, categoryId, cancellationToken)
+            .ConfigureAwait(false);
+        return policy.StopSellingDaysBeforeExpiry;
+    }
+
+    private async Task<decimal> CapAvailableBySellableLotsAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        Guid? categoryId,
+        decimal branchAvailable,
+        PosBranchId branchId,
+        Guid? primaryBranchId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (_lotReads is null)
+        {
+            return branchAvailable;
+        }
+
+        var stopDays = await ResolveStopSellingDaysAsync(
+                organizationId,
+                branchId,
+                categoryId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        var today = InventoryLot.BusinessDateOf(utcNow);
+        var lots = await _lotReads
+            .ListOnHandAsync(organizationId, productId, branchId, includeDepleted: false, cancellationToken)
+            .ConfigureAwait(false);
+        if (InventoryLotCompatibility.IncludeLegacyNullLots(primaryBranchId, branchId))
+        {
+            var legacy = await _lotReads
+                .ListOrgLevelOnHandAsync(organizationId, productId, includeDepleted: false, cancellationToken)
+                .ConfigureAwait(false);
+            lots = InventoryLotCompatibility.UnionByLotId(lots, legacy);
+        }
+
+        var sellable = InventoryLotFefo.SellableQuantity(lots, today, stopDays);
+        return Math.Min(branchAvailable, sellable);
     }
 }

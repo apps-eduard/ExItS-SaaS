@@ -120,7 +120,7 @@ public sealed class CashCountDenominationTests
     {
         var shift = CashierShift.Open(
             Org,
-            "260813-001",
+            "SH-260813-001",
             Actor,
             Register,
             2000m,
@@ -162,7 +162,7 @@ public sealed class CashCountDenominationTests
 
         var shift = CashierShift.Open(
             Org,
-            "260813-010",
+            "SH-260813-010",
             Actor,
             Register,
             1503.70m,
@@ -192,7 +192,7 @@ public sealed class CashCountDenominationTests
         };
         var shift = CashierShift.Open(
             Org,
-            "260813-011",
+            "SH-260813-011",
             Actor,
             Register,
             1503.70m,
@@ -225,7 +225,7 @@ public sealed class CashCountDenominationTests
     [Fact]
     public void Manual_total_has_no_breakdown()
     {
-        var shift = CashierShift.Open(Org, "260813-002", Actor, Register, 1000m, Now);
+        var shift = CashierShift.Open(Org, "SH-260813-002", Actor, Register, 1000m, Now);
         Assert.Empty(shift.OpeningDenominationLines);
         shift.Close(4750m, 1000m, Actor, Now.AddHours(8));
         Assert.Empty(shift.ClosingDenominationLines);

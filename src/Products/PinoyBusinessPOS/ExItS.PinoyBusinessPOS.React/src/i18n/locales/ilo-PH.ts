@@ -286,7 +286,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.regionPlaceholder": "Agpilika ti rehion",
 
-  "branches.deliveryAreas.regionSearchPlaceholder": "Biruken ti rehionâ€¦",
+  "branches.deliveryAreas.regionSearchPlaceholder": "Biruken ti rehionÃ¢â¬Â¦",
 
   "branches.deliveryAreas.regionSelected": "Napili a rehion",
 
@@ -294,7 +294,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.noRegionMatch": "Awan ti agpada a rehion",
 
-  "branches.deliveryAreas.regionsLoading": "Agload kadagiti rehionâ€¦",
+  "branches.deliveryAreas.regionsLoading": "Agload kadagiti rehionÃ¢â¬Â¦",
 
   "branches.deliveryAreas.regionsFailed": "Saan a ma-load dagiti rehion.",
 
@@ -306,7 +306,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.cityPlaceholder": "Agpilika ti siudad wenno munisipyo",
 
-  "branches.deliveryAreas.citiesLoading": "Agload kadagiti siudadâ€¦",
+  "branches.deliveryAreas.citiesLoading": "Agload kadagiti siudadÃ¢â¬Â¦",
 
   "branches.deliveryAreas.citiesFailed": "Saan a ma-load dagiti siudad.",
 
@@ -420,7 +420,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.hoursSameAllDaysTitle": "Same hours for every day",
 
   "branches.hoursSameAllDaysLede":
-    "Set opens and closes once, then apply to all days â€” or mark every day open 24 hours.",
+    "Set opens and closes once, then apply to all days Ã¢â¬â or mark every day open 24 hours.",
 
   "branches.hoursApplyAll": "Apply to all days",
 
@@ -1698,8 +1698,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.utangDueDate": "Due date (opsional)",
 
   "checkout.utangCustomerIdleEmpty":
-    "No checkout customers yet. People and businesses share this directory Ã¢â‚¬â€ Utang requires an Approved person with available credit.",
-  "checkout.directoryCredit.approvedAvailable": "Approved Ã¢â‚¬Â¢ Available {amount}",
+    "No checkout customers yet. People and businesses share this directory ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved ÃÂ¢Ã¢âÂ¬ÃÂ¢ Available {amount}",
   "checkout.directoryCredit.pending": "Pending approval",
   "checkout.directoryCredit.notConfigured": "Credit not enabled",
   "checkout.directoryCredit.disabled": "Paused",
@@ -1713,7 +1713,7 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Business relationship is not active. Utang cannot be used.",
   "checkout.utangSelect.connectionPending": "Credit is unavailable while this relationship is pending. The customer must accept the connection before Utang can be used.",
   "checkout.utangPendingUnavailableHint": "Unavailable",
-  "checkout.paymentUtangUnavailable": "Utang â€” unavailable",
+  "checkout.paymentUtangUnavailable": "Utang Ã¢â¬â unavailable",
   "checkout.utangPendingRelationshipHelper": "Utang becomes available after the customer accepts the relationship and credit requirements are met.",
   "checkout.directoryCredit.colCustomer": "Customer",
   "checkout.directoryCredit.colExItsId": "ExItS ID#",
@@ -1731,7 +1731,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.directoryCredit.status.PendingApproval": "Pending approval",
   "checkout.directoryCredit.status.NotConfigured": "Credit not enabled",
   "checkout.directoryCredit.status.Disabled": "Paused",
-  "checkout.directoryCredit.availableEmDash": "Ã¢â‚¬â€",
+  "checkout.directoryCredit.availableEmDash": "ÃÂ¢Ã¢âÂ¬Ã¢â¬Â",
 
 
   "checkout.utangDueDateOverride": "Due date override (opsional)",
@@ -1786,7 +1786,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.needsPrice": "Needs price",
   "connected.enableTrackingBeforeShare": "Enable inventory tracking before sharing this product.",
   "connected.setPriceBeforeShare": "Set a selling or Default PO price before sharing.",
-  "connected.buyerContext.b2bConnected": "B2B · Connected",
+  "connected.buyerContext.b2bConnected": "B2B Â· Connected",
   "connected.buyerContext.organizationId": "Organization ID",
   "connected.buyerContext.sellingBranch": "Selling branch",
   "connected.buyerContext.catalogSharing": "Catalog sharing",
@@ -1851,11 +1851,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.buyerPrice": "Presio para iti buyer",
   "connected.buyerPriceSellingRef": "Selling {price}",
   "connected.discountPercent": "Discount %",
-  "connected.discountPercentHelp": "Same % off each selected productÃ¢â‚¬â„¢s Default PO (B2B discount). Fixed buyer price is only available for one product.",
+  "connected.discountPercentHelp": "Same % off each selected productÃÂ¢Ã¢âÂ¬Ã¢âÂ¢s Default PO (B2B discount). Fixed buyer price is only available for one product.",
   "connected.applyDiscountPercent": "Apply discount",
   "connected.discountPercentInvalid": "Enter a discount between 0 and 100.",
   "connected.increasePercent": "Increase %",
-  "connected.increasePercentHelp": "Same % up each selected productÃ¢â‚¬â„¢s Default PO (B2B markup). Fixed buyer price is only available for one product.",
+  "connected.increasePercentHelp": "Same % up each selected productÃÂ¢Ã¢âÂ¬Ã¢âÂ¢s Default PO (B2B markup). Fixed buyer price is only available for one product.",
   "connected.applyIncreasePercent": "Apply increase",
   "connected.increasePercentInvalid": "Enter an increase between 0 and 1000.",
   "connected.percentModeLabel": "Percent change type",
@@ -2445,6 +2445,22 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.termExampleHelper":
     "Pagarigan: ti 90 nga aldaw ket agarup 3 a bulan.",
 
+  "customers.onlineOrdering.title": "Online ordering",
+  "customers.onlineOrdering.useStoreDefault": "Use store default",
+  "customers.onlineOrdering.allowed": "Allowed",
+  "customers.onlineOrdering.blocked": "Blocked",
+  "customers.onlineOrdering.effectiveAllowed": "Online ordering allowed",
+  "customers.onlineOrdering.effectiveBlocked": "Online ordering blocked",
+  "personal.merchantStatement.onlineShoppingAllowed": "Online shopping: Allowed",
+  "personal.merchantStatement.onlineShoppingBlocked": "Online shopping: Blocked",
+  "personal.merchantStatement.creditLimit": "Credit limit",
+  "personal.merchantStatement.pendingOnlineUtang": "Pending online Utang orders",
+  "personal.merchantStatement.availableCredit": "Available credit",
+  "orders.utangInsufficient": "Not enough available Utang credit for this order.",
+  "orders.utangCreditLimit": "Credit limit",
+  "orders.utangOutstanding": "Outstanding",
+  "orders.utangPending": "Pending orders",
+  "orders.utangAvailable": "Available credit",
   "customers.creditPolicy.title": "Credit & payment terms",
 
   "customers.creditsEmpty": "Awan pay ti charges",
@@ -2525,7 +2541,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.orgConnectAsCustomer": "Add as business customer",
 
   "customers.orgNeedsBuyerConnection":
-    "Masapul ti Active supplier connection para iti Direct B2B checkout. Bagaen daytoy nga organization nga ag-connect kenka iti Suppliers, ket awaten ti request. Kalpasanna, agparangda iti Customers Ã¢â€ â€™ Businesses ken iti Sell checkout.",
+    "Masapul ti Active supplier connection para iti Direct B2B checkout. Bagaen daytoy nga organization nga ag-connect kenka iti Suppliers, ket awaten ti request. Kalpasanna, agparangda iti Customers ÃÂ¢Ã¢â¬Â Ã¢â¬â¢ Businesses ken iti Sell checkout.",
 
   "customers.orgNeedsConnectionAction": "Kasano ti ag-connect",
   "customers.orgOpenExistingConnection": "Open existing connection",
@@ -2695,21 +2711,21 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.business.connectedCommerce.effectiveDefault": "Effective default: {timing}",
   "customers.business.connectedCommerce.pricingTitle": "B2B pricing overrides",
   "customers.business.connectedCommerce.pricingHelp":
-    "Nullable fields inherit organization pricing. Precedence: customer category → customer default → org category → org default → base price. No stacking.",
+    "Nullable fields inherit organization pricing. Precedence: customer category â customer default â org category â org default â base price. No stacking.",
   "customers.business.connectedCommerce.orgDefaultDiscount": "Organization default discount: {n}%",
   "customers.business.connectedCommerce.customerDefaultDiscount": "Customer default discount (%)",
   "customers.business.connectedCommerce.inheritPlaceholder": "Inherit organization default",
   "customers.business.connectedCommerce.categoryOverrides": "Category discount overrides",
   "customers.business.connectedCommerce.noCategoryOverrides": "No customer category overrides.",
   "customers.business.connectedCommerce.addCategory": "Category",
-  "customers.business.connectedCommerce.selectCategory": "Select category…",
+  "customers.business.connectedCommerce.selectCategory": "Select categoryâ¦",
   "customers.business.connectedCommerce.addRule": "Add rule",
   "customers.business.connectedCommerce.saved": "Customer Connected Commerce settings saved.",
   "customers.business.connectedCommerce.saveFailed": "Could not save customer Connected Commerce settings.",
   "customers.business.connectedCommerce.loadFailed": "Could not load customer Connected Commerce settings.",
   "customers.business.connectedCommerce.invalidDiscount": "Discount must be between 0 and 100.",
   "connectedCommerce.addCategoryRule": "Add category rule",
-  "connectedCommerce.selectCategory": "Select category…",
+  "connectedCommerce.selectCategory": "Select categoryâ¦",
   "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
   "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
@@ -2860,7 +2876,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.storeDetails.readOnlyIdentity": "Identity managed by customer.",
   "customers.storeDetails.cancel": "Cancel",
   "customers.storeDetails.save": "Save changes",
-  "customers.storeDetails.saving": "Savingâ€¦",
+  "customers.storeDetails.saving": "SavingÃ¢â¬Â¦",
   "customers.storeDetails.saved": "Customer details saved.",
   "customers.storeDetails.saveFailed": "Could not save customer details.",
   "customers.storeDetails.nameRequired": "Preferred name is required.",
@@ -2897,18 +2913,18 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Connection is still pending. Use a custom contact until the buyer accepts.",
   "customers.business.relationshipContact.organizationContact": "Contact at {name}",
   "customers.business.relationshipContact.directoryHelp": "Lists owner and staff from {name} - not your own organization.",
-  "customers.business.relationshipContact.searchContacts": "Search staffâ€¦",
-  "customers.business.relationshipContact.loadingContacts": "Loading contactsâ€¦",
+  "customers.business.relationshipContact.searchContacts": "Search staffÃ¢â¬Â¦",
+  "customers.business.relationshipContact.loadingContacts": "Loading contactsÃ¢â¬Â¦",
   "customers.business.relationshipContact.noContacts": "No matching people at {name}.",
   "customers.business.relationshipContact.noContactsAvailable": "{name} has no owner or staff to choose yet. Invite staff on their side, or use a custom contact.",
   "customers.business.relationshipContact.contactsLoadFailed": "Could not load organization contacts.",
   "customers.business.relationshipContact.retry": "Retry",
-  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staffâ€¦",
+  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staffÃ¢â¬Â¦",
   "customers.business.relationshipContact.changeContact": "Change contact",
   "customers.business.relationshipContact.ownerBadge": "Owner",
   "customers.business.relationshipContact.useCustomContact": "+ Use custom contact",
   "customers.business.relationshipContact.organizationManagedReadonly":
-    "Organization-managed contact information Â· Read-only",
+    "Organization-managed contact information ÃÂ· Read-only",
   "customers.business.relationshipContact.contactUnavailable": "Contact no longer available",
   "customers.business.relationshipContact.chooseAnother": "Choose another contact",
   "customers.business.relationshipContact.directoryCount": "{count} people at {name}",
@@ -2924,7 +2940,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.business.relationshipContact.internalNotes": "Internal notes",
   "customers.business.relationshipContact.cancel": "Cancel",
   "customers.business.relationshipContact.save": "Save changes",
-  "customers.business.relationshipContact.saving": "Savingâ€¦",
+  "customers.business.relationshipContact.saving": "SavingÃ¢â¬Â¦",
   "customers.business.relationshipContact.saved": "Relationship contact saved.",
   "customers.business.relationshipContact.saveFailed": "Could not save relationship contact.",
 
@@ -3075,7 +3091,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.receivables.outstanding": "Outstanding",
   "customers.receivables.amountApplied": "Na-apply",
   "customers.receivables.remaining": "Natio",
-  "customers.receivables.loading": "Aglo-load ti receivablesâ€¦",
+  "customers.receivables.loading": "Aglo-load ti receivablesÃ¢â¬Â¦",
   "customers.receivables.loadFailed": "Saan a ma-load ti receivables.",
   "customers.receivables.empty": "Awan ti nalukatan a receivable",
   "customers.receivables.emptyDetail": "Nabayaranen amin a credit line daytoy a business customer.",
@@ -3324,11 +3340,16 @@ export const iloPH: Record<keyof typeof en, string> = {
   "navigationMode.label": "Sidebar",
   "navigationMode.standard": "Standard",
   "navigationMode.compact": "Compact",
+  "navigationMode.hidden": "Hidden",
   "navigationMode.reveal": "Reveal",
-  "navigationMode.helper": "Standard shows icons and labels. Compact is a permanent icon rail. Reveal expands on hover or focus.",
+  "navigationMode.helper": "Standard shows icons and labels. Compact is a permanent icon rail. Hidden removes the desktop sidebar. Reveal expands on hover or focus.",
   "navigationMode.helperStandard": "Icons and labels.",
   "navigationMode.helperCompact": "Permanent icon rail.",
+  "navigationMode.helperHidden": "Desktop sidebar fully hidden.",
   "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
+  "navigationMode.cycleToCompact": "Show sidebar icons only",
+  "navigationMode.cycleToHidden": "Hide sidebar",
+  "navigationMode.cycleToStandard": "Show full sidebar",
   "shell.collapseSidebar": "I-collapse ti sidebar",
   "shell.expandSidebar": "I-expand ti sidebar",
   "shell.collapseAllNavGroups": "I-collapse amin",
@@ -3567,17 +3588,22 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonIconOnlyLede": "Square and round icon controls with aria-label. Shape matrix for visual approval.",
   "uiStandards.buttonMotionTitle": "Button motion",
   "uiStandards.buttonMotionLede": "Subtle press, elevated lift, and contextual icon motion. Prefer feeling the interaction over noticing the animation. Reduced-motion friendly.",
-  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX Ã¢â‚¬â€ Cancel / dismiss. CornerUpLeft Ã¢â‚¬â€ Cancel and return / abandon edit. X Ã¢â‚¬â€ Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft Ã¢â‚¬â€ Back/navigation.",
+  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Cancel / dismiss. CornerUpLeft ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Cancel and return / abandon edit. X ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Back/navigation.",
   "uiStandards.collapseAll": "Collapse all",
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",
   "uiStandards.tableDemoLede": "Approved ExitsTable reference with search, filter, sort, multi-select, output icons, pagination, Actions, and field-menu inline editing.",
+  "uiStandards.tableSimpleTitle": "Simple table",
+  "uiStandards.tableSimpleLede": "No search â sticky header, body scroll, pagination, and a sort preview where you choose which columns are sortable. Filter, multi-select, output, Actions, and inline edit stay OFF.",
   "uiStandards.buttonTreatmentsTitle": "Button treatments",
   "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
-  "uiStandards.buttonPilotBadge": "BUTTON STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
-  "uiStandards.buttonPilotLede": "Approved semantic intents. Reuses the shared ExItS Button component and design tokens. See Docs/UI/exits-button-standard.md.",
+  "uiStandards.buttonPilotBadge": "BUTTON STANDARD â APPROVED / LOCKED",
+  "uiStandards.buttonPilotLede": "Diamond Full sample is the locked ExItS Button standard. All 8 severities locked (Primary Â· Secondary Â· Success Â· Info Â· Warn Â· Help Â· Danger Â· Contrast). Shared Button; Help/Contrast are first-class intents. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
+  "uiStandards.messagePilotBadge": "MESSAGE STANDARD â APPROVED / LOCKED",
+  "uiStandards.messagePilotLede": "Diamond Full sample is the locked ExItS Message standard (includes Secondary Â· Contrast in the severity row). Product uses Notice + useExitsToast. See Docs/UI/exits-message-standard.md.",
+  "uiStandards.messagePilotTitle": "Message samples",
   "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
   "uiStandards.prefsHint": "Use Settings to test theme and density.",
   "uiStandards.copyCommandsHint": "Visual standards are paired with copyable Cursor commands. Choose the approved sample, copy its command, and paste it into Cursor.",
@@ -3588,8 +3614,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.tabModuleSubnav": "Module Subnav",
   "uiStandards.tabActionChips": "Mga Action Chip",
   "uiStandards.tabCards": "Cards",
-  "uiStandards.tabsPilotBadge": "TABS STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
-  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-tabs-standard.md.",
+  "uiStandards.tabsPilotBadge": "TABS STANDARD ÃÂ¢Ã¢âÂ¬Ã¢â¬Â APPROVED / LOCKED",
+  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Docs/UI/exits-tabs-standard.md.",
   "uiStandards.tabsVariantsTitle": "Tab variants",
   "uiStandards.tabsCountsTitle": "Tabs with counts",
   "uiStandards.tabsIconsTitle": "Icons",
@@ -3600,8 +3626,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.tabsRealWorldTitle": "Real-world examples",
   "uiStandards.tabsCheatTitle": "Cursor shorthand",
   "uiStandards.tabsCheatLede": "Locked vocabulary for Cursor tasks. APPROVED / LOCKED.",
-  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV Ã¢â‚¬â€ PILOT / CANDIDATE",
-  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module Ã¢â‚¬â€ not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE Ã¢â‚¬â€ Docs/UI/exits-module-subnav-standard.md.",
+  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV ÃÂ¢Ã¢âÂ¬Ã¢â¬Â PILOT / CANDIDATE",
+  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module ÃÂ¢Ã¢âÂ¬Ã¢â¬Â not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Docs/UI/exits-module-subnav-standard.md.",
   "uiStandards.moduleSubnavComparisonTitle": "Variant comparison",
   "uiStandards.moduleSubnavIconsTitle": "Icons",
   "uiStandards.moduleSubnavCountsTitle": "Counts",
@@ -3609,14 +3635,14 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.moduleSubnavRealWorldTitle": "Real-world examples",
   "uiStandards.moduleSubnavCheatTitle": "Cursor shorthand",
   "uiStandards.moduleSubnavCheatLede": "Pilot vocabulary for Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.actionChipsPilotBadge": "ACTION CHIP Ã¢â‚¬â€ PILOT / CANDIDATE (Ilokano)",
-  "uiStandards.actionChipsPilotLede": "ExItS Action Chip pilot (ExitsChipBar variant=actions + ActionChipBar). Napardas a tignay ken navigation shortcuts Ã¢â‚¬â€ saan a Tabs, Filters, Module Subnav, wenno Buttons. Theme ken density manipud Preferences. PILOT / CANDIDATE Ã¢â‚¬â€ Docs/UI/exits-action-chip-standard.md.",
+  "uiStandards.actionChipsPilotBadge": "ACTION CHIP ÃÂ¢Ã¢âÂ¬Ã¢â¬Â PILOT / CANDIDATE (Ilokano)",
+  "uiStandards.actionChipsPilotLede": "ExItS Action Chip pilot (ExitsChipBar variant=actions + ActionChipBar). Napardas a tignay ken navigation shortcuts ÃÂ¢Ã¢âÂ¬Ã¢â¬Â saan a Tabs, Filters, Module Subnav, wenno Buttons. Theme ken density manipud Preferences. PILOT / CANDIDATE ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Docs/UI/exits-action-chip-standard.md.",
   "uiStandards.actionChipsOverviewTitle": "Semantic overview (Ilo)",
-  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button Ã¢â‚¬â€ agpapada ti label, naisangsangayan ti trabaho.",
+  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button ÃÂ¢Ã¢âÂ¬Ã¢â¬Â agpapada ti label, naisangsangayan ti trabaho.",
   "uiStandards.actionChipsVariantsTitle": "Visual variants (Ilo)",
   "uiStandards.actionChipsVariantsLede": "Soft, outline, ghost, primary treatments, elevated, ken special-use gradient. Agpapada ti label para iti comparison.",
   "uiStandards.actionChipsShapesTitle": "Dagiti sukog",
-  "uiStandards.actionChipsShapesLede": "Pill, soft, ken square Ã¢â‚¬â€ reuse ti locked Chip shape language nga addaan action touch targets.",
+  "uiStandards.actionChipsShapesLede": "Pill, soft, ken square ÃÂ¢Ã¢âÂ¬Ã¢â¬Â reuse ti locked Chip shape language nga addaan action touch targets.",
   "uiStandards.actionChipsContentTitle": "Content ken states",
   "uiStandards.actionChipsContentLede": "Text, icons, counts, primary emphasis, disabled, ken loading.",
   "uiStandards.actionChipsGroupsTitle": "Action Chip groups (Ilo)",
@@ -3625,8 +3651,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.actionChipsRealWorldLede": "Static Inventory, Purchasing, Stock Count, Returns, ken Staff shortcuts para iti visual comparison. Awan APIs.",
   "uiStandards.actionChipsCheatTitle": "Cursor shorthand (Ilo)",
   "uiStandards.actionChipsCheatLede": "Pilot vocabulary para kadagiti Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.cardsPilotBadge": "CARD STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
-  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable ken status accents, motion. Theme ken density manipud Preferences. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-card-standard.md.",
+  "uiStandards.cardsPilotBadge": "CARD STANDARD ÃÂ¢Ã¢âÂ¬Ã¢â¬Â APPROVED / LOCKED",
+  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable ken status accents, motion. Theme ken density manipud Preferences. APPROVED / LOCKED ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Docs/UI/exits-card-standard.md.",
   "uiStandards.cardsTreatmentsTitle": "Card treatments",
   "uiStandards.cardsBasicTitle": "Basic / content cards",
   "uiStandards.cardsKpiTitle": "KPI / Stat",
@@ -3641,8 +3667,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.cardsFeaturedEffectsTitle": "Featured card effects",
   "uiStandards.cardsRealWorldTitle": "Real-world examples",
   "uiStandards.cardsCheatTitle": "Cursor shorthand",
-  "uiStandards.cardsCheatLede": "Locked vocabulary para iti Cursor tasks. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-card-standard.md.",
-  "uiStandards.chipPilotBadge": "CHIP STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
+  "uiStandards.cardsCheatLede": "Locked vocabulary para iti Cursor tasks. APPROVED / LOCKED ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Docs/UI/exits-card-standard.md.",
+  "uiStandards.chipPilotBadge": "CHIP STANDARD ÃÂ¢Ã¢âÂ¬Ã¢â¬Â APPROVED / LOCKED",
   "uiStandards.chipPilotLede": "Approved ExItS chip language. Soft semantic surfaces, density from Preferences, primary via --exits-primary. See Docs/UI/exits-chip-standard.md.",
   "uiStandards.chipStatusTitle": "Status chips",
   "uiStandards.chipShapesTitle": "Chip shapes",
@@ -3671,7 +3697,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.simpleModuleSubnavNote": "Related route/page navigation.",
   "uiStandards.simpleFiltersNote": "Changes the current dataset/view; does not navigate to another page.",
   "uiStandards.tableCheatLede": "Use these terms in Cursor tasks. Explicit ON/OFF overrides FULL TABLE defaults. ACTIONS and INLINE EDIT are optional.",
-  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
+  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD ÃÂ¢Ã¢âÂ¬Ã¢â¬Â APPROVED / LOCKED",
   "uiStandards.tablesAlignmentTitle": "Table alignment",
   "uiStandards.tablesActionsTitle": "Table actions",
   "uiStandards.tablesInlineRowEditTitle": "Inline row edit",
@@ -3689,7 +3715,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "exitsTable.filterNoSku": "No SKU",
   "exitsTable.next": "Next",
   "exitsTable.previous": "Previous",
-  "exitsTable.range": "{from}Ã¢â‚¬â€œ{to} of {total}",
+  "exitsTable.range": "{from}ÃÂ¢Ã¢âÂ¬Ã¢â¬Å{to} of {total}",
   "exitsTable.rowsPerPage": "Rows per page",
   "exitsTable.searchProducts": "Search products",
   "exitsTable.selectAll": "Select all visible rows",
@@ -3807,7 +3833,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.expiryCountNear": "Near expiry lots: {count}",
 
-  "inventory.expiryCounts": "Expired lots: {expired} Ã‚Â· Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} ÃâÃÂ· Near expiry lots: {near}",
 
   "inventory.expiryWindow": "Ipakita ti window",
 
@@ -3886,7 +3912,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.movements": "Kasaysayan iti movement",
 
-  "inventory.movementCol.when": "Idi",
+  "inventory.movementCol.when": "Idi/Siino",
 
   "inventory.movementCol.qty": "Qty",
 
@@ -3903,28 +3929,233 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.onHand": "Adda stock",
 
   "inventory.reserved": "Reserved",
+  "inventory.committed": "Committed",
 
   "inventory.available": "Available",
 
   "inventory.availableQty": "{qty} {uom} available",
 
   "inventory.reservedBadge": "{qty} reserved",
+  "inventory.expiredBadge": "{qty} expired",
+  "inventory.saleBlockedBadge": "{qty} expiry blocked",
+  "inventory.physicalOnHand": "Physical on hand",
+  "inventory.saleBlocked": "Expiry blocked",
   "inventory.returnsPendingBadge": "{qty} returns pending",
   "inventory.availableLabel": "available",
+  "inventory.expirySalePolicy.title": "Expiry sale policy",
+  "inventory.expirySalePolicy.lede":
+    "Stop selling expiry-tracked stock a set number of days before the expiration date. Physical stock remains on hand until written off.",
+  "inventory.expirySalePolicy.orgDefaultDays": "Organization default (days before expiry)",
+  "inventory.expirySalePolicy.orgHelp":
+    "0 means sell until the expiry date itself. Higher values block sale earlier. This is inventory sale eligibility, not purchase-order return policy.",
+  "inventory.expirySalePolicy.save": "Save expiry sale policy",
+  "inventory.expirySalePolicy.saved": "Expiry sale policy saved.",
+  "inventory.expirySalePolicy.branchTitle": "Branch expiry sale policy",
+  "inventory.expirySalePolicy.branchLede":
+    "Override the organization stop-selling rule for this workspace branch only.",
+  "inventory.expirySalePolicy.branchHelp":
+    "Use organization policy unless this branch needs a stricter or looser stop-selling window.",
+  "inventory.expirySalePolicy.branchOverride": "Branch override",
+  "inventory.expirySalePolicy.modeUseOrganization": "Use organization policy",
+  "inventory.expirySalePolicy.modeCustomBranch": "Custom days for this branch",
+  "inventory.expirySalePolicy.branchDays": "Branch stop-selling days",
+  "inventory.expirySalePolicy.effectiveDays": "Effective days",
+  "inventory.expirySalePolicy.effectiveSource": "Effective source",
+  "inventory.expirySalePolicy.orgCategoryDays": "Organization category days",
+  "inventory.expirySalePolicy.branchDefaultDays": "Branch default days",
+  "inventory.expirySalePolicy.sourceOrganizationDefault": "Organization default",
+  "inventory.expirySalePolicy.sourceOrganizationCategory": "Organization category",
+  "inventory.expirySalePolicy.sourceBranch": "Branch default",
+  "inventory.expirySalePolicy.sourceBranchCategory": "Branch category",
+  "inventory.expirySaleOverride.title": "Category overrides",
+  "inventory.expirySaleOverride.hierarchyHelp":
+    "Category rules override the default for products in that category. Use default removes the override.",
+  "inventory.expirySaleOverride.search": "Search categoriesâ¦",
+  "inventory.expirySaleOverride.add": "Add override",
+  "inventory.expirySaleOverride.addTitle": "Add category expiry sale override",
+  "inventory.expirySaleOverride.editTitle": "Edit category expiry sale override",
+  "inventory.expirySaleOverride.edit": "Edit",
+  "inventory.expirySaleOverride.remove": "Remove override",
+  "inventory.expirySaleOverride.emptyTitle": "No category overrides",
+  "inventory.expirySaleOverride.emptyDetail":
+    "Products use the default stop-selling days until you add a category override.",
+  "inventory.expirySaleOverride.noMatch": "No overrides match your search.",
+  "inventory.expirySaleOverride.colCategory": "Category",
+  "inventory.expirySaleOverride.colDays": "Stop-selling days",
+  "inventory.expirySaleOverride.colPolicy": "Policy",
+  "inventory.expirySaleOverride.colActions": "Actions",
+  "inventory.expirySaleOverride.modeUseDefault": "Use default",
+  "inventory.expirySaleOverride.modeCustom": "Custom days",
+  "inventory.expirySaleOverride.daysLabel": "Days before expiry",
+  "inventory.expirySaleOverride.days": "{n} days",
+  "inventory.expirySaleOverride.cancel": "Cancel",
+  "inventory.expirySaleOverride.save": "Save",
+  "inventory.expirySaleOverride.removeTitle": "Remove category override?",
+  "inventory.expirySaleOverride.removeDetail":
+    "Remove the stop-selling override for {category}? Products will use the default again.",
+  "inventory.expirySaleOverride.removeConfirm": "Remove override",
 
   "inventory.viewReservations": "Kitaen dagiti reservations",
+  "inventory.viewStockDetails": "View stock details",
+  "inventory.branchMetricOnHand": "on hand",
+  "inventory.branchMetricAvailable": "available",
+  "inspectionQueue.title": "Returns to inspect",
+  "inspectionQueue.description": "Returned damage and exception items waiting for inspection at this branch.",
+  "inspectionQueue.loading": "Loading inspection queue...",
+  "inspectionQueue.loadFailed": "Could not load inspection queue.",
+  "inspectionQueue.loadFailedDetail": "Check your connection and try again.",
+  "inspectionQueue.emptyTitle": "Nothing to inspect",
+  "inspectionQueue.emptyDescription": "When returned damage or exception stock arrives here, it will show up for inspection.",
+  "inspectionQueue.offlineTitle": "Offline",
+  "inspectionQueue.offlineDescription": "Connect to the network to load returns awaiting inspection.",
+  "inspectionQueue.col.product": "Product",
+  "inspectionQueue.col.kind": "Type",
+  "inspectionQueue.col.qty": "Qty",
+  "inspectionQueue.col.transfer": "Transfer",
+  "inspectionQueue.col.sellable": "Recovered sellable",
+  "inspectionQueue.col.damaged": "Confirmed damaged",
+  "inspectionQueue.col.nonSellable": "Confirmed non-sellable",
+  "inspectionQueue.col.status": "Status",
+  "inspectionQueue.col.updated": "Updated",
+  "inspectionQueue.col.action": "Action",
+  "inspectionQueue.confirm": "Confirm inspection",
+  "inspectionQueue.cancel": "Cancel",
+  "inspectionQueue.inspect": "Inspect",
+  "inspectionQueue.helpAllocate": "Choose how to allocate the returned quantity ({qty}). Sellable + damaged must equal the returned qty.",
+  "inspectionQueue.allSellable": "All sellable",
+  "inspectionQueue.allDamaged": "All damaged",
+  "inspectionQueue.allNonSellable": "All non-sellable",
+  "inspectionQueue.mustEqualQty": "Sellable + damaged must equal {qty}.",
+  "inspectionQueue.inspectInvalidQty": "Choose All sellable, All damaged, or enter quantities that add up to the returned qty.",
+  "inspectionQueue.inspectSuccess": "Inspection saved",
+  "inspectionQueue.inspectFailed": "Could not save inspection.",
+  "inspectionQueue.kind.damage": "Damage",
+  "inspectionQueue.kind.exception": "Exception",
+  "inspectionQueue.expected": "Expected: {name}",
+  "transfer.damageInspect": "Inspect",
+  "transfer.damageInspectTitle": "Inspect returned damage",
+  "transfer.damageInspectHelp": "Choose how to allocate the returned quantity ({qty}). Sellable + damaged must equal the returned qty.",
+  "transfer.damageAllSellable": "All sellable",
+  "transfer.damageAllDamaged": "All damaged",
+  "transfer.damageMustEqualQty": "Sellable + damaged must equal {qty}.",
+  "transfer.damageRecoveredSellable": "Recovered sellable",
+  "transfer.damageConfirmedDamaged": "Confirmed damaged",
+  "transfer.damageInspectConfirm": "Confirm inspection",
+  "transfer.damageInspectInvalidQty": "Choose All sellable, All damaged, or enter quantities that add up to the returned qty.",
+  "transfer.damageInspected": "Damage custody inspected",
+  "stockStatus.title": "Stock status",
+  "stockStatus.lede": "Current on-hand quantities across authorized branches. Snapshot only - not historical as-of.",
+  "stockStatus.currentOnly": "Current only (no historical as-of date)",
+  "stockStatus.search": "Search products",
+  "stockStatus.searchPlaceholder": "Name or SKU",
+  "stockStatus.branchFilter": "Branch",
+  "stockStatus.categoryFilter": "Category",
+  "stockStatus.allCategories": "All categories",
+  "stockStatus.scopeCurrentBranch": "Current branch",
+  "stockStatus.scopeAllBranches": "All authorized branches",
+  "stockStatus.stockStateFilter": "Stock state",
+  "stockStatus.stateAll": "All",
+  "stockStatus.stateAvailable": "Available",
+  "stockStatus.stateLowStock": "Low stock",
+  "stockStatus.stateOutOfStock": "Out of stock",
+  "stockStatus.stateReserved": "Reserved",
+  "stockStatus.stateDamaged": "Damaged",
+  "stockStatus.stateInspectionHold": "Inspection hold",
+  "stockStatus.statePendingReturn": "Pending return",
+  "stockStatus.stateExpired": "Expired",
+  "stockStatus.stateSaleBlocked": "Expiry blocked",
+  "stockStatus.colProduct": "Product",
+  "stockStatus.colCategory": "Category",
+  "stockStatus.colBranch": "Branch",
+  "stockStatus.colOnHand": "On hand",
+  "stockStatus.colSellable": "Sellable",
+  "stockStatus.colReserved": "Reserved",
+  "stockStatus.colCommittedToBranchRequests": "Committed",
+  "stockStatus.colCommittedToBranchRequestsTitle": "Committed to branch requests",
+  "stockStatus.colAvailable": "Available",
+  "stockStatus.colDamaged": "Damaged",
+  "stockStatus.colHold": "Review",
+  "stockStatus.colPendingReturn": "Pending return",
+  "stockStatus.colExpired": "Expired",
+  "stockStatus.colSaleBlocked": "Expiry blocked",
+  "stockStatus.colIncoming": "Incoming",
+  "stockStatus.colInTransitOut": "Transit out",
+  "stockStatus.colProductHint": "Product for this stock row.",
+  "stockStatus.colCategoryHint": "Catalog category of the product.",
+  "stockStatus.colBranchHint": "Branch where this stock is held.",
+  "stockStatus.colOnHandHint": "Physical quantity currently at this branch.",
+  "stockStatus.colSellableHint": "Quantity eligible to sell after expiry and policy rules.",
+  "stockStatus.colReservedHint": "Held for sales and customer orders  not free to sell again.",
+  "stockStatus.colCommittedHint": "Committed to approved branch stock requests still remaining to dispatch.",
+  "stockStatus.colAvailableHint": "Free to sell or allocate after reserved, committed, and non-sellable quantities.",
+  "stockStatus.colDamagedHint": "Damaged quantity set aside from sellable stock.",
+  "stockStatus.colHoldHint": "Quantity awaiting return inspection or review at this branch.",
+  "stockStatus.colPendingReturnHint": "Return quantity in progress back to the source branch.",
+  "stockStatus.colExpiredHint": "Past expiry and no longer sellable.",
+  "stockStatus.colSaleBlockedHint": "Near expiry and blocked from sale by the branch expiry policy.",
+  "stockStatus.colIncomingHint": "Inbound quantity in transit to this branch.",
+  "stockStatus.colInTransitOutHint": "Outbound quantity in transit from this branch.",
+  "stockStatus.mobileMetrics": "{onHand} on hand Â· {committed} committed Â· {available} available {uom}",
+  "stockStatus.openProduct": "Open",
+  "stockStatus.viewMovements": "View movements",
+  "stockStatus.loadFailed": "Could not load stock status.",
+  "stockStatus.empty": "No stock rows",
+  "stockStatus.emptyDetail": "Try another filter, search, or branch scope.",
+  "stockStatus.productFilterActive": "Showing: {productName}",
+  "stockStatus.productFilterActivePending": "Showing one product...",
+  "stockStatus.clearProductFilter": "Clear",
+  "stockStatus.pageSummary": "Showing {count} of {total}",
 
   "inventory.reservationsTitle": "Stock reservations",
+  "inventory.commitmentsTitle": "Inventory commitments",
+  "inventory.viewTransfer": "View transfer",
+  "inventory.viewFullTransfer": "View full transfer",
+  "inventory.transactionDetailsTitle": "Transaction details",
+  "inventory.transactionDetailsClose": "Close",
+  "inventory.transactionThisMovement": "This movement",
+  "inventory.quantity": "Quantity",
+  "inventory.transactionTransfer": "Transfer",
+  "inventory.transactionThisTransfer": "This transfer",
+  "inventory.transactionOverallFulfillment": "Overall fulfillment",
+  "inventory.transactionReceivingDecision": "Receiving decision",
+  "inventory.transactionFamily": "Replacement family",
+  "inventory.transactionPhysical": "Physical",
+  "inventory.transactionSellable": "Sellable",
+  "inventory.transactionDamaged": "Damaged",
+  "inventory.transactionHold": "Inspection hold",
+  "inventory.transactionFrom": "From",
+  "inventory.transactionTo": "To",
+  "inventory.transactionDamageDisposition": "Damage disposition",
+  "inventory.transactionInventoryEffect": "Inventory effect",
+  "inventory.damageDisposition.returnedToSource": "Returned to source",
+  "inventory.damageDisposition.heldAtDestination": "Keep at destination",
+  "inventory.bucketPhysical": "Physical",
+  "inventory.bucketSellable": "Sellable",
+  "inventory.bucketDamaged": "Damaged",
+  "inventory.bucketInspectionHold": "Inspection hold",
+  "inventory.sellableBefore": "Sellable before",
+  "inventory.sellableAfter": "Sellable after",
+  "inventory.transactionRecordedAt": "Recorded at",
 
   "inventory.reservationsClose": "Close",
 
-  "inventory.reservationsLoading": "Loading reservations…",
+  "inventory.reservationsLoading": "Loading reservationsâ¦",
 
   "inventory.reservationsEmpty": "Awan ti active reservations",
 
   "inventory.reservationsEmptyDetail": "Agparang ditoy ti reserved stock no adda purchase orders a manghold iti inventory.",
-
+  "inventory.commitmentsLoading": "Loading commitmentsâ¦",
+  "inventory.commitmentsEmpty": "No active commitments",
+  "inventory.commitmentsEmptyDetail": "Reservations and in-transit transfers will appear here.",
+  "inventory.commitmentsGroupReservations": "Reservations",
+  "inventory.commitmentsGroupInTransit": "In transit",
+  "inventory.inTransitOutbound": "In transit out",
+  "inventory.inTransitInbound": "In transit in",
+  "inventory.transferRoute": "{from} â {to}",
   "inventory.reservationTypeTemporary": "Temporary proposal",
+  "inventory.reservationTypeTransferOutbound": "Transfer out",
+  "inventory.reservationTypeTransferInbound": "Transfer in",
+  "inventory.reservationStatusInTransit": "In transit",
 
   "inventory.reservationTypeConfirmed": "Confirmed order",
 
@@ -4062,7 +4293,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
 
-  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Ã‚Â· {days}-day warning",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON ÃâÃÂ· {days}-day warning",
 
   "inventory.expirationTrackingEnabled": "Na-enable ti expiration tracking.",
 
@@ -4071,9 +4302,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.manageExpirationSettings": "I-manage ti expiration settings",
 
   "inventory.expirationSettingsTitle": "Expiration settings",
-
+  "inventory.expirationSettingsTitleWithBranch": "Expiration tracking Â· {branchName}",
   "inventory.expirationSettingsEnableHint":
-
     "I-on ti expiration tracking tapno mairekord ti expiry dates dagiti stock lots ken near-expiry warnings.",
 
   "inventory.expirationSetupRequired": "Missing expiry",
@@ -4210,7 +4440,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.movementLot": "Lot",
 
-  "inventory.movementUnitCost": "Unit purchase cost",
+  "inventory.movementUnitCost": "Unit cost",
 
   "inventory.movementStockValue": "Stock value",
 
@@ -4493,6 +4723,17 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.addProduct": "Add",
 
   "transfer.addProducts": "Add products",
+  "transfer.editShipment": "Edit shipment",
+  "transfer.editTransfer": "Edit transfer",
+  "transfer.editShipmentTitle": "Edit shipment",
+  "transfer.editShipmentLede":
+    "Adjust how much of the approved stock request ships now. Products stay fixed to the request.",
+  "transfer.notInThisShipment": "Not in this shipment",
+  "transfer.shipmentRequiresPositiveLine":
+    "Keep at least one product with quantity greater than zero in this shipment.",
+  "transfer.shipmentItemsEmpty": "No products in this shipment",
+  "transfer.shipmentItemsEmptyDetail":
+    "This shipment has no products. Cancel the draft or prepare the stock request again.",
 
   "transfer.backList": "Back to Transfers",
 
@@ -4594,10 +4835,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.draftEmpty": "Add at least one product.",
 
   "transfer.draftNoEdit":
-
-    "Draft transfers cannot be edited. Cancel this draft and create a new transfer to change items.",
+    "Only the source branch can edit this draft transfer.",
 
   "transfer.draftNumber": "Draft",
+
+  "transfer.editTitle": "Edit Inventory Transfer",
+
+  "transfer.editLede": "Add, remove, or change items on this draft. Source and destination stay the same.",
+
+  "transfer.saveChanges": "Save changes",
 
   "transfer.duplicateLine": "That product lot is already on this transfer.",
 
@@ -4654,8 +4900,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.reviewBeforeConfirm": "Review before confirm",
   "transfer.backToEditReceive": "Back to edit",
   "transfer.remainingDecisionTitle": "Missing quantity decision",
-  "transfer.remainingDecisionSummary": "{products} products · {units} units need a decision",
-  "transfer.remainingDecisionSummaryOne": "1 product · {units} units need a decision",
+  "transfer.remainingDecisionSummary": "{products} products Â· {units} units need a decision",
+  "transfer.remainingDecisionSummaryOne": "1 product Â· {units} units need a decision",
   "transfer.remainingDecisionRequired": "Choose expected later or close missing for all missing quantities.",
   "transfer.remainingDecisionCol": "Decision",
   "transfer.remainingCol": "Missing qty",
@@ -4728,13 +4974,110 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.receiveRemaining": "Receive remaining",
   "transfer.previouslyReceived": "Previously received",
   "transfer.outstanding": "Outstanding",
+  "transfer.good": "Good",
+  "transfer.inTransit": "In transit",
+  "transfer.fulfillment": "Fulfillment",
+  "transfer.thisShipment": "This shipment",
+  "transfer.receivingDecision": "Receiving decision",
+  "transfer.goodReceived": "Good received",
+  "transfer.missing": "Missing",
+  "transfer.other": "Other",
+  "transfer.otherDiscrepancy": "Other discrepancy",
+  "transfer.targetRequested": "Target / requested",
+  "transfer.stillInTransit": "Still in transit",
+  "transfer.needsFulfillment": "Needs fulfillment",
+  "transfer.acceptedWaived": "Accepted / waived",
+  "transfer.viewStockRequest": "View stock request",
+  "transfer.fulfillRemainingHint":
+    "Needs fulfillment: {qty}. Prepare the replacement transfer from this page or the stock request.",
+  "transfer.fulfillAtSourceHint":
+    "Needs fulfillment: {qty}. Switch to the source branch workspace to fulfill remaining, or open the stock request.",
+  "transfer.fulfillRemainingBanner": "{qty} still needs fulfillment",
+  "transfer.decision.replacementRequested": "Replacement requested",
+  "transfer.decision.acceptedNoReplacement": "Accepted â no replacement",
+  "transfer.decision.acceptedShortage": "Accepted shortage",
+  "transfer.custody.keepAtDestination": "Keep at destination",
+  "transfer.custody.returnToSource": "Return to source",
+  "transfer.custody.returnToBranch": "Return to {branch}",
+  "transfer.custody.heldAtDestination": "Held at destination",
+  "transfer.custody.awaitingReturn": "Waiting to return",
+  "transfer.custody.returnInTransit": "Return in transit",
+  "transfer.custody.returningToBranch": "Returning to {branch}",
+  "transfer.custody.receivedAtSource": "Returned to source",
+  "transfer.custody.returnedFromBranch": "Return from {branch}",
+  "transfer.custody.returnedToBranch": "Returned to {branch}",
+  "transfer.custody.awaitingInspection": "Awaiting inspection",
+  "transfer.custodyLabel": "Custody",
+  "transfer.inventoryState": "Inventory state",
+  "transfer.inventoryNonSellable": "Non-sellable",
+  "transfer.inventoryNonSellableAt": "Non-sellable at {branch}",
+  "transfer.currentLocation": "Current location",
+  "transfer.returnStatus": "Return status",
+  "transfer.actualItem": "Actual item",
+  "transfer.expectedItem": "Expected item",
+  "transfer.exceptionCustodyLabel": "Exception custody",
+  "transfer.exceptionActualProductRequired": "Select the actual product received for wrong-item discrepancies.",
+  "transfer.exceptionCustodyRequired": "Choose exception custody for other discrepancies.",
+  "transfer.exceptionActualProductHint": "Search and select the product that was actually received. It cannot be the expected transfer product.",
+  "transfer.exceptionForceReturnHint": "This reason requires return to source.",
+  "transfer.exceptionConfirmTitle": "Confirm wrong-item receive?",
+  "transfer.exceptionConfirmIntro": "Review stock effects before saving this receive wave.",
+  "transfer.exceptionConfirmLine":
+    "{expected} â actual {actual} ({qty}) Â· {custody} Â· {followUp}",
+  "transfer.exceptionConfirmStockHint":
+    "Source will restore expected stock and deduct actual; destination will hold the exception qty until return or inspection.",
+  "transfer.exceptionDispatchReturn": "Send back to source",
+  "transfer.exceptionDispatchReturnWithProduct": "Send back {qty} {product}",
+  "transfer.exceptionReturnSent": "Sent",
+  "transfer.exceptionReturnSentWithProduct": "Sent {qty} {product}",
+  "transfer.exceptionReceiveReturn": "Receive return",
+  "transfer.exceptionReceiveReturnWithProduct": "Receive {qty} {product}",
+  "transfer.exceptionReturnInTransitStatus": "Return in transit",
+  "transfer.exceptionReturnInTransitLine": "{qty} {product} â {branch}",
+  "transfer.exceptionWaitingForReturn": "Waiting for return",
+  "transfer.exceptionIncomingReturn": "Incoming return",
+  "transfer.exceptionIncomingReturnLine": "{qty} {product} â {branch}",
+  "transfer.exceptionReturnedToSource": "Returned to source",
+  "transfer.exceptionReceivedFromBranch": "{qty} {product} received from {branch}",
+  "transfer.exceptionSendBackDestinationOnly":
+    "Switch to the destination branch workspace to send this return.",
+  "transfer.exceptionSendBackOffline": "Go online to send this return.",
+  "transfer.exceptionSendBackNoPermission":
+    "You need inventory manage permission to send this return.",
+  "transfer.exceptionInspect": "Inspect exception",
+  "transfer.exceptionInspectTitle": "Inspect exception custody",
+  "transfer.exceptionInspectHelp": "Choose how to allocate the returned quantity ({qty}). Sellable + non-sellable must equal the returned qty.",
+  "transfer.exceptionAllSellable": "All sellable",
+  "transfer.exceptionAllNonSellable": "All non-sellable",
+  "transfer.exceptionMustEqualQty": "Sellable + non-sellable must equal {qty}.",
+  "transfer.exceptionRecoveredSellable": "Recovered sellable",
+  "transfer.exceptionConfirmedNonSellable": "Confirmed non-sellable",
+  "transfer.exceptionInspectConfirm": "Confirm inspection",
+  "transfer.exceptionInspectInvalidQty": "Choose All sellable, All non-sellable, or enter quantities that add up to the returned qty.",
+  "transfer.exceptionReturnDispatched": "Return sent to source",
+  "transfer.exceptionReturnReceived": "Received",
+  "transfer.exceptionReturnReceivedWithProduct": "Received {qty} {product}",
+  "transfer.exceptionReturnReceiveSuccess": "Return received",
+  "transfer.exceptionInspected": "Exception custody inspected",
+  "transfer.replacement": "Replacement",
+  "transfer.replacementRequestedShort": "Requested",
+  "transfer.noReplacement": "No replacement",
+  "transfer.reason": "Reason",
+  "transfer.note": "Note",
+  "transfer.family.original": "Original",
+  "transfer.family.replacementN": "Replacement R{n}",
+  "transfer.family.originalDraft": "Original (draft)",
+  "transfer.family.replacementDraft": "Replacement R{n} (draft)",
+  "transfer.viewDetails": "View details",
+  "transfer.followUp.replaceQty": "Replace {qty}",
+  "transfer.followUp.none": "â",
   "transfer.closedShort": "Closing short",
   "transfer.closeRemainder": "Close remaining",
   "transfer.closeRemainderTitle": "Close remaining quantity?",
   "transfer.closeRemainderBody":
     "Record why the outstanding quantity will not be received. This closes the transfer with a discrepancy.",
   "transfer.closeRemainderConfirm": "Close remaining",
-  "transfer.closingRemainder": "Closing…",
+  "transfer.closingRemainder": "Closingâ¦",
   "transfer.closeRemainderSuccess": "Transfer closed with discrepancy. Outstanding quantity was recorded.",
   "transfer.closeRemainderFailedTitle": "Cannot close remaining quantity",
 
@@ -4758,11 +5101,80 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "transfer.selectDestination": "Select destination branch",
 
+  "transfer.noCoveredDestinationsTitle": "No assigned branches",
+
+  "transfer.noCoveredDestinationsDetail":
+    "This warehouse can only transfer to branches assigned in supply coverage. Assign branches first, then try again.",
+
+  "transfer.coverageLoadFailed": "Could not load warehouse branch coverage.",
+
+  "transfer.destinationNotCovered":
+    "This warehouse can only transfer to branches assigned in supply coverage.",
+
   "transfer.selectDiscrepancy": "Select reason",
 
   "transfer.selectLot": "Select lot",
 
+  "transfer.selectStockLots": "Select stock lots",
+
+  "transfer.lotCount": "{count} lots",
+
+  "transfer.expiryAllocation": "Expiry allocation",
+
+  "transfer.fefoAutomaticallySelected": "FEFO automatically selected",
+
+  "transfer.manualLotAllocation": "Custom lot allocation",
+
+  "transfer.changeLots": "Change lots",
+
+  "transfer.useFefo": "Use FEFO",
+
+  "transfer.applyLots": "Apply",
+
+  "transfer.transferQuantity": "Transfer quantity",
+
+  "transfer.batchLot": "Batch / Lot",
+
+  "transfer.transferQtyCol": "Transfer",
+
+  "transfer.allocated": "Allocated",
+
+  "transfer.remaining": "Remaining",
+
+  "transfer.overAllocatedBy": "Over allocated by: {qty} {uom}",
+
+  "transfer.lotExceedsAvailable": "Only {qty} {uom} available.",
+
+  "transfer.lotExceedsTransferNeed": "Only {qty} {uom} needed for this transfer.",
+
+  "transfer.useMax": "Use max",
+
+  "transfer.overAllocatedHint": "Use FEFO to reset, or Use max on each lot.",
+
+  "transfer.lotTotalBecomesQuantity": "Transfer quantity will be {qty} {uom}",
+
+  "transfer.lotTotalHint": "Apply updates the line quantity to this total.",
+
+  "transfer.lotTotalExceedsAvailable": "Total exceeds available ({qty} {uom}).",
+
+  "transfer.allocationMismatch": "Lot allocation must equal the transfer quantity.",
+
+  "transfer.lotStockChanged":
+    "Stock for this expiry lot changed. Review the lot allocation and try again.",
+  "transfer.expired": "Expired",
+
+  "transfer.expiredQtyHint": "{qty} {uom} expired",
+
+  "transfer.lotExpiredCannotTransfer":
+    "This lot is expired and cannot be transferred.",
+
+  "transfer.dispatchLotsExpired":
+    "Selected stock has expired. Review the lot allocation before dispatching.",
   "transfer.sent": "Sent",
+
+  "transfer.prepared": "Prepared",
+
+  "transfer.qty": "Qty",
 
   "transfer.singleBranchDetail": "Add another branch to start transferring stock.",
 
@@ -4779,9 +5191,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.status.partiallyReceived": "Partially received",
 
   "transfer.status.received": "Received",
-  "transfer.status.closedWithDiscrepancy": "Closed with discrepancy",
-  "transfer.byPartiallyReceived": "Partially received by",
-  "transfer.byClosedWithDiscrepancy": "Closed by",
+  "transfer.status.closedWithDiscrepancy": "Discrepancy",
+  "transfer.byPartiallyReceived": "Partially received by {name}",
+  "transfer.byClosedWithDiscrepancy": "Closed by {name}",
 
   "transfer.title": "Dagiti Inventory Transfer",
 
@@ -4790,9 +5202,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.tracksExpiry": "Tracks expiry",
 
   "transfer.available": "Available: {qty} {uom}",
-  "transfer.colAvailable": "Available at source",
+  "transfer.colAvailable": "Available",
+
+  "transfer.colExpiryLot": "Expiry/Lot",
   "transfer.colNumber": "Transfer #",
   "transfer.colRoute": "Route",
+  "transfer.colLines": "Lines",
   "transfer.colUpdated": "Updated",
   "transfer.timelineTitle": "Transfer timeline",
   "transfer.activity.empty": "No timeline events yet.",
@@ -5396,7 +5811,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.detailLede": "Kitaen ti order snapshot manipud iti buyer. Ti panangawat ket saan a mangbaliw ti inventory.",
   "incomingOrders.shortageWarning": "Requested quantity exceeds available stock.",
-  "incomingOrders.shortageExample": "Requested {requested} / Available stock {atp} — confirm {confirm} or propose changes.",
+  "incomingOrders.shortageExample": "Requested {requested} / Available stock {atp} â confirm {confirm} or propose changes.",
   "incomingOrders.acceptBlockedShortage": "Exact accept is blocked while any line exceeds available stock. Propose changes instead.",
   "incomingOrders.proposeChanges": "Propose changes",
   "incomingOrders.proposeNoMaterialChanges": "Adjust at least one confirmed quantity before proposing changes.",
@@ -5458,7 +5873,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "incomingOrders.remainingCancelledValue": "Remaining qty/value being cancelled",
   "incomingOrders.paymentReceived": "Payment received",
   "incomingOrders.refundDue": "Refund due",
-  "incomingOrders.statusCompletedRemainingCancelled": "Completed · Remaining quantity cancelled",
+  "incomingOrders.statusCompletedRemainingCancelled": "Completed Â· Remaining quantity cancelled",
   "incomingOrders.shortClosed": "Short closed",
   "incomingOrders.finalAcceptedValue": "Final accepted value",
   "incomingOrders.balanceDue": "Balance due",
@@ -5545,6 +5960,31 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.totalOnHand": "Kinatibuk-ti adda stock",
 
   "inventory.tracked": "Gi-track",
+  "inventory.enablingTracking": "Enable tracking",
+  "inventory.enableStock": "Enable stock",
+  "inventory.enableCancel": "Cancel",
+  "inventory.viewInventoryDetails": "View inventory details",
+  "inventory.productSummary.title": "Product summary",
+  "inventory.productSummary.open": "Product summary",
+  "inventory.productSummary.close": "Close",
+  "inventory.productSummary.sectionStock": "Stock",
+  "inventory.productSummary.sectionConfig": "Configuration",
+  "inventory.productSummary.expirationTracking": "Expiration tracking",
+  "inventory.productSummary.expirationOn": "On",
+  "inventory.productSummary.expirationOff": "Off",
+  "inventory.productSummary.stopSellingDays": "Stop selling (days before expiry)",
+  "inventory.productSummary.pendingReturn": "Pending return",
+  "inventory.productSummary.daysValue": "{days} days",
+  "inventory.productSummary.notSet": "â",
+  "inventory.productSummary.loadingPolicy": "Loading sale policyâ¦",
+  "inventory.col.product": "Product",
+  "inventory.col.unit": "Unit",
+  "inventory.col.tracking": "Tracking",
+  "inventory.col.openingQty": "Opening Qty",
+  "inventory.col.purchaseCost": "Purchase Cost",
+  "inventory.col.sellingPrice": "Selling Price",
+  "inventory.col.available": "Available",
+  "inventory.col.action": "Action",
 
   "inventory.trackingFilter": "Tracking status",
   "inventory.categoryFilter": "Categories",
@@ -5772,10 +6212,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment Ã¢â‚¬â€ nayon",
-
-  "inventory.movementType.manualDecrease": "Stock adjustment Ã¢â‚¬â€ bawas",
-
+  "inventory.movementType.manualIncrease": "Stock adjustment â nayon",
+  "inventory.movementType.manualDecrease": "Stock adjustment â bawas",
   "inventory.movementType.sale": "Sale",
 
   "inventory.movementType.saleVoid": "Sale void restoration",
@@ -5787,11 +6225,34 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.movementType.transferIn": "Transfer in",
 
   "inventory.movementType.transferCancel": "Transfer cancel restore",
+  "inventory.movementType.transferDamageHold": "Damaged transfer received",
+  "inventory.movementType.transferDamageRecovery": "Returned damage recovered",
+  "inventory.movementType.transferDamageReturnOut": "Damaged returned to source",
+  "inventory.movementType.transferDamageReturnIn": "Damaged return received",
+  "inventory.movementType.transferDamageWriteOff": "Confirmed damaged",
+  "inventory.movementType.transferExceptionHold": "Wrong item received",
+  "inventory.movementType.transferExceptionHoldWrongItem": "Wrong item received",
+  "inventory.movementType.transferExceptionHoldWrongVariant": "Wrong variant received",
+  "inventory.movementType.transferExceptionExpectedRestore": "Expected item restored",
+  "inventory.movementType.transferExceptionActualOut": "Wrong item sent",
+  "inventory.movementType.transferExceptionActualOutWrongItem": "Wrong item sent",
+  "inventory.movementType.transferExceptionActualOutWrongVariant": "Wrong variant sent",
+  "inventory.movementType.transferExceptionReturnOut": "Wrong item returned to source",
+  "inventory.movementType.transferExceptionReturnOutWrongItem": "Wrong item returned to source",
+  "inventory.movementType.transferExceptionReturnOutWrongVariant": "Wrong variant returned to source",
+  "inventory.movementType.transferExceptionReturnIn": "Wrong item return received",
+  "inventory.movementType.transferExceptionReturnRestock": "Wrong item return received",
+  "inventory.movementType.transferExceptionReturnRestockWrongVariant": "Wrong variant return received",
+  "inventory.movementType.transferExceptionRecovery": "Returned exception recovered",
+  "inventory.movementType.transferExceptionWriteOff": "Confirmed non-sellable exception",
+  "inventory.exceptionExpectedRestoreWhy":
+    "{qty} {product} were recorded as sent but were not physically sent.",
+  "inventory.exceptionReturnedFrom": "Returned from",
+  "inventory.exceptionReceivedBy": "Received by",
+  "inventory.exceptionWhy": "Why",
 
-  "inventory.movementType.stockCountIncrease": "Stock count Ã¢â‚¬â€ nayon",
-
-  "inventory.movementType.stockCountDecrease": "Stock count Ã¢â‚¬â€ bawas",
-
+  "inventory.movementType.stockCountIncrease": "Stock count â nayon",
+  "inventory.movementType.stockCountDecrease": "Stock count â bawas",
   "inventory.movementType.stockUse": "Stock use",
 
   "inventory.movementType.stockUseVoid": "Stock use void restoration",
@@ -6645,6 +7106,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.more.receiveStock": "Awaten ti stock",
 
   "org.more.transfers": "Dagiti transfer",
+  "org.more.awaitingInspection": "Return inspection",
+  "org.more.branchRequests": "Branch requests",
 
   "org.more.expiringLots": "Dagiti lot / expiry",
 
@@ -6913,8 +7376,13 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.nav.more": "More",
 
   "org.nav.inventory": "Imbentario",
+  "org.nav.stockStatus": "Stock status",
+  "org.nav.awaitingInspection": "Return inspection",
+
+  "org.nav.warehouse": "Warehouse",
 
   "org.nav.transfers": "Dagiti transfer",
+  "org.nav.branchRequests": "Branch requests",
 
   "org.nav.purchasing": "Panaggalot",
 
@@ -6969,7 +7437,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.reviewLimitsTitle": "Capacity changes",
 
-  "orgSubscription.reviewLimitRow": "{label}: {current} â†’ {target}",
+  "orgSubscription.reviewLimitRow": "{label}: {current} Ã¢â â {target}",
 
   "orgSubscription.continueToPayment": "Continue to simulated payment",
 
@@ -6991,7 +7459,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.simulateFailure": "Simulate failed payment",
 
-  "orgSubscription.submitting": "Workingâ€¦",
+  "orgSubscription.submitting": "WorkingÃ¢â¬Â¦",
 
   "orgSubscription.upgradeSuccess": "Plan upgraded successfully.",
 
@@ -7023,7 +7491,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "orgProfile.incompleteBody":
     "A phone number and full address help receipts, documents, and supplier connections.",
   "orgProfile.incompleteAction": "Complete profile",
-  "orgProfile.addressCountryOnly": "Country only ({country}) â€” add street and city.",
+  "orgProfile.addressCountryOnly": "Country only ({country}) Ã¢â¬â add street and city.",
   "orgProfile.section.basics": "Basics",
   "orgProfile.section.contact": "Contact",
   "orgProfile.section.address": "Address",
@@ -7100,10 +7568,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "staffBusinessProfile.jobTitle": "Position / Job title",
   "staffBusinessProfile.departmentPlaceholder": "Select or add department",
   "staffBusinessProfile.jobTitlePlaceholder": "Select or add position",
-  "staffBusinessProfile.catalogSearch": "Searchâ€¦",
+  "staffBusinessProfile.catalogSearch": "SearchÃ¢â¬Â¦",
   "staffBusinessProfile.catalogEmpty": "No matches",
-  "staffBusinessProfile.createDepartment": "Add â€œ{value}â€",
-  "staffBusinessProfile.createJobTitle": "Add â€œ{value}â€",
+  "staffBusinessProfile.createDepartment": "Add Ã¢â¬Å{value}Ã¢â¬Â",
+  "staffBusinessProfile.createJobTitle": "Add Ã¢â¬Å{value}Ã¢â¬Â",
   "staffBusinessProfile.unsavedTitle": "Discard unsaved changes?",
   "staffBusinessProfile.unsavedDetail": "You have unsaved changes. Close anyway?",
   "staffBusinessProfile.unsavedConfirm": "Discard",
@@ -7162,7 +7630,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "orgSubscription.deniedDetail":
     "Ti organization Owner laeng ti makakita iti subscription ken billing details.",
 
-  "orgSubscription.loading": "Maikarkarga ti subscription moâ€¦",
+  "orgSubscription.loading": "Maikarkarga ti subscription moÃ¢â¬Â¦",
 
   "orgSubscription.loadError": "Saan a nakarga ti subscription mo",
 
@@ -7230,11 +7698,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "orgSubscription.planDowngrade": "Nababbaba a plan",
 
   "orgSubscription.planLimits":
-    "Branches {branches} Â· Staff {staff} Â· Devices {devices} Â· Areas {areas}",
+    "Branches {branches} ÃÂ· Staff {staff} ÃÂ· Devices {devices} ÃÂ· Areas {areas}",
 
   "orgSubscription.compare": "Kitaen ti epekto",
 
-  "orgSubscription.comparing": "Kitkitaen ti epektoâ€¦",
+  "orgSubscription.comparing": "Kitkitaen ti epektoÃ¢â¬Â¦",
 
   "orgSubscription.previewError": "Saan a makita ti epekto daytoy a plan ita.",
 
@@ -7485,7 +7953,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "people.add.identityFound": "[ILO] Identity found",
 
-  "people.add.lede": "[ILO] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+  "people.add.lede": "[ILO] Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
 
   "people.add.notFound": "[ILO] No matching ExItS identity was found.",
 
@@ -7531,7 +7999,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "people.formLedeExits":
 
-    "[ILO] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+    "[ILO] Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
 
   "people.sectionBasics": "[ILO] Basics",
 
@@ -7557,7 +8025,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
     "[ILO] Review the identity above, then add them to your People list.",
 
-  "people.listTitle": "[ILO] Your people",
+  "people.listTitle": "[ILO] Your friends",
+  "people.backToFriends": "[ILO] Back to friends",
 
   "people.filter.label": "[ILO] Filter people",
 
@@ -7579,7 +8048,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "people.detail.amountInvalid": "[ILO] Enter a valid amount.",
 
-  "people.detail.block": "[ILO] Block person",
+  "people.detail.block": "[ILO] Block friend",
+  "people.detail.connectionAndSafety": "[ILO] Connection & safety",
 
   "people.detail.blockConfirmBody": "[ILO] This person cannot send you new connection requests until you unblock them.",
 
@@ -7588,6 +8058,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "people.detail.cancelRequest": "[ILO] Cancel request",
 
   "people.detail.confirmUtang": "[ILO] Continue",
+  "people.detail.saveILent": "[ILO] Save I lent",
+  "people.detail.saveIBorrowed": "[ILO] Save I borrowed",
 
   "people.detail.connectedSince": "[ILO] Connected since {date}",
 
@@ -7794,10 +8266,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.explore.billingEveryYear": "every year",
   "personal.explore.billingPopular": "Popular",
   "personal.explore.billingBestValue": "Best value",
-  "personal.explore.billingBestValueSave": "Best value Ã¢â‚¬â€ Save {percent}%",
+  "personal.explore.billingBestValueSave": "Best value ÃÂ¢Ã¢âÂ¬Ã¢â¬Â Save {percent}%",
   "personal.explore.billingSavePercent": "Save {percent}%",
   "personal.explore.cycleSavings": "Save {percent}%",
-  "personal.explore.cycleSavingsDetail": "Save {amount} Ã‚Â· {percent}%",
+  "personal.explore.cycleSavingsDetail": "Save {amount} ÃâÃÂ· {percent}%",
   "personal.explore.equivalentMonthly": "{amount}/month equivalent",
   "personal.startBusiness.baseAmount": "Base",
   "personal.startBusiness.discount": "Discount ({percent}%)",
@@ -7808,7 +8280,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "personal.explore.annualSavings": "Save {percent}% vs monthly",
 
-  "personal.explore.capacityLine": "{branches} branch Ã‚Â· {staff} staff Ã‚Â· {devices} POS",
+  "personal.explore.capacityLine": "{branches} branch ÃâÃÂ· {staff} staff ÃâÃÂ· {devices} POS",
   "personal.explore.viewAllFeatures": "View all features",
   "personal.explore.simulatedPaymentsNotice":
     "Payments are currently simulated. No real charge will be made.",
@@ -7883,7 +8355,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connectedCommerce.tab.fulfillment": "Fulfillment",
   "connectedCommerce.tab.payments": "Payments",
   "connectedCommerce.tab.catalog": "Catalog & Pricing",
-  "connectedCommerce.tab.orders": "Orders",
+  "connectedCommerce.tab.orders": "Return Policy",
+  "connectedCommerce.tab.returnPolicy": "Return Policy",
+  "connectedCommerce.tab.expirySalePolicy": "Expiry sale policy",
   "connectedCommerce.tab.documents": "Documents & Compliance",
   "connectedCommerce.orgRequired": "Organization required",
   "connectedCommerce.orgRequiredDetail": "Bind an organization workspace to manage Connected Commerce settings.",
@@ -7967,7 +8441,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "paymentMethods.selectedBranches": "Selected branches",
   "paymentMethods.noBranches": "No active branches to select yet.",
   "paymentMethods.orgRequired": "Open Payment methods from Manage Business for an organization.",
-  "paymentMethods.loading": "Loading payment methodsÃ¢â‚¬Â¦",
+  "paymentMethods.loading": "Loading payment methodsÃÂ¢Ã¢âÂ¬ÃÂ¦",
   "paymentMethods.errorTitle": "Could not load payment methods",
   "paymentMethods.saved": "Payment method saved",
 
@@ -8067,7 +8541,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.payingAmount": "Amount due: {amount}",
   "subscriptionCheckout.payNow": "Pay now (simulated)",
   "subscriptionCheckout.confirmSimulatedPay": "Confirm simulated payment",
-  "subscriptionCheckout.processing": "ProcessingÃ¢â‚¬Â¦",
+  "subscriptionCheckout.processing": "ProcessingÃÂ¢Ã¢âÂ¬ÃÂ¦",
   "subscriptionCheckout.processFailed": "Payment could not be processed.",
   "subscriptionCheckout.invalidChannel": "Choose GCash, Maya, or Card.",
   "subscriptionCheckout.ewalletHint": "Simulate a {channel} wallet authorization. No real wallet is contacted.",
@@ -8082,12 +8556,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.card.requiredFields": "Enter card name, number, expiry, and CVV.",
   "subscriptionCheckout.card.invalidNumber": "Enter a test card number.",
   "subscriptionCheckout.card.testScenarios": "Test card autofill",
-  "subscriptionCheckout.card.scenarioSuccess": "4242Ã¢â‚¬Â¦ success",
-  "subscriptionCheckout.card.scenarioDecline": "4000Ã¢â‚¬Â¦0002 fail",
-  "subscriptionCheckout.card.scenarioProcessing": "4000Ã¢â‚¬Â¦9995 processing",
-  "subscriptionCheckout.card.ruleSuccess": "4242 4242 4242 4242 Ã¢â€ â€™ Paid",
-  "subscriptionCheckout.card.ruleDecline": "4000 0000 0000 0002 Ã¢â€ â€™ Failed",
-  "subscriptionCheckout.card.ruleProcessing": "4000 0000 0000 9995 Ã¢â€ â€™ Processing",
+  "subscriptionCheckout.card.scenarioSuccess": "4242ÃÂ¢Ã¢âÂ¬ÃÂ¦ success",
+  "subscriptionCheckout.card.scenarioDecline": "4000ÃÂ¢Ã¢âÂ¬ÃÂ¦0002 fail",
+  "subscriptionCheckout.card.scenarioProcessing": "4000ÃÂ¢Ã¢âÂ¬ÃÂ¦9995 processing",
+  "subscriptionCheckout.card.ruleSuccess": "4242 4242 4242 4242 ÃÂ¢Ã¢â¬Â Ã¢â¬â¢ Paid",
+  "subscriptionCheckout.card.ruleDecline": "4000 0000 0000 0002 ÃÂ¢Ã¢â¬Â Ã¢â¬â¢ Failed",
+  "subscriptionCheckout.card.ruleProcessing": "4000 0000 0000 9995 ÃÂ¢Ã¢â¬Â Ã¢â¬â¢ Processing",
   "subscriptionCheckout.resultTitle": "Payment result",
   "subscriptionCheckout.receiptTitle": "Receipt",
   "subscriptionCheckout.paymentDetailsTitle": "Payment details",
@@ -9096,6 +9570,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.todo.searchLabel": "Search to-dos",
 
   "personal.todo.searchPlaceholder": "Search title or notes",
+  "personal.todo.expandRow": "Expand to-do",
+  "personal.todo.collapseRow": "Collapse to-do",
 
   "personal.todo.moreOptions": "More options",
 
@@ -9182,6 +9658,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.todo.filterUpcoming": "Umadani",
 
   "personal.todo.filters": "Dagiti panagsala ti aramiden",
+  "personal.todo.filterAll": "Amin nga aramid",
+  "personal.todo.cardTitle": "Dagiti aramiden",
+  "personal.todo.newTask": "Baro nga to-do",
+  "personal.todo.railSection": "Aramid",
+  "personal.todo.groupHeader": "{count} Tasks {label}",
+  "personal.todo.closeDetail": "Irekep",
+  "personal.todo.openFullDetail": "Lukatan ti apagisu a detalye",
+  "personal.todo.emptyAllTitle": "Awan pay ti aramid",
+  "personal.todo.emptyAllDetail": "Mangaramid iti aramid tapno mangrugi.",
 
   "personal.todo.genericError": "Adda ti biddut. Padasem manen.",
 
@@ -9208,6 +9693,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.todo.priorityNormal": "Kadawyan",
 
   "personal.todo.reactivate": "I-reactivate",
+  "personal.todo.delete": "Ikkaten",
+  "personal.todo.deleteConfirmTitle": "Ikkaten daytoy a to-do?",
+  "personal.todo.deleteConfirmDetail":
+    "Permanente nga maikkat ti cancelled a to-do. Saanen a maisubli.",
+  "personal.todo.deleteConfirm": "Permanente nga ikkaten",
 
   "personal.todo.relatedContact": "Tao",
 
@@ -9554,6 +10044,23 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.utang.sharedLedger": "Shared ledger",
 
   "personal.utang.statusCancelled": "Nakansela",
+  "personal.utang.statusPrivate": "Private",
+  "personal.utang.statusAutoSynced": "Shared · Auto-synced",
+  "personal.utang.statusSharedReportedBy": "Shared · Reported by {name} · Pending",
+  "personal.utang.savePrivately": "Save privately",
+  "personal.utang.shareWithPerson": "Share with {name}",
+  "personal.utang.shareOffHint": "Saved only on your ledger. They will not see this.",
+  "personal.utang.shareOnHint":
+    "Shared online with {name}. They will see it right away; confirmation may still be required.",
+  "personal.utang.shareRequiresOnline": "Sharing with another person requires an internet connection.",
+  "personal.utang.sharedEntryHint": "This updates your shared ledger with {name}.",
+  "personal.utang.savedPrivatelyNotReceiving":
+    "Saved privately. This person is not receiving shared Utang entries.",
+  "personal.utang.prefsTitle": "Shared Utang from {name}",
+  "personal.utang.prefsReceive": "Show shared Utang",
+  "personal.utang.prefsAutoSync": "Automatically sync {name}'s entries",
+  "personal.utang.prefsNotifications": "Notifications",
+  "personal.utang.prefsRequiresOnline": "Shared Utang preferences require an internet connection.",
 
   "personal.utang.statusConfirmed": "Nakumpirma",
 
@@ -9819,7 +10326,30 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "purchasing.expiryDate": "Expiry date",
 
+  "purchasing.lotNumberOptional": "Optional",
+
   "purchasing.expiryRequired": "Expiry date is required when receiving expiration-tracked stock.",
+
+  "purchasing.clearExpiryDate": "Clear date",
+
+  "purchasing.expiryEnableTrackingHint":
+    "Expiry tracking will be enabled when this receipt is saved.",
+
+  "purchasing.expirySetupTitle": "Set up expiry tracking",
+
+  "purchasing.expirySetupDescription":
+    "{product} already has {qty} {uom} in stock without expiration information. Assign expiration dates to the existing stock before receiving new expiry-tracked stock.",
+
+  "purchasing.expirySetupAddGroup": "Add expiry group",
+
+  "purchasing.expirySetupStockChanged":
+    "Stock quantity changed while you were setting up expiry tracking. Refresh the allocation and try again.",
+
+  "purchasing.expirySetupOffline": "Setting up expiry tracking needs an internet connection.",
+
+  "purchasing.expirySetupLoadFailed": "Could not load current stock for expiry setup.",
+
+  "purchasing.expirySetupUnauthorized": "You do not have permission to set up expiry tracking.",
 
   "purchasing.receiveExpiryHelper": "Expiry is recorded for this received stock.",
 
@@ -9848,8 +10378,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.remainingQuestion": "What should happen to the remaining {qty}?",
 
   "purchasing.remainingDecisionTitle": "Remaining quantity",
-  "purchasing.remainingDecisionSummary": "{products} products · {units} units need a decision",
-  "purchasing.remainingDecisionSummaryOne": "1 product · {units} units need a decision",
+  "purchasing.remainingDecisionSummary": "{products} products Â· {units} units need a decision",
+  "purchasing.remainingDecisionSummaryOne": "1 product Â· {units} units need a decision",
   "purchasing.remainingApplyToAll": "Apply to all",
   "purchasing.remainingDecisionRequired": "Choose what should happen to all remaining quantities.",
   "purchasing.remainingDecisionCol": "Decision",
@@ -10235,7 +10765,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.category": "Category",
   "purchasing.categoriesPlaceholder": "Select categories",
   "purchasing.categoriesSelected": "{count} selected",
-  "purchasing.categoriesTriggerCount": "Categories Â· {count}",
+  "purchasing.categoriesTriggerCount": "Categories ÃÂ· {count}",
   "purchasing.selectAllCategories": "Pilien amin",
   "purchasing.deselectAllCategories": "Ikkaten amin",
   "purchasing.brandsPlaceholder": "Select brands",
@@ -10363,7 +10893,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.confirmedBy": "Confirmed by",
   "purchasing.confirmedAt": "Confirmed at",
   "purchasing.settlementNotes": "Settlement notes",
-  "purchasing.prepaidSettlementMissing": "Prepayment settlement data is missing for this pay-in-advance order. Contact the supplier or support before receiving — do not re-enter payment details.",
+  "purchasing.prepaidSettlementMissing": "Prepayment settlement data is missing for this pay-in-advance order. Contact the supplier or support before receiving â do not re-enter payment details.",
   "purchasing.supplierCreditReceiveHint": "Accepted goods value will be posted to the approved supplier credit account.",
   "purchasing.thisReceipt": "This receipt",
   "purchasing.previouslyReceivedValue": "Previously received",
@@ -11133,8 +11663,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "returns.backToEdit": "Agsubli iti pag-edit",
   "returns.returnsPending": "Returns pending",
   "returns.returnsProcessed": "Returns processed",
-  "returns.statusCompletedReturnsPending": "Completed · Returns pending",
-  "returns.statusCompletedReturnsProcessed": "Completed · Returns processed",
+  "returns.statusCompletedReturnsPending": "Completed Â· Returns pending",
+  "returns.statusCompletedReturnsProcessed": "Completed Â· Returns processed",
   "returns.returnedItems": "Returned items",
   "returns.pendingInspection": "Pending inspection",
   "returns.classified": "Classified",
@@ -11427,6 +11957,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "managerHome.warehouse.stockAlerts": "Stock alerts",
 
   "managerHome.warehouse.noIncoming": "No incoming transfers",
+  "managerHome.warehouse.branchRequests": "Branch requests",
+  "managerHome.warehouse.noBranchRequests": "No pending branch requests",
 
   "managerHome.warehouse.noReceivable": "No purchase orders ready",
 
@@ -11548,7 +12080,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Agbirok wenno agpili iti produkto tapno mangrugi iti sale.",
 
-  "sell.linePreview": "{qty} {unit} Ãƒâ€” {price} = {amount}",
+  "sell.linePreview": "{qty} {unit} ÃÆÃ¢â¬â {price} = {amount}",
 
   "sell.midSession.deviceLost": "Saanen a napalubusan ti device mo para iti panaglako.",
 
@@ -13205,6 +13737,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.create.name.warehouse": "Warehouse name",
   "branches.create.code.warehouse": "Warehouse code",
   "branches.detail.overview.warehouse": "Warehouse overview",
+  "branches.detail.servedBranches": "Branches served",
+  "branches.detail.servedBranchesHint": "Tap to add or remove branches this warehouse supplies",
+  "branches.detail.servedBranchesViewHint": "Branches this warehouse currently supplies",
+  "branches.detail.servedBranchesAria": "Branches served by this warehouse",
   "branches.detail.details.warehouse": "Warehouse details",
   "branches.detail.codeReadonly.warehouse": "Warehouse code",
   "branches.detail.lifecycleTitle.warehouse": "Warehouse lifecycle",
@@ -13279,6 +13815,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.listLedeRetail": "Dagiti request a naipatulod ti branchmo iti supply warehouse.",
   "stockRequest.listLedeWarehouse": "Dagiti umay a request manipud iti retail branch.",
   "stockRequest.detailTitle": "Stock request",
+  "stockRequest.summaryTitle": "Request summary",
   "stockRequest.needBranch": "Agpili mona ti location workspace.",
   "stockRequest.denied": "Awan ti inventory permissionmo a mangikiddaw ti stock.",
   "stockRequest.loading": "Agload ti stock request...",
@@ -13304,11 +13841,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.items": "item",
   "stockRequest.requested": "Naikiddaw",
   "stockRequest.approved": "Naaprubahan",
+  "stockRequest.goodReceived": "Good received",
   "stockRequest.approvedQty": "Naaprubahan a kaadu",
   "stockRequest.fulfilled": "Natungpal",
   "stockRequest.received": "Naawat",
   "stockRequest.stillInTransit": "Adda pay iti transit",
-  "stockRequest.remainingToDispatch": "Nabati a ma-dispatch",
+  "stockRequest.remainingToDispatch": "Remaining to dispatch (Committed)",
+  "stockRequest.needsFulfillmentSummary": "Committed remaining: {qty}",
+  "stockRequest.committedRemaining": "Committed remaining: {qty}",
+  "stockRequest.colRemainingToDispatchCommitted": "Remaining to dispatch (Committed)",
   "stockRequest.unit": "Unit",
   "stockRequest.openTransferBlocksDispatch":
     "{qty} units ti outstanding pay iti Transfer {transfer}. Awaten wenno irikep nga umuna ti transfer sakbay nga agipatulod ti kapada.",
@@ -13320,6 +13861,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.fulfillRemaining": "Tungpalen ti nabati a {qty}",
   "stockRequest.readyToReceive": "Makasagana nga umawat",
   "stockRequest.linkedTransfer.sent": "Naitulod",
+  "stockRequest.linkedTransfer.prepared": "Naihanda",
   "stockRequest.linkedTransfer.received": "Naawat",
   "stockRequest.linkedTransfer.closed": "Naiserra",
   "stockRequest.linkedTransfer.outstanding": "Outstanding",
@@ -13329,10 +13871,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.createTransfer": "Agaramid ti transfer",
   "stockRequest.reject": "Ibabawi ti request",
   "stockRequest.decline": "Ibabawi",
+  "stockRequest.declineConfirmTitle": "Decline stock request",
+  "stockRequest.declineConfirmDetail": "Tell the requesting branch why this request cannot be fulfilled.",
+  "stockRequest.declining": "Decliningâ¦",
   "stockRequest.rejectReason": "Rason ti panangibabawi (masapul)",
+  "stockRequest.rejectReasonPlaceholder": "Enter decline reason",
   "stockRequest.rejectDefault": "Naibabawi",
   "stockRequest.declineReasonRequired": "Isurat ti rason sakbay nga ibabawi.",
   "stockRequest.cancel": "Ikansela ti request",
+  "stockRequest.editRequest": "Baliwan ti request",
   "stockRequest.requestStock": "Agkiddaw ti stock",
   "stockRequest.tabs": "Dagiti filter ti stock request",
   "stockRequest.tab.submitted": "Naisumite",
@@ -13355,9 +13902,13 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.col.requestQty": "Kaadu ti request",
   "stockRequest.approve": "Aprubahan",
   "stockRequest.approveAndPrepare": "Aprubahan ken isagsagana",
+  "stockRequest.approvedButPrepareFailed":
+    "Naaprobaran ti request, ngem saan a maisagsagana ti transfer. Mabalinmo a saganaanen manen.",
   "stockRequest.startPreparing": "Rugian ti panagsagana",
   "stockRequest.dispatchStock": "Ipatulod ti stock",
   "stockRequest.receiveLinked": "Awaten ti stock",
+  "stockRequest.timelineTitle": "Request timeline",
+  "stockRequest.colNumber": "Request number",
   "stockRequest.activity": "Aktibidad",
   "stockRequest.activity.requested": "Naikiddaw",
   "stockRequest.activity.approved": "Naaprubahan",
@@ -13409,6 +13960,21 @@ export const iloPH: Record<keyof typeof en, string> = {
   "retailWarehouse.recentEmpty": "Awan ti nabiit a kiddaw",
   "retailWarehouse.recentEmptyDetail": "Agparang ditoy dagiti naisumite a stock request.",
   "retailWarehouse.request.supplyFrom": "Manipud iti {name}",
+  "retailWarehouse.request.detailsTitle": "Request details",
+  "retailWarehouse.request.fromWarehouse": "Supply warehouse",
+  "retailWarehouse.request.toBranch": "Requesting branch",
+  "retailWarehouse.request.items": "Items",
+  "retailWarehouse.request.addProducts": "Add products",
+  "retailWarehouse.request.findProducts": "Find products",
+  "retailWarehouse.request.closeFindProducts": "Close product finder",
+  "retailWarehouse.request.itemsEmpty": "No products yet",
+  "retailWarehouse.request.itemsEmptyDetail":
+    "Add products to request from the supply warehouse.",
+  "retailWarehouse.request.backOverview": "Back to warehouse",
+  "retailWarehouse.request.reset": "Reset",
+  "retailWarehouse.request.submitting": "Submittingâ¦",
+  "retailWarehouse.request.colWarehouseAvailable": "Warehouse available",
+
   "retailWarehouse.request.basket": "Basket ti kiddaw",
   "retailWarehouse.request.cartLabel": "Kiddaw",
   "retailWarehouse.request.cartEmptyDetail": "I-tap ti produkto tapno mainayon iti daytoy a kiddaw.",
@@ -13470,6 +14036,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "warehouse.toast.noAssignment.action": "I-configure ti warehouse",
   "transfer.stockRequest": "Stock request",
   "transfer.requestedBy": "Requested by",
+  "transfer.fulfillsStockRequest": "Fulfills stock request",
+  "transfer.fulfillsStockRequestShort": "Fulfills {number}",
   "warehouseDashboard.title": "Dashboard",
   "warehouseDashboard.lede": "Inventory, replenishment, transfers and receiving performance.",
   "warehouseDashboard.typeBadge": "Warehouse",
@@ -13477,6 +14045,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.loading": "Loading warehouse dashboard?",
   "warehouseDashboard.currentLocationOnly": "Current warehouse only",
   "warehouseDashboard.kpi.tracked": "Tracked products",
+  "warehouseDashboard.kpi.branchesServed": "Branches served",
   "warehouseDashboard.kpi.lowStock": "Low stock",
   "warehouseDashboard.kpi.expiry": "Expiry alerts",
   "warehouseDashboard.kpi.pendingRequests": "Pending requests",
@@ -13533,7 +14102,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "nav.backToWarehouseHome": "Back to Warehouse home",
 
   "catalog.cancel": "Kanselaen",
-  "catalog.category.creating": "CreatingÃ¢â‚¬Â¦",
+  "catalog.category.creating": "CreatingÃÂ¢Ã¢âÂ¬ÃÂ¦",
   "catalog.category.deactivateConfirm": "Deactivate this category? It will remain on historical products but cannot be assigned to new products.",
   "catalog.categoryCreateFailed": "Could not create the category.",
   "catalog.categoryDeactivateFailed": "Could not deactivate the category.",
@@ -13548,7 +14117,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedUnitCostLabel": "Cost / {uom}",
   "production.recipes.laborOverheadNotIncluded": "Labor and overhead are not included.",
   "production.recipes.lowMarginWarning": "Low estimated gross margin.",
-  "production.recipes.sellingBelowCostDetail": "Cost: {cost} Ã‚Â· Selling price: {price} Ã‚Â· Estimated loss: {loss} / {uom}",
+  "production.recipes.sellingBelowCostDetail": "Cost: {cost} ÃâÃÂ· Selling price: {price} ÃâÃÂ· Estimated loss: {loss} / {uom}",
   "production.recipes.sellingBelowCostWarning": "Selling below estimated material cost.",
   "production.recipes.suggestedPriceBasedOnMaterial": "Material-cost based suggestion",
   "production.recipes.suggestedPriceUnavailable": "Suggested price unavailable",
@@ -13577,7 +14146,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.orgReviewIncomingRequest": "Review request",
   "customers.orgOpenPendingConnection": "Open pending connection",
   "customers.business.waitingForAccept": "Waiting for {name} to accept.",
-  "customers.business.actionRequired": "Action required Ã¢â‚¬â€ {name} wants to connect.",
+  "customers.business.actionRequired": "Action required ÃÂ¢Ã¢âÂ¬Ã¢â¬Â {name} wants to connect.",
   "customers.business.reviewRequest": "Review request",
   "customers.badge.pending": "Pending",
   "customers.badge.active": "Active",
@@ -13672,7 +14241,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.mgmt.deliveryOff": "Delivery Off",
   "branches.mgmt.deliveryReady": "Delivery Ready",
   "branches.mgmt.deliverySetup": "Delivery Setup",
-  "branches.mgmt.deliveryReadyGloballyPaused": "Delivery Ready · Globally paused",
+  "branches.mgmt.deliveryReadyGloballyPaused": "Delivery Ready Â· Globally paused",
   "branches.poFulfillment.deliveryEffectivePaused": "Effective: Paused globally",
   "branches.poFulfillment.offerDeliveryPausedHelp": "Offer Delivery is off for the organization. Your branch configuration is preserved.",
   "customers.business.deliveryAllowanceBlockedTitle": "Not allowed for this customer"

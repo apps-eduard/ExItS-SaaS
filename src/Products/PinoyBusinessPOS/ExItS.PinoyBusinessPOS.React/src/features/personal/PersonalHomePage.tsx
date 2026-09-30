@@ -173,7 +173,7 @@ export function PersonalHomePage() {
 
   return (
     <div
-      className="personal-page exits-page flex min-w-0 flex-col gap-3"
+      className="personal-page personal-home-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="personal-home-page"
     >
       <PageHeader
@@ -184,6 +184,8 @@ export function PersonalHomePage() {
 
       <PersonalGuideHomeCard />
 
+      <div className="personal-home-layout" data-testid="personal-home-layout">
+        <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"
         aria-label={t("personal.home.personalTracker")}
@@ -346,7 +348,12 @@ export function PersonalHomePage() {
           </Link>
         </section>
       ) : null}
+        </div>
 
+        <aside
+          className="personal-home-layout__aside flex min-w-0 flex-col gap-3"
+          aria-label={t("personal.home.quickActions")}
+        >
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"
         aria-label={t("personal.home.quickActions")}
@@ -479,6 +486,8 @@ export function PersonalHomePage() {
           ]}
         />
       </section>
+        </aside>
+      </div>
     </div>
   );
 }

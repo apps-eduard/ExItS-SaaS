@@ -1,12 +1,23 @@
-import { Link, useOutletContext } from "react-router-dom";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Package, PackagePlus } from "lucide-react";
 import { getOutgoingStockRequestSummary } from "@/api/pos/pos-stock-requests-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { formatTransferTimestamp } from "@/features/inventory/inventory-transfer-labels";
 import {
   stockRequestStatusLabelKey,
@@ -26,8 +37,10 @@ function useReadySupply(): Extract<RetailWarehouseResolveState, { kind: "ready" 
 
 export function RetailWarehouseOverviewPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { workspace } = useRetailWarehouseResolve();
   const supply = useReadySupply();
+  const { layout } = useResponsiveDataLayout();
 
   const summaryQuery = useQuery({
     queryKey: ["stock-requests-outgoing-summary", workspace?.organizationId, workspace?.branchId],
@@ -76,6 +89,95 @@ export function RetailWarehouseOverviewPage() {
       testId: "retail-warehouse-metric-in-transit",
     },
   ];
+
+  const recentTable = (
+    <ExitsTableContainer data-testid="retail-warehouse-recent-desktop">
+      <ExitsTable>
+        <ExitsTableHeader>
+          <ExitsTableRow>
+            <ExitsTableHead cellAlign="text">{t("stockRequest.colNumber")}</ExitsTableHead>
+            <ExitsTableHead cellAlign="text" colSize="flex">
+              {t("retailWarehouse.request.fromWarehouse")}
+            </ExitsTableHead>
+            <ExitsTableHead cellAlign="center" className="whitespace-nowrap" colWidth="3.5rem">
+              {t("transfer.colLines")}
+            </ExitsTableHead>
+            <ExitsTableHead cellAlign="center" className="whitespace-nowrap" colWidth="7.5rem">
+              {t("purchasing.fieldStatus")}
+            </ExitsTableHead>
+            <ExitsTableHead cellAlign="text">{t("transfer.colUpdated")}</ExitsTableHead>
+          </ExitsTableRow>
+        </ExitsTableHeader>
+        <ExitsTableBody>
+          {summary.recent.map((item) => {
+            const requestNumber = item.requestNumber ?? item.stockRequestId.slice(0, 8);
+            return (
+              <ExitsTableRow
+                key={item.stockRequestId}
+                interactive
+                data-testid={`retail-warehouse-recent-${item.stockRequestId}`}
+                data-status={item.status}
+                onClick={() => navigate(`/warehouse/requests/${item.stockRequestId}`)}
+              >
+                <ExitsTableCell cellAlign="text" className="font-medium tabular-nums">
+                  {requestNumber}
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
+                  {item.requestedSourceLocationName ?? item.requestedSourceLocationId}
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="center" className="whitespace-nowrap tabular-nums">
+                  {item.lineCount}
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="center" className="whitespace-nowrap">
+                  <StatusChip tone={stockRequestStatusTone(item.status)}>
+                    {t(stockRequestStatusLabelKey(item.status) as MessageKey)}
+                  </StatusChip>
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="text" className="text-muted">
+                  {formatTransferTimestamp(item.updatedAtUtc)}
+                </ExitsTableCell>
+              </ExitsTableRow>
+            );
+          })}
+        </ExitsTableBody>
+      </ExitsTable>
+    </ExitsTableContainer>
+  );
+
+  const recentList = (
+    <ul
+      className="m-0 flex list-none flex-col gap-2 p-0"
+      data-testid="retail-warehouse-recent-mobile"
+    >
+      {summary.recent.map((item) => (
+        <li key={item.stockRequestId}>
+          <Link
+            to={`/warehouse/requests/${item.stockRequestId}`}
+            className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border p-3 no-underline"
+            data-testid={`retail-warehouse-recent-${item.stockRequestId}`}
+            data-status={item.status}
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-foreground">
+                  {item.requestNumber ?? item.stockRequestId.slice(0, 8)}
+                </span>
+                <StatusChip tone={stockRequestStatusTone(item.status)}>
+                  {t(stockRequestStatusLabelKey(item.status) as MessageKey)}
+                </StatusChip>
+              </div>
+              <div className="mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                {item.requestedSourceLocationName ?? item.requestedSourceLocationId}
+                {" · "}
+                {formatTransferTimestamp(item.updatedAtUtc)}
+              </div>
+            </div>
+            <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className="flex flex-col gap-3" data-testid="retail-warehouse-overview">
@@ -144,40 +246,20 @@ export function RetailWarehouseOverviewPage() {
 
         {summary.recent.length === 0 ? (
           <EmptyState
-              align="center"
-              icon={<Package className="size-5" strokeWidth={1.75} />}
+            align="center"
+            icon={<Package className="size-5" strokeWidth={1.75} />}
             title={t("retailWarehouse.recentEmpty")}
             detail={t("retailWarehouse.recentEmptyDetail")}
           />
         ) : (
-          <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
-            {summary.recent.map((item) => (
-              <li key={item.stockRequestId}>
-                <Link
-                  to={`/warehouse/requests/${item.stockRequestId}`}
-                  className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border p-3 no-underline"
-                  data-testid={`retail-warehouse-recent-${item.stockRequestId}`}
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-foreground">
-                        {item.requestNumber ?? item.stockRequestId.slice(0, 8)}
-                      </span>
-                      <StatusChip tone={stockRequestStatusTone(item.status)}>
-                        {t(stockRequestStatusLabelKey(item.status) as MessageKey)}
-                      </StatusChip>
-                    </div>
-                    <div className="mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                      {item.requestedSourceLocationName ?? item.requestedSourceLocationId}
-                      {" · "}
-                      {formatTransferTimestamp(item.updatedAtUtc)}
-                    </div>
-                  </div>
-                  <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-2">
+            <ExitsResponsiveDataView
+              layout={layout}
+              testId="retail-warehouse-recent-responsive"
+              table={layout === "table" ? recentTable : null}
+              list={layout === "list" ? recentList : null}
+            />
+          </div>
         )}
       </section>
     </div>

@@ -26,12 +26,74 @@ public interface IInventoryLotRepository
         bool includeDepleted,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Batch on-hand lots for many products at one branch (or org-wide when <paramref name="branchId"/> is null).
+    /// Default falls back to per-product <see cref="ListOnHandAsync"/> (test fakes); production overrides.
+    /// </summary>
+    async Task<IReadOnlyList<InventoryLot>> ListOnHandForProductsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        PosBranchId? branchId,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return Array.Empty<InventoryLot>();
+        }
+
+        var result = new List<InventoryLot>();
+        foreach (var productId in productIds.Distinct())
+        {
+            var lots = await ListOnHandAsync(
+                    organizationId,
+                    productId,
+                    branchId,
+                    includeDepleted,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            result.AddRange(lots);
+        }
+
+        return result;
+    }
+
     /// <summary>Lots with <c>BranchId</c> null (legacy org-level stock). Never includes branch-scoped lots.</summary>
     Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
         bool includeDepleted,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Batch legacy org-level lots for many products (<c>BranchId</c> null only).
+    /// Default falls back to per-product <see cref="ListOrgLevelOnHandAsync"/> (test fakes); production overrides.
+    /// </summary>
+    async Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandForProductsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return Array.Empty<InventoryLot>();
+        }
+
+        var result = new List<InventoryLot>();
+        foreach (var productId in productIds.Distinct())
+        {
+            var lots = await ListOrgLevelOnHandAsync(
+                    organizationId,
+                    productId,
+                    includeDepleted,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            result.AddRange(lots);
+        }
+
+        return result;
+    }
 
     Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
         PosOrganizationId organizationId,
@@ -55,10 +117,13 @@ public interface IInventoryLotRepository
     /// <summary>
     /// Counts on-hand expired lots (date-based) and near-expiry lots using each product's
     /// <c>EffectiveExpirationWarningDays</c> (joined from catalog products).
+    /// When <paramref name="branchId"/> is set, counts only lots for that exact branch
+    /// (org-level <c>BranchId</c> null lots are excluded).
     /// </summary>
     Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
         PosOrganizationId organizationId,
         DateOnly today,
+        PosBranchId? branchId = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default);

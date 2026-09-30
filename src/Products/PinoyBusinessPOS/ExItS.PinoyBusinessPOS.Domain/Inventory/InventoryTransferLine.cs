@@ -35,7 +35,9 @@ public sealed record InventoryTransferReceiveLineDraft(
     InventoryTransferMissingDisposition? MissingDisposition = null,
     InventoryTransferDiscrepancyFollowUp? DamagedFollowUp = null,
     InventoryTransferDiscrepancyFollowUp? OtherFollowUp = null,
-    InventoryTransferDamagedCustodyDecision? DamagedCustodyDecision = null)
+    InventoryTransferDamagedCustodyDecision? DamagedCustodyDecision = null,
+    InventoryTransferExceptionCustodyDecision? OtherCustodyDecision = null,
+    CatalogProductId? ActualReceivedProductId = null)
 {
     /// <summary>Backward-compatible alias for <see cref="GoodQty"/>.</summary>
     public decimal ReceivedQty => GoodQty;
@@ -265,8 +267,12 @@ public sealed class InventoryTransferLine
                 "When classifying a shortfall, damaged plus missing plus other must equal the discrepancy quantity.");
         }
 
+        // ExpectedLater ("Wait for remaining delivery") closes the shortfall and creates
+        // RemainingToDispatch so source can fulfill — same coverage effect as CloseMissing.
+        // Destination multi-receipt without a shortfall label still uses good-only partial receive.
         var missingClosed = receive.MissingDisposition is InventoryTransferMissingDisposition.CloseMissing
             or InventoryTransferMissingDisposition.AcceptShortage
+            or InventoryTransferMissingDisposition.ExpectedLater
             ? missing
             : 0m;
 

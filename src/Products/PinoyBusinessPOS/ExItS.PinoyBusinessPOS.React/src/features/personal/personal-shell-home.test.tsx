@@ -138,6 +138,12 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-nav-todo")).toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-orders")).toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-more")).toBeInTheDocument();
+    const desktopSidebar = screen.getByTestId("personal-desktop-sidebar");
+    expect(desktopSidebar.className).toMatch(/\bhidden\b/);
+    expect(desktopSidebar.className).toMatch(/\blg:block\b/);
+    expect(screen.getByTestId("personal-sidebar")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-sidebar-home")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-sidebar-stores")).toBeInTheDocument();
   });
 
   it("loads Utang-first home summary and quick actions", async () => {
@@ -153,6 +159,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("0");
     });
+    expect(screen.getByTestId("personal-home-layout")).toBeInTheDocument();
     expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-start-business")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();

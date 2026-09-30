@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ExitsModal } from "@/components/exits/ExitsModal";
+import { SideDrawer } from "@/components/exits/SideDrawer";
 import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import {
@@ -10,7 +10,11 @@ import {
   receiveDiscrepancyQty,
 } from "@/features/purchasing/receive-math";
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
-import { cn } from "@/lib/cn";
+import {
+  forcesReturnToSource,
+  isActualProductSameAsExpected,
+  requiresActualProduct,
+} from "@/features/inventory/transfer-exception-custody-policy";
 
 export type DiscrepancyLineDraft = {
   productId: string;
@@ -24,6 +28,8 @@ export type DiscrepancyLineDraft = {
   otherReasonCode: string;
   otherReasonText: string;
   otherExpanded?: boolean;
+  actualReceivedProductId?: string | null;
+  actualReceivedProductName?: string | null;
   remarksText: string;
 };
 
@@ -62,6 +68,10 @@ export type ReceiveDiscrepancyDialogProps = {
   cancelLabel: string;
   confirmLabel: string;
   notAcceptedTemplate: string;
+  actualProductLabel?: string;
+  actualProductRequiredHint?: string;
+  forceReturnHint?: string;
+  renderActualProductPicker?: (line: DiscrepancyLineDraft) => React.ReactNode;
 };
 
 function formatNotAccepted(template: string, qty: number, uom: string): string {
@@ -81,6 +91,12 @@ function otherReasonComplete(line: DiscrepancyLineDraft, other: number): boolean
   if (code === "Other" && !line.otherReasonText.trim()) {
     return false;
   }
+  if (requiresActualProduct(code) && !line.actualReceivedProductId?.trim()) {
+    return false;
+  }
+  if (isActualProductSameAsExpected(code, line.productId, line.actualReceivedProductId)) {
+    return false;
+  }
   return true;
 }
 
@@ -88,8 +104,13 @@ function qtyValue(text: string): number {
   return parseNonNegativeQty(text) ?? 0;
 }
 
+/** Max for one classification bucket so Damaged + Not delivered + Other stay ≤ discrepancy. */
+function maxBucketQty(discrepancyQty: number, othersSum: number): number {
+  return Math.max(0, discrepancyQty - Math.max(0, othersSum));
+}
+
 /**
- * Classification dialog shown only for lines where Good received &lt; Outstanding.
+ * Classification drawer (left) shown only for lines where Good received &lt; Outstanding.
  */
 export function ReceiveDiscrepancyDialog({
   open,
@@ -117,6 +138,10 @@ export function ReceiveDiscrepancyDialog({
   cancelLabel,
   confirmLabel,
   notAcceptedTemplate,
+  actualProductLabel = "Actual item received",
+  actualProductRequiredHint = "Select the product that was actually received.",
+  forceReturnHint = "This reason requires return to source.",
+  renderActualProductPicker,
 }: ReceiveDiscrepancyDialogProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const safeIndex = Math.min(activeIndex, Math.max(0, lines.length - 1));
@@ -165,9 +190,10 @@ export function ReceiveDiscrepancyDialog({
         ? "other"
         : "__unset__";
 
-  const otherPanelOpen =
+  const otherChosen =
     line != null &&
     (allOtherSelected ||
+      Boolean(line.otherExpanded) ||
       (other !== null && other > 1e-9) ||
       Boolean(line.otherReasonCode.trim()));
 
@@ -255,229 +281,312 @@ export function ReceiveDiscrepancyDialog({
   }
 
   return (
-    <ExitsModal
+    <SideDrawer
       open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          onCancel();
-        }
-      }}
+      onClose={onCancel}
       title={title}
       description={classifyHint}
-      size="md"
+      side="left"
       testId="receive-discrepancy-dialog"
-      footer={
-        <>
-          <Button
-            type="button"
-            variant="ghost"
-            data-testid="receive-discrepancy-cancel"
-            onClick={onCancel}
-          >
-            {cancelLabel}
-          </Button>
-          <Button
-            type="button"
-            disabled={!allComplete}
-            data-testid="receive-discrepancy-confirm"
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </Button>
-        </>
-      }
+      panelClassName="exits-form-drawer__panel exits-form-drawer__panel--md"
+      closeLabel={cancelLabel}
     >
-      {lines.length > 1 ? (
-        <div className="mb-2 flex flex-wrap gap-2" data-testid="receive-discrepancy-line-tabs">
-          {lines.map((entry, index) => (
-            <Button
-              key={entry.productId}
-              type="button"
-              size="sm"
-              variant={index === safeIndex ? "default" : "outline"}
-              data-testid={`receive-discrepancy-tab-${entry.productId}`}
-              onClick={() => setActiveIndex(index)}
-            >
-              {entry.name}
-            </Button>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="flex flex-col gap-3" data-testid={`receive-discrepancy-line-${line.productId}`}>
-        <div className="flex flex-col gap-1">
-          <p className="m-0 font-medium">{line.name}</p>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="receive-discrepancy-not-accepted">
-            {formatNotAccepted(notAcceptedTemplate, discrepancy, line.uom)}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <span className="exits-type-label">{classifyAsLabel}</span>
-          <ExitsPillSelect<ClassifyQuickFill>
-            appearance="tile"
-            aria-label={classifyAsLabel}
-            value={quickFillValue}
-            onChange={onQuickFillChange}
-            className="grid-cols-3"
-            testId="receive-discrepancy-quick-fill"
-            options={[
-              { value: "damaged", label: allDamagedLabel },
-              { value: "notDelivered", label: allNotDeliveredLabel },
-              { value: "other", label: allOtherLabel },
-            ]}
-          />
-        </div>
-
-        <div
-          className={cn(
-            "grid grid-cols-1 gap-3",
-            otherPanelOpen ? "sm:grid-cols-3" : "sm:grid-cols-2",
-          )}
-          data-testid="receive-discrepancy-qty-row"
-        >
-          <label className="exits-type-label flex flex-col gap-1.5">
-            <span>{damagedLabel}</span>
-            <QuantityStepper
-              compact
-              variant="auto"
-              min={0}
-              max={discrepancy}
-              value={qtyValue(line.damagedText)}
-              onChange={(next) =>
-                onChangeLine(line.productId, { damagedText: String(next) })
-              }
-              decreaseLabel={decreaseQtyLabel}
-              increaseLabel={increaseQtyLabel}
-              ariaLabel={damagedLabel}
-              valueTestId={`receive-discrepancy-damaged-${line.productId}`}
-              className="justify-start"
-            />
-          </label>
-          <label className="exits-type-label flex flex-col gap-1.5">
-            <span>{notDeliveredLabel}</span>
-            <QuantityStepper
-              compact
-              variant="auto"
-              min={0}
-              max={discrepancy}
-              value={qtyValue(line.notDeliveredText)}
-              onChange={(next) =>
-                onChangeLine(line.productId, { notDeliveredText: String(next) })
-              }
-              decreaseLabel={decreaseQtyLabel}
-              increaseLabel={increaseQtyLabel}
-              ariaLabel={notDeliveredLabel}
-              valueTestId={`receive-discrepancy-not-delivered-${line.productId}`}
-              className="justify-start"
-            />
-          </label>
-          {otherPanelOpen ? (
-            <label className="exits-type-label flex flex-col gap-1.5">
-              <span>{otherLabel}</span>
-              <QuantityStepper
-                compact
-                variant="auto"
-                min={0}
-                max={discrepancy}
-                value={qtyValue(line.otherText)}
-                onChange={(next) =>
-                  onChangeLine(line.productId, { otherText: String(next) })
-                }
-                decreaseLabel={decreaseQtyLabel}
-                increaseLabel={increaseQtyLabel}
-                ariaLabel={otherLabel}
-                valueTestId={`receive-discrepancy-other-qty-${line.productId}`}
-                className="justify-start"
-              />
-            </label>
+      <div className="exits-form-drawer" data-testid="receive-discrepancy-form">
+        <div className="exits-form-drawer__body">
+          {lines.length > 1 ? (
+            <div className="mb-2 flex flex-wrap gap-2" data-testid="receive-discrepancy-line-tabs">
+              {lines.map((entry, index) => (
+                <Button
+                  key={entry.productId}
+                  type="button"
+                  size="sm"
+                  variant={index === safeIndex ? "default" : "outline"}
+                  data-testid={`receive-discrepancy-tab-${entry.productId}`}
+                  onClick={() => setActiveIndex(index)}
+                >
+                  {entry.name}
+                </Button>
+              ))}
+            </div>
           ) : null}
-        </div>
 
-        {otherPanelOpen ? (
           <div
             className="flex flex-col gap-3"
-            data-testid={`receive-discrepancy-other-panel-${line.productId}`}
+            data-testid={`receive-discrepancy-line-${line.productId}`}
           >
-            <label className="exits-type-label flex flex-col gap-1.5">
-              <span>{otherReasonLabel}</span>
-              <select
-                className="exits-select"
-                value={line.otherReasonCode}
-                onChange={(e) =>
-                  onChangeLine(line.productId, {
-                    otherReasonCode: e.target.value,
-                    otherReasonText:
-                      e.target.value === "Other" ? line.otherReasonText : "",
-                  })
-                }
-                data-testid={`receive-discrepancy-other-reason-${line.productId}`}
+            <div
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 shadow-[var(--exits-shadow-sm)]"
+              data-testid="receive-discrepancy-product-card"
+            >
+              <p className="m-0 font-semibold">{line.name}</p>
+              <p
+                className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="receive-discrepancy-not-accepted"
               >
-                <option value="">—</option>
-                {otherReasons.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {line.otherReasonCode === "Other" ? (
+                {formatNotAccepted(notAcceptedTemplate, discrepancy, line.uom)}
+              </p>
+              {otherChosen && line.actualReceivedProductName?.trim() ? (
+                <p
+                  className="m-0 mt-1.5 text-[length:var(--exits-text-sm)]"
+                  data-testid={`receive-discrepancy-product-card-actual-${line.productId}`}
+                >
+                  <span className="text-muted">{actualProductLabel}: </span>
+                  <span className="font-medium">{line.actualReceivedProductName}</span>
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="exits-type-label font-bold">{classifyAsLabel}</span>
+              <ExitsPillSelect<ClassifyQuickFill>
+                appearance="tile"
+                aria-label={classifyAsLabel}
+                value={quickFillValue}
+                onChange={onQuickFillChange}
+                className="grid-cols-3"
+                testId="receive-discrepancy-quick-fill"
+                options={[
+                  { value: "damaged", label: allDamagedLabel },
+                  { value: "notDelivered", label: allNotDeliveredLabel },
+                  { value: "other", label: allOtherLabel },
+                ]}
+              />
+            </div>
+
+            <div
+              className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+              data-testid="receive-discrepancy-qty-row"
+            >
               <label className="exits-type-label flex flex-col gap-1.5">
-                <span className="inline-flex items-center gap-1">
-                  {otherDescriptionLabel}
-                  <span
-                    className="text-[length:var(--exits-text-xs)] font-bold text-[var(--exits-danger)]"
-                    aria-hidden="true"
-                  >
-                    *
-                  </span>
-                </span>
-                <input
-                  className="exits-input"
-                  type="text"
-                  value={line.otherReasonText}
-                  onChange={(e) =>
-                    onChangeLine(line.productId, { otherReasonText: e.target.value })
+                <span>{damagedLabel}</span>
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  min={0}
+                  max={
+                    otherChosen
+                      ? maxBucketQty(discrepancy, qtyValue(line.notDeliveredText) + qtyValue(line.otherText))
+                      : discrepancy
                   }
-                  data-testid={`receive-discrepancy-other-description-${line.productId}`}
+                  value={qtyValue(line.damagedText)}
+                  onChange={(next) =>
+                    onChangeLine(line.productId, { damagedText: String(next) })
+                  }
+                  decreaseLabel={decreaseQtyLabel}
+                  increaseLabel={increaseQtyLabel}
+                  ariaLabel={damagedLabel}
+                  valueTestId={`receive-discrepancy-damaged-${line.productId}`}
+                  className="justify-start"
                 />
               </label>
+              <label className="exits-type-label flex flex-col gap-1.5">
+                <span>{notDeliveredLabel}</span>
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  min={0}
+                  max={
+                    otherChosen
+                      ? maxBucketQty(discrepancy, qtyValue(line.damagedText) + qtyValue(line.otherText))
+                      : discrepancy
+                  }
+                  value={qtyValue(line.notDeliveredText)}
+                  onChange={(next) =>
+                    onChangeLine(line.productId, { notDeliveredText: String(next) })
+                  }
+                  decreaseLabel={decreaseQtyLabel}
+                  increaseLabel={increaseQtyLabel}
+                  ariaLabel={notDeliveredLabel}
+                  valueTestId={`receive-discrepancy-not-delivered-${line.productId}`}
+                  className="justify-start"
+                />
+              </label>
+              <label className="exits-type-label flex flex-col gap-1.5">
+                <span>{otherLabel}</span>
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  min={0}
+                  max={
+                    otherChosen
+                      ? maxBucketQty(discrepancy, qtyValue(line.damagedText) + qtyValue(line.notDeliveredText))
+                      : discrepancy
+                  }
+                  value={qtyValue(line.otherText)}
+                  disabled={!otherChosen}
+                  onChange={(next) =>
+                    onChangeLine(line.productId, {
+                      otherText: String(next),
+                      otherExpanded: next > 0 || line.otherExpanded,
+                    })
+                  }
+                  decreaseLabel={decreaseQtyLabel}
+                  increaseLabel={increaseQtyLabel}
+                  ariaLabel={otherLabel}
+                  valueTestId={`receive-discrepancy-other-qty-${line.productId}`}
+                  className="justify-start"
+                />
+              </label>
+            </div>
+
+            {otherChosen ? (
+              <div
+                className="flex flex-col gap-3"
+                data-testid={`receive-discrepancy-other-panel-${line.productId}`}
+              >
+                <label className="exits-type-label flex flex-col gap-1.5">
+                  <span>{otherReasonLabel}</span>
+                  <select
+                    className="exits-select"
+                    value={line.otherReasonCode}
+                onChange={(e) => {
+                  const nextCode = e.target.value;
+                  const keepActual = requiresActualProduct(nextCode);
+                  const sameAsExpected =
+                    keepActual &&
+                    isActualProductSameAsExpected(
+                      nextCode,
+                      line.productId,
+                      line.actualReceivedProductId,
+                    );
+                  onChangeLine(line.productId, {
+                    otherReasonCode: nextCode,
+                    otherReasonText: nextCode === "Other" ? line.otherReasonText : "",
+                    actualReceivedProductId: keepActual && !sameAsExpected
+                      ? line.actualReceivedProductId
+                      : null,
+                    actualReceivedProductName: keepActual && !sameAsExpected
+                      ? line.actualReceivedProductName
+                      : null,
+                  });
+                }}
+                    data-testid={`receive-discrepancy-other-reason-${line.productId}`}
+                  >
+                    <option value="">—</option>
+                    {otherReasons.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {line.otherReasonCode === "Other" ? (
+                  <label className="exits-type-label flex flex-col gap-1.5">
+                    <span className="inline-flex items-center gap-1">
+                      {otherDescriptionLabel}
+                      <span
+                        className="text-[length:var(--exits-text-xs)] font-bold text-[var(--exits-danger)]"
+                        aria-hidden="true"
+                      >
+                        *
+                      </span>
+                    </span>
+                    <input
+                      className="exits-input"
+                      type="text"
+                      value={line.otherReasonText}
+                      onChange={(e) =>
+                        onChangeLine(line.productId, { otherReasonText: e.target.value })
+                      }
+                      data-testid={`receive-discrepancy-other-description-${line.productId}`}
+                    />
+                  </label>
+                ) : null}
+                {requiresActualProduct(line.otherReasonCode) && other !== null && other > 1e-9 ? (
+                  <div
+                    className="flex flex-col gap-1.5"
+                    data-testid={`receive-discrepancy-actual-product-${line.productId}`}
+                  >
+                    <span className="exits-type-label inline-flex items-center gap-1">
+                      {actualProductLabel}
+                      <span
+                        className="text-[length:var(--exits-text-xs)] font-bold text-[var(--exits-danger)]"
+                        aria-hidden="true"
+                      >
+                        *
+                      </span>
+                    </span>
+                    <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {actualProductRequiredHint}
+                    </p>
+                    {line.actualReceivedProductName ? (
+                      <p
+                        className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+                        data-testid={`receive-discrepancy-actual-product-selected-${line.productId}`}
+                      >
+                        {line.actualReceivedProductName}
+                      </p>
+                    ) : null}
+                    {renderActualProductPicker?.(line)}
+                  </div>
+                ) : null}
+                {forcesReturnToSource(line.otherReasonCode) && other !== null && other > 1e-9 ? (
+                  <p
+                    className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid={`receive-discrepancy-force-return-${line.productId}`}
+                  >
+                    {forceReturnHint}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
-          </div>
-        ) : null}
 
-        <label className="exits-type-label flex flex-col gap-1.5">
-          <span className="inline-flex items-center gap-1">
-            {remarksLabel}
-            <span
-              className="text-[length:var(--exits-text-xs)] font-bold text-[var(--exits-danger)]"
-              aria-hidden="true"
+            <label className="exits-type-label flex flex-col gap-1.5">
+              <span className="inline-flex items-center gap-1">
+                {remarksLabel}
+                <span
+                  className="text-[length:var(--exits-text-xs)] font-bold text-[var(--exits-danger)]"
+                  aria-hidden="true"
+                >
+                  *
+                </span>
+                <span className="sr-only">{remarksRequiredLabel}</span>
+              </span>
+              <textarea
+                className="exits-input"
+                rows={2}
+                required
+                aria-required="true"
+                value={line.remarksText}
+                onChange={(e) => onChangeLine(line.productId, { remarksText: e.target.value })}
+                data-testid={`receive-discrepancy-remarks-${line.productId}`}
+              />
+            </label>
+
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] tabular-nums font-medium"
+              data-testid="receive-discrepancy-remaining"
             >
-              *
-            </span>
-            <span className="sr-only">{remarksRequiredLabel}</span>
-          </span>
-          <textarea
-            className="exits-input"
-            rows={2}
-            required
-            aria-required="true"
-            value={line.remarksText}
-            onChange={(e) => onChangeLine(line.productId, { remarksText: e.target.value })}
-            data-testid={`receive-discrepancy-remarks-${line.productId}`}
-          />
-        </label>
+              {remainingToClassifyLabel.replace(
+                "{qty}",
+                formatStockQtyLabel(remaining, line.uom),
+              )}
+            </p>
+          </div>
+        </div>
 
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] tabular-nums font-medium"
-          data-testid="receive-discrepancy-remaining"
-        >
-          {remainingToClassifyLabel.replace(
-            "{qty}",
-            formatStockQtyLabel(remaining, line.uom),
-          )}
-        </p>
+        <div className="exits-form-drawer__footer">
+          <div className="exits-form-drawer__footer-actions">
+            <Button
+              type="button"
+              intent="danger"
+              appearance="solid"
+              data-testid="receive-discrepancy-cancel"
+              onClick={onCancel}
+            >
+              {cancelLabel}
+            </Button>
+            <Button
+              type="button"
+              disabled={!allComplete}
+              data-testid="receive-discrepancy-confirm"
+              onClick={onConfirm}
+            >
+              {confirmLabel}
+            </Button>
+          </div>
+        </div>
       </div>
-    </ExitsModal>
+    </SideDrawer>
   );
 }

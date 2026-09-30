@@ -336,6 +336,32 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<decimal> SumActiveOnlineUtangCommitmentAsync(
+        PosOrganizationId sellerOrganizationId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (platformBusinessCustomerId == Guid.Empty)
+        {
+            return 0m;
+        }
+
+        var submitted = nameof(CustomerOrderStatus.Submitted);
+        var accepted = nameof(CustomerOrderStatus.Accepted);
+        var utang = nameof(CustomerOrderPaymentMethod.Utang);
+
+        var sum = await _db.CustomerOrders.AsNoTracking()
+            .Where(o =>
+                o.SellerOrganizationId == sellerOrganizationId.Value
+                && o.PlatformBusinessCustomerId == platformBusinessCustomerId
+                && o.PaymentMethod == utang
+                && (o.Status == submitted || o.Status == accepted))
+            .SumAsync(o => (decimal?)o.Total, cancellationToken)
+            .ConfigureAwait(false);
+
+        return sum ?? 0m;
+    }
+
     private async Task<long> ReserveNextSequenceAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,

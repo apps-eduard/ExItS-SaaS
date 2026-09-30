@@ -277,7 +277,7 @@ export function InvitationsPage() {
 
   if (connectionsQuery.isLoading && !connectionsQuery.data) {
     return (
-      <div className="personal-page invitations-page exits-page mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3">
+      <div className="personal-page invitations-page exits-page flex w-full min-w-0 flex-col gap-3">
         <PageHeader
           title={t("invitations.title")}
           description={t("invitations.lede")}
@@ -293,7 +293,7 @@ export function InvitationsPage() {
   if (connectionsQuery.error) {
     const err = connectionsQuery.error;
     return (
-      <div className="personal-page invitations-page exits-page mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3">
+      <div className="personal-page invitations-page exits-page flex w-full min-w-0 flex-col gap-3">
         <PageHeader
           title={t("invitations.title")}
           description={t("invitations.lede")}
@@ -314,7 +314,7 @@ export function InvitationsPage() {
 
   return (
     <section
-      className="personal-page invitations-page exits-page mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4"
+      className="personal-page invitations-page exits-page flex w-full min-w-0 flex-col gap-4"
       data-testid="invitations-page"
     >
       <header className="flex items-center gap-2">

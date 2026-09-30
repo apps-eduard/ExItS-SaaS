@@ -97,7 +97,7 @@ export function OrgEssentialsPage() {
   );
 
   const overviewQuery = useQuery({
-    queryKey: ["org-home-overview", workspace?.organizationId, workspace?.branchId],
+    queryKey: ["org-home-overview", workspace?.organizationId],
     enabled: Boolean(workspace) && canDashboard && online,
     queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
   });
@@ -189,7 +189,7 @@ export function OrgEssentialsPage() {
     if (overview.lowStockProductCount > 0) {
       items.push({
         id: "low-stock",
-        label: t("dashboard.lowStock"),
+        label: `${t("dashboard.lowStock")} (${t("dashboard.scope.allBranches")})`,
         value: String(overview.lowStockProductCount),
         tone: "attention",
         to: "/inventory",
@@ -199,7 +199,7 @@ export function OrgEssentialsPage() {
     if (overview.nearExpiryLotCount > 0) {
       items.push({
         id: "near-expiry",
-        label: t("dashboard.nearExpiryLots"),
+        label: `${t("dashboard.nearExpiryLots")} (${t("dashboard.scope.allBranches")})`,
         value: String(overview.nearExpiryLotCount),
         tone: "attention",
         to: "/inventory/expiration",
@@ -209,7 +209,7 @@ export function OrgEssentialsPage() {
     if (overview.expiredLotCount > 0) {
       items.push({
         id: "expired",
-        label: t("dashboard.expiredLots"),
+        label: `${t("dashboard.expiredLots")} (${t("dashboard.scope.allBranches")})`,
         value: String(overview.expiredLotCount),
         tone: "danger",
         to: "/inventory/expiration",

@@ -32,6 +32,13 @@ export const linkedCustomerStatementSummarySchema = z.object({
   outstandingBalance: z.number(),
   currency: z.string(),
   asOfUtc: z.string(),
+  onlineOrderingAccess: z.enum(["Default", "Allowed", "Blocked"]).optional().default("Default"),
+  onlineShoppingAllowed: z.boolean().optional().default(false),
+  creditStatus: z.string().nullable().optional(),
+  creditLimit: z.number().nullable().optional(),
+  pendingOnlineUtangCommitment: z.number().optional().default(0),
+  availableCredit: z.number().optional().default(0),
+  defaultTermDays: z.number().nullable().optional(),
 });
 
 export const linkedCustomerRecentActivityPageSchema = z.object({
@@ -193,6 +200,14 @@ function normalizeStatement(raw: unknown): unknown {
     outstandingBalance: r.outstandingBalance ?? r.OutstandingBalance,
     currency: r.currency ?? r.Currency,
     asOfUtc: r.asOfUtc ?? r.AsOfUtc,
+    onlineOrderingAccess: r.onlineOrderingAccess ?? r.OnlineOrderingAccess ?? "Default",
+    onlineShoppingAllowed: r.onlineShoppingAllowed ?? r.OnlineShoppingAllowed ?? false,
+    creditStatus: r.creditStatus ?? r.CreditStatus ?? null,
+    creditLimit: r.creditLimit ?? r.CreditLimit ?? null,
+    pendingOnlineUtangCommitment:
+      r.pendingOnlineUtangCommitment ?? r.PendingOnlineUtangCommitment ?? 0,
+    availableCredit: r.availableCredit ?? r.AvailableCredit ?? 0,
+    defaultTermDays: r.defaultTermDays ?? r.DefaultTermDays ?? null,
   };
 }
 

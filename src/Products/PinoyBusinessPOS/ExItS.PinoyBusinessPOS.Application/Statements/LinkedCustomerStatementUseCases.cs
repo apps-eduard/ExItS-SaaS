@@ -1,7 +1,10 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using Microsoft.Extensions.Options;
 
@@ -20,6 +23,7 @@ public static class LinkedCustomerStatementLimits
 
 /// <summary>
 /// Lightweight Personal-facing linked Business Utang statement summary (no activity lines).
+/// Merchant POS remains authority; this is an authorized projection only.
 /// </summary>
 public sealed record LinkedCustomerStatementSummaryDto(
     Guid OrganizationId,
@@ -30,7 +34,14 @@ public sealed record LinkedCustomerStatementSummaryDto(
     string CustomerDisplayName,
     decimal OutstandingBalance,
     string Currency,
-    DateTimeOffset AsOfUtc);
+    DateTimeOffset AsOfUtc,
+    string OnlineOrderingAccess = "Default",
+    bool OnlineShoppingAllowed = false,
+    string? CreditStatus = null,
+    decimal? CreditLimit = null,
+    decimal PendingOnlineUtangCommitment = 0m,
+    decimal AvailableCredit = 0m,
+    int? DefaultTermDays = null);
 
 public sealed record LinkedCustomerActivityItemDto(
     Guid ActivityId,
@@ -120,17 +131,26 @@ public sealed class GetLinkedCustomerStatementSummary
     private readonly AuthorizeLinkedCustomerStatementAccess _authorize;
     private readonly IPOSCustomerRepository _customers;
     private readonly IOutstandingBalanceService _outstanding;
+    private readonly ICustomerCreditPolicyRepository _creditPolicies;
+    private readonly ICustomerOrderRepository _orders;
+    private readonly ISellerCustomerOrderingCapability _sellerCapability;
     private readonly IClock _clock;
 
     public GetLinkedCustomerStatementSummary(
         AuthorizeLinkedCustomerStatementAccess authorize,
         IPOSCustomerRepository customers,
         IOutstandingBalanceService outstanding,
+        ICustomerCreditPolicyRepository creditPolicies,
+        ICustomerOrderRepository orders,
+        ISellerCustomerOrderingCapability sellerCapability,
         IClock clock)
     {
         _authorize = authorize;
         _customers = customers;
         _outstanding = outstanding;
+        _creditPolicies = creditPolicies;
+        _orders = orders;
+        _sellerCapability = sellerCapability;
         _clock = clock;
     }
 
@@ -165,6 +185,28 @@ public sealed class GetLinkedCustomerStatementSummary
             .GetOutstandingAsync(orgId, posCustomerId, cancellationToken)
             .ConfigureAwait(false);
 
+        var capability = await _sellerCapability
+            .ResolveAsync(ctx.OrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var shoppingAllowed = CustomerOnlineOrderingAccessRules.IsShoppingAllowed(
+            capability.CanCustomerOrder,
+            customer.OnlineOrderingAccess);
+
+        var policy = await _creditPolicies
+            .GetByCustomerAsync(orgId, posCustomerId, cancellationToken)
+            .ConfigureAwait(false);
+        var pending = await _orders
+            .SumActiveOnlineUtangCommitmentAsync(orgId, ctx.PlatformBusinessCustomerId, cancellationToken)
+            .ConfigureAwait(false);
+        var creditStatus = policy?.Status.ToString() ?? nameof(CustomerCreditPolicyStatus.NotConfigured);
+        var creditLimit = policy?.CreditLimit;
+        var available = policy is null
+            ? 0m
+            : CustomerCreditPolicy.AvailableCredit(
+                policy.Status,
+                policy.CreditLimit,
+                outstanding + pending);
+
         return ApplicationResult<LinkedCustomerStatementSummaryDto>.Success(
             new LinkedCustomerStatementSummaryDto(
                 ctx.OrganizationId,
@@ -175,7 +217,14 @@ public sealed class GetLinkedCustomerStatementSummary
                 customer.DisplayName,
                 outstanding,
                 string.IsNullOrWhiteSpace(currencyCode) ? "PHP" : currencyCode.Trim().ToUpperInvariant(),
-                _clock.UtcNow));
+                _clock.UtcNow,
+                customer.OnlineOrderingAccess.ToString(),
+                shoppingAllowed,
+                creditStatus,
+                creditLimit,
+                pending,
+                available,
+                policy?.DefaultTermDays));
     }
 }
 

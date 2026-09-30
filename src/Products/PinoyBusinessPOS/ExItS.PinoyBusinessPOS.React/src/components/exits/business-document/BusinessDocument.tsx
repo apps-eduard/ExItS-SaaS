@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export type BusinessIdentity = {
@@ -195,6 +195,32 @@ export type DocumentColumn = {
   width?: string;
 };
 
+function documentColumnAlignClass(align: DocumentColumn["align"]): string | undefined {
+  if (align === "right") {
+    // Tailwind important beats base `th, td { text-align: left }` in globals.
+    return "is-right !text-end";
+  }
+  if (align === "center") {
+    return "is-center !text-center";
+  }
+  return undefined;
+}
+
+function documentColumnAlignStyle(
+  align: DocumentColumn["align"],
+  width?: string,
+): CSSProperties | undefined {
+  const textAlign =
+    align === "right" ? "end" : align === "center" ? "center" : undefined;
+  if (!textAlign && !width) {
+    return undefined;
+  }
+  return {
+    ...(width ? { width } : {}),
+    ...(textAlign ? { textAlign } : {}),
+  };
+}
+
 export function DocumentLineTable({
   columns,
   rows,
@@ -211,11 +237,8 @@ export function DocumentLineTable({
           {columns.map((col) => (
             <th
               key={col.key}
-              className={cn(
-                col.align === "right" && "is-right",
-                col.align === "center" && "is-center",
-              )}
-              style={col.width ? { width: col.width } : undefined}
+              className={documentColumnAlignClass(col.align)}
+              style={documentColumnAlignStyle(col.align, col.width)}
             >
               {col.header}
             </th>
@@ -233,10 +256,8 @@ export function DocumentLineTable({
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={cn(
-                    col.align === "right" && "is-right",
-                    col.align === "center" && "is-center",
-                  )}
+                  className={documentColumnAlignClass(col.align)}
+                  style={documentColumnAlignStyle(col.align)}
                 >
                   {row[col.key] ?? ""}
                 </td>

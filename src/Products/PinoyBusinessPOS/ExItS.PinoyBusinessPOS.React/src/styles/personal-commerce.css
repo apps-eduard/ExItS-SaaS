@@ -2,12 +2,12 @@
 
 .personal-commerce-page {
   width: 100%;
-  max-width: 56rem;
-  margin-inline: auto;
+  max-width: none;
+  margin-inline: 0;
 }
 
 .personal-commerce-page.personal-page {
-  max-width: 56rem;
+  max-width: none;
 }
 
 /* —— Store directory —— */
@@ -1341,7 +1341,7 @@
   padding: 1.25rem 1rem;
   border: 1px dashed var(--exits-border);
   border-radius: var(--exits-radius-lg);
-  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+  background: transparent;
 }
 
 /* —— Ordering unavailable —— */
@@ -1631,7 +1631,7 @@
   }
 }
 
-/* Override personal-page max-width for commerce pages on large screens */
+/* Commerce pages fill the personal content column (same width pattern as home). */
 @media (min-width: 1024px) {
   .linked-merchants-page.personal-commerce-page,
   .merchant-shop-page.personal-commerce-page,
@@ -1640,6 +1640,8 @@
   .my-order-detail-page.personal-commerce-page,
   .linked-merchant-statement-page.personal-commerce-page,
   .linked-merchant-receipt-page.personal-commerce-page {
-    max-width: 56rem;
+    max-width: none;
+    margin-inline: 0;
+    width: 100%;
   }
 }

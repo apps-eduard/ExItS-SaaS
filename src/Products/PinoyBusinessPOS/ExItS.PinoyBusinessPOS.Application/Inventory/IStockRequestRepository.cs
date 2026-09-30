@@ -25,6 +25,16 @@ public interface IStockRequestRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Open committing stock requests at a source warehouse that include any of the given products.
+    /// Statuses: Approved, Preparing, legacy InProgress, InTransit, PartiallyFulfilled.
+    /// </summary>
+    Task<IReadOnlyList<StockRequest>> ListOpenCommittingBySourceAndProductIdsAsync(
+        PosOrganizationId organizationId,
+        PosBranchId sourceLocationId,
+        IReadOnlyCollection<Domain.Catalog.CatalogProductId> productIds,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
         PosOrganizationId organizationId,
         PosBranchId destinationLocationId,

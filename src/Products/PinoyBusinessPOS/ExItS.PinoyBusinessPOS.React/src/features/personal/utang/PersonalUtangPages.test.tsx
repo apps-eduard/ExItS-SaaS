@@ -459,13 +459,16 @@ describe("Personal Utang shared-ledger UI", () => {
     );
   });
 
-  it("switches create submit to send-for-confirmation for linked contacts", async () => {
+  it("shows Share toggle for linked contacts defaulting to Save privately", async () => {
     const user = userEvent.setup();
     renderPath("/personal/utang/lent");
     await openUtangRecordForm(user);
     await user.selectOptions(screen.getByTestId("utang-rel-contact"), linkedContactId);
-    expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Send for confirmation");
-    expect(screen.getByTestId("utang-rel-confirm-hint")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Save privately");
+    expect(screen.getByTestId("utang-rel-share-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-rel-share-checkbox")).not.toBeChecked();
+    await user.click(screen.getByTestId("utang-rel-share-checkbox"));
+    expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Share with");
   });
 
   it("requires Purpose / Note before recording a private Utang", async () => {
@@ -476,7 +479,7 @@ describe("Personal Utang shared-ledger UI", () => {
     await user.type(screen.getByTestId("utang-rel-amount"), "100");
     await user.click(screen.getByTestId("utang-rel-submit"));
     expect(await screen.findByRole("alert")).toHaveTextContent(/purpose \/ note/i);
-    expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Save Utang");
+    expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Save privately");
   });
 
   it("shows private save hint for unlinked contacts", async () => {
@@ -492,7 +495,7 @@ describe("Personal Utang shared-ledger UI", () => {
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
 
     expect(await screen.findByTestId("utang-detail-ledger")).toHaveTextContent("Shared ledger");
-    expect(screen.getByTestId("utang-entry-submit")).toHaveTextContent("Send for confirmation");
+    expect(screen.getByTestId("utang-entry-submit")).toHaveTextContent("Save");
     expect(screen.getByTestId("utang-entry-confirm-hint")).toBeInTheDocument();
 
     const incoming = await screen.findByTestId(`utang-history-entry-${pendingIncomingId}`);

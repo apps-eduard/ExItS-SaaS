@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -21,8 +22,8 @@ public sealed class PurchaseOrderDomainTests
     public void Po_and_grn_numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 7, 31);
-        Assert.Equal("260731-001", PurchaseOrderNumbers.Format(date, 1));
-        Assert.Equal("260731-042", GoodsReceiptNumbers.Format(date, 42));
+        Assert.Equal("PO-260731-001", PurchaseOrderNumbers.Format(date, 1));
+        Assert.Equal("GRN-260731-042", GoodsReceiptNumbers.Format(date, 42));
         Assert.Equal("260731-001", PurchaseOrderNumbers.Normalize(" 260731-001 "));
     }
 
@@ -90,10 +91,10 @@ public sealed class PurchaseOrderDomainTests
                 "line note")
         };
 
-        po.Submit("260731-001", snapshots, Guid.NewGuid(), Now);
+        po.Submit("PO-260731-001", snapshots, Guid.NewGuid(), Now);
 
         Assert.Equal(PurchaseOrderStatus.Ordered, po.Status);
-        Assert.Equal("260731-001", po.PoNumber);
+        Assert.Equal("PO-260731-001", po.PoNumber);
         var line = po.Lines.Single();
         Assert.Equal("Bigas Premium", line.NameSnapshot);
         Assert.Equal(UnitOfMeasure.Kilogram, line.UomSnapshot);
@@ -107,7 +108,15 @@ public sealed class PurchaseOrderDomainTests
         var org = PosOrganizationId.From(OrgA);
         var po = BuildOrderedPo(org, orderedQty: 10m);
 
-        po.ApplyReceiptLines([new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 4m)], Now);
+        po.ApplyReceiptLines(
+        [
+            new PurchaseOrderReceiveLineDraft(
+                CatalogProductId.From(ProductA),
+                ReceiveQty: 4m,
+                RejectedQty: 6m,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Short)
+        ],
+        Now);
         Assert.Equal(PurchaseOrderStatus.PartiallyReceived, po.Status);
         Assert.Equal(6m, po.Lines.Single().OutstandingQty);
 
@@ -118,7 +127,7 @@ public sealed class PurchaseOrderDomainTests
         var grn = GoodsReceipt.Create(
             org,
             po.Id,
-            "260731-001",
+            "GRN-260731-001",
             po,
             [new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 4m)],
             Guid.NewGuid(),
@@ -160,7 +169,15 @@ public sealed class PurchaseOrderDomainTests
         Assert.Equal(Actor, ordered.CancelledByUserId);
 
         var partial = BuildOrderedPo(org, 5m);
-        partial.ApplyReceiptLines([new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 1m)], Now);
+        partial.ApplyReceiptLines(
+        [
+            new PurchaseOrderReceiveLineDraft(
+                CatalogProductId.From(ProductA),
+                ReceiveQty: 1m,
+                RejectedQty: 4m,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Short)
+        ],
+        Now);
         var ex = Assert.Throws<DomainException>(() => partial.Cancel(Actor, Now));
         Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderStatusTransition, ex.ErrorCode);
     }
@@ -218,7 +235,7 @@ public sealed class PurchaseOrderDomainTests
             [new PurchaseOrderLineDraft(CatalogProductId.From(ProductA), orderedQty, 10m)],
             Now);
         po.Submit(
-            "260731-099",
+            "PO-260731-099",
             [new PurchaseOrderLineSnapshotInput(
                 CatalogProductId.From(ProductA),
                 "Item",

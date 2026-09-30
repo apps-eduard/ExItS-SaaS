@@ -30,6 +30,9 @@ export const posCustomerListItemSchema = z.object({
   linkedBuyerOrganizationId: guidSchema.nullable().optional(),
   linkedBuyerPublicOrganizationId: z.string().nullable().optional(),
   partyKind: z.string().nullable().optional(),
+  onlineOrderingAccess: z.enum(["Default", "Allowed", "Blocked"]).optional().default("Default"),
+  onlineOrderingAccessUpdatedByUserId: guidSchema.nullable().optional(),
+  onlineOrderingAccessUpdatedAtUtc: z.string().nullable().optional(),
 });
 
 export const posCustomerDetailSchema = posCustomerListItemSchema;
@@ -489,6 +492,31 @@ export async function createCustomer(
       customerId,
       body,
       OFFLINE_OPERATION_TYPES.CustomerCreate,
+    ),
+  });
+  return posCustomerDetailSchema.parse(raw);
+}
+
+export type CustomerOnlineOrderingAccess = "Default" | "Allowed" | "Blocked";
+
+export async function setCustomerOnlineOrderingAccess(
+  workspace: PosWorkspaceScope,
+  customerId: string,
+  access: CustomerOnlineOrderingAccess,
+  signal?: AbortSignal,
+): Promise<PosCustomerDetail> {
+  const operationId = newMutationId();
+  const body = { access };
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: customerPath(customerId, "/online-ordering-access"),
+    body,
+    headers: await customerMutationHeaders(
+      operationId,
+      body,
+      "customer.online_ordering_access.set",
     ),
   });
   return posCustomerDetailSchema.parse(raw);

@@ -64,6 +64,8 @@ public sealed class CreateDirectPurchaseReceipt
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
     private readonly BranchInventoryMutationService _branchMutations;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
+    private readonly IInventoryBranchExpirationSettingRepository _expirationSettings;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly ConnectedB2bDirectPurchaseCreditSync? _b2bCreditSync;
@@ -79,6 +81,8 @@ public sealed class CreateDirectPurchaseReceipt
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         BranchInventoryMutationService branchMutations,
+        BranchExpirationPolicyResolver expirationPolicies,
+        IInventoryBranchExpirationSettingRepository expirationSettings,
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
         IClock clock,
@@ -93,6 +97,8 @@ public sealed class CreateDirectPurchaseReceipt
         _branchBalances = branchBalances;
         _lots = lots;
         _branchMutations = branchMutations;
+        _expirationPolicies = expirationPolicies;
+        _expirationSettings = expirationSettings;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
         _b2bCreditSync = b2bCreditSync;
@@ -224,17 +230,77 @@ public sealed class CreateDirectPurchaseReceipt
                             }
                         }
 
+                        var utcNow = _clock.UtcNow;
+                        var primaryBranchId = _branches is null
+                            ? null
+                            : await _branches.GetPrimaryBranchIdAsync(orgId.Value, ct).ConfigureAwait(false);
+                        var balances = (await _branchBalances
+                                .ListByProductIdsAsync(orgId, catalogProductIds, ct)
+                                .ConfigureAwait(false))
+                            .ToList();
+                        var policies = (await _expirationPolicies
+                                .ResolveManyAsync(orgId, receivingBranch, catalogProductIds, ct)
+                                .ConfigureAwait(false))
+                            .ToDictionary(kv => kv.Key, kv => kv.Value);
+
                         var drafts = new List<DirectPurchaseReceiptLineDraft>(request.Lines.Count);
                         foreach (var line in request.Lines)
                         {
                             var product = productsById[line.ProductId];
-                            if (product.TracksExpiration && line.ExpiryDate is null)
+                            var account = accountsByProduct[line.ProductId];
+                            var policy = policies[line.ProductId];
+                            var branchOnHand = BranchStockResolver.ResolveOnHand(
+                                receivingBranch,
+                                primaryBranchId,
+                                account.OnHandQuantity,
+                                balances,
+                                product.Id);
+
+                            // Expiry on a branch without tracking turns branch tracking on atomically with this receipt
+                            // (zero branch on-hand only). Existing branch on-hand must be allocated via EnableExpirationTracking first.
+                            // Does not mutate CatalogProduct.TracksExpiration (legacy compatibility field).
+                            if (!policy.TracksExpiration && line.ExpiryDate is not null)
+                            {
+                                if (branchOnHand > 0m)
+                                {
+                                    return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                        ApplicationErrorCodes.ExpirationInitializationRequired,
+                                        "This product already has stock on hand at this branch. Assign expiry dates to existing stock before receiving with an expiry date.");
+                                }
+
+                                var existingSetting = await _expirationSettings
+                                    .GetAsync(orgId, receivingBranch, product.Id, ct)
+                                    .ConfigureAwait(false);
+                                if (existingSetting is null)
+                                {
+                                    existingSetting = InventoryBranchExpirationSetting.CreateEnabled(
+                                        orgId,
+                                        receivingBranch,
+                                        product.Id,
+                                        expirationWarningDays: null,
+                                        actorId,
+                                        utcNow);
+                                }
+                                else
+                                {
+                                    existingSetting.Enable(expirationWarningDays: null, actorId, utcNow);
+                                }
+
+                                await _expirationSettings.UpsertAsync(existingSetting, ct).ConfigureAwait(false);
+                                policy = BranchExpirationPolicyResolver.FromSetting(existingSetting);
+                                policies[line.ProductId] = policy;
+                            }
+
+                            if (policy.TracksExpiration && line.ExpiryDate is null)
                             {
                                 return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
                                     DomainErrorCodes.InventoryExpirationRequired,
                                     "Expiration date is required when receiving expiration-tracked stock.");
                             }
 
+                            // Lot-only (no expiry) is allowed as a receipt-line snapshot when tracking is off.
+                            // InventoryLot always requires an expiration date — lot-only does not create a lot
+                            // and does not enable branch expiration tracking.
                             drafts.Add(new DirectPurchaseReceiptLineDraft(
                                 product.Id,
                                 product.Name,
@@ -247,7 +313,6 @@ public sealed class CreateDirectPurchaseReceipt
                                 line.LotNumber));
                         }
 
-                        var utcNow = _clock.UtcNow;
                         var businessDate = DirectPurchaseReceiptNumbers.BusinessDateOf(utcNow);
                         var receiptNumber = await _receipts
                             .AllocateNextNumberAsync(orgId, businessDate, ct)
@@ -267,10 +332,6 @@ public sealed class CreateDirectPurchaseReceipt
                             idempotencyKey,
                             receivingBranch);
 
-                        var primaryBranchId = await _branches
-                            .GetPrimaryBranchIdAsync(orgId.Value, ct)
-                            .ConfigureAwait(false);
-
                         foreach (var line in receipt.Lines)
                         {
                             var account = accountsByProduct[line.ProductId.Value];
@@ -282,6 +343,7 @@ public sealed class CreateDirectPurchaseReceipt
                             }
 
                             var product = productsById[line.ProductId.Value];
+                            var policy = policies[line.ProductId.Value];
                             var orgOnHandBefore = account.OnHandQuantity;
                             var movement = StockMovement.DirectPurchaseReceipt(
                                 orgId,
@@ -293,10 +355,11 @@ public sealed class CreateDirectPurchaseReceipt
                                 actorId,
                                 utcNow,
                                 sellingMode: product.SellingMode,
-                                unitCost: line.UnitCost)
+                                unitCost: line.UnitCost,
+                                receiptNumber: receipt.ReceiptNumber)
                                 .WithBranch(receivingBranch.Value);
 
-                            if (product.TracksExpiration)
+                            if (policy.TracksExpiration)
                             {
                                 var receivedLot = await _lots
                                     .ReceiveAsync(
@@ -456,6 +519,7 @@ public sealed class VoidDirectPurchaseReceipt
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
     private readonly BranchInventoryMutationService _branchMutations;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly ConnectedB2bDirectPurchaseCreditSync? _b2bCreditSync;
@@ -469,6 +533,7 @@ public sealed class VoidDirectPurchaseReceipt
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         BranchInventoryMutationService branchMutations,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
         IClock clock,
@@ -481,6 +546,7 @@ public sealed class VoidDirectPurchaseReceipt
         _branchBalances = branchBalances;
         _lots = lots;
         _branchMutations = branchMutations;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
         _b2bCreditSync = b2bCreditSync;
@@ -582,6 +648,9 @@ public sealed class VoidDirectPurchaseReceipt
                         }
 
                         ApplicationResult<DirectPurchaseReceiptDto>? failure = null;
+                        var policies = await _expirationPolicies
+                            .ResolveManyAsync(orgId, receivingBranch, productIds, ct)
+                            .ConfigureAwait(false);
                         await _inventory
                             .ExecuteWithProductReservationLocksAsync(
                                 orgId,
@@ -590,8 +659,8 @@ public sealed class VoidDirectPurchaseReceipt
                                 {
                                     var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
                                     var anyLotTracked = receipt.Lines.Any(l =>
-                                        productsById.TryGetValue(l.ProductId.Value, out var p)
-                                        && p.TracksExpiration
+                                        policies.TryGetValue(l.ProductId.Value, out var policy)
+                                        && policy.TracksExpiration
                                         && accountsByProduct.TryGetValue(l.ProductId.Value, out var a)
                                         && a.IsTracked);
 
@@ -639,7 +708,9 @@ public sealed class VoidDirectPurchaseReceipt
                                         }
 
                                         var totalQty = lineGroup.Sum(l => l.Quantity);
-                                        if (!product.TracksExpiration && account.OnHandQuantity < totalQty)
+                                        var tracksExpiration = policies.TryGetValue(lineGroup.Key, out var linePolicy)
+                                            && linePolicy.TracksExpiration;
+                                        if (!tracksExpiration && account.OnHandQuantity < totalQty)
                                         {
                                             failure = ApplicationResult<DirectPurchaseReceiptDto>.Failure(
                                                 DomainErrorCodes.DirectPurchaseReceiptVoidInsufficient,

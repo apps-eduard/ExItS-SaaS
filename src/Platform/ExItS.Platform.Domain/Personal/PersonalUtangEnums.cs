@@ -88,6 +88,17 @@ public enum PersonalUtangEntryStatus
     Cancelled
 }
 
+/// <summary>
+/// How a shared ledger entry became Confirmed.
+/// Private entries use <see cref="None"/> (confirmed at record time without counterparty resolution).
+/// </summary>
+public enum PersonalUtangConfirmationSource
+{
+    None = 0,
+    Manual = 1,
+    RecipientAutoAccept = 2
+}
+
 public enum PersonalUtangInvitationStatus
 {
     Pending,

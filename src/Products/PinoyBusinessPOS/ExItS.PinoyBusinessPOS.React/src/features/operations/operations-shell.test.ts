@@ -171,6 +171,54 @@ describe("operations navigation", () => {
     expect(paths).not.toContain("/sell");
   });
 
+  it("Warehouse sidebar includes Inspection after Stock status", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Warehouse",
+      experience: "operations",
+    });
+    const ids = flattenOperationsSidebarItems(groups).map((i) => i.id);
+    expect(ids).toContain("stock-status");
+    expect(ids).toContain("awaiting-inspection");
+    expect(ids.indexOf("awaiting-inspection")).toBeGreaterThan(ids.indexOf("stock-status"));
+    const item = flattenOperationsSidebarItems(groups).find((i) => i.id === "awaiting-inspection");
+    expect(item?.to).toBe("/inventory/awaiting-inspection");
+  });
+
+  it("Warehouse sidebar includes Branch requests after Transfers", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Warehouse",
+      experience: "operations",
+    });
+    const ids = flattenOperationsSidebarItems(groups).map((i) => i.id);
+    expect(ids).toContain("transfers");
+    expect(ids).toContain("branch-requests");
+    expect(ids.indexOf("branch-requests")).toBeGreaterThan(ids.indexOf("transfers"));
+    const branchRequests = flattenOperationsSidebarItems(groups).find(
+      (i) => i.id === "branch-requests",
+    );
+    expect(branchRequests?.to).toBe("/inventory/stock-requests");
+    expect(ids).not.toContain("warehouse");
+  });
+
+  it("Retail sidebar places Warehouse after Inventory and before Transfers", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Retail",
+      experience: "operations",
+    });
+    const items = flattenOperationsSidebarItems(groups);
+    const ids = items.map((i) => i.id);
+    expect(ids).toContain("inventory");
+    expect(ids).toContain("warehouse");
+    expect(ids).toContain("transfers");
+    expect(ids.indexOf("warehouse")).toBeGreaterThan(ids.indexOf("inventory"));
+    expect(ids.indexOf("transfers")).toBeGreaterThan(ids.indexOf("warehouse"));
+    expect(items.find((i) => i.id === "warehouse")?.to).toBe("/warehouse");
+    expect(ids).not.toContain("branch-requests");
+  });
+
   it("Warehouse sidebar has a single Stock movements entry and no CONTROL group", () => {
     const groups = buildOperationsSidebarGroups({
       grant: owner,

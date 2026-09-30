@@ -7,7 +7,7 @@ import {
   canViewInventory,
   canViewPurchasing,
 } from "@/access/pos-capabilities";
-import { listInventory, listExpiringLots } from "@/api/pos/pos-inventory-client";
+import { getInventoryAttentionSummary, listInventory, listExpiringLots } from "@/api/pos/pos-inventory-client";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import {
   getInventoryMovementsReport,
@@ -18,6 +18,7 @@ import {
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
 import { listIncomingStockRequests } from "@/api/pos/pos-stock-requests-client";
+import { listSupplyRoutes } from "@/api/pos/pos-supply-routes-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -138,11 +139,15 @@ export function WarehouseManagementDashboardPage() {
           listInventory(workspace!, { tracked: true, page: 1, pageSize: 200 }, signal),
       },
       {
-        queryKey: ["wh-dash", "low-stock", workspace?.organizationId, workspace?.branchId],
+        queryKey: [
+          "inventory",
+          "attention-summary",
+          workspace?.organizationId,
+          workspace?.branchId,
+        ],
         enabled: enabled && canInventory,
         staleTime: STALE,
-        queryFn: ({ signal }) =>
-          listInventory(workspace!, { lowStock: true, page: 1, pageSize: 1 }, signal),
+        queryFn: ({ signal }) => getInventoryAttentionSummary(workspace!, signal),
       },
       {
         queryKey: ["wh-dash", "expiry", workspace?.organizationId, workspace?.branchId],
@@ -204,12 +209,18 @@ export function WarehouseManagementDashboardPage() {
         staleTime: STALE,
         queryFn: ({ signal }) => listIncomingStockRequests(workspace!, 1, 40, signal),
       },
+      {
+        queryKey: ["wh-dash", "supply-routes", workspace?.organizationId, workspace?.branchId],
+        enabled: enabled && canInventory,
+        staleTime: STALE,
+        queryFn: ({ signal }) => listSupplyRoutes(workspace!, signal),
+      },
     ],
   });
 
   const [
     trackedQ,
-    lowStockQ,
+    attentionQ,
     expiryQ,
     txOutQ,
     txInQ,
@@ -217,6 +228,7 @@ export function WarehouseManagementDashboardPage() {
     movementsQ,
     purchasingQ,
     stockReqQ,
+    supplyRoutesQ,
   ] = results;
 
   const loading = results.some((q) => q.isLoading);
@@ -224,21 +236,12 @@ export function WarehouseManagementDashboardPage() {
 
   const trackedItems = trackedQ.data?.items ?? [];
   const trackedCount = trackedQ.data?.totalCount ?? trackedItems.length;
-  const lowStockCount = lowStockQ.data?.totalCount ?? 0;
-  const fullTrackedPage =
-    trackedQ.data != null && trackedItems.length >= Math.min(trackedCount, trackedItems.length)
-      ? trackedCount <= trackedItems.length
-      : false;
-  const outOfStockCount = fullTrackedPage
-    ? trackedItems.filter((i) => i.onHandQuantity <= 0).length
-    : null;
-  const healthyCount =
-    outOfStockCount == null
-      ? Math.max(0, trackedCount - lowStockCount)
-      : Math.max(0, trackedCount - lowStockCount - outOfStockCount);
+  const lowStockCount = attentionQ.data?.lowStockProductCount ?? 0;
+  const outOfStockCount = attentionQ.data?.outOfStockProductCount ?? 0;
+  const healthyCount = Math.max(0, trackedCount - lowStockCount - outOfStockCount);
 
-  const expiredCount = expiryQ.data?.expiredCount ?? 0;
-  const nearExpiryCount = expiryQ.data?.nearExpiryCount ?? 0;
+  const expiredCount = attentionQ.data?.expiredLotCount ?? 0;
+  const nearExpiryCount = attentionQ.data?.nearExpiryLotCount ?? 0;
 
   const outgoing = txOutQ.data?.items ?? [];
   const incoming = txInQ.data?.items ?? [];
@@ -250,13 +253,40 @@ export function WarehouseManagementDashboardPage() {
   );
   const movementSummary = summarizeMovementTypes(movementsQ.data?.byType ?? []);
   const destinations = topDestinationsFromOutgoing(outgoing);
+  const productNamesById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of trackedItems) {
+      const name = item.name?.trim();
+      if (item.productId && name) {
+        map.set(item.productId, name);
+      }
+    }
+    return map;
+  }, [trackedItems]);
   const movedProducts = topMovedProductsFromRows(
     (movementsQ.data?.rows ?? []) as Record<string, unknown>[],
     movedDir,
+    5,
+    productNamesById,
   );
   const stockReqItems = stockReqQ.data?.items ?? [];
   const stockReqCounts = stockRequestStatusCounts(stockReqItems);
   const pendingRequests = stockReqCounts.pending;
+  const branchesServed = useMemo(() => {
+    const sourceId = workspace?.branchId;
+    if (!sourceId) return 0;
+    const ids = new Set<string>();
+    for (const route of supplyRoutesQ.data ?? []) {
+      if (
+        route.isActive &&
+        route.sourceLocationId === sourceId &&
+        route.destinationLocationId
+      ) {
+        ids.add(route.destinationLocationId);
+      }
+    }
+    return ids.size;
+  }, [supplyRoutesQ.data, workspace?.branchId]);
 
   const attention = buildWarehouseAttentionItems({
     lowStock: canInventory ? lowStockCount : 0,
@@ -396,6 +426,12 @@ export function WarehouseManagementDashboardPage() {
             href="/inventory"
           />
           <KpiChip
+            label={t("warehouseDashboard.kpi.branchesServed")}
+            value={branchesServed}
+            testId="wh-kpi-branches"
+            href={workspace ? `/org/branches/${workspace.branchId}` : undefined}
+          />
+          <KpiChip
             label={t("warehouseDashboard.kpi.lowStock")}
             value={lowStockCount}
             tone={lowStockCount > 0 ? "attention" : "default"}
@@ -450,7 +486,7 @@ export function WarehouseManagementDashboardPage() {
           <DashboardPanel title={t("warehouseDashboard.currentStock")} testId="warehouse-stock-health">
             <MetricRow label={t("warehouseDashboard.health.healthy")} value={healthyCount} />
             <MetricRow label={t("warehouseDashboard.health.lowStock")} value={lowStockCount} />
-            {outOfStockCount != null ? (
+            {outOfStockCount > 0 || trackedCount > 0 ? (
               <MetricRow label={t("warehouseDashboard.health.outOfStock")} value={outOfStockCount} />
             ) : null}
             <MetricRow label={t("warehouseDashboard.health.nearExpiry")} value={nearExpiryCount} />

@@ -336,17 +336,27 @@ internal static class CustomerOrderEndpoints
             int? page,
             int? pageSize,
             Guid? fulfillmentBranchId,
+            Guid? platformBusinessCustomerId,
             GetCustomerStorefront useCase,
             CancellationToken ct) =>
         {
-            if (!PosOrganizationScope.TryGetActorId(request, out _, out var problem))
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out var problem))
             {
                 return problem!;
             }
 
             return PosApiResults.FromResult(
                 await useCase
-                    .ExecuteAsync(sellerOrganizationId, search, categoryId, page, pageSize, ct, fulfillmentBranchId)
+                    .ExecuteAsync(
+                        sellerOrganizationId,
+                        search,
+                        categoryId,
+                        page,
+                        pageSize,
+                        ct,
+                        fulfillmentBranchId,
+                        actorId,
+                        platformBusinessCustomerId)
                     .ConfigureAwait(false),
                 Results.Ok);
         });
@@ -356,16 +366,25 @@ internal static class CustomerOrderEndpoints
             Guid sellerOrganizationId,
             Guid productId,
             string variant,
+            Guid? platformBusinessCustomerId,
             GetStorefrontProductImage useCase,
             CancellationToken ct) =>
         {
-            if (!PosOrganizationScope.TryGetActorId(request, out _, out var problem))
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out var problem))
             {
                 return problem!;
             }
 
             return PosApiResults.FromResult(
-                await useCase.ExecuteAsync(sellerOrganizationId, productId, variant, ct).ConfigureAwait(false),
+                await useCase
+                    .ExecuteAsync(
+                        sellerOrganizationId,
+                        productId,
+                        variant,
+                        ct,
+                        actorId,
+                        platformBusinessCustomerId)
+                    .ConfigureAwait(false),
                 image => PosApiResults.ImageFile(request.HttpContext.Response, image));
         });
 
@@ -408,13 +427,15 @@ internal static class CustomerOrderEndpoints
             QuoteCustomerOrderDelivery useCase,
             CancellationToken ct) =>
         {
-            if (!PosOrganizationScope.TryGetActorId(request, out _, out var problem))
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out var problem))
             {
                 return problem!;
             }
 
             return PosApiResults.FromResult(
-                await useCase.ExecuteAsync(sellerOrganizationId, body, ct).ConfigureAwait(false),
+                await useCase
+                    .ExecuteAsync(sellerOrganizationId, body, ct, actorId)
+                    .ConfigureAwait(false),
                 Results.Ok);
         });
 

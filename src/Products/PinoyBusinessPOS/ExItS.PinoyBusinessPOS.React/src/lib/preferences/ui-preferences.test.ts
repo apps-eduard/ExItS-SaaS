@@ -6,6 +6,7 @@ import {
   applyPrimaryColor,
   applyUiPreferences,
   defaultUiPreferences,
+  nextNavigationModeCycle,
   parseUiPreferences,
   PRIMARY_COLOR_OPTIONS,
   UI_PREFERENCES_STORAGE_KEY,
@@ -154,6 +155,9 @@ describe("ui preferences", () => {
     applyNavigationMode("reveal");
     expect(document.documentElement.dataset.navigationMode).toBe("reveal");
 
+    applyNavigationMode("hidden");
+    expect(document.documentElement.dataset.navigationMode).toBe("hidden");
+
     applyUiPreferences(defaultUiPreferences);
     expect(document.documentElement.dataset.primary).toBe("green");
     expect(document.documentElement.dataset.controlShape).toBe("standard");
@@ -161,7 +165,7 @@ describe("ui preferences", () => {
     expect(document.documentElement.dataset.navigationMode).toBe("standard");
   });
 
-  it("accepts standard, compact, and reveal navigation mode", () => {
+  it("accepts standard, compact, hidden, and reveal navigation mode", () => {
     expect(
       parseUiPreferences(
         JSON.stringify({
@@ -185,9 +189,25 @@ describe("ui preferences", () => {
         JSON.stringify({
           theme: "light",
           locale: "en",
+          navigationMode: "hidden",
+        }),
+      ),
+    ).toMatchObject({ navigationMode: "hidden" });
+    expect(
+      parseUiPreferences(
+        JSON.stringify({
+          theme: "light",
+          locale: "en",
           navigationMode: "standard",
         }),
       ),
     ).toMatchObject({ navigationMode: "standard" });
+  });
+
+  it("cycles navigation mode full → icons → hidden → full", () => {
+    expect(nextNavigationModeCycle("standard")).toBe("compact");
+    expect(nextNavigationModeCycle("compact")).toBe("hidden");
+    expect(nextNavigationModeCycle("hidden")).toBe("standard");
+    expect(nextNavigationModeCycle("reveal")).toBe("standard");
   });
 });

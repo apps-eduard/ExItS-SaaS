@@ -108,10 +108,12 @@ export function UiStandardsPreferencePreview() {
           </StatusChip>
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-[length:var(--exits-text-xs)] text-muted">QuantityStepper Auto</span>
+          <span className="text-[length:var(--exits-text-xs)] text-muted">
+            QuantityStepper Outline (standard)
+          </span>
           <QuantityStepper
             compact
-            variant="auto"
+            variant="outline"
             value={previewQty}
             onChange={setPreviewQty}
             min={1}

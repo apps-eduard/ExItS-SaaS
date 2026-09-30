@@ -20,9 +20,9 @@ public sealed class InventoryLot
     public PosOrganizationId OrganizationId { get; }
     public CatalogProductId ProductId { get; }
     public PosBranchId? BranchId { get; }
-    public string? LotNumber { get; }
-    public string NormalizedLotNumber { get; }
-    public DateOnly ExpirationDate { get; }
+    public string? LotNumber { get; private set; }
+    public string NormalizedLotNumber { get; private set; }
+    public DateOnly ExpirationDate { get; private set; }
     public decimal QuantityOnHand { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -126,6 +126,29 @@ public sealed class InventoryLot
 
         QuantityOnHand = next;
         UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Metadata-only correction of expiration date and optional batch/lot number.
+    /// Never changes quantity, organization, product, or branch. Eligibility is enforced by the application layer.
+    /// </summary>
+    /// <returns><c>true</c> when identity fields changed; <c>false</c> when already matching (no-op).</returns>
+    public bool CorrectIdentity(DateOnly expirationDate, string? lotNumber, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var (display, normalized) = NormalizeLotNumber(lotNumber);
+        if (ExpirationDate == expirationDate
+            && string.Equals(NormalizedLotNumber, normalized, StringComparison.Ordinal)
+            && string.Equals(LotNumber, display, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        ExpirationDate = expirationDate;
+        LotNumber = display;
+        NormalizedLotNumber = normalized;
+        UpdatedAtUtc = utcNow;
+        return true;
     }
 
     public bool IsExpired(DateOnly today) => ExpirationDate < today;

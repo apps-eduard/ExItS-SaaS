@@ -4,6 +4,7 @@ import {
   ArrowUpDown,
   Boxes,
   CalendarClock,
+  ClipboardCheck,
   ClipboardList,
   Clock3,
   FileText,
@@ -396,7 +397,7 @@ export function buildOperationsSidebarGroups(input: {
       id: "inventory",
       to: "/inventory",
       labelKey: "org.nav.inventory",
-      icon: Warehouse,
+      icon: Boxes,
       testId: "ops-sidebar-inventory",
       matchPrefixes: ["/inventory"],
     },
@@ -404,6 +405,51 @@ export function buildOperationsSidebarGroups(input: {
     NAV_MANAGER,
     navWorkspace,
   );
+  pushItem(
+    stock,
+    {
+      id: "stock-status",
+      to: "/inventory/stock-status",
+      labelKey: "org.nav.stockStatus",
+      icon: ClipboardList,
+      testId: "ops-sidebar-stock-status",
+      matchPrefixes: ["/inventory/stock-status"],
+    },
+    canViewInventory(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  pushItem(
+    stock,
+    {
+      id: "awaiting-inspection",
+      to: "/inventory/awaiting-inspection",
+      labelKey: "org.nav.awaitingInspection",
+      icon: ClipboardCheck,
+      testId: "ops-sidebar-awaiting-inspection",
+      matchPrefixes: ["/inventory/awaiting-inspection"],
+    },
+    canViewInventory(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  if (!warehouse) {
+    // Retail replenishment hub (request stock / my requests) — not used on warehouse branches.
+    pushItem(
+      stock,
+      {
+        id: "warehouse",
+        to: "/warehouse",
+        labelKey: "org.nav.warehouse",
+        icon: Warehouse,
+        testId: "ops-sidebar-warehouse",
+        matchPrefixes: ["/warehouse"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+  }
   if (warehouse) {
     pushItem(
       stock,
@@ -428,6 +474,20 @@ export function buildOperationsSidebarGroups(input: {
         icon: ArrowLeftRight,
         testId: "ops-sidebar-transfers",
         matchPrefixes: ["/inventory/transfers"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+    pushItem(
+      stock,
+      {
+        id: "branch-requests",
+        to: "/inventory/stock-requests",
+        labelKey: "org.nav.branchRequests",
+        icon: ClipboardList,
+        testId: "ops-sidebar-branch-requests",
+        matchPrefixes: ["/inventory/stock-requests"],
       },
       canViewInventory(grant),
       NAV_MANAGER,

@@ -63,7 +63,6 @@ public sealed class PlaceCustomerOrderCapabilityTests
     [InlineData("Cash", "Cash")]
     [InlineData("GCash", "ManualGCash")]
     [InlineData("ManualGCash", "ManualGCash")]
-    [InlineData("Utang", "Utang")]
     public async Task Place_persists_manual_payment_method_and_stays_unpaid(string? requested, string expected)
     {
         var useCase = CreateUseCase(canOrder: true, canDelivery: true);
@@ -71,6 +70,15 @@ public sealed class PlaceCustomerOrderCapabilityTests
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.Equal(expected, result.Value!.PaymentMethod);
         Assert.Equal(nameof(CustomerOrderPaymentStatus.Unpaid), result.Value.PaymentStatus);
+    }
+
+    [Fact]
+    public async Task Place_utang_without_credit_services_fails_closed()
+    {
+        var useCase = CreateUseCase(canOrder: true, canDelivery: true);
+        var result = await useCase.ExecuteAsync(Seller, PickupRequest(paymentMethod: "Utang"), Actor);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerOrderOnlineUtangUnavailable, result.ErrorCode);
     }
 
     [Fact]
@@ -406,6 +414,12 @@ public sealed class PlaceCustomerOrderCapabilityTests
 
         public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+
+        public Task<decimal> SumActiveOnlineUtangCommitmentAsync(
+            PosOrganizationId sellerOrganizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
     }
 
     private static string FindRepoRoot()

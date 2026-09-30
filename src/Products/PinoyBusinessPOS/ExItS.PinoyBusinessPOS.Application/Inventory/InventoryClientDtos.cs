@@ -32,7 +32,32 @@ public sealed record PosInventoryAccountDto(
     string MonitoringMode = "BranchDefault",
     decimal ReservedQuantity = 0m,
     decimal AvailableQuantity = 0m,
-    decimal PendingReturnQuantity = 0m);
+    decimal PendingReturnQuantity = 0m,
+    decimal InTransitOutboundQuantity = 0m,
+    string? InTransitOutboundBranchName = null,
+    decimal InTransitInboundQuantity = 0m,
+    string? InTransitInboundBranchName = null,
+    /// <summary>Organization-default selling price (guide for opening unit cost).</summary>
+    decimal? SellingPrice = null,
+    /// <summary>Branch-effective selling price (BranchOverride ?? OrganizationDefault).</summary>
+    decimal? EffectiveSellingPrice = null,
+    bool HasBranchPriceOverride = false,
+    /// <summary>Latest acquisition unit cost when known (tracked products; display only).</summary>
+    decimal? UnitCost = null,
+    /// <summary>Recorded opening-stock quantity for this branch when an OpeningStock movement exists.</summary>
+    decimal? OpeningQuantity = null,
+    /// <summary>
+    /// On-hand lot quantity blocked from normal sale by stop-selling-days policy (not yet calendar-expired).
+    /// Null when the product does not track expiration.
+    /// </summary>
+    decimal? SalePolicyBlockedQuantity = null,
+    decimal InspectionHoldQuantity = 0m,
+    decimal DamagedQuantity = 0m,
+    /// <summary>
+    /// Derived SUM of RemainingToDispatch for open stock requests sourced from this branch.
+    /// Not a sales/customer <see cref="ReservedQuantity"/> ledger hold.
+    /// </summary>
+    decimal StockRequestCommittedQuantity = 0m);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,
@@ -55,7 +80,19 @@ public sealed record PosStockMovementDto(
     string? LotNumber = null,
     decimal? UnitCost = null,
     decimal? StockValue = null,
-    Guid? BranchId = null);
+    Guid? BranchId = null,
+    /// <summary>Authoritative transaction kind (e.g. InventoryTransfer). Null when unresolved.</summary>
+    string? TransactionType = null,
+    /// <summary>Authoritative parent transaction id (transfer id, not receipt/custody child id).</summary>
+    Guid? TransactionId = null,
+    /// <summary>Human document reference (e.g. TR-260922-001).</summary>
+    string? TransactionReference = null,
+    /// <summary>Sellable on-hand immediately before this movement (branch + product history).</summary>
+    decimal? SellableBefore = null,
+    /// <summary>Authoritative sellable bucket delta for this movement type.</summary>
+    decimal? SellableDelta = null,
+    /// <summary>Sellable on-hand immediately after this movement (branch + product history).</summary>
+    decimal? SellableAfter = null);
 
 public sealed record EnableInventoryTrackingRequest(
     decimal? OpeningQuantity = null,
@@ -104,7 +141,15 @@ public sealed record PosInventoryLotDto(
     decimal QuantityOnHand,
     string ExpiryStatus,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool CanEditIdentity = false,
+    string? IdentityLockReason = null);
+
+public sealed record CorrectInventoryLotIdentityRequest(
+    DateOnly ExpirationDate,
+    string? LotNumber,
+    string Reason,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record PosInventoryLotPagedResult(
     List<PosInventoryLotDto> Items,

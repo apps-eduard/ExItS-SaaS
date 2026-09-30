@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ChevronDown, ChevronRight, PackageMinus, Trash2 } from "lucide-react";
@@ -7,6 +7,7 @@ import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   adjustInventoryStock,
   addOpeningStock,
+  correctInventoryLotIdentity,
   disableInventoryTracking,
   enableInventoryTracking,
   getInventoryProduct,
@@ -16,6 +17,7 @@ import {
   listProductLots,
   type PosInventoryAreaRollupDto,
   type PosInventoryLotDto,
+  type PosStockMovementDto,
 } from "@/api/pos/pos-inventory-client";
 import { getCatalogProduct } from "@/api/pos/pos-catalog-client";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -31,7 +33,11 @@ import {
   canAddOpeningStock,
   canDisableExpirationTracking,
   computeGoodQuantity,
+  formatBranchRollupMetricsLine,
+  listNonZeroStockExceptions,
   sortLotsByExpiry,
+  stockExceptionLabelKey,
+  type StockExceptionKind,
 } from "@/features/inventory/inventory-detail-helpers";
 import { computeOpeningStockValue } from "@/features/catalog/opening-stock-helpers";
 import {
@@ -43,13 +49,22 @@ import {
   resolveInventoryBranchDisplayName,
 } from "@/features/inventory/inventory-branch-labels";
 import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
+import { EditLotIdentityDialog } from "@/features/inventory/EditLotIdentityDialog";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import { InventoryMovementsResponsiveList } from "@/features/inventory/InventoryMovementsResponsiveList";
+import { InventoryMovementTransactionDrawer } from "@/features/inventory/InventoryMovementTransactionDrawer";
 import {
   formatInventoryQty,
+  InventoryExpiredBadge,
+  InventoryInTransitBadge,
   InventoryReservedBadge,
+  InventorySaleBlockedBadge,
   resolveAvailableQuantity,
+  resolveExpiredQuantity,
+  resolveInTransitInboundQuantity,
+  resolveInTransitOutboundQuantity,
   resolveReservedQuantity,
+  resolveSalePolicyBlockedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
 import {
@@ -116,7 +131,10 @@ export function InventoryDetailPage() {
   const [statusLocked, setStatusLocked] = useState(false);
   const [statusDetailsOpen, setStatusDetailsOpen] = useState(false);
   const [reservationsOpen, setReservationsOpen] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<PosStockMovementDto | null>(null);
   const [areaOverrides, setAreaOverrides] = useState<Record<string, boolean>>({});
+  const [editingLot, setEditingLot] = useState<PosInventoryLotDto | null>(null);
+  const [editLotError, setEditLotError] = useState<string | null>(null);
   const movementIdRef = useRef<string | null>(null);
   const statusDetailsId = useId();
 
@@ -241,6 +259,37 @@ export function InventoryDetailPage() {
     await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
     await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
   }
+
+  const correctLotIdentityMutation = useMutation({
+    mutationFn: (values: {
+      expirationDate: string;
+      lotNumber: string | null;
+      reason: string;
+      expectedUpdatedAtUtc: string;
+    }) =>
+      correctInventoryLotIdentity(workspace!, productId!, editingLot!.lotId, values),
+    onSuccess: async () => {
+      setEditLotError(null);
+      setEditingLot(null);
+      await invalidateInventory();
+      toast.success(t("inventory.editLotIdentitySave"));
+    },
+    onError: (err) => {
+      if (err instanceof PosApiError) {
+        if (err.errorCode === "pos.inventory.lot_identity_conflict") {
+          setEditLotError(t("inventory.lotIdentityConflict"));
+          return;
+        }
+        if (err.errorCode === "pos.inventory.lot_changed") {
+          setEditLotError(t("inventory.lotIdentityChanged"));
+          return;
+        }
+        setEditLotError(describePosApiError(err, t));
+        return;
+      }
+      setEditLotError(describePosApiError(err, t));
+    },
+  });
 
   const enableMutation = useMutation({
     mutationFn: () => {
@@ -633,6 +682,14 @@ export function InventoryDetailPage() {
             lots={lots}
             unitOfMeasure={account.unitOfMeasure}
             formatStatus={formatStatus}
+            onEditLotIdentity={
+              allowManageInventory
+                ? (lot) => {
+                    setEditLotError(null);
+                    setEditingLot(lot);
+                  }
+                : undefined
+            }
           />
         )}
         {lotsQuery.hasNextPage ? (
@@ -698,10 +755,40 @@ export function InventoryDetailPage() {
                 </span>
               </button>
               <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+                {account.tracksExpiration ? (
+                  <>
+                    <InventoryExpiredBadge
+                      expiredQuantity={resolveExpiredQuantity(account)}
+                      unitOfMeasure={account.unitOfMeasure}
+                      testId="inventory-detail-expired-badge"
+                    />
+                    <InventorySaleBlockedBadge
+                      salePolicyBlockedQuantity={resolveSalePolicyBlockedQuantity(account)}
+                      unitOfMeasure={account.unitOfMeasure}
+                      testId="inventory-detail-sale-blocked-badge"
+                    />
+                  </>
+                ) : null}
                 <InventoryReservedBadge
                   reservedQuantity={resolveReservedQuantity(account)}
                   onClick={() => setReservationsOpen(true)}
                   testId="inventory-detail-reserved-badge"
+                />
+                <InventoryInTransitBadge
+                  quantity={resolveInTransitOutboundQuantity(account)}
+                  branchName={account.inTransitOutboundBranchName}
+                  direction="outbound"
+                  unitOfMeasure={account.unitOfMeasure}
+                  onClick={() => setReservationsOpen(true)}
+                  testId="inventory-detail-in-transit-out-badge"
+                />
+                <InventoryInTransitBadge
+                  quantity={resolveInTransitInboundQuantity(account)}
+                  branchName={account.inTransitInboundBranchName}
+                  direction="inbound"
+                  unitOfMeasure={account.unitOfMeasure}
+                  onClick={() => setReservationsOpen(true)}
+                  testId="inventory-detail-in-transit-in-badge"
                 />
                 <ChevronDown
                   aria-hidden
@@ -724,28 +811,82 @@ export function InventoryDetailPage() {
                   data-testid="inventory-stock-breakdown"
                 >
                   <dt className="text-muted">{t("inventory.onHand")}</dt>
-                  <dd className="m-0 justify-self-end tabular-nums font-medium">
+                  <dd
+                    className="m-0 justify-self-end tabular-nums font-medium"
+                    data-testid="inventory-breakdown-on-hand"
+                  >
                     {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
                   </dd>
+                  {account.tracksExpiration ? (
+                    <>
+                      <dt className="text-muted">{t("inventory.sellable")}</dt>
+                      <dd
+                        className="m-0 justify-self-end tabular-nums font-medium"
+                        data-testid="inventory-breakdown-sellable"
+                      >
+                        {formatInventoryQty(
+                          account.sellableQuantity != null &&
+                            Number.isFinite(account.sellableQuantity)
+                            ? Math.max(0, account.sellableQuantity)
+                            : resolveAvailableQuantity(account),
+                        )}{" "}
+                        {account.unitOfMeasure}
+                      </dd>
+                    </>
+                  ) : null}
                   <dt className="text-muted">{t("inventory.reserved")}</dt>
-                  <dd className="m-0 justify-self-end tabular-nums font-medium">
+                  <dd
+                    className="m-0 justify-self-end tabular-nums font-medium"
+                    data-testid="inventory-breakdown-reserved"
+                  >
                     {formatInventoryQty(resolveReservedQuantity(account))} {account.unitOfMeasure}
                   </dd>
                   <dt className="font-semibold">{t("inventory.available")}</dt>
-                  <dd className="m-0 justify-self-end tabular-nums font-semibold">
+                  <dd
+                    className="m-0 justify-self-end tabular-nums font-semibold"
+                    data-testid="inventory-breakdown-available"
+                  >
                     {formatInventoryQty(resolveAvailableQuantity(account))} {account.unitOfMeasure}
                   </dd>
+                  {listNonZeroStockExceptions(account).map((row) => (
+                    <Fragment key={row.kind}>
+                      <dt className="text-muted">{t(stockExceptionLabelKey(row.kind))}</dt>
+                      <dd
+                        className="m-0 justify-self-end tabular-nums font-medium"
+                        data-testid={row.testId}
+                      >
+                        {formatInventoryQty(row.quantity)} {account.unitOfMeasure}
+                      </dd>
+                    </Fragment>
+                  ))}
                 </dl>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-fit"
-                  onClick={() => setReservationsOpen(true)}
-                  data-testid="inventory-view-reservations"
-                >
-                  {t("inventory.viewReservations")}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    intent="info"
+                    appearance="outline"
+                    shape="standard"
+                    className="w-fit"
+                    onClick={() => setReservationsOpen(true)}
+                    data-testid="inventory-view-reservations"
+                  >
+                    {t("inventory.viewReservations")}
+                  </Button>
+                  <Button
+                    asChild
+                    intent="primary"
+                    appearance="outline"
+                    shape="standard"
+                    className="w-fit"
+                  >
+                    <Link
+                      to={`/inventory/stock-status?productId=${encodeURIComponent(productId)}`}
+                      data-testid="inventory-view-stock-details"
+                    >
+                      {t("inventory.viewStockDetails")}
+                    </Link>
+                  </Button>
+                </div>
                 {rollup?.isTracked ? (
                   <div
                     className="flex flex-col gap-2"
@@ -827,11 +968,26 @@ export function InventoryDetailPage() {
                                           </span>
                                         ) : null}
                                       </p>
-                                      <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                                        {t("inventory.branchBreakdownMetrics")
-                                          .replace("{onHand}", String(row.onHandQuantity))
-                                          .replace("{reserved}", String(row.reservedQuantity))
-                                          .replace("{available}", String(row.availableQuantity))}
+                                      <p
+                                        className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                                        data-testid={`inventory-branch-metrics-${row.branchId}`}
+                                      >
+                                        {formatBranchRollupMetricsLine(row, {
+                                          onHand: t("inventory.branchMetricOnHand"),
+                                          available: t("inventory.branchMetricAvailable"),
+                                          exceptions: {
+                                            damaged: t("inventory.bucketDamaged"),
+                                            inspectionHold: t("inventory.bucketInspectionHold"),
+                                            pendingReturn: t(
+                                              "inventory.productSummary.pendingReturn",
+                                            ),
+                                            expired: t("inventory.expiredQty"),
+                                            nearExpiry: t("inventory.nearExpiryQty"),
+                                            saleBlocked: t("inventory.saleBlocked"),
+                                            inTransitOutbound: t("inventory.inTransitOutbound"),
+                                            inTransitInbound: t("inventory.inTransitInbound"),
+                                          } satisfies Record<StockExceptionKind, string>,
+                                        })}
                                       </p>
                                     </li>
                                   );
@@ -1480,6 +1636,7 @@ export function InventoryDetailPage() {
           unitOfMeasure={account.unitOfMeasure}
           resolveActor={(actorId) => actors.resolve(actorId)}
           actorsLoading={actors.isResolving}
+          onOpenMovement={(movement) => setSelectedMovement(movement)}
         />
       </div>
 
@@ -1492,6 +1649,37 @@ export function InventoryDetailPage() {
           productNameFallback={account.name}
         />
       ) : null}
+
+      <InventoryMovementTransactionDrawer
+        open={selectedMovement != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedMovement(null);
+          }
+        }}
+        movement={selectedMovement}
+        unitOfMeasure={account.unitOfMeasure}
+        workspace={workspace}
+        resolveActor={(actorId) => actors.resolve(actorId)}
+        actorsLoading={actors.isResolving}
+      />
+
+      <EditLotIdentityDialog
+        open={editingLot != null}
+        lot={editingLot}
+        productName={account.name}
+        locationName={branchLabel}
+        unitOfMeasure={account.unitOfMeasure}
+        busy={correctLotIdentityMutation.isPending}
+        errorMessage={editLotError}
+        onCancel={() => {
+          if (!correctLotIdentityMutation.isPending) {
+            setEditingLot(null);
+            setEditLotError(null);
+          }
+        }}
+        onSave={(values) => correctLotIdentityMutation.mutate(values)}
+      />
     </div>
   );
 }

@@ -82,6 +82,11 @@ public sealed class DirectPurchaseReceiptRepository : IDirectPurchaseReceiptRepo
             query = query.Where(r => r.PurchaseDate <= to);
         }
 
+        if (filter.ReceivingBranchId is Guid receivingBranch && receivingBranch != Guid.Empty)
+        {
+            query = query.Where(r => r.ReceivingBranchId == receivingBranch);
+        }
+
         if (filter.SupplierId is Guid supplierId)
         {
             query = query.Where(r => r.SupplierId == supplierId);
@@ -157,6 +162,31 @@ public sealed class DirectPurchaseReceiptRepository : IDirectPurchaseReceiptRepo
         {
             _db.DirectPurchaseReceiptLines.Add(DirectPurchaseReceiptEntityMapper.ToRecord(line));
         }
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, string>> ResolveReceiptNumbersByIdAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> receiptIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (receiptIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var ids = receiptIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var rows = await _db.DirectPurchaseReceipts.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value && ids.Contains(r.Id))
+            .Select(r => new { r.Id, r.ReceiptNumber })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(r => r.Id, r => r.ReceiptNumber);
     }
 
     public async Task<string> AllocateNextNumberAsync(

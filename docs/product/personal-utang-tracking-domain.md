@@ -147,31 +147,53 @@ Rules:
 
 ## Shared Record Behavior
 
-After linking, both participants may view the **same canonical** debt relationship (one `PersonalDebtRelationship` id — no dual ledgers).
+Connection consent and Utang sharing are **separate**. A connected contact does **not** automatically create a shared ledger.
 
-### Private (unlinked contact) mode
+Creating a new I Lent / I Borrowed debt may optionally **Share with {person}** (default **OFF**).
 
-The owner may record Loan / Payment / Adjustment immediately. Entries are **Confirmed** and update `CurrentBalance` at once. No counterparty confirmation is required.
+### Private mode (Share OFF, or unlinked contact)
 
-### Linked Personal↔Personal confirmation
+- Keep the counterparty as an **owner-private contact participant** — do **not** canonicalize a linked contact to a Platform user participant.
+- Entries are **Confirmed** immediately and update the owner's `CurrentBalance`.
+- Does **not** appear in the counterparty's I Lent / I Borrowed, dashboard, due totals, reminders, or notifications.
+- Remains queueable offline where existing private Utang supports it.
 
-When both sides are linked Personal users (`IsSharedLinked`), new financial entries start as **Pending** and do **not** affect `CurrentBalance`, dashboard totals (Owed to me / I owe), or overdue confirmed debt until the **counterparty** confirms.
+Connecting / linking an ExItS ID must **not** silently promote historical private relationships into a shared ledger. Explicit Utang invitation accept may still authorize that specific relationship.
+
+### Share ON = shared Personal↔Personal
+
+Share ON is **online required**. The server canonicalizes the linked contact to a user participant so both sides share **one** authoritative `PersonalDebtRelationship` (no dual ledgers / no duplicate financial entry). Perspective mirrors automatically (I Lent ↔ I Borrowed).
+
+Recipient-owned preferences (keyed by recipient + connected counterparty; **not** global account settings):
+
+| Preference | Default | Meaning |
+|---|---|---|
+| `ReceiveSharedUtang` | true | Show shared Utang from this person |
+| `AutoAcceptSharedUtang` | false | Automatically sync (confirm) their regular entries |
+| `SharedUtangNotifications` | true | Notify about shared activity from them |
+
+If `ReceiveSharedUtang` is **OFF**, Share ON falls back to **private** for the sender with a soft outcome (`PrivateNotReceiving`) — no notification and no counterparty visibility. Turning receive back ON affects **future** shared creates only.
+
+Block / unlink overrides sharing and auto-sync.
+
+### Shared entry confirmation
+
+When both sides are linked Personal users (`IsSharedLinked`):
+
+- Default (`Receive` ON, `AutoAccept` OFF): new **regular** entries start as **Pending**, appear immediately to the counterparty (e.g. "Reported by {proposer}"), and do **not** affect confirmed `CurrentBalance` until Confirm.
+- With `AutoAccept` ON: future regular Loan / Payment / Adjustment entries are confirmed server-side by standing recipient preference (`ConfirmationSource = RecipientAutoAccept`). Audit text must state auto-confirm by preference, not a manual button click. **Settlement** entries are never auto-accepted.
+- Only **Confirmed** entries change balance (Loan +, Payment −, Adjustment ±)
+- Pending / Disputed / Cancelled have zero balance effect
+- Proposer may cancel their own Pending entry
+- Confirm is idempotent; concurrent Confirm/Dispute participates in relationship optimistic concurrency
+- Legacy shared Pending/Confirmed history remains compatible; rows confirmed before auto-sync use `ConfirmationSource = Manual` when resolved
 
 Entry statuses: `Pending` | `Confirmed` | `Disputed` | `Cancelled`.
-
-Rules:
-
-- proposer ≠ confirmer / disputer
-- only **Confirmed** entries change balance (Loan +, Payment −, Adjustment ±)
-- Pending / Disputed / Cancelled have zero balance effect
-- proposer may cancel their own Pending entry
-- Confirm is idempotent; concurrent Confirm/Dispute participates in relationship optimistic concurrency
-- legacy rows (pre-confirmation) are backfilled as **Confirmed**; invite acceptance preserves relationship id, history, and confirmed balance — only **new** post-link entries use Pending → Confirm/Dispute
 
 Recommended shared visibility:
 
 - confirmed current balance
-- confirmed history and pending / disputed proposals
+- confirmed history and pending / disputed proposals (visible before confirm)
 - due dates
 - participant identities
 - reminder status where appropriate
@@ -181,9 +203,10 @@ Recommended controls:
 - only authorized participants may propose transactions
 - disputed entries remain in history without balance effect
 - confirmed historical amounts are not silently rewritten in place
-- corrections use append-only adjustments (also confirmed on shared ledgers)
+- corrections use append-only adjustments (also confirmed on shared ledgers unless auto-synced)
 - every meaningful change should be timestamped and attributable
 
+Anti-spam (shared Loan proposals): preserve block checks, duplicate submission protection, rolling daily limit, and advisory locking. Unresolved-pending limit applies when review is required; auto-sync must not be incorrectly blocked by pending-count.
 ## Reminders and Notifications
 
 The lender may create reminder rules such as:

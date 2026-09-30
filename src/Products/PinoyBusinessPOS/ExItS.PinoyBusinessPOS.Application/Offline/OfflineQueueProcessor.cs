@@ -401,6 +401,7 @@ public static class OfflineOperationTypes
     public const string DevOfflineProbe = "dev.offline-probe";
     public const string CustomerCreate = "customer.create";
     public const string CustomerUpdate = "customer.update";
+    public const string CustomerOnlineOrderingAccessSet = "customer.online_ordering_access.set";
     public const string CreditCreate = "credit.create";
     public const string RepaymentCreate = "repayment.create";
     public const string RepaymentReverse = "repayment.reverse";
@@ -496,11 +497,38 @@ public static class OfflineOperationTypes
     /// <summary>Server-side idempotency for inventory transfer create. Online-only.</summary>
     public const string InventoryTransferCreate = "inventory_transfer.create";
 
+    /// <summary>Server-side idempotency for inventory transfer draft update. Online-only.</summary>
+    public const string InventoryTransferUpdate = "inventory_transfer.update";
+
     /// <summary>Server-side idempotency for inventory transfer dispatch. Online-only.</summary>
     public const string InventoryTransferDispatch = "inventory_transfer.dispatch";
 
     /// <summary>Server-side idempotency for inventory transfer receive. Online-only.</summary>
     public const string InventoryTransferReceive = "inventory_transfer.receive";
+
+    /// <summary>Server-side idempotency for exception custody dispatch-return. Online-only.</summary>
+    public const string InventoryTransferExceptionDispatchReturn =
+        "inventory_transfer.exception_dispatch_return";
+
+    /// <summary>Server-side idempotency for exception custody receive-return. Online-only.</summary>
+    public const string InventoryTransferExceptionReceiveReturn =
+        "inventory_transfer.exception_receive_return";
+
+    /// <summary>Server-side idempotency for exception custody inspect. Online-only.</summary>
+    public const string InventoryTransferExceptionInspect =
+        "inventory_transfer.exception_inspect";
+
+    /// <summary>Server-side idempotency for damage custody dispatch-return. Online-only.</summary>
+    public const string InventoryTransferDamageDispatchReturn =
+        "inventory_transfer.damage_dispatch_return";
+
+    /// <summary>Server-side idempotency for damage custody receive-return. Online-only.</summary>
+    public const string InventoryTransferDamageReceiveReturn =
+        "inventory_transfer.damage_receive_return";
+
+    /// <summary>Server-side idempotency for damage custody inspect. Online-only.</summary>
+    public const string InventoryTransferDamageInspect =
+        "inventory_transfer.damage_inspect";
 
     /// <summary>Server-side idempotency for inventory transfer close-remainder. Online-only.</summary>
     public const string InventoryTransferCloseRemainder = "inventory_transfer.close_remainder";

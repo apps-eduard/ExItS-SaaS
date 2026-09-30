@@ -93,6 +93,38 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
       organizationManagementAuthority: true,
     },
   }),
+  useOptionalWorkspace: () => ({
+    boundWorkspace: workspace,
+    workspaces: [
+      {
+        organizationId: workspace.organizationId,
+        displayName: "mica store",
+        branches: [
+          {
+            branchId: workspace.branchId,
+            name: "Kalibo Branch",
+            secondaryLine: "",
+            isPrimary: true,
+            isActive: true,
+          },
+          {
+            branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+            name: "Iloilo Branch",
+            secondaryLine: "",
+            isPrimary: false,
+            isActive: true,
+          },
+        ],
+      },
+    ],
+    sessionGrant: {
+      productAccessAllowed: true,
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    },
+  }),
 }));
 
 vi.mock("@/connectivity/browser-online", () => ({
@@ -712,5 +744,89 @@ describe("InventoryDetailPage expiration UX", () => {
     renderPage();
     await screen.findByTestId("inventory-add-opening-stock");
     expect(screen.queryByTestId("inventory-adjust-form")).not.toBeInTheDocument();
+  });
+
+  it("hides zero exception rows and shows non-zero exception rows in quick view", async () => {
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({
+        damagedQuantity: 5,
+        inspectionHoldQuantity: 0,
+        pendingReturnQuantity: 2,
+        expiredQuantity: 0,
+        salePolicyBlockedQuantity: 0,
+        inTransitOutboundQuantity: 0,
+        inTransitInboundQuantity: 3,
+      }) as never,
+    );
+    renderPage();
+    await expandStatusDetails();
+    expect(screen.getByTestId("inventory-exception-damaged")).toHaveTextContent("5");
+    expect(screen.getByTestId("inventory-exception-pending-return")).toHaveTextContent("2");
+    expect(screen.getByTestId("inventory-exception-incoming")).toHaveTextContent("3");
+    expect(screen.queryByTestId("inventory-exception-inspection-hold")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-exception-expired")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-exception-sale-blocked")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-exception-in-transit-out")).not.toBeInTheDocument();
+  });
+
+  it("links View stock details to stock-status with productId", async () => {
+    renderPage();
+    await expandStatusDetails();
+    const link = await screen.findByTestId("inventory-view-stock-details");
+    expect(link).toHaveAttribute("href", `/inventory/stock-status?productId=${productId}`);
+    expect(link).toHaveAttribute("data-appearance", "outline");
+    expect(link.className).toContain("rounded-[var(--exits-radius-md)]");
+    const reservations = screen.getByTestId("inventory-view-reservations");
+    expect(reservations).toHaveAttribute("data-appearance", "outline");
+    expect(reservations).toHaveAttribute("data-intent", "info");
+    expect(reservations.className).toContain("rounded-[var(--exits-radius-md)]");
+  });
+
+  it("branch breakdown uses server rollup available and appends non-zero exceptions", async () => {
+    vi.mocked(inventoryClient.getInventoryStockRollup).mockResolvedValue({
+      productId,
+      productName: "Milk 1L",
+      unitOfMeasure: "Piece",
+      isTracked: true,
+      organizationTotalsVisible: true,
+      organizationOnHandQuantity: 40,
+      organizationReservedQuantity: 4,
+      organizationAvailableQuantity: 31,
+      accessibleOnHandQuantity: 40,
+      accessibleReservedQuantity: 4,
+      accessibleAvailableQuantity: 31,
+      hasAreas: false,
+      areas: [
+        {
+          areaId: null,
+          areaName: null,
+          isUnassigned: true,
+          onHandQuantity: 40,
+          reservedQuantity: 4,
+          availableQuantity: 31,
+          branches: [
+            {
+              branchId: workspace.branchId,
+              branchName: "Kalibo Branch",
+              onHandQuantity: 40,
+              reservedQuantity: 4,
+              availableQuantity: 31,
+              damagedQuantity: 5,
+              pendingReturnQuantity: 0,
+              inspectionHoldQuantity: 0,
+            },
+          ],
+        },
+      ],
+    });
+    renderPage();
+    await expandStatusDetails();
+    const metrics = await screen.findByTestId(
+      `inventory-branch-metrics-${workspace.branchId}`,
+    );
+    expect(metrics).toHaveTextContent("40");
+    expect(metrics).toHaveTextContent("31");
+    expect(metrics).toHaveTextContent(/5 damaged/i);
+    expect(metrics).not.toHaveTextContent(/reserved/i);
   });
 });

@@ -21,11 +21,14 @@ function baseEdit(overrides: Partial<TransferReceiveLineEdit> = {}): TransferRec
     otherText: "0",
     otherReasonCode: "",
     otherReasonText: "",
+    actualReceivedProductId: null,
+    actualReceivedProductName: null,
     remarksText: "Mixed",
     missingFollowUp: "wait_original",
     damagedFollowUp: "request_replacement",
     otherFollowUp: "request_replacement",
     damagedCustodyDecision: "KeepAtDestination",
+    otherCustodyDecision: null,
     ...overrides,
   };
 }
@@ -85,6 +88,71 @@ describe("transfer-receive-plan", () => {
     }
     expect(result.lines[0]?.missingDisposition).toBe("AcceptShortage");
     expect(result.lines[0]?.damagedFollowUp).toBe("AcceptShortage");
+  });
+
+  it("maps WrongVariant other qty with actual product and forced ReturnToSource", () => {
+    const actualProductId = "99999999-9999-9999-9999-999999999999";
+    const result = buildTransferReceivePayload([
+      baseEdit({
+        goodText: "20",
+        damagedText: "0",
+        notDeliveredText: "0",
+        otherText: "4",
+        otherReasonCode: "WrongVariant",
+        otherFollowUp: "request_replacement",
+        otherCustodyDecision: "KeepAtDestination",
+        actualReceivedProductId: actualProductId,
+      }),
+    ]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.lines[0]).toMatchObject({
+      otherQty: 4,
+      otherReasonCode: "WrongVariant",
+      otherCustodyDecision: "ReturnToSource",
+      actualReceivedProductId: actualProductId,
+      otherFollowUp: "RequestReplacement",
+    });
+  });
+
+  it("requires actual product for WrongVariant", () => {
+    const result = buildTransferReceivePayload([
+      baseEdit({
+        goodText: "20",
+        damagedText: "0",
+        notDeliveredText: "0",
+        otherText: "4",
+        otherReasonCode: "WrongVariant",
+        otherFollowUp: "request_replacement",
+      }),
+    ]);
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+    expect(result.error).toBe("other_actual_product_required");
+  });
+
+  it("rejects actual product same as expected for WrongItem/WrongVariant", () => {
+    const result = buildTransferReceivePayload([
+      baseEdit({
+        goodText: "20",
+        damagedText: "0",
+        notDeliveredText: "0",
+        otherText: "4",
+        otherReasonCode: "WrongVariant",
+        otherFollowUp: "request_replacement",
+        actualReceivedProductId: "11111111-1111-1111-1111-111111111111",
+        actualReceivedProductName: "Expected Apple",
+      }),
+    ]);
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+    expect(result.error).toBe("other_actual_product_same_as_expected");
   });
 
   it("omits missing disposition when no missing qty", () => {

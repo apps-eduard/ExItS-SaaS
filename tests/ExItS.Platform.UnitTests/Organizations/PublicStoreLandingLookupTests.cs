@@ -153,12 +153,13 @@ public sealed class PublicStoreLandingLookupTests
         InMemoryEntitlementSnapshotRepository? entitlements = null) =>
         new(
             orgs,
-            branches,
-            hours ?? new InMemoryBranchOperatingHoursRepository(),
-            policies ?? new InMemoryBranchDeliveryPolicyRepository(),
-            new EntitlementQueryService(entitlements ?? new InMemoryEntitlementSnapshotRepository()),
-            new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),
-            new FixedClock(T0),
+            new OrganizationCustomerOrderingAvailability(
+                branches,
+                hours ?? new InMemoryBranchOperatingHoursRepository(),
+                policies ?? new InMemoryBranchDeliveryPolicyRepository(),
+                new EntitlementQueryService(entitlements ?? new InMemoryEntitlementSnapshotRepository()),
+                new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),
+                new FixedClock(T0)),
             audit);
 
     private static async Task<ReadyOrderingHarness> CreateReadyOrderingHarnessAsync(

@@ -3,9 +3,11 @@ import {
   parseNonNegativeQty,
   receiveDiscrepancyQty,
 } from "@/features/purchasing/receive-math";
+import { requiresActualProduct, isActualProductSameAsExpected } from "@/features/inventory/transfer-exception-custody-policy";
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 
 export type ReceiveDiscrepancyDraftLine = {
+  productId?: string;
   outstandingQty: number;
   goodText: string;
   damagedText: string;
@@ -13,6 +15,8 @@ export type ReceiveDiscrepancyDraftLine = {
   otherText?: string;
   otherReasonCode?: string;
   otherReasonText?: string;
+  actualReceivedProductId?: string | null;
+  actualReceivedProductName?: string | null;
   remarksText: string;
   uom: string;
 };
@@ -53,6 +57,12 @@ function otherReasonValid(line: ReceiveDiscrepancyDraftLine, other: number): boo
     return false;
   }
   if (code === "Other" && !(line.otherReasonText?.trim())) {
+    return false;
+  }
+  if (requiresActualProduct(code) && !line.actualReceivedProductId?.trim()) {
+    return false;
+  }
+  if (isActualProductSameAsExpected(code, line.productId, line.actualReceivedProductId)) {
     return false;
   }
   return true;
@@ -125,9 +135,13 @@ export function formatReceiveDiscrepancySummary(
   }
   if (other > 1e-9) {
     const otherLabel = otherSummaryLabel(line.otherReasonCode, labels);
-    parts.push(
-      `${formatStockQtyLabel(other, line.uom).replace(/\s+\S+$/, "")} ${otherLabel}`,
-    );
+    const qtyPart = formatStockQtyLabel(other, line.uom).replace(/\s+\S+$/, "");
+    const actualName = line.actualReceivedProductName?.trim();
+    if (actualName && requiresActualProduct(line.otherReasonCode?.trim() ?? "")) {
+      parts.push(`${qtyPart} ${otherLabel} (${actualName})`);
+    } else {
+      parts.push(`${qtyPart} ${otherLabel}`);
+    }
   }
 
   return parts.length > 0 ? parts.join(" · ") : null;

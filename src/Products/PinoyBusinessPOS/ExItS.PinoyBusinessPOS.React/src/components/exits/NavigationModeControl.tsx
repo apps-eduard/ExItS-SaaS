@@ -1,4 +1,4 @@
-import { PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeft, PanelLeftClose, PanelLeftOpen, PanelLeftDashed } from "lucide-react";
 import { SettingsSelect } from "@/components/ui/settings-select";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -26,6 +26,11 @@ export function NavigationModeControl() {
             icon: <PanelLeftClose className="size-3.5 shrink-0" aria-hidden="true" />,
           },
           {
+            value: "hidden",
+            label: t("navigationMode.hidden"),
+            icon: <PanelLeftDashed className="size-3.5 shrink-0" aria-hidden="true" />,
+          },
+          {
             value: "reveal",
             label: t("navigationMode.reveal"),
             icon: <PanelLeftOpen className="size-3.5 shrink-0" aria-hidden="true" />,
@@ -42,6 +47,11 @@ export function NavigationModeControl() {
           <span className="font-medium text-foreground">{t("navigationMode.compact")}</span>
           {" — "}
           {t("navigationMode.helperCompact")}
+        </li>
+        <li>
+          <span className="font-medium text-foreground">{t("navigationMode.hidden")}</span>
+          {" — "}
+          {t("navigationMode.helperHidden")}
         </li>
         <li>
           <span className="font-medium text-foreground">{t("navigationMode.reveal")}</span>

@@ -18,7 +18,12 @@ export const primaryColorPreferenceSchema = z.enum([
 ]);
 export const controlShapePreferenceSchema = z.enum(["standard", "soft", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
-export const navigationModePreferenceSchema = z.enum(["standard", "compact", "reveal"]);
+export const navigationModePreferenceSchema = z.enum([
+  "standard",
+  "compact",
+  "hidden",
+  "reveal",
+]);
 
 export const uiPreferencesSchema = z.object({
   theme: themePreferenceSchema,
@@ -43,6 +48,26 @@ export type ControlShapePreference = z.infer<typeof controlShapePreferenceSchema
 export type MotionPreference = z.infer<typeof motionPreferenceSchema>;
 export type NavigationModePreference = z.infer<typeof navigationModePreferenceSchema>;
 export type UiPreferences = z.infer<typeof uiPreferencesSchema>;
+
+/** Topbar cycle: full → icons → hidden → full. Reveal joins by restoring to full. */
+export const NAVIGATION_MODE_CYCLE = [
+  "standard",
+  "compact",
+  "hidden",
+] as const satisfies readonly NavigationModePreference[];
+
+export function nextNavigationModeCycle(
+  current: NavigationModePreference,
+): (typeof NAVIGATION_MODE_CYCLE)[number] {
+  if (current === "standard") {
+    return "compact";
+  }
+  if (current === "compact") {
+    return "hidden";
+  }
+  // hidden, reveal, or unknown → restore full labeled sidebar
+  return "standard";
+}
 
 export const PRIMARY_COLOR_OPTIONS = [
   "green",

@@ -50,7 +50,7 @@ public sealed class SaleDomainTests
         var sale = Checkout([Draft(25.50m, 3m), Draft(10m, 2m, name: "Kape")]);
 
         Assert.Equal(SaleStatus.Completed, sale.Status);
-        Assert.Equal("260730-001", sale.SaleNumber);
+        Assert.Equal("SAL-260730-001", sale.SaleNumber);
         Assert.Equal(Actor, sale.RecordedBy);
         Assert.Equal(Now, sale.RecordedAtUtc);
         Assert.Null(sale.VoidedAtUtc);
@@ -402,8 +402,8 @@ public sealed class SaleDomainTests
     [Fact]
     public void Sale_numbers_are_formatted_and_normalized_per_business_date()
     {
-        Assert.Equal("260730-001", SaleNumbers.Format(new DateOnly(2026, 7, 30), 1));
-        Assert.Equal("260101-12345", SaleNumbers.Format(new DateOnly(2026, 1, 1), 12_345));
+        Assert.Equal("SAL-260730-001", SaleNumbers.Format(new DateOnly(2026, 7, 30), 1));
+        Assert.Equal("SAL-260101-12345", SaleNumbers.Format(new DateOnly(2026, 1, 1), 12_345));
         Assert.Equal("260730-001", SaleNumbers.Normalize(" 260730-001 "));
 
         Assert.Equal(new DateOnly(2026, 7, 30), SaleNumbers.BusinessDateOf(Now));

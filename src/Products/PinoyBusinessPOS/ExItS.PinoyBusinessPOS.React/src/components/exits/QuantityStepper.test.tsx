@@ -9,6 +9,94 @@ import {
 } from "@/components/exits/MoneyQuantity";
 
 describe("QuantityStepper editable mode", () => {
+  it("defaults to outline capsule (standard stepper)", () => {
+    render(
+      <QuantityStepper
+        value={2}
+        onChange={() => undefined}
+        min={1}
+        step={1}
+        precision={0}
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const root = screen.getByTestId("quantity-stepper");
+    expect(root.className).toContain("quantity-stepper--cart");
+    expect(root.className).toContain("quantity-stepper--outline");
+  });
+
+  it("shows unit inside the qty middle when idle and hides it while typing", async () => {
+    const user = userEvent.setup();
+    render(
+      <QuantityStepper
+        value={2}
+        onChange={() => undefined}
+        min={1}
+        step={1}
+        precision={0}
+        unit="Kilogram"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const middle = screen.getByTestId("quantity-stepper").querySelector(".quantity-stepper__middle");
+    expect(middle).not.toBeNull();
+    expect(middle!.querySelector(".quantity-stepper__unit")?.textContent).toBe(" kg");
+
+    await user.click(screen.getByTestId("qty"));
+    expect(middle!.querySelector(".quantity-stepper__unit")).toBeNull();
+
+    await user.keyboard("{Enter}");
+    expect(middle!.querySelector(".quantity-stepper__unit")?.textContent).toBe(" kg");
+  });
+
+  it("renders field variant with white-center capsule chrome", () => {
+    render(
+      <QuantityStepper
+        value={2}
+        onChange={() => undefined}
+        min={1}
+        step={1}
+        precision={0}
+        variant="field"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const root = screen.getByTestId("quantity-stepper");
+    expect(root.className).toContain("quantity-stepper--cart");
+    expect(root.className).toContain("quantity-stepper--field");
+    expect(root).toHaveAttribute("data-variant", "field");
+  });
+
+  it("renders outline variant with capsule chrome", () => {
+    render(
+      <QuantityStepper
+        value={2}
+        onChange={() => undefined}
+        min={1}
+        step={1}
+        precision={0}
+        variant="outline"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const root = screen.getByTestId("quantity-stepper");
+    expect(root.className).toContain("quantity-stepper--cart");
+    expect(root.className).toContain("quantity-stepper--outline");
+    expect(root).toHaveAttribute("data-variant", "outline");
+  });
+
   it("increments and decrements with plus/minus", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -680,6 +768,7 @@ describe("QuantityStepper editable mode", () => {
     const onChange = vi.fn();
     render(
       <QuantityStepper
+        variant="default"
         value={1}
         onChange={onChange}
         min={0.01}
@@ -693,7 +782,15 @@ describe("QuantityStepper editable mode", () => {
       />,
     );
     const input = screen.getByTestId("qty");
-    expect(input).toHaveStyle({ width: `${QUANTITY_STEPPER_INPUT_MIN_CH}ch` });
+    const middle = screen
+      .getByTestId("quantity-stepper")
+      .querySelector(".quantity-stepper__middle") as HTMLElement;
+    expect(middle).toHaveStyle({
+      width: `${quantityStepperInputWidthCh("1 kg")}ch`,
+    });
+    expect(input).toHaveStyle({
+      width: `${quantityStepperInputWidthCh("1")}ch`,
+    });
 
     await user.clear(input);
     await user.type(input, "1.");

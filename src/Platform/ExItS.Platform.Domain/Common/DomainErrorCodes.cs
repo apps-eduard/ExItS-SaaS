@@ -191,6 +191,13 @@ public static class DomainErrorCodes
     public const string PersonalAccountSettingsConcurrencyConflict =
         "platform.personal.account_settings.concurrency_conflict";
 
+    public const string InvalidPersonalSharedUtangPreferenceId =
+        "platform.personal.shared_utang_preference.id.invalid";
+    public const string InvalidPersonalSharedUtangPreference =
+        "platform.personal.shared_utang_preference.invalid";
+    public const string PersonalSharedUtangPreferenceConcurrencyConflict =
+        "platform.personal.shared_utang_preference.concurrency_conflict";
+
     public const string InvalidPlatformSettings = "platform.settings.invalid";
     public const string PlatformSettingsConcurrencyConflict = "platform.settings.concurrency_conflict";
 

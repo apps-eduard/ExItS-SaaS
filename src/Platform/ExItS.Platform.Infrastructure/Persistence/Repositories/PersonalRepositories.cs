@@ -70,6 +70,75 @@ internal sealed class PersonalAccountSettingsRepository(PlatformDbContext db) : 
         };
 }
 
+internal sealed class PersonalSharedUtangPreferenceRepository(PlatformDbContext db)
+    : IPersonalSharedUtangPreferenceRepository
+{
+    public async Task<PersonalSharedUtangPreference?> GetByOwnerAndCounterpartyAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalSharedUtangPreferences.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.OwnerUserIdentityId == ownerUserIdentityId.Value
+                    && x.CounterpartyUserIdentityId == counterpartyUserIdentityId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalSharedUtangPreference preference, CancellationToken cancellationToken = default)
+    {
+        db.PersonalSharedUtangPreferences.Add(ToRecord(preference));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(
+        PersonalSharedUtangPreference preference,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalSharedUtangPreferences
+            .FirstOrDefaultAsync(x => x.Id == preference.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.ReceiveSharedUtang = preference.ReceiveSharedUtang;
+        record.AutoAcceptSharedUtang = preference.AutoAcceptSharedUtang;
+        record.SharedUtangNotifications = preference.SharedUtangNotifications;
+        record.UpdatedAtUtc = preference.UpdatedAtUtc;
+        record.Version = preference.Version;
+    }
+
+    private static PersonalSharedUtangPreference ToDomain(PersonalSharedUtangPreferenceRecord record) =>
+        PersonalSharedUtangPreference.Rehydrate(
+            PersonalSharedUtangPreferenceId.From(record.Id),
+            PlatformUserId.From(record.OwnerUserIdentityId),
+            PlatformUserId.From(record.CounterpartyUserIdentityId),
+            record.ReceiveSharedUtang,
+            record.AutoAcceptSharedUtang,
+            record.SharedUtangNotifications,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.Version);
+
+    private static PersonalSharedUtangPreferenceRecord ToRecord(PersonalSharedUtangPreference preference) =>
+        new()
+        {
+            Id = preference.Id.Value,
+            OwnerUserIdentityId = preference.OwnerUserIdentityId.Value,
+            CounterpartyUserIdentityId = preference.CounterpartyUserIdentityId.Value,
+            ReceiveSharedUtang = preference.ReceiveSharedUtang,
+            AutoAcceptSharedUtang = preference.AutoAcceptSharedUtang,
+            SharedUtangNotifications = preference.SharedUtangNotifications,
+            CreatedAtUtc = preference.CreatedAtUtc,
+            UpdatedAtUtc = preference.UpdatedAtUtc,
+            Version = preference.Version
+        };
+}
+
 internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersonalContactRepository
 {
     public async Task<PersonalContact?> GetByIdAsync(PersonalContactId id, CancellationToken cancellationToken = default)
@@ -615,6 +684,7 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
         record.ResolvedByUserIdentityId = entry.ResolvedByUserIdentityId?.Value;
         record.ResolvedAtUtc = entry.ResolvedAtUtc;
         record.DisputeReason = entry.DisputeReason;
+        record.ConfirmationSource = entry.ConfirmationSource.ToString();
     }
 
     private static PersonalUtangEntry ToDomain(PersonalUtangEntryRecord record) =>
@@ -638,7 +708,10 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
             string.IsNullOrWhiteSpace(record.Intent)
                 ? PersonalUtangEntryIntent.Regular
                 : Enum.Parse<PersonalUtangEntryIntent>(record.Intent, ignoreCase: true),
-            record.SettlementBalanceSnapshot);
+            record.SettlementBalanceSnapshot,
+            string.IsNullOrWhiteSpace(record.ConfirmationSource)
+                ? PersonalUtangConfirmationSource.None
+                : Enum.Parse<PersonalUtangConfirmationSource>(record.ConfirmationSource, ignoreCase: true));
 
     private static PersonalUtangEntryRecord ToRecord(PersonalUtangEntry entry) =>
         new()
@@ -658,7 +731,8 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
             ResolvedAtUtc = entry.ResolvedAtUtc,
             DisputeReason = entry.DisputeReason,
             Intent = entry.Intent.ToString(),
-            SettlementBalanceSnapshot = entry.SettlementBalanceSnapshot
+            SettlementBalanceSnapshot = entry.SettlementBalanceSnapshot,
+            ConfirmationSource = entry.ConfirmationSource.ToString()
         };
 }
 
@@ -1728,6 +1802,19 @@ internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTo
         record.UpdatedAtUtc = todo.UpdatedAtUtc;
         record.CompletedAtUtc = todo.CompletedAtUtc;
         record.Version = todo.Version;
+    }
+
+    public async Task DeleteAsync(PersonalTodo todo, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalTodos
+            .FirstOrDefaultAsync(x => x.Id == todo.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        db.PersonalTodos.Remove(record);
     }
 
     private static PersonalTodo ToDomain(PersonalTodoRecord record)

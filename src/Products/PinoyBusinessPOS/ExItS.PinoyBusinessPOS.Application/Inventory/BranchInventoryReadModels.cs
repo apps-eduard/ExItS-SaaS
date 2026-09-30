@@ -18,7 +18,10 @@ public sealed record BranchInventoryProductRead(
     decimal? ReorderQuantity,
     bool IsLowStock,
     bool IsReorderSuggested,
-    decimal? SuggestedOrderQuantity);
+    decimal? SuggestedOrderQuantity,
+    decimal BranchPendingReturn = 0m,
+    decimal BranchInspectionHold = 0m,
+    decimal BranchDamaged = 0m);
 
 public sealed record BranchInventoryListFilter(
     string? Search = null,
@@ -113,4 +116,10 @@ public sealed record BranchInventoryListRow(
     string MonitoringMode = "BranchDefault",
     decimal BranchReserved = 0m,
     decimal BranchAvailable = 0m,
-    decimal BranchPendingReturn = 0m);
+    decimal BranchPendingReturn = 0m,
+    /// <summary>Organization-default catalog selling price (before branch override).</summary>
+    decimal? SellingPrice = null,
+    /// <summary>Sum of OpeningStock movement quantities for this branch (when recorded).</summary>
+    decimal? OpeningQuantity = null,
+    decimal BranchInspectionHold = 0m,
+    decimal BranchDamaged = 0m);

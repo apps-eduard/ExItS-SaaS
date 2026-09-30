@@ -261,6 +261,14 @@ export function BusinessRelationshipContactEditDrawer({
         queryKey: ["business-customers", "detail", workspace.organizationId, customer.connectionId],
       });
       await queryClient.invalidateQueries({
+        queryKey: [
+          "business-customers",
+          "commerce-readiness",
+          workspace.organizationId,
+          customer.connectionId,
+        ],
+      });
+      await queryClient.invalidateQueries({
         queryKey: ["business-customers", "list", workspace.organizationId],
       });
       await queryClient.invalidateQueries({

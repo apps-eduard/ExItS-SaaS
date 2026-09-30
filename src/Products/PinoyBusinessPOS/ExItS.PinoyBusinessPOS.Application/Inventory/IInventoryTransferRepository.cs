@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
@@ -22,9 +23,37 @@ public interface IInventoryTransferRepository
         StockRequestId stockRequestId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Linked transfers for many stock requests (batch; used by commitment SUM).</summary>
+    Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<StockRequestId> stockRequestIds,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
         PosOrganizationId organizationId,
         InventoryTransferId rootTransferId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Lightweight transfer number lookup for queue / badge surfaces.</summary>
+    Task<IReadOnlyDictionary<Guid, string?>> GetTransferNumbersAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Transfer number + destination branch for inspection-queue "return from" labels.</summary>
+    Task<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>> GetTransferQueueHintsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> transferIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Open (InTransit / PartiallyReceived) transfer line outstanding for a branch,
+    /// optionally limited to product ids. Used for inventory reserved/in-transit badges.
+    /// </summary>
+    Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId>? productIds = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);
@@ -35,7 +64,39 @@ public interface IInventoryTransferRepository
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves authoritative inventory-transfer transaction refs for stock movements.
+    /// SourceId may be transfer id, receipt id, receipt-line id, or damage-custody id
+    /// depending on <see cref="StockMovement.MovementType"/>.
+    /// Keyed by movement id.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>> ResolveStockMovementTransactionRefsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<StockMovement> movements,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>Authoritative transfer document linked from a stock movement.</summary>
+public sealed record InventoryTransferTransactionRef(
+    Guid TransferId,
+    string? TransferNumber);
+
+/// <summary>Lightweight transfer fields for awaiting-inspection / queue rows.</summary>
+public sealed record InventoryTransferQueueHint(
+    string? TransferNumber,
+    Guid DestinationBranchId);
+
+/// <summary>Open transfer commitment for inventory badge / reservation drawer.</summary>
+public sealed record InventoryTransferOpenCommitment(
+    Guid TransferId,
+    string? TransferNumber,
+    Guid ProductId,
+    decimal OutstandingQuantity,
+    /// <summary><c>Outbound</c> when acting branch is source; <c>Inbound</c> when destination.</summary>
+    string Direction,
+    Guid PeerBranchId,
+    DateTimeOffset CreatedAtUtc);
 
 public interface IInventoryBranchBalanceRepository
 {

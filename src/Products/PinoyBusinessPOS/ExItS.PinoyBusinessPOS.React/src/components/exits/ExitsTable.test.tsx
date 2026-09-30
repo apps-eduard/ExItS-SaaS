@@ -427,4 +427,26 @@ describe("ExitsTable foundation", () => {
       "exits-table__action-reset",
     );
   });
+
+  it("supports stickyHeader on the scroll wrapper", () => {
+    const { container } = render(
+      <ExitsTableContainer>
+        <ExitsTable stickyHeader data-testid="sticky-table">
+          <ExitsTableHeader>
+            <ExitsTableRow>
+              <ExitsTableHead>Product</ExitsTableHead>
+            </ExitsTableRow>
+          </ExitsTableHeader>
+          <ExitsTableBody>
+            <ExitsTableRow>
+              <ExitsTableCell>Apple</ExitsTableCell>
+            </ExitsTableRow>
+          </ExitsTableBody>
+        </ExitsTable>
+      </ExitsTableContainer>,
+    );
+    const scroll = container.querySelector(".exits-table-scroll");
+    expect(scroll).toHaveClass("exits-table-scroll--sticky-header");
+    expect(scroll).toHaveAttribute("data-sticky-header", "true");
+  });
 });

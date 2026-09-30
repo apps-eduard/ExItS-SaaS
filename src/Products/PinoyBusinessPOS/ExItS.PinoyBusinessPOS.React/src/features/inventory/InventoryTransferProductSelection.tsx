@@ -7,6 +7,12 @@ import {
   type ProductSelectionColumn,
   type ProductSelectionRow,
 } from "@/components/exits/ProductSelectionView";
+import {
+  resolveTransferableAvailableQuantity,
+  selectTransferEligibleLots,
+  sumTransferExpiredLotQuantity,
+} from "@/features/inventory/inventory-transfer-fefo-allocate";
+import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
 import { cn } from "@/lib/cn";
 
 type Translate = (key: string) => string;
@@ -14,61 +20,84 @@ type Translate = (key: string) => string;
 export type InventoryTransferProductSelectionProps = {
   layout: ResponsiveDataLayout;
   products: readonly PosInventoryAccountDto[];
-  lotByProduct: Readonly<Record<string, string>>;
   lotsCache: Readonly<Record<string, PosInventoryLotDto[]>>;
   online: boolean;
   formatAvailable: (qty: number, uom: string) => string;
-  onLotChange: (productId: string, lotId: string) => void;
-  onLotFocus: (productId: string) => void;
   onAddProduct: (row: PosInventoryAccountDto) => void;
   t: Translate;
 };
 
 /**
- * Branch Transfer adapter — source availability / lot → ProductSelectionView.
- * Quantity is edited on draft lines after add (default +1 per click).
+ * Branch Transfer find-products adapter — product-only add.
+ * Lot allocation happens on the draft after add (FEFO / Change lots).
  */
 export function InventoryTransferProductSelection({
   layout,
   products,
-  lotByProduct,
   lotsCache,
   online,
   formatAvailable,
-  onLotChange,
-  onLotFocus,
   onAddProduct,
   t,
 }: InventoryTransferProductSelectionProps) {
   const columns: ProductSelectionColumn[] = [
     { id: "product", header: t("transfer.product") },
-    { id: "sku", header: t("purchasing.colSku") },
     { id: "category", header: t("purchasing.category") },
     { id: "available", header: t("transfer.colAvailable") },
-    { id: "unit", header: t("purchasing.colUnit") },
   ];
 
   const rows: ProductSelectionRow[] = products.map((row) => {
     const tracksExpiration = row.tracksExpiration === true;
-    const lots = lotsCache[row.productId] ?? [];
-    const available = Math.max(0, row.onHandQuantity);
+    const lots = lotsCache[row.productId];
+    const eligibleLotCount =
+      lots != null ? selectTransferEligibleLots(lots).length : null;
+    const branchAvailable = Math.max(0, resolveAvailableQuantity(row));
+    const available = resolveTransferableAvailableQuantity({
+      branchAvailable,
+      tracksExpiration,
+      lots,
+    });
+    const expiredQty =
+      tracksExpiration && lots != null ? sumTransferExpiredLotQuantity(lots) : 0;
     const outOfStock = available <= 0;
-    const selectedLotId = lotByProduct[row.productId] ?? "";
-    const selectedLot = lots.find((l) => l.lotId === selectedLotId);
-    const lotOut =
-      tracksExpiration && selectedLot != null && selectedLot.quantityOnHand <= 0;
-    const addDisabled = !online || outOfStock || lotOut;
-    const sku = row.sku?.trim() || "—";
+    const addDisabled = !online || outOfStock;
+    const sku = row.sku?.trim() || "";
     const category =
       row.categoryName?.trim() ||
       (row.categoryId?.trim() ? row.categoryId : "—");
-    const unit = row.unitOfMeasure || "—";
-    const availableLabel = outOfStock
+
+    let availableLabel = outOfStock
       ? t("transfer.outOfStock")
       : formatAvailable(available, row.unitOfMeasure);
-    const availableWithExpiry = tracksExpiration
-      ? `${availableLabel} · ${t("transfer.tracksExpiry")}`
-      : availableLabel;
+
+    if (tracksExpiration && outOfStock && expiredQty > 0 && lots != null) {
+      availableLabel = `${t("transfer.outOfStock")} · ${t("transfer.expiredQtyHint")
+        .replace("{qty}", String(expiredQty))
+        .replace("{uom}", row.unitOfMeasure)}`;
+    }
+
+    let availableWithExpiry = availableLabel;
+    if (tracksExpiration && !outOfStock) {
+      const parts = [availableLabel];
+      if (eligibleLotCount != null) {
+        parts.push(
+          t("transfer.lotCount").replace("{count}", String(eligibleLotCount)),
+        );
+      }
+      parts.push(t("transfer.tracksExpiry"));
+      availableWithExpiry = parts.join(" · ");
+    } else if (tracksExpiration && outOfStock) {
+      availableWithExpiry = availableLabel;
+    }
+
+    const productCell = (
+      <>
+        <div className="font-medium leading-snug">{row.name}</div>
+        {sku ? (
+          <div className="text-[length:var(--exits-text-xs)] text-muted">{sku}</div>
+        ) : null}
+      </>
+    );
 
     const primaryAction = outOfStock ? (
       <span
@@ -91,31 +120,11 @@ export function InventoryTransferProductSelection({
       </Button>
     );
 
-    const details =
-      tracksExpiration && !outOfStock ? (
-        <select
-          className="exits-select w-full max-w-md"
-          value={lotByProduct[row.productId] ?? ""}
-          onFocus={() => onLotFocus(row.productId)}
-          onChange={(e) => onLotChange(row.productId, e.target.value)}
-          data-testid={`transfer-lot-${row.productId}`}
-        >
-          <option value="">{t("transfer.selectLot")}</option>
-          {lots.map((lot) => (
-            <option key={lot.lotId} value={lot.lotId} disabled={lot.quantityOnHand <= 0}>
-              {(lot.lotNumber ?? t("transfer.lot")) +
-                ` · ${lot.expirationDate ?? "—"} · ${lot.quantityOnHand}`}
-              {lot.quantityOnHand <= 0 ? ` (${t("transfer.outOfStock")})` : ""}
-            </option>
-          ))}
-        </select>
-      ) : undefined;
-
     return {
       id: row.productId,
       testId: `transfer-picker-row-${row.productId}`,
       title: row.name,
-      subtitle: sku !== "—" ? sku : undefined,
+      subtitle: sku || undefined,
       status: (
         <span
           className={cn(
@@ -128,10 +137,7 @@ export function InventoryTransferProductSelection({
         </span>
       ),
       cells: [
-        <span key="name" className="font-medium leading-snug">
-          {row.name}
-        </span>,
-        sku,
+        productCell,
         category,
         <span
           key="avail"
@@ -140,15 +146,12 @@ export function InventoryTransferProductSelection({
         >
           {availableWithExpiry}
         </span>,
-        unit,
       ],
       fields: [
         { label: t("purchasing.category"), value: category },
         { label: t("transfer.colAvailable"), value: availableWithExpiry },
-        { label: t("purchasing.colUnit"), value: unit },
       ],
       primaryAction,
-      details,
     };
   });
 

@@ -13,6 +13,8 @@ using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
+using ExItS.PinoyBusinessPOS.UnitTests.Inventory;
+
 namespace ExItS.PinoyBusinessPOS.UnitTests.Returns;
 
 public sealed class SaleReturnStockServiceTests
@@ -33,7 +35,7 @@ public sealed class SaleReturnStockServiceTests
         var saleReturn = ReturnForLines(sale, RestockDisposition.ReturnToStock);
         var lots = new FakeLots();
         var service = new SaleReturnStockService(
-            inventory, new FakeProducts([product]), new InventoryLotStockService(lots), lots, new FakeReturns());
+            inventory, new FakeProducts([product]), new InventoryLotStockService(lots), lots, new FakeReturns(), BranchExpirationTestHelpers.CreateResolver());
 
         await service.RestockForReturnAsync(Org, saleReturn, sale, Actor, Now);
 
@@ -60,6 +62,7 @@ public sealed class SaleReturnStockServiceTests
             new InventoryLotStockService(lots),
             lots,
             new FakeReturns(),
+            BranchExpirationTestHelpers.CreateResolver(),
             balances);
 
         await service.RestockForReturnAsync(Org, saleReturn, sale, Actor, Now);
@@ -86,6 +89,7 @@ public sealed class SaleReturnStockServiceTests
             new InventoryLotStockService(lots),
             lots,
             new FakeReturns(),
+            BranchExpirationTestHelpers.CreateResolver(),
             balances);
 
         var ex = await Assert.ThrowsAsync<DomainException>(() =>
@@ -100,6 +104,15 @@ public sealed class SaleReturnStockServiceTests
         var inventory = new FakeInventory(EnableTracked(productId, 0m));
         var product = CatalogProduct.Create(Org, "Milk", UnitOfMeasure.Piece, 10m, Now, id: productId);
         product.SetExpirationTracking(true, 7, Now);
+        var expirationSettings = new InMemoryBranchExpirationSettings();
+        await expirationSettings.UpsertAsync(
+            InventoryBranchExpirationSetting.CreateEnabled(
+                Org,
+                Branch,
+                productId,
+                expirationWarningDays: 7,
+                Actor,
+                Now));
         var sale = SaleWithOneLine(productId, 5m, Branch);
         var priorReturnId = SaleReturnId.New();
         inventory.MarkRestocked(priorReturnId, productId);
@@ -147,7 +160,8 @@ public sealed class SaleReturnStockServiceTests
             new FakeProducts([product]),
             new InventoryLotStockService(lots),
             lots,
-            new FakeReturns([priorReturn]));
+            new FakeReturns([priorReturn]),
+            BranchExpirationTestHelpers.CreateResolver(expirationSettings));
 
         var ex = await Assert.ThrowsAsync<DomainException>(() =>
             service.RestockForReturnAsync(Org, currentReturn, sale, Actor, Now));
@@ -483,7 +497,7 @@ public sealed class SaleReturnStockServiceTests
         public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(PosOrganizationId organizationId, CatalogProductId productId, bool includeDepleted, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<InventoryLot>>([]);
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(PosOrganizationId organizationId, CatalogProductId productId, PosBranchId? branchId, bool includeDepleted, int skip, int take, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListExpiringPagedAsync(PosOrganizationId organizationId, PosBranchId? branchId, DateOnly expireOnOrBefore, DateOnly? expireOnOrAfter, string? search, int skip, int take, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(PosOrganizationId organizationId, DateOnly today, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(PosOrganizationId organizationId, DateOnly today, PosBranchId? branchId = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task AdoptOrgLevelLotsForBranchAsync(PosOrganizationId organizationId, CatalogProductId productId, PosBranchId branchId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task UpdateAsync(InventoryLot lot, CancellationToken cancellationToken = default) => Task.CompletedTask;
