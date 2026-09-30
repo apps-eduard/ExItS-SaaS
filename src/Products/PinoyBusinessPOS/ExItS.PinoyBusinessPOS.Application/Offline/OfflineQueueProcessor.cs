@@ -401,6 +401,7 @@ public static class OfflineOperationTypes
     public const string DevOfflineProbe = "dev.offline-probe";
     public const string CustomerCreate = "customer.create";
     public const string CustomerUpdate = "customer.update";
+    public const string CustomerOnlineOrderingAccessSet = "customer.online_ordering_access.set";
     public const string CreditCreate = "credit.create";
     public const string RepaymentCreate = "repayment.create";
     public const string RepaymentReverse = "repayment.reverse";

@@ -89,6 +89,21 @@ public sealed class PersonalTodoTests
     }
 
     [Fact]
+    public void EnsureCanPermanentlyDelete_allows_cancelled_only()
+    {
+        var todo = PersonalTodo.Create(OwnerId, "Discard me", T0);
+
+        var openEx = Assert.Throws<DomainException>(() => todo.EnsureCanPermanentlyDelete(expectedVersion: 1));
+        Assert.Equal(DomainErrorCodes.InvalidPersonalTodoStatusTransition, openEx.ErrorCode);
+
+        todo.Cancel(T0.AddMinutes(1), expectedVersion: 1);
+        todo.EnsureCanPermanentlyDelete(expectedVersion: 2);
+
+        var staleEx = Assert.Throws<DomainException>(() => todo.EnsureCanPermanentlyDelete(expectedVersion: 1));
+        Assert.Equal(DomainErrorCodes.PersonalTodoConcurrencyConflict, staleEx.ErrorCode);
+    }
+
+    [Fact]
     public void Reminder_due_until_notified_and_reschedule_clears_notified()
     {
         var reminderAt = T0.AddHours(2);

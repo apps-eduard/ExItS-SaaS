@@ -4,8 +4,9 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Customers;
 
 /// <summary>
-/// Organization-owned POS customer aggregate. Profile and lifecycle only —
-/// no credit, ledger, balance, repayment, sales, or inventory state.
+/// Organization-owned POS customer aggregate. Profile, lifecycle, and lightweight
+/// commerce access overrides (online ordering). Credit/ledger/outstanding remain on
+/// CustomerCreditPolicy and CreditEntry — not on this aggregate.
 /// Notes are general identification only and must never be treated as credit records.
 /// </summary>
 public sealed class POSCustomer
@@ -54,6 +55,13 @@ public sealed class POSCustomer
     /// <summary>Optional public organization id (ORG######) for the linked buyer organization.</summary>
     public string? LinkedBuyerPublicOrganizationId { get; private set; }
 
+    /// <summary>Per-customer online storefront/order override (org-owned commerce policy).</summary>
+    public CustomerOnlineOrderingAccess OnlineOrderingAccess { get; private set; }
+
+    public Guid? OnlineOrderingAccessUpdatedByUserId { get; private set; }
+
+    public DateTimeOffset? OnlineOrderingAccessUpdatedAtUtc { get; private set; }
+
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -72,7 +80,10 @@ public sealed class POSCustomer
         Guid? linkedBuyerOrganizationId,
         string? linkedBuyerPublicOrganizationId,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        CustomerOnlineOrderingAccess onlineOrderingAccess = CustomerOnlineOrderingAccess.Default,
+        Guid? onlineOrderingAccessUpdatedByUserId = null,
+        DateTimeOffset? onlineOrderingAccessUpdatedAtUtc = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -87,6 +98,9 @@ public sealed class POSCustomer
         LinkedPersonalPublicUserId = linkedPersonalPublicUserId;
         LinkedBuyerOrganizationId = linkedBuyerOrganizationId;
         LinkedBuyerPublicOrganizationId = linkedBuyerPublicOrganizationId;
+        OnlineOrderingAccess = onlineOrderingAccess;
+        OnlineOrderingAccessUpdatedByUserId = onlineOrderingAccessUpdatedByUserId;
+        OnlineOrderingAccessUpdatedAtUtc = onlineOrderingAccessUpdatedAtUtc;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -155,7 +169,10 @@ public sealed class POSCustomer
         string? linkedPersonalPublicUserId = null,
         Guid? linkedBuyerOrganizationId = null,
         string? linkedBuyerPublicOrganizationId = null,
-        CustomerPartyKind partyKind = CustomerPartyKind.Person) =>
+        CustomerPartyKind partyKind = CustomerPartyKind.Person,
+        CustomerOnlineOrderingAccess onlineOrderingAccess = CustomerOnlineOrderingAccess.Default,
+        Guid? onlineOrderingAccessUpdatedByUserId = null,
+        DateTimeOffset? onlineOrderingAccessUpdatedAtUtc = null) =>
         new(
             id,
             organizationId,
@@ -171,7 +188,45 @@ public sealed class POSCustomer
             linkedBuyerOrganizationId,
             linkedBuyerPublicOrganizationId,
             createdAtUtc,
-            updatedAtUtc);
+            updatedAtUtc,
+            onlineOrderingAccess,
+            onlineOrderingAccessUpdatedByUserId,
+            onlineOrderingAccessUpdatedAtUtc);
+
+    /// <summary>
+    /// Sets organization-owned Personal online-ordering access. Idempotent when unchanged.
+    /// </summary>
+    public void SetOnlineOrderingAccess(
+        CustomerOnlineOrderingAccess access,
+        Guid actorUserId,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (actorUserId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidActorId,
+                "Actor is required to change online ordering access.");
+        }
+
+        if (!Enum.IsDefined(access))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOnlineOrderingAccess,
+                "Online ordering access value is invalid.");
+        }
+
+        if (OnlineOrderingAccess == access
+            && OnlineOrderingAccessUpdatedByUserId == actorUserId)
+        {
+            return;
+        }
+
+        OnlineOrderingAccess = access;
+        OnlineOrderingAccessUpdatedByUserId = actorUserId;
+        OnlineOrderingAccessUpdatedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
 
     /// <summary>
     /// Updates seller-owned store customer details only (display/preferred name, contact phone,

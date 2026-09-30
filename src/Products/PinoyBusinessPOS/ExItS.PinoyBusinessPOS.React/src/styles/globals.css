@@ -3154,12 +3154,15 @@ select.exits-select.stock-status-toolbar__select {
   background: #f9fafb;
 }
 
-.exits-bizdoc__table .is-right {
-  text-align: right;
+/* Important: beat any later table/text utilities that reset cell alignment. */
+.exits-bizdoc__table th.is-right,
+.exits-bizdoc__table td.is-right {
+  text-align: end !important;
 }
 
-.exits-bizdoc__table .is-center {
-  text-align: center;
+.exits-bizdoc__table th.is-center,
+.exits-bizdoc__table td.is-center {
+  text-align: center !important;
 }
 
 .exits-bizdoc__table-row {
@@ -10395,7 +10398,7 @@ html:has(.personal-shell) #root {
 }
 
 .personal-todo-row__actions--open {
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .personal-todo-row__actions--completed {
@@ -10404,6 +10407,10 @@ html:has(.personal-shell) #root {
 
 .personal-todo-row__actions--solo {
   grid-template-columns: 1fr;
+}
+
+.personal-todo-row__actions--cancelled {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .personal-todo-row__action {
@@ -10476,51 +10483,13 @@ html:has(.personal-shell) #root {
 }
 
 .personal-todo-tasklist-rail {
-  display: none;
+  display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 0.85rem;
   padding: 1rem;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-}
-
-@media (min-width: 1024px) {
-  .personal-todo-tasklist-layout--desktop {
-    display: grid;
-    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
-    gap: 1rem;
-    align-items: stretch;
-    height: 100%;
-    min-height: 0;
-  }
-
-  .personal-todo-tasklist-rail {
-    display: flex;
-    position: sticky;
-    top: 0;
-    max-height: 100%;
-    overflow: hidden;
-  }
-
-  .personal-todo-tasklist-rail__nav {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .personal-todo-tasklist-card {
-    min-height: 0;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .personal-todo-tasklist-card__groups {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-  }
 }
 
 .personal-todo-tasklist-rail__new {
@@ -10538,13 +10507,16 @@ html:has(.personal-shell) #root {
 
 .personal-todo-tasklist-rail__list {
   display: flex;
-  flex-direction: column;
   gap: 0.25rem;
+}
+
+.personal-todo-tasklist-rail__list > li {
+  display: flex;
+  min-width: 0;
 }
 
 .personal-todo-tasklist-rail__item {
   display: flex;
-  width: 100%;
   min-height: 2.55rem;
   align-items: center;
   gap: 0.55rem;
@@ -10585,6 +10557,110 @@ html:has(.personal-shell) #root {
   font-weight: var(--exits-font-weight-medium);
 }
 
+/* Default / small screens: one horizontal scrolling row. */
+.personal-todo-tasklist-rail__section {
+  display: none;
+}
+
+.personal-todo-tasklist-rail__nav {
+  min-width: 0;
+}
+
+.personal-todo-tasklist-rail__list {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  padding-bottom: 0.1rem;
+}
+
+.personal-todo-tasklist-rail__list > li {
+  flex: 0 0 auto;
+}
+
+.personal-todo-tasklist-rail__item {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: max-content;
+  min-height: 2.35rem;
+  scroll-snap-align: start;
+}
+
+.personal-todo-tasklist-rail__label {
+  flex: 0 1 auto;
+}
+
+@media (min-width: 1024px) {
+  .personal-todo-tasklist-layout--desktop {
+    display: grid;
+    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .personal-todo-tasklist-rail {
+    position: sticky;
+    top: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .personal-todo-tasklist-rail__section {
+    display: block;
+  }
+
+  .personal-todo-tasklist-rail__nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .personal-todo-tasklist-rail__list {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    overflow-x: visible;
+    overflow-y: visible;
+    scroll-snap-type: none;
+    padding-bottom: 0;
+  }
+
+  .personal-todo-tasklist-rail__list > li {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .personal-todo-tasklist-rail__item {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.55rem;
+  }
+
+  .personal-todo-tasklist-rail__label {
+    flex: 1 1 auto;
+  }
+
+  .personal-todo-tasklist-card {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .personal-todo-tasklist-card__groups {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
 .personal-todo-tasklist-rail__count {
   display: inline-flex;
   min-width: 1.5rem;
@@ -10606,6 +10682,7 @@ html:has(.personal-shell) #root {
 
 .personal-todo-tasklist-card {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.85rem;
   padding: 1rem 1rem 1.1rem;
@@ -10632,28 +10709,30 @@ html:has(.personal-shell) #root {
   flex-shrink: 0;
 }
 
-.personal-todo-tasklist-card__filters {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  padding-bottom: 0.15rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 85%, transparent);
+.personal-todo-tasklist-card__search-row {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
 }
 
-.personal-todo-tasklist-filters .exits-chip-bar {
-  flex-wrap: nowrap;
-  min-width: min-content;
-}
-
-.personal-todo-tasklist-filters .exits-chip-bar__chip[data-state="active"] {
-  background: color-mix(in srgb, var(--exits-primary) 16%, var(--exits-surface));
-  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
-  color: var(--exits-primary);
-  box-shadow: inset 0 -2px 0 var(--exits-primary);
+.personal-todo-tasklist-card__search {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .personal-todo-tasklist-card__search-field {
   border-radius: var(--exits-radius-md);
   background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+}
+
+.personal-todo-tasklist-card__expand-toggle {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
 }
 
 .personal-todo-tasklist-card__create {
@@ -10664,9 +10743,14 @@ html:has(.personal-shell) #root {
 
 .personal-todo-tasklist-card__groups {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .personal-todo-tasklist-group {
@@ -10708,12 +10792,15 @@ html:has(.personal-shell) #root {
   gap: 0;
 }
 
+.personal-todo-tasklist-card__groups > li:first-child .personal-todo-tasklist-row {
+  border-top: none;
+}
+
 .personal-todo-tasklist-row {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
   padding: 0.95rem 0.15rem;
   border-top: 1px dashed color-mix(in srgb, var(--exits-border) 72%, transparent);
   min-width: 0;
@@ -10767,8 +10854,13 @@ html:has(.personal-shell) #root {
     background-color var(--exits-motion-fast) ease;
 }
 
+.personal-todo-tasklist-row__check .personal-todo-tasklist-row__check-box {
+  border-color: color-mix(in srgb, var(--exits-success) 55%, var(--exits-border));
+}
+
 .personal-todo-tasklist-row__check:hover:not(:disabled) .personal-todo-tasklist-row__check-box {
-  border-color: var(--exits-primary);
+  border-color: var(--exits-success);
+  background: color-mix(in srgb, var(--exits-success) 12%, transparent);
 }
 
 .personal-todo-tasklist-row__check--completed .personal-todo-tasklist-row__check-box,
@@ -10779,6 +10871,49 @@ html:has(.personal-shell) #root {
 
 .personal-todo-tasklist-row__check--cancelled .personal-todo-tasklist-row__check-box {
   opacity: 0.45;
+}
+
+.personal-todo-tasklist-row__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.personal-todo-tasklist-row__heading .personal-todo-tasklist-row__title-link,
+.personal-todo-tasklist-row__heading .personal-todo-tasklist-row__title-button {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.personal-todo-tasklist-row__expand {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-block: -0.2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--exits-radius-sm);
+  background: transparent;
+  color: var(--exits-text-muted);
+  cursor: pointer;
+}
+
+.personal-todo-tasklist-row__expand:hover,
+.personal-todo-tasklist-row__expand:focus-visible {
+  color: var(--exits-text);
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, transparent);
+}
+
+.personal-todo-tasklist-row__expand-chevron {
+  transition: transform var(--exits-motion-fast) ease;
+}
+
+.personal-todo-tasklist-row__expand-chevron--open {
+  transform: rotate(180deg);
 }
 
 .personal-todo-tasklist-row__title {
@@ -10819,10 +10954,21 @@ html:has(.personal-shell) #root {
 
 .personal-todo-tasklist-row__meta {
   display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  min-width: 0;
+}
+
+.personal-todo-tasklist-row__meta-start {
+  display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.5rem;
-  margin-top: 0.55rem;
+  min-width: 0;
 }
 
 .personal-todo-tasklist-row__date-pill {
@@ -10831,14 +10977,17 @@ html:has(.personal-shell) #root {
   gap: 0.35rem;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
-  background: color-mix(in srgb, var(--exits-surface-muted) 50%, var(--exits-surface));
+  border: 1px solid color-mix(in srgb, var(--exits-info) 28%, transparent);
+  background: color-mix(in srgb, var(--exits-info) 12%, transparent);
   font-size: var(--exits-text-xs);
-  color: var(--exits-text-muted);
+  color: color-mix(in srgb, var(--exits-info) 82%, var(--exits-text));
 }
 
 .personal-todo-tasklist-row__date-pill--muted {
   border-style: dashed;
+  border-color: color-mix(in srgb, var(--exits-border) 88%, transparent);
+  background: color-mix(in srgb, var(--exits-surface-muted) 50%, var(--exits-surface));
+  color: var(--exits-text-muted);
 }
 
 .personal-todo-tasklist-row__date-sep {
@@ -10854,8 +11003,9 @@ html:has(.personal-shell) #root {
   flex-shrink: 0;
   flex-wrap: nowrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.15rem;
-  padding-top: 0.1rem;
+  margin-inline-start: auto;
 }
 
 .personal-todo-tasklist-row__icon-action,
@@ -10873,6 +11023,23 @@ html:has(.personal-shell) #root {
     background-color var(--exits-motion-fast) ease;
 }
 
+.personal-todo-tasklist-row__icon-link--edit {
+  color: var(--exits-info);
+}
+
+.personal-todo-tasklist-row__icon-action--reopen,
+.personal-todo-tasklist-row__icon-action--reactivate {
+  color: var(--exits-primary);
+}
+
+.personal-todo-tasklist-row__icon-action--cancel {
+  color: var(--exits-warning);
+}
+
+.personal-todo-tasklist-row__icon-action--delete {
+  color: var(--exits-danger);
+}
+
 .personal-todo-tasklist-row__icon-link:hover,
 .personal-todo-tasklist-row__icon-link:focus-visible,
 .personal-todo-tasklist-row__icon-action:hover:not(:disabled),
@@ -10881,19 +11048,35 @@ html:has(.personal-shell) #root {
   background: color-mix(in srgb, var(--exits-surface-muted) 65%, transparent);
 }
 
-@media (max-width: 1023px) {
-  .personal-todo-tasklist-row {
-    flex-direction: column;
-  }
+.personal-todo-tasklist-row__icon-link--edit:hover,
+.personal-todo-tasklist-row__icon-link--edit:focus-visible {
+  color: var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 12%, transparent);
+}
 
-  .personal-todo-tasklist-row__actions {
-    padding-inline-start: 2rem;
-  }
+.personal-todo-tasklist-row__icon-action--reopen:hover:not(:disabled),
+.personal-todo-tasklist-row__icon-action--reopen:focus-visible:not(:disabled),
+.personal-todo-tasklist-row__icon-action--reactivate:hover:not(:disabled),
+.personal-todo-tasklist-row__icon-action--reactivate:focus-visible:not(:disabled) {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+}
+
+.personal-todo-tasklist-row__icon-action--cancel:hover:not(:disabled),
+.personal-todo-tasklist-row__icon-action--cancel:focus-visible:not(:disabled) {
+  color: var(--exits-warning);
+  background: color-mix(in srgb, var(--exits-warning) 12%, transparent);
+}
+
+.personal-todo-tasklist-row__icon-action--delete:hover:not(:disabled),
+.personal-todo-tasklist-row__icon-action--delete:focus-visible:not(:disabled) {
+  color: var(--exits-danger);
+  background: color-mix(in srgb, var(--exits-danger) 12%, transparent);
 }
 
 @media (max-width: 520px) {
   .personal-todo-row__actions--open {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .personal-todo-row__action {
@@ -10992,11 +11175,37 @@ html:has(.personal-shell) #root {
 
 .personal-todo-meta__chip--priority-high {
   background: color-mix(in srgb, var(--exits-danger) 14%, transparent);
-  color: color-mix(in srgb, var(--exits-danger) 78%, var(--exits-text));
+  color: color-mix(in srgb, var(--exits-danger) 82%, var(--exits-text));
+}
+
+.personal-todo-meta__chip--priority-normal {
+  background: color-mix(in srgb, var(--exits-primary) 14%, transparent);
+  color: color-mix(in srgb, var(--exits-primary) 82%, var(--exits-text));
 }
 
 .personal-todo-meta__chip--priority-low {
-  background: color-mix(in srgb, var(--exits-text-muted) 14%, transparent);
+  background: color-mix(in srgb, var(--exits-warning) 14%, transparent);
+  color: color-mix(in srgb, var(--exits-warning) 82%, var(--exits-text));
+}
+
+.personal-todo-meta__chip--priority-none {
+  background: color-mix(in srgb, var(--exits-text-muted) 12%, transparent);
+  color: var(--exits-text-muted);
+}
+
+.personal-todo-priority-text--high {
+  color: var(--exits-danger);
+}
+
+.personal-todo-priority-text--normal {
+  color: var(--exits-primary);
+}
+
+.personal-todo-priority-text--low {
+  color: var(--exits-warning);
+}
+
+.personal-todo-priority-text--none {
   color: var(--exits-text-muted);
 }
 
@@ -22879,9 +23088,13 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
-/* Page canvas inside personal content: no grey --exits-bg wash between cards. */
+/* Page canvas: no floating card chrome on small screens (desktop adds it below). */
 .personal-shell .admin-shell__content.personal-shell__content {
-  background: var(--exits-surface);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding-block-start: var(--exits-page-gutter-inline);
 }
 
 .personal-shell .personal-shell__content .exits-page,
@@ -22890,9 +23103,8 @@ a.exits-chip--primary:hover {
 }
 
 /*
- * Personal top bar (all breakpoints): cancel AppShell bleed margins.
- * Shell already applies page gutter + safe-area; negative margins clipped the chrome
- * inside overflow-hidden and misaligned the bar on phone widths.
+ * Personal top bar — small screens: true full viewport width (shell has no horizontal pad).
+ * Inner padding keeps controls clear of safe-area edges.
  */
 .personal-shell .app-top-bar--personal {
   position: relative;
@@ -22904,11 +23116,18 @@ a.exits-chip--primary:hover {
   margin-inline: 0;
   margin-right: 0;
   padding-block: 0.35rem;
-  padding-inline: 0.15rem;
+  padding-inline: max(0.75rem, env(safe-area-inset-left))
+    max(0.75rem, env(safe-area-inset-right));
   border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
   background: color-mix(in srgb, var(--exits-surface) 96%, transparent);
   backdrop-filter: blur(12px);
   animation: none;
+}
+
+/* Page body keeps the horizontal gutters on small screens (top bar stays edge-to-edge). */
+.personal-shell .personal-shell__body {
+  padding-inline: max(var(--exits-page-gutter-inline), env(safe-area-inset-left))
+    max(var(--exits-page-gutter-inline), env(safe-area-inset-right));
 }
 
 .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
@@ -22993,10 +23212,18 @@ a.exits-chip--primary:hover {
     align-self: stretch;
   }
 
+  .personal-shell .personal-shell__body {
+    padding-inline: 0;
+  }
+
   .personal-shell .app-top-bar--personal {
+    width: 100%;
+    max-width: 100%;
     height: var(--exits-shell-chrome-height);
     min-height: var(--exits-shell-chrome-height);
     max-height: var(--exits-shell-chrome-height);
+    margin-inline: 0;
+    margin-right: 0;
     padding-block: 0;
     padding-inline: 0.35rem;
     justify-content: center;
@@ -23023,13 +23250,21 @@ a.exits-chip--primary:hover {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
+    padding-block-start: var(--exits-page-gutter-inline);
   }
 }
 
 .personal-shell .personal-todo-hub {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
+}
+
+.personal-shell .personal-todo-hub > :not(.personal-todo-tasklist-layout) {
+  flex-shrink: 0;
 }
 
 .personal-home-page {

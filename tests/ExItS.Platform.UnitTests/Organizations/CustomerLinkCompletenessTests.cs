@@ -378,6 +378,9 @@ public sealed class CustomerLinkCompletenessTests
             var personalNotifications = new InMemoryPersonalInAppNotificationRepository();
             var orgNotifications = new InMemoryOrganizationInAppNotificationRepository();
             var entitlements = new InMemoryEntitlementSnapshotRepository();
+            // Link completeness harness does not set up Connected Commerce Online branches.
+            IOrganizationCustomerOrderingAvailability orderingAvailability =
+                new FixedOrderingAvailability(available: false);
 
             var org = PlatformOrganization.Create("Corner Store", "corner-store", T0);
             await orgs.AddAsync(org);
@@ -402,7 +405,7 @@ public sealed class CustomerLinkCompletenessTests
                 orgs,
                 new AcceptCustomerLinkRequest(requests, customers, links, memberships, users, uow, clock, orgNotifications),
                 new UnlinkAcceptedCustomerLink(links, customers, uow, clock),
-                new ListLinkedMerchantsForPersonalUser(links, customers, orgs, entitlements),
+                new ListLinkedMerchantsForPersonalUser(links, customers, orgs, entitlements, orderingAvailability),
                 new RevokeCustomerLinkRequest(requests, uow, clock),
                 new CreateCustomerLinkRequest(
                     customers,
@@ -419,8 +422,16 @@ public sealed class CustomerLinkCompletenessTests
                         users, memberships, requests, links, clock)),
                 new DeclineCustomerLinkRequest(requests, uow, clock, orgNotifications, users),
                 new AuthorizeLinkedCustomerAccess(users, links, customers),
-                new GetLinkedMerchantOrderingCapability(links, entitlements, orgs));
+                new GetLinkedMerchantOrderingCapability(links, entitlements, orgs, orderingAvailability));
         }
+    }
+
+    private sealed class FixedOrderingAvailability(bool available) : IOrganizationCustomerOrderingAvailability
+    {
+        public Task<bool> IsAvailableAsync(
+            PlatformOrganization organization,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(available);
     }
 
     internal sealed class InMemoryBusinessCustomerRepository : IBusinessCustomerRepository

@@ -50,7 +50,8 @@ export function PersonalShell() {
       <div
         className={cn(
           "personal-shell admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
-          "px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+          /* Small: no horizontal shell pad so top bar can be true full-bleed; gutters live on body. */
+          "px-0 pt-[env(safe-area-inset-top)]",
           /* Reserve space for fixed bottom nav on phone/tablet; desktop float uses lg:pb inset. */
           isDesktop
             ? "pb-[max(0.75rem,env(safe-area-inset-bottom))]"
@@ -83,20 +84,19 @@ export function PersonalShell() {
             data-testid="personal-top-bar"
           >
             <div className="app-top-bar__row app-top-bar__row--personal">
-              <div
-                className="app-top-bar__leading hidden lg:flex"
-                data-testid="personal-top-bar-leading"
-              >
-                <ShellSidebarModeButton className="app-top-bar__action" />
-              </div>
+              {isDesktop ? (
+                <div
+                  className="app-top-bar__leading"
+                  data-testid="personal-top-bar-leading"
+                >
+                  <ShellSidebarModeButton className="app-top-bar__action" />
+                </div>
+              ) : null}
 
               <div className="app-top-bar__brand app-top-bar__brand--personal min-w-0">
                 <div className="app-top-bar__brand-copy">
                   <p className="app-top-bar__workspace-org m-0 truncate">
                     {session?.displayName || t("personal.badge")}
-                  </p>
-                  <p className="app-top-bar__workspace-branch m-0 truncate">
-                    {t("personal.badge")}
                   </p>
                 </div>
               </div>
@@ -129,7 +129,7 @@ export function PersonalShell() {
             </div>
           </header>
 
-          <div className="admin-shell__body personal-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:mt-0 lg:gap-0 lg:pt-3">
+          <div className="admin-shell__body personal-shell__body mt-0 flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:mt-0 lg:gap-0">
             <div className="admin-shell__main flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden">
               <main
                 id="main-content"

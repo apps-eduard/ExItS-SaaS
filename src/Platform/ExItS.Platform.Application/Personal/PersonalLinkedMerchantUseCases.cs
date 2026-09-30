@@ -35,17 +35,20 @@ public sealed class ListLinkedMerchantsForPersonalUser
     private readonly IBusinessCustomerRepository _customers;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IEntitlementSnapshotRepository _entitlements;
+    private readonly IOrganizationCustomerOrderingAvailability _orderingAvailability;
 
     public ListLinkedMerchantsForPersonalUser(
         ILinkedCustomerAppUserRepository links,
         IBusinessCustomerRepository customers,
         IPlatformOrganizationRepository organizations,
-        IEntitlementSnapshotRepository entitlements)
+        IEntitlementSnapshotRepository entitlements,
+        IOrganizationCustomerOrderingAvailability orderingAvailability)
     {
         _links = links;
         _customers = customers;
         _organizations = organizations;
         _entitlements = entitlements;
+        _orderingAvailability = orderingAvailability;
     }
 
     public async Task<PagedResult<LinkedMerchantDto>> ExecuteAsync(
@@ -74,7 +77,7 @@ public sealed class ListLinkedMerchantsForPersonalUser
                 orgNames[org.Id.Value] = org.DisplayName;
             }
 
-            orderingByOrg[orgId.Value] = await ResolveOrderingCapabilityAsync(orgId, cancellationToken)
+            orderingByOrg[orgId.Value] = await ResolveOrderingCapabilityAsync(org, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -108,16 +111,37 @@ public sealed class ListLinkedMerchantsForPersonalUser
     }
 
     private async Task<(bool CanOrder, bool CanDelivery)> ResolveOrderingCapabilityAsync(
-        PlatformOrganizationId organizationId,
+        PlatformOrganization? organization,
         CancellationToken cancellationToken)
     {
+        if (organization is null)
+        {
+            return (false, false);
+        }
+
         var snapshot = await _entitlements
             .GetLatestForOrganizationProductAsync(
-                organizationId,
+                organization.Id,
                 ProductCode.Create(ProductCode.PinoyBusinessPos),
                 cancellationToken)
             .ConfigureAwait(false);
-        return LinkedMerchantOrderingCapability.FromSnapshot(snapshot);
+        var (canOrder, canDelivery) = LinkedMerchantOrderingCapability.FromSnapshot(snapshot);
+        if (!canOrder)
+        {
+            return (false, false);
+        }
+
+        // Entitlement alone is not enough: Connected Commerce Online must be ON
+        // on at least one ready Active branch.
+        var onlineAvailable = await _orderingAvailability
+            .IsAvailableAsync(organization, cancellationToken)
+            .ConfigureAwait(false);
+        if (!onlineAvailable)
+        {
+            return (false, false);
+        }
+
+        return (true, canDelivery);
     }
 }
 
@@ -126,15 +150,18 @@ public sealed class GetLinkedMerchantOrderingCapability
     private readonly ILinkedCustomerAppUserRepository _links;
     private readonly IEntitlementSnapshotRepository _entitlements;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationCustomerOrderingAvailability _orderingAvailability;
 
     public GetLinkedMerchantOrderingCapability(
         ILinkedCustomerAppUserRepository links,
         IEntitlementSnapshotRepository entitlements,
-        IPlatformOrganizationRepository organizations)
+        IPlatformOrganizationRepository organizations,
+        IOrganizationCustomerOrderingAvailability orderingAvailability)
     {
         _links = links;
         _entitlements = entitlements;
         _organizations = organizations;
+        _orderingAvailability = orderingAvailability;
     }
 
     public async Task<ApplicationResult<LinkedMerchantOrderingCapabilityDto>> ExecuteAsync(
@@ -160,6 +187,7 @@ public sealed class GetLinkedMerchantOrderingCapability
                 "No active linked merchant was found for this organization.");
         }
 
+        var organization = await _organizations.GetByIdAsync(org, cancellationToken).ConfigureAwait(false);
         var snapshot = await _entitlements
             .GetLatestForOrganizationProductAsync(
                 org,
@@ -167,7 +195,23 @@ public sealed class GetLinkedMerchantOrderingCapability
                 cancellationToken)
             .ConfigureAwait(false);
         var (canOrder, canDelivery) = LinkedMerchantOrderingCapability.FromSnapshot(snapshot);
-        var organization = await _organizations.GetByIdAsync(org, cancellationToken).ConfigureAwait(false);
+        if (canOrder && organization is not null)
+        {
+            var onlineAvailable = await _orderingAvailability
+                .IsAvailableAsync(organization, cancellationToken)
+                .ConfigureAwait(false);
+            if (!onlineAvailable)
+            {
+                canOrder = false;
+                canDelivery = false;
+            }
+        }
+        else if (organization is null)
+        {
+            canOrder = false;
+            canDelivery = false;
+        }
+
         return ApplicationResult<LinkedMerchantOrderingCapabilityDto>.Success(
             new LinkedMerchantOrderingCapabilityDto(
                 organizationId,

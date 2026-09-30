@@ -2445,6 +2445,22 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.termExampleHelper":
     "Halimbawa: ang 90 ka adlaw mga 3 ka bulan.",
 
+  "customers.onlineOrdering.title": "Online ordering",
+  "customers.onlineOrdering.useStoreDefault": "Use store default",
+  "customers.onlineOrdering.allowed": "Allowed",
+  "customers.onlineOrdering.blocked": "Blocked",
+  "customers.onlineOrdering.effectiveAllowed": "Online ordering allowed",
+  "customers.onlineOrdering.effectiveBlocked": "Online ordering blocked",
+  "personal.merchantStatement.onlineShoppingAllowed": "Online shopping: Allowed",
+  "personal.merchantStatement.onlineShoppingBlocked": "Online shopping: Blocked",
+  "personal.merchantStatement.creditLimit": "Credit limit",
+  "personal.merchantStatement.pendingOnlineUtang": "Pending online Utang orders",
+  "personal.merchantStatement.availableCredit": "Available credit",
+  "orders.utangInsufficient": "Not enough available Utang credit for this order.",
+  "orders.utangCreditLimit": "Credit limit",
+  "orders.utangOutstanding": "Outstanding",
+  "orders.utangPending": "Pending orders",
+  "orders.utangAvailable": "Available credit",
   "customers.creditPolicy.title": "Credit & payment terms",
 
   "customers.creditsEmpty": "Wala pa sing charges",
@@ -9550,6 +9566,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.todo.searchLabel": "Search to-dos",
 
   "personal.todo.searchPlaceholder": "Search title or notes",
+  "personal.todo.expandRow": "Expand to-do",
+  "personal.todo.collapseRow": "Collapse to-do",
 
   "personal.todo.moreOptions": "More options",
 
@@ -9638,7 +9656,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.todo.filters": "Mga filter sang ihimo",
   "personal.todo.filterAll": "Tanan nga ihimo",
   "personal.todo.cardTitle": "Mga ihimo",
-  "personal.todo.newTask": "Bag-o nga ihimo",
+  "personal.todo.newTask": "Bag-o nga to-do",
   "personal.todo.railSection": "Ihimo",
   "personal.todo.groupHeader": "{count} Tasks {label}",
   "personal.todo.closeDetail": "Sirado",
@@ -9671,6 +9689,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.todo.priorityNormal": "Normal",
 
   "personal.todo.reactivate": "I-reactivate",
+  "personal.todo.delete": "Panason",
+  "personal.todo.deleteConfirmTitle": "Panason ini nga to-do?",
+  "personal.todo.deleteConfirmDetail":
+    "Permanenteng kuhaon ang cancelled to-do. Indi na ini mauli.",
+  "personal.todo.deleteConfirm": "Permanenteng panason",
 
   "personal.todo.relatedContact": "Tawo",
 

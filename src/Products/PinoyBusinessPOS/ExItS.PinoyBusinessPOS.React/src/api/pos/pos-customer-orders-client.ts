@@ -458,6 +458,7 @@ export async function getCustomerStorefront(
     page?: number;
     pageSize?: number;
     fulfillmentBranchId?: string;
+    platformBusinessCustomerId?: string;
   } = {},
   signal?: AbortSignal,
 ): Promise<CustomerStorefrontDto> {
@@ -469,6 +470,7 @@ export async function getCustomerStorefront(
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 40,
       fulfillmentBranchId: options.fulfillmentBranchId,
+      platformBusinessCustomerId: options.platformBusinessCustomerId,
     })}`,
     signal,
   });
@@ -479,12 +481,13 @@ export async function getCustomerStorefront(
 export async function probeSellerCustomerOrderingCapability(
   sellerOrganizationId: string,
   signal?: AbortSignal,
+  platformBusinessCustomerId?: string,
 ): Promise<{ canCustomerOrder: boolean; canCustomerDelivery: boolean }> {
   try {
     const storefront = await getCustomerStorefront(
       sellerWorkspace(sellerOrganizationId),
       sellerOrganizationId,
-      { page: 1, pageSize: 1 },
+      { page: 1, pageSize: 1, platformBusinessCustomerId },
       signal,
     );
     return {
@@ -553,37 +556,39 @@ export async function cancelMyCustomerOrder(
 
 export const INSUFFICIENT_STOCK_ERROR = "pos.inventory.insufficient_stock";
 export const CUSTOMER_ORDER_ORDERING_UNAVAILABLE = "pos.customer_order.ordering.unavailable";
+export const CUSTOMER_ORDER_CUSTOMER_BLOCKED = "pos.customer_order.customer.blocked";
+export const LINKED_CUSTOMER_NOT_FOUND = "pos.linked_customer.not_found";
+
+function readPosErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") {
+    return undefined;
+  }
+  if ("errorCode" in error && typeof error.errorCode === "string") {
+    return error.errorCode;
+  }
+  if (
+    "problem" in error &&
+    error.problem &&
+    typeof error.problem === "object" &&
+    "errorCode" in error.problem &&
+    typeof (error.problem as { errorCode?: unknown }).errorCode === "string"
+  ) {
+    return (error.problem as { errorCode: string }).errorCode;
+  }
+  return undefined;
+}
 
 export function isInsufficientStockError(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-  const code =
-    "errorCode" in error && typeof error.errorCode === "string"
-      ? error.errorCode
-      : "problem" in error &&
-          error.problem &&
-          typeof error.problem === "object" &&
-          "errorCode" in error.problem &&
-          typeof (error.problem as { errorCode?: unknown }).errorCode === "string"
-        ? (error.problem as { errorCode: string }).errorCode
-        : undefined;
+  const code = readPosErrorCode(error);
   return code === INSUFFICIENT_STOCK_ERROR;
 }
 
+/** Storefront/quote/place denials that must hide Shop + catalog (fail closed). */
 export function isCustomerOrderingUnavailable(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-  const code =
-    "errorCode" in error && typeof error.errorCode === "string"
-      ? error.errorCode
-      : "problem" in error &&
-          error.problem &&
-          typeof error.problem === "object" &&
-          "errorCode" in error.problem &&
-          typeof (error.problem as { errorCode?: unknown }).errorCode === "string"
-        ? (error.problem as { errorCode: string }).errorCode
-        : undefined;
-  return code === CUSTOMER_ORDER_ORDERING_UNAVAILABLE;
+  const code = readPosErrorCode(error);
+  return (
+    code === CUSTOMER_ORDER_ORDERING_UNAVAILABLE ||
+    code === CUSTOMER_ORDER_CUSTOMER_BLOCKED ||
+    code === LINKED_CUSTOMER_NOT_FOUND
+  );
 }

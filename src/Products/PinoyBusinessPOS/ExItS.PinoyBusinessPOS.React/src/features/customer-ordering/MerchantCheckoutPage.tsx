@@ -13,6 +13,7 @@ import {
   quoteCustomerDelivery,
   sellerWorkspace,
 } from "@/api/pos/pos-customer-orders-client";
+import { getLinkedCustomerStatement } from "@/api/pos/pos-linked-customers-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -94,23 +95,70 @@ export function MerchantCheckoutPage() {
     [organizationId, branchId],
   );
 
-  const storefrontQuery = useQuery({
-    queryKey: ["storefront", "checkout", organizationId],
-    enabled: Boolean(workspace) && tokenReady && online,
-    queryFn: ({ signal }) =>
-      getCustomerStorefront(workspace!, organizationId, { pageSize: 1 }, signal),
-    meta: { suppressGlobalError: true, operation: "load checkout storefront" },
-  });
-
-  const checkoutOrderingUnavailable =
-    storefrontQuery.isError && isCustomerOrderingUnavailable(storefrontQuery.error);
-
   // Always resolve Platform business-customer id for place (and statement link).
   // Shop page uses an inverted "only when unavailable" gate; that must not be reused here.
   const merchantContextQuery = useLinkedMerchantShopContext(
     organizationId,
     Boolean(organizationId) && tokenReady && online,
   );
+
+  const storefrontQuery = useQuery({
+    queryKey: [
+      "storefront",
+      "checkout",
+      organizationId,
+      merchantContextQuery.data?.businessCustomerId,
+    ],
+    enabled:
+      Boolean(workspace) &&
+      tokenReady &&
+      online &&
+      Boolean(merchantContextQuery.data?.businessCustomerId),
+    queryFn: ({ signal }) =>
+      getCustomerStorefront(
+        workspace!,
+        organizationId,
+        {
+          pageSize: 1,
+          platformBusinessCustomerId: merchantContextQuery.data!.businessCustomerId,
+        },
+        signal,
+      ),
+    meta: { suppressGlobalError: true, operation: "load checkout storefront" },
+  });
+
+  const checkoutOrderingUnavailable =
+    storefrontQuery.isError && isCustomerOrderingUnavailable(storefrontQuery.error);
+
+  const creditProjectionQuery = useQuery({
+    queryKey: [
+      "linked-customer-statement",
+      "checkout-utang",
+      organizationId,
+      merchantContextQuery.data?.businessCustomerId,
+    ],
+    enabled:
+      Boolean(organizationId) &&
+      tokenReady &&
+      online &&
+      Boolean(merchantContextQuery.data?.businessCustomerId),
+    queryFn: ({ signal }) =>
+      getLinkedCustomerStatement(
+        organizationId,
+        merchantContextQuery.data!.businessCustomerId,
+        { signal },
+      ),
+    meta: { suppressGlobalError: true, operation: "load checkout utang projection" },
+  });
+
+  const utangProjection = creditProjectionQuery.data;
+  const utangAvailable =
+    utangProjection != null &&
+    utangProjection.creditStatus === "Approved" &&
+    utangProjection.availableCredit > 0;
+  const orderTotalEstimate = merchandiseSubtotal; // delivery fee added later; server remains authority
+  const utangInsufficient =
+    utangAvailable && orderTotalEstimate > utangProjection.availableCredit;
 
   const checkoutStoreName =
     personalStoreDisplayName(
@@ -643,7 +691,7 @@ export function MerchantCheckoutPage() {
             role="radiogroup"
             aria-label={t("orders.paymentMethod")}
           >
-            {PAYMENT_METHOD_CODES.map((code) => (
+            {PAYMENT_METHOD_CODES.filter((code) => code !== "Utang" || utangAvailable).map((code) => (
               <SegmentedOption
                 key={code}
                 pressed={paymentMethod === code}
@@ -661,6 +709,26 @@ export function MerchantCheckoutPage() {
               </SegmentedOption>
             ))}
           </div>
+          {utangAvailable && utangProjection ? (
+            <dl
+              className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm"
+              data-testid="checkout-utang-projection"
+            >
+              <dt>{t("orders.utangCreditLimit")}</dt>
+              <dd>{money(utangProjection.creditLimit ?? 0)}</dd>
+              <dt>{t("orders.utangOutstanding")}</dt>
+              <dd>{money(utangProjection.outstandingBalance)}</dd>
+              <dt>{t("orders.utangPending")}</dt>
+              <dd>{money(utangProjection.pendingOnlineUtangCommitment)}</dd>
+              <dt>{t("orders.utangAvailable")}</dt>
+              <dd>{money(utangProjection.availableCredit)}</dd>
+            </dl>
+          ) : null}
+          {paymentMethod === "Utang" && utangInsufficient ? (
+            <p className="m-0 text-sm text-destructive" data-testid="checkout-utang-insufficient">
+              {t("orders.utangInsufficient")}
+            </p>
+          ) : null}
         </section>
 
         <section className="pc-checkout-section" data-testid="checkout-totals">

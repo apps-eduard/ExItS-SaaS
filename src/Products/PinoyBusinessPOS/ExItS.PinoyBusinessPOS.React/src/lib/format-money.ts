@@ -7,6 +7,17 @@ export function formatPeso(amount: number): string {
   }).format(amount);
 }
 
+/** Grouped money + currency code (e.g. 1,124.00 PHP). */
+export function formatMoneyWithCode(amount: number, currencyCode = "PHP"): string {
+  const code = currencyCode.trim() || "PHP";
+  const grouped = new Intl.NumberFormat("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true,
+  }).format(Number.isFinite(amount) ? amount : 0);
+  return `${grouped} ${code}`;
+}
+
 /** Display-only PHP formatting for cash denomination values (₱1,000 / ₱0.25). */
 export function formatDenominationCurrency(value: number): string {
   const fractionDigits = Number.isInteger(value) ? 0 : 2;

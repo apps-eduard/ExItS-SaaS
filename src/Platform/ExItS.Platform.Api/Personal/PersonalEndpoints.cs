@@ -826,6 +826,37 @@ internal static class PersonalEndpoints
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
+
+        todos.MapDelete("/{todoId:guid}", async (
+            HttpContext http,
+            Guid todoId,
+            int? expectedVersion,
+            DeletePersonalTodo deleteTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await deleteTodo
+                .ExecuteAsync(PlatformUserId.From(userId), todoId, expectedVersion, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                return Results.NoContent();
+            }
+
+            return PlatformApiResults.Problem(
+                result.ErrorCode!,
+                result.ErrorMessage!,
+                PlatformApiResults.MapStatusCode(result.ErrorCode!));
+        });
     }
 
     private static void MapPersonalConnectionEndpoints(RouteGroupBuilder personal)

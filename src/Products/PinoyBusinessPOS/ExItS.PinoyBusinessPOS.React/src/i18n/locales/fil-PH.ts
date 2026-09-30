@@ -2448,6 +2448,22 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.termExampleHelper":
     "Halimbawa: ang 90 araw ay humigit-kumulang 3 buwan.",
 
+  "customers.onlineOrdering.title": "Online ordering",
+  "customers.onlineOrdering.useStoreDefault": "Use store default",
+  "customers.onlineOrdering.allowed": "Allowed",
+  "customers.onlineOrdering.blocked": "Blocked",
+  "customers.onlineOrdering.effectiveAllowed": "Online ordering allowed",
+  "customers.onlineOrdering.effectiveBlocked": "Online ordering blocked",
+  "personal.merchantStatement.onlineShoppingAllowed": "Online shopping: Allowed",
+  "personal.merchantStatement.onlineShoppingBlocked": "Online shopping: Blocked",
+  "personal.merchantStatement.creditLimit": "Credit limit",
+  "personal.merchantStatement.pendingOnlineUtang": "Pending online Utang orders",
+  "personal.merchantStatement.availableCredit": "Available credit",
+  "orders.utangInsufficient": "Not enough available Utang credit for this order.",
+  "orders.utangCreditLimit": "Credit limit",
+  "orders.utangOutstanding": "Outstanding",
+  "orders.utangPending": "Pending orders",
+  "orders.utangAvailable": "Available credit",
   "customers.creditPolicy.title": "Credit & payment terms",
 
   "customers.creditsEmpty": "Wala pang charges",
@@ -9517,6 +9533,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.todo.searchLabel": "Search to-dos",
 
   "personal.todo.searchPlaceholder": "Search title or notes",
+  "personal.todo.expandRow": "Expand to-do",
+  "personal.todo.collapseRow": "Collapse to-do",
 
   "personal.todo.moreOptions": "More options",
 
@@ -9605,7 +9623,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.todo.filters": "Mga filter ng gawain",
   "personal.todo.filterAll": "Lahat ng gawain",
   "personal.todo.cardTitle": "Mga gawain",
-  "personal.todo.newTask": "Bagong gawain",
+  "personal.todo.newTask": "Bagong to-do",
   "personal.todo.railSection": "Gawain",
   "personal.todo.groupHeader": "{count} Tasks {label}",
   "personal.todo.closeDetail": "Isara",
@@ -9638,6 +9656,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.todo.priorityNormal": "Karaniwan",
 
   "personal.todo.reactivate": "I-activate muli",
+  "personal.todo.delete": "Tanggalin",
+  "personal.todo.deleteConfirmTitle": "Tanggalin ang to-do na ito?",
+  "personal.todo.deleteConfirmDetail":
+    "Permanenteng aalisin ang kinanselang to-do. Hindi na ito maibabalik.",
+  "personal.todo.deleteConfirm": "Permanenteng tanggalin",
 
   "personal.todo.relatedContact": "Tao",
 

@@ -1730,6 +1730,19 @@ internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTo
         record.Version = todo.Version;
     }
 
+    public async Task DeleteAsync(PersonalTodo todo, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalTodos
+            .FirstOrDefaultAsync(x => x.Id == todo.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        db.PersonalTodos.Remove(record);
+    }
+
     private static PersonalTodo ToDomain(PersonalTodoRecord record)
     {
         var relatedType = PersonalTodoRelatedEntityType.None;

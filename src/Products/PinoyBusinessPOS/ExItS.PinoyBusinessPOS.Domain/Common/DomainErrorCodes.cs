@@ -14,6 +14,8 @@ public static class DomainErrorCodes
     public const string InvalidPlatformBusinessCustomerId = "pos.customer.platform_business_customer_id.invalid";
     public const string PlatformBusinessCustomerCorrelationConflict =
         "pos.customer.platform_business_customer.correlation_conflict";
+    public const string InvalidCustomerOnlineOrderingAccess =
+        "pos.customer.online_ordering_access.invalid";
 
     public const string InvalidCreditEntryId = "pos.credit_entry.id.invalid";
     public const string InvalidBusinessCreditEntryId = "pos.business_credit_entry.id.invalid";

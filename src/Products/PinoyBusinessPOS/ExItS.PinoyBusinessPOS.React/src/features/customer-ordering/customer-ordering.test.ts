@@ -183,12 +183,28 @@ describe("stock conflict detection", () => {
 });
 
 describe("ordering unavailable detection", () => {
-  it("detects customer ordering unavailable PosApiError", () => {
+  it("detects master-off, blocked customer, and unlinked denials", () => {
     expect(
       isCustomerOrderingUnavailable(
         new PosApiError(403, {
           errorCode: "pos.customer_order.ordering.unavailable",
-          detail: "This merchant is not accepting customer orders.",
+          detail: "This store is not accepting online orders.",
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      isCustomerOrderingUnavailable(
+        new PosApiError(403, {
+          errorCode: "pos.customer_order.customer.blocked",
+          detail: "Online ordering is blocked for this customer.",
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      isCustomerOrderingUnavailable(
+        new PosApiError(404, {
+          errorCode: "pos.linked_customer.not_found",
+          detail: "Linked customer was not found.",
         }),
       ),
     ).toBe(true);

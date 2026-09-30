@@ -366,5 +366,11 @@ public sealed class DeliveryServiceAreaQuotePlaceTests
 
         public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+
+        public Task<decimal> SumActiveOnlineUtangCommitmentAsync(
+            PosOrganizationId sellerOrganizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
     }
 }

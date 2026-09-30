@@ -57,4 +57,13 @@ public interface ICustomerOrderRepository
         CancellationToken cancellationToken = default);
 
     Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sum of Submitted + Accepted Personal Utang CustomerOrder totals for the correlated
+    /// PlatformBusinessCustomer. Completed orders are ledger-backed and must not be included.
+    /// </summary>
+    Task<decimal> SumActiveOnlineUtangCommitmentAsync(
+        PosOrganizationId sellerOrganizationId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default);
 }

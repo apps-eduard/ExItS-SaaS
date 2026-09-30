@@ -209,6 +209,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ExtendedHistoryRequired
             or ApplicationErrorCodes.InventoryTransferBranchForbidden
             or ApplicationErrorCodes.CustomerOrderOrderingUnavailable
+            or ApplicationErrorCodes.CustomerOrderCustomerBlocked
+            or ApplicationErrorCodes.CustomerOrderOnlineUtangUnavailable
+            or ApplicationErrorCodes.CustomerOrderOnlineUtangLimitExceeded
             or ApplicationErrorCodes.CustomerOrderPartyMismatch
             or ApplicationErrorCodes.ProductScopeForbidden
             or ApplicationErrorCodes.ProductOriginBranchForbidden

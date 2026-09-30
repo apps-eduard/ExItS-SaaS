@@ -2445,6 +2445,22 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.termExampleHelper":
     "Pananglitan: ang 90 ka adlaw kay mga 3 ka bulan.",
 
+  "customers.onlineOrdering.title": "Online ordering",
+  "customers.onlineOrdering.useStoreDefault": "Use store default",
+  "customers.onlineOrdering.allowed": "Allowed",
+  "customers.onlineOrdering.blocked": "Blocked",
+  "customers.onlineOrdering.effectiveAllowed": "Online ordering allowed",
+  "customers.onlineOrdering.effectiveBlocked": "Online ordering blocked",
+  "personal.merchantStatement.onlineShoppingAllowed": "Online shopping: Allowed",
+  "personal.merchantStatement.onlineShoppingBlocked": "Online shopping: Blocked",
+  "personal.merchantStatement.creditLimit": "Credit limit",
+  "personal.merchantStatement.pendingOnlineUtang": "Pending online Utang orders",
+  "personal.merchantStatement.availableCredit": "Available credit",
+  "orders.utangInsufficient": "Not enough available Utang credit for this order.",
+  "orders.utangCreditLimit": "Credit limit",
+  "orders.utangOutstanding": "Outstanding",
+  "orders.utangPending": "Pending orders",
+  "orders.utangAvailable": "Available credit",
   "customers.creditPolicy.title": "Credit & payment terms",
 
   "customers.creditsEmpty": "Wala pay charges",
@@ -9550,6 +9566,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.searchLabel": "Search to-dos",
 
   "personal.todo.searchPlaceholder": "Search title or notes",
+  "personal.todo.expandRow": "Expand to-do",
+  "personal.todo.collapseRow": "Collapse to-do",
 
   "personal.todo.moreOptions": "More options",
 
@@ -9638,7 +9656,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.filters": "Mga filter sa buhaton",
   "personal.todo.filterAll": "Tanang buhaton",
   "personal.todo.cardTitle": "Mga buhaton",
-  "personal.todo.newTask": "Bag-ong buhaton",
+  "personal.todo.newTask": "Bag-ong to-do",
   "personal.todo.railSection": "Buhaton",
   "personal.todo.groupHeader": "{count} Tasks {label}",
   "personal.todo.closeDetail": "Sirado",
@@ -9671,6 +9689,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.priorityNormal": "Kasagaran",
 
   "personal.todo.reactivate": "I-activate pag-usab",
+  "personal.todo.delete": "Tangtangon",
+  "personal.todo.deleteConfirmTitle": "Tangtangon kini nga to-do?",
+  "personal.todo.deleteConfirmDetail":
+    "Permanenteng kuhaon ang cancelled to-do. Dili na kini mauli.",
+  "personal.todo.deleteConfirm": "Permanenteng tangtangon",
 
   "personal.todo.relatedContact": "Tawo",
 

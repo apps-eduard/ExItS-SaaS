@@ -3718,6 +3718,22 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("notes");
 
+                    b.Property<string>("OnlineOrderingAccess")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Default")
+                        .HasColumnName("online_ordering_access");
+
+                    b.Property<DateTimeOffset?>("OnlineOrderingAccessUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("online_ordering_access_updated_at_utc");
+
+                    b.Property<Guid?>("OnlineOrderingAccessUpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("online_ordering_access_updated_by_user_id");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
@@ -3783,6 +3799,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("customers", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_customers_online_ordering_access", "online_ordering_access IN ('Default', 'Allowed', 'Blocked')");
+
                             t.HasCheckConstraint("ck_customers_party_kind", "party_kind IN ('Person', 'Business')");
 
                             t.HasCheckConstraint("ck_customers_status", "status IN ('Active', 'Inactive')");

@@ -216,6 +216,21 @@ export async function cancelPersonalTodo(
   return personalTodoSchema.parse(normalizeTodo(raw));
 }
 
+/** Permanently deletes a cancelled to-do (server hard delete). */
+export async function deletePersonalTodo(
+  todoId: string,
+  body?: PersonalTodoVersionRequest,
+  signal?: AbortSignal,
+): Promise<void> {
+  const versionQuery =
+    body?.expectedVersion == null ? "" : `?expectedVersion=${encodeURIComponent(String(body.expectedVersion))}`;
+  await platformRequest<void>({
+    method: "DELETE",
+    path: `${TODOS}/${todoId}${versionQuery}`,
+    signal,
+  });
+}
+
 export function isTodoConcurrencyConflict(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const err = error as { status?: number; errorCode?: string };
@@ -525,13 +540,28 @@ export function priorityRank(priority: string): number {
   }
 }
 
-export function priorityToneClass(priority: string): string | null {
+export function priorityToneClass(priority: string): string {
   switch (priority) {
     case "High":
       return "personal-todo-meta__chip--priority-high";
+    case "Normal":
+      return "personal-todo-meta__chip--priority-normal";
     case "Low":
       return "personal-todo-meta__chip--priority-low";
     default:
-      return null;
+      return "personal-todo-meta__chip--priority-none";
+  }
+}
+
+export function priorityTextToneClass(priority: string): string {
+  switch (priority) {
+    case "High":
+      return "personal-todo-priority-text--high";
+    case "Normal":
+      return "personal-todo-priority-text--normal";
+    case "Low":
+      return "personal-todo-priority-text--low";
+    default:
+      return "personal-todo-priority-text--none";
   }
 }

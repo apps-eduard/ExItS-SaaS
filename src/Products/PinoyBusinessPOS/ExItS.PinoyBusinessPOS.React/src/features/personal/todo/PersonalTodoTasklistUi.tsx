@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -19,8 +19,6 @@ import type { PersonalTodoDto } from "@/api/platform/personal-todo-client";
 import {
   priorityToneClass,
   type PersonalTodoCounts,
-  type PersonalTodoListGroup,
-  type PersonalTodoListGroupId,
   type TodoAgendaTab,
 } from "@/api/platform/personal-todo-client";
 import { IconButton } from "@/components/ui/icon-button";
@@ -28,14 +26,9 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
 
-const GROUP_LABEL_KEYS: Record<PersonalTodoListGroupId, MessageKey> = {
-  all: "personal.todo.filterAll",
-  overdue: "personal.todo.filterOverdue",
-  today: "personal.todo.filterToday",
-  upcoming: "personal.todo.filterUpcoming",
-  open: "personal.todo.filterOpen",
-  completed: "personal.todo.filterCompleted",
-  cancelled: "personal.todo.filterCancelled",
+export type PersonalTodoExpandAllCommand = {
+  expanded: boolean;
+  token: number;
 };
 
 export const PERSONAL_TODO_FILTER_TABS: {
@@ -122,7 +115,7 @@ export function PersonalTodoFilterRail({
                 onClick={() => onChange(item.id)}
               >
                 <Icon className="personal-todo-tasklist-rail__icon size-4 shrink-0" aria-hidden />
-                <span className="personal-todo-tasklist-rail__label min-w-0 flex-1 truncate">
+                <span className="personal-todo-tasklist-rail__label min-w-0 truncate">
                   {t(item.labelKey)}
                 </span>
                 {count != null ? (
@@ -137,50 +130,6 @@ export function PersonalTodoFilterRail({
   );
 }
 
-export function PersonalTodoTasklistGroup({
-  group,
-  defaultExpanded = true,
-  children,
-}: {
-  group: PersonalTodoListGroup;
-  defaultExpanded?: boolean;
-  children: ReactNode;
-}) {
-  const { t } = useI18n();
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  const label = t(GROUP_LABEL_KEYS[group.id]);
-  const header = t("personal.todo.groupHeader")
-    .replace("{count}", String(group.items.length))
-    .replace("{label}", label);
-
-  return (
-    <section
-      className="personal-todo-tasklist-group"
-      data-testid={`todo-group-${group.id}`}
-    >
-      <button
-        type="button"
-        className="personal-todo-tasklist-group__toggle"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((open) => !open)}
-        data-testid={`todo-group-toggle-${group.id}`}
-      >
-        <span className="personal-todo-tasklist-group__title">{header}</span>
-        <ChevronDown
-          className={cn(
-            "personal-todo-tasklist-group__chevron size-4 shrink-0",
-            expanded && "personal-todo-tasklist-group__chevron--open",
-          )}
-          aria-hidden
-        />
-      </button>
-      {expanded ? (
-        <ul className="personal-todo-tasklist-group__list m-0 list-none p-0">{children}</ul>
-      ) : null}
-    </section>
-  );
-}
-
 export function PersonalTodoTaskRow({
   item,
   isActing,
@@ -189,10 +138,13 @@ export function PersonalTodoTaskRow({
   offlineBlocked,
   peekMode,
   selected,
+  expandAllCommand,
+  onExpandedChange,
   onSelect,
   onComplete,
   onCancel,
   onReopen,
+  onDelete,
 }: {
   item: PersonalTodoDto;
   isActing: boolean;
@@ -201,12 +153,16 @@ export function PersonalTodoTaskRow({
   offlineBlocked: boolean;
   peekMode: boolean;
   selected: boolean;
+  expandAllCommand?: PersonalTodoExpandAllCommand | null;
+  onExpandedChange?: (expanded: boolean) => void;
   onSelect: () => void;
   onComplete: () => void;
   onCancel: () => void;
   onReopen: () => void;
+  onDelete: () => void;
 }) {
   const { t } = useI18n();
+  const [expanded, setExpanded] = useState(true);
   const dueLabel = formatTaskDate(item.dueAtUtc);
   const createdLabel = formatTaskDate(item.createdAtUtc);
   const priorityClass = priorityToneClass(item.priority);
@@ -214,20 +170,30 @@ export function PersonalTodoTaskRow({
   const cancelled = item.status === "Cancelled";
   const open = item.status === "Open";
 
-  const titleContent = (
-    <>
-      <span
-        className={cn(
-          "personal-todo-tasklist-row__title",
-          (completed || cancelled) && "personal-todo-tasklist-row__title--done",
-        )}
-      >
-        {item.title}
-      </span>
-      {item.notes ? (
-        <p className="personal-todo-tasklist-row__notes m-0">{item.notes}</p>
-      ) : null}
-    </>
+  useEffect(() => {
+    if (!expandAllCommand) {
+      return;
+    }
+    setExpanded(expandAllCommand.expanded);
+  }, [expandAllCommand?.token, expandAllCommand?.expanded]);
+
+  function toggleExpanded() {
+    setExpanded((openState) => {
+      const next = !openState;
+      onExpandedChange?.(next);
+      return next;
+    });
+  }
+
+  const titleText = (
+    <span
+      className={cn(
+        "personal-todo-tasklist-row__title",
+        (completed || cancelled) && "personal-todo-tasklist-row__title--done",
+      )}
+    >
+      {item.title}
+    </span>
   );
 
   return (
@@ -241,6 +207,7 @@ export function PersonalTodoTaskRow({
           item.priority === "High" && "personal-todo-tasklist-row--priority-high",
           selected && "personal-todo-tasklist-row--selected",
           isExiting && "personal-todo-row--exit",
+          !expanded && "personal-todo-tasklist-row--collapsed",
         )}
       >
         <div className="personal-todo-tasklist-row__main">
@@ -271,119 +238,160 @@ export function PersonalTodoTaskRow({
           )}
 
           <div className="personal-todo-tasklist-row__content min-w-0 flex-1">
-            {peekMode ? (
+            <div className="personal-todo-tasklist-row__heading">
+              {peekMode ? (
+                <button
+                  type="button"
+                  className="personal-todo-tasklist-row__title-button"
+                  onClick={onSelect}
+                  data-testid={`todo-select-${item.id}`}
+                >
+                  {titleText}
+                </button>
+              ) : (
+                <Link
+                  to={`/personal/todo/${item.id}`}
+                  className="personal-todo-tasklist-row__title-link text-foreground no-underline"
+                >
+                  {titleText}
+                </Link>
+              )}
               <button
                 type="button"
-                className="personal-todo-tasklist-row__title-button"
-                onClick={onSelect}
-                data-testid={`todo-select-${item.id}`}
+                className="personal-todo-tasklist-row__expand"
+                aria-expanded={expanded}
+                aria-label={
+                  expanded ? t("personal.todo.collapseRow") : t("personal.todo.expandRow")
+                }
+                data-testid={`todo-expand-${item.id}`}
+                onClick={toggleExpanded}
               >
-                {titleContent}
+                <ChevronDown
+                  className={cn(
+                    "personal-todo-tasklist-row__expand-chevron size-4 shrink-0",
+                    expanded && "personal-todo-tasklist-row__expand-chevron--open",
+                  )}
+                  aria-hidden
+                />
               </button>
-            ) : (
-              <Link
-                to={`/personal/todo/${item.id}`}
-                className="personal-todo-tasklist-row__title-link text-foreground no-underline"
-              >
-                {titleContent}
-              </Link>
-            )}
-
-            <div className="personal-todo-tasklist-row__meta">
-              {dueLabel ? (
-                <span className="personal-todo-tasklist-row__date-pill">
-                  <Calendar className="size-3.5 shrink-0" aria-hidden />
-                  {createdLabel && createdLabel !== dueLabel ? (
-                    <>
-                      <span>{createdLabel}</span>
-                      <span className="personal-todo-tasklist-row__date-sep" aria-hidden>
-                        –
-                      </span>
-                    </>
-                  ) : null}
-                  <span>{dueLabel}</span>
-                </span>
-              ) : (
-                <span className="personal-todo-tasklist-row__date-pill personal-todo-tasklist-row__date-pill--muted">
-                  {t("personal.todo.noDue")}
-                </span>
-              )}
-              <span
-                className={cn(
-                  "personal-todo-meta__chip personal-todo-tasklist-row__priority",
-                  priorityClass,
-                )}
-              >
-                {t(priorityLabelKey(item.priority))}
-              </span>
-              {pendingLocal ? (
-                <span
-                  className="text-[length:var(--exits-text-xs)] text-muted"
-                  data-testid="todo-waiting-chip"
-                >
-                  {t("offline.personalWaitingBadge")}
-                </span>
-              ) : null}
             </div>
-          </div>
-        </div>
 
-        <div className="personal-todo-tasklist-row__actions">
-          {open ? (
-            <>
-              <Link
-                to={`/personal/todo/${item.id}?edit=1`}
-                className="personal-todo-tasklist-row__icon-link"
-                data-testid={`todo-edit-${item.id}`}
-                aria-label={t("personal.todo.edit")}
-                title={t("personal.todo.edit")}
-              >
-                <Pencil className="size-4" aria-hidden />
-              </Link>
-              <IconButton
-                label={t("personal.todo.cancel")}
-                className="personal-todo-tasklist-row__icon-action"
-                data-testid={`todo-cancel-${item.id}`}
-                disabled={isActing || offlineBlocked}
-                onClick={onCancel}
-              >
-                <Trash2 className="size-4" aria-hidden />
-              </IconButton>
-            </>
-          ) : null}
-          {completed ? (
-            <>
-              <IconButton
-                label={t("personal.todo.reopen")}
-                className="personal-todo-tasklist-row__icon-action"
-                data-testid={`todo-reopen-${item.id}`}
-                disabled={isActing || offlineBlocked}
-                onClick={onReopen}
-              >
-                <RotateCcw className="size-4" aria-hidden />
-              </IconButton>
-              <IconButton
-                label={t("personal.todo.cancel")}
-                className="personal-todo-tasklist-row__icon-action"
-                data-testid={`todo-cancel-${item.id}`}
-                disabled={isActing || offlineBlocked}
-                onClick={onCancel}
-              >
-                <Trash2 className="size-4" aria-hidden />
-              </IconButton>
-            </>
-          ) : null}
-          {cancelled ? (
-            <IconButton
-              label={t("personal.todo.reactivate")}
-              className="personal-todo-tasklist-row__icon-action"
-              data-testid={`todo-reactivate-${item.id}`}
-              disabled={isActing || offlineBlocked}
-              onClick={onReopen}
-            >
-              <RotateCcw className="size-4" aria-hidden />
-            </IconButton>
-          ) : null}
+            {expanded ? (
+              <>
+                {item.notes ? (
+                  <p className="personal-todo-tasklist-row__notes m-0">{item.notes}</p>
+                ) : null}
+
+                <div className="personal-todo-tasklist-row__meta">
+                  <div className="personal-todo-tasklist-row__meta-start">
+                    {dueLabel ? (
+                      <span className="personal-todo-tasklist-row__date-pill">
+                        <Calendar className="size-3.5 shrink-0" aria-hidden />
+                        {createdLabel && createdLabel !== dueLabel ? (
+                          <>
+                            <span>{createdLabel}</span>
+                            <span className="personal-todo-tasklist-row__date-sep" aria-hidden>
+                              –
+                            </span>
+                          </>
+                        ) : null}
+                        <span>{dueLabel}</span>
+                      </span>
+                    ) : (
+                      <span className="personal-todo-tasklist-row__date-pill personal-todo-tasklist-row__date-pill--muted">
+                        {t("personal.todo.noDue")}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "personal-todo-meta__chip personal-todo-tasklist-row__priority",
+                        priorityClass,
+                      )}
+                    >
+                      {t(priorityLabelKey(item.priority))}
+                    </span>
+                    {pendingLocal ? (
+                      <span
+                        className="text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid="todo-waiting-chip"
+                      >
+                        {t("offline.personalWaitingBadge")}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="personal-todo-tasklist-row__actions">
+                    {open ? (
+                      <>
+                        <Link
+                          to={`/personal/todo/${item.id}?edit=1`}
+                          className="personal-todo-tasklist-row__icon-link personal-todo-tasklist-row__icon-link--edit"
+                          data-testid={`todo-edit-${item.id}`}
+                          aria-label={t("personal.todo.edit")}
+                          title={t("personal.todo.edit")}
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </Link>
+                        <IconButton
+                          label={t("personal.todo.cancel")}
+                          className="personal-todo-tasklist-row__icon-action personal-todo-tasklist-row__icon-action--cancel"
+                          data-testid={`todo-cancel-${item.id}`}
+                          disabled={isActing || offlineBlocked}
+                          onClick={onCancel}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                        </IconButton>
+                      </>
+                    ) : null}
+                    {completed ? (
+                      <>
+                        <IconButton
+                          label={t("personal.todo.reopen")}
+                          className="personal-todo-tasklist-row__icon-action personal-todo-tasklist-row__icon-action--reopen"
+                          data-testid={`todo-reopen-${item.id}`}
+                          disabled={isActing || offlineBlocked}
+                          onClick={onReopen}
+                        >
+                          <RotateCcw className="size-4" aria-hidden />
+                        </IconButton>
+                        <IconButton
+                          label={t("personal.todo.cancel")}
+                          className="personal-todo-tasklist-row__icon-action personal-todo-tasklist-row__icon-action--cancel"
+                          data-testid={`todo-cancel-${item.id}`}
+                          disabled={isActing || offlineBlocked}
+                          onClick={onCancel}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                        </IconButton>
+                      </>
+                    ) : null}
+                    {cancelled ? (
+                      <>
+                        <IconButton
+                          label={t("personal.todo.reactivate")}
+                          className="personal-todo-tasklist-row__icon-action personal-todo-tasklist-row__icon-action--reactivate"
+                          data-testid={`todo-reactivate-${item.id}`}
+                          disabled={isActing || offlineBlocked}
+                          onClick={onReopen}
+                        >
+                          <RotateCcw className="size-4" aria-hidden />
+                        </IconButton>
+                        <IconButton
+                          label={t("personal.todo.delete")}
+                          className="personal-todo-tasklist-row__icon-action personal-todo-tasklist-row__icon-action--delete"
+                          data-testid={`todo-delete-${item.id}`}
+                          disabled={isActing || offlineBlocked}
+                          onClick={onDelete}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                        </IconButton>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </article>
     </li>

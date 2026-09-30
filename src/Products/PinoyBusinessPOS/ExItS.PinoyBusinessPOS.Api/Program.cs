@@ -99,6 +99,8 @@ builder.Services.AddHttpClient<IPlatformTokenIntrospectionClient, PlatformTokenI
 builder.Services.AddScoped<POSCustomerQueryService>();
 builder.Services.AddScoped<CreatePOSCustomer>();
 builder.Services.AddScoped<UpdatePOSCustomer>();
+builder.Services.AddScoped<SetCustomerOnlineOrderingAccess>();
+builder.Services.AddScoped<PersonalOnlineCommerceAuthorization>();
 builder.Services.AddScoped<DeactivatePOSCustomer>();
 builder.Services.AddScoped<ReactivatePOSCustomer>();
 builder.Services.AddScoped<CorrelatePOSCustomerToPlatformBusinessCustomer>();

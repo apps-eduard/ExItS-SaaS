@@ -212,6 +212,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_customers_party_kind",
                     "party_kind IN ('Person', 'Business')");
+                tb.HasCheckConstraint(
+                    "ck_customers_online_ordering_access",
+                    "online_ordering_access IN ('Default', 'Allowed', 'Blocked')");
             });
 
             entity.HasKey(e => e.Id);
@@ -238,6 +241,15 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LinkedBuyerPublicOrganizationId)
                 .HasColumnName("linked_buyer_public_organization_id")
                 .HasMaxLength(9);
+            entity.Property(e => e.OnlineOrderingAccess)
+                .HasColumnName("online_ordering_access")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue(nameof(CustomerOnlineOrderingAccess.Default));
+            entity.Property(e => e.OnlineOrderingAccessUpdatedByUserId)
+                .HasColumnName("online_ordering_access_updated_by_user_id");
+            entity.Property(e => e.OnlineOrderingAccessUpdatedAtUtc)
+                .HasColumnName("online_ordering_access_updated_at_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)

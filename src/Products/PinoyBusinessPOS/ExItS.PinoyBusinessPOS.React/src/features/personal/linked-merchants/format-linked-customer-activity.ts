@@ -1,6 +1,11 @@
 import type { LinkedCustomerActivityItem } from "@/api/pos/pos-linked-customers-client";
+import { formatMoneyAmountInput } from "@/lib/money-input";
 
 const customerOrderNumberPattern = /^SO-\d+$/i;
+
+function formatSignedMoney(amount: number, sign: "+" | "−" | "" = ""): string {
+  return `${sign}${formatMoneyAmountInput(Math.abs(amount))}`;
+}
 
 export function formatLinkedCustomerActivityLabel(item: LinkedCustomerActivityItem): string | null {
   if (
@@ -27,18 +32,19 @@ export function formatLinkedCustomerActivityTitle(item: LinkedCustomerActivityIt
   const reference = formatLinkedCustomerActivityReference(item);
   if (label) {
     if (item.chargeAmount != null) {
-      return `${label} · ${reference} · +${item.chargeAmount.toFixed(2)}`;
+      return `${label} · ${reference} · ${formatSignedMoney(item.chargeAmount, "+")}`;
     }
     return `${label} · ${reference}`;
   }
   if (item.chargeAmount != null) {
-    return `${reference} · +${item.chargeAmount.toFixed(2)}`;
+    return `${reference} · ${formatSignedMoney(item.chargeAmount, "+")}`;
   }
   if (item.paymentAmount != null) {
-    return `${reference} · −${item.paymentAmount.toFixed(2)}`;
+    return `${reference} · ${formatSignedMoney(item.paymentAmount, "−")}`;
   }
   if (item.adjustmentAmount != null) {
-    return `${reference} · ${item.adjustmentAmount.toFixed(2)}`;
+    const sign = item.adjustmentAmount < 0 ? "−" : item.adjustmentAmount > 0 ? "+" : "";
+    return `${reference} · ${formatSignedMoney(item.adjustmentAmount, sign)}`;
   }
   return reference;
 }
@@ -57,15 +63,15 @@ export function formatLinkedCustomerActivityAmount(
   item: LinkedCustomerActivityItem,
 ): { text: string; kind: LinkedCustomerActivityAmountKind } | null {
   if (item.chargeAmount != null) {
-    return { text: `+${item.chargeAmount.toFixed(2)}`, kind: "charge" };
+    return { text: formatSignedMoney(item.chargeAmount, "+"), kind: "charge" };
   }
   if (item.paymentAmount != null) {
-    return { text: `−${item.paymentAmount.toFixed(2)}`, kind: "payment" };
+    return { text: formatSignedMoney(item.paymentAmount, "−"), kind: "payment" };
   }
   if (item.adjustmentAmount != null) {
     const prefix = item.adjustmentAmount >= 0 ? "+" : "−";
     return {
-      text: `${prefix}${Math.abs(item.adjustmentAmount).toFixed(2)}`,
+      text: formatSignedMoney(item.adjustmentAmount, prefix),
       kind: "neutral",
     };
   }

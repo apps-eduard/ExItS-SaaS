@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
@@ -9,6 +10,7 @@ using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
@@ -345,7 +347,14 @@ public sealed class LinkedCustomerSaleProjectionTests
                 Sales = sales,
                 Credits = credits,
                 Repayments = repayments,
-                Summary = new GetLinkedCustomerStatementSummary(authorize, customers, outstanding, clock),
+                Summary = new GetLinkedCustomerStatementSummary(
+                    authorize,
+                    customers,
+                    outstanding,
+                    new EmptyCreditPolicies(),
+                    new EmptyOrders(),
+                    new AlwaysOnSellerCapability(),
+                    clock),
                 Activity = new ListLinkedCustomerRecentActivity(
                     authorize, activityQuery, outstanding, entitlements, options, clock),
                 OpenDebt = new ListLinkedCustomerOpenDebtActivity(authorize, activityQuery, outstanding),
@@ -372,6 +381,109 @@ public sealed class LinkedCustomerSaleProjectionTests
 
         public Task UpdateAsync(PosOperationalSetup setup, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class AlwaysOnSellerCapability : ISellerCustomerOrderingCapability
+    {
+        public Task<SellerCustomerOrderingCapability> ResolveAsync(
+            Guid sellerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new SellerCustomerOrderingCapability(sellerOrganizationId, true, true));
+    }
+
+    private sealed class EmptyCreditPolicies : ICustomerCreditPolicyRepository
+    {
+        public Task<CustomerCreditPolicy?> GetByCustomerAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerCreditPolicy?>(null);
+
+        public Task<IReadOnlyList<CustomerCreditPolicy>> ListByCustomerIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> customerIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerCreditPolicy>>([]);
+
+        public Task AddAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddChangeAsync(CustomerCreditPolicyChange change, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<(IReadOnlyList<CustomerCreditPolicyChange> Items, int TotalCount)> ListChangesAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<CustomerCreditPolicyChange>, int)>(([], 0));
+
+        public Task AcquireCustomerCreditLockAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class EmptyOrders : ICustomerOrderRepository
+    {
+        public Task<CustomerOrder?> GetByIdAsync(
+            PosOrganizationId sellerOrganizationId,
+            CustomerOrderId orderId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerOrder?>(null);
+
+        public Task<CustomerOrder?> FindByIdempotencyKeyAsync(
+            PosOrganizationId sellerOrganizationId,
+            string idempotencyKey,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerOrder?>(null);
+
+        public Task<(IReadOnlyList<CustomerOrder> Items, int TotalCount)> ListAsync(
+            PosOrganizationId sellerOrganizationId,
+            CustomerOrderFilter filter,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<CustomerOrder>, int)>(([], 0));
+
+        public Task<(IReadOnlyList<CustomerOrder> Items, int TotalCount)> ListForCustomerPartyAsync(
+            CustomerPartyType partyType,
+            Guid? platformUserId,
+            Guid? buyerOrganizationId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<CustomerOrder>, int)>(([], 0));
+
+        public Task<CustomerOrder?> GetForCustomerPartyAsync(
+            CustomerOrderId orderId,
+            CustomerPartyType partyType,
+            Guid? platformUserId,
+            Guid? buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerOrder?>(null);
+
+        public Task<CustomerOrder> PlaceAsync(
+            PosOrganizationId sellerOrganizationId,
+            DateOnly businessDateUtc,
+            Func<string, CustomerOrder> createOrder,
+            Func<CustomerOrder, CancellationToken, Task>? afterCreated = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<decimal> SumActiveOnlineUtangCommitmentAsync(
+            PosOrganizationId sellerOrganizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
     }
 
     private sealed class FakeEntitlements(bool active) : IPersonalFeatureEntitlementClient

@@ -31,17 +31,20 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
     private readonly ICreditEntryRepository _credits;
     private readonly IPOSCustomerRepository _customers;
     private readonly InventoryCostResolver _costResolver;
+    private readonly ICustomerCreditPolicyRepository? _creditPolicies;
 
     public CustomerOrderUtangLedgerService(
         ISaleRepository sales,
         ICreditEntryRepository credits,
         IPOSCustomerRepository customers,
-        InventoryCostResolver costResolver)
+        InventoryCostResolver costResolver,
+        ICustomerCreditPolicyRepository? creditPolicies = null)
     {
         _sales = sales;
         _credits = credits;
         _customers = customers;
         _costResolver = costResolver;
+        _creditPolicies = creditPolicies;
     }
 
     public async Task PostOnCompleteIfNeededAsync(
@@ -94,6 +97,23 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
             }
 
             creditEntryId = CustomerOrderUtangSettlementIds.CreditEntryIdForOrder(order.Id);
+            var existingCredit = await _credits
+                .GetByIdForOrganizationAsync(orgId, creditEntryId, cancellationToken)
+                .ConfigureAwait(false);
+            if (existingCredit is not null)
+            {
+                // Completed order already converted commitment → CreditEntry; never double-post.
+                return;
+            }
+
+            // Serialize with PlaceCustomerOrder(Utang) credit lock so commitment → ledger conversion
+            // cannot race a concurrent online Utang place against the same available credit.
+            if (_creditPolicies is not null)
+            {
+                await _creditPolicies
+                    .AcquireCustomerCreditLockAsync(orgId, posCustomerId, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
         var businessDate = SaleNumbers.BusinessDateOf(utcNow);
