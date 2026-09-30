@@ -5,6 +5,7 @@ import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UtangDueCaption, UtangLinkedIcon } from "@/features/personal/utang/UtangListMeta";
 import type { UtangAccountRow } from "@/features/personal/utang/utang-workspace";
+import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -39,7 +40,9 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
           <span className="min-w-0 truncate">{ownershipLabel}</span>
           {!row.isLedgerOwner ? (
             <StatusChip
-              tone="secondary"
+              tone={UTANG_READ_ONLY_CHIP.tone}
+              appearance={UTANG_READ_ONLY_CHIP.appearance}
+              shape={UTANG_READ_ONLY_CHIP.shape}
               data-testid={`utang-account-readonly-${row.relationshipId}`}
             >
               {t("personal.utang.readOnly")}

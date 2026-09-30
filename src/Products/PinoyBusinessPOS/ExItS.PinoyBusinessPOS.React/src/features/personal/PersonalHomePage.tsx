@@ -38,6 +38,11 @@ import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
+  UTANG_OWNERSHIP_MINE,
+  UTANG_OWNERSHIP_SHARED,
+  UTANG_READ_ONLY_CHIP,
+} from "@/features/personal/utang/utang-ownership-ui";
+import {
   buildHomeAttentionItems,
   isActiveUtangAccount,
   mergeUtangAccounts,
@@ -208,15 +213,16 @@ export function PersonalHomePage() {
               <DashboardMetricCard
                 label={
                   <StatusChip
-                    tone="primary"
-                    appearance="emphasis"
-                    shape="square"
+                    tone={UTANG_OWNERSHIP_MINE.chipTone}
+                    appearance={UTANG_OWNERSHIP_MINE.appearance}
+                    shape={UTANG_OWNERSHIP_MINE.shape}
                     data-testid="personal-stat-lent-mine-label"
                   >
                     {t("personal.utang.ownershipMine")}
                   </StatusChip>
                 }
                 icon={HandCoins}
+                tone={UTANG_OWNERSHIP_MINE.metricTone}
                 testId="personal-stat-lent-mine"
                 to="/personal/utang/lent"
               >
@@ -225,22 +231,23 @@ export function PersonalHomePage() {
               <DashboardMetricCard
                 label={
                   <StatusChip
-                    tone="info"
-                    appearance="emphasis"
-                    shape="square"
+                    tone={UTANG_OWNERSHIP_SHARED.chipTone}
+                    appearance={UTANG_OWNERSHIP_SHARED.appearance}
+                    shape={UTANG_OWNERSHIP_SHARED.shape}
                     data-testid="personal-stat-lent-shared-label"
                   >
                     {t("personal.utang.ownershipSharedWithMe")}
                   </StatusChip>
                 }
                 icon={HandCoins}
+                tone={UTANG_OWNERSHIP_SHARED.metricTone}
                 testId="personal-stat-lent-shared"
                 to="/personal/utang/lent"
                 tag={
                   <StatusChip
-                    tone="warning"
-                    appearance="emphasis"
-                    shape="square"
+                    tone={UTANG_READ_ONLY_CHIP.tone}
+                    appearance={UTANG_READ_ONLY_CHIP.appearance}
+                    shape={UTANG_READ_ONLY_CHIP.shape}
                     data-testid="personal-stat-lent-shared-readonly"
                   >
                     {t("personal.utang.readOnly")}
@@ -259,15 +266,16 @@ export function PersonalHomePage() {
               <DashboardMetricCard
                 label={
                   <StatusChip
-                    tone="primary"
-                    appearance="emphasis"
-                    shape="square"
+                    tone={UTANG_OWNERSHIP_MINE.chipTone}
+                    appearance={UTANG_OWNERSHIP_MINE.appearance}
+                    shape={UTANG_OWNERSHIP_MINE.shape}
                     data-testid="personal-stat-borrowed-mine-label"
                   >
                     {t("personal.utang.ownershipMine")}
                   </StatusChip>
                 }
                 icon={Wallet}
+                tone={UTANG_OWNERSHIP_MINE.metricTone}
                 testId="personal-stat-borrowed-mine"
                 to="/personal/utang/owe"
               >
@@ -276,22 +284,23 @@ export function PersonalHomePage() {
               <DashboardMetricCard
                 label={
                   <StatusChip
-                    tone="info"
-                    appearance="emphasis"
-                    shape="square"
+                    tone={UTANG_OWNERSHIP_SHARED.chipTone}
+                    appearance={UTANG_OWNERSHIP_SHARED.appearance}
+                    shape={UTANG_OWNERSHIP_SHARED.shape}
                     data-testid="personal-stat-borrowed-shared-label"
                   >
                     {t("personal.utang.ownershipSharedWithMe")}
                   </StatusChip>
                 }
                 icon={Wallet}
+                tone={UTANG_OWNERSHIP_SHARED.metricTone}
                 testId="personal-stat-borrowed-shared"
                 to="/personal/utang/owe"
                 tag={
                   <StatusChip
-                    tone="warning"
-                    appearance="emphasis"
-                    shape="square"
+                    tone={UTANG_READ_ONLY_CHIP.tone}
+                    appearance={UTANG_READ_ONLY_CHIP.appearance}
+                    shape={UTANG_READ_ONLY_CHIP.shape}
                     data-testid="personal-stat-borrowed-shared-readonly"
                   >
                     {t("personal.utang.readOnly")}

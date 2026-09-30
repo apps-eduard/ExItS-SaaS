@@ -36,6 +36,11 @@ import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
+import {
+  UTANG_OWNERSHIP_MINE,
+  UTANG_OWNERSHIP_SHARED,
+  UTANG_READ_ONLY_CHIP,
+} from "@/features/personal/utang/utang-ownership-ui";
 import { usePreferencesOverlay } from "@/features/preferences/PreferencesOverlay";
 import { PREFERENCES_DEFAULT_SECTION } from "@/features/preferences/preferences-sections";
 import { useNotificationsOverlay } from "@/features/personal/NotificationsOverlay";
@@ -160,23 +165,43 @@ export function PersonalUtangHubPage() {
               </h3>
               <div className="personal-summary-grid personal-summary-grid--balances" role="list">
                 <DashboardMetricCard
-                  label={t("personal.utang.ownershipMine")}
+                  label={
+                    <StatusChip
+                      tone={UTANG_OWNERSHIP_MINE.chipTone}
+                      appearance={UTANG_OWNERSHIP_MINE.appearance}
+                      shape={UTANG_OWNERSHIP_MINE.shape}
+                      data-testid="utang-hub-owed-to-me-mine-label"
+                    >
+                      {t("personal.utang.ownershipMine")}
+                    </StatusChip>
+                  }
                   icon={HandCoins}
-                  tone="emphasis"
+                  tone={UTANG_OWNERSHIP_MINE.metricTone}
                   testId="utang-hub-owed-to-me-mine"
                   to="/personal/utang/lent"
                 >
                   <MoneyDisplay amount={dashboard.totalLentBalance} />
                 </DashboardMetricCard>
                 <DashboardMetricCard
-                  label={t("personal.utang.ownershipSharedWithMe")}
+                  label={
+                    <StatusChip
+                      tone={UTANG_OWNERSHIP_SHARED.chipTone}
+                      appearance={UTANG_OWNERSHIP_SHARED.appearance}
+                      shape={UTANG_OWNERSHIP_SHARED.shape}
+                      data-testid="utang-hub-owed-to-me-shared-label"
+                    >
+                      {t("personal.utang.ownershipSharedWithMe")}
+                    </StatusChip>
+                  }
                   icon={HandCoins}
-                  tone="shared"
+                  tone={UTANG_OWNERSHIP_SHARED.metricTone}
                   testId="utang-hub-owed-to-me-shared"
                   to="/personal/utang/lent"
                   tag={
                     <StatusChip
-                      tone="secondary"
+                      tone={UTANG_READ_ONLY_CHIP.tone}
+                      appearance={UTANG_READ_ONLY_CHIP.appearance}
+                      shape={UTANG_READ_ONLY_CHIP.shape}
                       data-testid="utang-hub-owed-to-me-shared-readonly"
                     >
                       {t("personal.utang.readOnly")}
@@ -193,23 +218,43 @@ export function PersonalUtangHubPage() {
               </h3>
               <div className="personal-summary-grid personal-summary-grid--balances" role="list">
                 <DashboardMetricCard
-                  label={t("personal.utang.ownershipMine")}
+                  label={
+                    <StatusChip
+                      tone={UTANG_OWNERSHIP_MINE.chipTone}
+                      appearance={UTANG_OWNERSHIP_MINE.appearance}
+                      shape={UTANG_OWNERSHIP_MINE.shape}
+                      data-testid="utang-hub-i-owe-mine-label"
+                    >
+                      {t("personal.utang.ownershipMine")}
+                    </StatusChip>
+                  }
                   icon={Wallet}
-                  tone={dashboard.totalBorrowedBalance > 0 ? "attention" : "default"}
+                  tone={UTANG_OWNERSHIP_MINE.metricTone}
                   testId="utang-hub-i-owe-mine"
                   to="/personal/utang/owe"
                 >
                   <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
                 </DashboardMetricCard>
                 <DashboardMetricCard
-                  label={t("personal.utang.ownershipSharedWithMe")}
+                  label={
+                    <StatusChip
+                      tone={UTANG_OWNERSHIP_SHARED.chipTone}
+                      appearance={UTANG_OWNERSHIP_SHARED.appearance}
+                      shape={UTANG_OWNERSHIP_SHARED.shape}
+                      data-testid="utang-hub-i-owe-shared-label"
+                    >
+                      {t("personal.utang.ownershipSharedWithMe")}
+                    </StatusChip>
+                  }
                   icon={Wallet}
-                  tone="shared"
+                  tone={UTANG_OWNERSHIP_SHARED.metricTone}
                   testId="utang-hub-i-owe-shared"
                   to="/personal/utang/owe"
                   tag={
                     <StatusChip
-                      tone="secondary"
+                      tone={UTANG_READ_ONLY_CHIP.tone}
+                      appearance={UTANG_READ_ONLY_CHIP.appearance}
+                      shape={UTANG_READ_ONLY_CHIP.shape}
                       data-testid="utang-hub-i-owe-shared-readonly"
                     >
                       {t("personal.utang.readOnly")}

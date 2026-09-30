@@ -31,6 +31,8 @@ import { Card } from "@/components/ui/card";
 
 import { LoadingState } from "@/components/ui/skeleton";
 
+import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
+
 import { cn } from "@/lib/cn";
 
 import {
@@ -447,7 +449,9 @@ export function PersonDetailPage() {
                       </span>
                       {!owned ? (
                         <ExitsStatusChip
-                          tone="secondary"
+                          tone={UTANG_READ_ONLY_CHIP.tone}
+                          appearance={UTANG_READ_ONLY_CHIP.appearance}
+                          shape={UTANG_READ_ONLY_CHIP.shape}
                           data-testid={`person-detail-utang-readonly-${rel.id}`}
                         >
                           {t("personal.utang.readOnly")}

@@ -554,7 +554,9 @@ describe("Personal Utang shared-ledger UI", () => {
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
     await screen.findByTestId("utang-entry-type");
     await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
-    await user.type(screen.getByTestId("utang-entry-amount"), "10");
+    const amountInput = screen.getByTestId("utang-entry-amount");
+    await user.clear(amountInput);
+    await user.type(amountInput, "10");
     await user.type(screen.getByTestId("utang-entry-notes"), "Partial payment");
     await user.click(screen.getByTestId("utang-entry-submit"));
 

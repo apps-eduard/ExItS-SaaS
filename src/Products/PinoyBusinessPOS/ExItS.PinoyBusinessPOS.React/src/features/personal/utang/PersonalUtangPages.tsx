@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, Send, UserPlus, Users, Wallet } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, UserPlus, Users, Wallet } from "lucide-react";
 import {
   cancelPersonalUtangEntry,
   closePersonalDebtRelationship,
@@ -36,6 +36,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UtangDueCaption, UtangLinkedIcon } from "@/features/personal/utang/UtangListMeta";
+import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import {
   isSharedRelationship as workspaceIsSharedRelationship,
   resolveRelationshipContactName,
@@ -46,6 +47,11 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { cn } from "@/lib/cn";
+import {
+  formatMoneyAmountInput,
+  normalizeMoneyAmountTyping,
+  parseMoneyAmountInput,
+} from "@/lib/money-input";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { ONLINE_REQUIRED_CODES, onlineRequiredDetailKey } from "@/offline/online-required";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
@@ -988,7 +994,9 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                       <span className="min-w-0 truncate">{ownershipLabel}</span>
                       {!owned ? (
                         <StatusChip
-                          tone="secondary"
+                          tone={UTANG_READ_ONLY_CHIP.tone}
+                          appearance={UTANG_READ_ONLY_CHIP.appearance}
+                          shape={UTANG_READ_ONLY_CHIP.shape}
                           data-testid={`utang-rel-readonly-${row.id}`}
                         >
                           {t("personal.utang.readOnly")}
@@ -1049,7 +1057,7 @@ export function PersonalRelationshipDetailPage() {
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
   const [entryType, setEntryType] = useState<"Payment" | "Loan" | "Adjustment">("Payment");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(() => formatMoneyAmountInput(0));
   const [adjustmentDelta, setAdjustmentDelta] = useState("");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -1165,8 +1173,8 @@ export function PersonalRelationshipDetailPage() {
 
   const recordMutation = useMutation({
     mutationFn: async () => {
-      const amt = Number(amount);
-      if (!(amt > 0)) throw new Error("amount");
+      const amt = parseMoneyAmountInput(amount);
+      if (amt == null || !(amt > 0)) throw new Error("amount");
       const purpose = notes.trim();
       if (!purpose) throw new Error("purpose");
       if (!online) {
@@ -1223,7 +1231,7 @@ export function PersonalRelationshipDetailPage() {
     onSuccess: async () => {
       pendingEntryIdRef.current = null;
       setStatusLocked(false);
-      setAmount("");
+      setAmount(formatMoneyAmountInput(0));
       setAdjustmentDelta("");
       setNotes("");
       setFormError(null);
@@ -1530,7 +1538,7 @@ export function PersonalRelationshipDetailPage() {
           ) : null}
           <Button
             type="button"
-            className="w-full sm:w-auto"
+            className="w-auto self-start"
             disabled={settleBlockedOffline || settleMutation.isPending}
             data-testid="utang-settle"
             onClick={() => {
@@ -1538,6 +1546,7 @@ export function PersonalRelationshipDetailPage() {
               setSettleOpen(true);
             }}
           >
+            <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
             {t("personal.utang.settle")}
           </Button>
           {settleOpen ? (
@@ -1562,10 +1571,12 @@ export function PersonalRelationshipDetailPage() {
               <div className="flex min-w-0 flex-wrap gap-2">
                 <Button
                   type="button"
+                  className="w-auto self-start"
                   disabled={settleBlockedOffline || settleMutation.isPending}
                   data-testid="utang-settle-confirm"
                   onClick={() => settleMutation.mutate()}
                 >
+                  <Check className="size-4 shrink-0" aria-hidden="true" />
                   {t("personal.utang.settleConfirm")}
                 </Button>
                 <Button
@@ -1597,11 +1608,12 @@ export function PersonalRelationshipDetailPage() {
           </p>
           <Button
             type="button"
-            className="w-full sm:w-auto"
+            className="w-auto self-start"
             disabled={settleBlockedOffline || closeMutation.isPending}
             data-testid="utang-mark-settled"
             onClick={() => closeMutation.mutate()}
           >
+            <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
             {t("personal.utang.markSettled")}
           </Button>
         </div>
@@ -1613,7 +1625,8 @@ export function PersonalRelationshipDetailPage() {
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          if (!(Number(amount) > 0)) {
+          const parsedAmount = parseMoneyAmountInput(amount);
+          if (parsedAmount == null || !(parsedAmount > 0)) {
             setFormError(t("personal.utang.amountRequired"));
             return;
           }
@@ -1641,30 +1654,44 @@ export function PersonalRelationshipDetailPage() {
           <PenLine className="size-4 shrink-0" aria-hidden="true" />
           {t("personal.utang.entryType")}
         </h2>
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          <span className="sr-only">{t("personal.utang.entryType")}</span>
-          <select
-            data-testid="utang-entry-type"
-            className="exits-select"
-            value={entryType}
-            onChange={(e) => setEntryType(e.target.value as typeof entryType)}
-          >
-            <option value="Payment">{t("personal.utang.recordPayment")}</option>
-            <option value="Loan">{t("personal.utang.addAmount")}</option>
-            <option value="Adjustment">{t("personal.utang.adjustBalance")}</option>
-          </select>
-        </label>
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("personal.utang.amount")}
-          <input
-            data-testid="utang-entry-amount"
-            inputMode="decimal"
-            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
-        </label>
+        <div className="grid min-w-0 gap-2 lg:grid-cols-2 lg:items-end">
+          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span className="font-medium">{t("personal.utang.entryType")}</span>
+            <select
+              data-testid="utang-entry-type"
+              className="exits-select"
+              value={entryType}
+              onChange={(e) => setEntryType(e.target.value as typeof entryType)}
+            >
+              <option value="Payment">{t("personal.utang.recordPayment")}</option>
+              <option value="Loan">{t("personal.utang.addAmount")}</option>
+              <option value="Adjustment">{t("personal.utang.adjustBalance")}</option>
+            </select>
+          </label>
+          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span className="font-medium">{t("personal.utang.amount")}</span>
+            <div className="exits-currency-field">
+              <span className="exits-currency-field__prefix" aria-hidden>
+                ₱
+              </span>
+              <input
+                data-testid="utang-entry-amount"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                className="exits-currency-field__input"
+                value={amount}
+                onChange={(e) => setAmount(normalizeMoneyAmountTyping(e.target.value))}
+                onBlur={() => {
+                  const parsed = parseMoneyAmountInput(amount);
+                  setAmount(formatMoneyAmountInput(parsed ?? 0));
+                }}
+                required
+                aria-label={t("personal.utang.amount")}
+              />
+            </div>
+          </label>
+        </div>
         {entryType === "Adjustment" ? (
           <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("personal.utang.adjustmentDelta")}
@@ -1733,7 +1760,7 @@ export function PersonalRelationshipDetailPage() {
         ) : null}
         <Button
           type="submit"
-          className="w-full sm:w-auto"
+          className="w-auto self-start"
           disabled={
             recordMutation.isPending ||
             statusLocked ||
@@ -1743,11 +1770,7 @@ export function PersonalRelationshipDetailPage() {
           }
           data-testid="utang-entry-submit"
         >
-          {shared ? (
-            <Send className="size-4 shrink-0" aria-hidden="true" />
-          ) : (
-            <Check className="size-4 shrink-0" aria-hidden="true" />
-          )}
+          <Check className="size-4 shrink-0" aria-hidden="true" />
           {submitLabel}
         </Button>
       </form>
