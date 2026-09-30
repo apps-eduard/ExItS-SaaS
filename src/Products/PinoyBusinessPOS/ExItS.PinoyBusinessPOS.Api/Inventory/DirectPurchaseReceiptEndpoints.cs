@@ -34,6 +34,12 @@ internal static class DirectPurchaseReceiptEndpoints
             }
 
             var filter = new DirectPurchaseReceiptFilter(from, to, supplierId, sourceSearch, referenceNumber);
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch);
+            if (actingBranch is Guid branch && branch != Guid.Empty)
+            {
+                filter = filter with { ReceivingBranchId = branch };
+            }
+
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -51,12 +57,27 @@ internal static class DirectPurchaseReceiptEndpoints
             }
 
             var receipt = await queries.GetByIdAsync(organizationId, receiptId, ct).ConfigureAwait(false);
-            return receipt is null
-                ? PosApiResults.Problem(
+            if (receipt is null)
+            {
+                return PosApiResults.Problem(
                     ApplicationErrorCodes.DirectPurchaseReceiptNotFound,
                     "Direct purchase receipt was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(receipt);
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch)
+                && actingBranch is Guid branch
+                && branch != Guid.Empty
+                && receipt.ReceivingBranchId is Guid receiving
+                && receiving != branch)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.DirectPurchaseReceiptNotFound,
+                    "Direct purchase receipt was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            return Results.Ok(receipt);
         });
 
         group.MapPost("/", async (
@@ -98,6 +119,7 @@ internal static class DirectPurchaseReceiptEndpoints
             Guid receiptId,
             VoidDirectPurchaseReceiptRequest body,
             VoidDirectPurchaseReceipt useCase,
+            DirectPurchaseReceiptQueryService queries,
             IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
@@ -106,6 +128,21 @@ internal static class DirectPurchaseReceiptEndpoints
                 || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
+            }
+
+            if (PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch)
+                && actingBranch is Guid branch
+                && branch != Guid.Empty)
+            {
+                var existing = await queries.GetByIdAsync(organizationId, receiptId, ct).ConfigureAwait(false);
+                if (existing is null
+                    || (existing.ReceivingBranchId is Guid receiving && receiving != branch))
+                {
+                    return PosApiResults.Problem(
+                        ApplicationErrorCodes.DirectPurchaseReceiptNotFound,
+                        "Direct purchase receipt was not found.",
+                        StatusCodes.Status404NotFound);
+                }
             }
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(

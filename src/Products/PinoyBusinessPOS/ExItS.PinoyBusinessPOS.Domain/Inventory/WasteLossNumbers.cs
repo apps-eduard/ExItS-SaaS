@@ -3,19 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 /// <summary>
-/// Organization-scoped waste/loss number: <c>YYMMDD-NNN</c> (shared POS document format).
-/// Allocated server-side per organization and business date on create.
+/// Organization-scoped waste/loss number: <c>WL-YYMMDD-NNN</c>.
+/// Allocated server-side on waste/loss post.
 /// </summary>
 public static class WasteLossNumbers
 {
+    public const string Prefix = PosDocumentPrefixes.WasteLoss;
     public const int MaxLength = PosDocumentNumbers.MaxLength;
     public const long MaxSequence = PosDocumentNumbers.MaxSequence;
 
     public static string Format(DateOnly businessDate, long sequence) =>
-        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
+        Map(() => PosDocumentNumbers.Format(Prefix, businessDate, sequence));
 
     public static string Normalize(string? wasteLossNumber) =>
-        Map(() => PosDocumentNumbers.NormalizeRoot(wasteLossNumber));
+        Map(() => PosDocumentNumbers.NormalizeRoot(wasteLossNumber, Prefix));
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
 

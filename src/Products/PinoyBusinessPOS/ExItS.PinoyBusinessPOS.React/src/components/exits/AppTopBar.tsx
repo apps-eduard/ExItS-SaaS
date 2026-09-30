@@ -9,6 +9,7 @@ import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton"
 import { ShellNeedsAttentionButton } from "@/components/exits/ShellNeedsAttentionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
+import { ShellSidebarModeButton } from "@/components/exits/ShellSidebarModeButton";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
 import {
   countUnreadOrganizationNotifications,
@@ -206,6 +207,11 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
           hideDesktopBrand && "app-top-bar__row--shell-desktop",
         )}
       >
+        {hideDesktopBrand ? (
+          <div className="app-top-bar__leading hidden lg:flex" data-testid="app-top-bar-leading">
+            <ShellSidebarModeButton />
+          </div>
+        ) : null}
         <div
           className={cn(
             "app-top-bar__brand",

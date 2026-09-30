@@ -52,7 +52,8 @@ internal static class PersonalUtangProposalAntiSpam
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
         IClock clock,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool skipUnresolvedPendingLimit = false)
     {
         if (await PersonalConnectionSupport.IsBlockedEitherWayAsync(
                 senderUserIdentityId,
@@ -83,17 +84,20 @@ internal static class PersonalUtangProposalAntiSpam
                 "This Utang entry was already submitted.");
         }
 
-        var pending = await entries
-            .CountPendingProposalsBySenderTowardAsync(
-                senderUserIdentityId,
-                counterpartyUserIdentityId,
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (pending >= MaxUnresolvedPendingPerDirection)
+        if (!skipUnresolvedPendingLimit)
         {
-            return new GateFailure(
-                ApplicationErrorCodes.PersonalUtangPendingLimitReached,
-                "You already have the maximum unresolved Utang entries waiting for review with this person.");
+            var pending = await entries
+                .CountPendingProposalsBySenderTowardAsync(
+                    senderUserIdentityId,
+                    counterpartyUserIdentityId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (pending >= MaxUnresolvedPendingPerDirection)
+            {
+                return new GateFailure(
+                    ApplicationErrorCodes.PersonalUtangPendingLimitReached,
+                    "You already have the maximum unresolved Utang entries waiting for review with this person.");
+            }
         }
 
         var since = clock.UtcNow - RollingDayWindow;

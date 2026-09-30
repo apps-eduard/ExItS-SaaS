@@ -50,7 +50,12 @@ public sealed record PersonalDebtRelationshipSummaryDto(
     int Version,
     DateTimeOffset UpdatedAtUtc,
     bool IsSharedLedger,
-    bool IsPrivate);
+    bool IsPrivate,
+    /// <summary>
+    /// Set on create when share outcome is notable:
+    /// Private | SharedPending | SharedAutoSynced | PrivateNotReceiving.
+    /// </summary>
+    string? ShareOutcome = null);
 
 public sealed record CreatePersonalDebtRelationshipRequest(
     Guid? CreditorUserIdentityId,
@@ -64,7 +69,12 @@ public sealed record CreatePersonalDebtRelationshipRequest(
     /// <summary>Optional client-stable identity for offline replay / ambiguous-outcome reconciliation.</summary>
     Guid? RelationshipId = null,
     /// <summary>Optional client-stable id for the initial loan entry when <see cref="InitialLoanAmount"/> is set.</summary>
-    Guid? InitialLoanEntryId = null);
+    Guid? InitialLoanEntryId = null,
+    /// <summary>
+    /// When true and the counterparty is a connected ExItS user, create a shared ledger.
+    /// Default false — connected contacts stay private unless sharing is requested.
+    /// </summary>
+    bool ShareWithCounterparty = false);
 
 public sealed record RecordPersonalUtangEntryRequest(
     string EntryType,
@@ -110,7 +120,9 @@ public sealed record PersonalUtangEntryDto(
     bool IsSharedLedger,
     string Intent,
     decimal? SettlementBalanceSnapshot,
-    bool IsSettlement);
+    bool IsSettlement,
+    string ConfirmationSource = "None",
+    bool WasAutoSynced = false);
 
 public sealed record PersonalUtangBalanceDto(
     Guid RelationshipId,
@@ -306,6 +318,7 @@ public sealed class CreatePersonalContact
 {
     private readonly IPersonalContactRepository _contacts;
     private readonly IPlatformUserRepository _users;
+    private readonly RequestPersonalConnection _requestConnection;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -313,12 +326,14 @@ public sealed class CreatePersonalContact
     public CreatePersonalContact(
         IPersonalContactRepository contacts,
         IPlatformUserRepository users,
+        RequestPersonalConnection requestConnection,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _contacts = contacts;
         _users = users;
+        _requestConnection = requestConnection;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -460,6 +475,15 @@ public sealed class CreatePersonalContact
                 summary: $"Personal contact '{contact.DisplayName}' created.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
+            // ExItS-identified adds auto-send a connection request so the other person is notified.
+            // Soft-fail: contact remains even if blocked / pending already exists (e.g. mutual add).
+            if (contact.HasResolvedIdentity)
+            {
+                _ = await _requestConnection
+                    .ExecuteAsync(ownerUserIdentityId, contact.Id.Value, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             return ApplicationResult<PersonalContactDto>.Success(ToDto(contact));
         }
         catch (PersistenceConflictException ex)
@@ -535,6 +559,7 @@ public sealed class CreatePersonalDebtRelationship
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPlatformUserRepository _users;
     private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalSharedUtangPreferenceRepository _sharedUtangPreferences;
     private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -546,6 +571,7 @@ public sealed class CreatePersonalDebtRelationship
         IPersonalUtangEntryRepository entries,
         IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
+        IPersonalSharedUtangPreferenceRepository sharedUtangPreferences,
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -556,6 +582,7 @@ public sealed class CreatePersonalDebtRelationship
         _entries = entries;
         _users = users;
         _settings = settings;
+        _sharedUtangPreferences = sharedUtangPreferences;
         _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -580,6 +607,9 @@ public sealed class CreatePersonalDebtRelationship
             ? PersonalContactId.From(dc)
             : null;
 
+        PersonalContact? ownedCreditorContact = null;
+        PersonalContact? ownedDebtorContact = null;
+
         if (creditorContact is not null)
         {
             var owned = await PersonalUtangAccess.RequireOwnedContactAsync(
@@ -590,12 +620,7 @@ public sealed class CreatePersonalDebtRelationship
                     owned.ErrorCode!, owned.ErrorMessage!);
             }
 
-            // Linked People contact → canonicalize to Personal user participant (shared ledger).
-            if (owned.Value!.LinkedUserIdentityId is PlatformUserId linkedCreditor)
-            {
-                creditorUser = linkedCreditor;
-                creditorContact = null;
-            }
+            ownedCreditorContact = owned.Value;
         }
 
         if (debtorContact is not null)
@@ -608,12 +633,91 @@ public sealed class CreatePersonalDebtRelationship
                     owned.ErrorCode!, owned.ErrorMessage!);
             }
 
-            if (owned.Value!.LinkedUserIdentityId is PlatformUserId linkedDebtor)
+            ownedDebtorContact = owned.Value;
+        }
+
+        var shareRequested = request.ShareWithCounterparty;
+        string? shareOutcome = PersonalSharedUtangSharingSupport.ShareOutcomePrivate;
+
+        if (shareRequested)
+        {
+            // Identify the counterparty contact (the side that is not the acting user as user participant).
+            var counterpartyContact = ownedDebtorContact ?? ownedCreditorContact;
+            PlatformUserId? linkedCounterparty =
+                counterpartyContact?.LinkedUserIdentityId
+                ?? (creditorUser is not null && creditorUser != actingUserIdentityId ? creditorUser : null)
+                ?? (debtorUser is not null && debtorUser != actingUserIdentityId ? debtorUser : null);
+
+            if (linkedCounterparty is null)
             {
-                debtorUser = linkedDebtor;
-                debtorContact = null;
+                return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
+                    ApplicationErrorCodes.PersonalUtangShareRequiresConnection,
+                    "Sharing requires a connected ExItS person.");
+            }
+
+            if (await PersonalConnectionSupport.IsBlockedEitherWayAsync(
+                    actingUserIdentityId,
+                    linkedCounterparty,
+                    _contacts,
+                    cancellationToken).ConfigureAwait(false))
+            {
+                return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
+                    ApplicationErrorCodes.PersonalConnectionBlocked,
+                    "This relationship is blocked.");
+            }
+
+            var recipientPrefs = await PersonalSharedUtangSharingSupport.GetEffectiveAsync(
+                linkedCounterparty,
+                actingUserIdentityId,
+                _sharedUtangPreferences,
+                _clock,
+                cancellationToken).ConfigureAwait(false);
+
+            if (!recipientPrefs.ReceiveSharedUtang)
+            {
+                // Fall back to private — keep contact participant; do not canonicalize.
+                shareOutcome = PersonalSharedUtangSharingSupport.ShareOutcomePrivateNotReceiving;
+                shareRequested = false;
+                // Ensure we do not keep a direct counterparty user id from the request.
+                if (creditorUser is not null && creditorUser != actingUserIdentityId)
+                {
+                    creditorUser = null;
+                }
+
+                if (debtorUser is not null && debtorUser != actingUserIdentityId)
+                {
+                    debtorUser = null;
+                }
+            }
+            else
+            {
+                // Canonicalize contact → user for shared ledger.
+                if (ownedCreditorContact?.LinkedUserIdentityId is PlatformUserId linkedCreditor)
+                {
+                    creditorUser = linkedCreditor;
+                    creditorContact = null;
+                }
+                else if (creditorUser is null && ownedCreditorContact is null
+                         && linkedCounterparty != actingUserIdentityId
+                         && debtorUser == actingUserIdentityId)
+                {
+                    creditorUser = linkedCounterparty;
+                }
+
+                if (ownedDebtorContact?.LinkedUserIdentityId is PlatformUserId linkedDebtor)
+                {
+                    debtorUser = linkedDebtor;
+                    debtorContact = null;
+                }
+                else if (debtorUser is null && ownedDebtorContact is null
+                         && linkedCounterparty != actingUserIdentityId
+                         && creditorUser == actingUserIdentityId)
+                {
+                    debtorUser = linkedCounterparty;
+                }
             }
         }
+        // Share OFF: never canonicalize linked contact → user (stay private).
 
         var actingOnUserSide = actingUserIdentityId == creditorUser || actingUserIdentityId == debtorUser;
         var actingOnContactSide = creditorContact is not null || debtorContact is not null;
@@ -695,7 +799,7 @@ public sealed class CreatePersonalDebtRelationship
                 }
 
                 return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Success(
-                    ToSummary(existingRelationship, actingUserIdentityId));
+                    ToSummary(existingRelationship, actingUserIdentityId, shareOutcome));
             }
         }
 
@@ -708,6 +812,14 @@ public sealed class CreatePersonalDebtRelationship
             if (sharedInitialLoan)
             {
                 var counterparty = actingUserIdentityId == creditorUser ? debtorUser! : creditorUser!;
+                var recipientPrefs = await PersonalSharedUtangSharingSupport.GetEffectiveAsync(
+                    counterparty,
+                    actingUserIdentityId,
+                    _sharedUtangPreferences,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+                var willAutoAccept = recipientPrefs.AutoAcceptSharedUtang && recipientPrefs.ReceiveSharedUtang;
+
                 PersonalUtangProposalAntiSpam.GateFailure? gateFailure = null;
                 PersonalDebtRelationshipSummaryDto? summary = null;
 
@@ -724,7 +836,8 @@ public sealed class CreatePersonalDebtRelationship
                             _entries,
                             _contacts,
                             _clock,
-                            ct).ConfigureAwait(false);
+                            ct,
+                            skipUnresolvedPendingLimit: willAutoAccept).ConfigureAwait(false);
                         if (gate is not null)
                         {
                             gateFailure = gate;
@@ -738,6 +851,7 @@ public sealed class CreatePersonalDebtRelationship
                             debtorUser,
                             debtorContact,
                             request,
+                            shareOutcomeOverride: null,
                             ct).ConfigureAwait(false);
                     },
                     cancellationToken).ConfigureAwait(false);
@@ -759,6 +873,7 @@ public sealed class CreatePersonalDebtRelationship
                 debtorUser,
                 debtorContact,
                 request,
+                shareOutcome,
                 cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Success(created);
         }
@@ -775,6 +890,7 @@ public sealed class CreatePersonalDebtRelationship
         PlatformUserId? debtorUser,
         PersonalContactId? debtorContact,
         CreatePersonalDebtRelationshipRequest request,
+        string? shareOutcomeOverride,
         CancellationToken cancellationToken)
     {
         var relationship = PersonalDebtRelationship.Create(
@@ -837,26 +953,36 @@ public sealed class CreatePersonalDebtRelationship
                     debtorContact,
                     request.CurrencyCode ?? "PHP"))
             {
-                return ToSummary(raced, actingUserIdentityId);
+                return ToSummary(raced, actingUserIdentityId, shareOutcomeOverride);
             }
 
             throw;
         }
 
-        if (initialEntry is not null && initialEntry.Status is PersonalUtangEntryStatus.Pending)
+        var shareOutcome = shareOutcomeOverride
+            ?? (relationship.IsSharedLinked
+                ? PersonalSharedUtangSharingSupport.ShareOutcomeSharedPending
+                : PersonalSharedUtangSharingSupport.ShareOutcomePrivate);
+
+        if (initialEntry is not null && relationship.IsSharedLinked
+            && initialEntry.Status is PersonalUtangEntryStatus.Pending)
         {
-            await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
+            shareOutcome = await PersonalSharedUtangSharingSupport.ApplySharedEntryOutcomeAsync(
                 relationship,
+                initialEntry,
                 actingUserIdentityId,
+                _sharedUtangPreferences,
+                _relationships,
+                _entries,
                 _users,
                 _settings,
                 _notifications,
-                _entries,
                 _clock,
                 cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        var autoSynced = shareOutcome == PersonalSharedUtangSharingSupport.ShareOutcomeSharedAutoSynced;
         await _auditWriter.WriteAsync(
             $"platform-user:{actingUserIdentityId.Value:D}",
             AuditActorType.PlatformUser,
@@ -864,7 +990,9 @@ public sealed class CreatePersonalDebtRelationship
             nameof(PersonalDebtRelationship),
             relationship.Id.Value.ToString("D"),
             AuditOutcome.Succeeded,
-            summary: "Personal debt relationship created.",
+            summary: autoSynced
+                ? "Personal debt relationship created; initial entry auto-confirmed by recipient preference."
+                : "Personal debt relationship created.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (initialEntry is not null)
@@ -876,16 +1004,19 @@ public sealed class CreatePersonalDebtRelationship
                 nameof(PersonalUtangEntry),
                 initialEntry.Id.Value.ToString("D"),
                 AuditOutcome.Succeeded,
-                summary: "Initial loan entry recorded.",
+                summary: autoSynced
+                    ? "Initial loan entry recorded and auto-confirmed by recipient standing preference (not a manual confirm)."
+                    : "Initial loan entry recorded.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
-        return ToSummary(relationship, actingUserIdentityId);
+        return ToSummary(relationship, actingUserIdentityId, shareOutcome);
     }
 
     internal static PersonalDebtRelationshipSummaryDto ToSummary(
         PersonalDebtRelationship relationship,
-        PlatformUserId viewerUserIdentityId)
+        PlatformUserId viewerUserIdentityId,
+        string? shareOutcome = null)
     {
         var perspective = relationship.DebtorUserIdentityId == viewerUserIdentityId ? "Borrowed" : "Lent";
         var isShared = relationship.IsSharedLinked;
@@ -903,7 +1034,8 @@ public sealed class CreatePersonalDebtRelationship
             relationship.Version,
             relationship.UpdatedAtUtc,
             IsSharedLedger: isShared,
-            IsPrivate: !isShared);
+            IsPrivate: !isShared,
+            ShareOutcome: shareOutcome);
     }
 }
 
@@ -1128,6 +1260,7 @@ public sealed class RecordPersonalUtangEntry
     private readonly IPersonalContactRepository _contacts;
     private readonly IPlatformUserRepository _users;
     private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalSharedUtangPreferenceRepository _sharedUtangPreferences;
     private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -1139,6 +1272,7 @@ public sealed class RecordPersonalUtangEntry
         IPersonalContactRepository contacts,
         IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
+        IPersonalSharedUtangPreferenceRepository sharedUtangPreferences,
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -1149,6 +1283,7 @@ public sealed class RecordPersonalUtangEntry
         _contacts = contacts;
         _users = users;
         _settings = settings;
+        _sharedUtangPreferences = sharedUtangPreferences;
         _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -1226,8 +1361,17 @@ public sealed class RecordPersonalUtangEntry
                         "Personal debt relationship is not visible to this account.");
                 }
 
+                var recipientPrefs = await PersonalSharedUtangSharingSupport.GetEffectiveAsync(
+                    counterparty,
+                    actingUserIdentityId,
+                    _sharedUtangPreferences,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+                var willAutoAccept = recipientPrefs.AutoAcceptSharedUtang && recipientPrefs.ReceiveSharedUtang;
+
                 PersonalUtangProposalAntiSpam.GateFailure? gateFailure = null;
                 PersonalUtangEntry? createdEntry = null;
+                var autoSynced = false;
 
                 await _unitOfWork.ExecuteWithAdvisoryLockAsync(
                     actingUserIdentityId.Value,
@@ -1265,7 +1409,8 @@ public sealed class RecordPersonalUtangEntry
                             _entries,
                             _contacts,
                             _clock,
-                            ct).ConfigureAwait(false);
+                            ct,
+                            skipUnresolvedPendingLimit: willAutoAccept).ConfigureAwait(false);
                         if (gate is not null)
                         {
                             gateFailure = gate;
@@ -1291,15 +1436,19 @@ public sealed class RecordPersonalUtangEntry
                         await _entries.AddAsync(createdEntry, ct).ConfigureAwait(false);
                         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
-                        await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
+                        var outcome = await PersonalSharedUtangSharingSupport.ApplySharedEntryOutcomeAsync(
                             relationship,
+                            createdEntry,
                             actingUserIdentityId,
+                            _sharedUtangPreferences,
+                            _relationships,
+                            _entries,
                             _users,
                             _settings,
                             _notifications,
-                            _entries,
                             _clock,
                             ct).ConfigureAwait(false);
+                        autoSynced = outcome == PersonalSharedUtangSharingSupport.ShareOutcomeSharedAutoSynced;
 
                         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                     },
@@ -1319,7 +1468,9 @@ public sealed class RecordPersonalUtangEntry
                     nameof(PersonalUtangEntry),
                     createdEntry!.Id.Value.ToString("D"),
                     AuditOutcome.Succeeded,
-                    summary: $"{entryType} entry recorded.",
+                    summary: autoSynced
+                        ? $"{entryType} entry recorded and auto-confirmed by recipient standing preference (not a manual confirm)."
+                        : $"{entryType} entry recorded.",
                     cancellationToken: cancellationToken).ConfigureAwait(false);
 
                 return ApplicationResult<PersonalUtangEntryDto>.Success(
@@ -1367,16 +1518,34 @@ public sealed class RecordPersonalUtangEntry
 
             if (entry.Status is PersonalUtangEntryStatus.Pending)
             {
-                await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
+                var outcome = await PersonalSharedUtangSharingSupport.ApplySharedEntryOutcomeAsync(
                     relationship,
+                    entry,
                     actingUserIdentityId,
+                    _sharedUtangPreferences,
+                    _relationships,
+                    _entries,
                     _users,
                     _settings,
                     _notifications,
-                    _entries,
                     _clock,
                     cancellationToken).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{actingUserIdentityId.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.PersonalUtangEntryRecorded,
+                    nameof(PersonalUtangEntry),
+                    entry.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    summary: outcome == PersonalSharedUtangSharingSupport.ShareOutcomeSharedAutoSynced
+                        ? $"{entryType} entry recorded and auto-confirmed by recipient standing preference (not a manual confirm)."
+                        : $"{entryType} entry recorded.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                return ApplicationResult<PersonalUtangEntryDto>.Success(
+                    ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
             }
 
             await _auditWriter.WriteAsync(
@@ -1444,6 +1613,8 @@ public sealed class RecordPersonalUtangEntry
             IsSharedLedger: isSharedLedger,
             Intent: entry.Intent.ToString(),
             SettlementBalanceSnapshot: entry.SettlementBalanceSnapshot,
-            IsSettlement: entry.IsSettlement);
+            IsSettlement: entry.IsSettlement,
+            ConfirmationSource: entry.ConfirmationSource.ToString(),
+            WasAutoSynced: entry.WasAutoSynced);
     }
 }

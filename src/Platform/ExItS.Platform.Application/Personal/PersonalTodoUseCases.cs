@@ -129,6 +129,18 @@ internal static class PersonalTodoAccess
 
         return ApplicationResult<PersonalTodoDto>.Failure(ex.ErrorCode, ex.Message);
     }
+
+    public static ApplicationResult MapMutationFailureUnit(DomainException ex)
+    {
+        if (ex.ErrorCode == DomainErrorCodes.PersonalTodoConcurrencyConflict)
+        {
+            return ApplicationResult.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                ex.Message);
+        }
+
+        return ApplicationResult.Failure(ex.ErrorCode, ex.Message);
+    }
 }
 
 public sealed class CreatePersonalTodo
@@ -507,6 +519,67 @@ public sealed class CancelPersonalTodo
         catch (DomainException ex)
         {
             return PersonalTodoAccess.MapMutationFailure(ex);
+        }
+    }
+}
+
+public sealed class DeletePersonalTodo
+{
+    private readonly IPersonalTodoRepository _todos;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+
+    public DeletePersonalTodo(
+        IPersonalTodoRepository todos,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork)
+    {
+        _todos = todos;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<ApplicationResult> ExecuteAsync(
+        PlatformUserId ownerUserIdentityId,
+        Guid todoId,
+        int? expectedVersion = null,
+        CancellationToken cancellationToken = default)
+    {
+        var access = await PersonalTodoAccess
+            .RequireOwnedAsync(ownerUserIdentityId, PersonalTodoId.From(todoId), _todos, cancellationToken)
+            .ConfigureAwait(false);
+        if (!access.IsSuccess || access.Value is null)
+        {
+            return ApplicationResult.Failure(access.ErrorCode!, access.ErrorMessage!);
+        }
+
+        var todo = access.Value;
+        try
+        {
+            todo.EnsureCanPermanentlyDelete(expectedVersion);
+            var title = todo.Title;
+            await _todos.DeleteAsync(todo, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _auditWriter.WriteAsync(
+                $"platform-user:{ownerUserIdentityId.Value:D}",
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.PersonalTodoDeleted,
+                nameof(PersonalTodo),
+                todo.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: $"Personal to-do '{title}' permanently deleted.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            return ApplicationResult.Success();
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return PersonalTodoAccess.MapMutationFailureUnit(ex);
         }
     }
 }

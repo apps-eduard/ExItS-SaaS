@@ -231,6 +231,43 @@ internal static class CustomerEndpoints
                 .ConfigureAwait(false);
         });
 
+        group.MapPut("/{customerId:guid}/online-ordering-access", async (
+            HttpRequest request,
+            Guid customerId,
+            SetCustomerOnlineOrderingAccessRequest body,
+            SetCustomerOnlineOrderingAccess useCase,
+            IPosIdempotencyService idempotency,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
+            {
+                return problem!;
+            }
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CustomerOnlineOrderingAccessSet,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        customerId,
+                        body.Access,
+                        actorId,
+                        ct2),
+                    POSCustomerQueryService.Map,
+                    Results.Ok,
+                    ct)
+                .ConfigureAwait(false);
+        });
+
         group.MapPost("/{customerId:guid}/deactivate", async (
             HttpRequest request,
             Guid customerId,

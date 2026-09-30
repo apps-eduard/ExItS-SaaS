@@ -7,6 +7,7 @@ import type {
   TransferFollowUpRow,
   TransferMissingFollowUp,
 } from "@/features/inventory/transfer-receive-follow-up";
+import { forcesReturnToSource } from "@/features/inventory/transfer-exception-custody-policy";
 
 export type TransferReceiveFollowUpTableProps = {
   title: string;
@@ -21,8 +22,13 @@ export type TransferReceiveFollowUpTableProps = {
   keepAtDestinationLabel?: string;
   returnToSourceLabel?: string;
   custodyDecisionColLabel?: string;
+  otherCustodyDecisionColLabel?: string;
   allowCustodyDecision?: boolean;
   custodyDecisionByProductId?: ReadonlyMap<string, InventoryTransferDamagedCustodyDecisionCode | null>;
+  otherCustodyDecisionByProductId?: ReadonlyMap<
+    string,
+    InventoryTransferDamagedCustodyDecisionCode | null
+  >;
   linkedStockRequest: boolean;
   rows: readonly TransferFollowUpRow[];
   highlightUnresolved: boolean;
@@ -31,6 +37,10 @@ export type TransferReceiveFollowUpTableProps = {
     action: TransferMissingFollowUp | TransferDamagedOtherFollowUp,
   ) => void;
   onCustodyDecisionChange?: (
+    productId: string,
+    decision: InventoryTransferDamagedCustodyDecisionCode,
+  ) => void;
+  onOtherCustodyDecisionChange?: (
     productId: string,
     decision: InventoryTransferDamagedCustodyDecisionCode,
   ) => void;
@@ -50,13 +60,16 @@ export function TransferReceiveFollowUpTable({
   keepAtDestinationLabel = "Keep at destination",
   returnToSourceLabel = "Return to source",
   custodyDecisionColLabel = "Damage custody",
+  otherCustodyDecisionColLabel = "Exception custody",
   allowCustodyDecision = false,
   custodyDecisionByProductId,
+  otherCustodyDecisionByProductId,
   linkedStockRequest,
   rows,
   highlightUnresolved,
   onDecisionChange,
   onCustodyDecisionChange,
+  onOtherCustodyDecisionChange,
   testId = "transfer-receive-follow-up",
 }: TransferReceiveFollowUpTableProps) {
   if (rows.length === 0) {
@@ -64,7 +77,8 @@ export function TransferReceiveFollowUpTable({
   }
 
   const showCustodyCol =
-    allowCustodyDecision && rows.some((row) => row.issueKind === "damaged");
+    allowCustodyDecision &&
+    rows.some((row) => row.issueKind === "damaged" || row.issueKind === "other");
 
   return (
     <Card className="receive-remaining-table flex flex-col gap-3 p-3" data-testid={testId}>
@@ -75,24 +89,24 @@ export function TransferReceiveFollowUpTable({
         </p>
       </div>
 
-      <div className="receive-remaining-table__desktop overflow-hidden rounded-md border border-border">
-        <table className="w-full border-collapse text-start text-[length:var(--exits-text-sm)]">
+      <div className="receive-remaining-table__desktop overflow-x-auto rounded-md border border-border">
+        <table className="receive-remaining-table__grid w-full min-w-[40rem] border-collapse text-start text-[length:var(--exits-text-sm)]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th scope="col" className="px-3 py-2 text-start font-medium">
+              <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {productColLabel}
               </th>
-              <th scope="col" className="px-3 py-2 text-start font-medium whitespace-nowrap">
+              <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {qtyColLabel}
               </th>
-              <th scope="col" className="receive-remaining-table__issue-col px-3 py-2 text-start font-medium">
+              <th scope="col" className="receive-remaining-table__issue-col receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {issueColLabel}
               </th>
-              <th scope="col" className="px-3 py-2 text-start font-medium">
+              <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {decisionColLabel}
               </th>
               {showCustodyCol ? (
-                <th scope="col" className="px-3 py-2 text-start font-medium">
+                <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                   {custodyDecisionColLabel}
                 </th>
               ) : null}
@@ -109,15 +123,20 @@ export function TransferReceiveFollowUpTable({
                   : []),
                 { value: "accept_shortage" as const, label: acceptShortageLabel },
               ];
+              // Damaged / other: always Request replacement or Accept shortage (branch transfers included).
               const damagedOtherOptions = [
-                ...(linkedStockRequest
-                  ? [{ value: "request_replacement" as const, label: requestReplacementLabel }]
-                  : []),
+                { value: "request_replacement" as const, label: requestReplacementLabel },
                 { value: "accept_shortage" as const, label: acceptShortageLabel },
               ];
               const options = row.issueKind === "missing" ? missingOptions : damagedOtherOptions;
               const custodyValue =
                 custodyDecisionByProductId?.get(row.productId) ?? "KeepAtDestination";
+              const otherCustodyValue =
+                otherCustodyDecisionByProductId?.get(row.productId) ?? "KeepAtDestination";
+              const otherForceReturn =
+                row.issueKind === "other" &&
+                row.otherReasonCode != null &&
+                forcesReturnToSource(row.otherReasonCode);
 
               return (
                 <tr
@@ -140,8 +159,20 @@ export function TransferReceiveFollowUpTable({
                   </td>
                   <td className="receive-remaining-table__issue-col px-3 py-2 text-start align-middle">
                     <p className="m-0">{row.issueLabel}</p>
-                    {row.remark ? (
-                      <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">{row.remark}</p>
+                    {row.actualReceivedProductName?.trim() ? (
+                      <p
+                        className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid={`${testId}-issue-actual-${row.rowKey}`}
+                      >
+                        {row.actualReceivedProductName.trim()}
+                      </p>
+                    ) : row.remark ? (
+                      <p
+                        className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid={`${testId}-issue-remark-${row.rowKey}`}
+                      >
+                        {row.remark}
+                      </p>
                     ) : null}
                   </td>
                   <td className="px-3 py-2 text-start align-middle">
@@ -172,6 +203,27 @@ export function TransferReceiveFollowUpTable({
                             { value: "ReturnToSource", label: returnToSourceLabel },
                           ]}
                           testId={`${testId}-custody-${row.productId}`}
+                        />
+                      ) : row.issueKind === "other" ? (
+                        <ExitsPillSelect<InventoryTransferDamagedCustodyDecisionCode>
+                          className="receive-remaining-choice"
+                          aria-label={`${row.name}: ${otherCustodyDecisionColLabel}`}
+                          value={otherForceReturn ? "ReturnToSource" : otherCustodyValue}
+                          onChange={(next) => {
+                            if (otherForceReturn) {
+                              return;
+                            }
+                            onOtherCustodyDecisionChange?.(row.productId, next);
+                          }}
+                          options={[
+                            {
+                              value: "KeepAtDestination",
+                              label: keepAtDestinationLabel,
+                              disabled: otherForceReturn,
+                            },
+                            { value: "ReturnToSource", label: returnToSourceLabel },
+                          ]}
+                          testId={`${testId}-custody-other-${row.productId}${otherForceReturn ? "-locked" : ""}`}
                         />
                       ) : (
                         <span className="text-muted">—</span>

@@ -1,6 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
-using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -12,18 +11,21 @@ public sealed class InventoryLotQueryService
 {
     private readonly IInventoryLotRepository _lots;
     private readonly ICatalogProductRepository _products;
-    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
+    private readonly IInventoryLotIdentityEditSupport _identitySupport;
     private readonly IClock _clock;
 
     public InventoryLotQueryService(
         IInventoryLotRepository lots,
         ICatalogProductRepository products,
-        IPosUnitOfWork unitOfWork,
+        BranchExpirationPolicyResolver expirationPolicies,
+        IInventoryLotIdentityEditSupport identitySupport,
         IClock clock)
     {
         _lots = lots;
         _products = products;
-        _unitOfWork = unitOfWork;
+        _expirationPolicies = expirationPolicies;
+        _identitySupport = identitySupport;
         _clock = clock;
     }
 
@@ -50,9 +52,31 @@ public sealed class InventoryLotQueryService
             .ListPagedAsync(orgId, catalogProductId, branch, includeDepleted, skip, take, cancellationToken)
             .ConfigureAwait(false);
         var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
-        var warning = product.EffectiveExpirationWarningDays;
+        // LEGACY_COMPAT: product-level warning when no branch context is supplied.
+        var warning = branch is PosBranchId warningBranch
+            ? (await _expirationPolicies
+                .ResolveAsync(orgId, warningBranch, catalogProductId, cancellationToken)
+                .ConfigureAwait(false)).EffectiveWarningDays
+            : product.EffectiveExpirationWarningDays;
+
+        var editability = await ResolveEditabilityAsync(
+                orgId,
+                items.Select(l => l.Id.Value).ToArray(),
+                cancellationToken)
+            .ConfigureAwait(false);
+
         return new PagedResult<PosInventoryLotDto>(
-            items.Select(l => Map(l, today, warning)).ToList(),
+            items.Select(l =>
+            {
+                editability.TryGetValue(l.Id.Value, out var lockReason);
+                lockReason ??= InventoryLotIdentityEditPolicy.LockReasonNone;
+                return Map(
+                    l,
+                    today,
+                    warning,
+                    InventoryLotIdentityEditPolicy.CanEditIdentity(lockReason),
+                    lockReason);
+            }).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -79,7 +103,7 @@ public sealed class InventoryLotQueryService
             .ListExpiringPagedAsync(orgId, branch, expireOnOrBefore, expireOnOrAfter, search, skip, take, cancellationToken)
             .ConfigureAwait(false);
         var counts = await _lots
-            .CountExpiryAsync(orgId, today, cancellationToken)
+            .CountExpiryAsync(orgId, today, branch, cancellationToken)
             .ConfigureAwait(false);
 
         var productIds = items.Select(l => l.ProductId).Distinct().ToArray();
@@ -93,10 +117,39 @@ public sealed class InventoryLotQueryService
             }
         }
 
+        var warningByBranchProduct = new Dictionary<(Guid BranchId, Guid ProductId), int>();
+        if (branch is PosBranchId listBranch && productIds.Length > 0)
+        {
+            var policies = await _expirationPolicies
+                .ResolveManyAsync(orgId, listBranch, productIds, cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var (productKey, policy) in policies)
+            {
+                warningByBranchProduct[(listBranch.Value, productKey)] = policy.EffectiveWarningDays;
+            }
+        }
+        else
+        {
+            foreach (var group in items.Where(l => l.BranchId is not null).GroupBy(l => l.BranchId!.Value))
+            {
+                var ids = group.Select(l => l.ProductId).Distinct().ToList();
+                var policies = await _expirationPolicies
+                    .ResolveManyAsync(orgId, PosBranchId.From(group.Key), ids, cancellationToken)
+                    .ConfigureAwait(false);
+                foreach (var (productKey, policy) in policies)
+                {
+                    warningByBranchProduct[(group.Key, productKey)] = policy.EffectiveWarningDays;
+                }
+            }
+        }
+
         var mapped = items.Select(lot =>
         {
             products.TryGetValue(lot.ProductId, out var product);
-            var warning = product?.EffectiveExpirationWarningDays ?? InventoryLot.DefaultWarningDays;
+            var warning = lot.BranchId is PosBranchId lotBranch
+                && warningByBranchProduct.TryGetValue((lotBranch.Value, lot.ProductId.Value), out var days)
+                    ? days
+                    : product?.EffectiveExpirationWarningDays ?? InventoryLot.DefaultWarningDays;
             return new PosExpiringLotDto(
                 lot.Id.Value,
                 lot.ProductId.Value,
@@ -144,7 +197,12 @@ public sealed class InventoryLotQueryService
         return (null, today.AddDays(days));
     }
 
-    public static PosInventoryLotDto Map(InventoryLot lot, DateOnly today, int warningDays) =>
+    public static PosInventoryLotDto Map(
+        InventoryLot lot,
+        DateOnly today,
+        int warningDays,
+        bool canEditIdentity = false,
+        string? identityLockReason = null) =>
         new(
             lot.Id.Value,
             lot.ProductId.Value,
@@ -154,5 +212,37 @@ public sealed class InventoryLotQueryService
             lot.QuantityOnHand,
             InventoryLotExpiryStatuses.ToCode(lot.ExpiryStatus(today, warningDays)),
             lot.CreatedAtUtc,
-            lot.UpdatedAtUtc);
+            lot.UpdatedAtUtc,
+            canEditIdentity,
+            identityLockReason ?? InventoryLotIdentityEditPolicy.LockReasonNone);
+
+    private async Task<Dictionary<Guid, string>> ResolveEditabilityAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> lotIds,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<Guid, string>();
+        if (lotIds.Count == 0)
+        {
+            return result;
+        }
+
+        var movementsByLot = await _identitySupport
+            .ListDistinctMovementTypesByLotIdsAsync(organizationId, lotIds, cancellationToken)
+            .ConfigureAwait(false);
+        var draftRefs = await _identitySupport
+            .ListLotIdsReferencedByActiveTransferDraftAsync(organizationId, lotIds, cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var lotId in lotIds)
+        {
+            movementsByLot.TryGetValue(lotId, out var types);
+            types ??= Array.Empty<StockMovementType>();
+            result[lotId] = InventoryLotIdentityEditPolicy.ResolveLockReason(
+                types,
+                draftRefs.Contains(lotId));
+        }
+
+        return result;
+    }
 }

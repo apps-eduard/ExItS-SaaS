@@ -62,6 +62,7 @@ import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionS
 import { mapOrgLinkStatusToRelationship } from "@/features/customer-connection/connection-state";
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
 import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
+import { CustomerOnlineOrderingAccessSection } from "@/features/customers/CustomerOnlineOrderingAccessSection";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
 import { PaymentHistorySection } from "@/features/customers/PaymentHistorySection";
 import { RecordPaymentModal } from "@/features/customers/RecordPaymentModal";
@@ -782,6 +783,15 @@ export function CustomerDetailPage() {
           </dl>
         </Card>
       )}
+
+      {workspace && customer && platformCustomerId ? (
+        <CustomerOnlineOrderingAccessSection
+          workspace={workspace}
+          customer={customer}
+          canEdit={allowEdit}
+          online={online}
+        />
+      ) : null}
 
       {workspace && customerId ? (
         <CreditPolicySection

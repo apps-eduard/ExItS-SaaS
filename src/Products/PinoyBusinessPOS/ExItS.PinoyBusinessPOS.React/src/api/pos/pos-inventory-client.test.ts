@@ -2,6 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
   adjustInventoryStock,
   enableInventoryTracking,
+  getInventoryAttentionSummary,
   listExpiringLots,
   listProductLots,
 } from "@/api/pos/pos-inventory-client";
@@ -68,6 +69,18 @@ describe("pos-inventory-client lots", () => {
           );
         }
 
+        if (url.includes("/inventory/attention-summary") && method === "GET") {
+          return new Response(
+            JSON.stringify({
+              lowStockProductCount: 1,
+              outOfStockProductCount: 2,
+              expiredLotCount: 3,
+              nearExpiryLotCount: 4,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
         if (url.includes(`/inventory/${productId}/enable`) && method === "POST") {
           const body = JSON.parse(String(init?.body));
           expect(body).toMatchObject({
@@ -126,6 +139,18 @@ describe("pos-inventory-client lots", () => {
     expect(url).toContain("window=Custom");
     expect(url).toContain("fromDate=2026-08-01");
     expect(url).toContain("toDate=2026-08-31");
+  });
+
+  it("gets branch inventory attention summary with schema validation", async () => {
+    const summary = await getInventoryAttentionSummary(workspace);
+    expect(summary).toEqual({
+      lowStockProductCount: 1,
+      outOfStockProductCount: 2,
+      expiredLotCount: 3,
+      nearExpiryLotCount: 4,
+    });
+    const url = String(vi.mocked(fetch).mock.calls.at(-1)![0]);
+    expect(url).toContain("/inventory/attention-summary");
   });
 
   it("posts enable body with expirationDate and lotNumber", async () => {

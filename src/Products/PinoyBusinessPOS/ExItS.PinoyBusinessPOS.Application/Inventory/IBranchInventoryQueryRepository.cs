@@ -10,6 +10,14 @@ public interface IBranchInventoryQueryRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Same filter composition as <see cref="ListAsync"/>; returns only the matching product count.
+    /// </summary>
+    Task<int> CountAsync(
+        BranchInventoryContext context,
+        BranchInventoryListFilter filter,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Product ids matching the same filters as <see cref="ListAsync"/> (org + branch scoped).
     /// Used for server-side bulk low-stock updates without loading full rows into the client.
     /// </summary>

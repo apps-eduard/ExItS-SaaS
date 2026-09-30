@@ -1,11 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as branchesClient from "@/api/platform/organization-branches-client";
 import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
@@ -26,15 +27,32 @@ vi.mock("@/i18n/I18nProvider", () => ({
   }),
 }));
 
+const refreshWorkspaces = vi.fn(async () => undefined);
+
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
     boundWorkspace: { organizationId: "11111111-1111-1111-1111-111111111111" },
     sessionGrant: { productRole: "Owner", organizationManagementAuthority: true },
+    refreshWorkspaces,
   }),
 }));
 
 vi.mock("@/api/platform/organization-branches-client", () => ({
   createOrganizationBranch: vi.fn(),
+}));
+
+vi.mock("@/workspace/use-pos-workspace-scope", () => ({
+  usePosWorkspaceScope: () => ({
+    organizationId: "11111111-1111-1111-1111-111111111111",
+    branchId: "22222222-2222-2222-2222-222222222222",
+  }),
+}));
+
+vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
+  getOrganizationFulfillmentSettings: vi.fn(async () => ({
+    defaultPickupEnabled: true,
+    defaultOnlineOrdersEnabled: false,
+  })),
 }));
 
 function renderPage(path = "/org/branches/new") {
@@ -44,7 +62,10 @@ function renderPage(path = "/org/branches/new") {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[path]}>
-        <BranchCreatePage />
+        <Routes>
+          <Route path="/org/branches/new" element={<BranchCreatePage />} />
+          <Route path="/org/branches/:branchId" element={<div data-testid="branch-detail-stub" />} />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -60,6 +81,31 @@ const globalsCss = readFileSync(
 );
 
 describe("BranchCreatePage", () => {
+  beforeEach(() => {
+    refreshWorkspaces.mockClear();
+    vi.mocked(branchesClient.createOrganizationBranch).mockReset();
+  });
+
+  it("refreshes workspaces after create so Operations sees the new branch", async () => {
+    canUseWarehouseBranches.mockReturnValue(false);
+    vi.mocked(branchesClient.createOrganizationBranch).mockResolvedValue({
+      ok: true,
+      value: {
+        id: "33333333-3333-3333-3333-333333333333",
+        name: "East Branch",
+        code: "EAST-BRANCH",
+      },
+    } as never);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByTestId("branch-create-name"), "East Branch");
+    await user.click(screen.getByTestId("branch-create-submit"));
+
+    await waitFor(() => expect(refreshWorkspaces).toHaveBeenCalled());
+    expect(await screen.findByTestId("branch-detail-stub")).toBeInTheDocument();
+  });
+
   it("keeps PH and Asia/Manila read-only and suggests a branch code", async () => {
     canUseWarehouseBranches.mockReturnValue(false);
     const user = userEvent.setup();

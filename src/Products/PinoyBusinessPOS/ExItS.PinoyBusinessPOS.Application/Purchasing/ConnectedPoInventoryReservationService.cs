@@ -510,7 +510,12 @@ public sealed class ConnectedPoInventoryReservationService
                             balances,
                             demand.ProductId);
                         var reserved = BranchStockResolver.ResolveReserved(branchId, balances, demand.ProductId);
-                        var availableBase = BranchStockResolver.ResolveAvailable(onHand, reserved);
+                        var availableBase = BranchStockResolver.ResolveAvailable(
+                            branchId,
+                            balances,
+                            demand.ProductId,
+                            onHand,
+                            reserved);
                         var availablePurchase = availableBase / multiplier;
 
                         if (neededBase > availableBase)

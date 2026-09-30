@@ -266,6 +266,7 @@ public sealed class StockUseUseCaseTests
                 Inventory,
                 Branches,
                 lots,
+                BranchExpirationTestHelpers.CreateResolver(),
                 UnitOfWork,
                 Clock);
             Void = new VoidStockUse(
@@ -802,6 +803,7 @@ public sealed class StockUseUseCaseTests
         public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
             PosOrganizationId organizationId,
             DateOnly today,
+            PosBranchId? branchId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult((0, 0));
 

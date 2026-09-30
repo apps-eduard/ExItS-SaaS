@@ -51,6 +51,9 @@ export type PersonalDebtRelationshipSummaryDto = {
   status: string;
   version: number;
   updatedAtUtc: string;
+  isSharedLedger?: boolean;
+  isPrivate?: boolean;
+  shareOutcome?: "Private" | "SharedPending" | "SharedAutoSynced" | "PrivateNotReceiving" | null;
 };
 
 export type CreatePersonalDebtRelationshipRequest = {
@@ -62,6 +65,7 @@ export type CreatePersonalDebtRelationshipRequest = {
   dueDateUtc?: string | null;
   initialLoanAmount?: number | null;
   initialLoanNotes?: string | null;
+  shareWithCounterparty?: boolean;
 };
 
 export type PersonalUtangInvitationDto = {

@@ -14,6 +14,8 @@ public static class DomainErrorCodes
     public const string InvalidPlatformBusinessCustomerId = "pos.customer.platform_business_customer_id.invalid";
     public const string PlatformBusinessCustomerCorrelationConflict =
         "pos.customer.platform_business_customer.correlation_conflict";
+    public const string InvalidCustomerOnlineOrderingAccess =
+        "pos.customer.online_ordering_access.invalid";
 
     public const string InvalidCreditEntryId = "pos.credit_entry.id.invalid";
     public const string InvalidBusinessCreditEntryId = "pos.business_credit_entry.id.invalid";
@@ -215,9 +217,28 @@ public static class DomainErrorCodes
     public const string InvalidInventoryAccountId = "pos.inventory.account.id.invalid";
     public const string InvalidInventoryLotId = "pos.inventory.lot.id.invalid";
     public const string InvalidInventoryLotNumber = "pos.inventory.lot_number.invalid";
+    public const string InvalidInventoryLotIdentityCorrectionId =
+        "pos.inventory.lot_identity_correction.id.invalid";
+    public const string InvalidInventoryLotIdentityCorrectionReason =
+        "pos.inventory.lot_identity_correction.reason.invalid";
+    public const string InvalidInventoryLotIdentityCorrectionActor =
+        "pos.inventory.lot_identity_correction.actor.invalid";
     public const string InventoryExpirationRequired = "pos.inventory.expiration.required";
     public const string InventoryLotMismatch = "pos.inventory.lot.mismatch";
+    public const string InventoryExpirationBranchRequired = "pos.inventory.expiration.branch_required";
+    public const string InventoryTransferDestinationExpirySetupRequired =
+        "pos.inventory.transfer.destination_expiry_setup_required";
+    public const string InventoryTransferSourceExpirySetupRequired =
+        "pos.inventory.transfer.source_expiry_setup_required";
+    /// <summary>Normal branch transfer cannot use an expired source lot.</summary>
+    public const string InventoryLotExpiredForTransfer = "pos.inventory.lot.expired_for_transfer";
     public const string InvalidExpirationWarningDays = "pos.inventory.expiration_warning_days.invalid";
+    public const string InvalidStopSellingDaysBeforeExpiry =
+        "pos.inventory.stop_selling_days_before_expiry.invalid";
+    public const string InvalidExpirySalePolicyActor = "pos.inventory.expiry_sale_policy.actor.invalid";
+    public const string InvalidExpirySalePolicyCategory =
+        "pos.inventory.expiry_sale_policy.category.invalid";
+    public const string InvalidInventoryExpirationActor = "pos.inventory.expiration.actor.invalid";
     public const string InvalidStockMovementId = "pos.inventory.movement.id.invalid";
     public const string InvalidInventoryMovementType = "pos.inventory.movement_type.invalid";
     public const string InvalidInventorySourceType = "pos.inventory.source_type.invalid";
@@ -286,6 +307,12 @@ public static class DomainErrorCodes
     public const string InvalidInventoryTransferDamagedCustodyDecision = "pos.inventory.transfer.damaged_custody_decision.invalid";
     public const string InvalidInventoryTransferDamageCustodyStatus = "pos.inventory.transfer.damage_custody.status.invalid";
     public const string InvalidInventoryTransferDamageCustodyId = "pos.inventory.transfer.damage_custody.id.invalid";
+    public const string InvalidInventoryTransferExceptionCustodyDecision = "pos.inventory.transfer.exception_custody_decision.invalid";
+    public const string InvalidInventoryTransferExceptionCustodyStatus = "pos.inventory.transfer.exception_custody.status.invalid";
+    public const string InvalidInventoryTransferExceptionCustodyId = "pos.inventory.transfer.exception_custody.id.invalid";
+    public const string InvalidInventoryTransferOtherReason = "pos.inventory.transfer.other_reason.invalid";
+    public const string InvalidInventoryTransferActualProduct = "pos.inventory.transfer.actual_product.invalid";
+    public const string InsufficientStockForExceptionCorrection = "pos.inventory.transfer.exception_correction.insufficient_stock";
     public const string InvalidInventoryTransferReplacementSequence = "pos.inventory.transfer.replacement_sequence.invalid";
     public const string InvalidInventoryInspectionHoldQuantity = "pos.inventory.inspection_hold.quantity.invalid";
     public const string InvalidInventoryDamagedQuantity = "pos.inventory.damaged.quantity.invalid";

@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -100,6 +101,9 @@ public sealed class PlaceCustomerOrder
     private readonly ISellerCustomerOrderingCapability _sellerCapability;
     private readonly ILinkedCustomerPlatformAuthorization? _linkedCustomerAuth;
     private readonly IPOSCustomerRepository? _customers;
+    private readonly PersonalOnlineCommerceAuthorization? _shoppingAuth;
+    private readonly CustomerCreditAuthorizationService? _creditAuthorization;
+    private readonly IPosUnitOfWork? _unitOfWork;
     private readonly IClock _clock;
     private readonly ICatalogProductAvailabilityResolver? _availability;
     private readonly IEffectivePriceResolver? _effectivePrices;
@@ -117,7 +121,10 @@ public sealed class PlaceCustomerOrder
         IPOSCustomerRepository? customers = null,
         ICatalogProductAvailabilityResolver? availability = null,
         IEffectivePriceResolver? effectivePrices = null,
-        PartyBranchAccessService? branchAccess = null)
+        PartyBranchAccessService? branchAccess = null,
+        PersonalOnlineCommerceAuthorization? shoppingAuth = null,
+        CustomerCreditAuthorizationService? creditAuthorization = null,
+        IPosUnitOfWork? unitOfWork = null)
     {
         _orders = orders;
         _products = products;
@@ -128,6 +135,9 @@ public sealed class PlaceCustomerOrder
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _linkedCustomerAuth = linkedCustomerAuth;
         _customers = customers;
+        _shoppingAuth = shoppingAuth;
+        _creditAuthorization = creditAuthorization;
+        _unitOfWork = unitOfWork;
         _availability = availability;
         _effectivePrices = effectivePrices;
         _branchAccess = branchAccess;
@@ -160,7 +170,7 @@ public sealed class PlaceCustomerOrder
             {
                 return ApplicationResult<CustomerOrderDto>.Failure(
                     ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
-                    "This merchant is not accepting customer orders.");
+                    CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage);
             }
 
             if (!Enum.TryParse<CustomerOrderFulfillmentType>(request.FulfillmentType, true, out var fulfillmentType))
@@ -196,6 +206,7 @@ public sealed class PlaceCustomerOrder
 
             Guid? platformBusinessCustomerId = null;
             var allowDeliveryBeyondNormalDistance = false;
+            POSCustomer? personalPosCustomer = null;
             if (partyType == CustomerPartyType.Personal)
             {
                 var linked = await ValidatePersonalLinkedCustomerAsync(
@@ -211,6 +222,7 @@ public sealed class PlaceCustomerOrder
 
                 platformBusinessCustomerId = linked.Value.PlatformBusinessCustomerId;
                 allowDeliveryBeyondNormalDistance = linked.Value.AllowDeliveryBeyondNormalDistance;
+                personalPosCustomer = linked.Value.PosCustomer;
             }
 
             var branch = await _branches
@@ -368,28 +380,112 @@ public sealed class PlaceCustomerOrder
             var orderId = request.ClientOrderId is Guid id && id != Guid.Empty
                 ? CustomerOrderId.From(id)
                 : null;
+            var paymentMethod = CustomerOrderPaymentMethods.Parse(request.PaymentMethod);
+            var businessDate = CustomerOrderNumbers.BusinessDateOf(now);
 
-            var created = await _orders
-                .PlaceAsync(
-                    orgId,
-                    CustomerOrderNumbers.BusinessDateOf(now),
-                    number => CustomerOrder.CreateSubmitted(
+            CustomerOrder created;
+            if (partyType == CustomerPartyType.Personal
+                && paymentMethod == CustomerOrderPaymentMethod.Utang)
+            {
+                if (_unitOfWork is null
+                    || _creditAuthorization is null
+                    || personalPosCustomer is null
+                    || platformBusinessCustomerId is not Guid pbcId)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        ApplicationErrorCodes.CustomerOrderOnlineUtangUnavailable,
+                        "Utang is not available for online orders for this customer.");
+                }
+
+                var merchandiseSubtotal = SaleMoney.RoundMoney(
+                    drafts.Sum(d => SaleMoney.RoundMoney(d.UnitPrice * d.Quantity) - d.Discount));
+                var deliveryFee = delivery?.FinalDeliveryFee ?? 0m;
+                var requestedTotal = SaleMoney.RoundMoney(merchandiseSubtotal + deliveryFee);
+
+                var placeResult = await _unitOfWork
+                    .ExecuteInSerializableTransactionAsync(async ct =>
+                    {
+                        var commitment = await _orders
+                            .SumActiveOnlineUtangCommitmentAsync(orgId, pbcId, ct)
+                            .ConfigureAwait(false);
+                        var auth = await _creditAuthorization
+                            .AuthorizeOnlineUtangAsync(
+                                orgId,
+                                personalPosCustomer.Id,
+                                requestedTotal,
+                                commitment,
+                                businessDate,
+                                ct)
+                            .ConfigureAwait(false);
+                        if (!auth.IsSuccess)
+                        {
+                            return ApplicationResult<CustomerOrderDto>.Failure(
+                                auth.ErrorCode!,
+                                auth.ErrorMessage!);
+                        }
+
+                        var order = await _orders
+                            .PlaceAsync(
+                                orgId,
+                                businessDate,
+                                number => CustomerOrder.CreateSubmitted(
+                                    orgId,
+                                    number,
+                                    party,
+                                    fulfillmentType,
+                                    branch.BranchId,
+                                    branch.Name,
+                                    drafts,
+                                    actorId,
+                                    now,
+                                    delivery,
+                                    request.IdempotencyKey,
+                                    orderId,
+                                    paymentMethod,
+                                    platformBusinessCustomerId),
+                                cancellationToken: ct)
+                            .ConfigureAwait(false);
+                        return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+                    }, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (!placeResult.IsSuccess || placeResult.Value is null)
+                {
+                    return placeResult;
+                }
+
+                // Reload domain order for notifications / branch access below.
+                created = await _orders
+                    .GetByIdAsync(orgId, CustomerOrderId.From(placeResult.Value.OrderId), cancellationToken)
+                    .ConfigureAwait(false)
+                    ?? throw new PersistenceConflictException(
+                        ApplicationErrorCodes.CustomerOrderNotFound,
+                        "Customer order was not found after place.");
+            }
+            else
+            {
+                created = await _orders
+                    .PlaceAsync(
                         orgId,
-                        number,
-                        party,
-                        fulfillmentType,
-                        branch.BranchId,
-                        branch.Name,
-                        drafts,
-                        actorId,
-                        now,
-                        delivery,
-                        request.IdempotencyKey,
-                        orderId,
-                        CustomerOrderPaymentMethods.Parse(request.PaymentMethod),
-                        platformBusinessCustomerId),
-                    cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
+                        businessDate,
+                        number => CustomerOrder.CreateSubmitted(
+                            orgId,
+                            number,
+                            party,
+                            fulfillmentType,
+                            branch.BranchId,
+                            branch.Name,
+                            drafts,
+                            actorId,
+                            now,
+                            delivery,
+                            request.IdempotencyKey,
+                            orderId,
+                            paymentMethod,
+                            platformBusinessCustomerId),
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             await _notifications
                 .PublishAsync(
@@ -546,7 +642,8 @@ public sealed class PlaceCustomerOrder
 
     private sealed record PersonalLinkedCustomerAuthorization(
         Guid PlatformBusinessCustomerId,
-        bool AllowDeliveryBeyondNormalDistance);
+        bool AllowDeliveryBeyondNormalDistance,
+        POSCustomer? PosCustomer);
 
     private async Task<ApplicationResult<PersonalLinkedCustomerAuthorization>> ValidatePersonalLinkedCustomerAsync(
         PosOrganizationId orgId,
@@ -569,6 +666,29 @@ public sealed class PlaceCustomerOrder
                 "Customer party must match the authenticated caller.");
         }
 
+        if (_shoppingAuth is not null)
+        {
+            var shopping = await _shoppingAuth
+                .AuthorizeShoppingAsync(
+                    sellerOrganizationId,
+                    personalUserId,
+                    platformBusinessCustomerId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!shopping.IsSuccess || shopping.Value is null)
+            {
+                return ApplicationResult<PersonalLinkedCustomerAuthorization>.Failure(
+                    shopping.ErrorCode!,
+                    shopping.ErrorMessage!);
+            }
+
+            return ApplicationResult<PersonalLinkedCustomerAuthorization>.Success(
+                new PersonalLinkedCustomerAuthorization(
+                    platformBusinessCustomerId,
+                    shopping.Value.AllowDeliveryBeyondNormalDistance,
+                    shopping.Value.PosCustomer));
+        }
+
         var allowBeyond = false;
         if (_linkedCustomerAuth is not null)
         {
@@ -589,9 +709,10 @@ public sealed class PlaceCustomerOrder
             allowBeyond = platform.Proof.AllowDeliveryBeyondNormalDistance;
         }
 
+        POSCustomer? posCustomer = null;
         if (_customers is not null)
         {
-            var posCustomer = await _customers
+            posCustomer = await _customers
                 .FindByPlatformBusinessCustomerIdAsync(orgId, platformBusinessCustomerId, cancellationToken)
                 .ConfigureAwait(false);
             if (posCustomer is null)
@@ -600,10 +721,27 @@ public sealed class PlaceCustomerOrder
                     ApplicationErrorCodes.LinkedCustomerNotFound,
                     "Linked customer was not found.");
             }
+
+            var capability = await _sellerCapability
+                .ResolveAsync(sellerOrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (!CustomerOnlineOrderingAccessRules.IsShoppingAllowed(
+                    capability.CanCustomerOrder,
+                    posCustomer.OnlineOrderingAccess))
+            {
+                var message = CustomerOnlineOrderingAccessRules.DenialMessage(
+                        capability.CanCustomerOrder,
+                        posCustomer.OnlineOrderingAccess)
+                    ?? CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage;
+                var code = !capability.CanCustomerOrder
+                    ? ApplicationErrorCodes.CustomerOrderOrderingUnavailable
+                    : ApplicationErrorCodes.CustomerOrderCustomerBlocked;
+                return ApplicationResult<PersonalLinkedCustomerAuthorization>.Failure(code, message);
+            }
         }
 
         return ApplicationResult<PersonalLinkedCustomerAuthorization>.Success(
-            new PersonalLinkedCustomerAuthorization(platformBusinessCustomerId, allowBeyond));
+            new PersonalLinkedCustomerAuthorization(platformBusinessCustomerId, allowBeyond, posCustomer));
     }
 }
 
@@ -612,21 +750,25 @@ public sealed class QuoteCustomerOrderDelivery
     private readonly ICustomerOrderBranchDirectory _branches;
     private readonly ISellerCustomerOrderingCapability _sellerCapability;
     private readonly ILinkedCustomerPlatformAuthorization? _linkedCustomerAuth;
+    private readonly PersonalOnlineCommerceAuthorization? _shoppingAuth;
 
     public QuoteCustomerOrderDelivery(
         ICustomerOrderBranchDirectory branches,
         ISellerCustomerOrderingCapability? sellerCapability = null,
-        ILinkedCustomerPlatformAuthorization? linkedCustomerAuth = null)
+        ILinkedCustomerPlatformAuthorization? linkedCustomerAuth = null,
+        PersonalOnlineCommerceAuthorization? shoppingAuth = null)
     {
         _branches = branches;
         _sellerCapability = sellerCapability ?? new AllowAllSellerCustomerOrderingCapability();
         _linkedCustomerAuth = linkedCustomerAuth;
+        _shoppingAuth = shoppingAuth;
     }
 
     public async Task<ApplicationResult<QuoteCustomerOrderDeliveryDto>> ExecuteAsync(
         Guid sellerOrganizationId,
         QuoteCustomerOrderDeliveryRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? personalPlatformUserId = null)
     {
         try
         {
@@ -637,7 +779,7 @@ public sealed class QuoteCustomerOrderDelivery
             {
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Failure(
                     ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
-                    "This merchant is not accepting customer orders.");
+                    CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage);
             }
 
             if (!sellerCapability.CanCustomerDelivery)
@@ -647,11 +789,37 @@ public sealed class QuoteCustomerOrderDelivery
                     "This merchant is not accepting delivery orders.");
             }
 
-            var allowBeyond = await ResolveDistanceExceptionAsync(
-                    sellerOrganizationId,
-                    request.PlatformBusinessCustomerId,
-                    cancellationToken)
-                .ConfigureAwait(false);
+            var allowBeyond = false;
+            if (_shoppingAuth is not null
+                && request.PlatformBusinessCustomerId is Guid pbcId
+                && pbcId != Guid.Empty
+                && personalPlatformUserId is Guid personalUserId
+                && personalUserId != Guid.Empty)
+            {
+                var shopping = await _shoppingAuth
+                    .AuthorizeShoppingAsync(
+                        sellerOrganizationId,
+                        personalUserId,
+                        pbcId,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!shopping.IsSuccess || shopping.Value is null)
+                {
+                    return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Failure(
+                        shopping.ErrorCode!,
+                        shopping.ErrorMessage!);
+                }
+
+                allowBeyond = shopping.Value.AllowDeliveryBeyondNormalDistance;
+            }
+            else
+            {
+                allowBeyond = await ResolveDistanceExceptionAsync(
+                        sellerOrganizationId,
+                        request.PlatformBusinessCustomerId,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             var branch = await _branches
                 .GetBranchAsync(sellerOrganizationId, request.FulfillmentBranchId, cancellationToken)

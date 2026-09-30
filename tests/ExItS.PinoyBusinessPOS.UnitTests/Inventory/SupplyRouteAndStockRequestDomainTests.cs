@@ -48,7 +48,7 @@ public sealed class SupplyRouteAndStockRequestDomainTests
     [Fact]
     public void Stock_request_number_formats()
     {
-        Assert.Equal("260905-001", StockRequestNumbers.Format(new DateOnly(2026, 9, 5), 1));
+        Assert.Equal("SR-260905-001", StockRequestNumbers.Format(new DateOnly(2026, 9, 5), 1));
         Assert.Equal("260905-001", StockRequestNumbers.Normalize(" 260905-001 "));
     }
 
@@ -62,11 +62,11 @@ public sealed class SupplyRouteAndStockRequestDomainTests
             [new StockRequestLineDraft(Rice, 10m, "Rice 5kg", UnitOfMeasure.Piece)],
             Actor,
             Utc,
-            "260905-001");
+            "SR-260905-001");
         Assert.Equal(StockRequestStatus.Pending, request.Status);
         Assert.Equal(10m, request.Lines[0].RequestedQuantity);
         Assert.Null(request.Lines[0].ApprovedQuantity);
-        Assert.Equal("260905-001", request.RequestNumber);
+        Assert.Equal("SR-260905-001", request.RequestNumber);
     }
 
     [Fact]
@@ -154,6 +154,56 @@ public sealed class SupplyRouteAndStockRequestDomainTests
         Assert.Equal("Preparing", StockRequestStatuses.ToCode(StockRequestStatus.InProgress));
     }
 
+    [Fact]
+    public void Recompute_with_open_in_transit_moves_cancelled_in_transit_to_preparing()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.NewGuid());
+        Assert.Equal(StockRequestStatus.InTransit, request.Status);
+
+        request.RecalculateStatusFromFulfillmentCoverage(
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal> { [Rice.Value] = 0m },
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.Preparing, request.Status);
+        Assert.Null(request.LinkedInventoryTransferId);
+    }
+
+    [Fact]
+    public void Recompute_keeps_partially_fulfilled_when_replacement_is_in_transit()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.NewGuid());
+
+        request.RecalculateStatusFromFulfillmentCoverage(
+            new Dictionary<Guid, decimal> { [Rice.Value] = 6m },
+            new Dictionary<Guid, decimal>(),
+            new Dictionary<Guid, decimal> { [Rice.Value] = 4m },
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.PartiallyFulfilled, request.Status);
+    }
+
+    [Fact]
+    public void Recompute_good_plus_waived_reaches_fulfilled()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.NewGuid());
+
+        request.RecalculateStatusFromFulfillmentCoverage(
+            new Dictionary<Guid, decimal> { [Rice.Value] = 6m },
+            new Dictionary<Guid, decimal> { [Rice.Value] = 4m },
+            new Dictionary<Guid, decimal>(),
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.Fulfilled, request.Status);
+    }
+
     private static StockRequest CreatePending() =>
         StockRequest.Create(
             Org,
@@ -162,5 +212,5 @@ public sealed class SupplyRouteAndStockRequestDomainTests
             [new StockRequestLineDraft(Rice, 10m, "Rice 5kg", UnitOfMeasure.Piece)],
             Actor,
             Utc,
-            "260905-002");
+            "SR-260905-002");
 }

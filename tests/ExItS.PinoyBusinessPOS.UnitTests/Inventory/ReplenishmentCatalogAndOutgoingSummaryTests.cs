@@ -278,6 +278,12 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<int> CountAsync(
+            BranchInventoryContext context,
+            BranchInventoryListFilter filter,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<(IReadOnlyList<ReplenishmentCatalogRow> Items, int TotalCount)> ListReplenishmentCatalogAsync(
             BranchInventoryContext retailContext,
             ReplenishmentCatalogFilter filter,
@@ -392,6 +398,25 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
             return Task.FromResult<(IReadOnlyList<StockRequest>, int)>((q.Skip(skip).Take(take).ToList(), q.Count));
         }
 
+        public Task<IReadOnlyList<StockRequest>> ListOpenCommittingBySourceAndProductIdsAsync(
+            PosOrganizationId organizationId,
+            PosBranchId sourceLocationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var productSet = productIds.Select(p => p.Value).ToHashSet();
+            var open = StockRequestCommitmentQuery.OpenCommittingStatuses.ToHashSet();
+            var list = Items
+                .Where(r =>
+                    r.OrganizationId == organizationId
+                    && r.RequestedSourceLocationId == sourceLocationId
+                    && (open.Contains(r.Status)
+                        || r.Status is StockRequestStatus.InProgress or StockRequestStatus.Preparing)
+                    && r.Lines.Any(l => productSet.Contains(l.ProductId.Value)))
+                .ToList();
+            return Task.FromResult<IReadOnlyList<StockRequest>>(list);
+        }
+
         public Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
             PosOrganizationId organizationId,
             PosBranchId destinationLocationId,
@@ -466,6 +491,25 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<InventoryTransfer>>([]);
 
+        public Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<StockRequestId> stockRequestIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransfer>>([]);
+
+        public Task<IReadOnlyDictionary<Guid, string?>> GetTransferNumbersAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string?>>(new Dictionary<Guid, string?>());
+
+        public Task<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>> GetTransferQueueHintsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> transferIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, InventoryTransferQueueHint>>(
+                new Dictionary<Guid, InventoryTransferQueueHint>());
+
         public Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
             PosOrganizationId organizationId,
             InventoryTransferId rootTransferId,
@@ -476,11 +520,25 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
 
         public Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
+        public Task<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>> ResolveStockMovementTransactionRefsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyList<StockMovement> movements,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>>(
+                new Dictionary<Guid, InventoryTransferTransactionRef>());
+
+        public Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            IReadOnlyCollection<CatalogProductId>? productIds = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferOpenCommitment>>([]);
+
         public Task<string> AllocateNextNumberAsync(
             PosOrganizationId organizationId,
             DateOnly businessDateUtc,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult("IT-20260906-000001");
+            Task.FromResult(InventoryTransferNumbers.Format(businessDateUtc, 1));
     }
 
     private sealed class FakeInventory : CostResolverInventoryStub;

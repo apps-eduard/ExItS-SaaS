@@ -6,6 +6,7 @@ import { AppProviders } from "@/app/providers";
 import { PosApiError } from "@/api/pos/pos-http";
 import * as inventoryClient from "@/api/pos/pos-inventory-client";
 import * as transferClient from "@/api/pos/pos-inventory-transfer-client";
+import * as supplyRoutesClient from "@/api/pos/pos-supply-routes-client";
 import { InventoryTransferCreatePage } from "@/features/inventory/InventoryTransferCreatePage";
 import {
   canAddTransferQuantity,
@@ -15,6 +16,7 @@ import {
 const orgId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const mainId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const branchBId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const branchCId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 const soapId = "11111111-1111-1111-1111-111111111111";
 const zeroId = "22222222-2222-2222-2222-222222222222";
 
@@ -24,6 +26,7 @@ const workspaceMock = {
     organizationDisplayName: "Store",
     branchId: mainId,
     branchName: "Main Branch",
+    branchType: "Retail" as "Retail" | "Warehouse",
     experience: "operations" as const,
   },
   sessionGrant: {
@@ -42,6 +45,7 @@ const workspaceMock = {
           secondaryLine: "",
           isPrimary: true,
           isActive: true,
+          branchType: "Retail" as "Retail" | "Warehouse",
         },
         {
           branchId: branchBId,
@@ -49,6 +53,7 @@ const workspaceMock = {
           secondaryLine: "",
           isPrimary: false,
           isActive: true,
+          branchType: "Retail" as "Retail" | "Warehouse",
         },
       ],
     },
@@ -183,6 +188,26 @@ describe("inventory-transfer-stock-guard helpers", () => {
 
 describe("InventoryTransferCreatePage stock guard", () => {
   beforeEach(() => {
+    workspaceMock.boundWorkspace.branchType = "Retail";
+    workspaceMock.boundWorkspace.branchName = "Main Branch";
+    workspaceMock.workspaces[0]!.branches = [
+      {
+        branchId: mainId,
+        name: "Main Branch",
+        secondaryLine: "",
+        isPrimary: true,
+        isActive: true,
+        branchType: "Retail",
+      },
+      {
+        branchId: branchBId,
+        name: "Iloilo Branch",
+        secondaryLine: "",
+        isPrimary: false,
+        isActive: true,
+        branchType: "Retail",
+      },
+    ];
     vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
       items: [account(soapId, "Bath Soap Bar", 10), account(zeroId, "Zero Stock Item", 0)],
       totalCount: 2,
@@ -201,6 +226,61 @@ describe("InventoryTransferCreatePage stock guard", () => {
     vi.restoreAllMocks();
   });
 
+  it("warehouse source only lists branches covered by supply routes", async () => {
+    const user = userEvent.setup();
+    workspaceMock.boundWorkspace.branchType = "Warehouse";
+    workspaceMock.boundWorkspace.branchName = "Iloilo Warehouse";
+    workspaceMock.workspaces[0]!.branches = [
+      {
+        branchId: mainId,
+        name: "Iloilo Warehouse",
+        secondaryLine: "",
+        isPrimary: false,
+        isActive: true,
+        branchType: "Warehouse",
+      },
+      {
+        branchId: branchBId,
+        name: "Main",
+        secondaryLine: "",
+        isPrimary: true,
+        isActive: true,
+        branchType: "Retail",
+      },
+      {
+        branchId: branchCId,
+        name: "Other Branch",
+        secondaryLine: "",
+        isPrimary: false,
+        isActive: true,
+        branchType: "Retail",
+      },
+    ];
+    vi.spyOn(supplyRoutesClient, "listSupplyRoutes").mockResolvedValue([
+      {
+        routeId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+        organizationId: orgId,
+        sourceLocationId: mainId,
+        destinationLocationId: branchBId,
+        isPreferred: true,
+        isActive: true,
+        notes: null,
+        createdAtUtc: "2026-08-29T08:00:00Z",
+        updatedAtUtc: "2026-08-29T08:00:00Z",
+      },
+    ]);
+
+    renderCreate();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("transfer-destination-branch")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("transfer-destination-branch"));
+    expect(await screen.findByRole("menuitem", { name: /^Main$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Other Branch/i })).not.toBeInTheDocument();
+  });
+
   it("shows source availability and blocks zero-stock add", async () => {
     const user = userEvent.setup();
     renderCreate();
@@ -210,7 +290,7 @@ describe("InventoryTransferCreatePage stock guard", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId(`transfer-picker-available-${soapId}`)).toHaveTextContent(
-        /Available:\s*10\s*Piece/,
+        /10\/Piece/,
       );
     });
     // Out-of-stock products are hidden until the Out of stock category filter is selected.
@@ -219,7 +299,7 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
 
     await waitFor(() => {
-      expect(screen.getByTestId(`transfer-line-${soapId}:none`)).toBeInTheDocument();
+      expect(screen.getByTestId(`transfer-line-${soapId}`)).toBeInTheDocument();
     });
     // Added products leave the finder table.
     expect(screen.queryByTestId(`transfer-add-${soapId}`)).not.toBeInTheDocument();
@@ -235,7 +315,7 @@ describe("InventoryTransferCreatePage stock guard", () => {
     expect(screen.getByTestId(`transfer-picker-unavailable-${zeroId}`)).toBeInTheDocument();
     expect(screen.queryByTestId(`transfer-add-${zeroId}`)).not.toBeInTheDocument();
 
-    await setLineQuantity(user, `${soapId}:none`, "10");
+    await setLineQuantity(user, soapId, "10");
     expect(screen.getByTestId("transfer-save-draft")).not.toBeDisabled();
   });
 
@@ -247,9 +327,9 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
 
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
-    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}`));
 
-    await setLineQuantity(user, `${soapId}:none`, "11");
+    await setLineQuantity(user, soapId, "11");
 
     await waitFor(() => {
       expect(screen.getByTestId("transfer-create-error")).toHaveTextContent(
@@ -266,12 +346,12 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await openProductFinder(user);
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
-    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}`));
 
-    await setLineQuantity(user, `${soapId}:none`, "10");
+    await setLineQuantity(user, soapId, "10");
 
-    const line = screen.getByTestId(`transfer-line-${soapId}:none`);
-    expect(within(line).getByTestId(`transfer-line-available-${soapId}:none`)).toHaveTextContent(
+    const line = screen.getByTestId(`transfer-line-${soapId}`);
+    expect(within(line).getByTestId(`transfer-line-available-${soapId}`)).toHaveTextContent(
       /10\s*Piece/,
     );
     expect(screen.getByTestId("transfer-save-draft")).not.toBeDisabled();
@@ -293,14 +373,88 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await openProductFinder(user);
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
-    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}`));
 
-    await setLineQuantity(user, `${soapId}:none`, "10");
+    await setLineQuantity(user, soapId, "10");
     await user.click(screen.getByTestId("transfer-save-draft"));
 
     await waitFor(() => {
       expect(screen.getByTestId("transfer-create-error")).toHaveTextContent(/only 6 Piece/i);
     });
-    expect(screen.getByTestId(`transfer-line-${soapId}:none`)).toBeInTheDocument();
+    expect(screen.getByTestId(`transfer-line-${soapId}`)).toBeInTheDocument();
+  });
+
+  it("edit draft loads real available qty instead of Out of stock", async () => {
+    const draftId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    // Picker page deliberately omits this product so availability refresh cannot rescue a 0 hydrate.
+    vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
+      items: [account(zeroId, "Zero Stock Item", 0)],
+      totalCount: 1,
+      page: 1,
+      pageSize: 40,
+    });
+    vi.spyOn(inventoryClient, "getInventoryProduct").mockResolvedValue(
+      account(soapId, "Bath Soap Bar", 140),
+    );
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      transferId: draftId,
+      organizationId: orgId,
+      transferNumber: "TR-DRAFT-1",
+      sourceBranchId: mainId,
+      sourceBranchName: "Main Branch",
+      destinationBranchId: branchBId,
+      destinationBranchName: "Iloilo Branch",
+      status: "Draft",
+      notes: null,
+      createdBy: "99999999-9999-9999-9999-999999999999",
+      createdAtUtc: "2026-09-28T08:00:00Z",
+      updatedAtUtc: "2026-09-28T08:00:00Z",
+      totalSentQty: 10,
+      totalReceivedQty: 0,
+      totalClosedQty: 0,
+      totalOutstandingQty: 10,
+      totalDifferenceQty: 0,
+      receiptCount: 0,
+      lines: [
+        {
+          lineId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          productId: soapId,
+          productName: "Bath Soap Bar",
+          sku: "SOAP",
+          unitOfMeasure: "Piece",
+          lineNumber: 1,
+          sentQty: 10,
+          receivedQty: 0,
+          differenceQty: 0,
+          lineStatus: "Open",
+          sourceLotId: null,
+          unitCostSnapshot: 10,
+        },
+      ],
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${draftId}/edit`]}>
+          <Routes>
+            <Route
+              path="/inventory/transfers/:transferId/edit"
+              element={<InventoryTransferCreatePage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("inventory-transfer-edit-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(inventoryClient.getInventoryProduct).toHaveBeenCalledWith(
+        expect.anything(),
+        soapId,
+      );
+    });
+    const available = await screen.findByTestId(`transfer-line-available-${soapId}`);
+    expect(available).toHaveTextContent(/140/);
+    expect(available).not.toHaveTextContent(/Out of stock/i);
   });
 });

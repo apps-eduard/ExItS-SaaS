@@ -33,6 +33,7 @@ import {
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
 import { MerchantStatementStatusPanel } from "@/features/personal/linked-merchants/MerchantStatementStatusPanel";
 import { cn } from "@/lib/cn";
+import { formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
@@ -139,11 +140,13 @@ export function LinkedMerchantStatementPage() {
 
   const merchantContextQuery = useLinkedMerchantShopContext(organizationId, Boolean(organizationId));
   const { byOrganizationId } = useLinkedMerchantsOrderingProbes(
-    organizationId ? [organizationId] : [],
-    Boolean(organizationId) && online,
+    organizationId && businessCustomerId
+      ? [{ organizationId, platformBusinessCustomerId: businessCustomerId }]
+      : [],
+    Boolean(organizationId) && Boolean(businessCustomerId) && online,
   );
   const orderingProbe = byOrganizationId.get(organizationId);
-  const shopTo = organizationId ? `/personal/linked-merchants/${organizationId}/shop` : null;
+  const shopPath = organizationId ? `/personal/linked-merchants/${organizationId}/shop` : null;
   const storeName =
     personalStoreDisplayName(merchantContextQuery.data?.organizationDisplayName) ||
     t("personal.merchantStatement.title");
@@ -153,6 +156,8 @@ export function LinkedMerchantStatementPage() {
   );
   const canCustomerOrder = Boolean(orderingProbe?.resolved && orderingProbe.canCustomerOrder);
   const orderingPending = !orderingProbe || orderingProbe.pending;
+  /** Shop only when effective Personal shopping auth says yes (probe or statement projection). */
+  const shopTo = canCustomerOrder ? shopPath : null;
 
   const pageShell =
     "personal-page personal-commerce-page linked-merchant-statement-page exits-page flex min-w-0 flex-col gap-3";
@@ -169,13 +174,18 @@ export function LinkedMerchantStatementPage() {
     );
   }
 
-  function statementIdentity(name: string, linkedAs: string | null) {
+  function statementIdentity(
+    name: string,
+    linkedAs: string | null,
+    shoppingAllowed = canCustomerOrder,
+    shoppingPending = orderingPending,
+  ) {
     return (
       <PersonalStoreIdentityCard
         storeName={name}
         relationshipLabel={linkedAs}
-        canCustomerOrder={canCustomerOrder}
-        orderingPending={orderingPending}
+        canCustomerOrder={shoppingAllowed}
+        orderingPending={shoppingPending}
         headingLevel="h2"
         connectionTestId="merchant-statement-connection-chip"
       />
@@ -420,17 +430,25 @@ export function LinkedMerchantStatementPage() {
   const statementRelationshipLabel =
     personalCustomerRelationshipLabel(summary.customerDisplayName, session?.displayName) ??
     relationshipLabel;
+  // Merchant POS authority via statement projection — not a always-on Shop shortcut.
+  const shoppingAllowed = summary.onlineShoppingAllowed;
+  const allowedShopTo = shoppingAllowed ? shopPath : null;
 
   return (
     <div className={pageShell} data-testid="linked-merchant-statement-page">
       {statementPageHeader()}
       <PersonalCommerceNav active="stores" />
-      {statementIdentity(statementStoreName, statementRelationshipLabel)}
+      {statementIdentity(
+        statementStoreName,
+        statementRelationshipLabel,
+        shoppingAllowed,
+        false,
+      )}
 
       <section className="pc-balance-hero exits-animate-panel" data-testid="linked-merchant-outstanding">
         <p className="pc-balance-hero__label">{t("personal.merchantStatement.outstandingLabel")}</p>
         <p className="pc-balance-hero__amount">
-          {summary.outstandingBalance.toFixed(2)} {summary.currency}
+          {formatPeso(summary.outstandingBalance)}
         </p>
         {summary.asOfUtc ? (
           <p className="pc-balance-hero__as-of">
@@ -439,10 +457,37 @@ export function LinkedMerchantStatementPage() {
         ) : null}
       </section>
 
+      <section
+        className="pc-store-card pc-store-card--static exits-animate-panel flex flex-col gap-2"
+        data-testid="linked-merchant-commerce-projection"
+      >
+        <p data-testid="linked-merchant-online-shopping">
+          {shoppingAllowed
+            ? t("personal.merchantStatement.onlineShoppingAllowed")
+            : t("personal.merchantStatement.onlineShoppingBlocked")}
+        </p>
+        {summary.creditLimit != null ? (
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+            <dt>{t("personal.merchantStatement.creditLimit")}</dt>
+            <dd data-testid="linked-merchant-credit-limit">
+              {formatPeso(summary.creditLimit)}
+            </dd>
+            <dt>{t("personal.merchantStatement.pendingOnlineUtang")}</dt>
+            <dd data-testid="linked-merchant-pending-utang">
+              {formatPeso(summary.pendingOnlineUtangCommitment)}
+            </dd>
+            <dt>{t("personal.merchantStatement.availableCredit")}</dt>
+            <dd data-testid="linked-merchant-available-credit">
+              {formatPeso(summary.availableCredit)}
+            </dd>
+          </dl>
+        ) : null}
+      </section>
+
       {hasNoActivity ? (
         <MerchantStatementStatusPanel
           variant="empty"
-          shopTo={shopTo}
+          shopTo={allowedShopTo}
         />
       ) : (
         <>

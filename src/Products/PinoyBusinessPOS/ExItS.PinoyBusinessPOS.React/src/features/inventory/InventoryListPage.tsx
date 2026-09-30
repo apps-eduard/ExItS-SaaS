@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, Package, PackageMinus, PackagePlus, Settings2, Trash2, Warehouse } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, MoreHorizontal, Package, PackageMinus, PackagePlus, Settings2, Trash2, Warehouse } from "lucide-react";
 import { canManageCatalog, canManageInventory, canViewInventory } from "@/access/pos-capabilities";
 import { listCatalogBrands, listCatalogCategories } from "@/api/pos/pos-catalog-client";
-import { listInventory } from "@/api/pos/pos-inventory-client";
+import { listInventory, type PosInventoryAccountDto } from "@/api/pos/pos-inventory-client";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
@@ -15,14 +16,10 @@ import { ProductBrandMultiSelect } from "@/components/exits/ProductBrandMultiSel
 import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
 import { SearchField } from "@/components/exits/SearchField";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
-import {
-  formatInventoryQty,
-  InventoryPendingReturnBadge,
-  InventoryReservedBadge,
-  resolveAvailableQuantity,
-  resolvePendingReturnQuantity,
-  resolveReservedQuantity,
-} from "@/features/inventory/inventory-reservation-display";
+import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
+import { InventoryAvailableQtyPill } from "@/features/inventory/InventoryAvailableQtyPill";
+import { InventoryListDesktopTable } from "@/features/inventory/InventoryListDesktopTable";
+import { InventoryProductSummaryDrawer } from "@/features/inventory/InventoryProductSummaryDrawer";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -93,6 +90,7 @@ export function InventoryListPage() {
     productId: string;
     name: string;
   } | null>(null);
+  const [summaryProduct, setSummaryProduct] = useState<PosInventoryAccountDto | null>(null);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -383,7 +381,7 @@ export function InventoryListPage() {
           <BackgroundRefreshIndicator active label={t("loading.updating")} />
         ) : null}
 
-        <div className="inventory-list-page__scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+        <div className="inventory-list-page__scroll min-h-0 flex-1 overflow-x-auto overflow-y-auto overscroll-y-contain">
           <OrganizationQueryGate
             title={t("inventory.title")}
             isLoading={query.isLoading}
@@ -418,21 +416,19 @@ export function InventoryListPage() {
             ) : null}
 
             {!query.isError ? (
-            <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="inventory-list">
+              <>
+            <ul
+              className="exits-list m-0 grid list-none gap-2 p-0 lg:hidden"
+              data-testid="inventory-list"
+              aria-hidden={false}
+            >
               {items.map((item) => {
                 const tracked = item.isTracked;
                 const lowStock = tracked && item.isLowStock;
                 const stockStatus = tracked ? item.stockStatus?.trim() ?? "" : "";
                 const stockStatusKey = stockStatus.toLowerCase();
                 const outOfStock = stockStatusKey.includes("out");
-                const showStockChip =
-                  tracked &&
-                  Boolean(stockStatus) &&
-                  (lowStock || outOfStock || stockStatusKey.includes("low"));
-                const tracksExpiry = tracked && item.tracksExpiration === true;
                 const availableQty = resolveAvailableQuantity(item);
-                const reservedQty = resolveReservedQuantity(item);
-                const pendingReturnQty = resolvePendingReturnQuantity(item);
 
                 return (
                   <li key={item.productId}>
@@ -451,68 +447,40 @@ export function InventoryListPage() {
                         data-testid={`inventory-row-link-${item.productId}`}
                       >
                         <span className="exits-list__name block truncate font-semibold">{item.name}</span>
-                        {!tracked ||
-                        tracksExpiry ||
-                        showStockChip ||
-                        reservedQty > 0 ||
-                        pendingReturnQty > 0 ? (
+                        {!tracked ? (
                           <div className="inventory-row__chips mt-1 flex flex-wrap items-center gap-1">
-                            {!tracked ? (
-                              <span className="inventory-row__badge inventory-row__badge--untracked">
-                                {t("inventory.notTracked")}
-                              </span>
-                            ) : null}
-                            {tracksExpiry ? (
-                              <span className="inventory-row__badge inventory-row__badge--expiry">
-                                {t("inventory.tracksExpirationShort")}
-                              </span>
-                            ) : null}
-                            {showStockChip ? (
-                              <span
-                                className={
-                                  outOfStock
-                                    ? "inventory-row__badge inventory-row__badge--out"
-                                    : "inventory-row__badge inventory-row__badge--low"
-                                }
-                              >
-                                {outOfStock ? stockStatus : t("inventory.lowStock")}
-                              </span>
-                            ) : null}
-                            <InventoryReservedBadge
-                              reservedQuantity={reservedQty}
-                              onClick={() =>
-                                setReservationsProduct({
-                                  productId: item.productId,
-                                  name: item.name,
-                                })
-                              }
-                              testId={`inventory-row-reserved-${item.productId}`}
-                            />
-                            <InventoryPendingReturnBadge
-                              pendingReturnQuantity={pendingReturnQty}
-                              unitOfMeasure={item.unitOfMeasure}
-                              testId={`inventory-row-pending-return-${item.productId}`}
-                            />
+                            <span className="inventory-row__badge inventory-row__badge--untracked">
+                              {t("inventory.notTracked")}
+                            </span>
                           </div>
                         ) : null}
                       </AppLinkWithReturn>
-                      <div className="inventory-row__aside shrink-0">
+                      <div className="inventory-row__aside shrink-0 flex items-center gap-1">
                         {tracked ? (
-                          <span
-                            className={cn(
-                              "inventory-row__qty tabular-nums",
-                              lowStock && "inventory-row__qty--warn",
-                              outOfStock && "inventory-row__qty--danger",
-                            )}
-                            data-testid={`inventory-row-available-${item.productId}`}
-                          >
-                            {formatInventoryQty(availableQty)}
-                          </span>
+                          <InventoryAvailableQtyPill
+                            quantity={availableQty}
+                            lowStock={lowStock}
+                            outOfStock={outOfStock}
+                            testId={`inventory-row-available-${item.productId}`}
+                          />
                         ) : (
                           <span className="inventory-row__qty inventory-row__qty--muted" aria-hidden>
                             —
                           </span>
                         )}
+                        <Button
+                          type="button"
+                          size="icon"
+                          intent="info"
+                          appearance="outline"
+                          className="size-8 shrink-0"
+                          aria-label={t("inventory.productSummary.open")}
+                          title={t("inventory.productSummary.open")}
+                          data-testid={`inventory-row-summary-${item.productId}`}
+                          onClick={() => setSummaryProduct(item)}
+                        >
+                          <MoreHorizontal className="size-4" aria-hidden />
+                        </Button>
                       </div>
                       <AppLinkWithReturn
                         to={`/inventory/${item.productId}`}
@@ -527,21 +495,39 @@ export function InventoryListPage() {
                 );
               })}
             </ul>
+            <InventoryListDesktopTable
+              items={items}
+              workspace={workspace}
+              allowManage={allowManage}
+              onOpenSummary={setSummaryProduct}
+            />
+              </>
             ) : null}
           </OrganizationQueryGate>
         </div>
       </div>
 
       {workspace ? (
-        <InventoryReservationsDrawer
-          open={Boolean(reservationsProduct)}
-          onOpenChange={(open) => {
-            if (!open) setReservationsProduct(null);
-          }}
-          workspace={workspace}
-          productId={reservationsProduct?.productId ?? ""}
-          productNameFallback={reservationsProduct?.name}
-        />
+        <>
+          <InventoryProductSummaryDrawer
+            open={Boolean(summaryProduct)}
+            onOpenChange={(open) => {
+              if (!open) setSummaryProduct(null);
+            }}
+            workspace={workspace}
+            account={summaryProduct}
+            onOpenReservations={setReservationsProduct}
+          />
+          <InventoryReservationsDrawer
+            open={Boolean(reservationsProduct)}
+            onOpenChange={(open) => {
+              if (!open) setReservationsProduct(null);
+            }}
+            workspace={workspace}
+            productId={reservationsProduct?.productId ?? ""}
+            productNameFallback={reservationsProduct?.name}
+          />
+        </>
       ) : null}
     </div>
   );

@@ -21,6 +21,80 @@ export function inventoryTransferStatusLabelKey(status: string): MessageKey {
   }
 }
 
+/**
+ * Draft line qty is planned for dispatch — not yet physically sent.
+ * After dispatch, the same field means Sent.
+ */
+export function transferShipmentQuantityLabelKey(status: string): MessageKey {
+  return status === "Draft" ? "transfer.prepared" : "transfer.sent";
+}
+
+/** Linked-transfer chip on Stock Request detail: Prepared vs Sent. */
+export function stockRequestLinkedTransferQtyLabelKey(status: string): MessageKey {
+  return status === "Draft"
+    ? "stockRequest.linkedTransfer.prepared"
+    : "stockRequest.linkedTransfer.sent";
+}
+
+/** Discrepancy chip phase for ClosedWithDiscrepancy (closed vs open follow-up). */
+export type InventoryTransferDiscrepancyPhase = "closed" | "open";
+
+export type InventoryTransferStatusPresentation = {
+  labelKey: MessageKey;
+  tone: "info" | "success" | "warning" | "danger";
+  /** Leading StatusChip icon for discrepancy rows. */
+  discrepancyIcon: "check" | "clock" | null;
+};
+
+/**
+ * List/detail status chip presentation.
+ * Closed/success → Check; in-progress → Clock3.
+ * ClosedWithDiscrepancy → "Discrepancy" with Check (both sides clear) or Clock (still processing:
+ * pending return / incomplete fulfillment).
+ */
+export function inventoryTransferStatusPresentation(
+  status: string,
+  options?: { hasOpenDiscrepancyFollowUp?: boolean },
+): InventoryTransferStatusPresentation {
+  if (status === "ClosedWithDiscrepancy") {
+    const open = options?.hasOpenDiscrepancyFollowUp === true;
+    return {
+      labelKey: "transfer.status.closedWithDiscrepancy",
+      tone: open ? "warning" : "success",
+      discrepancyIcon: open ? "clock" : "check",
+    };
+  }
+
+  switch (status) {
+    case "Received":
+      return {
+        labelKey: inventoryTransferStatusLabelKey(status),
+        tone: "success",
+        discrepancyIcon: "check",
+      };
+    case "InTransit":
+    case "PartiallyReceived":
+      return {
+        labelKey: inventoryTransferStatusLabelKey(status),
+        tone: "warning",
+        discrepancyIcon: "clock",
+      };
+    case "Cancelled":
+      return {
+        labelKey: inventoryTransferStatusLabelKey(status),
+        tone: "danger",
+        discrepancyIcon: null,
+      };
+    case "Draft":
+    default:
+      return {
+        labelKey: inventoryTransferStatusLabelKey(status),
+        tone: inventoryTransferStatusTone(status),
+        discrepancyIcon: null,
+      };
+  }
+}
+
 export function inventoryTransferStatusTone(
   status: string,
 ): "info" | "success" | "warning" | "danger" {
@@ -28,7 +102,7 @@ export function inventoryTransferStatusTone(
     case "Received":
       return "success";
     case "ClosedWithDiscrepancy":
-      return "warning";
+      return "success";
     case "InTransit":
     case "PartiallyReceived":
       return "warning";
@@ -91,7 +165,15 @@ export function branchDisplayName(
   fallbackId: string,
 ): string {
   const trimmed = name?.trim();
-  return trimmed || fallbackId;
+  if (trimmed) {
+    return trimmed;
+  }
+  // Never surface raw branch GUIDs in route labels when the API omitted a name.
+  const guidLike =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      fallbackId.trim(),
+    );
+  return guidLike ? "Unknown branch" : fallbackId.trim() || "Unknown branch";
 }
 
 export function parseTransferQuantity(text: string): number | "invalid" | "empty" {
@@ -146,6 +228,7 @@ export function inventoryTransferExecutor(item: {
   dispatchedBy?: string | null;
   receivedBy?: string | null;
   cancelledBy?: string | null;
+  closedBy?: string | null;
 }): { actorId: string; labelKey: MessageKey } {
   switch (item.status) {
     case "Cancelled":
@@ -165,7 +248,7 @@ export function inventoryTransferExecutor(item: {
       };
     case "ClosedWithDiscrepancy":
       return {
-        actorId: item.receivedBy || item.dispatchedBy || item.createdBy,
+        actorId: item.closedBy || item.receivedBy || item.dispatchedBy || item.createdBy,
         labelKey: "transfer.byClosedWithDiscrepancy",
       };
     case "InTransit":

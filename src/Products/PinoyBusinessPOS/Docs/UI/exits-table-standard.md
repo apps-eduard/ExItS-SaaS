@@ -107,7 +107,9 @@ Cursor must **not** arbitrarily relocate standard controls.
 
 - Tailwind + existing ExItS design tokens
 - Subtle outer border; existing app radius
+- Sticky header when useful for long tables (`ExitsTable` `stickyHeader`)
 - Muted header background
+- **Bold** column header labels (`--exits-font-weight-bold`)
 - Light row separators
 - **No** zebra stripes by default
 - **No** heavy shadows

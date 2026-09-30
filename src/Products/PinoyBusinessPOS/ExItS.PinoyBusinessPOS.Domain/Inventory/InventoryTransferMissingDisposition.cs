@@ -4,8 +4,18 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 public enum InventoryTransferMissingDisposition
 {
+    /// <summary>
+    /// Wait for remaining delivery from source. Closes the missing shortfall on this transfer
+    /// and increases family RemainingToDispatch (source Fulfill remaining).
+    /// </summary>
     ExpectedLater = 0,
+    /// <summary>
+    /// Explicit request replacement. Closes missing and increases RemainingToDispatch.
+    /// </summary>
     CloseMissing = 1,
+    /// <summary>
+    /// Accept shortage — closes missing and increases WaivedQty (no RemainingToDispatch).
+    /// </summary>
     AcceptShortage = 2
 }
 

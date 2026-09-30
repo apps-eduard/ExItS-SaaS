@@ -124,6 +124,11 @@ public static class ApplicationErrorCodes
     public const string InventoryTransferProductNotTracked = "pos.inventory.transfer.product.not_tracked";
     public const string InventoryTransferAlreadyReceived = "pos.inventory.transfer.already_received";
     public const string InventoryTransferBranchForbidden = "pos.inventory.transfer.branch.forbidden";
+    public const string InventoryTransferNoRemainingToFulfill = "pos.inventory.transfer.no_remaining_to_fulfill";
+    /// <summary>Warehouse may only transfer to branches assigned via supply coverage.</summary>
+    public const string InventoryTransferDestinationNotCovered = "pos.inventory.transfer.destination_not_covered";
+    /// <summary>Selected source lot(s) expired before dispatch of a normal transfer.</summary>
+    public const string InventoryTransferSourceLotExpired = "pos.inventory.transfer.source_lot_expired";
 
     /// <summary>On-hand stock must be allocated into lots via enable-expiration-tracking.</summary>
     public const string ExpirationInitializationRequired = "pos.inventory.expiration.initialization_required";
@@ -137,6 +142,11 @@ public static class ApplicationErrorCodes
     public const string ExpirationDisableRequiresZeroOnHand = "pos.inventory.expiration.disable_requires_zero_on_hand";
     /// <summary>An existing-stock lot line has invalid quantity (must be &gt; 0).</summary>
     public const string ExpirationLotQuantityInvalid = "pos.inventory.expiration.lot_quantity_invalid";
+
+    public const string InventoryLotNotFound = "pos.inventory.lot.not_found";
+    public const string InventoryLotIdentityLocked = "pos.inventory.lot_identity_locked";
+    public const string InventoryLotIdentityConflict = "pos.inventory.lot_identity_conflict";
+    public const string InventoryLotChanged = "pos.inventory.lot_changed";
 
     public const string ExpenseCategoryNotFound = "pos.expense_category.not_found";
     public const string ExpenseCategoryNameConflict = "pos.expense_category.name.conflict";
@@ -277,7 +287,10 @@ public static class ApplicationErrorCodes
     public const string CustomerOrderDeliveryUnavailable = "pos.customer_order.delivery.unavailable";
     public const string CustomerOrderDeliveryServiceAreaInvalid = "pos.customer_order.delivery.service_area.invalid";
     public const string CustomerOrderOrderingUnavailable = "pos.customer_order.ordering.unavailable";
+    public const string CustomerOrderCustomerBlocked = "pos.customer_order.customer.blocked";
     public const string CustomerOrderLinkedCustomerRequired = "pos.customer_order.linked_customer.required";
+    public const string CustomerOrderOnlineUtangUnavailable = "pos.customer_order.utang.unavailable";
+    public const string CustomerOrderOnlineUtangLimitExceeded = "pos.customer_order.utang.limit_exceeded";
 }
 
 public sealed class PersistenceConflictException : Exception

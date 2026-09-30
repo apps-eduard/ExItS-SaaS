@@ -116,6 +116,9 @@ public interface IPosInventoryClient
         int pageSize = 20,
         CancellationToken ct = default);
 
+    Task<ApiResult<InventoryTransferAwaitingInspectionResultDto>> ListAwaitingInspectionAsync(
+        CancellationToken ct = default);
+
     Task<ApiResult<InventoryTransferDto>> GetTransferAsync(Guid transferId, CancellationToken ct = default);
 
     Task<ApiResult<InventoryTransferDto>> CreateTransferAsync(

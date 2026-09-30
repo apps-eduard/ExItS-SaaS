@@ -3,19 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 
 /// <summary>
-/// Organization-scoped customer order number: <c>YYMMDD-NNN</c> (shared POS document format).
-/// Allocated server-side per organization and business date; clients never propose one.
+/// Organization-scoped customer order number: <c>ORD-YYMMDD-NNN</c>.
+/// Allocated server-side on order place.
 /// </summary>
 public static class CustomerOrderNumbers
 {
+    public const string Prefix = PosDocumentPrefixes.CustomerOrder;
     public const int MaxLength = PosDocumentNumbers.MaxLength;
     public const long MaxSequence = PosDocumentNumbers.MaxSequence;
 
     public static string Format(DateOnly businessDate, long sequence) =>
-        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
+        Map(() => PosDocumentNumbers.Format(Prefix, businessDate, sequence));
 
     public static string Normalize(string? orderNumber) =>
-        Map(() => PosDocumentNumbers.NormalizeRoot(orderNumber));
+        Map(() => PosDocumentNumbers.NormalizeRoot(orderNumber, Prefix));
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
 

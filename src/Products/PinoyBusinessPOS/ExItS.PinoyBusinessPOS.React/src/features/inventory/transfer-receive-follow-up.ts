@@ -1,6 +1,7 @@
 import { parseNonNegativeQty } from "@/features/purchasing/receive-math";
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 import type { TransferReceiveLineEdit } from "@/features/inventory/inventory-transfer-receive-helpers";
+import { requiresActualProduct } from "@/features/inventory/transfer-exception-custody-policy";
 
 export type TransferMissingFollowUp = "wait_original" | "request_replacement" | "accept_shortage";
 export type TransferDamagedOtherFollowUp = "request_replacement" | "accept_shortage";
@@ -16,7 +17,10 @@ export type TransferFollowUpRow = {
   qty: number;
   qtyLabel: string;
   issueLabel: string;
+  otherReasonCode?: string;
+  /** Secondary line under Issue — remarks, or actual product for wrong item/variant. */
   remark: string | null;
+  actualReceivedProductName?: string | null;
   action: TransferMissingFollowUp | TransferDamagedOtherFollowUp | null;
 };
 
@@ -93,6 +97,8 @@ export function buildTransferFollowUpRows(
     }
     if (other > 1e-9) {
       const code = line.otherReasonCode?.trim() ?? "";
+      const actualName = line.actualReceivedProductName?.trim() || null;
+      const showActualInsteadOfRemark = requiresActualProduct(code) && Boolean(actualName);
       rows.push({
         rowKey: `${line.productId}-other`,
         productId: line.productId,
@@ -102,7 +108,9 @@ export function buildTransferFollowUpRows(
         qty: other,
         qtyLabel: formatStockQtyLabel(other, line.uom),
         issueLabel: (code && labels.otherReasons?.[code]) || labels.otherFallback || "Other",
-        remark,
+        otherReasonCode: code || undefined,
+        remark: showActualInsteadOfRemark ? null : remark,
+        actualReceivedProductName: showActualInsteadOfRemark ? actualName : null,
         action: line.otherFollowUp,
       });
     }
@@ -118,15 +126,16 @@ export function sumTransferFollowUpUnits(rows: readonly TransferFollowUpRow[]): 
   return rows.reduce((sum, row) => sum + row.qty, 0);
 }
 
-export function defaultTransferFollowUps(linkedStockRequest: boolean): {
+export function defaultTransferFollowUps(_linkedStockRequest: boolean): {
   missingFollowUp: TransferMissingFollowUp;
   damagedFollowUp: TransferDamagedOtherFollowUp;
   otherFollowUp: TransferDamagedOtherFollowUp;
 } {
-  const replacement = linkedStockRequest ? "request_replacement" : "accept_shortage";
   return {
-    missingFollowUp: linkedStockRequest ? "request_replacement" : "wait_original",
-    damagedFollowUp: replacement,
-    otherFollowUp: replacement,
+    // Wait / Request replacement both create Needs fulfillment; default Request replacement.
+    missingFollowUp: "request_replacement",
+    // Damaged / other: Request replacement or Accept shortage (always available).
+    damagedFollowUp: "request_replacement",
+    otherFollowUp: "request_replacement",
   };
 }

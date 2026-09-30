@@ -152,7 +152,7 @@ export function ReturnInspectionDialog({ open, workspace, batch, line, onClose, 
             {t("returns.sellableAgain")}
             <span className="flex w-fit flex-col items-center gap-1">
               <QuantityStepper
-                variant="auto"
+                variant="outline"
                 value={sellableQuantity}
                 onChange={setSellableLinked}
                 min={0}
@@ -173,7 +173,7 @@ export function ReturnInspectionDialog({ open, workspace, batch, line, onClose, 
             {t("returns.damagedWriteOff")}
             <span className="flex w-fit flex-col items-center gap-1">
               <QuantityStepper
-                variant="auto"
+                variant="outline"
                 value={damagedQuantity}
                 onChange={setDamagedLinked}
                 min={0}

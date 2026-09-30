@@ -89,7 +89,12 @@ public static class ConnectedPurchaseOrderSupplierStock
                 balanceRows,
                 catalogProductId);
             var reserved = BranchStockResolver.ResolveReserved(branchId, balanceRows, catalogProductId);
-            var available = BranchStockResolver.ResolveAvailable(onHand, reserved);
+            var available = BranchStockResolver.ResolveAvailable(
+                branchId,
+                balanceRows,
+                catalogProductId,
+                onHand,
+                reserved);
             result[productId] = new StockSnapshot(
                 IsTracked: true,
                 AvailableBaseQuantity: available,

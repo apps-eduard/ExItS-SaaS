@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LockKeyhole, Plus, RotateCcw, X } from "lucide-react";
 import {
   canInviteOrganizationStaff,
@@ -39,8 +39,9 @@ function resolveInitialBranchType(
 export function BranchCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, refreshWorkspaces } = useWorkspace();
   const workspace = usePosWorkspaceScope();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
@@ -143,7 +144,17 @@ export function BranchCreatePage() {
       }
       return result.value;
     },
-    onSuccess: (branch) => {
+    onSuccess: async (branch) => {
+      // Operations / transfers / workspace chooser read `workspaces` from WorkspaceProvider.
+      // Without a refresh, the new branch stays invisible until a full browser reload.
+      await refreshWorkspaces();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["branch-management-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["branch-capacity"] }),
+        queryClient.invalidateQueries({ queryKey: ["branch-fulfillment-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["branch-fulfillment-detail"] }),
+        queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] }),
+      ]);
       navigate(`/org/branches/${branch.id}`, { replace: true });
     },
     onError: (error) => {

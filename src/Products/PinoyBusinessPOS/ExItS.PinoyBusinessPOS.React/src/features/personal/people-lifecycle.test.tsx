@@ -274,12 +274,12 @@ describe("People lifecycle UX", () => {
     expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
     expect(screen.getByText("Request sent")).toBeInTheDocument();
     expect(screen.getByText("Ana Cruz")).toBeInTheDocument();
-    expect(screen.getByText("Connected")).toBeInTheDocument();
+    expect(screen.getAllByText("Connected").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /block/i })).not.toBeInTheDocument();
   });
 
-  it("persists resolved identity on add without auto connection request", async () => {
+  it("persists resolved identity on add without a separate client connection-request call", async () => {
     const fetchMock = vi.fn(
       withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
@@ -437,6 +437,7 @@ describe("People lifecycle UX", () => {
 
     const user = userEvent.setup();
     renderPeopleApp("/personal/people/c1");
+    await user.click(await screen.findByTestId("person-detail-connection-toggle"));
     expect(await screen.findByRole("button", { name: "Request connection" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Request connection" }));
     await waitFor(() => expect(connections).toHaveLength(1));

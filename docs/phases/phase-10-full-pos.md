@@ -95,7 +95,7 @@ Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
 
 - Purchase orders (Draft → Ordered → PartiallyReceived → Received / Cancelled)
 - PO lines with quantity, unit purchase cost (operational only — not valuation/COGS)
-- Server `PO-YYYYMMDD-NNNNNN` / `GRN-YYYYMMDD-NNNNNN` numbers
+- Server `PO-YYMMDD-NNN` / `GRN-YYMMDD-NNN` numbers (authoritative: [pos-transaction-reference-numbering.md](../engineering/pos-transaction-reference-numbering.md); historical WP reports may still show older long forms)
 - Immutable goods receipts with partial/complete receiving
 - Atomic inventory `PurchaseReceipt` movements for tracked products
 - Feature grants `store-purchasing-view` / `store-purchasing-manage`
@@ -164,7 +164,7 @@ Prior tip: `a25fe6abd713da84ad99d9d0a2022b99f49765e8` (P10-WP03 complete). Basel
 
 Organization-isolated cashier shifts for operational cash control:
 
-- Shift open with opening cash float (`SHIFT-YYYYMMDD-NNNNNN`); opens in **Open**
+- Shift open with opening cash float (`SH-YYMMDD-NNN`); opens in **Open**
 - One Open shift per OrganizationId + trusted cashier ActorId
 - New Cash / ManualGCash / Utang sales require an active Open shift and immutable `CashierShiftId` linkage
 - Immutable CashIn / CashOut movements on Open shifts (deny CashOut that would make expected cash negative)
@@ -200,7 +200,7 @@ Prior tip: `7a6a2e4eb6d2f8074bb923dd6a0a5eca6654f706` (P10-WP04 complete). Basel
 
 Organization-isolated post-sale returns/refunds that preserve the original sale:
 
-- Atomic Completed-only `SaleReturn` (`RET-YYYYMMDD-NNNNNN`); no Draft/Pending states
+- Atomic Completed-only `SaleReturn` (`RET-YYMMDD-NNN`); no Draft/Pending states
 - Partial/full line returns from sale-line snapshots; server-authoritative refundable qty/amount
 - Refund method matches original sale tender (Cash / ManualGCash / Utang) — no method switch
 - Cash refund through active cashier shift (expected-cash impact); ManualGCash as confirmed external refund; Utang adjusts linked credit

@@ -34,16 +34,13 @@ import {
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
 import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
-import { listInventory } from "@/api/pos/pos-inventory-client";
+import { getInventoryAttentionSummary } from "@/api/pos/pos-inventory-client";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import {
   isReceivablePurchaseOrderStatus,
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
-import {
-  getDashboard,
-  getManagementOverview,
-} from "@/api/pos/pos-reporting-client";
+import { getDashboard } from "@/api/pos/pos-reporting-client";
 import { getOutgoingStockRequestSummary } from "@/api/pos/pos-stock-requests-client";
 import { listSupplyRoutesByDestination } from "@/api/pos/pos-supply-routes-client";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -215,24 +212,17 @@ export function ManagerRetailHome() {
     queryFn: ({ signal }) => getDashboard(workspace!, todayRange, signal, branchId),
   });
 
-  const overviewQuery = useQuery({
-    queryKey: ["manager-home", "overview", workspace?.organizationId, branchId],
-    enabled: Boolean(workspace && (canInventory || canPurchasing)),
-    staleTime: 30_000,
-    queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
-  });
-
-  /** Branch-scoped monitored low stock (same engine as Inventory / Low stock settings). */
-  const lowStockQuery = useQuery({
-    queryKey: ["manager-home", "low-stock", workspace?.organizationId, branchId],
+  /** Branch-scoped physical inventory attention (never management/overview). */
+  const attentionQuery = useQuery({
+    queryKey: [
+      "inventory",
+      "attention-summary",
+      workspace?.organizationId,
+      branchId,
+    ],
     enabled: Boolean(workspace && branchId && canInventory),
     staleTime: 30_000,
-    queryFn: ({ signal }) =>
-      listInventory(
-        workspace!,
-        { tracked: true, lowStock: true, page: 1, pageSize: 1 },
-        signal,
-      ),
+    queryFn: ({ signal }) => getInventoryAttentionSummary(workspace!, signal),
   });
 
   const ordersQuery = useQuery({
@@ -268,7 +258,7 @@ export function ManagerRetailHome() {
   });
 
   const dashboard = dashboardQuery.data;
-  const overview = overviewQuery.data;
+  const attention = attentionQuery.data;
   const receivableCount = (purchaseOrdersQuery.data?.items ?? []).filter((po) =>
     isReceivablePurchaseOrderStatus(po.status),
   ).length;
@@ -276,17 +266,18 @@ export function ManagerRetailHome() {
     (item) => item.status === "InTransit" || item.status === "PartiallyReceived",
   ).length;
   const submittedOrders = ordersQuery.data?.totalCount ?? 0;
-  const lowStock = lowStockQuery.data?.totalCount ?? 0;
-  const expiry =
-    (overview?.expiredLotCount ?? 0) + (overview?.nearExpiryLotCount ?? 0);
+  const lowStock = canInventory ? (attention?.lowStockProductCount ?? 0) : 0;
+  const expiredLotCount = canInventory ? (attention?.expiredLotCount ?? 0) : 0;
+  const nearExpiryLotCount = canInventory ? (attention?.nearExpiryLotCount ?? 0) : 0;
+  const expiry = expiredLotCount + nearExpiryLotCount;
   const overdueUtang = dashboard?.overdueUtangAmount ?? 0;
   const outstandingUtang = dashboard?.activeCustomerUtangOutstanding ?? 0;
 
   const attentionItems = buildManagerAttentionItems(
     {
-      lowStockProductCount: canInventory ? lowStock : 0,
-      expiredLotCount: canInventory ? (overview?.expiredLotCount ?? 0) : 0,
-      nearExpiryLotCount: canInventory ? (overview?.nearExpiryLotCount ?? 0) : 0,
+      lowStockProductCount: lowStock,
+      expiredLotCount,
+      nearExpiryLotCount,
       submittedOrderCount: canOrders ? submittedOrders : 0,
       receivablePoCount: canPurchasing ? receivableCount : 0,
       pendingIncomingTransferCount: canInventory ? pendingTransfers : 0,
@@ -422,12 +413,12 @@ export function ManagerRetailHome() {
   const saleCount = dashboard?.completedSaleCount ?? 0;
   const loading =
     dashboardQuery.isLoading ||
-    (canInventory && overviewQuery.isLoading) ||
+    (canInventory && attentionQuery.isLoading) ||
     (canOrders && ordersQuery.isLoading);
 
   const loadError =
     dashboardQuery.error ??
-    overviewQuery.error ??
+    attentionQuery.error ??
     ordersQuery.error ??
     purchaseOrdersQuery.error ??
     transfersQuery.error;

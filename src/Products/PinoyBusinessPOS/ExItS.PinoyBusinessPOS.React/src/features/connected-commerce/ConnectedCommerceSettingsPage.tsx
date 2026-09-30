@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  CalendarClock,
   ClipboardList,
   FileText,
   Network,
@@ -10,7 +11,7 @@ import {
   Truck,
   WalletCards,
 } from "lucide-react";
-import { canManageSuppliers, hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
+import { canManageInventory, canManageSuppliers, hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
   getConnectedCommerceOverview,
   getOrganizationConnectedCommerceSettings,
@@ -42,6 +43,7 @@ import {
   parseConnectedCommerceTab,
   type ConnectedCommerceTab,
 } from "@/features/connected-commerce/connected-commerce-tabs";
+import { OrganizationExpirySalePolicyCard } from "@/features/inventory/OrganizationExpirySalePolicyCard";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -244,7 +246,12 @@ export function ConnectedCommerceSettingsPage() {
           { key: "fulfillment", label: t("connectedCommerce.tab.fulfillment"), icon: Truck },
           { key: "payments", label: t("connectedCommerce.tab.payments"), icon: WalletCards },
           { key: "catalog", label: t("connectedCommerce.tab.catalog"), icon: Percent },
-          { key: "orders", label: t("connectedCommerce.tab.orders"), icon: ClipboardList },
+          { key: "orders", label: t("connectedCommerce.tab.returnPolicy"), icon: ClipboardList },
+          {
+            key: "expiry-sale",
+            label: t("connectedCommerce.tab.expirySalePolicy"),
+            icon: CalendarClock,
+          },
           { key: "documents", label: t("connectedCommerce.tab.documents"), icon: FileText },
         ]}
       />
@@ -734,6 +741,19 @@ export function ConnectedCommerceSettingsPage() {
             >
               {t("connectedCommerce.save")}
             </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!loading && tab === "expiry-sale" ? (
+        <div className="flex flex-col gap-3" data-testid="connected-commerce-expiry-sale">
+          {workspace ? (
+            <OrganizationExpirySalePolicyCard
+              workspace={workspace}
+              canEdit={
+                canManageInventory(sessionGrant) || hasOrganizationManagementAuthority(sessionGrant)
+              }
+            />
           ) : null}
         </div>
       ) : null}

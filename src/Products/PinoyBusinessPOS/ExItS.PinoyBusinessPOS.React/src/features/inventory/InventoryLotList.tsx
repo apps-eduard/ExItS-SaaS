@@ -1,4 +1,6 @@
+import { Lock, Pencil } from "lucide-react";
 import type { PosInventoryLotDto } from "@/api/pos/pos-inventory-client";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatLotBatchLabel } from "@/features/inventory/inventory-detail-helpers";
 import { resolveLotExpiryLabel } from "@/features/inventory/inventory-lot-status";
@@ -12,6 +14,8 @@ type InventoryLotListProps = {
   selectedLotId?: string;
   onSelectLot?: (lotId: string) => void;
   namePrefix?: string;
+  /** When set, shows edit/lock actions for lot identity correction. */
+  onEditLotIdentity?: (lot: PosInventoryLotDto) => void;
 };
 
 function statusBadgeClass(lot: PosInventoryLotDto): string {
@@ -27,6 +31,66 @@ function statusBadgeClass(lot: PosInventoryLotDto): string {
   }
 }
 
+function lockReasonMessage(
+  reason: string | null | undefined,
+  t: (key: string) => string,
+): string {
+  switch (reason) {
+    case "ActiveTransferDraft":
+      return t("inventory.lotIdentityLockedActiveDraft");
+    case "ReceivedFromTransfer":
+      return t("inventory.lotIdentityLockedReceivedFromTransfer");
+    case "Transferred":
+      return t("inventory.lotIdentityLockedTransferred");
+    case "ReferencedByDocument":
+      return t("inventory.lotIdentityLockedReferenced");
+    default:
+      return t("inventory.lotIdentityLockedUsed");
+  }
+}
+
+function LotIdentityAction({
+  lot,
+  onEditLotIdentity,
+}: {
+  lot: PosInventoryLotDto;
+  onEditLotIdentity?: (lot: PosInventoryLotDto) => void;
+}) {
+  const { t } = useI18n();
+  if (!onEditLotIdentity) {
+    return null;
+  }
+
+  if (lot.canEditIdentity) {
+    return (
+      <Button
+        type="button"
+        size="icon"
+        intent="neutral"
+        appearance="ghost"
+        aria-label={t("inventory.editLotIdentityAria")}
+        title={t("inventory.editLotIdentityAria")}
+        data-testid={`lot-edit-identity-${lot.lotId}`}
+        onClick={() => onEditLotIdentity(lot)}
+      >
+        <Pencil className="size-4" aria-hidden />
+      </Button>
+    );
+  }
+
+  const message = lockReasonMessage(lot.identityLockReason, t);
+  return (
+    <span
+      className="inline-flex text-muted"
+      title={message}
+      aria-label={message}
+      data-testid={`lot-identity-locked-${lot.lotId}`}
+    >
+      <Lock className="size-4" aria-hidden />
+    </span>
+  );
+}
+
 export function InventoryLotList({
   lots,
   unitOfMeasure,
@@ -35,8 +99,10 @@ export function InventoryLotList({
   selectedLotId,
   onSelectLot,
   namePrefix = "inventory-lot",
+  onEditLotIdentity,
 }: InventoryLotListProps) {
   const { t } = useI18n();
+  const showActions = Boolean(onEditLotIdentity);
 
   if (lots.length === 0) {
     return null;
@@ -53,6 +119,7 @@ export function InventoryLotList({
               <th scope="col">{t("inventory.lotColumnBatch")}</th>
               <th scope="col">{t("inventory.lotColumnAvailable")}</th>
               <th scope="col">{t("inventory.lotColumnStatus")}</th>
+              {showActions ? <th scope="col">{t("inventory.lotColumnAction")}</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -78,6 +145,11 @@ export function InventoryLotList({
                 <td>
                   <span className={statusBadgeClass(lot)}>{formatStatus(lot)}</span>
                 </td>
+                {showActions ? (
+                  <td>
+                    <LotIdentityAction lot={lot} onEditLotIdentity={onEditLotIdentity} />
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -102,11 +174,21 @@ export function InventoryLotList({
                     className="mt-1"
                   />
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <LotCardBody lot={lot} unitOfMeasure={unitOfMeasure} formatStatus={formatStatus} />
+                    <LotCardBody
+                      lot={lot}
+                      unitOfMeasure={unitOfMeasure}
+                      formatStatus={formatStatus}
+                      onEditLotIdentity={onEditLotIdentity}
+                    />
                   </span>
                 </label>
               ) : (
-                <LotCardBody lot={lot} unitOfMeasure={unitOfMeasure} formatStatus={formatStatus} />
+                <LotCardBody
+                  lot={lot}
+                  unitOfMeasure={unitOfMeasure}
+                  formatStatus={formatStatus}
+                  onEditLotIdentity={onEditLotIdentity}
+                />
               )}
             </Card>
           </li>
@@ -120,17 +202,22 @@ function LotCardBody({
   lot,
   unitOfMeasure,
   formatStatus,
+  onEditLotIdentity,
 }: {
   lot: PosInventoryLotDto;
   unitOfMeasure: string;
   formatStatus: (lot: PosInventoryLotDto) => string;
+  onEditLotIdentity?: (lot: PosInventoryLotDto) => void;
 }) {
   const { t } = useI18n();
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-semibold">{lot.expirationDate}</span>
-        <span className={statusBadgeClass(lot)}>{formatStatus(lot)}</span>
+        <span className="flex items-center gap-2">
+          <span className={statusBadgeClass(lot)}>{formatStatus(lot)}</span>
+          <LotIdentityAction lot={lot} onEditLotIdentity={onEditLotIdentity} />
+        </span>
       </div>
       <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)]">
         {lot.quantityOnHand} {unitOfMeasure}
@@ -138,6 +225,11 @@ function LotCardBody({
       <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("inventory.lotCardBatch")}: {formatLotBatchLabel(lot.lotNumber)}
       </p>
+      {!lot.canEditIdentity && onEditLotIdentity ? (
+        <p className="mt-1 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+          {lockReasonMessage(lot.identityLockReason, t)}
+        </p>
+      ) : null}
     </>
   );
 }

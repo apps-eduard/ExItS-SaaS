@@ -10,6 +10,9 @@ import {
 
 type PreferencesSectionNavProps = {
   activeSection: PreferencesSectionId;
+  /** Route links (deep-link page) or overlay buttons (stay on current page). */
+  mode?: "route" | "overlay";
+  onSectionSelect?: (section: PreferencesSectionId) => void;
 };
 
 const ACCENT_INACTIVE: Record<Exclude<PreferencesSectionAccent, "teal">, string> = {
@@ -26,12 +29,30 @@ function inactiveAccentClass(accent: PreferencesSectionAccent): string {
   return ACCENT_INACTIVE[accent];
 }
 
+function sectionControlClass(isActive: boolean, accent: PreferencesSectionAccent): string {
+  return cn(
+    "inline-flex size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)]",
+    "items-center justify-center rounded-[var(--exits-control-radius)] border border-transparent",
+    "no-underline transition-[background-color,border-color,color,box-shadow,border-radius]",
+    "duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)]",
+    "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
+    isActive
+      ? "border-[color-mix(in_srgb,var(--exits-primary)_40%,var(--exits-border))] bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))] text-[var(--exits-primary)]"
+      : cn("bg-transparent hover:bg-[var(--exits-surface-muted)]", inactiveAccentClass(accent)),
+  );
+}
+
 /**
  * Preferences section icon top nav — link semantics (aria-current), not Tabs.
  * Icon-only + title tooltip + aria-label. Shared on desktop and mobile.
  * Hit target shape follows Control Shape (`--exits-control-radius`).
  */
-export function PreferencesSectionNav({ activeSection }: PreferencesSectionNavProps) {
+export function PreferencesSectionNav({
+  activeSection,
+  mode = "route",
+  onSectionSelect,
+}: PreferencesSectionNavProps) {
   const { t } = useI18n();
 
   return (
@@ -46,31 +67,36 @@ export function PreferencesSectionNav({ activeSection }: PreferencesSectionNavPr
         {PREFERENCES_SECTIONS.map((section) => {
           const Icon = section.icon;
           const label = t(section.labelKey);
-          const to = preferencesSectionPath(section.id);
+          const isActive = activeSection === section.id;
           return (
             <li key={section.id} className="shrink-0">
-              <NavLink
-                to={to}
-                data-testid={section.testId}
-                data-accent={section.accent}
-                aria-label={label}
-                title={label}
-                className={({ isActive }) =>
-                  cn(
-                    "inline-flex size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)]",
-                    "items-center justify-center rounded-[var(--exits-control-radius)] border border-transparent",
-                    "no-underline transition-[background-color,border-color,color,box-shadow,border-radius]",
-                    "duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)]",
-                    "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
-                    isActive
-                      ? "border-[color-mix(in_srgb,var(--exits-primary)_40%,var(--exits-border))] bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))] text-[var(--exits-primary)]"
-                      : cn("bg-transparent hover:bg-[var(--exits-surface-muted)]", inactiveAccentClass(section.accent)),
-                  )
-                }
-              >
-                <Icon className="size-4 shrink-0 opacity-95" aria-hidden strokeWidth={2} />
-              </NavLink>
+              {mode === "overlay" ? (
+                <button
+                  type="button"
+                  data-testid={section.testId}
+                  data-accent={section.accent}
+                  aria-label={label}
+                  title={label}
+                  aria-current={isActive ? "true" : undefined}
+                  className={sectionControlClass(isActive, section.accent)}
+                  onClick={() => onSectionSelect?.(section.id)}
+                >
+                  <Icon className="size-4 shrink-0 opacity-95" aria-hidden strokeWidth={2} />
+                </button>
+              ) : (
+                <NavLink
+                  to={preferencesSectionPath(section.id)}
+                  data-testid={section.testId}
+                  data-accent={section.accent}
+                  aria-label={label}
+                  title={label}
+                  className={({ isActive: linkActive }) =>
+                    sectionControlClass(linkActive, section.accent)
+                  }
+                >
+                  <Icon className="size-4 shrink-0 opacity-95" aria-hidden strokeWidth={2} />
+                </NavLink>
+              )}
             </li>
           );
         })}

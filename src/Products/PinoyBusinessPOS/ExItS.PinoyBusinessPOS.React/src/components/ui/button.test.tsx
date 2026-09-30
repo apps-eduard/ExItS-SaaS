@@ -53,11 +53,38 @@ describe("Button intent + appearance (locked standard)", () => {
     );
   });
 
+  it("locks help and contrast as first-class severities", () => {
+    expect(resolveButtonVisual({ intent: "help", appearance: "solid", emphasis: "strong" })).toEqual(
+      {
+        intent: "help",
+        appearance: "solid",
+        emphasis: "strong",
+      },
+    );
+    expect(resolveButtonVisual({ intent: "contrast", appearance: "outline" })).toEqual({
+      intent: "contrast",
+      appearance: "outline",
+      emphasis: "soft",
+    });
+    const helpStrong = buttonVariants({
+      intent: "help",
+      appearance: "solid",
+      emphasis: "strong",
+    });
+    expect(helpStrong).toContain("bg-[var(--exits-severity-help)]");
+    const contrastStrong = buttonVariants({
+      intent: "contrast",
+      appearance: "solid",
+      emphasis: "strong",
+    });
+    expect(contrastStrong).toContain("bg-[var(--exits-severity-contrast)]");
+  });
+
   it("maps muted secondary alias to neutral + solid", () => {
     expect(resolveButtonVisual({ variant: "secondary" })).toEqual({
       intent: "neutral",
       appearance: "solid",
-      dangerFill: "soft",
+      emphasis: "soft",
     });
   });
 
@@ -71,8 +98,20 @@ describe("Button intent + appearance (locked standard)", () => {
     expect(resolveButtonVisual({ intent: "success", appearance: "outline" })).toEqual({
       intent: "success",
       appearance: "outline",
-      dangerFill: "soft",
+      emphasis: "soft",
     });
+  });
+
+  it("applies strong emphasis filled colors for severities", () => {
+    const strongSuccess = buttonVariants({
+      intent: "success",
+      appearance: "solid",
+      emphasis: "strong",
+    });
+    expect(strongSuccess).toContain("bg-[var(--exits-success)]");
+    expect(strongSuccess).toContain("text-white");
+    expect(resolveButtonVisual({ variant: "dangerStrong" }).emphasis).toBe("strong");
+    expect(resolveButtonVisual({ intent: "danger", emphasis: "strong" }).emphasis).toBe("strong");
   });
 
   it("keeps action semantics on the canonical model", () => {
@@ -177,6 +216,12 @@ describe("Button shape and treatment (locked standard)", () => {
     expect(screen.getByRole("button", { name: "Disabled" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Disabled" }).className).toContain(
       "disabled:scale-100",
+    );
+    expect(screen.getByRole("button", { name: "Disabled" }).className).toContain(
+      "disabled:!bg-[var(--exits-surface-muted)]",
+    );
+    expect(screen.getByRole("button", { name: "Disabled" }).className).not.toContain(
+      "disabled:opacity-50",
     );
   });
 });

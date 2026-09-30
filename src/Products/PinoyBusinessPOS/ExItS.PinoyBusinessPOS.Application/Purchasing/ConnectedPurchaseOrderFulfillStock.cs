@@ -27,6 +27,7 @@ public sealed class ConnectedPurchaseOrderFulfillStock
     private readonly BranchInventoryMutationService _branchMutations;
     private readonly ConnectedPoInventoryReservationService? _reservations;
     private readonly InventoryLotStockService? _lots;
+    private readonly BranchExpirationPolicyResolver? _expirationPolicies;
     private readonly IOrganizationBranchDirectory? _branches;
 
     public ConnectedPurchaseOrderFulfillStock(
@@ -37,7 +38,8 @@ public sealed class ConnectedPurchaseOrderFulfillStock
         BranchInventoryMutationService branchMutations,
         ConnectedPoInventoryReservationService? reservations = null,
         InventoryLotStockService? lots = null,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        BranchExpirationPolicyResolver? expirationPolicies = null)
     {
         _inventory = inventory;
         _products = products;
@@ -47,6 +49,7 @@ public sealed class ConnectedPurchaseOrderFulfillStock
         _reservations = reservations;
         _lots = lots;
         _branches = branches;
+        _expirationPolicies = expirationPolicies;
     }
 
     public async Task ApplyAsync(
@@ -125,6 +128,13 @@ public sealed class ConnectedPurchaseOrderFulfillStock
             ? PosBranchId.From(bid)
             : null;
 
+        IReadOnlyDictionary<Guid, BranchExpirationPolicy> fulfillPolicies =
+            supplierBranch is PosBranchId fulfillBranch && _expirationPolicies is not null
+                ? await _expirationPolicies
+                    .ResolveManyAsync(order.SupplierOrganizationId, fulfillBranch, productIds, cancellationToken)
+                    .ConfigureAwait(false)
+                : new Dictionary<Guid, BranchExpirationPolicy>();
+
         var consumedAnyHold = false;
 
         await _inventory
@@ -190,7 +200,12 @@ public sealed class ConnectedPurchaseOrderFulfillStock
                             supplierBranch,
                             balanceRows,
                             demand.ProductId);
-                        var availableBase = BranchStockResolver.ResolveAvailable(onHand, reserved);
+                        var availableBase = BranchStockResolver.ResolveAvailable(
+                            supplierBranch,
+                            balanceRows,
+                            demand.ProductId,
+                            onHand,
+                            reserved);
                         var availablePurchase = availableBase / multiplier;
 
                         var useReservation = _reservations is not null
@@ -210,7 +225,8 @@ public sealed class ConnectedPurchaseOrderFulfillStock
                                 $"{demand.Name} has only {FormatQty(onHand / multiplier)} on hand; {FormatQty(demand.PurchaseQty)} required.");
                         }
 
-                        if (product.TracksExpiration && _lots is not null)
+                        if (fulfillPolicies.GetValueOrDefault(demand.ProductId.Value).TracksExpiration
+                            && _lots is not null)
                         {
                             var today = InventoryLot.BusinessDateOf(utcNow);
                             try

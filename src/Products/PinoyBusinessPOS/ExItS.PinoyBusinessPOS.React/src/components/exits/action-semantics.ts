@@ -79,12 +79,14 @@ function toLegacyVariant(
     case "primary":
       return "default";
     case "neutral":
+    case "contrast":
       return appearance === "solid" || appearance === "elevated" || appearance === "gradient"
         ? "secondary"
         : "outline";
     case "success":
       return "success";
     case "info":
+    case "help":
       return "info";
     case "warning":
       return "warning";

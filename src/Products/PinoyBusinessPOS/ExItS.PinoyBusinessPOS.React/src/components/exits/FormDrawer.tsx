@@ -23,7 +23,7 @@ function getFocusable(container: HTMLElement): HTMLElement[] {
 }
 
 /**
- * Canonical entity edit shell: right drawer on desktop, full-width 100dvh sheet on mobile.
+ * Canonical entity edit shell: floating right drawer (rounded inset panel).
  * Owns presentation only — no domain fields or API calls.
  */
 export function FormDrawer({

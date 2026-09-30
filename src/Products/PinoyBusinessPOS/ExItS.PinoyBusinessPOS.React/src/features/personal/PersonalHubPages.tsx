@@ -35,10 +35,9 @@ import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
-import {
-  capturePreferencesReturnFrom,
-  preferencesNavigationState,
-} from "@/features/preferences/preferences-return";
+import { usePreferencesOverlay } from "@/features/preferences/PreferencesOverlay";
+import { PREFERENCES_DEFAULT_SECTION } from "@/features/preferences/preferences-sections";
+import { useNotificationsOverlay } from "@/features/personal/NotificationsOverlay";
 import {
   countSegment,
   filterUtangAccounts,
@@ -389,7 +388,8 @@ export function PersonalUtangHubPage() {
 export function PersonalMorePage() {
   const { t } = useI18n();
   const location = useLocation();
-  const preferencesState = preferencesNavigationState(location.pathname, location.search);
+  const { openPreferences } = usePreferencesOverlay();
+  const { openNotifications } = useNotificationsOverlay();
   const { canSwitch, switching, switchToBusiness, online } = useSwitchToBusiness();
   const pendingOwnershipQuery = useQuery({
     queryKey: PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY,
@@ -497,7 +497,10 @@ export function PersonalMorePage() {
               label: t("personal.social.notificationsTitle"),
               icon: Bell,
               testId: "more-open-notifications",
-              to: "/personal/notifications",
+              onClick: () =>
+                openNotifications({
+                  returnTo: `${location.pathname}${location.search}`,
+                }),
             },
             {
               key: "qr",
@@ -538,14 +541,11 @@ export function PersonalMorePage() {
               label: t("preferences.title"),
               icon: Settings,
               testId: "more-open-preferences",
-              to: "/settings/preferences",
-              ...(preferencesState
-                ? {
-                    state: preferencesState,
-                    onClick: () =>
-                      capturePreferencesReturnFrom(location.pathname, location.search),
-                  }
-                : {}),
+              onClick: () =>
+                openPreferences({
+                  section: PREFERENCES_DEFAULT_SECTION,
+                  returnTo: `${location.pathname}${location.search}`,
+                }),
             },
             {
               key: "profile",

@@ -47,12 +47,16 @@ export function LinkedMerchantsPage() {
   const items = selectCanonicalLinkedMerchantPerStore(
     query.data?.pages.flatMap((page) => page.items) ?? [],
   );
-  const organizationIds = useMemo(
-    () => items.map((merchant) => merchant.organizationId),
+  const probeTargets = useMemo(
+    () =>
+      items.map((merchant) => ({
+        organizationId: merchant.organizationId,
+        platformBusinessCustomerId: merchant.businessCustomerId,
+      })),
     [items],
   );
   const { byOrganizationId } = useLinkedMerchantsOrderingProbes(
-    organizationIds,
+    probeTargets,
     buyerTokenReady && items.length > 0,
   );
 

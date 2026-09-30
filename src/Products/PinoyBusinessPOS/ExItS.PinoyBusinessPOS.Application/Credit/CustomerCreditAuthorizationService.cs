@@ -73,4 +73,68 @@ public sealed class CustomerCreditAuthorizationService
         return ApplicationResult<AuthorizationResult>.Success(
             new AuthorizationResult(policy, outstanding, available, requestedCreditAmount, due));
     }
+
+    /// <summary>
+    /// Personal online Utang: Available = CreditLimit − outstanding − ActiveOnlineUtangCommitment
+    /// (Submitted + Accepted Utang CustomerOrders). Call after credit lock inside ambient transaction.
+    /// </summary>
+    public async Task<ApplicationResult<OnlineUtangAuthorizationResult>> AuthorizeOnlineUtangAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        decimal requestedCreditAmount,
+        decimal activeOnlineUtangCommitment,
+        DateOnly businessDate,
+        CancellationToken cancellationToken = default)
+    {
+        await _policies
+            .AcquireCustomerCreditLockAsync(organizationId, customerId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var policy = await _policies
+            .GetByCustomerAsync(organizationId, customerId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (policy is null || !policy.PermitsNewUtang)
+        {
+            return ApplicationResult<OnlineUtangAuthorizationResult>.Failure(
+                ApplicationErrorCodes.CustomerOrderOnlineUtangUnavailable,
+                "Utang is not available for online orders for this customer.");
+        }
+
+        var outstanding = await _outstanding
+            .GetOutstandingAsync(organizationId, customerId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var commitment = activeOnlineUtangCommitment < 0m ? 0m : decimal.Round(activeOnlineUtangCommitment, 2, MidpointRounding.AwayFromZero);
+        var available = CustomerCreditPolicy.AvailableCredit(
+            policy.Status,
+            policy.CreditLimit,
+            outstanding + commitment);
+
+        var projected = outstanding + commitment + requestedCreditAmount;
+        if (projected > policy.CreditLimit)
+        {
+            return ApplicationResult<OnlineUtangAuthorizationResult>.Failure(
+                ApplicationErrorCodes.CustomerOrderOnlineUtangLimitExceeded,
+                $"Online Utang exceeds available credit. Limit {policy.CreditLimit:0.00}, outstanding {outstanding:0.00}, pending online {commitment:0.00}, available {available:0.00}, requested {requestedCreditAmount:0.00}.");
+        }
+
+        var due = CustomerCreditPolicy.ComputeDefaultDueDate(businessDate, policy.DefaultTermDays);
+        return ApplicationResult<OnlineUtangAuthorizationResult>.Success(
+            new OnlineUtangAuthorizationResult(
+                policy,
+                outstanding,
+                commitment,
+                available,
+                requestedCreditAmount,
+                due));
+    }
+
+    public sealed record OnlineUtangAuthorizationResult(
+        CustomerCreditPolicy Policy,
+        decimal Outstanding,
+        decimal ActiveOnlineUtangCommitment,
+        decimal AvailableCredit,
+        decimal RequestedCredit,
+        DateOnly DefaultDueDate);
 }

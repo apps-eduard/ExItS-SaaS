@@ -3,19 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 /// <summary>
-/// Organization-scoped goods receipt number: <c>YYMMDD-NNN</c> (shared POS document format).
-/// Allocated server-side per organization and business date on receive.
+/// Organization-scoped goods receipt number: <c>GRN-YYMMDD-NNN</c>.
+/// Allocated server-side on receive.
 /// </summary>
 public static class GoodsReceiptNumbers
 {
+    public const string Prefix = PosDocumentPrefixes.GoodsReceipt;
     public const int MaxLength = PosDocumentNumbers.MaxLength;
     public const long MaxSequence = PosDocumentNumbers.MaxSequence;
 
     public static string Format(DateOnly businessDate, long sequence) =>
-        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
+        Map(() => PosDocumentNumbers.Format(Prefix, businessDate, sequence));
 
     public static string Normalize(string? grnNumber) =>
-        Map(() => PosDocumentNumbers.NormalizeRoot(grnNumber));
+        Map(() => PosDocumentNumbers.NormalizeRoot(grnNumber, Prefix));
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
 

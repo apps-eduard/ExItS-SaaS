@@ -62,6 +62,7 @@ public sealed class CreateStockUse
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -73,6 +74,7 @@ public sealed class CreateStockUse
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBranchDirectory? branches = null)
@@ -83,6 +85,7 @@ public sealed class CreateStockUse
         _inventory = inventory;
         _branchBalances = branchBalances;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
@@ -194,6 +197,17 @@ public sealed class CreateStockUse
                             unitsById[unitId] = unit;
                         }
 
+                        PosBranchId? stockUseBranchEarly = request.BranchId is Guid stockUseBranchGuid
+                            && stockUseBranchGuid != Guid.Empty
+                                ? PosBranchId.From(stockUseBranchGuid)
+                                : null;
+                        IReadOnlyDictionary<Guid, BranchExpirationPolicy> stockUsePolicies =
+                            stockUseBranchEarly is PosBranchId stockUsePolicyBranch
+                                ? await _expirationPolicies
+                                    .ResolveManyAsync(orgId, stockUsePolicyBranch, catalogIds, ct)
+                                    .ConfigureAwait(false)
+                                : new Dictionary<Guid, BranchExpirationPolicy>();
+
                         ApplicationResult<StockUseDto>? failure = null;
                         await _inventory
                             .ExecuteWithProductReservationLocksAsync(
@@ -240,7 +254,8 @@ public sealed class CreateStockUse
 
                                         var baseQty = ProductUnitConversion.ToBaseQuantity(line.Quantity, multiplier);
                                         var account = accountsByProduct[line.ProductId];
-                                        if (!product.TracksExpiration && account.AvailableQuantity < baseQty)
+                                        if (!stockUsePolicies.GetValueOrDefault(line.ProductId).TracksExpiration
+                                            && account.AvailableQuantity < baseQty)
                                         {
                                             failure = ApplicationResult<StockUseDto>.Failure(
                                                 ApplicationErrorCodes.InsufficientStock,
@@ -306,7 +321,7 @@ public sealed class CreateStockUse
                                         }
 
                                         var product = productsById[line.ProductId.Value];
-                                        if (product.TracksExpiration)
+                                        if (stockUsePolicies.GetValueOrDefault(line.ProductId.Value).TracksExpiration)
                                         {
                                             var today = InventoryLot.BusinessDateOf(utcNow);
                                             try

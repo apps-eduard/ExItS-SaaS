@@ -25,7 +25,10 @@ internal static class CustomerEntityMapper
                 string.IsNullOrWhiteSpace(record.PartyKind)
                     ? nameof(CustomerPartyKind.Person)
                     : record.PartyKind,
-                ignoreCase: true));
+                ignoreCase: true),
+            ParseOnlineOrderingAccess(record.OnlineOrderingAccess),
+            record.OnlineOrderingAccessUpdatedByUserId,
+            record.OnlineOrderingAccessUpdatedAtUtc);
 
     public static POSCustomerRecord ToRecord(POSCustomer customer) =>
         new()
@@ -43,6 +46,9 @@ internal static class CustomerEntityMapper
             LinkedPersonalPublicUserId = customer.LinkedPersonalPublicUserId,
             LinkedBuyerOrganizationId = customer.LinkedBuyerOrganizationId,
             LinkedBuyerPublicOrganizationId = customer.LinkedBuyerPublicOrganizationId,
+            OnlineOrderingAccess = customer.OnlineOrderingAccess.ToString(),
+            OnlineOrderingAccessUpdatedByUserId = customer.OnlineOrderingAccessUpdatedByUserId,
+            OnlineOrderingAccessUpdatedAtUtc = customer.OnlineOrderingAccessUpdatedAtUtc,
             CreatedAtUtc = customer.CreatedAtUtc,
             UpdatedAtUtc = customer.UpdatedAtUtc
         };
@@ -60,7 +66,15 @@ internal static class CustomerEntityMapper
         record.LinkedPersonalPublicUserId = customer.LinkedPersonalPublicUserId;
         record.LinkedBuyerOrganizationId = customer.LinkedBuyerOrganizationId;
         record.LinkedBuyerPublicOrganizationId = customer.LinkedBuyerPublicOrganizationId;
+        record.OnlineOrderingAccess = customer.OnlineOrderingAccess.ToString();
+        record.OnlineOrderingAccessUpdatedByUserId = customer.OnlineOrderingAccessUpdatedByUserId;
+        record.OnlineOrderingAccessUpdatedAtUtc = customer.OnlineOrderingAccessUpdatedAtUtc;
         record.UpdatedAtUtc = customer.UpdatedAtUtc;
         // OrganizationId is immutable — never rewritten from the aggregate.
     }
+
+    private static CustomerOnlineOrderingAccess ParseOnlineOrderingAccess(string? value) =>
+        Enum.TryParse<CustomerOnlineOrderingAccess>(value, ignoreCase: true, out var parsed)
+            ? parsed
+            : CustomerOnlineOrderingAccess.Default;
 }

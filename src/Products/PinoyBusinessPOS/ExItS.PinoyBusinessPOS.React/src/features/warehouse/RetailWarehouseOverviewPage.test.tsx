@@ -64,7 +64,10 @@ describe("RetailWarehouseOverviewPage metrics", () => {
     expect(await screen.findByTestId("retail-warehouse-metric-submitted")).toHaveTextContent("2");
     expect(screen.getByTestId("retail-warehouse-metric-in-progress")).toHaveTextContent("1");
     expect(screen.getByTestId("retail-warehouse-metric-in-transit")).toHaveTextContent("3");
+    expect(screen.getByTestId("retail-warehouse-recent-responsive")).toBeInTheDocument();
     expect(screen.getByTestId(`retail-warehouse-recent-${REQ_ID}`)).toBeInTheDocument();
     expect(screen.getByTestId("retail-warehouse-supply-card")).toHaveTextContent("Panay Warehouse");
+    // Feature-light: no search / filter / export / pagination chrome.
+    expect(screen.queryByTestId("exits-table-toolbar")).not.toBeInTheDocument();
   });
 });

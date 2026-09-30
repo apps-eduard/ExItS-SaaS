@@ -21,6 +21,16 @@ export type NotificationsLocationState = {
   workspace?: NotificationsWorkspaceReturn;
 };
 
+/** True when a nav destination opens the personal notifications drawer. */
+export function isNotificationsDestination(to: string): boolean {
+  return (
+    to === "/personal/notifications" ||
+    to.startsWith("/personal/notifications?") ||
+    (to.startsWith("/personal/notifications/") &&
+      !to.startsWith("/personal/notifications/archived"))
+  );
+}
+
 /** Safe in-app path to restore after closing notifications. */
 export function isNotificationsReturnPath(path: string | null | undefined): path is string {
   if (!path || !path.startsWith("/") || path.startsWith("//")) {
@@ -176,6 +186,15 @@ export function resolveNotificationsReturnTo(
     return fromState;
   }
   return fromStorage;
+}
+
+/** Drop stored return path without navigating. */
+export function clearNotificationsReturnTo(): void {
+  try {
+    sessionStorage.removeItem(NOTIFICATIONS_RETURN_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
 }
 
 export function workspaceDestinationFromReturn(

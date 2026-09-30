@@ -15,7 +15,7 @@ public sealed class ProductionDomainTests
     public void ProductionNumbers_format_PRD_pattern()
     {
         var number = ProductionNumbers.Format(new DateOnly(2026, 8, 29), 123);
-        Assert.Equal("260829-123", number);
+        Assert.Equal("PRD-260829-123", number);
         Assert.Equal(number, ProductionNumbers.Normalize(number.ToLowerInvariant()));
     }
 

@@ -37,6 +37,20 @@ public sealed class BranchStockResolverTests
     }
 
     [Fact]
+    public void Available_excludes_damaged_and_inspection_hold()
+    {
+        var balance = InventoryBranchBalance.Create(Org, BranchB, Coke, 20m, T0);
+        balance.IncreaseDamaged(10m, T0);
+        balance.IncreaseInspectionHold(2m, T0);
+        var balances = new List<InventoryBranchBalance> { balance };
+
+        Assert.Equal(
+            8m,
+            BranchStockResolver.ResolveAvailable(BranchB, balances, Coke, branchOnHand: 20m, branchReserved: 0m));
+        Assert.Equal(8m, balance.AvailableQuantity);
+    }
+
+    [Fact]
     public void Missing_non_primary_row_never_uses_org_total_as_branch_availability()
     {
         var main = InventoryBranchBalance.Create(Org, Main, Coke, 100m, T0);

@@ -3,19 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Quotations;
 
 /// <summary>
-/// Organization-scoped quotation number: <c>YYMMDD-NNN</c> (shared POS document format).
-/// Allocated server-side per organization and business date on Issue.
+/// Organization-scoped quotation number: <c>QUO-YYMMDD-NNN</c>.
+/// Allocated server-side on quotation create/issue.
 /// </summary>
 public static class QuotationNumbers
 {
+    public const string Prefix = PosDocumentPrefixes.Quotation;
     public const int MaxLength = PosDocumentNumbers.MaxLength;
     public const long MaxSequence = PosDocumentNumbers.MaxSequence;
 
     public static string Format(DateOnly businessDate, long sequence) =>
-        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
+        Map(() => PosDocumentNumbers.Format(Prefix, businessDate, sequence));
 
     public static string Normalize(string? quotationNumber) =>
-        Map(() => PosDocumentNumbers.NormalizeRoot(quotationNumber));
+        Map(() => PosDocumentNumbers.NormalizeRoot(quotationNumber, Prefix));
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
 

@@ -101,13 +101,38 @@ describe("pos-customer-orders-client", () => {
       ok: false,
       status: 403,
       json: async () => ({
-        detail: "This merchant is not accepting customer orders.",
+        detail: "This store is not accepting online orders.",
         errorCode: "pos.customer_order.ordering.unavailable",
       }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const capability = await probeSellerCustomerOrderingCapability(ORG);
+    const capability = await probeSellerCustomerOrderingCapability(
+      ORG,
+      undefined,
+      "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    );
+    expect(capability).toEqual({ canCustomerOrder: false, canCustomerDelivery: false });
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("platformBusinessCustomerId=");
+  });
+
+  it("probe returns unavailable when customer is blocked", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        detail: "Online ordering is blocked for this customer.",
+        errorCode: "pos.customer_order.customer.blocked",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const capability = await probeSellerCustomerOrderingCapability(
+      ORG,
+      undefined,
+      "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    );
     expect(capability).toEqual({ canCustomerOrder: false, canCustomerDelivery: false });
   });
 

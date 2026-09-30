@@ -69,6 +69,32 @@ export function totalRemainingToDispatch(
   return lines.reduce((sum, line) => sum + (line.remainingToDispatchQuantity ?? 0), 0);
 }
 
+/**
+ * Warehouse preparing / dispatched tabs: label remaining-to-dispatch as commitment when > 0.
+ * Returns null when there is nothing left to dispatch.
+ */
+export function formatCommittedRemainingLabel(
+  remainingQty: number,
+  template: string,
+  formatQty: (qty: number) => string = (qty) => String(qty),
+): string | null {
+  if (remainingQty <= 0) {
+    return null;
+  }
+  return template.replace("{qty}", formatQty(remainingQty));
+}
+
+/** Statuses shown on warehouse Preparing or Dispatched tabs. */
+export function isWarehousePreparingOrDispatchedStatus(status: string): boolean {
+  const normalized = normalizeStockRequestStatus(status);
+  return (
+    IN_PROGRESS_STATUSES.has(status) ||
+    IN_PROGRESS_STATUSES.has(normalized) ||
+    normalized === "InTransit" ||
+    normalized === "PartiallyFulfilled"
+  );
+}
+
 function sourceMayPrepareTransfer(
   status: string,
   lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
@@ -126,17 +152,38 @@ export function findOpenCoveringTransfer(
     totalOutstandingQty?: number;
   }>,
 ): OpenCoveringTransfer | null {
-  const open = linkedTransfers.find(
-    (t) =>
-      (t.status === "InTransit" || t.status === "PartiallyReceived") &&
-      (t.totalOutstandingQty ?? 0) > 0,
-  );
+  const open = listReceivableTransfers(linkedTransfers)[0];
   if (!open) return null;
   return {
     transferId: open.transferId,
-    transferLabel: open.transferNumber ?? open.transferId.slice(0, 8),
+    transferLabel: open.transferNumber?.trim() || open.transferId.slice(0, 8),
     outstandingQty: open.totalOutstandingQty ?? 0,
   };
+}
+
+/** All linked transfers the destination can receive (InTransit / PartiallyReceived with outstanding). */
+export function listReceivableTransfers(
+  linkedTransfers: ReadonlyArray<{
+    transferId: string;
+    transferNumber?: string | null;
+    status: string;
+    totalOutstandingQty?: number;
+  }>,
+): Array<{
+  transferId: string;
+  transferNumber?: string | null;
+  status: string;
+  totalOutstandingQty?: number;
+}> {
+  return linkedTransfers.filter(
+    (t) =>
+      (t.status === "InTransit" || t.status === "PartiallyReceived") &&
+      (t.totalOutstandingQty == null || t.totalOutstandingQty > 0),
+  );
+}
+
+export function transferReceiveHref(transferId: string): string {
+  return `/inventory/transfers/${transferId}?mode=receive`;
 }
 
 export function openCoveringTransferMessage(
@@ -280,6 +327,11 @@ export function stockRequestStatusTone(status: string): StatusChipTone {
 
 export function canCancelStockRequestAsDestination(status: string): boolean {
   return status === "Pending" || status === "Approved" || status === "Preparing" || status === "InProgress";
+}
+
+/** Stored approved qty only — null means warehouse has not approved yet (display 0). */
+export function displayApprovedQuantity(approvedQuantity: number | null | undefined): number {
+  return approvedQuantity ?? 0;
 }
 
 export function isStockRequestOpenForSourceActions(status: string): boolean {

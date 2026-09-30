@@ -139,6 +139,7 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ExpirationInitializationRequired
             or ApplicationErrorCodes.ExpirationAllocationMismatch
             or DomainErrorCodes.InventoryInsufficientStock
+            or DomainErrorCodes.InsufficientStockForExceptionCorrection
             or DomainErrorCodes.GoodsReceiptVoidInsufficient
             or DomainErrorCodes.DirectPurchaseReceiptVoidInsufficient
             or DomainErrorCodes.SupplierPayableReceiptReversalBlocked
@@ -208,6 +209,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ExtendedHistoryRequired
             or ApplicationErrorCodes.InventoryTransferBranchForbidden
             or ApplicationErrorCodes.CustomerOrderOrderingUnavailable
+            or ApplicationErrorCodes.CustomerOrderCustomerBlocked
+            or ApplicationErrorCodes.CustomerOrderOnlineUtangUnavailable
+            or ApplicationErrorCodes.CustomerOrderOnlineUtangLimitExceeded
             or ApplicationErrorCodes.CustomerOrderPartyMismatch
             or ApplicationErrorCodes.ProductScopeForbidden
             or ApplicationErrorCodes.ProductOriginBranchForbidden

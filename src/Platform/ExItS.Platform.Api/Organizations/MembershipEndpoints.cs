@@ -19,6 +19,12 @@ namespace ExItS.Platform.Api.Organizations;
 /// </summary>
 internal static class MembershipEndpoints
 {
+    private sealed class BranchDisplayNamesQuery
+    {
+        /// <summary>Repeated query: ?branchId=...&amp;branchId=...</summary>
+        public Guid[]? BranchId { get; init; }
+    }
+
     public static IEndpointRouteBuilder MapMembershipEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/members", async (
@@ -73,6 +79,35 @@ internal static class MembershipEndpoints
             var request = body ?? new ResolveOrganizationActorDisplayNamesRequest(Array.Empty<Guid>());
             return PlatformApiResults.FromResult(
                 await useCase.ExecuteAsync(organizationId, request, ct).ConfigureAwait(false),
+                items => Results.Ok(new { items }));
+        });
+
+        // Org-scoped branch labels for transfer/history UI (display only — not operational access).
+        // GET so POS server-side callers (cookie-forwarded) are not blocked by browser antiforgery.
+        // Any active org member may resolve peer branch names without ManageBranches.
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/branch-display-names", async (
+            Guid organizationId,
+            [AsParameters] BranchDisplayNamesQuery query,
+            ResolveOrganizationBranchDisplayNames useCase,
+            PlatformOrganizationAuthz organizationAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await organizationAuthz
+                .EnsureCanViewOrganizationAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var branchIds = query.BranchId ?? Array.Empty<Guid>();
+            return PlatformApiResults.FromResult(
+                await useCase
+                    .ExecuteAsync(
+                        organizationId,
+                        new ResolveOrganizationBranchDisplayNamesRequest(branchIds),
+                        ct)
+                    .ConfigureAwait(false),
                 items => Results.Ok(new { items }));
         });
 

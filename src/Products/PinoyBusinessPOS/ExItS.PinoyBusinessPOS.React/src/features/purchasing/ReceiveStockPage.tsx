@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, ClipboardList } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
@@ -14,6 +14,7 @@ import {
   type DirectPurchaseHistoryItem,
 } from "@/api/pos/pos-direct-purchases-client";
 import { PosApiError } from "@/api/pos/pos-http";
+import { getInventoryProduct } from "@/api/pos/pos-inventory-client";
 import { listSuppliers } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,11 +42,10 @@ import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView";
-import {
-  ProductFinderPanel,
-  SelectedItemsPanel,
-} from "@/components/exits/ProductSelectionWorkspace";
+import { SelectedItemsPanel } from "@/components/exits/ProductSelectionWorkspace";
+import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ReceiveCategoryMultiSelect } from "@/features/purchasing/ReceiveCategoryMultiSelect";
+import { ReceiveStockExpirySetupDialog } from "@/features/purchasing/ReceiveStockExpirySetupDialog";
 import { ReceiveStockFindProductsView } from "@/features/purchasing/ReceiveStockFindProductsView";
 import { ReceiveStockReceiptItemsView } from "@/features/purchasing/ReceiveStockReceiptItemsView";
 import {
@@ -100,6 +100,15 @@ type DraftLine = {
   lotNumber: string;
 };
 
+type ExpirySetupSession = {
+  productId: string;
+  candidateExpiryDate: string;
+  onHandQuantity: number;
+  unitOfMeasure: string;
+  productName: string;
+  expirationWarningDays: number | null;
+};
+
 function todayIsoDate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -138,6 +147,7 @@ export function ReceiveStockPage() {
   const { t } = useI18n();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
@@ -172,6 +182,8 @@ export function ReceiveStockPage() {
   const [paymentMode, setPaymentMode] = useState<ReceivePaymentMode>("paidInFull");
   const [paymentMethod, setPaymentMethod] = useState<ReceivePaymentMethodCode>("Cash");
   const [paidNowTouched, setPaidNowTouched] = useState(false);
+  const [expirySetup, setExpirySetup] = useState<ExpirySetupSession | null>(null);
+  const [expirySetupLoading, setExpirySetupLoading] = useState(false);
   const idempotencyKeyRef = useRef<string | null>(null);
   const draftBranchIdRef = useRef<string | null>(null);
   const finderPanelId = "direct-find-products-panel";
@@ -203,6 +215,8 @@ export function ReceiveStockPage() {
     draftBranchIdRef.current = currentBranchId;
     idempotencyKeyRef.current = null;
     setLines([]);
+    setExpirySetup(null);
+    setExpirySetupLoading(false);
     setFinderOpen(false);
     setHighlightProductId(null);
     setSupplierChoice("");
@@ -392,7 +406,12 @@ export function ReceiveStockPage() {
   });
 
   const recentCompletedQuery = useQuery({
-    queryKey: ["direct-purchases", "receive-stock-recent", workspace?.organizationId],
+    queryKey: [
+      "direct-purchases",
+      "receive-stock-recent",
+      workspace?.organizationId,
+      workspace?.branchId,
+    ],
     enabled: Boolean(workspace) && online,
     queryFn: ({ signal }) =>
       listDirectPurchases(
@@ -561,6 +580,168 @@ export function ReceiveStockPage() {
     );
   }
 
+  function focusExpiryField(productId: string) {
+    // After ExitsModal restores prior focus on close, re-assert the expiry field.
+    window.setTimeout(() => {
+      const el = document.querySelector<HTMLInputElement>(
+        `[data-testid="direct-line-expiry-${productId}"]`,
+      );
+      el?.focus();
+      el?.select?.();
+    }, 0);
+  }
+
+  async function attemptExpiryDate(productId: string, nextDate: string) {
+    const line = lines.find((item) => item.productId === productId);
+    if (!line) {
+      return;
+    }
+
+    if (!nextDate.trim() || line.tracksExpiration) {
+      patchLine(productId, { expiryDate: nextDate });
+      return;
+    }
+
+    // Dialog already open for this product — keep in-progress allocation; only
+    // refresh the candidate new-receipt expiry (never wipe the dialog form).
+    if (expirySetup?.productId === productId) {
+      setExpirySetup((prev) =>
+        prev ? { ...prev, candidateExpiryDate: nextDate } : prev,
+      );
+      return;
+    }
+
+    if (!workspace || !allowManage) {
+      showToast({
+        title: t("purchasing.expirySetupUnauthorized"),
+        tone: "error",
+      });
+      return;
+    }
+    if (!online) {
+      showToast({
+        title: t("offline.internetRequiredTitle"),
+        description: t("purchasing.expirySetupOffline"),
+        tone: "error",
+      });
+      return;
+    }
+
+    setExpirySetupLoading(true);
+    setError(null);
+    try {
+      const account = await getInventoryProduct(workspace, productId);
+      if (account.tracksExpiration === true) {
+        setLines((prev) =>
+          prev.map((item) =>
+            item.productId === productId
+              ? { ...item, tracksExpiration: true, expiryDate: nextDate }
+              : item,
+          ),
+        );
+        return;
+      }
+
+      // Enable-expiration allocates against authoritative org on-hand (server
+      // invariant), not branch-scoped display quantity.
+      const onHand =
+        account.organizationOnHandQuantity ?? account.onHandQuantity ?? 0;
+      if (!(onHand > 0)) {
+        patchLine(productId, { expiryDate: nextDate });
+        return;
+      }
+
+      setExpirySetup({
+        productId,
+        candidateExpiryDate: nextDate,
+        onHandQuantity: onHand,
+        unitOfMeasure: account.unitOfMeasure?.trim() || line.uom,
+        productName: account.name?.trim() || line.name,
+        expirationWarningDays: account.expirationWarningDays ?? 7,
+      });
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("purchasing.expirySetupLoadFailed"))
+          : t("purchasing.expirySetupLoadFailed"),
+      );
+    } finally {
+      setExpirySetupLoading(false);
+    }
+  }
+
+  async function reloadExpirySetupOnHand() {
+    if (!workspace || !expirySetup) {
+      return;
+    }
+    setExpirySetupLoading(true);
+    try {
+      const account = await getInventoryProduct(workspace, expirySetup.productId);
+      const onHand =
+        account.organizationOnHandQuantity ?? account.onHandQuantity ?? 0;
+      if (!(onHand > 0)) {
+        setExpirySetup(null);
+        focusExpiryField(expirySetup.productId);
+        return;
+      }
+      setExpirySetup((prev) =>
+        prev
+          ? {
+              ...prev,
+              onHandQuantity: onHand,
+              unitOfMeasure: account.unitOfMeasure?.trim() || prev.unitOfMeasure,
+              productName: account.name?.trim() || prev.productName,
+              expirationWarningDays: account.expirationWarningDays ?? prev.expirationWarningDays,
+            }
+          : null,
+      );
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("purchasing.expirySetupLoadFailed"))
+          : t("purchasing.expirySetupLoadFailed"),
+      );
+    } finally {
+      setExpirySetupLoading(false);
+    }
+  }
+
+  function cancelExpirySetup() {
+    const productId = expirySetup?.productId;
+    setExpirySetup(null);
+    if (productId) {
+      focusExpiryField(productId);
+    }
+  }
+
+  async function completeExpirySetup() {
+    if (!expirySetup) {
+      return;
+    }
+    const { productId, candidateExpiryDate } = expirySetup;
+    setLines((prev) =>
+      prev.map((line) =>
+        line.productId === productId
+          ? {
+              ...line,
+              tracksExpiration: true,
+              expiryDate: candidateExpiryDate.trim(),
+            }
+          : line,
+      ),
+    );
+    setExpirySetup(null);
+    showToast({
+      tone: "success",
+      title: t("inventory.expirationTrackingEnabled"),
+    });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["inventory"] }),
+      queryClient.invalidateQueries({ queryKey: ["catalog"] }),
+    ]);
+    focusExpiryField(productId);
+  }
+
   function removeLine(productId: string) {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
   }
@@ -635,9 +816,8 @@ export function ReceiveStockPage() {
         productId: line.productId,
         quantity: line.quantity,
         unitCost: line.unitCost,
-        expiryDate: line.tracksExpiration ? line.expiryDate.trim() : null,
-        lotNumber:
-          line.tracksExpiration && line.lotNumber.trim() ? line.lotNumber.trim() : null,
+        expiryDate: line.expiryDate.trim() || null,
+        lotNumber: line.lotNumber.trim() || null,
       })),
       ...paymentFields,
     };
@@ -863,21 +1043,50 @@ export function ReceiveStockPage() {
                 lines={lines}
                 highlightProductId={highlightProductId}
                 onPatchLine={patchLine}
+                onExpiryDateAttempt={(productId, nextDate) => {
+                  void attemptExpiryDate(productId, nextDate);
+                }}
                 onRemoveLine={removeLine}
                 t={t}
               />
             </SelectedItemsPanel>
 
-            {finderOpen ? (
-              <ProductFinderPanel
-                title={t("purchasing.findProducts")}
-                headingId="direct-add-products-heading"
-                panelId={finderPanelId}
-                closeLabel={t("purchasing.closeFindProducts")}
-                onClose={closeFinder}
-                closeTestId="direct-close-finder"
-                testId="direct-add-products"
-              >
+            {workspace && expirySetup ? (
+              <ReceiveStockExpirySetupDialog
+                open
+                workspace={workspace}
+                productId={expirySetup.productId}
+                productName={expirySetup.productName}
+                onHandQuantity={expirySetup.onHandQuantity}
+                unitOfMeasure={expirySetup.unitOfMeasure}
+                expirationWarningDays={expirySetup.expirationWarningDays}
+                loadingOnHand={expirySetupLoading}
+                onCancel={cancelExpirySetup}
+                onSuccess={() => {
+                  void completeExpirySetup();
+                }}
+                onReloadOnHand={() => {
+                  void reloadExpirySetupOnHand();
+                }}
+              />
+            ) : null}
+
+            <ExitsModal
+              open={finderOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  closeFinder();
+                }
+              }}
+              title={t("purchasing.findProducts")}
+              closeLabel={t("purchasing.closeFindProducts")}
+              testId="direct-add-products"
+              id={finderPanelId}
+              size="lg"
+              fullHeightOnCompact
+              className="lg:max-h-[min(92dvh,48rem)] lg:max-w-3xl"
+            >
+              <div className="flex flex-col gap-3">
                 <ProductSelectionToolbar
                   className="receive-stock-finder__filters"
                   testId="direct-finder-toolbar"
@@ -966,8 +1175,8 @@ export function ReceiveStockPage() {
                     t={t}
                   />
                 ) : null}
-              </ProductFinderPanel>
-            ) : null}
+              </div>
+            </ExitsModal>
           </div>
 
           <div className="receive-stock-actions">
@@ -1166,6 +1375,25 @@ export function ReceiveStockPage() {
                   {line.quantity} {line.uom} × {formatPeso(line.unitCost)}
                   {` · ${t("purchasing.sellingPriceShort")} ${formatPeso(line.sellingPrice)}`}
                 </span>
+                {line.expiryDate.trim() || line.lotNumber.trim() ? (
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">
+                    {[
+                      line.expiryDate.trim()
+                        ? `${t("purchasing.expiryDate")}: ${line.expiryDate.trim()}`
+                        : null,
+                      line.lotNumber.trim()
+                        ? `${t("purchasing.lotNumber")}: ${line.lotNumber.trim()}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                ) : null}
+                {!line.tracksExpiration && line.expiryDate.trim() ? (
+                  <span className="receive-stock-expiry-enable-hint">
+                    {t("purchasing.expiryEnableTrackingHint")}
+                  </span>
+                ) : null}
                 <span className="tabular-nums font-semibold">
                   {formatPeso(roundMoney(line.quantity * line.unitCost))}
                 </span>

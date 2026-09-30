@@ -16,7 +16,7 @@ public sealed class StockUseDomainTests
     public void Numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 8, 29);
-        Assert.Equal("260829-001", StockUseNumbers.Format(date, 1));
+        Assert.Equal("SU-260829-001", StockUseNumbers.Format(date, 1));
         Assert.Equal("260829-001", StockUseNumbers.Normalize(" 260829-001 "));
     }
 

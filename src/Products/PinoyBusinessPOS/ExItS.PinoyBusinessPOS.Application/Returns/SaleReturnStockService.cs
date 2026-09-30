@@ -31,6 +31,7 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
     private readonly InventoryLotStockService _lots;
     private readonly IInventoryLotRepository _lotRepository;
     private readonly ISaleReturnRepository _returns;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly IOrganizationBranchDirectory? _branches;
 
@@ -40,6 +41,7 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
         InventoryLotStockService lots,
         IInventoryLotRepository lotRepository,
         ISaleReturnRepository returns,
+        BranchExpirationPolicyResolver expirationPolicies,
         IInventoryBranchBalanceRepository? branchBalances = null,
         IOrganizationBranchDirectory? branches = null)
     {
@@ -48,6 +50,7 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
         _lots = lots;
         _lotRepository = lotRepository;
         _returns = returns;
+        _expirationPolicies = expirationPolicies;
         _branchBalances = branchBalances;
         _branches = branches;
     }
@@ -101,6 +104,12 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
             .ListByIdsAsync(organizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
         var productsById = products.ToDictionary(p => p.Id.Value);
+        IReadOnlyDictionary<Guid, BranchExpirationPolicy> returnPolicies =
+            originalSale.BranchId is PosBranchId returnBranch
+                ? await _expirationPolicies
+                    .ResolveManyAsync(organizationId, returnBranch, productIds, cancellationToken)
+                    .ConfigureAwait(false)
+                : new Dictionary<Guid, BranchExpirationPolicy>();
 
         var saleLineById = originalSale.Lines.ToDictionary(l => l.Id.Value);
 
@@ -131,7 +140,7 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
             }
 
             productsById.TryGetValue(group.ProductId.Value, out var product);
-            var tracksExpiration = product?.TracksExpiration == true;
+            var tracksExpiration = returnPolicies.GetValueOrDefault(group.ProductId.Value).TracksExpiration;
 
             if (tracksExpiration)
             {

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
 import {
@@ -6,6 +7,34 @@ import {
 } from "@/api/pos/pos-mutation-idempotency";
 
 const INVENTORY_PATH = "/api/v1/pos/inventory";
+
+/** Bound-branch physical inventory attention (not organization-wide management overview). */
+export const posInventoryAttentionSummaryDtoSchema = z.object({
+  lowStockProductCount: z.number(),
+  outOfStockProductCount: z.number(),
+  expiredLotCount: z.number(),
+  nearExpiryLotCount: z.number(),
+});
+
+export type PosInventoryAttentionSummaryDto = z.infer<
+  typeof posInventoryAttentionSummaryDtoSchema
+>;
+
+/**
+ * Inventory account quantity fields used by list/detail sellable locks.
+ * Full list payloads are not zod-parsed end-to-end; this documents the sale-capped shape.
+ */
+export const posInventoryAccountSaleQuantitiesSchema = z.object({
+  onHandQuantity: z.number(),
+  availableQuantity: z.number().optional(),
+  sellableQuantity: z.number().nullable().optional(),
+  expiredQuantity: z.number().nullable().optional(),
+  nearExpiryQuantity: z.number().nullable().optional(),
+  /** On-hand blocked by stop-selling-days policy (not calendar-expired). */
+  salePolicyBlockedQuantity: z.number().nullable().optional(),
+  reservedQuantity: z.number().optional(),
+  pendingReturnQuantity: z.number().optional(),
+});
 
 export type PosInventoryAccountDto = {
   productId: string;
@@ -29,6 +58,11 @@ export type PosInventoryAccountDto = {
   sellableQuantity?: number | null;
   expiredQuantity?: number | null;
   nearExpiryQuantity?: number | null;
+  /**
+   * On-hand lot quantity blocked from normal sale by stop-selling-days policy
+   * (not yet calendar-expired). Null when the product does not track expiration.
+   */
+  salePolicyBlockedQuantity?: number | null;
   hasOpeningStock?: boolean;
   sku?: string | null;
   barcode?: string | null;
@@ -37,7 +71,24 @@ export type PosInventoryAccountDto = {
   monitoringMode?: "BranchDefault" | "Custom" | "NotMonitored" | string;
   reservedQuantity?: number;
   availableQuantity?: number;
+  /** Qty still committed to open branch stock requests (remaining to dispatch). */
+  stockRequestCommittedQuantity?: number;
   pendingReturnQuantity?: number;
+  inspectionHoldQuantity?: number;
+  damagedQuantity?: number;
+  inTransitOutboundQuantity?: number;
+  inTransitOutboundBranchName?: string | null;
+  inTransitInboundQuantity?: number;
+  inTransitInboundBranchName?: string | null;
+  /** Organization-default selling price (guide for opening unit cost). */
+  sellingPrice?: number | null;
+  /** Branch-effective selling price (BranchOverride ?? OrganizationDefault). */
+  effectiveSellingPrice?: number | null;
+  hasBranchPriceOverride?: boolean | null;
+  /** Latest acquisition unit cost when known (tracked products; display only). */
+  unitCost?: number | null;
+  /** Recorded opening-stock quantity for this branch when an OpeningStock movement exists. */
+  openingQuantity?: number | null;
 };
 
 export type PosInventoryReservationItemDto = {
@@ -54,6 +105,7 @@ export type PosInventoryReservationItemDto = {
   branchId: string;
   branchName?: string | null;
   createdAtUtc: string;
+  inventoryTransferId?: string | null;
 };
 
 export type PosInventoryReservationsDto = {
@@ -64,6 +116,10 @@ export type PosInventoryReservationsDto = {
   reservedQuantity: number;
   availableQuantity: number;
   reservations: PosInventoryReservationItemDto[];
+  /** Dispatched transfer outbound outstanding (not part of reservedQuantity). */
+  inTransitOutboundQuantity?: number;
+  /** Open transfer inbound outstanding (not part of reservedQuantity). */
+  inTransitInboundQuantity?: number;
 };
 
 export type PosInventoryBranchReorderDefaultDto = {
@@ -122,6 +178,18 @@ export type PosStockMovementDto = {
   lotNumber?: string | null;
   unitCost?: number | null;
   stockValue?: number | null;
+  /** Authoritative transaction kind (e.g. InventoryTransfer). */
+  transactionType?: string | null;
+  /** Authoritative parent transaction id (transfer id, not receipt/custody child id). */
+  transactionId?: string | null;
+  /** Human document reference (e.g. TR-260922-001). */
+  transactionReference?: string | null;
+  /** Sellable on-hand immediately before this movement (branch + product history). */
+  sellableBefore?: number | null;
+  /** Authoritative sellable bucket delta for this movement type. */
+  sellableDelta?: number | null;
+  /** Sellable on-hand immediately after this movement (branch + product history). */
+  sellableAfter?: number | null;
 };
 
 export type PosInventoryLotDto = {
@@ -134,6 +202,8 @@ export type PosInventoryLotDto = {
   expiryStatus: string;
   createdAtUtc: string;
   updatedAtUtc: string;
+  canEditIdentity?: boolean;
+  identityLockReason?: string | null;
 };
 
 export type PosExpiringLotDto = {
@@ -193,6 +263,62 @@ export type PosInventoryBranchRollupDto = {
   onHandQuantity: number;
   reservedQuantity: number;
   availableQuantity: number;
+  pendingReturnQuantity?: number;
+  inspectionHoldQuantity?: number;
+  damagedQuantity?: number;
+  sellableQuantity?: number | null;
+  expiredQuantity?: number | null;
+  nearExpiryQuantity?: number | null;
+  salePolicyBlockedQuantity?: number | null;
+  inTransitOutboundQuantity?: number;
+  inTransitInboundQuantity?: number;
+};
+
+export type InventoryStockStatusState =
+  | "All"
+  | "Available"
+  | "LowStock"
+  | "OutOfStock"
+  | "Reserved"
+  | "Damaged"
+  | "InspectionHold"
+  | "PendingReturn"
+  | "Expired"
+  | "SaleBlocked";
+
+export type InventoryStockStatusRowDto = {
+  productId: string;
+  productName: string;
+  sku?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  unitOfMeasure: string;
+  branchId: string;
+  branchName: string;
+  areaId?: string | null;
+  areaName?: string | null;
+  onHandQuantity: number;
+  sellableQuantity: number;
+  reservedQuantity: number;
+  /** Qty still committed to open branch stock requests (remaining to dispatch). */
+  stockRequestCommittedQuantity: number;
+  availableQuantity: number;
+  damagedQuantity: number;
+  inspectionHoldQuantity: number;
+  pendingReturnQuantity: number;
+  expiredQuantity: number;
+  saleBlockedQuantity: number;
+  inTransitInboundQuantity: number;
+  inTransitOutboundQuantity: number;
+  reorderLevel?: number | null;
+  isLowStock: boolean;
+};
+
+export type InventoryStockStatusResultDto = {
+  generatedAtUtc: string;
+  isCurrentOnly: boolean;
+  totalCount: number;
+  rows: InventoryStockStatusRowDto[];
 };
 
 /** Derived area subtotal. The server owns the math; no area holds stock authority. */
@@ -331,6 +457,23 @@ export function listInventory(
   });
 }
 
+/**
+ * Branch-authoritative inventory attention for operational screens.
+ * Scope comes only from workspace headers (organizationId + branchId).
+ */
+export async function getInventoryAttentionSummary(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<PosInventoryAttentionSummaryDto> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/attention-summary`,
+  });
+  return posInventoryAttentionSummaryDtoSchema.parse(raw);
+}
+
 export function getInventoryProduct(
   workspace: PosWorkspaceScope,
   productId: string,
@@ -381,6 +524,38 @@ export function getInventoryStockRollup(
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}/stock-rollup`,
+  });
+}
+
+/** Current-stock snapshot across authorized branches (no historical as-of). */
+export function getInventoryStockStatus(
+  workspace: PosWorkspaceScope,
+  options: {
+    branchId?: string;
+    areaId?: string;
+    categoryId?: string;
+    productId?: string;
+    search?: string;
+    stockState?: InventoryStockStatusState | string;
+    page?: number;
+    pageSize?: number;
+  } = {},
+  signal?: AbortSignal,
+): Promise<InventoryStockStatusResultDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${INVENTORY_PATH}/stock-status`, {
+      branchId: options.branchId,
+      areaId: options.areaId,
+      categoryId: options.categoryId,
+      productId: options.productId,
+      search: options.search,
+      stockState: options.stockState,
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? 50,
+    }),
   });
 }
 
@@ -547,6 +722,32 @@ export function listProductLots(
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 50,
     }),
+  });
+}
+
+export function correctInventoryLotIdentity(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  lotId: string,
+  body: {
+    expirationDate: string;
+    lotNumber?: string | null;
+    reason: string;
+    expectedUpdatedAtUtc?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<PosInventoryLotDto> {
+  return posRequest({
+    method: "PATCH",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/lots/${lotId}/identity`,
+    body: {
+      expirationDate: body.expirationDate,
+      lotNumber: body.lotNumber ?? null,
+      reason: body.reason,
+      expectedUpdatedAtUtc: body.expectedUpdatedAtUtc ?? null,
+    },
   });
 }
 

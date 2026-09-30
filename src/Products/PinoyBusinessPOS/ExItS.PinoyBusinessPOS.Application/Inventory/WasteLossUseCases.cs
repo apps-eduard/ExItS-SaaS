@@ -63,6 +63,7 @@ public sealed class CreateWasteLoss
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly IInventoryLotRepository _lotRepository;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchExpirationPolicyResolver _expirationPolicies;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -75,6 +76,7 @@ public sealed class CreateWasteLoss
         IInventoryBranchBalanceRepository branchBalances,
         IInventoryLotRepository lotRepository,
         InventoryLotStockService lots,
+        BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBranchDirectory? branches = null)
@@ -86,6 +88,7 @@ public sealed class CreateWasteLoss
         _branchBalances = branchBalances;
         _lotRepository = lotRepository;
         _lots = lots;
+        _expirationPolicies = expirationPolicies;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
@@ -197,6 +200,21 @@ public sealed class CreateWasteLoss
                             unitsById[unitId] = unit;
                         }
 
+                        PosBranchId? wasteBranchEarly = request.BranchId is Guid wasteBranchGuid
+                            && wasteBranchGuid != Guid.Empty
+                                ? PosBranchId.From(wasteBranchGuid)
+                                : null;
+                        IReadOnlyDictionary<Guid, BranchExpirationPolicy> wastePolicies =
+                            wasteBranchEarly is PosBranchId wastePolicyBranch
+                                ? await _expirationPolicies
+                                    .ResolveManyAsync(
+                                        orgId,
+                                        wastePolicyBranch,
+                                        catalogIds,
+                                        ct)
+                                    .ConfigureAwait(false)
+                                : new Dictionary<Guid, BranchExpirationPolicy>();
+
                         ApplicationResult<WasteLossDto>? failure = null;
                         await _inventory
                             .ExecuteWithProductReservationLocksAsync(
@@ -236,7 +254,10 @@ public sealed class CreateWasteLoss
                                     {
                                         var account = accountsByProduct[productId];
                                         var product = productsById[productId];
-                                        if (!product.TracksExpiration && account.AvailableQuantity < required)
+                                        var tracksExpiration = wastePolicies
+                                            .GetValueOrDefault(productId)
+                                            .TracksExpiration;
+                                        if (!tracksExpiration && account.AvailableQuantity < required)
                                         {
                                             failure = ApplicationResult<WasteLossDto>.Failure(
                                                 ApplicationErrorCodes.InsufficientStock,
@@ -244,7 +265,7 @@ public sealed class CreateWasteLoss
                                             return;
                                         }
 
-                                        if (product.TracksExpiration && account.AvailableQuantity < required)
+                                        if (tracksExpiration && account.AvailableQuantity < required)
                                         {
                                             failure = ApplicationResult<WasteLossDto>.Failure(
                                                 ApplicationErrorCodes.InsufficientStock,
@@ -278,7 +299,7 @@ public sealed class CreateWasteLoss
                                         }
 
                                         InventoryLotId? lotId = null;
-                                        if (product.TracksExpiration)
+                                        if (wastePolicies.GetValueOrDefault(line.ProductId).TracksExpiration)
                                         {
                                             if (line.InventoryLotId is null || line.InventoryLotId == Guid.Empty)
                                             {
@@ -297,6 +318,18 @@ public sealed class CreateWasteLoss
                                                 failure = ApplicationResult<WasteLossDto>.Failure(
                                                     DomainErrorCodes.WasteLossLotMismatch,
                                                     $"Inventory lot does not belong to product '{product.Name}'.");
+                                                return;
+                                            }
+
+                                            // Bound branch may only write off lots for that branch
+                                            // (matches ListLots / ListExpiring filters).
+                                            if (request.BranchId is Guid wasteBranch
+                                                && wasteBranch != Guid.Empty
+                                                && lot.BranchId != PosBranchId.From(wasteBranch))
+                                            {
+                                                failure = ApplicationResult<WasteLossDto>.Failure(
+                                                    DomainErrorCodes.InventoryLotMismatch,
+                                                    $"Inventory lot does not belong to the selected branch for '{product.Name}'.");
                                                 return;
                                             }
                                         }
@@ -359,7 +392,7 @@ public sealed class CreateWasteLoss
                                     foreach (var line in wasteLoss.Lines)
                                     {
                                         var product = productsById[line.ProductId.Value];
-                                        if (product.TracksExpiration)
+                                        if (wastePolicies.GetValueOrDefault(line.ProductId.Value).TracksExpiration)
                                         {
                                             var lot = await _lotRepository
                                                 .GetByIdAsync(orgId, line.InventoryLotId!, lockCt)

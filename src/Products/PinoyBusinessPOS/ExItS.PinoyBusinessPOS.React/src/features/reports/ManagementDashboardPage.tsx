@@ -30,6 +30,7 @@ import {
   getSalesByProductReport,
   getUtangReport,
 } from "@/api/pos/pos-reporting-client";
+import { getInventoryAttentionSummary } from "@/api/pos/pos-inventory-client";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -199,6 +200,31 @@ export function ManagementDashboardPage() {
     queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
   });
 
+  /** Branch-scoped inventory health when a branch is selected; org overview when All branches. */
+  const inventoryScopeBranchId = reportBranchId ?? null;
+  const inventoryAttentionWorkspace = useMemo(() => {
+    if (!workspace || !inventoryScopeBranchId) {
+      return null;
+    }
+    return {
+      organizationId: workspace.organizationId,
+      branchId: inventoryScopeBranchId,
+    };
+  }, [workspace, inventoryScopeBranchId]);
+
+  const inventoryAttentionQuery = useQuery({
+    queryKey: [
+      "inventory",
+      "attention-summary",
+      "dashboard-health",
+      workspace?.organizationId,
+      inventoryScopeBranchId,
+    ],
+    enabled: Boolean(inventoryAttentionWorkspace),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => getInventoryAttentionSummary(inventoryAttentionWorkspace!, signal),
+  });
+
   const dashboardQuery = useQuery({
     queryKey: [
       "pos-dashboard",
@@ -308,9 +334,26 @@ export function ManagementDashboardPage() {
     productsQuery.isFetching ||
     profitabilityQuery.isFetching ||
     utangReportQuery.isFetching ||
-    branchRankQuery.isFetching;
+    branchRankQuery.isFetching ||
+    inventoryAttentionQuery.isFetching;
   const overview = overviewQuery.data;
   const dashboard = dashboardQuery.data;
+  const inventoryHealthIsBranchScoped = inventoryScopeBranchId != null;
+  const inventoryHealth = inventoryHealthIsBranchScoped
+    ? {
+        lowStock:
+          inventoryAttentionQuery.data?.lowStockProductCount ?? 0,
+        nearExpiry: inventoryAttentionQuery.data?.nearExpiryLotCount ?? 0,
+        expired: inventoryAttentionQuery.data?.expiredLotCount ?? 0,
+      }
+    : {
+        lowStock: overview?.lowStockProductCount ?? dashboard?.lowStockProductCount ?? 0,
+        nearExpiry: overview?.nearExpiryLotCount ?? 0,
+        expired: overview?.expiredLotCount ?? 0,
+      };
+  const inventoryHealthScopeLabel = inventoryHealthIsBranchScoped
+    ? branchScopeLabel
+    : organizationScopeLabel;
 
   const averageSale =
     dashboard && dashboard.completedSaleCount > 0
@@ -371,6 +414,9 @@ export function ManagementDashboardPage() {
           void productsQuery.refetch();
           void profitabilityQuery.refetch();
           void utangReportQuery.refetch();
+          if (inventoryAttentionWorkspace) {
+            void inventoryAttentionQuery.refetch();
+          }
           if (branchRankEnabled) {
             void branchRankQuery.refetch();
           }
@@ -627,7 +673,7 @@ export function ManagementDashboardPage() {
           <div className="dashboard-exec__ops">
             <DashboardPanel
               title={t("dashboard.inventoryHealth")}
-              scopeLabel={organizationScopeLabel}
+              scopeLabel={inventoryHealthScopeLabel}
               scopeTestId="scope-inventory-health"
               testId="dashboard-inventory-panel"
             >
@@ -639,21 +685,21 @@ export function ManagementDashboardPage() {
                   {
                     key: "low-stock",
                     label: t("dashboard.lowStock"),
-                    count: overview?.lowStockProductCount ?? dashboard.lowStockProductCount,
+                    count: inventoryHealth.lowStock,
                     href: "/inventory",
                     tone: "attention",
                   },
                   {
                     key: "near-expiry",
                     label: t("dashboard.nearExpiryLots"),
-                    count: overview?.nearExpiryLotCount ?? 0,
+                    count: inventoryHealth.nearExpiry,
                     href: "/inventory/expiration",
                     tone: "attention",
                   },
                   {
                     key: "expired",
                     label: t("dashboard.expiredLots"),
-                    count: overview?.expiredLotCount ?? 0,
+                    count: inventoryHealth.expired,
                     href: "/inventory/expiration",
                     tone: "danger",
                   },

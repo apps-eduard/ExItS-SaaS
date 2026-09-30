@@ -548,6 +548,7 @@ public sealed class BranchInventory02CClosureIntegrationTests(PosPostgreSqlFixtu
         new(
             new InventoryRepository(db),
             new InventoryLotStockService(new InventoryLotRepository(db)),
+            new BranchExpirationPolicyResolver(new InventoryBranchExpirationSettingRepository(db)),
             new InventoryBranchBalanceRepository(db),
             new FixedPrimaryDirectory(Main));
 

@@ -147,6 +147,56 @@ public sealed class DirectPurchaseHistoryQueryIntegrationTests(PosPostgreSqlFixt
         }
     }
 
+    [Fact]
+    public async Task Local_history_is_scoped_to_receiving_branch()
+    {
+        var options = new DbContextOptionsBuilder<PosDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .Options;
+        await using (var migrate = new PosDbContext(options))
+        {
+            await migrate.Database.MigrateAsync();
+        }
+
+        var buyer = Guid.NewGuid();
+        var main = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var panay = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var mainReceipt = Guid.NewGuid();
+        var panayReceipt = Guid.NewGuid();
+        var t1 = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
+
+        await using (var db = new PosDbContext(options))
+        {
+            db.DirectPurchaseReceipts.Add(
+                MakeLocal(mainReceipt, buyer, "DPR-MAIN", "Main Stall", 100m, new DateOnly(2026, 9, 12), t1, receivingBranchId: main));
+            db.DirectPurchaseReceipts.Add(
+                MakeLocal(panayReceipt, buyer, "DPR-PANAY", "Panay Stall", 200m, new DateOnly(2026, 9, 12), t1, receivingBranchId: panay));
+            await db.SaveChangesAsync();
+        }
+
+        var query = new DirectPurchaseHistoryQuery(new PosDbContext(options));
+        var (panayOnly, panayTotal) = await query.ListAsync(
+            buyer,
+            new DirectPurchaseHistoryFilter(
+                SourceType: DirectPurchaseHistorySourceTypes.Local,
+                ReceivingBranchId: panay),
+            0,
+            20);
+        Assert.Equal(1, panayTotal);
+        Assert.Single(panayOnly);
+        Assert.Equal(panayReceipt, panayOnly[0].SourceId);
+
+        var (empty, emptyTotal) = await query.ListAsync(
+            buyer,
+            new DirectPurchaseHistoryFilter(
+                SourceType: DirectPurchaseHistorySourceTypes.Local,
+                ReceivingBranchId: Guid.Parse("44444444-4444-4444-4444-444444444444")),
+            0,
+            20);
+        Assert.Equal(0, emptyTotal);
+        Assert.Empty(empty);
+    }
+
     private static void AssertBuyerSafeDetail(DirectPurchaseB2bDetailDto detail)
     {
         var json = System.Text.Json.JsonSerializer.Serialize(detail);
@@ -215,7 +265,8 @@ public sealed class DirectPurchaseHistoryQueryIntegrationTests(PosPostgreSqlFixt
         decimal total,
         DateOnly purchaseDate,
         DateTimeOffset createdAt,
-        bool voided = false) =>
+        bool voided = false,
+        Guid? receivingBranchId = null) =>
         new()
         {
             Id = id,
@@ -230,6 +281,7 @@ public sealed class DirectPurchaseHistoryQueryIntegrationTests(PosPostgreSqlFixt
             Status = voided ? "Voided" : "Posted",
             VoidedAtUtc = voided ? createdAt : null,
             VoidedByUserId = voided ? Actor : null,
-            VoidReason = voided ? "Test void" : null
+            VoidReason = voided ? "Test void" : null,
+            ReceivingBranchId = receivingBranchId
         };
 }

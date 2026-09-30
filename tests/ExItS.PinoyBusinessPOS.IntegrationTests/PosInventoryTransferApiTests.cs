@@ -169,8 +169,9 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
             tracksExpiration: true);
         await EnableAsync(client, org, product.ProductId, 0m);
 
-        var early = new DateOnly(2026, 8, 20);
-        var later = new DateOnly(2026, 9, 5);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var early = today.AddDays(30);
+        var later = today.AddDays(60);
         await AdjustInAsync(client, org, product.ProductId, 10m, early, "LOT-A");
         await AdjustInAsync(client, org, product.ProductId, 20m, later, "LOT-B");
 
@@ -238,6 +239,333 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         var sourceLots = await ListLotsAsync(client, org, product.ProductId, BranchA);
         Assert.Equal(6m, sourceLots.Single(l => l.LotId == lotA.LotId).QuantityOnHand);
         Assert.Equal(14m, sourceLots.Single(l => l.LotId == lotB.LotId).QuantityOnHand);
+    }
+
+    [Fact]
+    public async Task WrongVariant_receive_corrects_source_holds_destination_and_supports_return_inspect()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var red = await CreateProductAsync(client, org, "Apple Red", "Kilogram", 50m, $"tr-red-{org:N}"[..20]);
+        var green = await CreateProductAsync(client, org, "Apple Green", "Kilogram", 50m, $"tr-grn-{org:N}"[..20]);
+        await EnableAsync(client, org, red.ProductId, 100m);
+        await EnableAsync(client, org, green.ProductId, 50m);
+
+        var transfer = await CreateTransferAsync(client, org, BranchA, BranchB, red.ProductId, 10m);
+        transfer = await DispatchAsync(client, org, BranchA, transfer.TransferId);
+        Assert.Equal(90m, await OnHandAsync(client, org, red.ProductId, BranchA));
+        Assert.Equal(50m, await OnHandAsync(client, org, green.ProductId, BranchA));
+
+        transfer = await ReceiveAsync(
+            client,
+            org,
+            BranchB,
+            transfer.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(
+                    red.ProductId,
+                    GoodQty: 5m,
+                    OtherQty: 5m,
+                    OtherReasonCode: "WrongVariant",
+                    OtherFollowUp: "RequestReplacement",
+                    ActualReceivedProductId: green.ProductId,
+                    OtherCustodyDecision: "ReturnToSource")
+            ],
+            idempotencyKey: $"recv-wv-{org:N}");
+
+        Assert.Equal(95m, await OnHandAsync(client, org, red.ProductId, BranchA));
+        Assert.Equal(45m, await OnHandAsync(client, org, green.ProductId, BranchA));
+        Assert.Equal(5m, await OnHandAsync(client, org, red.ProductId, BranchB));
+        Assert.Equal(5m, await AvailableAsync(client, org, red.ProductId, BranchB));
+        Assert.Equal(5m, await OnHandAsync(client, org, green.ProductId, BranchB));
+        Assert.Equal(0m, await AvailableAsync(client, org, green.ProductId, BranchB));
+        Assert.Equal(5m, transfer.RemainingToDispatchQty);
+        Assert.Equal(0m, transfer.WaivedQty);
+
+        var custody = Assert.Single(transfer.ExceptionCustodies ?? []);
+        Assert.Equal("WrongVariant", custody.ReasonCode);
+        Assert.Equal(red.ProductId, custody.ExpectedProductId);
+        Assert.Equal(green.ProductId, custody.ActualProductId);
+        Assert.Equal("ReturnToSource", custody.Decision);
+        Assert.Equal(5m, custody.ReplacementDemandQty);
+
+        // Idempotent replay must not duplicate corrections.
+        var replay = await ReceiveAsync(
+            client,
+            org,
+            BranchB,
+            transfer.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(
+                    red.ProductId,
+                    GoodQty: 5m,
+                    OtherQty: 5m,
+                    OtherReasonCode: "WrongVariant",
+                    OtherFollowUp: "RequestReplacement",
+                    ActualReceivedProductId: green.ProductId,
+                    OtherCustodyDecision: "ReturnToSource")
+            ],
+            idempotencyKey: $"recv-wv-{org:N}");
+        Assert.Equal(95m, await OnHandAsync(client, org, red.ProductId, BranchA));
+        Assert.Equal(45m, await OnHandAsync(client, org, green.ProductId, BranchA));
+        Assert.Single(replay.ExceptionCustodies ?? []);
+
+        using (var dispatchReturn = Scoped(
+                   HttpMethod.Post,
+                   $"{Inventory}/transfers/exception-custodies/{custody.CustodyId:D}/dispatch-return",
+                   org,
+                   BranchB))
+        {
+            using var dispatchResponse = await client.SendAsync(dispatchReturn);
+            Assert.True(dispatchResponse.IsSuccessStatusCode, await dispatchResponse.Content.ReadAsStringAsync());
+        }
+
+        Assert.Equal(0m, await OnHandAsync(client, org, green.ProductId, BranchB));
+        Assert.Equal(0m, await AvailableAsync(client, org, green.ProductId, BranchB));
+
+        using (var receiveReturn = Scoped(
+                   HttpMethod.Post,
+                   $"{Inventory}/transfers/exception-custodies/{custody.CustodyId:D}/receive-return",
+                   org,
+                   BranchA))
+        {
+            using var receiveResponse = await client.SendAsync(receiveReturn);
+            Assert.True(receiveResponse.IsSuccessStatusCode, await receiveResponse.Content.ReadAsStringAsync());
+        }
+
+        Assert.Equal(50m, await OnHandAsync(client, org, green.ProductId, BranchA));
+        Assert.Equal(50m, await AvailableAsync(client, org, green.ProductId, BranchA));
+
+        transfer = await GetTransferAsync(client, org, BranchA, transfer.TransferId);
+        var afterReceive = Assert.Single(transfer.ExceptionCustodies ?? []);
+        Assert.Equal("ReceivedAtSource", afterReceive.Status);
+        Assert.NotNull(afterReceive.ReturnReceivedAtUtc);
+
+        // Idempotent re-receive must not restock again.
+        using (var receiveReturnAgain = Scoped(
+                   HttpMethod.Post,
+                   $"{Inventory}/transfers/exception-custodies/{custody.CustodyId:D}/receive-return",
+                   org,
+                   BranchA))
+        {
+            using var receiveAgainResponse = await client.SendAsync(receiveReturnAgain);
+            Assert.True(receiveAgainResponse.IsSuccessStatusCode, await receiveAgainResponse.Content.ReadAsStringAsync());
+        }
+
+        Assert.Equal(50m, await OnHandAsync(client, org, green.ProductId, BranchA));
+        Assert.Equal(50m, await AvailableAsync(client, org, green.ProductId, BranchA));
+        transfer = await GetTransferAsync(client, org, BranchA, transfer.TransferId);
+        Assert.Equal("ReceivedAtSource", Assert.Single(transfer.ExceptionCustodies ?? []).Status);
+
+        // Wrong variant must not use source inspection — receive return already restored sellable.
+        using (var inspect = Scoped(
+                   HttpMethod.Post,
+                   $"{Inventory}/transfers/exception-custodies/{custody.CustodyId:D}/inspect",
+                   org,
+                   BranchA))
+        {
+            inspect.Content = JsonContent.Create(
+                new InspectInventoryTransferExceptionCustodyRequest(5m, 0m),
+                options: JsonOptions);
+            using var inspectResponse = await client.SendAsync(inspect);
+            Assert.Equal(HttpStatusCode.BadRequest, inspectResponse.StatusCode);
+        }
+
+        Assert.Equal(50m, await OnHandAsync(client, org, green.ProductId, BranchA));
+        Assert.Equal(50m, await AvailableAsync(client, org, green.ProductId, BranchA));
+        Assert.Equal(5m, transfer.RemainingToDispatchQty);
+    }
+
+    [Fact]
+    public async Task WrongVariant_AcceptShortage_clears_remaining_and_rejects_KeepAtDestination()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var red = await CreateProductAsync(client, org, "Apple Red", "Kilogram", 50m, $"tr-red2-{org:N}"[..20]);
+        var green = await CreateProductAsync(client, org, "Apple Green", "Kilogram", 50m, $"tr-grn2-{org:N}"[..20]);
+        await EnableAsync(client, org, red.ProductId, 100m);
+        await EnableAsync(client, org, green.ProductId, 50m);
+
+        var transfer = await CreateTransferAsync(client, org, BranchA, BranchB, red.ProductId, 10m);
+        transfer = await DispatchAsync(client, org, BranchA, transfer.TransferId);
+
+        var keepRejected = await ReceiveRawAsync(
+            client,
+            org,
+            BranchB,
+            transfer.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(
+                    red.ProductId,
+                    GoodQty: 5m,
+                    OtherQty: 5m,
+                    OtherReasonCode: "WrongVariant",
+                    OtherFollowUp: "AcceptShortage",
+                    ActualReceivedProductId: green.ProductId,
+                    OtherCustodyDecision: "KeepAtDestination")
+            ]);
+        Assert.Equal(HttpStatusCode.BadRequest, keepRejected.StatusCode);
+
+        transfer = await ReceiveAsync(
+            client,
+            org,
+            BranchB,
+            transfer.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(
+                    red.ProductId,
+                    GoodQty: 5m,
+                    OtherQty: 5m,
+                    OtherReasonCode: "WrongVariant",
+                    OtherFollowUp: "AcceptShortage",
+                    ActualReceivedProductId: green.ProductId,
+                    OtherCustodyDecision: "ReturnToSource")
+            ],
+            idempotencyKey: $"recv-wv-as-{org:N}");
+
+        Assert.Equal(0m, transfer.RemainingToDispatchQty);
+        Assert.Equal(5m, transfer.WaivedQty);
+        var custody = Assert.Single(transfer.ExceptionCustodies ?? []);
+        Assert.Equal(0m, custody.ReplacementDemandQty);
+        Assert.Equal("ReturnToSource", custody.Decision);
+        Assert.Equal(5m, await OnHandAsync(client, org, green.ProductId, BranchB));
+        Assert.Equal(0m, await AvailableAsync(client, org, green.ProductId, BranchB));
+    }
+
+    [Fact]
+    public async Task Replacement_chain_R2_AcceptShortage_persists_waived_qty_and_clears_remaining()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Apple", "Kilogram", 50m, $"tr-apple-{org:N}"[..20]);
+        await EnableAsync(client, org, product.ProductId, 100m);
+
+        var root = await CreateTransferAsync(client, org, BranchA, BranchB, product.ProductId, 10m);
+        root = await DispatchAsync(client, org, BranchA, root.TransferId);
+        root = await ReceiveAsync(
+            client,
+            org,
+            BranchB,
+            root.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(
+                    product.ProductId,
+                    GoodQty: 5m,
+                    DamagedQty: 5m,
+                    DamagedFollowUp: "RequestReplacement",
+                    DamagedCustodyDecision: "KeepAtDestination")
+            ],
+            idempotencyKey: $"recv-root-{org:N}");
+        Assert.Equal("ClosedWithDiscrepancy", root.Status);
+        Assert.Equal(5m, root.RemainingToDispatchQty);
+        Assert.Equal(0m, root.WaivedQty);
+
+        var r1 = await PrepareRemainingAsync(client, org, BranchA, root.TransferId, $"prep-r1-{org:N}");
+        Assert.Equal(5m, r1.TotalSentQty);
+        r1 = await DispatchAsync(client, org, BranchA, r1.TransferId);
+        r1 = await ReceiveAsync(
+            client,
+            org,
+            BranchB,
+            r1.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(
+                    product.ProductId,
+                    GoodQty: 1m,
+                    DamagedQty: 4m,
+                    DamagedFollowUp: "RequestReplacement",
+                    DamagedCustodyDecision: "KeepAtDestination")
+            ],
+            idempotencyKey: $"recv-r1-{org:N}");
+        Assert.Equal(4m, r1.RemainingToDispatchQty);
+
+        var r2 = await PrepareRemainingAsync(client, org, BranchA, root.TransferId, $"prep-r2-{org:N}");
+        Assert.Equal(4m, r2.TotalSentQty);
+        r2 = await DispatchAsync(client, org, BranchA, r2.TransferId);
+        r2 = await ReceiveAsync(
+            client,
+            org,
+            BranchB,
+            r2.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(
+                    product.ProductId,
+                    GoodQty: 2m,
+                    MissingQty: 2m,
+                    MissingDisposition: "AcceptShortage")
+            ],
+            idempotencyKey: $"recv-r2-{org:N}");
+
+        var r2Line = Assert.Single(r2.Lines);
+        Assert.Equal(4m, r2Line.SentQty);
+        Assert.Equal(2m, r2Line.ReceivedQty);
+        Assert.Equal(2m, r2Line.ClosedQty);
+        Assert.Equal(2m, r2Line.WaivedQty);
+        Assert.Equal(0m, r2Line.OutstandingQty);
+
+        var r2ReceiptLine = Assert.Single(Assert.Single(r2.Receipts).Lines);
+        Assert.Equal(2m, r2ReceiptLine.QuantityReceived);
+        Assert.Equal(2m, r2ReceiptLine.QuantityMissing);
+        Assert.Equal("AcceptShortage", r2ReceiptLine.MissingDisposition);
+        Assert.Equal(2m, r2ReceiptLine.QuantityWaived);
+
+        // Re-fetch to prove EF persisted WaivedQty (not only in-memory receive result).
+        using var get = Scoped(HttpMethod.Get, $"{Inventory}/transfers/{r2.TransferId:D}", org, BranchA);
+        using var getResponse = await client.SendAsync(get);
+        getResponse.EnsureSuccessStatusCode();
+        var reloaded = await getResponse.Content.ReadFromJsonAsync<InventoryTransferDto>(JsonOptions);
+        Assert.NotNull(reloaded);
+        Assert.Equal(2m, Assert.Single(reloaded!.Lines).WaivedQty);
+        Assert.Equal(8m, reloaded.SatisfiedAtDestinationQty);
+        Assert.Equal(2m, reloaded.WaivedQty);
+        Assert.Equal(0m, reloaded.OpenInTransitQty);
+        Assert.Equal(0m, reloaded.RemainingToDispatchQty);
+
+        using var blockedResponse = await PrepareRemainingRawAsync(
+            client,
+            org,
+            BranchA,
+            root.TransferId,
+            $"prep-r3-{org:N}");
+        Assert.False(blockedResponse.IsSuccessStatusCode);
+        Assert.True(
+            (int)blockedResponse.StatusCode is >= 400 and < 500,
+            $"Unexpected status {(int)blockedResponse.StatusCode}");
+    }
+
+    private static async Task<InventoryTransferDto> PrepareRemainingAsync(
+        HttpClient client,
+        Guid org,
+        Guid source,
+        Guid transferId,
+        string idempotencyKey)
+    {
+        using var response = await PrepareRemainingRawAsync(client, org, source, transferId, idempotencyKey);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(response.IsSuccessStatusCode, body);
+        var dto = JsonSerializer.Deserialize<InventoryTransferDto>(body, JsonOptions);
+        Assert.NotNull(dto);
+        return dto!;
+    }
+
+    private static async Task<HttpResponseMessage> PrepareRemainingRawAsync(
+        HttpClient client,
+        Guid org,
+        Guid source,
+        Guid transferId,
+        string idempotencyKey)
+    {
+        var payload = "{}";
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))).ToLowerInvariant();
+        var request = Scoped(HttpMethod.Post, $"{Inventory}/transfers/{transferId:D}/prepare-remaining", org, source);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+        request.Headers.TryAddWithoutValidation("X-Pos-Payload-Hash", hash);
+        request.Headers.TryAddWithoutValidation("X-Pos-Operation-Type", "inventory_transfer.create");
+        request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+        return await client.SendAsync(request);
     }
 
     private static async Task<PosCatalogProductDto> CreateProductAsync(
@@ -309,13 +637,85 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         return page!.Items;
     }
 
+    [Fact]
+    public async Task List_all_and_detail_are_scoped_to_acting_branch()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var branchPanay = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var product = await CreateProductAsync(client, org, "Scope Coke", "Piece", 25m, "tr-scope");
+        await EnableAsync(client, org, product.ProductId, 200m);
+
+        // Unrelated to Panay — must never appear in Panay scoped list/detail.
+        var mainToIloilo = await CreateTransferAsync(client, org, BranchA, BranchB, product.ProductId, 10m);
+        var mainToPanay = await CreateTransferAsync(client, org, BranchA, branchPanay, product.ProductId, 11m);
+        await DispatchAsync(client, org, BranchA, mainToPanay.TransferId);
+        await ReceiveAsync(
+            client,
+            org,
+            branchPanay,
+            mainToPanay.TransferId,
+            [new InventoryTransferReceiveLineRequest(product.ProductId, 11m)]);
+        var panayToIloilo = await CreateTransferAsync(client, org, branchPanay, BranchB, product.ProductId, 5m);
+
+        using var allPanay = Scoped(HttpMethod.Get, $"{Inventory}/transfers", org, branchPanay);
+        using var allPanayResponse = await client.SendAsync(allPanay);
+        allPanayResponse.EnsureSuccessStatusCode();
+        var panayAll = await allPanayResponse.Content.ReadFromJsonAsync<PagedResult<InventoryTransferListItemDto>>(JsonOptions);
+        Assert.NotNull(panayAll);
+        Assert.Equal(2, panayAll!.TotalCount);
+        Assert.DoesNotContain(panayAll.Items, t => t.TransferId == mainToIloilo.TransferId);
+        Assert.Contains(panayAll.Items, t => t.TransferId == mainToPanay.TransferId);
+        Assert.Contains(panayAll.Items, t => t.TransferId == panayToIloilo.TransferId);
+
+        using var outPanay = Scoped(HttpMethod.Get, $"{Inventory}/transfers?direction=outgoing", org, branchPanay);
+        using var outResponse = await client.SendAsync(outPanay);
+        var panayOut = await outResponse.Content.ReadFromJsonAsync<PagedResult<InventoryTransferListItemDto>>(JsonOptions);
+        Assert.Single(panayOut!.Items);
+        Assert.Equal(panayToIloilo.TransferId, panayOut.Items[0].TransferId);
+
+        var inboundDraft = await CreateTransferAsync(client, org, BranchA, branchPanay, product.ProductId, 3m);
+        await DispatchAsync(client, org, BranchA, inboundDraft.TransferId);
+        using var inResponse = await client.SendAsync(
+            Scoped(HttpMethod.Get, $"{Inventory}/transfers?direction=incoming", org, branchPanay));
+        var panayIn = await inResponse.Content.ReadFromJsonAsync<PagedResult<InventoryTransferListItemDto>>(JsonOptions);
+        Assert.Contains(panayIn!.Items, t => t.TransferId == inboundDraft.TransferId);
+        Assert.DoesNotContain(panayIn.Items, t => t.TransferId == mainToIloilo.TransferId);
+
+        using var foreignDetail = Scoped(HttpMethod.Get, $"{Inventory}/transfers/{mainToIloilo.TransferId:D}", org, branchPanay);
+        using var foreignResponse = await client.SendAsync(foreignDetail);
+        Assert.Equal(HttpStatusCode.NotFound, foreignResponse.StatusCode);
+
+        using var involvedDetail = Scoped(HttpMethod.Get, $"{Inventory}/transfers/{panayToIloilo.TransferId:D}", org, branchPanay);
+        using var involvedResponse = await client.SendAsync(involvedDetail);
+        involvedResponse.EnsureSuccessStatusCode();
+    }
+
     private static async Task<decimal> OnHandAsync(HttpClient client, Guid org, Guid productId, Guid? branchId = null)
+    {
+        var account = await AccountAsync(client, org, productId, branchId);
+        return account.OnHandQuantity;
+    }
+
+    private static async Task<decimal> AvailableAsync(HttpClient client, Guid org, Guid productId, Guid? branchId = null)
+    {
+        var account = await AccountAsync(client, org, productId, branchId);
+        return account.AvailableQuantity;
+    }
+
+    private static async Task<PosInventoryAccountDto> AccountAsync(
+        HttpClient client,
+        Guid org,
+        Guid productId,
+        Guid? branchId = null)
     {
         using var get = Scoped(HttpMethod.Get, $"{Inventory}/{productId:D}", org, branchId ?? BranchA);
         using var response = await client.SendAsync(get);
         response.EnsureSuccessStatusCode();
         var account = await response.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
-        return account!.OnHandQuantity;
+        Assert.NotNull(account);
+        return account!;
     }
 
     private static async Task<decimal> OrgOnHandAsync(HttpClient client, Guid org, Guid productId)
@@ -359,6 +759,20 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         Guid transferId)
     {
         using var request = Scoped(HttpMethod.Post, $"{Inventory}/transfers/{transferId:D}/dispatch", org, source);
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var dto = await response.Content.ReadFromJsonAsync<InventoryTransferDto>(JsonOptions);
+        Assert.NotNull(dto);
+        return dto!;
+    }
+
+    private static async Task<InventoryTransferDto> GetTransferAsync(
+        HttpClient client,
+        Guid org,
+        Guid branchId,
+        Guid transferId)
+    {
+        using var request = Scoped(HttpMethod.Get, $"{Inventory}/transfers/{transferId:D}", org, branchId);
         using var response = await client.SendAsync(request);
         response.EnsureSuccessStatusCode();
         var dto = await response.Content.ReadFromJsonAsync<InventoryTransferDto>(JsonOptions);

@@ -77,7 +77,12 @@ public sealed record DirectPurchaseHistoryFilter(
     DateOnly? FromDate = null,
     DateOnly? ToDate = null,
     string? Search = null,
-    string? Status = null);
+    string? Status = null,
+    /// <summary>
+    /// When set, Local receipts are limited to this receiving branch.
+    /// B2B seller-sale projections remain organization-scoped (no buyer receiving branch).
+    /// </summary>
+    Guid? ReceivingBranchId = null);
 
 /// <summary>Buyer-safe unified list row for Direct Purchases.</summary>
 public sealed record DirectPurchaseHistoryItemDto(

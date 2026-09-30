@@ -431,7 +431,7 @@ describe("purchase-order-create-connected", () => {
   });
 
   it("formats unit labels for display", () => {
-    expect(formatUnitOfMeasureLabel("Kilogram")).toBe("Kg");
+    expect(formatUnitOfMeasureLabel("Kilogram")).toBe("kg");
     expect(formatUnitPriceLabel(12, "Piece")).toMatch(/₱\s*12/);
   });
 });

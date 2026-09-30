@@ -6,8 +6,10 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 /// <summary>
-/// Tracks damaged quantity custody after a transfer receive wave until inspection finalizes
-/// recovered sellable vs confirmed damaged outcomes.
+/// Tracks damaged quantity custody after a transfer receive wave.
+/// Destination keep: goods remain Damaged (non-sellable); no destination re-inspection.
+/// Return-to-source: destination returns physical damaged goods; only source inspects
+/// recovered sellable vs confirmed damaged. Source recovery never satisfies destination demand.
 /// </summary>
 public sealed class InventoryTransferDamageCustody
 {
@@ -36,42 +38,21 @@ public sealed class InventoryTransferDamageCustody
     public Guid? InspectedBy { get; private set; }
 
     /// <summary>
-    /// Destination-side recovered sellable that counts toward coverage satisfaction.
-    /// Source-side recovery never counts as destination fulfillment.
+    /// Destination keep never contributes recovered sellable toward fulfillment
+    /// (destination does not reclassify damaged into sellable via transfer inspection).
+    /// Retained for historical custody rows that may have been inspected under the prior model.
     /// </summary>
-    public decimal DestinationRecoveredSellableQty =>
-        Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
-            ? RecoveredSellableQty
-            : 0m;
+    public decimal DestinationRecoveredSellableQty => 0m;
 
     /// <summary>
-    /// Quantity that still needs replacement after inspection (or all qty when returning,
-    /// because destination lost physical possession of the entire damaged wave).
+    /// Quantity that still needs replacement after the receive-time fulfillment decision.
+    /// AcceptShortage → 0. RequestReplacement → full custody quantity (Keep or Return).
+    /// Source inspection outcomes never change destination replacement demand.
     /// </summary>
-    public decimal ReplacementDemandQty
-    {
-        get
-        {
-            if (FollowUpIntent == InventoryTransferDiscrepancyFollowUp.AcceptShortage)
-            {
-                return 0m;
-            }
-
-            if (Decision == InventoryTransferDamagedCustodyDecision.ReturnToSource)
-            {
-                // Entire damaged qty left destination; all requires replacement.
-                return Quantity - WaivedQty;
-            }
-
-            if (Status != InventoryTransferDamageCustodyStatus.Inspected)
-            {
-                // Held/uninspected keep qty is not yet satisfied and not open-in-transit.
-                return Quantity;
-            }
-
-            return Math.Max(0m, ConfirmedDamagedQty - WaivedQty);
-        }
-    }
+    public decimal ReplacementDemandQty =>
+        FollowUpIntent == InventoryTransferDiscrepancyFollowUp.AcceptShortage
+            ? 0m
+            : Quantity;
 
     private InventoryTransferDamageCustody(
         InventoryTransferDamageCustodyId id,

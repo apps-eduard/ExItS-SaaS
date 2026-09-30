@@ -3718,6 +3718,22 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("notes");
 
+                    b.Property<string>("OnlineOrderingAccess")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Default")
+                        .HasColumnName("online_ordering_access");
+
+                    b.Property<DateTimeOffset?>("OnlineOrderingAccessUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("online_ordering_access_updated_at_utc");
+
+                    b.Property<Guid?>("OnlineOrderingAccessUpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("online_ordering_access_updated_by_user_id");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
@@ -3783,6 +3799,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("customers", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_customers_online_ordering_access", "online_ordering_access IN ('Default', 'Allowed', 'Blocked')");
+
                             t.HasCheckConstraint("ck_customers_party_kind", "party_kind IN ('Person', 'Business')");
 
                             t.HasCheckConstraint("ck_customers_status", "status IN ('Active', 'Inactive')");
@@ -4079,6 +4097,89 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_idempotency_org_product_type_key");
 
                     b.ToTable("idempotency_records", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.BranchCategoryExpirySalePolicyRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<int>("StopSellingDaysBeforeExpiry")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_selling_days_before_expiry");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("OrganizationId", "BranchId", "CategoryId")
+                        .HasName("pk_branch_category_expiry_sale_policies");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("OrganizationId", "BranchId")
+                        .HasDatabaseName("ix_branch_category_expiry_sale_policies_org_branch");
+
+                    b.ToTable("branch_category_expiry_sale_policies", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_branch_category_expiry_sale_policies_days", "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.BranchExpirySalePolicySettingRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<int>("StopSellingDaysBeforeExpiry")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_selling_days_before_expiry");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("OrganizationId", "BranchId")
+                        .HasName("pk_branch_expiry_sale_policy_settings");
+
+                    b.ToTable("branch_expiry_sale_policy_settings", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_branch_expiry_sale_policy_settings_days", "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+                        });
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.DirectPurchaseReceiptLineRecord", b =>
@@ -4476,6 +4577,64 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryBranchExpirationSettingRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<DateTimeOffset>("EnabledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("enabled_at_utc");
+
+                    b.Property<Guid>("EnabledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("enabled_by");
+
+                    b.Property<int?>("ExpirationWarningDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("expiration_warning_days");
+
+                    b.Property<bool>("TracksExpiration")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tracks_expiration");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("OrganizationId", "BranchId", "ProductId")
+                        .HasName("pk_inventory_branch_expiration_settings");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("OrganizationId", "BranchId", "TracksExpiration")
+                        .HasDatabaseName("ix_inventory_branch_expiration_settings_org_branch_enabled");
+
+                    b.ToTable("inventory_branch_expiration_settings", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_inventory_branch_expiration_settings_warning_days", "expiration_warning_days IS NULL OR (expiration_warning_days >= 1 AND expiration_warning_days <= 365)");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryBranchReorderDefaultRecord", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -4560,6 +4719,71 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("inventory_branch_reorder_settings", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryLotIdentityCorrectionRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<DateTimeOffset>("CorrectedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("corrected_at_utc");
+
+                    b.Property<Guid>("CorrectedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("corrected_by");
+
+                    b.Property<Guid>("InventoryLotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_lot_id");
+
+                    b.Property<DateOnly>("NewExpirationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("new_expiration_date");
+
+                    b.Property<string>("NewLotNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("new_lot_number");
+
+                    b.Property<DateOnly>("OldExpirationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("old_expiration_date");
+
+                    b.Property<string>("OldLotNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("old_lot_number");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryLotId");
+
+                    b.HasIndex("OrganizationId", "InventoryLotId", "CorrectedAtUtc")
+                        .HasDatabaseName("ix_inventory_lot_identity_corrections_org_lot_corrected");
+
+                    b.ToTable("inventory_lot_identity_corrections", "pos");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryLotMovementRecord", b =>
@@ -4913,6 +5137,146 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferExceptionCustodyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ActualProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actual_product_id");
+
+                    b.Property<decimal>("ConfirmedNonSellableQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("confirmed_non_sellable_qty");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("decision");
+
+                    b.Property<Guid>("ExpectedProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("expected_product_id");
+
+                    b.Property<string>("FollowUpIntent")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("follow_up_intent");
+
+                    b.Property<Guid>("HeldBranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("held_branch_id");
+
+                    b.Property<DateTimeOffset?>("InspectedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inspected_at_utc");
+
+                    b.Property<Guid?>("InspectedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspected_by");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("ReasonCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("reason_code");
+
+                    b.Property<Guid>("ReceiptLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receipt_line_id");
+
+                    b.Property<decimal>("RecoveredSellableQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("recovered_sellable_qty");
+
+                    b.Property<DateTimeOffset?>("ReturnDispatchedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("return_dispatched_at_utc");
+
+                    b.Property<Guid?>("ReturnDispatchedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("return_dispatched_by");
+
+                    b.Property<DateTimeOffset?>("ReturnReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("return_received_at_utc");
+
+                    b.Property<Guid?>("ReturnReceivedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("return_received_by");
+
+                    b.Property<Guid>("RootTransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_transfer_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transfer_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiptLineId");
+
+                    b.HasIndex("TransferId");
+
+                    b.HasIndex("OrganizationId", "ReceiptLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_itec_org_receipt_line");
+
+                    b.HasIndex("OrganizationId", "RootTransferId")
+                        .HasDatabaseName("ix_itec_org_root");
+
+                    b.HasIndex("OrganizationId", "TransferId")
+                        .HasDatabaseName("ix_itec_org_transfer");
+
+                    b.ToTable("inventory_transfer_exception_custodies", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_itec_decision", "decision IN ('KeepAtDestination', 'ReturnToSource')");
+
+                            t.HasCheckConstraint("ck_itec_follow_up", "follow_up_intent IN ('RequestReplacement', 'AcceptShortage')");
+
+                            t.HasCheckConstraint("ck_itec_inspection_split", "recovered_sellable_qty >= 0 AND confirmed_non_sellable_qty >= 0");
+
+                            t.HasCheckConstraint("ck_itec_quantity_positive", "quantity > 0");
+
+                            t.HasCheckConstraint("ck_itec_status", "status IN ('HeldAtDestination', 'AwaitingReturn', 'ReturnInTransit', 'ReceivedAtSource', 'AwaitingInspection', 'Inspected')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferLineRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5047,6 +5411,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("ActualReceivedProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actual_received_product_id");
+
                     b.Property<string>("DamagedFollowUp")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
@@ -5061,6 +5429,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("note");
+
+                    b.Property<string>("OtherCustodyDecision")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("other_custody_decision");
 
                     b.Property<string>("OtherFollowUp")
                         .HasMaxLength(32)
@@ -5328,6 +5701,79 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_inventory_transfers_replacement_shape", "(root_transfer_id IS NULL AND replacement_sequence IS NULL) OR (root_transfer_id IS NOT NULL AND replacement_sequence IS NOT NULL AND replacement_sequence >= 1)");
 
                             t.HasCheckConstraint("ck_inventory_transfers_status", "status IN ('Draft', 'InTransit', 'PartiallyReceived', 'Received', 'Cancelled', 'ClosedWithDiscrepancy')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.OrganizationCategoryExpirySalePolicyRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<int>("StopSellingDaysBeforeExpiry")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_selling_days_before_expiry");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("OrganizationId", "CategoryId")
+                        .HasName("pk_organization_category_expiry_sale_policies");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("organization_category_expiry_sale_policies", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_organization_category_expiry_sale_policies_days", "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.OrganizationExpirySalePolicySettingRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("StopSellingDaysBeforeExpiry")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_selling_days_before_expiry");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("OrganizationId")
+                        .HasName("pk_organization_expiry_sale_policy_settings");
+
+                    b.ToTable("organization_expiry_sale_policy_settings", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_organization_expiry_sale_policy_settings_days", "stop_selling_days_before_expiry >= 0 AND stop_selling_days_before_expiry <= 365");
                         });
                 });
 
@@ -6076,7 +6522,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("stock_movements", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal', 'WasteLoss', 'WasteLossVoidRestoration', 'PurchaseReceiptReversal', 'DirectPurchaseReceiptReversal', 'ConnectedPurchaseFulfillment', 'SaleReturnWriteOff', 'ConnectedPoReturnDispatch', 'ConnectedPoReturnRestock', 'ConnectedPoReturnWriteOff', 'ConnectedPurchaseFulfillmentReconciliation', 'TransferDamageHold', 'TransferDamageRecovery', 'TransferDamageReturnOut', 'TransferDamageReturnIn', 'TransferDamageWriteOff')");
+                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal', 'WasteLoss', 'WasteLossVoidRestoration', 'PurchaseReceiptReversal', 'DirectPurchaseReceiptReversal', 'ConnectedPurchaseFulfillment', 'SaleReturnWriteOff', 'ConnectedPoReturnDispatch', 'ConnectedPoReturnRestock', 'ConnectedPoReturnWriteOff', 'ConnectedPurchaseFulfillmentReconciliation', 'TransferDamageHold', 'TransferDamageRecovery', 'TransferDamageReturnOut', 'TransferDamageReturnIn', 'TransferDamageWriteOff', 'TransferExceptionHold', 'TransferExceptionExpectedRestore', 'TransferExceptionActualOut', 'TransferExceptionReturnOut', 'TransferExceptionReturnIn', 'TransferExceptionRecovery', 'TransferExceptionWriteOff', 'TransferExceptionReturnRestock')");
 
                             t.HasCheckConstraint("ck_stock_movements_quantity_effect_nonzero", "quantity_effect <> 0");
 
@@ -10759,6 +11205,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_expenses_expense_categories");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.BranchCategoryExpirySalePolicyRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.ProductCategoryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_branch_category_expiry_sale_policies_categories");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.DirectPurchaseReceiptLineRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
@@ -10805,6 +11261,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_inventory_branch_balances_products");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryBranchExpirationSettingRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_branch_expiration_settings_products");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryBranchReorderSettingRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
@@ -10813,6 +11279,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_inventory_branch_reorder_settings_products");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryLotIdentityCorrectionRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryLotRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InventoryLotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_lot_identity_corrections_lots");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryLotMovementRecord", b =>
@@ -10860,6 +11336,23 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_itdc_transfer");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferExceptionCustodyRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferReceiptLineRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ReceiptLineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_itec_receipt_line");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferRecord", null)
+                        .WithMany()
+                        .HasForeignKey("TransferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_itec_transfer");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferLineRecord", b =>
@@ -10925,6 +11418,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasForeignKey("StockRequestId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_inventory_transfers_stock_requests");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.OrganizationCategoryExpirySalePolicyRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.ProductCategoryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_category_expiry_sale_policies_categories");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionComponentRecord", b =>

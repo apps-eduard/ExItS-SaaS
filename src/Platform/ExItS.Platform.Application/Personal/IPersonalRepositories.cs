@@ -13,6 +13,18 @@ public interface IPersonalAccountSettingsRepository
     Task UpdateAsync(PersonalAccountSettings settings, CancellationToken cancellationToken = default);
 }
 
+public interface IPersonalSharedUtangPreferenceRepository
+{
+    Task<PersonalSharedUtangPreference?> GetByOwnerAndCounterpartyAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalSharedUtangPreference preference, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalSharedUtangPreference preference, CancellationToken cancellationToken = default);
+}
+
 public interface IPersonalContactRepository
 {
     Task<PersonalContact?> GetByIdAsync(PersonalContactId id, CancellationToken cancellationToken = default);
@@ -183,6 +195,8 @@ public interface IPersonalTodoRepository
     Task AddAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<PersonalTodo>> ListDueRemindersAsync(
         DateTimeOffset asOfUtc,

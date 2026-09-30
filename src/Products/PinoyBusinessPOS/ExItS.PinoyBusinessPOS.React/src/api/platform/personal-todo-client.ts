@@ -55,9 +55,17 @@ export type PersonalTodoVersionRequest = {
   expectedVersion?: number | null;
 };
 
-export type TodoAgendaTab = "today" | "upcoming" | "overdue" | "open" | "completed" | "cancelled";
+export type TodoAgendaTab =
+  | "all"
+  | "today"
+  | "upcoming"
+  | "overdue"
+  | "open"
+  | "completed"
+  | "cancelled";
 
 const TODO_AGENDA_TABS: readonly TodoAgendaTab[] = [
+  "all",
   "today",
   "upcoming",
   "overdue",
@@ -70,7 +78,7 @@ export function parseTodoAgendaTab(value: string | null | undefined): TodoAgenda
   if (value && TODO_AGENDA_TABS.includes(value as TodoAgendaTab)) {
     return value as TodoAgendaTab;
   }
-  return "today";
+  return "all";
 }
 
 export function todoAgendaTabHref(tab: TodoAgendaTab): string {
@@ -80,6 +88,7 @@ export function todoAgendaTabHref(tab: TodoAgendaTab): string {
 export type TodoDueBucket = "none" | "today" | "upcoming" | "overdue";
 
 export type PersonalTodoCounts = {
+  all: number;
   today: number;
   upcoming: number;
   overdue: number;
@@ -207,6 +216,21 @@ export async function cancelPersonalTodo(
   return personalTodoSchema.parse(normalizeTodo(raw));
 }
 
+/** Permanently deletes a cancelled to-do (server hard delete). */
+export async function deletePersonalTodo(
+  todoId: string,
+  body?: PersonalTodoVersionRequest,
+  signal?: AbortSignal,
+): Promise<void> {
+  const versionQuery =
+    body?.expectedVersion == null ? "" : `?expectedVersion=${encodeURIComponent(String(body.expectedVersion))}`;
+  await platformRequest<void>({
+    method: "DELETE",
+    path: `${TODOS}/${todoId}${versionQuery}`,
+    signal,
+  });
+}
+
 export function isTodoConcurrencyConflict(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const err = error as { status?: number; errorCode?: string };
@@ -243,6 +267,7 @@ export function filterTodosByTab(
   now = new Date(),
 ): PersonalTodoDto[] {
   return todos.filter((todo) => {
+    if (tab === "all") return todo.status !== "Cancelled";
     if (tab === "completed") return todo.status === "Completed";
     if (tab === "cancelled") return todo.status === "Cancelled";
     if (todo.status !== "Open") return false;
@@ -260,6 +285,7 @@ export function summarizeTodoCounts(
   now = new Date(),
 ): PersonalTodoCounts {
   return {
+    all: filterTodosByTab(todos, "all", now).length,
     today: filterTodosByTab(todos, "today", now).length,
     upcoming: filterTodosByTab(todos, "upcoming", now).length,
     overdue: filterTodosByTab(todos, "overdue", now).length,
@@ -360,8 +386,63 @@ export function filterAndSortTodosForTab(
   return sortPersonalTodos(searched);
 }
 
+export type PersonalTodoListGroupId =
+  | TodoAgendaTab
+  | "overdue"
+  | "today"
+  | "upcoming";
+
+export type PersonalTodoListGroup = {
+  id: PersonalTodoListGroupId;
+  items: PersonalTodoDto[];
+};
+
+/** Atlantis-style grouped sections (Open tab splits by due bucket). */
+export function buildPersonalTodoListGroups(
+  todos: readonly PersonalTodoDto[],
+  tab: TodoAgendaTab,
+  options?: { search?: string; now?: Date },
+): PersonalTodoListGroup[] {
+  const now = options?.now ?? new Date();
+  const search = options?.search ?? "";
+
+  function bucketItems(bucket: TodoDueBucket | "upcoming-open"): PersonalTodoDto[] {
+    const open = filterTodosByTab([...todos], "open", now);
+    const bucketed = open.filter((todo) => {
+      const dueBucket = classifyTodoDue(todo.dueAtUtc, now);
+      if (bucket === "upcoming-open") {
+        return dueBucket === "upcoming" || dueBucket === "none";
+      }
+      return dueBucket === bucket;
+    });
+    return sortPersonalTodos(filterTodosBySearch(bucketed, search));
+  }
+
+  if (tab === "all" || tab === "open") {
+    const groups: PersonalTodoListGroup[] = [
+      { id: "overdue", items: bucketItems("overdue") },
+      { id: "today", items: bucketItems("today") },
+      { id: "upcoming", items: bucketItems("upcoming-open") },
+    ];
+    if (tab === "all") {
+      groups.push({
+        id: "completed",
+        items: filterAndSortTodosForTab(todos, "completed", { search, now }),
+      });
+    }
+    return groups.filter((group) => group.items.length > 0);
+  }
+
+  const items = filterAndSortTodosForTab(todos, tab, { search, now });
+  if (items.length === 0) {
+    return [];
+  }
+  return [{ id: tab, items }];
+}
+
 export type TodoAgendaTabEmptyKey = {
   titleKey:
+    | "personal.todo.emptyAllTitle"
     | "personal.todo.emptyTodayTitle"
     | "personal.todo.emptyUpcomingTitle"
     | "personal.todo.emptyOverdueTitle"
@@ -370,6 +451,7 @@ export type TodoAgendaTabEmptyKey = {
     | "personal.todo.emptyCancelledTitle"
     | "personal.todo.emptySearchTitle";
   detailKey:
+    | "personal.todo.emptyAllDetail"
     | "personal.todo.emptyTodayDetail"
     | "personal.todo.emptyUpcomingDetail"
     | "personal.todo.emptyOverdueDetail"
@@ -390,6 +472,11 @@ export function todoEmptyStateKeys(
     };
   }
   switch (tab) {
+    case "all":
+      return {
+        titleKey: "personal.todo.emptyAllTitle",
+        detailKey: "personal.todo.emptyAllDetail",
+      };
     case "today":
       return {
         titleKey: "personal.todo.emptyTodayTitle",
@@ -453,13 +540,28 @@ export function priorityRank(priority: string): number {
   }
 }
 
-export function priorityToneClass(priority: string): string | null {
+export function priorityToneClass(priority: string): string {
   switch (priority) {
     case "High":
       return "personal-todo-meta__chip--priority-high";
+    case "Normal":
+      return "personal-todo-meta__chip--priority-normal";
     case "Low":
       return "personal-todo-meta__chip--priority-low";
     default:
-      return null;
+      return "personal-todo-meta__chip--priority-none";
+  }
+}
+
+export function priorityTextToneClass(priority: string): string {
+  switch (priority) {
+    case "High":
+      return "personal-todo-priority-text--high";
+    case "Normal":
+      return "personal-todo-priority-text--normal";
+    case "Low":
+      return "personal-todo-priority-text--low";
+    default:
+      return "personal-todo-priority-text--none";
   }
 }

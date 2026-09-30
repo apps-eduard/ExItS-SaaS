@@ -10,6 +10,13 @@ vi.mock("@/i18n/I18nProvider", () => ({
   }),
 }));
 
+vi.mock("@/session/SessionProvider", () => ({
+  useSession: () => ({
+    session: { accountClass: "Organization" },
+    refreshSession: vi.fn(),
+  }),
+}));
+
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
     boundWorkspace: {
@@ -29,22 +36,35 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
   }),
 }));
 
+const getManagementOverview = vi.fn(async () => ({
+  businessDate: "2026-09-04",
+  todaySalesTotal: 0,
+  todaySaleCount: 0,
+  todayCashSalesTotal: 0,
+  todayUtangSalesTotal: 0,
+  todayPaymentsReceived: 0,
+  openUtangOutstanding: 0,
+  lowStockProductCount: 99,
+  expiredLotCount: 99,
+  nearExpiryLotCount: 99,
+  pendingTransferCount: 1,
+  openShiftCount: 0,
+  activeRegisterCount: 0,
+}));
+
 vi.mock("@/api/pos/pos-reporting-client", () => ({
-  getManagementOverview: vi.fn(async () => ({
-    businessDate: "2026-09-04",
-    todaySalesTotal: 0,
-    todaySaleCount: 0,
-    todayCashSalesTotal: 0,
-    todayUtangSalesTotal: 0,
-    todayPaymentsReceived: 0,
-    openUtangOutstanding: 0,
-    lowStockProductCount: 2,
-    expiredLotCount: 1,
-    nearExpiryLotCount: 3,
-    pendingTransferCount: 1,
-    openShiftCount: 0,
-    activeRegisterCount: 0,
-  })),
+  getManagementOverview: (...args: unknown[]) => getManagementOverview(...args),
+}));
+
+const getInventoryAttentionSummary = vi.fn(async () => ({
+  lowStockProductCount: 2,
+  outOfStockProductCount: 0,
+  expiredLotCount: 0,
+  nearExpiryLotCount: 0,
+}));
+
+vi.mock("@/api/pos/pos-inventory-client", () => ({
+  getInventoryAttentionSummary: (...args: unknown[]) => getInventoryAttentionSummary(...args),
 }));
 
 vi.mock("@/api/pos/pos-inventory-transfer-client", () => ({
@@ -91,5 +111,36 @@ describe("WarehouseDashboardPage", () => {
     });
     expect(screen.getByTestId("manager-home-quick-actions")).toBeInTheDocument();
     expect(screen.queryByTestId("manager-action-sell")).not.toBeInTheDocument();
+  });
+
+  it("uses branch attention summary for expiry — not management overview", async () => {
+    getInventoryAttentionSummary.mockResolvedValueOnce({
+      lowStockProductCount: 0,
+      outOfStockProductCount: 0,
+      expiredLotCount: 0,
+      nearExpiryLotCount: 0,
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <WarehouseDashboardPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("manager-today-stock-alerts")).toBeInTheDocument();
+    });
+
+    expect(getInventoryAttentionSummary).toHaveBeenCalled();
+    expect(getManagementOverview).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("manager-attention-expiry")).not.toBeInTheDocument();
+    const stockAlerts = screen.getByTestId("manager-today-stock-alerts");
+    expect(stockAlerts.textContent).toMatch(/0/);
+    expect(stockAlerts.textContent).not.toMatch(/198|99/);
   });
 });

@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -58,7 +59,7 @@ public sealed class InventoryStockRollupQueryTests
     }
 
     [Fact]
-    public async Task AREA02_07_available_is_on_hand_minus_reserved_at_every_level()
+    public async Task AREA02_07_available_subtracts_reserved_and_non_sellable_buckets()
     {
         var harness = Harness.WithAreas();
 
@@ -66,12 +67,65 @@ public sealed class InventoryStockRollupQueryTests
 
         foreach (var area in rollup.Areas)
         {
-            Assert.Equal(area.OnHandQuantity - area.ReservedQuantity, area.AvailableQuantity);
+            Assert.Equal(
+                area.Branches.Sum(b => b.AvailableQuantity),
+                area.AvailableQuantity);
             foreach (var branch in area.Branches)
             {
-                Assert.Equal(branch.OnHandQuantity - branch.ReservedQuantity, branch.AvailableQuantity);
+                Assert.Equal(
+                    Math.Max(
+                        0m,
+                        branch.OnHandQuantity
+                        - branch.ReservedQuantity
+                        - branch.PendingReturnQuantity
+                        - branch.InspectionHoldQuantity
+                        - branch.DamagedQuantity),
+                    branch.AvailableQuantity);
             }
         }
+    }
+
+    [Fact]
+    public async Task Available_matches_branch_stock_resolver_when_damaged_present()
+    {
+        var balances = new[]
+        {
+            InventoryBranchBalance.Rehydrate(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(MainBranch),
+                CatalogProductId.From(Product),
+                onHandQuantity: 1480m,
+                updatedAtUtc: Utc,
+                reservedQuantity: 0m,
+                pendingReturnQuantity: 0m,
+                inspectionHoldQuantity: 0m,
+                damagedQuantity: 5m),
+            InventoryBranchBalance.Rehydrate(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(IloiloBranch),
+                CatalogProductId.From(Product),
+                onHandQuantity: 20m,
+                updatedAtUtc: Utc,
+                reservedQuantity: 0m),
+        };
+        var harness = Harness.WithAreas(
+            authorized:
+            [
+                new AuthorizedBranchGrouping(MainBranch, "Panay warehouse", Panay, "PANAY"),
+                new AuthorizedBranchGrouping(IloiloBranch, "Iloilo branch", Panay, "PANAY"),
+            ],
+            balances: balances,
+            accountOnHand: 1500m,
+            accountReserved: 0m);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+        var panay = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == MainBranch);
+        Assert.Equal(1480m, panay.OnHandQuantity);
+        Assert.Equal(5m, panay.DamagedQuantity);
+        Assert.Equal(1475m, panay.AvailableQuantity);
+        Assert.Equal(
+            BranchStockResolver.ResolveAvailable(1480m, 0m, 0m, 0m, 5m),
+            panay.AvailableQuantity);
     }
 
     [Fact]
@@ -316,6 +370,151 @@ public sealed class InventoryStockRollupQueryTests
         Assert.Equal(1, harness.Grouping.CallCount);
     }
 
+    [Fact]
+    public async Task Rollup_available_caps_to_sellable_when_expiration_tracked_lots_include_expired()
+    {
+        // Main: 90 on hand, lots = 50 expired + 40 sellable → available 40 (not 90).
+        // Iloilo: 60 on hand, no tracking → available 60.
+        // Org account: 150 on hand / 0 reserved → available Min(150, 40+60) = 100.
+        var clockUtc = new DateTimeOffset(2026, 9, 27, 12, 0, 0, TimeSpan.Zero);
+        var settings = new InMemoryBranchExpirationSettings();
+        settings.Items.Add(InventoryBranchExpirationSetting.CreateEnabled(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(MainBranch),
+            CatalogProductId.From(Product),
+            expirationWarningDays: 7,
+            actorId: Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            utcNow: clockUtc));
+
+        var lots = new RollupLots(
+        [
+            InventoryLot.Create(
+                PosOrganizationId.From(Org),
+                CatalogProductId.From(Product),
+                new DateOnly(2026, 9, 12),
+                50m,
+                clockUtc,
+                PosBranchId.From(MainBranch),
+                "EXPIRED"),
+            InventoryLot.Create(
+                PosOrganizationId.From(Org),
+                CatalogProductId.From(Product),
+                new DateOnly(2026, 9, 30),
+                40m,
+                clockUtc,
+                PosBranchId.From(MainBranch),
+                "NEAR"),
+        ]);
+
+        var harness = Harness.WithAreas(
+            authorized:
+            [
+                new AuthorizedBranchGrouping(MainBranch, "Main Branch", Panay, "PANAY"),
+                new AuthorizedBranchGrouping(IloiloBranch, "Iloilo", Panay, "PANAY"),
+            ],
+            accountOnHand: 150m,
+            accountReserved: 0m,
+            balances:
+            [
+                Balance(MainBranch, 90m, 0m),
+                Balance(IloiloBranch, 60m, 0m),
+            ],
+            lots: lots,
+            expirationPolicies: new BranchExpirationPolicyResolver(settings),
+            clock: new RollupClock(clockUtc));
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        var main = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == MainBranch);
+        Assert.Equal(90m, main.OnHandQuantity);
+        Assert.Equal(0m, main.ReservedQuantity);
+        Assert.Equal(40m, main.AvailableQuantity);
+        Assert.Equal(50m, main.ExpiredQuantity);
+        Assert.Equal(40m, main.NearExpiryQuantity);
+        Assert.Equal(40m, main.SellableQuantity);
+
+        var iloilo = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == IloiloBranch);
+        Assert.Equal(60m, iloilo.AvailableQuantity);
+        Assert.Null(iloilo.NearExpiryQuantity);
+        Assert.Null(iloilo.ExpiredQuantity);
+
+        Assert.Equal(150m, rollup.OrganizationOnHandQuantity);
+        Assert.Equal(0m, rollup.OrganizationReservedQuantity);
+        Assert.Equal(100m, rollup.OrganizationAvailableQuantity);
+        Assert.Equal(100m, rollup.AccessibleAvailableQuantity);
+    }
+
+    [Fact]
+    public async Task Rollup_exposes_near_expiry_per_branch_when_viewing_from_another_branch()
+    {
+        // Iloilo has near-expiry lots; Main has none. Branch breakdown must still show
+        // Iloilo near-expiry so Main viewers see it under "other branches".
+        var clockUtc = new DateTimeOffset(2026, 9, 27, 12, 0, 0, TimeSpan.Zero);
+        var settings = new InMemoryBranchExpirationSettings();
+        settings.Items.Add(InventoryBranchExpirationSetting.CreateEnabled(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(IloiloBranch),
+            CatalogProductId.From(Product),
+            expirationWarningDays: 7,
+            actorId: Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            utcNow: clockUtc));
+        settings.Items.Add(InventoryBranchExpirationSetting.CreateEnabled(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(MainBranch),
+            CatalogProductId.From(Product),
+            expirationWarningDays: 7,
+            actorId: Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            utcNow: clockUtc));
+
+        var lots = new RollupLots(
+        [
+            InventoryLot.Create(
+                PosOrganizationId.From(Org),
+                CatalogProductId.From(Product),
+                new DateOnly(2026, 9, 30),
+                25m,
+                clockUtc,
+                PosBranchId.From(IloiloBranch),
+                "ILO-NEAR"),
+            InventoryLot.Create(
+                PosOrganizationId.From(Org),
+                CatalogProductId.From(Product),
+                new DateOnly(2026, 12, 1),
+                40m,
+                clockUtc,
+                PosBranchId.From(MainBranch),
+                "MAIN-GOOD"),
+        ]);
+
+        var harness = Harness.WithAreas(
+            authorized:
+            [
+                new AuthorizedBranchGrouping(MainBranch, "Main Branch", Panay, "PANAY"),
+                new AuthorizedBranchGrouping(IloiloBranch, "Iloilo", Panay, "PANAY"),
+            ],
+            accountOnHand: 65m,
+            accountReserved: 0m,
+            balances:
+            [
+                Balance(MainBranch, 40m, 0m),
+                Balance(IloiloBranch, 25m, 0m),
+            ],
+            lots: lots,
+            expirationPolicies: new BranchExpirationPolicyResolver(settings),
+            clock: new RollupClock(clockUtc));
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        var main = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == MainBranch);
+        Assert.Equal(0m, main.NearExpiryQuantity);
+        Assert.Equal(40m, main.SellableQuantity);
+
+        var iloilo = rollup.Areas.SelectMany(a => a.Branches).Single(b => b.BranchId == IloiloBranch);
+        Assert.Equal(25m, iloilo.NearExpiryQuantity);
+        Assert.Equal(25m, iloilo.SellableQuantity);
+        Assert.Equal(0m, iloilo.ExpiredQuantity);
+    }
+
     private sealed class Harness
     {
         public required InventoryStockRollupQuery Query { get; init; }
@@ -326,7 +525,13 @@ public sealed class InventoryStockRollupQueryTests
             IReadOnlyList<AuthorizedBranchGrouping>? authorized = null,
             bool tracked = true,
             bool organizationWide = true,
-            IReadOnlyList<Guid>? branchesWithBalances = null)
+            IReadOnlyList<Guid>? branchesWithBalances = null,
+            decimal? accountOnHand = null,
+            decimal? accountReserved = null,
+            IReadOnlyList<InventoryBranchBalance>? balances = null,
+            IInventoryLotRepository? lots = null,
+            BranchExpirationPolicyResolver? expirationPolicies = null,
+            IClock? clock = null)
         {
             var productId = CatalogProductId.From(Product);
             var orgId = PosOrganizationId.From(Org);
@@ -337,6 +542,8 @@ public sealed class InventoryStockRollupQueryTests
                 55m,
                 Utc,
                 id: productId));
+            var onHand = accountOnHand ?? (tracked ? 120m : 0m);
+            var reserved = accountReserved ?? (tracked ? 10m : 0m);
             var inventory = new RollupInventory(InventoryAccount.Rehydrate(
                 InventoryAccountId.New(),
                 orgId,
@@ -344,10 +551,10 @@ public sealed class InventoryStockRollupQueryTests
                 tracked,
                 reorderLevel: null,
                 reorderQuantity: null,
-                onHandQuantity: tracked ? 120m : 0m,
+                onHandQuantity: onHand,
                 createdAtUtc: Utc,
                 updatedAtUtc: Utc,
-                reservedQuantity: tracked ? 10m : 0m));
+                reservedQuantity: reserved));
             var allBalances = new[]
             {
                 Balance(MainBranch, 40m, 6m),
@@ -355,10 +562,18 @@ public sealed class InventoryStockRollupQueryTests
                 Balance(CebuBranch, 20m, 0m),
                 Balance(ManilaBranch, 15m, 5m)
             };
-            var balances = new RollupBalances();
-            balances.Items.AddRange(branchesWithBalances is null
-                ? allBalances
-                : allBalances.Where(b => branchesWithBalances.Contains(b.BranchId.Value)));
+            var balanceRepo = new RollupBalances();
+            if (balances is not null)
+            {
+                balanceRepo.Items.AddRange(balances);
+            }
+            else
+            {
+                balanceRepo.Items.AddRange(branchesWithBalances is null
+                    ? allBalances
+                    : allBalances.Where(b => branchesWithBalances.Contains(b.BranchId.Value)));
+            }
+
             var grouping = new RollupGrouping
             {
                 Rows = authorized ??
@@ -373,8 +588,15 @@ public sealed class InventoryStockRollupQueryTests
 
             return new Harness
             {
-                Query = new InventoryStockRollupQuery(inventory, products, balances, grouping),
-                Balances = balances,
+                Query = new InventoryStockRollupQuery(
+                    inventory,
+                    products,
+                    balanceRepo,
+                    grouping,
+                    lots,
+                    expirationPolicies,
+                    clock: clock),
+                Balances = balanceRepo,
                 Grouping = grouping
             };
         }
@@ -387,6 +609,132 @@ public sealed class InventoryStockRollupQueryTests
                 onHand,
                 Utc,
                 reserved);
+    }
+
+    private static InventoryBranchBalance Balance(Guid branchId, decimal onHand, decimal reserved) =>
+        InventoryBranchBalance.Rehydrate(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(branchId),
+            CatalogProductId.From(Product),
+            onHand,
+            Utc,
+            reserved);
+
+    private sealed class RollupClock(DateTimeOffset utcNow) : IClock
+    {
+        public DateTimeOffset UtcNow => utcNow;
+    }
+
+    private sealed class RollupLots(IReadOnlyList<InventoryLot> lots) : IInventoryLotRepository
+    {
+        public Task<InventoryLot?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            InventoryLotId lotId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(lots.FirstOrDefault(l => l.Id == lotId));
+
+        public Task<InventoryLot?> FindAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            DateOnly expirationDate,
+            string normalizedLotNumber,
+            PosBranchId? branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<InventoryLot?>(null);
+
+        public Task<IReadOnlyList<InventoryLot>> ListOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId? branchId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default)
+        {
+            IEnumerable<InventoryLot> query = lots.Where(l =>
+                l.OrganizationId == organizationId && l.ProductId == productId);
+            if (branchId is not null)
+            {
+                query = query.Where(l => l.BranchId == branchId);
+            }
+
+            if (!includeDepleted)
+            {
+                query = query.Where(l => l.QuantityOnHand > 0m);
+            }
+
+            return Task.FromResult<IReadOnlyList<InventoryLot>>(query.ToList());
+        }
+
+        public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLot>>(
+                lots.Where(l =>
+                        l.OrganizationId == organizationId
+                        && l.ProductId == productId
+                        && l.BranchId is null
+                        && (includeDepleted || l.QuantityOnHand > 0m))
+                    .ToList());
+
+        public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId? branchId,
+            bool includeDepleted,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<InventoryLot>, int)>(([], 0));
+
+        public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListExpiringPagedAsync(
+            PosOrganizationId organizationId,
+            PosBranchId? branchId,
+            DateOnly expireOnOrBefore,
+            DateOnly? expireOnOrAfter,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<InventoryLot>, int)>(([], 0));
+
+        public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
+            PosOrganizationId organizationId,
+            DateOnly today,
+            PosBranchId? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((0, 0));
+
+        public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(InventoryLot lot, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddMovementAsync(InventoryLotMovement movement, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<bool> HasMovementAsync(
+            PosOrganizationId organizationId,
+            Guid sourceId,
+            InventoryLotId lotId,
+            StockMovementType movementType,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlyList<InventoryLotMovement>> ListBySourceAsync(
+            PosOrganizationId organizationId,
+            Guid sourceId,
+            StockMovementType movementType,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLotMovement>>([]);
+
+        public Task AdoptOrgLevelLotsForBranchAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class RollupInventory(InventoryAccount account) : CostResolverInventoryStub

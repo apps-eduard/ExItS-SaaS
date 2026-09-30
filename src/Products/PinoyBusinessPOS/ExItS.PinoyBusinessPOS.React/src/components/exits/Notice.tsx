@@ -26,8 +26,9 @@ const TONE_ICON: Record<NoticeTone, typeof Info> = {
 };
 
 /**
- * Compact contextual notice (APPROVED / LOCKED).
+ * Compact contextual notice (APPROVED / LOCKED — ExItS Message Standard).
  * INFO / WARNING / DANGER / SUCCESS — not an EmptyState and not a page ErrorState.
+ * @see Docs/UI/exits-message-standard.md
  */
 export function Notice({
   children,
@@ -84,8 +85,8 @@ export function Notice({
         {children != null && children !== "" ? (
           <div className="m-0 leading-snug text-inherit [&_p]:m-0">{children}</div>
         ) : null}
-        {action ? <div className="mt-0.5">{action}</div> : null}
       </div>
+      {action ? <div className="exits-notice__action shrink-0 self-start">{action}</div> : null}
     </div>
   );
 }

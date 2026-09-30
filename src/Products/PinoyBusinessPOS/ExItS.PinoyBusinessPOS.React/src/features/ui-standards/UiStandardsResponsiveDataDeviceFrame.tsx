@@ -28,6 +28,8 @@ type UiStandardsResponsiveDataDeviceFrameProps = {
   onDeviceChange: (device: UiStandardsDataPreviewDevice) => void;
   layout: "table" | "list";
   children: ReactNode;
+  /** Optional controls rendered below Preview size. */
+  controls?: ReactNode;
   /** Prefix for data-testid hooks (defaults to responsive-data sample ids). */
   testIdPrefix?: string;
 };
@@ -41,6 +43,7 @@ export function UiStandardsResponsiveDataDeviceFrame({
   onDeviceChange,
   layout,
   children,
+  controls,
   testIdPrefix = "ui-standard-responsive-data",
 }: UiStandardsResponsiveDataDeviceFrameProps) {
   const widthPx = UI_STANDARDS_DATA_PREVIEW_WIDTHS[device];
@@ -59,6 +62,11 @@ export function UiStandardsResponsiveDataDeviceFrame({
           { value: "mobile", label: "Mobile" },
         ]}
       />
+      {controls ? (
+        <div className="min-w-0" data-testid={`${testIdPrefix}-preview-controls`}>
+          {controls}
+        </div>
+      ) : null}
       <p
         className="m-0 text-center text-[length:var(--exits-text-xs)] font-medium text-muted"
         data-testid={`${testIdPrefix}-mode`}

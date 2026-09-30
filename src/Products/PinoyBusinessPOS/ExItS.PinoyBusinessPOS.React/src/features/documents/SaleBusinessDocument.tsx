@@ -88,7 +88,8 @@ export function CustomerPurchaseSummaryDocument({
   const columns = [
     { key: "description", header: "Description" },
     ...(showSkuColumn ? [{ key: "sku", header: "SKU" }] : []),
-    { key: "qty", header: "Qty", align: "right" as const },
+    // Match Unit Price / Line Total end-alignment (qty+uom must not sit at column start).
+    { key: "qty", header: "Qty", align: "right" as const, width: "7.5rem" },
     { key: "unitPrice", header: "Unit Price", align: "right" as const },
     ...(showDiscountColumn
       ? [{ key: "discount", header: "Discount", align: "right" as const }]

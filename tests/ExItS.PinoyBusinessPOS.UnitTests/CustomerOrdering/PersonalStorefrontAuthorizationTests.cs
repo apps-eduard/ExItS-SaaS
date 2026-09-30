@@ -126,6 +126,47 @@ public sealed class PersonalStorefrontAuthorizationTests
     }
 
     [Fact]
+    public async Task Online_orders_off_denies_storefront_without_catalog()
+    {
+        var capability = new MutableCapability(canOrder: true, canDelivery: true);
+        var catalogTouched = false;
+        var useCase = new GetCustomerStorefront(
+            capability,
+            new FakeProducts(() => catalogTouched = true),
+            new FakeCategories(),
+            new FakeInventory(),
+            new OfflineOnlineBranches(),
+            new EmptyImages());
+
+        var result = await useCase.ExecuteAsync(Seller, null, null, 1, 20);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerOrderOrderingUnavailable, result.ErrorCode);
+        Assert.Equal(CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage, result.ErrorMessage);
+        Assert.False(catalogTouched);
+    }
+
+    [Fact]
+    public async Task Online_orders_paused_denies_storefront_without_catalog()
+    {
+        var capability = new MutableCapability(canOrder: true, canDelivery: true);
+        var catalogTouched = false;
+        var useCase = new GetCustomerStorefront(
+            capability,
+            new FakeProducts(() => catalogTouched = true),
+            new FakeCategories(),
+            new FakeInventory(),
+            new OfflineOnlineBranches(enabled: true, paused: true),
+            new EmptyImages());
+
+        var result = await useCase.ExecuteAsync(Seller, null, null, 1, 20);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerOrderOrderingUnavailable, result.ErrorCode);
+        Assert.False(catalogTouched);
+    }
+
+    [Fact]
     public async Task Linked_personal_pickup_and_delivery_quote_remain_available()
     {
         var capability = new MutableCapability(canOrder: true, canDelivery: true);
@@ -289,6 +330,38 @@ public sealed class PersonalStorefrontAuthorizationTests
                 [
                     new CustomerOrderDeliveryServiceAreaSnapshot(ServiceArea, "Manila", "NCR")
                 ]);
+    }
+
+    private sealed class OfflineOnlineBranches(bool enabled = false, bool paused = false)
+        : ICustomerOrderBranchDirectory
+    {
+        public Task<CustomerOrderBranchSnapshot?> GetBranchAsync(
+            Guid sellerOrganizationId,
+            Guid branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerOrderBranchSnapshot?>(BranchSnapshot());
+
+        public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
+            Guid sellerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([BranchSnapshot()]);
+
+        private CustomerOrderBranchSnapshot BranchSnapshot() =>
+            new(
+                Branch,
+                "Main",
+                CustomerOrderingEnabled: enabled,
+                PickupEnabled: true,
+                DeliveryEnabled: true,
+                CustomerOrderingOperational: false,
+                PickupOperational: false,
+                DeliveryOperational: false,
+                OnlineOrdersPaused: paused,
+                StoreStatusMessage: paused ? "Paused" : "Offline",
+                14.5995m,
+                120.9842m,
+                new CustomerOrderBranchDeliveryPolicySnapshot(0m, 49m, 2m, 10m, 15m, 500m),
+                IsPrimary: true);
     }
 
     private sealed class CountingStock : ICustomerOrderStockService
@@ -770,5 +843,11 @@ public sealed class PersonalStorefrontAuthorizationTests
 
         public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+
+        public Task<decimal> SumActiveOnlineUtangCommitmentAsync(
+            PosOrganizationId sellerOrganizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
     }
 }

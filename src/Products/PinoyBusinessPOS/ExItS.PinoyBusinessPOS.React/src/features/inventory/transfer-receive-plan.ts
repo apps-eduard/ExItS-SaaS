@@ -9,6 +9,12 @@ import {
   parseNonNegativeQty,
   type BuildReceivePlanResult,
 } from "@/features/purchasing/receive-math";
+import {
+  forcesReturnToSource,
+  isActualProductSameAsExpected,
+  requiresActualProduct,
+  resolveDefaultOtherCustody,
+} from "@/features/inventory/transfer-exception-custody-policy";
 
 export const TRANSFER_MISSING_DISPOSITIONS = [
   "ExpectedLater",
@@ -17,9 +23,15 @@ export const TRANSFER_MISSING_DISPOSITIONS = [
 ] as const;
 export type TransferMissingDispositionCode = (typeof TRANSFER_MISSING_DISPOSITIONS)[number];
 
+export type BuildTransferReceivePayloadError =
+  | NonNullable<BuildReceivePlanResult extends { ok: false } ? BuildReceivePlanResult["error"] : never>
+  | "other_actual_product_required"
+  | "other_actual_product_same_as_expected"
+  | "other_custody_required";
+
 export type BuildTransferReceivePayloadResult =
   | { ok: true; lines: InventoryTransferReceiveLineRequest[] }
-  | { ok: false; error: NonNullable<BuildReceivePlanResult extends { ok: false } ? BuildReceivePlanResult["error"] : never> };
+  | { ok: false; error: BuildTransferReceivePayloadError };
 
 export function buildTransferReceivePayload(
   edits: readonly TransferReceiveLineEdit[],
@@ -84,13 +96,39 @@ export function buildTransferReceivePayload(
       entry.damagedCustodyDecision = edit.damagedCustodyDecision ?? "KeepAtDestination";
     }
     if (planned.otherQty > 1e-9) {
+      if (!otherReasonCode) {
+        return { ok: false, error: "classification_incomplete" };
+      }
+      if (requiresActualProduct(otherReasonCode) && !edit.actualReceivedProductId?.trim()) {
+        return { ok: false, error: "other_actual_product_required" };
+      }
+      if (
+        isActualProductSameAsExpected(
+          otherReasonCode,
+          edit.productId,
+          edit.actualReceivedProductId,
+        )
+      ) {
+        return { ok: false, error: "other_actual_product_same_as_expected" };
+      }
+      const otherCustody = forcesReturnToSource(otherReasonCode)
+        ? resolveDefaultOtherCustody(otherReasonCode)
+        : edit.otherCustodyDecision ?? resolveDefaultOtherCustody(otherReasonCode);
+      if (!otherCustody) {
+        return { ok: false, error: "other_custody_required" };
+      }
       entry.otherQty = planned.otherQty;
       entry.otherFollowUp = damagedOtherFollowUpToApi(edit.otherFollowUp);
+      entry.otherCustodyDecision = otherCustody;
       if (otherReasonCode) {
         entry.otherReasonCode = otherReasonCode;
       }
       if (otherReasonNote) {
         entry.otherReasonNote = otherReasonNote;
+      }
+      const actualId = edit.actualReceivedProductId?.trim();
+      if (actualId) {
+        entry.actualReceivedProductId = actualId;
       }
     }
     apiLines.push(entry);

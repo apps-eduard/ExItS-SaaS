@@ -128,7 +128,8 @@ public sealed class InventoryLotStockService
         Guid? sourceId = null,
         Guid? stockMovementId = null,
         CancellationToken cancellationToken = default,
-        Guid? primaryBranchId = null)
+        Guid? primaryBranchId = null,
+        int stopSellingDaysBeforeExpiry = 0)
     {
         if (sourceId is Guid existingSource)
         {
@@ -151,7 +152,11 @@ public sealed class InventoryLotStockService
                 .ConfigureAwait(false);
             lots = InventoryLotCompatibility.UnionByLotId(lots, legacy);
         }
-        var allocations = InventoryLotFefo.AllocateSellable(lots, quantity, today);
+        var allocations = InventoryLotFefo.AllocateSellable(
+            lots,
+            quantity,
+            today,
+            stopSellingDaysBeforeExpiry);
         foreach (var allocation in allocations)
         {
             await ConsumeSpecificAsync(

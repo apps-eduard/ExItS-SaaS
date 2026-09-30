@@ -222,7 +222,7 @@ export function PeopleListSection({
         variant="filter"
         ariaLabel={t("people.filter.label")}
         testId="people-status-filters"
-        className="exits-animate-toolbar"
+        className="exits-animate-toolbar exits-chip-bar--scroll people-page__filters"
         items={FILTERS.map((item) => ({
           key: item.key,
           label: t(item.labelKey),

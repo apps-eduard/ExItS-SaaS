@@ -50,6 +50,9 @@ internal sealed class DirectPurchaseHistoryQuery : IDirectPurchaseHistoryQuery
         var status = filter.Status;
         var fromDate = filter.FromDate;
         var toDate = filter.ToDate;
+        var receivingBranchId = filter.ReceivingBranchId is Guid branch && branch != Guid.Empty
+            ? branch
+            : (Guid?)null;
         var unionSql = BuildUnionSql(includeLocal, includeB2b);
 
         var countSql =
@@ -86,13 +89,13 @@ internal sealed class DirectPurchaseHistoryQuery : IDirectPurchaseHistoryQuery
             LIMIT @take
             """;
 
-        var filterParams = BuildFilterParams(buyerOrganizationId, fromDate, toDate, status, search);
+        var filterParams = BuildFilterParams(buyerOrganizationId, fromDate, toDate, status, search, receivingBranchId);
         var total = await _db.Database
             .SqlQueryRaw<IntCountRow>(countSql, filterParams)
             .SingleAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var listParams = BuildFilterParams(buyerOrganizationId, fromDate, toDate, status, search)
+        var listParams = BuildFilterParams(buyerOrganizationId, fromDate, toDate, status, search, receivingBranchId)
             .Concat(
             [
                 new NpgsqlParameter("skip", skip),
@@ -242,6 +245,7 @@ internal sealed class DirectPurchaseHistoryQuery : IDirectPurchaseHistoryQuery
                     NULL::text AS search_sale_number
                 FROM pos.direct_purchase_receipts r
                 WHERE r.organization_id = @buyer_org
+                  AND (@receiving_branch::uuid IS NULL OR r.receiving_branch_id = @receiving_branch::uuid)
                   AND (@from_date::date IS NULL OR r.purchase_date >= @from_date::date)
                   AND (@to_date::date IS NULL OR r.purchase_date <= @to_date::date)
                   AND (
@@ -320,7 +324,8 @@ internal sealed class DirectPurchaseHistoryQuery : IDirectPurchaseHistoryQuery
         DateOnly? fromDate,
         DateOnly? toDate,
         string? status,
-        string? search) =>
+        string? search,
+        Guid? receivingBranchId) =>
         [
             new NpgsqlParameter("buyer_org", buyerOrganizationId),
             new NpgsqlParameter("from_date", (object?)fromDate ?? DBNull.Value)
@@ -338,6 +343,10 @@ internal sealed class DirectPurchaseHistoryQuery : IDirectPurchaseHistoryQuery
             new NpgsqlParameter("search", (object?)search ?? DBNull.Value)
             {
                 NpgsqlDbType = NpgsqlDbType.Text
+            },
+            new NpgsqlParameter("receiving_branch", (object?)receivingBranchId ?? DBNull.Value)
+            {
+                NpgsqlDbType = NpgsqlDbType.Uuid
             }
         ];
 

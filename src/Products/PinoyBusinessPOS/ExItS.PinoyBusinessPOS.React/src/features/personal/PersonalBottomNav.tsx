@@ -1,47 +1,18 @@
 import { NavLink } from "react-router-dom";
-import { CheckSquare, Home, ListOrdered, MoreHorizontal, Wallet } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import { PERSONAL_PRIMARY_NAV_ITEMS } from "@/features/personal/personal-nav-config";
 import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
 import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
-const tabs = [
-  {
-    to: "/personal",
-    end: true,
-    labelKey: "personal.nav.home",
-    icon: Home,
-    testId: "personal-nav-home",
-  },
-  {
-    to: "/personal/utang",
-    end: false,
-    labelKey: "personal.nav.utang",
-    icon: Wallet,
-    testId: "personal-nav-utang",
-  },
-  {
-    to: "/personal/todo",
-    end: false,
-    labelKey: "personal.nav.todo",
-    icon: CheckSquare,
-    testId: "personal-nav-todo",
-  },
-  {
-    to: "/personal/orders",
-    end: false,
-    labelKey: "personal.nav.orders",
-    icon: ListOrdered,
-    testId: "personal-nav-orders",
-  },
-  {
-    to: "/personal/more",
-    end: false,
-    labelKey: "personal.nav.more",
-    icon: MoreHorizontal,
-    testId: "personal-nav-more",
-  },
-] as const;
+const moreTab = {
+  to: "/personal/more",
+  end: false,
+  labelKey: "personal.nav.more" as const,
+  icon: MoreHorizontal,
+  testId: "personal-nav-more",
+};
 
 /** Personal bottom nav — phone/tablet only; unmounted on desktop (>=1024). */
 export function PersonalBottomNav() {
@@ -52,11 +23,13 @@ export function PersonalBottomNav() {
     return null;
   }
 
+  const tabs = [...PERSONAL_PRIMARY_NAV_ITEMS, moreTab];
+
   return (
     <nav
       data-testid="personal-bottom-nav"
       aria-label={t("personal.nav.aria")}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="personal-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto flex max-w-5xl items-stretch justify-between gap-1 px-2 pt-1">
         {tabs.map((tab) => {

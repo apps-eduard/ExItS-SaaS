@@ -55,6 +55,7 @@ export type OfflinePersonalUtangRejectionCode =
   | "offline.personal.contact.identity_link_not_supported"
   | "offline.personal.relationship.contact_required"
   | "offline.personal.relationship.counterparty_identity_not_supported"
+  | "offline.personal.relationship.share_requires_online"
   | "offline.personal.relationship.owner_unknown"
   | "offline.personal.entry.amount_invalid"
   | "offline.personal.entry.adjustment_not_supported"
@@ -194,6 +195,8 @@ export type EnqueuePersonalRelationshipInput = PersonalOfflineScope & {
   initialLoanNotes?: string | null;
   /** Present only so an offline attempt to name a second real user is refused. */
   counterpartyUserIdentityId?: string | null;
+  /** Sharing with a linked counterparty is online-only. */
+  shareWithCounterparty?: boolean;
 };
 
 export type EnqueuedPersonalRelationship = {
@@ -212,6 +215,12 @@ export async function enqueuePersonalRelationshipCreate(
   options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalRelationship> {
   guardPersonalWebOfflineEnqueue(options);
+  if (input.shareWithCounterparty) {
+    throw new OfflinePersonalUtangRejectedError(
+      "offline.personal.relationship.share_requires_online",
+      "Sharing Utang with another person requires an internet connection.",
+    );
+  }
   if (input.counterpartyUserIdentityId) {
     throw new OfflinePersonalUtangRejectedError(
       "offline.personal.relationship.counterparty_identity_not_supported",
@@ -258,6 +267,7 @@ export async function enqueuePersonalRelationshipCreate(
     dueDateUtc,
     initialLoanAmount: amount,
     initialLoanNotes: notes,
+    shareWithCounterparty: false,
   };
 
   const operation = await enqueueEncryptedOperation({
@@ -291,6 +301,7 @@ export async function enqueuePersonalRelationshipCreate(
     updatedAtUtc: operation.createdAt,
     isSharedLedger: false,
     isPrivate: true,
+    shareOutcome: "Private",
   };
   await cacheLocalPersonalRelationship(
     input.db,
@@ -403,6 +414,8 @@ export async function enqueuePersonalUtangEntry(
     intent: "Regular",
     settlementBalanceSnapshot: null,
     isSettlement: false,
+    confirmationSource: "None",
+    wasAutoSynced: false,
   };
   await cacheLocalPersonalEntry(input.db, input.scopeBinding, entry);
   return { operation, entry };

@@ -1,4 +1,4 @@
-import { Lock, RotateCcw } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, Lock, RotateCcw } from "lucide-react";
 import { formatQuantityDisplay } from "@/cart/sell-cart-helpers";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -19,6 +19,8 @@ export function resolveAvailableQuantity(item: {
   availableQuantity?: number | null;
   reservedQuantity?: number | null;
   pendingReturnQuantity?: number | null;
+  inspectionHoldQuantity?: number | null;
+  damagedQuantity?: number | null;
 }): number {
   if (!item.isTracked) return item.onHandQuantity;
   if (item.availableQuantity != null && Number.isFinite(item.availableQuantity)) {
@@ -32,7 +34,15 @@ export function resolveAvailableQuantity(item: {
     item.pendingReturnQuantity != null && Number.isFinite(item.pendingReturnQuantity)
       ? Math.max(0, item.pendingReturnQuantity)
       : 0;
-  return Math.max(0, item.onHandQuantity - reserved - pendingReturn);
+  const inspectionHold =
+    item.inspectionHoldQuantity != null && Number.isFinite(item.inspectionHoldQuantity)
+      ? Math.max(0, item.inspectionHoldQuantity)
+      : 0;
+  const damaged =
+    item.damagedQuantity != null && Number.isFinite(item.damagedQuantity)
+      ? Math.max(0, item.damagedQuantity)
+      : 0;
+  return Math.max(0, item.onHandQuantity - reserved - pendingReturn - inspectionHold - damaged);
 }
 
 export function resolveReservedQuantity(item: {
@@ -44,6 +54,18 @@ export function resolveReservedQuantity(item: {
   return 0;
 }
 
+export function resolveStockRequestCommittedQuantity(item: {
+  stockRequestCommittedQuantity?: number | null;
+}): number {
+  if (
+    item.stockRequestCommittedQuantity != null &&
+    Number.isFinite(item.stockRequestCommittedQuantity)
+  ) {
+    return Math.max(0, item.stockRequestCommittedQuantity);
+  }
+  return 0;
+}
+
 export function resolvePendingReturnQuantity(item: {
   pendingReturnQuantity?: number | null;
 }): number {
@@ -51,6 +73,178 @@ export function resolvePendingReturnQuantity(item: {
     return Math.max(0, item.pendingReturnQuantity);
   }
   return 0;
+}
+
+export function resolveInTransitOutboundQuantity(item: {
+  inTransitOutboundQuantity?: number | null;
+}): number {
+  if (item.inTransitOutboundQuantity != null && Number.isFinite(item.inTransitOutboundQuantity)) {
+    return Math.max(0, item.inTransitOutboundQuantity);
+  }
+  return 0;
+}
+
+export function resolveInTransitInboundQuantity(item: {
+  inTransitInboundQuantity?: number | null;
+}): number {
+  if (item.inTransitInboundQuantity != null && Number.isFinite(item.inTransitInboundQuantity)) {
+    return Math.max(0, item.inTransitInboundQuantity);
+  }
+  return 0;
+}
+
+export function resolveExpiredQuantity(item: {
+  expiredQuantity?: number | null;
+}): number {
+  if (item.expiredQuantity != null && Number.isFinite(item.expiredQuantity)) {
+    return Math.max(0, item.expiredQuantity);
+  }
+  return 0;
+}
+
+export function resolveSalePolicyBlockedQuantity(item: {
+  salePolicyBlockedQuantity?: number | null;
+}): number {
+  if (item.salePolicyBlockedQuantity != null && Number.isFinite(item.salePolicyBlockedQuantity)) {
+    return Math.max(0, item.salePolicyBlockedQuantity);
+  }
+  return 0;
+}
+
+export function InventoryExpiredBadge({
+  expiredQuantity,
+  unitOfMeasure,
+  onClick,
+  testId,
+  className,
+}: {
+  expiredQuantity: number;
+  unitOfMeasure?: string;
+  onClick?: () => void;
+  testId?: string;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  if (!(expiredQuantity > 0)) return null;
+
+  const label = t("inventory.expiredBadge")
+    .replace("{qty}", formatInventoryQty(expiredQuantity))
+    .replace("{uom}", unitOfMeasure?.trim() || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const content = (
+    <>
+      <Lock className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
+      <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </>
+  );
+
+  const sharedClass = cn(
+    "inventory-expired-badge inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-left text-[length:var(--exits-text-xs)] font-medium",
+    "border-[color-mix(in_srgb,var(--exits-danger)_40%,var(--exits-border))] bg-[var(--exits-danger-soft)] text-[var(--exits-danger)]",
+    className,
+  );
+
+  if (!onClick) {
+    return (
+      <span className={sharedClass} data-testid={testId ?? "inventory-expired-badge"} aria-label={label}>
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        sharedClass,
+        "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-[color-mix(in_srgb,var(--exits-danger)_14%,var(--exits-danger-soft))]",
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      data-testid={testId ?? "inventory-expired-badge"}
+      aria-label={label}
+    >
+      {content}
+    </button>
+  );
+}
+
+export function InventorySaleBlockedBadge({
+  salePolicyBlockedQuantity,
+  unitOfMeasure,
+  onClick,
+  testId,
+  className,
+}: {
+  salePolicyBlockedQuantity: number;
+  unitOfMeasure?: string;
+  onClick?: () => void;
+  testId?: string;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  if (!(salePolicyBlockedQuantity > 0)) return null;
+
+  const label = t("inventory.saleBlockedBadge")
+    .replace("{qty}", formatInventoryQty(salePolicyBlockedQuantity))
+    .replace("{uom}", unitOfMeasure?.trim() || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const content = (
+    <>
+      <CalendarClock className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
+      <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </>
+  );
+
+  const sharedClass = cn(
+    "inventory-sale-blocked-badge inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-left text-[length:var(--exits-text-xs)] font-medium",
+    "border-[color-mix(in_srgb,var(--exits-warning)_35%,var(--exits-border))] bg-[var(--exits-warning-soft)] text-[var(--exits-warning)]",
+    className,
+  );
+
+  if (!onClick) {
+    return (
+      <span
+        className={sharedClass}
+        data-testid={testId ?? "inventory-sale-blocked-badge"}
+        aria-label={label}
+      >
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        sharedClass,
+        "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-[color-mix(in_srgb,var(--exits-warning)_14%,var(--exits-warning-soft))]",
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      data-testid={testId ?? "inventory-sale-blocked-badge"}
+      aria-label={label}
+    >
+      {content}
+    </button>
+  );
 }
 
 export function InventoryReservedBadge({
@@ -96,6 +290,82 @@ export function InventoryReservedBadge({
     >
       <Lock className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
       <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </button>
+  );
+}
+
+/** In-transit transfer commitment badge: icon + qty + peer branch name (like PO reserved). */
+export function InventoryInTransitBadge({
+  quantity,
+  branchName,
+  direction,
+  unitOfMeasure,
+  onClick,
+  testId,
+  className,
+}: {
+  quantity: number;
+  branchName?: string | null;
+  direction: "outbound" | "inbound";
+  unitOfMeasure?: string;
+  onClick?: () => void;
+  testId?: string;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  if (!(quantity > 0)) return null;
+
+  const qtyPart = `${formatInventoryQty(quantity)}${unitOfMeasure?.trim() ? ` ${unitOfMeasure.trim()}` : ""}`;
+  const branchPart = branchName?.trim() || t("inventory.inTransitBranchFallback");
+  const label =
+    direction === "outbound"
+      ? t("inventory.inTransitOutboundBadge")
+          .replace("{qty}", qtyPart)
+          .replace("{branch}", branchPart)
+      : t("inventory.inTransitInboundBadge")
+          .replace("{qty}", qtyPart)
+          .replace("{branch}", branchPart);
+
+  const content = (
+    <>
+      <ArrowLeftRight className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
+      <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </>
+  );
+
+  const sharedClass = cn(
+    "inventory-in-transit-badge inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-left text-[length:var(--exits-text-xs)] font-medium",
+    "border-[color-mix(in_srgb,var(--exits-primary)_30%,var(--exits-border))] bg-[var(--exits-primary-soft)] text-[var(--exits-primary)]",
+    className,
+  );
+
+  if (!onClick) {
+    return (
+      <span className={sharedClass} data-testid={testId ?? "inventory-in-transit-badge"} aria-label={label}>
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        sharedClass,
+        "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-primary-soft))]",
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      data-testid={testId ?? "inventory-in-transit-badge"}
+      aria-label={label}
+    >
+      {content}
     </button>
   );
 }

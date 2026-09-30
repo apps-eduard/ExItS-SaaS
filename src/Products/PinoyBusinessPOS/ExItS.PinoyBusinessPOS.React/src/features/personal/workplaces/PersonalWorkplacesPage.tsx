@@ -200,7 +200,7 @@ export function PersonalWorkplacesPage() {
 
     return (
       <div
-        className="personal-page exits-page mx-auto flex w-full max-w-lg flex-col gap-3"
+        className="personal-page exits-page flex w-full min-w-0 flex-col gap-3"
         data-testid="personal-workplaces-accept-success"
       >
         <PageHeader
@@ -255,7 +255,7 @@ export function PersonalWorkplacesPage() {
 
   return (
     <div
-      className="personal-page exits-page mx-auto flex w-full max-w-lg flex-col gap-3"
+      className="personal-page exits-page flex w-full min-w-0 flex-col gap-3"
       data-testid="personal-workplaces-page"
     >
       <PageHeader

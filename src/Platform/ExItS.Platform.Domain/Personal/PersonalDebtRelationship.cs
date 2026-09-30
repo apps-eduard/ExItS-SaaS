@@ -157,7 +157,9 @@ public sealed class PersonalDebtRelationship
         || (DebtorContactId is not null && contact.Id == DebtorContactId && contact.IsOwnedBy(ownerUserIdentityId));
 
     /// <summary>
-    /// Both sides are linked Personal users — shared ledger requiring counterparty confirmation.
+    /// Both sides are linked Personal users — shared ledger.
+    /// Regular entries start Pending unless the recipient has auto-accept enabled;
+    /// only Confirmed entries affect <see cref="CurrentBalance"/>.
     /// </summary>
     public bool IsSharedLinked =>
         CreditorUserIdentityId is not null && DebtorUserIdentityId is not null;
@@ -432,7 +434,8 @@ public sealed class PersonalDebtRelationship
         PersonalUtangEntry entry,
         PlatformUserId actingUserIdentityId,
         DateTimeOffset utcNow,
-        int? expectedVersion = null)
+        int? expectedVersion = null,
+        PersonalUtangConfirmationSource confirmationSource = PersonalUtangConfirmationSource.Manual)
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(actingUserIdentityId);
@@ -460,10 +463,24 @@ public sealed class PersonalDebtRelationship
                 $"Only pending entries can be confirmed (current status: {entry.Status}).");
         }
 
-        EnsureCounterpartyMayResolve(entry, actingUserIdentityId);
+        if (confirmationSource is PersonalUtangConfirmationSource.RecipientAutoAccept)
+        {
+            EnsureStandingAutoAcceptMayResolve(entry, actingUserIdentityId);
+        }
+        else
+        {
+            EnsureCounterpartyMayResolve(entry, actingUserIdentityId);
+        }
 
         if (entry.IsSettlement)
         {
+            if (confirmationSource is PersonalUtangConfirmationSource.RecipientAutoAccept)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonalUtangSettlementInvalid,
+                    "Settlement entries cannot be auto-accepted by recipient preference.");
+            }
+
             if (!entry.SettlementBalanceSnapshot.HasValue
                 || CurrentBalance != entry.SettlementBalanceSnapshot.Value)
             {
@@ -480,7 +497,7 @@ public sealed class PersonalDebtRelationship
             DueDateUtc = entry.DueDateUtc;
         }
 
-        entry.MarkConfirmed(actingUserIdentityId, utcNow, newBalance);
+        entry.MarkConfirmed(actingUserIdentityId, utcNow, newBalance, confirmationSource);
         UpdatedAtUtc = utcNow;
         Version++;
 
@@ -604,6 +621,34 @@ public sealed class PersonalDebtRelationship
             throw new DomainException(
                 DomainErrorCodes.PersonalUtangUnauthorized,
                 "The proposer cannot confirm or dispute their own entry.");
+        }
+    }
+
+    /// <summary>
+    /// Standing recipient auto-accept: resolver must be the counterparty (not the proposer),
+    /// even though the proposer is the API actor recording the shared entry.
+    /// </summary>
+    private void EnsureStandingAutoAcceptMayResolve(PersonalUtangEntry entry, PlatformUserId recipientUserIdentityId)
+    {
+        if (!IsSharedLinked || !IsLinkedParticipant(recipientUserIdentityId))
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangUnauthorized,
+                "Only a linked counterparty preference can auto-accept shared ledger entries.");
+        }
+
+        if (entry.CreatedByUserIdentityId == recipientUserIdentityId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangUnauthorized,
+                "The proposer cannot auto-accept their own entry.");
+        }
+
+        if (entry.IsSettlement)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangSettlementInvalid,
+                "Settlement entries cannot be auto-accepted by recipient preference.");
         }
     }
 

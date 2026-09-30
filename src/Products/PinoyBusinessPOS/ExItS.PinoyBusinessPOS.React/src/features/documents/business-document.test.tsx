@@ -74,6 +74,13 @@ describe("business document shell", () => {
     expect(screen.getByTestId("business-document-business-name")).toHaveTextContent("Paul Coffee");
     expect(screen.getByTestId("business-document-title")).toHaveTextContent("Purchase Order");
     expect(screen.getByTestId("business-document-line-table")).toBeInTheDocument();
+    const qtyHeader = screen.getByRole("columnheader", { name: "Qty" });
+    expect(qtyHeader).toHaveClass("is-right");
+    expect(qtyHeader.className).toMatch(/text-end/);
+    expect(qtyHeader).toHaveStyle({ textAlign: "end" });
+    const qtyCell = screen.getByRole("cell", { name: "2" });
+    expect(qtyCell).toHaveClass("is-right");
+    expect(qtyCell).toHaveStyle({ textAlign: "end" });
     expect(screen.getByTestId("business-document-total-total")).toBeInTheDocument();
     expect(screen.queryByTestId("business-document-disclaimer")).not.toBeInTheDocument();
   });

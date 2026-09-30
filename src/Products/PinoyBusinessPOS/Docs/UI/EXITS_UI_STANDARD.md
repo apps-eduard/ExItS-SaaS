@@ -12,6 +12,7 @@ The corresponding Cursor Project Rules under `.cursor/rules` (`exits-ui-architec
 Related locked standards:
 
 - [exits-button-standard.md](./exits-button-standard.md)
+- [exits-message-standard.md](./exits-message-standard.md)
 - [exits-table-standard.md](./exits-table-standard.md)
 - [exits-responsive-data-view-standard.md](./exits-responsive-data-view-standard.md)
 - [exits-tabs-standard.md](./exits-tabs-standard.md)
@@ -38,6 +39,7 @@ A compact Do / Don’t card covers Primary hierarchy, Intent vs Appearance, Soft
 | Concern | Component | Path |
 |--------|-----------|------|
 | Button | `Button` | `components/ui/button.tsx` |
+| Inline message | `Notice` | `components/exits/Notice.tsx` |
 | Action icons / intents | `EXITS_ACTIONS` | `components/exits/action-semantics.ts` |
 | Table icon actions | `TableActionButton` | `components/exits/TableActionButton.tsx` |
 | Toast | `ToastProvider` / `useExitsToast` | `components/exits/ToastProvider.tsx` |
@@ -48,9 +50,9 @@ A compact Do / Don’t card covers Primary hierarchy, Intent vs Appearance, Soft
 | Responsive collections | `ExitsResponsiveDataView` | `components/exits/ExitsResponsiveDataView.tsx` |
 | Upload | `ExitsUpload` | `components/exits/ExitsUpload.tsx` |
 | Quantity | `QuantityStepper` | `components/exits/MoneyQuantity.tsx` |
-
-`QuantityStepper` chrome: **[ soft-danger − ][ qty ][ primary + ]**. Minus uses `--exits-danger-soft` / danger text (soft, not solid Delete). Plus uses `--exits-primary` / Primary Palette. Center input stays neutral and auto-widens with typed value (`ch`, min 12 / max 20). Solid Danger remains reserved for Remove/Delete.
 | States | `EmptyState` / `LoadingState` / `ErrorState` | `components/exits/` |
+
+`QuantityStepper` **standard** is `variant="outline"`: surface capsule with **primary border** **[ − ][ qty ][ + ]**; radius follows Preferences → Control Shape (`--exits-control-radius`). `variant="auto"` is the solid Primary capsule (white rim). `variant="field"` keeps the primary capsule with a **white/surface center** (input look). See UI Standards → Global Preference Preview. Legacy `variant="default"` form field chrome (`[ neutral − ][ qty ][ primary + ]`) is opt-in only and must not appear under Forms.
 
 Changing a canonical component must update all consumers. Do **not** restyle via page-specific CSS selectors.
 
@@ -62,9 +64,9 @@ Intent/Tone = semantic meaning. Appearance/Treatment = how it is drawn. They com
 
 | Intent | Appearance |
 |--------|------------|
-| Primary · Neutral · Success · Info · Warning · Danger | Solid · Outline · Ghost · Elevated · Gradient |
+| Primary · Neutral · Success · Info · Warning · Help · Danger · Contrast | Solid · Outline · Ghost · Elevated · Gradient |
 
-Elevated / Outline / Ghost / Gradient are **not** intents. Historical “Muted” maps to **Neutral + Solid** (`variant="secondary"` alias). Prefer `intent` + `appearance` (or `getActionButtonStyle`). See [exits-button-standard.md](./exits-button-standard.md).
+Elevated / Outline / Ghost / Gradient are **not** intents. Historical “Muted” maps to **Neutral + Solid** (`variant="secondary"` alias). Prefer `intent` + `appearance` (or `getActionButtonStyle`). Locked set = Diamond **8 severities** (Help + Contrast included). See [exits-button-standard.md](./exits-button-standard.md).
 
 ## Action semantics
 
@@ -125,9 +127,13 @@ Icon-only controls are allowed in dense rows. They **must**:
 
 ---
 
-## Toast
+## Message + Toast
 
-API:
+**Visual authority:** Diamond PrimeNG Message Full sample on `/ui-standards` → **Messages**. That Full sample **is** the ExItS Message standard (severity colors showcase-only; product keeps Notice / Toast APIs and brand semantic tokens). See [exits-message-standard.md](./exits-message-standard.md).
+
+Inline / contextual: reuse `Notice` (`info` / `success` / `warning` / `danger`).
+
+Transient toast API:
 
 ```ts
 const toast = useExitsToast();
@@ -144,7 +150,7 @@ toast.error("Payment could not be recorded.");
 | WARNING | `TriangleAlert` | `--exits-warning` |
 | ERROR | `CircleAlert` | `--exits-danger` |
 
-Do not invent custom colored toast markup on feature pages. `showToast` remains for legacy callers.
+Do not invent custom colored toast or notice markup on feature pages. `showToast` remains for legacy callers.
 
 ---
 
@@ -220,19 +226,20 @@ Button `shape="auto"` follows Control Shape. Toast / dialog motion respects `pre
 Exactly **one live card per category**:
 
 1. Buttons
-2. Toasts
-3. Confirm Dialog
-4. Form Drawer
-5. Modal
-6. Status & Chips
-7. Form Controls
-8. Upload (dropzone / tile / button)
-9. Selects
-10. Navigation & Selection
-11. Responsive Data View (TABLE ↔ LIST)
-12. Cards (types + Customer Purchase Summary invoice sample)
-13. States
-14. Do / Don’t
+2. Messages (Notice + gallery)
+3. Toasts
+4. Confirm Dialog
+5. Form Drawer
+6. Modal
+7. Status & Chips
+8. Form Controls
+9. Upload (dropzone / tile / button)
+10. Selects
+11. Navigation & Selection
+12. Responsive Data View (TABLE ↔ LIST)
+13. Cards (types + Customer Purchase Summary invoice sample)
+14. States
+15. Do / Don’t
 
 Plus the filterable standards catalog table. Data filter also surfaces the locked ExitsTable reference panel.
 

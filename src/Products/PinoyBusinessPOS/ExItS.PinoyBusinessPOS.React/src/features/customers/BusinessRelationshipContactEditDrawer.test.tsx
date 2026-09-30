@@ -94,7 +94,8 @@ function renderDrawer(customer: BusinessCustomer) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  return render(
+  const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+  const view = render(
     <QueryClientProvider client={client}>
       <PreferencesProvider>
         <I18nProvider>
@@ -110,6 +111,7 @@ function renderDrawer(customer: BusinessCustomer) {
       </PreferencesProvider>
     </QueryClientProvider>,
   );
+  return { ...view, client, invalidateSpy };
 }
 
 describe("resolveInitialContactSource", () => {
@@ -256,5 +258,43 @@ describe("BusinessRelationshipContactEditDrawer", () => {
 
     expect(await screen.findByTestId("b2b-selected-organization-contact")).toBeInTheDocument();
     expect(screen.queryByTestId("b2b-contact-person")).not.toBeInTheDocument();
+  });
+
+  it("invalidates commerce readiness after saving relationship contact", async () => {
+    const user = userEvent.setup();
+    vi.mocked(connectedClient.updateBusinessCustomerRelationshipContact).mockResolvedValue(
+      baseCustomer({
+        contactSource: "Custom",
+        contactPersonName: "AP Desk",
+        preferredContactMethod: "Phone",
+      }) as never,
+    );
+
+    const { invalidateSpy } = renderDrawer(
+      baseCustomer({
+        contactSource: "Custom",
+        contactPersonName: "AP Desk",
+      }),
+    );
+
+    await user.clear(screen.getByTestId("b2b-preferred-method"));
+    await user.type(screen.getByTestId("b2b-preferred-method"), "Phone");
+    await user.click(screen.getByTestId("business-relationship-contact-save"));
+
+    await waitFor(() => {
+      expect(connectedClient.updateBusinessCustomerRelationshipContact).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: [
+            "business-customers",
+            "commerce-readiness",
+            workspace.organizationId,
+            "33333333-3333-3333-3333-333333333333",
+          ],
+        }),
+      );
+    });
   });
 });

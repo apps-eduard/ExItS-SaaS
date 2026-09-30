@@ -24,7 +24,8 @@ export function RootLayout() {
   const { t } = useI18n();
   const location = useLocation();
   const isContextSwitch = isAccountContextSwitchPath(location.pathname);
-  const isPersonal = location.pathname.startsWith("/personal") || isContextSwitch;
+  const isPersonalRoute = location.pathname.startsWith("/personal");
+  const isPersonal = isPersonalRoute || isContextSwitch;
   const isOnboarding = location.pathname.startsWith("/onboarding");
   const { status: sessionStatus } = useSession();
   const { status: workspaceStatus, boundWorkspace, sessionGrant } = useWorkspace();
@@ -84,6 +85,9 @@ export function RootLayout() {
           >
             <Outlet />
           </OperationsShell>
+        ) : isPersonalRoute ? (
+          /* PersonalShell owns full-viewport chrome (sidebar + content) — do not nest in max-w AppShell. */
+          <Outlet />
         ) : (
           <AppShell
             header={isPersonal ? undefined : <AppTopBar />}

@@ -2445,6 +2445,22 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.termExampleHelper":
     "Pananglitan: ang 90 ka adlaw kay mga 3 ka bulan.",
 
+  "customers.onlineOrdering.title": "Online ordering",
+  "customers.onlineOrdering.useStoreDefault": "Use store default",
+  "customers.onlineOrdering.allowed": "Allowed",
+  "customers.onlineOrdering.blocked": "Blocked",
+  "customers.onlineOrdering.effectiveAllowed": "Online ordering allowed",
+  "customers.onlineOrdering.effectiveBlocked": "Online ordering blocked",
+  "personal.merchantStatement.onlineShoppingAllowed": "Online shopping: Allowed",
+  "personal.merchantStatement.onlineShoppingBlocked": "Online shopping: Blocked",
+  "personal.merchantStatement.creditLimit": "Credit limit",
+  "personal.merchantStatement.pendingOnlineUtang": "Pending online Utang orders",
+  "personal.merchantStatement.availableCredit": "Available credit",
+  "orders.utangInsufficient": "Not enough available Utang credit for this order.",
+  "orders.utangCreditLimit": "Credit limit",
+  "orders.utangOutstanding": "Outstanding",
+  "orders.utangPending": "Pending orders",
+  "orders.utangAvailable": "Available credit",
   "customers.creditPolicy.title": "Credit & payment terms",
 
   "customers.creditsEmpty": "Wala pay charges",
@@ -3324,11 +3340,16 @@ export const cebPH: Record<keyof typeof en, string> = {
   "navigationMode.label": "Sidebar",
   "navigationMode.standard": "Standard",
   "navigationMode.compact": "Compact",
+  "navigationMode.hidden": "Hidden",
   "navigationMode.reveal": "Reveal",
-  "navigationMode.helper": "Standard shows icons and labels. Compact is a permanent icon rail. Reveal expands on hover or focus.",
+  "navigationMode.helper": "Standard shows icons and labels. Compact is a permanent icon rail. Hidden removes the desktop sidebar. Reveal expands on hover or focus.",
   "navigationMode.helperStandard": "Icons and labels.",
   "navigationMode.helperCompact": "Permanent icon rail.",
+  "navigationMode.helperHidden": "Desktop sidebar fully hidden.",
   "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
+  "navigationMode.cycleToCompact": "Show sidebar icons only",
+  "navigationMode.cycleToHidden": "Hide sidebar",
+  "navigationMode.cycleToStandard": "Show full sidebar",
   "shell.collapseSidebar": "I-collapse ang sidebar",
   "shell.expandSidebar": "I-expand ang sidebar",
   "shell.collapseAllNavGroups": "I-collapse tanan",
@@ -3572,12 +3593,17 @@ export const cebPH: Record<keyof typeof en, string> = {
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",
   "uiStandards.tableDemoLede": "Approved ExitsTable reference with search, filter, sort, multi-select, output icons, pagination, Actions, and field-menu inline editing.",
+  "uiStandards.tableSimpleTitle": "Simple table",
+  "uiStandards.tableSimpleLede": "No search — sticky header, body scroll, pagination, and a sort preview where you choose which columns are sortable. Filter, multi-select, output, Actions, and inline edit stay OFF.",
   "uiStandards.buttonTreatmentsTitle": "Button treatments",
   "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
-  "uiStandards.buttonPilotBadge": "BUTTON STANDARD ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ APPROVED / LOCKED",
-  "uiStandards.buttonPilotLede": "Approved semantic intents. Reuses the shared ExItS Button component and design tokens. See Docs/UI/exits-button-standard.md.",
+  "uiStandards.buttonPilotBadge": "BUTTON STANDARD — APPROVED / LOCKED",
+  "uiStandards.buttonPilotLede": "Diamond Full sample is the locked ExItS Button standard. All 8 severities locked (Primary · Secondary · Success · Info · Warn · Help · Danger · Contrast). Shared Button; Help/Contrast are first-class intents. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
+  "uiStandards.messagePilotBadge": "MESSAGE STANDARD — APPROVED / LOCKED",
+  "uiStandards.messagePilotLede": "Diamond Full sample is the locked ExItS Message standard (includes Secondary · Contrast in the severity row). Product uses Notice + useExitsToast. See Docs/UI/exits-message-standard.md.",
+  "uiStandards.messagePilotTitle": "Message samples",
   "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
   "uiStandards.prefsHint": "Use Settings to test theme and density.",
   "uiStandards.copyCommandsHint": "Visual standards are paired with copyable Cursor commands. Choose the approved sample, copy its command, and paste it into Cursor.",
@@ -3886,7 +3912,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "inventory.movements": "Kasaysayan sa movement",
 
-  "inventory.movementCol.when": "Kanus-a",
+  "inventory.movementCol.when": "Kanus-a/Kinsa",
 
   "inventory.movementCol.qty": "Qty",
 
@@ -3903,18 +3929,213 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.onHand": "Naay stock",
 
   "inventory.reserved": "Reserved",
+  "inventory.committed": "Committed",
 
   "inventory.available": "Available",
 
   "inventory.availableQty": "{qty} {uom} available",
 
   "inventory.reservedBadge": "{qty} reserved",
+  "inventory.expiredBadge": "{qty} expired",
+  "inventory.saleBlockedBadge": "{qty} expiry blocked",
+  "inventory.physicalOnHand": "Physical on hand",
+  "inventory.saleBlocked": "Expiry blocked",
   "inventory.returnsPendingBadge": "{qty} returns pending",
   "inventory.availableLabel": "available",
+  "inventory.expirySalePolicy.title": "Expiry sale policy",
+  "inventory.expirySalePolicy.lede":
+    "Stop selling expiry-tracked stock a set number of days before the expiration date. Physical stock remains on hand until written off.",
+  "inventory.expirySalePolicy.orgDefaultDays": "Organization default (days before expiry)",
+  "inventory.expirySalePolicy.orgHelp":
+    "0 means sell until the expiry date itself. Higher values block sale earlier. This is inventory sale eligibility, not purchase-order return policy.",
+  "inventory.expirySalePolicy.save": "Save expiry sale policy",
+  "inventory.expirySalePolicy.saved": "Expiry sale policy saved.",
+  "inventory.expirySalePolicy.branchTitle": "Branch expiry sale policy",
+  "inventory.expirySalePolicy.branchLede":
+    "Override the organization stop-selling rule for this workspace branch only.",
+  "inventory.expirySalePolicy.branchHelp":
+    "Use organization policy unless this branch needs a stricter or looser stop-selling window.",
+  "inventory.expirySalePolicy.branchOverride": "Branch override",
+  "inventory.expirySalePolicy.modeUseOrganization": "Use organization policy",
+  "inventory.expirySalePolicy.modeCustomBranch": "Custom days for this branch",
+  "inventory.expirySalePolicy.branchDays": "Branch stop-selling days",
+  "inventory.expirySalePolicy.effectiveDays": "Effective days",
+  "inventory.expirySalePolicy.effectiveSource": "Effective source",
+  "inventory.expirySalePolicy.orgCategoryDays": "Organization category days",
+  "inventory.expirySalePolicy.branchDefaultDays": "Branch default days",
+  "inventory.expirySalePolicy.sourceOrganizationDefault": "Organization default",
+  "inventory.expirySalePolicy.sourceOrganizationCategory": "Organization category",
+  "inventory.expirySalePolicy.sourceBranch": "Branch default",
+  "inventory.expirySalePolicy.sourceBranchCategory": "Branch category",
+  "inventory.expirySaleOverride.title": "Category overrides",
+  "inventory.expirySaleOverride.hierarchyHelp":
+    "Category rules override the default for products in that category. Use default removes the override.",
+  "inventory.expirySaleOverride.search": "Search categories…",
+  "inventory.expirySaleOverride.add": "Add override",
+  "inventory.expirySaleOverride.addTitle": "Add category expiry sale override",
+  "inventory.expirySaleOverride.editTitle": "Edit category expiry sale override",
+  "inventory.expirySaleOverride.edit": "Edit",
+  "inventory.expirySaleOverride.remove": "Remove override",
+  "inventory.expirySaleOverride.emptyTitle": "No category overrides",
+  "inventory.expirySaleOverride.emptyDetail":
+    "Products use the default stop-selling days until you add a category override.",
+  "inventory.expirySaleOverride.noMatch": "No overrides match your search.",
+  "inventory.expirySaleOverride.colCategory": "Category",
+  "inventory.expirySaleOverride.colDays": "Stop-selling days",
+  "inventory.expirySaleOverride.colPolicy": "Policy",
+  "inventory.expirySaleOverride.colActions": "Actions",
+  "inventory.expirySaleOverride.modeUseDefault": "Use default",
+  "inventory.expirySaleOverride.modeCustom": "Custom days",
+  "inventory.expirySaleOverride.daysLabel": "Days before expiry",
+  "inventory.expirySaleOverride.days": "{n} days",
+  "inventory.expirySaleOverride.cancel": "Cancel",
+  "inventory.expirySaleOverride.save": "Save",
+  "inventory.expirySaleOverride.removeTitle": "Remove category override?",
+  "inventory.expirySaleOverride.removeDetail":
+    "Remove the stop-selling override for {category}? Products will use the default again.",
+  "inventory.expirySaleOverride.removeConfirm": "Remove override",
 
   "inventory.viewReservations": "Tan-awa ang reservations",
+  "inventory.viewStockDetails": "View stock details",
+  "inventory.branchMetricOnHand": "on hand",
+  "inventory.branchMetricAvailable": "available",
+  "inspectionQueue.title": "Returns to inspect",
+  "inspectionQueue.description": "Returned damage and exception items waiting for inspection at this branch.",
+  "inspectionQueue.loading": "Loading inspection queue...",
+  "inspectionQueue.loadFailed": "Could not load inspection queue.",
+  "inspectionQueue.loadFailedDetail": "Check your connection and try again.",
+  "inspectionQueue.emptyTitle": "Nothing to inspect",
+  "inspectionQueue.emptyDescription": "When returned damage or exception stock arrives here, it will show up for inspection.",
+  "inspectionQueue.offlineTitle": "Offline",
+  "inspectionQueue.offlineDescription": "Connect to the network to load returns awaiting inspection.",
+  "inspectionQueue.col.product": "Product",
+  "inspectionQueue.col.kind": "Type",
+  "inspectionQueue.col.qty": "Qty",
+  "inspectionQueue.col.transfer": "Transfer",
+  "inspectionQueue.col.sellable": "Recovered sellable",
+  "inspectionQueue.col.damaged": "Confirmed damaged",
+  "inspectionQueue.col.nonSellable": "Confirmed non-sellable",
+  "inspectionQueue.col.status": "Status",
+  "inspectionQueue.col.updated": "Updated",
+  "inspectionQueue.col.action": "Action",
+  "inspectionQueue.confirm": "Confirm inspection",
+  "inspectionQueue.cancel": "Cancel",
+  "inspectionQueue.inspect": "Inspect",
+  "inspectionQueue.helpAllocate": "Choose how to allocate the returned quantity ({qty}). Sellable + damaged must equal the returned qty.",
+  "inspectionQueue.allSellable": "All sellable",
+  "inspectionQueue.allDamaged": "All damaged",
+  "inspectionQueue.allNonSellable": "All non-sellable",
+  "inspectionQueue.mustEqualQty": "Sellable + damaged must equal {qty}.",
+  "inspectionQueue.inspectInvalidQty": "Choose All sellable, All damaged, or enter quantities that add up to the returned qty.",
+  "inspectionQueue.inspectSuccess": "Inspection saved",
+  "inspectionQueue.inspectFailed": "Could not save inspection.",
+  "inspectionQueue.kind.damage": "Damage",
+  "inspectionQueue.kind.exception": "Exception",
+  "inspectionQueue.expected": "Expected: {name}",
+  "transfer.damageInspect": "Inspect",
+  "transfer.damageInspectTitle": "Inspect returned damage",
+  "transfer.damageInspectHelp": "Choose how to allocate the returned quantity ({qty}). Sellable + damaged must equal the returned qty.",
+  "transfer.damageAllSellable": "All sellable",
+  "transfer.damageAllDamaged": "All damaged",
+  "transfer.damageMustEqualQty": "Sellable + damaged must equal {qty}.",
+  "transfer.damageRecoveredSellable": "Recovered sellable",
+  "transfer.damageConfirmedDamaged": "Confirmed damaged",
+  "transfer.damageInspectConfirm": "Confirm inspection",
+  "transfer.damageInspectInvalidQty": "Choose All sellable, All damaged, or enter quantities that add up to the returned qty.",
+  "transfer.damageInspected": "Damage custody inspected",
+  "stockStatus.title": "Stock status",
+  "stockStatus.lede": "Current on-hand quantities across authorized branches. Snapshot only - not historical as-of.",
+  "stockStatus.currentOnly": "Current only (no historical as-of date)",
+  "stockStatus.search": "Search products",
+  "stockStatus.searchPlaceholder": "Name or SKU",
+  "stockStatus.branchFilter": "Branch",
+  "stockStatus.categoryFilter": "Category",
+  "stockStatus.allCategories": "All categories",
+  "stockStatus.scopeCurrentBranch": "Current branch",
+  "stockStatus.scopeAllBranches": "All authorized branches",
+  "stockStatus.stockStateFilter": "Stock state",
+  "stockStatus.stateAll": "All",
+  "stockStatus.stateAvailable": "Available",
+  "stockStatus.stateLowStock": "Low stock",
+  "stockStatus.stateOutOfStock": "Out of stock",
+  "stockStatus.stateReserved": "Reserved",
+  "stockStatus.stateDamaged": "Damaged",
+  "stockStatus.stateInspectionHold": "Inspection hold",
+  "stockStatus.statePendingReturn": "Pending return",
+  "stockStatus.stateExpired": "Expired",
+  "stockStatus.stateSaleBlocked": "Expiry blocked",
+  "stockStatus.colProduct": "Product",
+  "stockStatus.colCategory": "Category",
+  "stockStatus.colBranch": "Branch",
+  "stockStatus.colOnHand": "On hand",
+  "stockStatus.colSellable": "Sellable",
+  "stockStatus.colReserved": "Reserved",
+  "stockStatus.colCommittedToBranchRequests": "Committed",
+  "stockStatus.colCommittedToBranchRequestsTitle": "Committed to branch requests",
+  "stockStatus.colAvailable": "Available",
+  "stockStatus.colDamaged": "Damaged",
+  "stockStatus.colHold": "Review",
+  "stockStatus.colPendingReturn": "Pending return",
+  "stockStatus.colExpired": "Expired",
+  "stockStatus.colSaleBlocked": "Expiry blocked",
+  "stockStatus.colIncoming": "Incoming",
+  "stockStatus.colInTransitOut": "Transit out",
+  "stockStatus.colProductHint": "Product for this stock row.",
+  "stockStatus.colCategoryHint": "Catalog category of the product.",
+  "stockStatus.colBranchHint": "Branch where this stock is held.",
+  "stockStatus.colOnHandHint": "Physical quantity currently at this branch.",
+  "stockStatus.colSellableHint": "Quantity eligible to sell after expiry and policy rules.",
+  "stockStatus.colReservedHint": "Held for sales and customer orders � not free to sell again.",
+  "stockStatus.colCommittedHint": "Committed to approved branch stock requests still remaining to dispatch.",
+  "stockStatus.colAvailableHint": "Free to sell or allocate after reserved, committed, and non-sellable quantities.",
+  "stockStatus.colDamagedHint": "Damaged quantity set aside from sellable stock.",
+  "stockStatus.colHoldHint": "Quantity awaiting return inspection or review at this branch.",
+  "stockStatus.colPendingReturnHint": "Return quantity in progress back to the source branch.",
+  "stockStatus.colExpiredHint": "Past expiry and no longer sellable.",
+  "stockStatus.colSaleBlockedHint": "Near expiry and blocked from sale by the branch expiry policy.",
+  "stockStatus.colIncomingHint": "Inbound quantity in transit to this branch.",
+  "stockStatus.colInTransitOutHint": "Outbound quantity in transit from this branch.",
+  "stockStatus.mobileMetrics": "{onHand} on hand · {committed} committed · {available} available {uom}",
+  "stockStatus.openProduct": "Open",
+  "stockStatus.viewMovements": "View movements",
+  "stockStatus.loadFailed": "Could not load stock status.",
+  "stockStatus.empty": "No stock rows",
+  "stockStatus.emptyDetail": "Try another filter, search, or branch scope.",
+  "stockStatus.productFilterActive": "Showing: {productName}",
+  "stockStatus.productFilterActivePending": "Showing one product...",
+  "stockStatus.clearProductFilter": "Clear",
+  "stockStatus.pageSummary": "Showing {count} of {total}",
 
   "inventory.reservationsTitle": "Stock reservations",
+  "inventory.commitmentsTitle": "Inventory commitments",
+  "inventory.viewTransfer": "View transfer",
+  "inventory.viewFullTransfer": "View full transfer",
+  "inventory.transactionDetailsTitle": "Transaction details",
+  "inventory.transactionDetailsClose": "Close",
+  "inventory.transactionThisMovement": "This movement",
+  "inventory.quantity": "Quantity",
+  "inventory.transactionTransfer": "Transfer",
+  "inventory.transactionThisTransfer": "This transfer",
+  "inventory.transactionOverallFulfillment": "Overall fulfillment",
+  "inventory.transactionReceivingDecision": "Receiving decision",
+  "inventory.transactionFamily": "Replacement family",
+  "inventory.transactionPhysical": "Physical",
+  "inventory.transactionSellable": "Sellable",
+  "inventory.transactionDamaged": "Damaged",
+  "inventory.transactionHold": "Inspection hold",
+  "inventory.transactionFrom": "From",
+  "inventory.transactionTo": "To",
+  "inventory.transactionDamageDisposition": "Damage disposition",
+  "inventory.transactionInventoryEffect": "Inventory effect",
+  "inventory.damageDisposition.returnedToSource": "Returned to source",
+  "inventory.damageDisposition.heldAtDestination": "Keep at destination",
+  "inventory.bucketPhysical": "Physical",
+  "inventory.bucketSellable": "Sellable",
+  "inventory.bucketDamaged": "Damaged",
+  "inventory.bucketInspectionHold": "Inspection hold",
+  "inventory.sellableBefore": "Sellable before",
+  "inventory.sellableAfter": "Sellable after",
+  "inventory.transactionRecordedAt": "Recorded at",
 
   "inventory.reservationsClose": "Close",
 
@@ -3923,8 +4144,18 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.reservationsEmpty": "Walay active reservations",
 
   "inventory.reservationsEmptyDetail": "Reserved stock mo-appear dinhi kung ang purchase orders mag-hold og inventory.",
-
+  "inventory.commitmentsLoading": "Loading commitments…",
+  "inventory.commitmentsEmpty": "No active commitments",
+  "inventory.commitmentsEmptyDetail": "Reservations and in-transit transfers will appear here.",
+  "inventory.commitmentsGroupReservations": "Reservations",
+  "inventory.commitmentsGroupInTransit": "In transit",
+  "inventory.inTransitOutbound": "In transit out",
+  "inventory.inTransitInbound": "In transit in",
+  "inventory.transferRoute": "{from} → {to}",
   "inventory.reservationTypeTemporary": "Temporary proposal",
+  "inventory.reservationTypeTransferOutbound": "Transfer out",
+  "inventory.reservationTypeTransferInbound": "Transfer in",
+  "inventory.reservationStatusInTransit": "In transit",
 
   "inventory.reservationTypeConfirmed": "Confirmed order",
 
@@ -4071,9 +4302,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.manageExpirationSettings": "I-manage ang expiration settings",
 
   "inventory.expirationSettingsTitle": "Expiration settings",
-
+  "inventory.expirationSettingsTitleWithBranch": "Expiration tracking · {branchName}",
   "inventory.expirationSettingsEnableHint":
-
     "I-on ang expiration tracking aron i-record ang expiry dates sa stock lots ug near-expiry warnings.",
 
   "inventory.expirationSetupRequired": "Missing expiry",
@@ -4210,7 +4440,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "inventory.movementLot": "Lot",
 
-  "inventory.movementUnitCost": "Unit purchase cost",
+  "inventory.movementUnitCost": "Unit cost",
 
   "inventory.movementStockValue": "Stock value",
 
@@ -4493,6 +4723,17 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.addProduct": "Add",
 
   "transfer.addProducts": "Add products",
+  "transfer.editShipment": "Edit shipment",
+  "transfer.editTransfer": "Edit transfer",
+  "transfer.editShipmentTitle": "Edit shipment",
+  "transfer.editShipmentLede":
+    "Adjust how much of the approved stock request ships now. Products stay fixed to the request.",
+  "transfer.notInThisShipment": "Not in this shipment",
+  "transfer.shipmentRequiresPositiveLine":
+    "Keep at least one product with quantity greater than zero in this shipment.",
+  "transfer.shipmentItemsEmpty": "No products in this shipment",
+  "transfer.shipmentItemsEmptyDetail":
+    "This shipment has no products. Cancel the draft or prepare the stock request again.",
 
   "transfer.backList": "Back to Transfers",
 
@@ -4594,10 +4835,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.draftEmpty": "Add at least one product.",
 
   "transfer.draftNoEdit":
-
-    "Draft transfers cannot be edited. Cancel this draft and create a new transfer to change items.",
+    "Only the source branch can edit this draft transfer.",
 
   "transfer.draftNumber": "Draft",
+
+  "transfer.editTitle": "Edit Inventory Transfer",
+
+  "transfer.editLede": "Add, remove, or change items on this draft. Source and destination stay the same.",
+
+  "transfer.saveChanges": "Save changes",
 
   "transfer.duplicateLine": "That product lot is already on this transfer.",
 
@@ -4728,6 +4974,103 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.receiveRemaining": "Receive remaining",
   "transfer.previouslyReceived": "Previously received",
   "transfer.outstanding": "Outstanding",
+  "transfer.good": "Good",
+  "transfer.inTransit": "In transit",
+  "transfer.fulfillment": "Fulfillment",
+  "transfer.thisShipment": "This shipment",
+  "transfer.receivingDecision": "Receiving decision",
+  "transfer.goodReceived": "Good received",
+  "transfer.missing": "Missing",
+  "transfer.other": "Other",
+  "transfer.otherDiscrepancy": "Other discrepancy",
+  "transfer.targetRequested": "Target / requested",
+  "transfer.stillInTransit": "Still in transit",
+  "transfer.needsFulfillment": "Needs fulfillment",
+  "transfer.acceptedWaived": "Accepted / waived",
+  "transfer.viewStockRequest": "View stock request",
+  "transfer.fulfillRemainingHint":
+    "Needs fulfillment: {qty}. Prepare the replacement transfer from this page or the stock request.",
+  "transfer.fulfillAtSourceHint":
+    "Needs fulfillment: {qty}. Switch to the source branch workspace to fulfill remaining, or open the stock request.",
+  "transfer.fulfillRemainingBanner": "{qty} still needs fulfillment",
+  "transfer.decision.replacementRequested": "Replacement requested",
+  "transfer.decision.acceptedNoReplacement": "Accepted — no replacement",
+  "transfer.decision.acceptedShortage": "Accepted shortage",
+  "transfer.custody.keepAtDestination": "Keep at destination",
+  "transfer.custody.returnToSource": "Return to source",
+  "transfer.custody.returnToBranch": "Return to {branch}",
+  "transfer.custody.heldAtDestination": "Held at destination",
+  "transfer.custody.awaitingReturn": "Waiting to return",
+  "transfer.custody.returnInTransit": "Return in transit",
+  "transfer.custody.returningToBranch": "Returning to {branch}",
+  "transfer.custody.receivedAtSource": "Returned to source",
+  "transfer.custody.returnedFromBranch": "Return from {branch}",
+  "transfer.custody.returnedToBranch": "Returned to {branch}",
+  "transfer.custody.awaitingInspection": "Awaiting inspection",
+  "transfer.custodyLabel": "Custody",
+  "transfer.inventoryState": "Inventory state",
+  "transfer.inventoryNonSellable": "Non-sellable",
+  "transfer.inventoryNonSellableAt": "Non-sellable at {branch}",
+  "transfer.currentLocation": "Current location",
+  "transfer.returnStatus": "Return status",
+  "transfer.actualItem": "Actual item",
+  "transfer.expectedItem": "Expected item",
+  "transfer.exceptionCustodyLabel": "Exception custody",
+  "transfer.exceptionActualProductRequired": "Select the actual product received for wrong-item discrepancies.",
+  "transfer.exceptionCustodyRequired": "Choose exception custody for other discrepancies.",
+  "transfer.exceptionActualProductHint": "Search and select the product that was actually received. It cannot be the expected transfer product.",
+  "transfer.exceptionForceReturnHint": "This reason requires return to source.",
+  "transfer.exceptionConfirmTitle": "Confirm wrong-item receive?",
+  "transfer.exceptionConfirmIntro": "Review stock effects before saving this receive wave.",
+  "transfer.exceptionConfirmLine":
+    "{expected} → actual {actual} ({qty}) · {custody} · {followUp}",
+  "transfer.exceptionConfirmStockHint":
+    "Source will restore expected stock and deduct actual; destination will hold the exception qty until return or inspection.",
+  "transfer.exceptionDispatchReturn": "Send back to source",
+  "transfer.exceptionDispatchReturnWithProduct": "Send back {qty} {product}",
+  "transfer.exceptionReturnSent": "Sent",
+  "transfer.exceptionReturnSentWithProduct": "Sent {qty} {product}",
+  "transfer.exceptionReceiveReturn": "Receive return",
+  "transfer.exceptionReceiveReturnWithProduct": "Receive {qty} {product}",
+  "transfer.exceptionReturnInTransitStatus": "Return in transit",
+  "transfer.exceptionReturnInTransitLine": "{qty} {product} → {branch}",
+  "transfer.exceptionWaitingForReturn": "Waiting for return",
+  "transfer.exceptionIncomingReturn": "Incoming return",
+  "transfer.exceptionIncomingReturnLine": "{qty} {product} ← {branch}",
+  "transfer.exceptionReturnedToSource": "Returned to source",
+  "transfer.exceptionReceivedFromBranch": "{qty} {product} received from {branch}",
+  "transfer.exceptionSendBackDestinationOnly":
+    "Switch to the destination branch workspace to send this return.",
+  "transfer.exceptionSendBackOffline": "Go online to send this return.",
+  "transfer.exceptionSendBackNoPermission":
+    "You need inventory manage permission to send this return.",
+  "transfer.exceptionInspect": "Inspect exception",
+  "transfer.exceptionInspectTitle": "Inspect exception custody",
+  "transfer.exceptionInspectHelp": "Choose how to allocate the returned quantity ({qty}). Sellable + non-sellable must equal the returned qty.",
+  "transfer.exceptionAllSellable": "All sellable",
+  "transfer.exceptionAllNonSellable": "All non-sellable",
+  "transfer.exceptionMustEqualQty": "Sellable + non-sellable must equal {qty}.",
+  "transfer.exceptionRecoveredSellable": "Recovered sellable",
+  "transfer.exceptionConfirmedNonSellable": "Confirmed non-sellable",
+  "transfer.exceptionInspectConfirm": "Confirm inspection",
+  "transfer.exceptionInspectInvalidQty": "Choose All sellable, All non-sellable, or enter quantities that add up to the returned qty.",
+  "transfer.exceptionReturnDispatched": "Return sent to source",
+  "transfer.exceptionReturnReceived": "Received",
+  "transfer.exceptionReturnReceivedWithProduct": "Received {qty} {product}",
+  "transfer.exceptionReturnReceiveSuccess": "Return received",
+  "transfer.exceptionInspected": "Exception custody inspected",
+  "transfer.replacement": "Replacement",
+  "transfer.replacementRequestedShort": "Requested",
+  "transfer.noReplacement": "No replacement",
+  "transfer.reason": "Reason",
+  "transfer.note": "Note",
+  "transfer.family.original": "Original",
+  "transfer.family.replacementN": "Replacement R{n}",
+  "transfer.family.originalDraft": "Original (draft)",
+  "transfer.family.replacementDraft": "Replacement R{n} (draft)",
+  "transfer.viewDetails": "View details",
+  "transfer.followUp.replaceQty": "Replace {qty}",
+  "transfer.followUp.none": "—",
   "transfer.closedShort": "Closing short",
   "transfer.closeRemainder": "Close remaining",
   "transfer.closeRemainderTitle": "Close remaining quantity?",
@@ -4758,11 +5101,80 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "transfer.selectDestination": "Select destination branch",
 
+  "transfer.noCoveredDestinationsTitle": "No assigned branches",
+
+  "transfer.noCoveredDestinationsDetail":
+    "This warehouse can only transfer to branches assigned in supply coverage. Assign branches first, then try again.",
+
+  "transfer.coverageLoadFailed": "Could not load warehouse branch coverage.",
+
+  "transfer.destinationNotCovered":
+    "This warehouse can only transfer to branches assigned in supply coverage.",
+
   "transfer.selectDiscrepancy": "Select reason",
 
   "transfer.selectLot": "Select lot",
 
+  "transfer.selectStockLots": "Select stock lots",
+
+  "transfer.lotCount": "{count} lots",
+
+  "transfer.expiryAllocation": "Expiry allocation",
+
+  "transfer.fefoAutomaticallySelected": "FEFO automatically selected",
+
+  "transfer.manualLotAllocation": "Custom lot allocation",
+
+  "transfer.changeLots": "Change lots",
+
+  "transfer.useFefo": "Use FEFO",
+
+  "transfer.applyLots": "Apply",
+
+  "transfer.transferQuantity": "Transfer quantity",
+
+  "transfer.batchLot": "Batch / Lot",
+
+  "transfer.transferQtyCol": "Transfer",
+
+  "transfer.allocated": "Allocated",
+
+  "transfer.remaining": "Remaining",
+
+  "transfer.overAllocatedBy": "Over allocated by: {qty} {uom}",
+
+  "transfer.lotExceedsAvailable": "Only {qty} {uom} available.",
+
+  "transfer.lotExceedsTransferNeed": "Only {qty} {uom} needed for this transfer.",
+
+  "transfer.useMax": "Use max",
+
+  "transfer.overAllocatedHint": "Use FEFO to reset, or Use max on each lot.",
+
+  "transfer.lotTotalBecomesQuantity": "Transfer quantity will be {qty} {uom}",
+
+  "transfer.lotTotalHint": "Apply updates the line quantity to this total.",
+
+  "transfer.lotTotalExceedsAvailable": "Total exceeds available ({qty} {uom}).",
+
+  "transfer.allocationMismatch": "Lot allocation must equal the transfer quantity.",
+
+  "transfer.lotStockChanged":
+    "Stock for this expiry lot changed. Review the lot allocation and try again.",
+  "transfer.expired": "Expired",
+
+  "transfer.expiredQtyHint": "{qty} {uom} expired",
+
+  "transfer.lotExpiredCannotTransfer":
+    "This lot is expired and cannot be transferred.",
+
+  "transfer.dispatchLotsExpired":
+    "Selected stock has expired. Review the lot allocation before dispatching.",
   "transfer.sent": "Sent",
+
+  "transfer.prepared": "Prepared",
+
+  "transfer.qty": "Qty",
 
   "transfer.singleBranchDetail": "Add another branch to start transferring stock.",
 
@@ -4779,9 +5191,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.status.partiallyReceived": "Partially received",
 
   "transfer.status.received": "Received",
-  "transfer.status.closedWithDiscrepancy": "Closed with discrepancy",
-  "transfer.byPartiallyReceived": "Partially received by",
-  "transfer.byClosedWithDiscrepancy": "Closed by",
+  "transfer.status.closedWithDiscrepancy": "Discrepancy",
+  "transfer.byPartiallyReceived": "Partially received by {name}",
+  "transfer.byClosedWithDiscrepancy": "Closed by {name}",
 
   "transfer.title": "Mga Inventory Transfer",
 
@@ -4790,9 +5202,12 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.tracksExpiry": "Tracks expiry",
 
   "transfer.available": "Available: {qty} {uom}",
-  "transfer.colAvailable": "Available at source",
+  "transfer.colAvailable": "Available",
+
+  "transfer.colExpiryLot": "Expiry/Lot",
   "transfer.colNumber": "Transfer #",
   "transfer.colRoute": "Route",
+  "transfer.colLines": "Lines",
   "transfer.colUpdated": "Updated",
   "transfer.timelineTitle": "Transfer timeline",
   "transfer.activity.empty": "No timeline events yet.",
@@ -5545,6 +5960,31 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.totalOnHand": "Kinatibuk-ang naay stock",
 
   "inventory.tracked": "Gi-track",
+  "inventory.enablingTracking": "Enable tracking",
+  "inventory.enableStock": "Enable stock",
+  "inventory.enableCancel": "Cancel",
+  "inventory.viewInventoryDetails": "View inventory details",
+  "inventory.productSummary.title": "Product summary",
+  "inventory.productSummary.open": "Product summary",
+  "inventory.productSummary.close": "Close",
+  "inventory.productSummary.sectionStock": "Stock",
+  "inventory.productSummary.sectionConfig": "Configuration",
+  "inventory.productSummary.expirationTracking": "Expiration tracking",
+  "inventory.productSummary.expirationOn": "On",
+  "inventory.productSummary.expirationOff": "Off",
+  "inventory.productSummary.stopSellingDays": "Stop selling (days before expiry)",
+  "inventory.productSummary.pendingReturn": "Pending return",
+  "inventory.productSummary.daysValue": "{days} days",
+  "inventory.productSummary.notSet": "—",
+  "inventory.productSummary.loadingPolicy": "Loading sale policy…",
+  "inventory.col.product": "Product",
+  "inventory.col.unit": "Unit",
+  "inventory.col.tracking": "Tracking",
+  "inventory.col.openingQty": "Opening Qty",
+  "inventory.col.purchaseCost": "Purchase Cost",
+  "inventory.col.sellingPrice": "Selling Price",
+  "inventory.col.available": "Available",
+  "inventory.col.action": "Action",
 
   "inventory.trackingFilter": "Tracking status",
   "inventory.categoryFilter": "Categories",
@@ -5772,10 +6212,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt / resibo sa PO",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ dugang",
-
-  "inventory.movementType.manualDecrease": "Stock adjustment ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ bawas",
-
+  "inventory.movementType.manualIncrease": "Stock adjustment — dugang",
+  "inventory.movementType.manualDecrease": "Stock adjustment — bawas",
   "inventory.movementType.sale": "Baligya",
 
   "inventory.movementType.saleVoid": "Pagbalik gikan sa voided sale",
@@ -5787,11 +6225,34 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.movementType.transferIn": "Pagbalhin sulod",
 
   "inventory.movementType.transferCancel": "Pagbalik gikan sa kanselado nga transfer",
+  "inventory.movementType.transferDamageHold": "Damaged transfer received",
+  "inventory.movementType.transferDamageRecovery": "Returned damage recovered",
+  "inventory.movementType.transferDamageReturnOut": "Damaged returned to source",
+  "inventory.movementType.transferDamageReturnIn": "Damaged return received",
+  "inventory.movementType.transferDamageWriteOff": "Confirmed damaged",
+  "inventory.movementType.transferExceptionHold": "Wrong item received",
+  "inventory.movementType.transferExceptionHoldWrongItem": "Wrong item received",
+  "inventory.movementType.transferExceptionHoldWrongVariant": "Wrong variant received",
+  "inventory.movementType.transferExceptionExpectedRestore": "Expected item restored",
+  "inventory.movementType.transferExceptionActualOut": "Wrong item sent",
+  "inventory.movementType.transferExceptionActualOutWrongItem": "Wrong item sent",
+  "inventory.movementType.transferExceptionActualOutWrongVariant": "Wrong variant sent",
+  "inventory.movementType.transferExceptionReturnOut": "Wrong item returned to source",
+  "inventory.movementType.transferExceptionReturnOutWrongItem": "Wrong item returned to source",
+  "inventory.movementType.transferExceptionReturnOutWrongVariant": "Wrong variant returned to source",
+  "inventory.movementType.transferExceptionReturnIn": "Wrong item return received",
+  "inventory.movementType.transferExceptionReturnRestock": "Wrong item return received",
+  "inventory.movementType.transferExceptionReturnRestockWrongVariant": "Wrong variant return received",
+  "inventory.movementType.transferExceptionRecovery": "Returned exception recovered",
+  "inventory.movementType.transferExceptionWriteOff": "Confirmed non-sellable exception",
+  "inventory.exceptionExpectedRestoreWhy":
+    "{qty} {product} were recorded as sent but were not physically sent.",
+  "inventory.exceptionReturnedFrom": "Returned from",
+  "inventory.exceptionReceivedBy": "Received by",
+  "inventory.exceptionWhy": "Why",
 
-  "inventory.movementType.stockCountIncrease": "Stock count ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ dugang",
-
-  "inventory.movementType.stockCountDecrease": "Stock count ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ bawas",
-
+  "inventory.movementType.stockCountIncrease": "Stock count — dugang",
+  "inventory.movementType.stockCountDecrease": "Stock count — bawas",
   "inventory.movementType.stockUse": "Paggamit sa stock",
 
   "inventory.movementType.stockUseVoid": "Pagbalik gikan sa voided stock use",
@@ -6645,6 +7106,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "org.more.receiveStock": "Dawata ang stock",
 
   "org.more.transfers": "Mga transfer",
+  "org.more.awaitingInspection": "Return inspection",
+  "org.more.branchRequests": "Branch requests",
 
   "org.more.expiringLots": "Mga lot / expiry",
 
@@ -6913,8 +7376,13 @@ export const cebPH: Record<keyof typeof en, string> = {
   "org.nav.more": "Dugang",
 
   "org.nav.inventory": "Imbentaryo",
+  "org.nav.stockStatus": "Stock status",
+  "org.nav.awaitingInspection": "Return inspection",
+
+  "org.nav.warehouse": "Warehouse",
 
   "org.nav.transfers": "Mga transfer",
+  "org.nav.branchRequests": "Branch requests",
 
   "org.nav.purchasing": "Pagpalit",
 
@@ -7485,7 +7953,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "people.add.identityFound": "[CEB] Identity found",
 
-  "people.add.lede": "[CEB] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+  "people.add.lede": "[CEB] Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
 
   "people.add.notFound": "[CEB] No matching ExItS identity was found.",
 
@@ -7531,7 +7999,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "people.formLedeExits":
 
-    "[CEB] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+    "[CEB] Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
 
   "people.sectionBasics": "[CEB] Basics",
 
@@ -7557,7 +8025,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
     "[CEB] Review the identity above, then add them to your People list.",
 
-  "people.listTitle": "[CEB] Your people",
+  "people.listTitle": "[CEB] Your friends",
+  "people.backToFriends": "[CEB] Back to friends",
 
   "people.filter.label": "[CEB] Filter people",
 
@@ -7579,7 +8048,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "people.detail.amountInvalid": "[CEB] Enter a valid amount.",
 
-  "people.detail.block": "[CEB] Block person",
+  "people.detail.block": "[CEB] Block friend",
+  "people.detail.connectionAndSafety": "[CEB] Connection & safety",
 
   "people.detail.blockConfirmBody": "[CEB] This person cannot send you new connection requests until you unblock them.",
 
@@ -7588,6 +8058,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "people.detail.cancelRequest": "[CEB] Cancel request",
 
   "people.detail.confirmUtang": "[CEB] Continue",
+  "people.detail.saveILent": "[CEB] Save I lent",
+  "people.detail.saveIBorrowed": "[CEB] Save I borrowed",
 
   "people.detail.connectedSince": "[CEB] Connected since {date}",
 
@@ -7883,7 +8355,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connectedCommerce.tab.fulfillment": "Fulfillment",
   "connectedCommerce.tab.payments": "Payments",
   "connectedCommerce.tab.catalog": "Catalog & Pricing",
-  "connectedCommerce.tab.orders": "Orders",
+  "connectedCommerce.tab.orders": "Return Policy",
+  "connectedCommerce.tab.returnPolicy": "Return Policy",
+  "connectedCommerce.tab.expirySalePolicy": "Expiry sale policy",
   "connectedCommerce.tab.documents": "Documents & Compliance",
   "connectedCommerce.orgRequired": "Organization required",
   "connectedCommerce.orgRequiredDetail": "Bind an organization workspace to manage Connected Commerce settings.",
@@ -9096,6 +9570,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.searchLabel": "Search to-dos",
 
   "personal.todo.searchPlaceholder": "Search title or notes",
+  "personal.todo.expandRow": "Expand to-do",
+  "personal.todo.collapseRow": "Collapse to-do",
 
   "personal.todo.moreOptions": "More options",
 
@@ -9182,6 +9658,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.filterUpcoming": "Umaabot",
 
   "personal.todo.filters": "Mga filter sa buhaton",
+  "personal.todo.filterAll": "Tanang buhaton",
+  "personal.todo.cardTitle": "Mga buhaton",
+  "personal.todo.newTask": "Bag-ong to-do",
+  "personal.todo.railSection": "Buhaton",
+  "personal.todo.groupHeader": "{count} Tasks {label}",
+  "personal.todo.closeDetail": "Sirado",
+  "personal.todo.openFullDetail": "Ablihi ang tibuok detalye",
+  "personal.todo.emptyAllTitle": "Wala pay buhaton",
+  "personal.todo.emptyAllDetail": "Paghimo og buhaton aron magsugod.",
 
   "personal.todo.genericError": "Adunay sayop. Sulayi pag-usab.",
 
@@ -9208,6 +9693,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.priorityNormal": "Kasagaran",
 
   "personal.todo.reactivate": "I-activate pag-usab",
+  "personal.todo.delete": "Tangtangon",
+  "personal.todo.deleteConfirmTitle": "Tangtangon kini nga to-do?",
+  "personal.todo.deleteConfirmDetail":
+    "Permanenteng kuhaon ang cancelled to-do. Dili na kini mauli.",
+  "personal.todo.deleteConfirm": "Permanenteng tangtangon",
 
   "personal.todo.relatedContact": "Tawo",
 
@@ -9554,6 +10044,23 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.sharedLedger": "Shared ledger",
 
   "personal.utang.statusCancelled": "Gikansela",
+  "personal.utang.statusPrivate": "Private",
+  "personal.utang.statusAutoSynced": "Shared · Auto-synced",
+  "personal.utang.statusSharedReportedBy": "Shared · Reported by {name} · Pending",
+  "personal.utang.savePrivately": "Save privately",
+  "personal.utang.shareWithPerson": "Share with {name}",
+  "personal.utang.shareOffHint": "Saved only on your ledger. They will not see this.",
+  "personal.utang.shareOnHint":
+    "Shared online with {name}. They will see it right away; confirmation may still be required.",
+  "personal.utang.shareRequiresOnline": "Sharing with another person requires an internet connection.",
+  "personal.utang.sharedEntryHint": "This updates your shared ledger with {name}.",
+  "personal.utang.savedPrivatelyNotReceiving":
+    "Saved privately. This person is not receiving shared Utang entries.",
+  "personal.utang.prefsTitle": "Shared Utang from {name}",
+  "personal.utang.prefsReceive": "Show shared Utang",
+  "personal.utang.prefsAutoSync": "Automatically sync {name}'s entries",
+  "personal.utang.prefsNotifications": "Notifications",
+  "personal.utang.prefsRequiresOnline": "Shared Utang preferences require an internet connection.",
 
   "personal.utang.statusConfirmed": "Nakumpirma",
 
@@ -9819,7 +10326,30 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.expiryDate": "Expiry date",
 
+  "purchasing.lotNumberOptional": "Optional",
+
   "purchasing.expiryRequired": "Expiry date is required when receiving expiration-tracked stock.",
+
+  "purchasing.clearExpiryDate": "Clear date",
+
+  "purchasing.expiryEnableTrackingHint":
+    "Expiry tracking will be enabled when this receipt is saved.",
+
+  "purchasing.expirySetupTitle": "Set up expiry tracking",
+
+  "purchasing.expirySetupDescription":
+    "{product} already has {qty} {uom} in stock without expiration information. Assign expiration dates to the existing stock before receiving new expiry-tracked stock.",
+
+  "purchasing.expirySetupAddGroup": "Add expiry group",
+
+  "purchasing.expirySetupStockChanged":
+    "Stock quantity changed while you were setting up expiry tracking. Refresh the allocation and try again.",
+
+  "purchasing.expirySetupOffline": "Setting up expiry tracking needs an internet connection.",
+
+  "purchasing.expirySetupLoadFailed": "Could not load current stock for expiry setup.",
+
+  "purchasing.expirySetupUnauthorized": "You do not have permission to set up expiry tracking.",
 
   "purchasing.receiveExpiryHelper": "Expiry is recorded for this received stock.",
 
@@ -11427,6 +11957,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "managerHome.warehouse.stockAlerts": "Stock alerts",
 
   "managerHome.warehouse.noIncoming": "No incoming transfers",
+  "managerHome.warehouse.branchRequests": "Branch requests",
+  "managerHome.warehouse.noBranchRequests": "No pending branch requests",
 
   "managerHome.warehouse.noReceivable": "No purchase orders ready",
 
@@ -13204,6 +13736,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "branches.create.name.warehouse": "Warehouse name",
   "branches.create.code.warehouse": "Warehouse code",
   "branches.detail.overview.warehouse": "Warehouse overview",
+  "branches.detail.servedBranches": "Branches served",
+  "branches.detail.servedBranchesHint": "Tap to add or remove branches this warehouse supplies",
+  "branches.detail.servedBranchesViewHint": "Branches this warehouse currently supplies",
+  "branches.detail.servedBranchesAria": "Branches served by this warehouse",
   "branches.detail.details.warehouse": "Warehouse details",
   "branches.detail.codeReadonly.warehouse": "Warehouse code",
   "branches.detail.lifecycleTitle.warehouse": "Warehouse lifecycle",
@@ -13278,6 +13814,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.listLedeRetail": "Mga request nga gipadala sa imong branch ngadto sa supply warehouse.",
   "stockRequest.listLedeWarehouse": "Mga umaabot nga request gikan sa retail branch.",
   "stockRequest.detailTitle": "Stock request",
+  "stockRequest.summaryTitle": "Request summary",
   "stockRequest.needBranch": "Pagpili una og location workspace.",
   "stockRequest.denied": "Wala kay inventory permission aron mangayo og stock.",
   "stockRequest.loading": "Nag-load sa stock request...",
@@ -13303,11 +13840,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.items": "item",
   "stockRequest.requested": "Gipangayo",
   "stockRequest.approved": "Gi-aprubahan",
+  "stockRequest.goodReceived": "Good received",
   "stockRequest.approvedQty": "Gi-aprubahan nga kantidad",
   "stockRequest.fulfilled": "Natuman",
   "stockRequest.received": "Nadawat",
   "stockRequest.stillInTransit": "Naay transit pa",
-  "stockRequest.remainingToDispatch": "Nahibilin nga i-dispatch",
+  "stockRequest.remainingToDispatch": "Remaining to dispatch (Committed)",
+  "stockRequest.needsFulfillmentSummary": "Committed remaining: {qty}",
+  "stockRequest.committedRemaining": "Committed remaining: {qty}",
+  "stockRequest.colRemainingToDispatchCommitted": "Remaining to dispatch (Committed)",
   "stockRequest.unit": "Unit",
   "stockRequest.openTransferBlocksDispatch":
     "{qty} units outstanding pa sa Transfer {transfer}. Dawata o isira una ang transfer sa dili pa magpadala og kapuli.",
@@ -13319,6 +13860,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.fulfillRemaining": "Tumanon ang nahibilin nga {qty}",
   "stockRequest.readyToReceive": "Andam na modawat",
   "stockRequest.linkedTransfer.sent": "Gipadala",
+  "stockRequest.linkedTransfer.prepared": "Giandam",
   "stockRequest.linkedTransfer.received": "Nadawat",
   "stockRequest.linkedTransfer.closed": "Gisira",
   "stockRequest.linkedTransfer.outstanding": "Outstanding",
@@ -13328,10 +13870,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.createTransfer": "Paghimo og transfer",
   "stockRequest.reject": "Balibara ang request",
   "stockRequest.decline": "Balibara",
+  "stockRequest.declineConfirmTitle": "Decline stock request",
+  "stockRequest.declineConfirmDetail": "Tell the requesting branch why this request cannot be fulfilled.",
+  "stockRequest.declining": "Declining…",
   "stockRequest.rejectReason": "Rason sa pagbalibad (gikinahanglan)",
+  "stockRequest.rejectReasonPlaceholder": "Enter decline reason",
   "stockRequest.rejectDefault": "Gibalibaran",
   "stockRequest.declineReasonRequired": "Isulat ang rason una sa pagbalibad.",
   "stockRequest.cancel": "Kanselahon ang request",
+  "stockRequest.editRequest": "I-edit ang request",
   "stockRequest.requestStock": "Pangayo og stock",
   "stockRequest.tabs": "Mga filter sa stock request",
   "stockRequest.tab.submitted": "Naisumite",
@@ -13354,9 +13901,13 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.col.requestQty": "Kantidad sa request",
   "stockRequest.approve": "Aprubahan",
   "stockRequest.approveAndPrepare": "Aprubahan ug andama",
+  "stockRequest.approvedButPrepareFailed":
+    "Naaprubahan ang request, apan dili maandam ang transfer. Mahimo nimo kini andamon pag-usab.",
   "stockRequest.startPreparing": "Sugdi ang pag-andam",
   "stockRequest.dispatchStock": "Ipadala ang stock",
   "stockRequest.receiveLinked": "Dawata ang stock",
+  "stockRequest.timelineTitle": "Request timeline",
+  "stockRequest.colNumber": "Request number",
   "stockRequest.activity": "Kalihokan",
   "stockRequest.activity.requested": "Gipangayo",
   "stockRequest.activity.approved": "Gi-aprubahan",
@@ -13408,6 +13959,21 @@ export const cebPH: Record<keyof typeof en, string> = {
   "retailWarehouse.recentEmpty": "Walay bag-ohing hangyo",
   "retailWarehouse.recentEmptyDetail": "Mokita dinhi ang mga nasumite nga stock request.",
   "retailWarehouse.request.supplyFrom": "Gikan sa {name}",
+  "retailWarehouse.request.detailsTitle": "Request details",
+  "retailWarehouse.request.fromWarehouse": "Supply warehouse",
+  "retailWarehouse.request.toBranch": "Requesting branch",
+  "retailWarehouse.request.items": "Items",
+  "retailWarehouse.request.addProducts": "Add products",
+  "retailWarehouse.request.findProducts": "Find products",
+  "retailWarehouse.request.closeFindProducts": "Close product finder",
+  "retailWarehouse.request.itemsEmpty": "No products yet",
+  "retailWarehouse.request.itemsEmptyDetail":
+    "Add products to request from the supply warehouse.",
+  "retailWarehouse.request.backOverview": "Back to warehouse",
+  "retailWarehouse.request.reset": "Reset",
+  "retailWarehouse.request.submitting": "Submitting…",
+  "retailWarehouse.request.colWarehouseAvailable": "Warehouse available",
+
   "retailWarehouse.request.basket": "Basket sa hangyo",
   "retailWarehouse.request.cartLabel": "Hangyo",
   "retailWarehouse.request.cartEmptyDetail": "I-tap ang produkto aron idugang niining hangyo.",
@@ -13469,6 +14035,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "warehouse.toast.noAssignment.action": "I-configure ang warehouse",
   "transfer.stockRequest": "Stock request",
   "transfer.requestedBy": "Requested by",
+  "transfer.fulfillsStockRequest": "Fulfills stock request",
+  "transfer.fulfillsStockRequestShort": "Fulfills {number}",
   "warehouseDashboard.title": "Dashboard",
   "warehouseDashboard.lede": "Inventory, replenishment, transfers and receiving performance.",
   "warehouseDashboard.typeBadge": "Warehouse",
@@ -13476,6 +14044,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.loading": "Loading warehouse dashboard?",
   "warehouseDashboard.currentLocationOnly": "Current warehouse only",
   "warehouseDashboard.kpi.tracked": "Tracked products",
+  "warehouseDashboard.kpi.branchesServed": "Branches served",
   "warehouseDashboard.kpi.lowStock": "Low stock",
   "warehouseDashboard.kpi.expiry": "Expiry alerts",
   "warehouseDashboard.kpi.pendingRequests": "Pending requests",

@@ -52,6 +52,12 @@ internal static class PurchaseOrderEndpoints
             }
 
             var filter = new PurchaseOrderFilter(parsedStatus, supplierId, poNumber, parsedFrom, parsedTo);
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch);
+            if (actingBranch is Guid branch && branch != Guid.Empty)
+            {
+                filter = filter with { IntendedReceivingBranchId = branch };
+            }
+
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -97,12 +103,27 @@ internal static class PurchaseOrderEndpoints
             }
 
             var po = await queries.GetByIdAsync(organizationId, purchaseOrderId, ct).ConfigureAwait(false);
-            return po is null
-                ? PosApiResults.Problem(
+            if (po is null)
+            {
+                return PosApiResults.Problem(
                     ApplicationErrorCodes.PurchaseOrderNotFound,
                     "Purchase order was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(po);
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranch)
+                && actingBranch is Guid branch
+                && branch != Guid.Empty
+                && po.IntendedReceivingBranchId is Guid intended
+                && intended != branch)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.PurchaseOrderNotFound,
+                    "Purchase order was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            return Results.Ok(po);
         });
 
         group.MapPut("/{purchaseOrderId:guid}", async (

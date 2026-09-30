@@ -96,9 +96,12 @@ export function MerchantShopPage() {
     () => (organizationId ? sellerWorkspace(organizationId, branchId) : null),
     [organizationId, branchId],
   );
+  const merchantContextQuery = useLinkedMerchantShopContext(organizationId, Boolean(organizationId));
+  const platformBusinessCustomerId = merchantContextQuery.data?.businessCustomerId;
+
   const query = useInfiniteQuery({
-    queryKey: ["storefront", organizationId, branchId, debounced, categoryId],
-    enabled: Boolean(workspace) && tokenReady && online,
+    queryKey: ["storefront", organizationId, branchId, debounced, categoryId, platformBusinessCustomerId],
+    enabled: Boolean(workspace) && tokenReady && online && Boolean(platformBusinessCustomerId),
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) =>
       getCustomerStorefront(
@@ -110,6 +113,7 @@ export function MerchantShopPage() {
           fulfillmentBranchId: branchId ?? undefined,
           page: pageParam,
           pageSize: STOREFRONT_PAGE_SIZE,
+          platformBusinessCustomerId,
         },
         signal,
       ),
@@ -127,10 +131,16 @@ export function MerchantShopPage() {
   const orderingUnavailable =
     (query.isError && isCustomerOrderingUnavailable(query.error)) ||
     (storefront !== null && !storefront.canCustomerOrder);
-  const merchantContextQuery = useLinkedMerchantShopContext(organizationId, Boolean(organizationId));
   const { byOrganizationId } = useLinkedMerchantsOrderingProbes(
-    organizationId ? [organizationId] : [],
-    tokenReady && Boolean(organizationId) && online,
+    organizationId
+      ? [
+          {
+            organizationId,
+            platformBusinessCustomerId: platformBusinessCustomerId ?? null,
+          },
+        ]
+      : [],
+    tokenReady && Boolean(organizationId) && online && Boolean(platformBusinessCustomerId),
   );
   const orderingProbe = byOrganizationId.get(organizationId);
 
@@ -235,21 +245,29 @@ export function MerchantShopPage() {
     );
   }
 
-  if (query.isLoading) {
+  if (
+    merchantContextQuery.isLoading ||
+    query.isLoading ||
+    (tokenReady && online && !platformBusinessCustomerId && !merchantContextQuery.isError)
+  ) {
     return (
       <div className={pageShell}>
         {shopPageHeader()}
         <PersonalCommerceNav active="stores" />
         {shopIdentity(
           Boolean(orderingProbe?.resolved && orderingProbe.canCustomerOrder),
-          !orderingProbe || orderingProbe.pending,
+          !orderingProbe || orderingProbe.pending || merchantContextQuery.isLoading,
         )}
         <LoadingSkeleton label={t("loading.label")} />
       </div>
     );
   }
 
-  if (orderingUnavailable) {
+  if (
+    orderingUnavailable ||
+    (!platformBusinessCustomerId && merchantContextQuery.isFetched) ||
+    (orderingProbe?.resolved === true && !orderingProbe.canCustomerOrder)
+  ) {
     return (
       <div className={pageShell} data-testid="merchant-shop-unavailable">
         {shopPageHeader()}

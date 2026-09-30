@@ -80,11 +80,16 @@ export function topMovedProductsFromRows(
   rows: ReadonlyArray<Record<string, unknown>>,
   direction: "outbound" | "inbound",
   limit = 5,
+  productNamesById?: ReadonlyMap<string, string>,
 ): Array<{ productId: string; productName: string; quantity: number }> {
   const map = new Map<string, { productName: string; quantity: number }>();
   for (const row of rows) {
     const productId = String(row.productId ?? row.ProductId ?? "");
-    const productName = String(row.productName ?? row.ProductName ?? "").trim();
+    const fromRow = String(
+      row.productName ?? row.ProductName ?? row.name ?? row.Name ?? "",
+    ).trim();
+    const fromLookup = productNamesById?.get(productId)?.trim() ?? "";
+    const productName = fromRow || fromLookup;
     const qty = Number(row.quantityEffect ?? row.QuantityEffect ?? 0);
     if (!productId || !Number.isFinite(qty) || qty === 0) continue;
     if (direction === "outbound" && qty >= 0) continue;
@@ -94,6 +99,9 @@ export function topMovedProductsFromRows(
       quantity: 0,
     };
     if (productName) prev.productName = productName;
+    else if (fromLookup && (!prev.productName || prev.productName === productId.slice(0, 8))) {
+      prev.productName = fromLookup;
+    }
     prev.quantity += Math.abs(qty);
     map.set(productId, prev);
   }

@@ -161,7 +161,8 @@ public sealed record PosInventoryMovementRowDto(
     string SourceType,
     decimal QuantityEffect,
     DateTimeOffset RecordedAtUtc,
-    Guid RecordedBy);
+    Guid RecordedBy,
+    string? ProductName = null);
 
 public sealed record PosStockCountVarianceRowDto(
     Guid StockCountId,
@@ -719,6 +720,12 @@ public sealed class OperationalReportService(
             .Select(g => new ReportMovementTypeTotalDto(g.Key, g.Sum(m => m.QuantityEffect), g.Count()))
             .ToList();
 
+        var productIds = movements.Select(m => m.ProductId).Distinct().ToList();
+        var catalog = productIds.Count == 0
+            ? Array.Empty<CatalogProduct>()
+            : await products.ListByIdsAsync(org, productIds, ct).ConfigureAwait(false);
+        var namesByProductId = catalog.ToDictionary(p => p.Id.Value, p => p.Name);
+
         var rows = movements
             .OrderByDescending(m => m.RecordedAtUtc)
             .Select(m => new PosInventoryMovementRowDto(
@@ -728,7 +735,8 @@ public sealed class OperationalReportService(
                 StockMovementSourceTypes.ToCode(m.SourceType),
                 m.QuantityEffect,
                 m.RecordedAtUtc,
-                m.RecordedBy))
+                m.RecordedBy,
+                namesByProductId.GetValueOrDefault(m.ProductId.Value)))
             .ToList();
 
         return ApplicationResult<PosInventoryMovementsReportDto>.Success(

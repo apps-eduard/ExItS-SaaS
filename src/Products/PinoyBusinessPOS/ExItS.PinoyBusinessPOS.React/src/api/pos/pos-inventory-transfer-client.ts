@@ -87,6 +87,8 @@ export const inventoryTransferReceiptLineDtoSchema = z.object({
   otherFollowUp: z.string().nullable().optional(),
   quantityWaived: z.number().optional(),
   note: z.string().nullable().optional(),
+  actualReceivedProductId: guidSchema.nullable().optional(),
+  otherCustodyDecision: z.string().nullable().optional(),
 });
 
 export const inventoryTransferReceiptDtoSchema = z.object({
@@ -101,6 +103,7 @@ export const inventoryTransferDtoSchema = z.object({
   transferId: guidSchema,
   organizationId: guidSchema,
   stockRequestId: guidSchema.nullable().optional(),
+  stockRequestNumber: z.string().nullable().optional(),
   transferNumber: z.string().nullable().optional(),
   sourceBranchId: guidSchema,
   sourceBranchName: z.string().nullable().optional(),
@@ -143,6 +146,9 @@ export const inventoryTransferDtoSchema = z.object({
         totalSentQty: z.number(),
         totalReceivedQty: z.number(),
         totalOutstandingQty: z.number(),
+        totalDamagedQty: z.number().optional(),
+        totalMissingQty: z.number().optional(),
+        totalOtherQty: z.number().optional(),
       }),
     )
     .nullable()
@@ -174,6 +180,35 @@ export const inventoryTransferDtoSchema = z.object({
     )
     .nullable()
     .optional(),
+  exceptionCustodies: z
+    .array(
+      z.object({
+        custodyId: guidSchema,
+        transferId: guidSchema,
+        rootTransferId: guidSchema,
+        receiptLineId: guidSchema,
+        expectedProductId: guidSchema,
+        actualProductId: guidSchema,
+        quantity: z.number(),
+        reasonCode: z.string(),
+        decision: z.string(),
+        followUpIntent: z.string(),
+        status: z.string(),
+        heldBranchId: guidSchema,
+        recoveredSellableQty: z.number(),
+        confirmedNonSellableQty: z.number(),
+        replacementDemandQty: z.number(),
+        createdAtUtc: z.string(),
+        updatedAtUtc: z.string(),
+        returnDispatchedAtUtc: z.string().nullable().optional(),
+        returnReceivedAtUtc: z.string().nullable().optional(),
+        inspectedAtUtc: z.string().nullable().optional(),
+        expectedProductName: z.string().nullable().optional(),
+        actualProductName: z.string().nullable().optional(),
+      }),
+    )
+    .nullable()
+    .optional(),
   satisfiedAtDestinationQty: z.number().optional(),
   openInTransitQty: z.number().optional(),
   remainingToDispatchQty: z.number().optional(),
@@ -198,6 +233,16 @@ export const inventoryTransferListItemDtoSchema = z.object({
   dispatchedBy: guidSchema.nullable().optional(),
   receivedBy: guidSchema.nullable().optional(),
   cancelledBy: guidSchema.nullable().optional(),
+  closedAtUtc: z.string().nullable().optional(),
+  closedBy: guidSchema.nullable().optional(),
+  /** True when this transfer chose RequestReplacement follow-up. */
+  hasRequestReplacementFollowUp: z.boolean().optional().default(false),
+  /** Family-level remaining to dispatch (Needs fulfillment). */
+  remainingToDispatchQty: z.number().optional().default(0),
+  /** Family-level still in transit. */
+  openInTransitQty: z.number().optional().default(0),
+  /** True while RequestReplacement family fulfillment is still outstanding. */
+  hasOpenDiscrepancyFollowUp: z.boolean().optional().default(false),
 });
 
 export const inventoryTransferPagedResultSchema = z.object({
@@ -214,6 +259,39 @@ export type InventoryTransferDto = z.infer<typeof inventoryTransferDtoSchema>;
 export type InventoryTransferListItemDto = z.infer<typeof inventoryTransferListItemDtoSchema>;
 export type InventoryTransferPagedResult = z.infer<typeof inventoryTransferPagedResultSchema>;
 
+export const INVENTORY_TRANSFER_AWAITING_INSPECTION_KINDS = ["Damage", "Exception"] as const;
+export type InventoryTransferAwaitingInspectionKind =
+  (typeof INVENTORY_TRANSFER_AWAITING_INSPECTION_KINDS)[number];
+
+export const inventoryTransferAwaitingInspectionItemDtoSchema = z.object({
+  custodyId: guidSchema,
+  custodyKind: z.string(),
+  transferId: guidSchema,
+  transferNumber: z.string().nullable().optional(),
+  productId: guidSchema,
+  productName: z.string().nullable().optional(),
+  quantity: z.number(),
+  status: z.string(),
+  heldBranchId: guidSchema,
+  updatedAtUtc: z.string(),
+  returnReceivedAtUtc: z.string().nullable().optional(),
+  expectedProductId: guidSchema.nullable().optional(),
+  expectedProductName: z.string().nullable().optional(),
+  returnedFromBranchName: z.string().nullable().optional(),
+});
+
+export const inventoryTransferAwaitingInspectionResultDtoSchema = z.object({
+  items: z.array(inventoryTransferAwaitingInspectionItemDtoSchema),
+  totalCount: z.number(),
+});
+
+export type InventoryTransferAwaitingInspectionItemDto = z.infer<
+  typeof inventoryTransferAwaitingInspectionItemDtoSchema
+>;
+export type InventoryTransferAwaitingInspectionResultDto = z.infer<
+  typeof inventoryTransferAwaitingInspectionResultDtoSchema
+>;
+
 export type InventoryTransferLineRequest = {
   productId: string;
   quantity: number;
@@ -223,6 +301,13 @@ export type InventoryTransferLineRequest = {
 export type CreateInventoryTransferRequest = {
   sourceBranchId: string;
   destinationBranchId: string;
+  lines: InventoryTransferLineRequest[];
+  notes?: string | null;
+  /** Client-generated idempotency entity id. */
+  operationId?: string | null;
+};
+
+export type UpdateInventoryTransferRequest = {
   lines: InventoryTransferLineRequest[];
   notes?: string | null;
   /** Client-generated idempotency entity id. */
@@ -250,6 +335,8 @@ export type InventoryTransferReceiveLineRequest = {
   damagedFollowUp?: InventoryTransferDiscrepancyFollowUpCode | string | null;
   otherFollowUp?: InventoryTransferDiscrepancyFollowUpCode | string | null;
   damagedCustodyDecision?: InventoryTransferDamagedCustodyDecisionCode | string | null;
+  otherCustodyDecision?: InventoryTransferDamagedCustodyDecisionCode | string | null;
+  actualReceivedProductId?: string | null;
   discrepancyReason?: string | null;
   discrepancyNote?: string | null;
   lineId?: string | null;
@@ -323,6 +410,19 @@ export async function listInventoryTransfers(
   return inventoryTransferPagedResultSchema.parse(raw);
 }
 
+export async function listInventoryTransfersAwaitingInspection(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<InventoryTransferAwaitingInspectionResultDto> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/awaiting-inspection`,
+  });
+  return inventoryTransferAwaitingInspectionResultDtoSchema.parse(raw);
+}
+
 export async function getInventoryTransfer(
   workspace: PosWorkspaceScope,
   transferId: string,
@@ -379,6 +479,49 @@ export async function createInventoryTransfer(
   return inventoryTransferDtoSchema.parse(raw);
 }
 
+export async function updateInventoryTransfer(
+  workspace: PosWorkspaceScope,
+  transferId: string,
+  body: UpdateInventoryTransferRequest,
+  signal?: AbortSignal,
+): Promise<InventoryTransferDto> {
+  const operationId = body.operationId?.trim() || crypto.randomUUID();
+  const payload: Record<string, unknown> = {
+    lines: body.lines.map((line) => {
+      const entry: Record<string, unknown> = {
+        productId: line.productId,
+        quantity: line.quantity,
+      };
+      if (line.sourceLotId) {
+        entry.sourceLotId = line.sourceLotId;
+      }
+      return entry;
+    }),
+  };
+  const notes = trimOrUndef(body.notes);
+  if (notes) {
+    payload.notes = notes;
+  } else if (body.notes === null || body.notes === "") {
+    payload.notes = null;
+  }
+
+  const headers = await buildPosMutationIdempotencyHeaders(
+    operationId,
+    JSON.stringify(payload),
+    OFFLINE_OPERATION_TYPES.InventoryTransferUpdate,
+  );
+
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/${transferId}`,
+    body: payload,
+    headers,
+  });
+  return inventoryTransferDtoSchema.parse(raw);
+}
+
 export async function dispatchInventoryTransfer(
   workspace: PosWorkspaceScope,
   transferId: string,
@@ -394,6 +537,27 @@ export async function dispatchInventoryTransfer(
     workspace,
     signal,
     path: `${PATH}/${transferId}/dispatch`,
+    body: {},
+    headers,
+  });
+  return inventoryTransferDtoSchema.parse(raw);
+}
+
+export async function prepareInventoryTransferRemaining(
+  workspace: PosWorkspaceScope,
+  transferId: string,
+  signal?: AbortSignal,
+): Promise<InventoryTransferDto> {
+  const headers = await buildPosMutationIdempotencyHeaders(
+    transferId,
+    "{}",
+    OFFLINE_OPERATION_TYPES.InventoryTransferCreate,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/${transferId}/prepare-remaining`,
     body: {},
     headers,
   });
@@ -449,6 +613,14 @@ export async function receiveInventoryTransfer(
       const custodyDecision = trimOrUndef(line.damagedCustodyDecision ?? undefined);
       if (custodyDecision) {
         entry.damagedCustodyDecision = custodyDecision;
+      }
+      const otherCustody = trimOrUndef(line.otherCustodyDecision ?? undefined);
+      if (otherCustody) {
+        entry.otherCustodyDecision = otherCustody;
+      }
+      const actualProductId = trimOrUndef(line.actualReceivedProductId ?? undefined);
+      if (actualProductId) {
+        entry.actualReceivedProductId = actualProductId;
       }
       const reason = trimOrUndef(line.discrepancyReason);
       if (reason) {
@@ -573,18 +745,46 @@ const damageCustodyDtoSchema = z.object({
 
 export type InventoryTransferDamageCustodyDto = z.infer<typeof damageCustodyDtoSchema>;
 
+export const exceptionCustodyDtoSchema = z.object({
+  custodyId: guidSchema,
+  transferId: guidSchema,
+  rootTransferId: guidSchema,
+  receiptLineId: guidSchema,
+  expectedProductId: guidSchema,
+  actualProductId: guidSchema,
+  quantity: z.number(),
+  reasonCode: z.string(),
+  decision: z.string(),
+  followUpIntent: z.string(),
+  status: z.string(),
+  heldBranchId: guidSchema,
+  recoveredSellableQty: z.number(),
+  confirmedNonSellableQty: z.number(),
+  replacementDemandQty: z.number(),
+  createdAtUtc: z.string(),
+  updatedAtUtc: z.string(),
+  returnDispatchedAtUtc: z.string().nullable().optional(),
+  returnReceivedAtUtc: z.string().nullable().optional(),
+  inspectedAtUtc: z.string().nullable().optional(),
+  expectedProductName: z.string().nullable().optional(),
+  actualProductName: z.string().nullable().optional(),
+});
+
+export type InventoryTransferExceptionCustodyDto = z.infer<typeof exceptionCustodyDtoSchema>;
+
 async function mutateDamageCustody(
   workspace: PosWorkspaceScope,
   custodyId: string,
   pathSuffix: string,
   body: Record<string, unknown>,
+  operationType: string,
   signal?: AbortSignal,
 ): Promise<InventoryTransferDamageCustodyDto> {
   const payloadJson = JSON.stringify(body);
   const headers = await buildPosMutationIdempotencyHeaders(
     custodyId,
     payloadJson,
-    OFFLINE_OPERATION_TYPES.InventoryTransferReceive,
+    operationType,
   );
   const raw = await posRequest<unknown>({
     method: "POST",
@@ -602,7 +802,14 @@ export async function dispatchInventoryTransferDamageReturn(
   custodyId: string,
   signal?: AbortSignal,
 ): Promise<InventoryTransferDamageCustodyDto> {
-  return mutateDamageCustody(workspace, custodyId, "dispatch-return", {}, signal);
+  return mutateDamageCustody(
+    workspace,
+    custodyId,
+    "dispatch-return",
+    {},
+    OFFLINE_OPERATION_TYPES.InventoryTransferDamageDispatchReturn,
+    signal,
+  );
 }
 
 export async function receiveInventoryTransferDamageReturn(
@@ -610,7 +817,14 @@ export async function receiveInventoryTransferDamageReturn(
   custodyId: string,
   signal?: AbortSignal,
 ): Promise<InventoryTransferDamageCustodyDto> {
-  return mutateDamageCustody(workspace, custodyId, "receive-return", {}, signal);
+  return mutateDamageCustody(
+    workspace,
+    custodyId,
+    "receive-return",
+    {},
+    OFFLINE_OPERATION_TYPES.InventoryTransferDamageReceiveReturn,
+    signal,
+  );
 }
 
 export async function inspectInventoryTransferDamageCustody(
@@ -627,5 +841,83 @@ export async function inspectInventoryTransferDamageCustody(
   if (followUp) {
     payload.followUpOverride = followUp;
   }
-  return mutateDamageCustody(workspace, custodyId, "inspect", payload, signal);
+  return mutateDamageCustody(
+    workspace,
+    custodyId,
+    "inspect",
+    payload,
+    OFFLINE_OPERATION_TYPES.InventoryTransferDamageInspect,
+    signal,
+  );
+}
+
+async function mutateExceptionCustody(
+  workspace: PosWorkspaceScope,
+  custodyId: string,
+  pathSuffix: string,
+  body: Record<string, unknown>,
+  operationType: string,
+  signal?: AbortSignal,
+): Promise<InventoryTransferExceptionCustodyDto> {
+  const payloadJson = JSON.stringify(body);
+  const headers = await buildPosMutationIdempotencyHeaders(
+    custodyId,
+    payloadJson,
+    operationType,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/exception-custodies/${custodyId}/${pathSuffix}`,
+    body,
+    headers,
+  });
+  return exceptionCustodyDtoSchema.parse(raw);
+}
+
+export async function dispatchInventoryTransferExceptionReturn(
+  workspace: PosWorkspaceScope,
+  custodyId: string,
+  signal?: AbortSignal,
+): Promise<InventoryTransferExceptionCustodyDto> {
+  return mutateExceptionCustody(
+    workspace,
+    custodyId,
+    "dispatch-return",
+    {},
+    OFFLINE_OPERATION_TYPES.InventoryTransferExceptionDispatchReturn,
+    signal,
+  );
+}
+
+export async function receiveInventoryTransferExceptionReturn(
+  workspace: PosWorkspaceScope,
+  custodyId: string,
+  signal?: AbortSignal,
+): Promise<InventoryTransferExceptionCustodyDto> {
+  return mutateExceptionCustody(
+    workspace,
+    custodyId,
+    "receive-return",
+    {},
+    OFFLINE_OPERATION_TYPES.InventoryTransferExceptionReceiveReturn,
+    signal,
+  );
+}
+
+export async function inspectInventoryTransferExceptionCustody(
+  workspace: PosWorkspaceScope,
+  custodyId: string,
+  body: { recoveredSellableQty: number; confirmedNonSellableQty: number },
+  signal?: AbortSignal,
+): Promise<InventoryTransferExceptionCustodyDto> {
+  return mutateExceptionCustody(
+    workspace,
+    custodyId,
+    "inspect",
+    body,
+    OFFLINE_OPERATION_TYPES.InventoryTransferExceptionInspect,
+    signal,
+  );
 }

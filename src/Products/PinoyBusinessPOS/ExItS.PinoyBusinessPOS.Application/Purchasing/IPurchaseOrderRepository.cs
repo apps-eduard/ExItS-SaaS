@@ -8,7 +8,9 @@ public sealed record PurchaseOrderFilter(
     Guid? SupplierId = null,
     string? PoNumber = null,
     DateOnly? FromOrderDate = null,
-    DateOnly? ToOrderDate = null);
+    DateOnly? ToOrderDate = null,
+    /// <summary>When set, only POs intended for this receiving branch.</summary>
+    Guid? IntendedReceivingBranchId = null);
 
 public interface IPurchaseOrderRepository
 {

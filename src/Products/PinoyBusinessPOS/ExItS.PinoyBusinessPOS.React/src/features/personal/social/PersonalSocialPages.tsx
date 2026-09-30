@@ -157,7 +157,7 @@ export function PersonalUtangInviteAcceptPage() {
 
   return (
     <div
-      className="personal-page exits-page mx-auto flex min-h-[100dvh] max-w-lg flex-col gap-4 p-4"
+      className="personal-page exits-page flex min-h-[100dvh] w-full min-w-0 flex-col gap-4 p-4"
       data-testid="utang-invite-accept"
     >
       <PageHeader
