@@ -3,12 +3,9 @@ import {
   acceptPersonalConnectionRequest,
   blockPersonalContact,
   createPersonalContact,
-  createPersonalDebtRelationship,
   declinePersonalConnectionRequest,
   getPersonalNotificationUnreadCount,
   listArchivedPersonalNotifications,
-  listBorrowedRelationships,
-  listLentRelationships,
   listPersonalConnectionRequests,
   listPersonalContacts,
   listPersonalNotifications,
@@ -20,6 +17,14 @@ import {
   unlinkPersonalContact,
   unblockPersonalContact,
 } from "@/api/platform/personal-people-client";
+import {
+  createPersonalDebtRelationship,
+  getPersonalSharedUtangPreference,
+  listBorrowedRelationships,
+  listLentRelationships,
+  updatePersonalSharedUtangPreference,
+  type UpdatePersonalSharedUtangPreferenceRequest,
+} from "@/api/platform/personal-utang-client";
 import type { CreatePersonalContactRequest, CreatePersonalDebtRelationshipRequest } from "@/api/platform/personal-types";
 import {
   PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY,
@@ -86,7 +91,8 @@ export function useInvalidatePersonalPeople() {
       queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: [...personalPeopleKeys.all, "utang-summaries"] }),
-      queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] }),
+      queryClient.invalidateQueries({ queryKey: ["personal", "utang"] }),
+      queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] }),
     ]);
 }
 
@@ -210,6 +216,28 @@ export function useCreateUtangMutation() {
       createPersonalDebtRelationship(relationship),
     onSuccess: async () => {
       await invalidate();
+    },
+  });
+}
+
+export function usePersonalSharedUtangPreferenceQuery(counterpartyUserIdentityId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["personal", "shared-utang-preferences", counterpartyUserIdentityId ?? ""],
+    enabled: Boolean(counterpartyUserIdentityId),
+    queryFn: ({ signal }) =>
+      getPersonalSharedUtangPreference(counterpartyUserIdentityId!, signal),
+  });
+}
+
+export function useUpdatePersonalSharedUtangPreferenceMutation(counterpartyUserIdentityId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdatePersonalSharedUtangPreferenceRequest) =>
+      updatePersonalSharedUtangPreference(counterpartyUserIdentityId, body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["personal", "shared-utang-preferences", counterpartyUserIdentityId],
+      });
     },
   });
 }

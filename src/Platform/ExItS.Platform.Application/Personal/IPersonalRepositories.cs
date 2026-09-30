@@ -13,6 +13,18 @@ public interface IPersonalAccountSettingsRepository
     Task UpdateAsync(PersonalAccountSettings settings, CancellationToken cancellationToken = default);
 }
 
+public interface IPersonalSharedUtangPreferenceRepository
+{
+    Task<PersonalSharedUtangPreference?> GetByOwnerAndCounterpartyAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalSharedUtangPreference preference, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalSharedUtangPreference preference, CancellationToken cancellationToken = default);
+}
+
 public interface IPersonalContactRepository
 {
     Task<PersonalContact?> GetByIdAsync(PersonalContactId id, CancellationToken cancellationToken = default);

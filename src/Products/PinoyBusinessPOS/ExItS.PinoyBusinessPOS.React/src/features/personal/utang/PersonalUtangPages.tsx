@@ -27,6 +27,7 @@ import {
 } from "@/api/platform/personal-utang-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -127,17 +128,30 @@ function entryTypeLabelKey(entryType: string): MessageKey {
   return "personal.utang.entryTypeLoan";
 }
 
-function entryStatusLabelKey(status: string | undefined): MessageKey {
-  switch (status) {
-    case "Pending":
-      return "personal.utang.statusPending";
-    case "Disputed":
-      return "personal.utang.statusDisputed";
-    case "Cancelled":
-      return "personal.utang.statusCancelled";
-    default:
-      return "personal.utang.statusConfirmed";
+function entryStatusLabel(
+  entry: {
+    status?: string;
+    isSharedLedger?: boolean;
+    wasAutoSynced?: boolean;
+  },
+  options: { pendingIncoming?: boolean; reporterName?: string },
+  t: (key: MessageKey) => string,
+): string {
+  const status = entry.status ?? "Confirmed";
+  if (status === "Cancelled") return t("personal.utang.statusCancelled");
+  if (status === "Disputed") return t("personal.utang.statusDisputed");
+  if (status === "Pending") {
+    if (options.pendingIncoming && options.reporterName) {
+      return t("personal.utang.statusSharedReportedBy").replace(
+        "{name}",
+        options.reporterName,
+      );
+    }
+    return t("personal.utang.statusPending");
   }
+  if (entry.wasAutoSynced) return t("personal.utang.statusAutoSynced");
+  if (!entry.isSharedLedger) return t("personal.utang.statusPrivate");
+  return t("personal.utang.statusConfirmed");
 }
 
 function isSharedRelationship(
@@ -389,6 +403,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [shareWithCounterparty, setShareWithCounterparty] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [recordFormOpen, setRecordFormOpen] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
@@ -501,6 +516,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       const relationshipId = pendingRelationshipIdRef.current;
       const initialLoanEntryId = pendingInitialLoanEntryIdRef.current;
 
+      const share = Boolean(selectedLinked && shareWithCounterparty);
       const body =
         mode === "lent"
           ? {
@@ -514,6 +530,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               dueDateUtc: dueDate ? new Date(dueDate).toISOString() : null,
               initialLoanAmount: initial,
               initialLoanNotes: purpose,
+              shareWithCounterparty: share,
             }
           : {
               relationshipId,
@@ -526,6 +543,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               dueDateUtc: dueDate ? new Date(dueDate).toISOString() : null,
               initialLoanAmount: initial,
               initialLoanNotes: purpose,
+              shareWithCounterparty: share,
             };
       try {
         return await createPersonalDebtRelationship(body);
@@ -557,10 +575,20 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       setAmount("");
       setDueDate("");
       setNotes("");
+      setShareWithCounterparty(false);
       setFormError(null);
+      if (created.shareOutcome === "PrivateNotReceiving") {
+        // Soft notice — still navigate to the saved private record.
+        setFormError(t("personal.utang.savedPrivatelyNotReceiving"));
+      }
       await queryClient.invalidateQueries({ queryKey: ["personal", "utang"] });
       await queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] });
-      navigate(`/personal/utang/relationships/${created.id}`);
+      navigate(`/personal/utang/relationships/${created.id}`, {
+        state:
+          created.shareOutcome === "PrivateNotReceiving"
+            ? { shareNotice: "PrivateNotReceiving" }
+            : undefined,
+      });
     },
     onError: (error) => {
       setRecordFormOpen(true);
@@ -604,19 +632,23 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
   const title = mode === "lent" ? t("personal.utang.lent") : t("personal.utang.owe");
   const lede = mode === "lent" ? t("personal.utang.lentLede") : t("personal.utang.oweLede");
-  const submitLabel = selectedLinked
-    ? t("personal.utang.sendForConfirmation")
-    : t("personal.utang.saveUtang");
-  const recordFormLabel =
-    mode === "lent" ? t("personal.utang.recordLent") : t("personal.utang.recordOwe");
-  const RecordFormIcon = mode === "lent" ? HandCoins : Wallet;
   const selectedContactName =
     contactId
       ? (contacts.find((c) => c.id === contactId)?.displayName ?? t("personal.utang.person"))
       : "";
+  const willShare = Boolean(selectedLinked && shareWithCounterparty);
+  const submitLabel = willShare
+    ? t("personal.utang.shareWithPerson").replace("{name}", selectedContactName)
+    : t("personal.utang.savePrivately");
+  const recordFormLabel =
+    mode === "lent" ? t("personal.utang.recordLent") : t("personal.utang.recordOwe");
+  const RecordFormIcon = mode === "lent" ? HandCoins : Wallet;
   const viewPendingTo = existingSharedForContact
     ? `/personal/utang/relationships/${existingSharedForContact.id}`
     : "/personal/utang";
+  // Pending limit only applies when sharing into an existing shared ledger for review.
+  const sharePendingBlocked =
+    willShare && Boolean(existingSharedForContact) && pendingAtLimit;
 
   return (
     <div
@@ -769,20 +801,44 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             </p>
           </div>
         ) : null}
-        {!online ? <OfflineNotice message={t("offline.requiredPersonalUtangRecord")} /> : null}
         {selectedLinked ? (
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="utang-rel-confirm-hint"
+          <label
+            className="flex min-w-0 cursor-pointer items-start gap-2 text-[length:var(--exits-text-sm)]"
+            data-testid="utang-rel-share-toggle"
           >
-            {t("personal.utang.sendForConfirmationHint").replace("{name}", selectedContactName)}
-          </p>
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={shareWithCounterparty}
+              onChange={(e) => setShareWithCounterparty(e.target.checked)}
+              data-testid="utang-rel-share-checkbox"
+            />
+            <span>
+              <span className="font-medium">
+                {t("personal.utang.shareWithPerson").replace("{name}", selectedContactName)}
+              </span>
+              <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
+                {shareWithCounterparty
+                  ? t("personal.utang.shareOnHint").replace("{name}", selectedContactName)
+                  : t("personal.utang.shareOffHint")}
+              </span>
+            </span>
+          </label>
         ) : contactId ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="utang-rel-private-hint">
             {t("personal.utang.privateSaveHint")}
           </p>
         ) : null}
-        {selectedLinked && existingSharedForContact && pendingOutgoingCount > 0 ? (
+        {!online ? (
+          <OfflineNotice
+            message={
+              willShare
+                ? t("personal.utang.shareRequiresOnline")
+                : t("offline.requiredPersonalUtangRecord")
+            }
+          />
+        ) : null}
+        {willShare && existingSharedForContact && pendingOutgoingCount > 0 ? (
           <PendingOutgoingHint
             count={pendingOutgoingCount}
             name={selectedContactName}
@@ -809,7 +865,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               createMutation.isPending ||
               statusLocked ||
               contacts.length === 0 ||
-              pendingAtLimit ||
+              sharePendingBlocked ||
               !online
             }
             data-testid="utang-rel-submit"
@@ -1292,9 +1348,7 @@ export function PersonalRelationshipDetailPage() {
   // An Adjustment rewrites a balance against a version this device may no longer be showing.
   const adjustmentBlocked = !online && entryType === "Adjustment";
   const loanBlockedByPendingLimit = shared && pendingAtLimit && entryType === "Loan";
-  const submitLabel = shared
-    ? t("personal.utang.sendForConfirmation")
-    : t("personal.utang.saveEntry");
+  const submitLabel = t("personal.utang.saveEntry");
   const viewPendingTo = `/personal/utang/relationships/${relationshipId}`;
   const settleBlockedOffline = !online;
 
@@ -1544,7 +1598,7 @@ export function PersonalRelationshipDetailPage() {
             className="m-0 text-[length:var(--exits-text-sm)] text-muted"
             data-testid="utang-entry-confirm-hint"
           >
-            {t("personal.utang.sendForConfirmationHint").replace("{name}", personName)}
+            {t("personal.utang.sharedEntryHint").replace("{name}", personName)}
           </p>
         ) : null}
         {shared && pendingOutgoingCount > 0 ? (
@@ -1695,7 +1749,21 @@ export function PersonalRelationshipDetailPage() {
                           className="m-0 text-[length:var(--exits-text-sm)]"
                           data-testid={`utang-entry-status-${entry.id}`}
                         >
-                          {t(entryStatusLabelKey(status))}
+                          {entryStatusLabel(
+                            {
+                              status,
+                              isSharedLedger: shared,
+                              wasAutoSynced:
+                                "wasAutoSynced" in entry
+                                  ? Boolean(entry.wasAutoSynced)
+                                  : false,
+                            },
+                            {
+                              pendingIncoming,
+                              reporterName: personName === EM_DASH ? undefined : personName,
+                            },
+                            t,
+                          )}
                         </p>
                         {pendingOutgoing ? (
                           <p

@@ -7953,7 +7953,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "people.add.identityFound": "[CEB] Identity found",
 
-  "people.add.lede": "[CEB] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+  "people.add.lede": "[CEB] Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
 
   "people.add.notFound": "[CEB] No matching ExItS identity was found.",
 
@@ -7999,7 +7999,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "people.formLedeExits":
 
-    "[CEB] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+    "[CEB] Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
 
   "people.sectionBasics": "[CEB] Basics",
 
@@ -8025,7 +8025,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
     "[CEB] Review the identity above, then add them to your People list.",
 
-  "people.listTitle": "[CEB] Your people",
+  "people.listTitle": "[CEB] Your friends",
+  "people.backToFriends": "[CEB] Back to friends",
 
   "people.filter.label": "[CEB] Filter people",
 
@@ -8047,7 +8048,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "people.detail.amountInvalid": "[CEB] Enter a valid amount.",
 
-  "people.detail.block": "[CEB] Block person",
+  "people.detail.block": "[CEB] Block friend",
+  "people.detail.connectionAndSafety": "[CEB] Connection & safety",
 
   "people.detail.blockConfirmBody": "[CEB] This person cannot send you new connection requests until you unblock them.",
 
@@ -8056,6 +8058,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "people.detail.cancelRequest": "[CEB] Cancel request",
 
   "people.detail.confirmUtang": "[CEB] Continue",
+  "people.detail.saveILent": "[CEB] Save I lent",
+  "people.detail.saveIBorrowed": "[CEB] Save I borrowed",
 
   "people.detail.connectedSince": "[CEB] Connected since {date}",
 
@@ -10040,6 +10044,23 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.sharedLedger": "Shared ledger",
 
   "personal.utang.statusCancelled": "Gikansela",
+  "personal.utang.statusPrivate": "Private",
+  "personal.utang.statusAutoSynced": "Shared · Auto-synced",
+  "personal.utang.statusSharedReportedBy": "Shared · Reported by {name} · Pending",
+  "personal.utang.savePrivately": "Save privately",
+  "personal.utang.shareWithPerson": "Share with {name}",
+  "personal.utang.shareOffHint": "Saved only on your ledger. They will not see this.",
+  "personal.utang.shareOnHint":
+    "Shared online with {name}. They will see it right away; confirmation may still be required.",
+  "personal.utang.shareRequiresOnline": "Sharing with another person requires an internet connection.",
+  "personal.utang.sharedEntryHint": "This updates your shared ledger with {name}.",
+  "personal.utang.savedPrivatelyNotReceiving":
+    "Saved privately. This person is not receiving shared Utang entries.",
+  "personal.utang.prefsTitle": "Shared Utang from {name}",
+  "personal.utang.prefsReceive": "Show shared Utang",
+  "personal.utang.prefsAutoSync": "Automatically sync {name}'s entries",
+  "personal.utang.prefsNotifications": "Notifications",
+  "personal.utang.prefsRequiresOnline": "Shared Utang preferences require an internet connection.",
 
   "personal.utang.statusConfirmed": "Nakumpirma",
 

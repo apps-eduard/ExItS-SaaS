@@ -1472,7 +1472,7 @@ export const en = {
   "people.formLedeWalkIn":
     "Keep someone in People without linking an ExItS account. Connecting is optional and done separately from their profile.",
   "people.formLedeExits":
-    "Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+    "Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
   "people.sectionBasics": "Basics",
   "people.sectionDetails": "Contact details",
   "people.displayName": "Name",
@@ -1485,7 +1485,8 @@ export const en = {
     "Scan or enter their Personal ExItS ID to confirm who you are adding.",
   "people.identityPanel.confirmHint":
     "Review the identity above, then add them to your People list.",
-  "people.listTitle": "Your people",
+  "people.listTitle": "Your friends",
+  "people.backToFriends": "Back to friends",
   "people.filter.label": "Filter people",
   "people.filter.all": "All",
   "people.filter.connected": "Connected",
@@ -1531,7 +1532,7 @@ export const en = {
   "people.status.local": "Local contact",
   "people.status.blocked": "Blocked",
   "people.add.lede":
-    "Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+    "Find someone with their exact ExItS ID or QR payload. They get a connection request notification.",
   "people.add.scanQr": "Scan QR",
   "people.add.scanHint": "Paste the QR payload into ExItS ID, then find the person.",
   "people.add.exitsId": "ExItS ID",
@@ -1561,9 +1562,12 @@ export const en = {
   "people.detail.amount": "Amount",
   "people.detail.amountInvalid": "Enter a valid amount.",
   "people.detail.confirmUtang": "Continue",
+  "people.detail.saveILent": "Save I lent",
+  "people.detail.saveIBorrowed": "Save I borrowed",
   "people.detail.relationship": "Relationship",
   "people.detail.connectedSince": "Connected since {date}",
   "people.detail.connection": "Connection",
+  "people.detail.connectionAndSafety": "Connection & safety",
   "people.detail.connectionHelp":
     "Connecting lets both accounts recognize this Personal relationship. It does not create debt or organization access.",
   "people.detail.requestConnection": "Request connection",
@@ -1573,7 +1577,7 @@ export const en = {
     "You will no longer be connected. Existing financial records will not be deleted.",
   "people.detail.unlinkConfirmAction": "Unlink",
   "people.detail.safety": "Safety",
-  "people.detail.block": "Block person",
+  "people.detail.block": "Block friend",
   "people.detail.blockConfirmBody":
     "This person cannot send you new connection requests until you unblock them.",
   "people.detail.blockedHelp": "This person cannot send you new connection requests.",
@@ -1770,7 +1774,7 @@ export const en = {
   "personal.utang.whatHappenedBorrowed": "What happened? I borrowed money ? I owe someone.",
   "personal.utang.reviewLent": "You lent {name} ?{amount}",
   "personal.utang.reviewBorrowed": "You owe {name} ?{amount}",
-  "personal.utang.privateSaveHint": "This will be saved to your private Utang record.",
+  "personal.utang.privateSaveHint": "Saved privately on your ledger only.",
   "personal.utang.activityYouLent": "You lent {name}",
   "personal.utang.activityYouBorrowed": "You borrowed from {name}",
   "personal.utang.activityTheyLentYou": "{name} lent you",
@@ -1831,9 +1835,27 @@ export const en = {
   "personal.utang.pendingConfirmationsLede":
     "Open a shared utang to confirm or dispute what the other person recorded.",
   "personal.utang.statusPending": "Pending",
-  "personal.utang.statusConfirmed": "Confirmed",
+  "personal.utang.statusConfirmed": "Shared · Confirmed",
   "personal.utang.statusDisputed": "Disputed",
   "personal.utang.statusCancelled": "Cancelled",
+  "personal.utang.statusPrivate": "Private",
+  "personal.utang.statusAutoSynced": "Shared · Auto-synced",
+  "personal.utang.statusSharedReportedBy": "Shared · Reported by {name} · Pending",
+  "personal.utang.savePrivately": "Save privately",
+  "personal.utang.shareWithPerson": "Share with {name}",
+  "personal.utang.shareOffHint": "Saved only on your ledger. They will not see this.",
+  "personal.utang.shareOnHint":
+    "Shared online with {name}. They will see it right away; confirmation may still be required.",
+  "personal.utang.shareRequiresOnline": "Sharing with another person requires an internet connection.",
+  "personal.utang.sharedEntryHint":
+    "This updates your shared ledger with {name}.",
+  "personal.utang.savedPrivatelyNotReceiving":
+    "Saved privately. This person is not receiving shared Utang entries.",
+  "personal.utang.prefsTitle": "Shared Utang from {name}",
+  "personal.utang.prefsReceive": "Show shared Utang",
+  "personal.utang.prefsAutoSync": "Automatically sync {name}'s entries",
+  "personal.utang.prefsNotifications": "Notifications",
+  "personal.utang.prefsRequiresOnline": "Shared Utang preferences require an internet connection.",
   "personal.utang.waitingForYou": "Waiting for you",
   "personal.utang.recordedForReview": "{name} recorded an Utang entry",
   "personal.utang.waitingForName": "Waiting for {name}",

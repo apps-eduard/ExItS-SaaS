@@ -94,56 +94,17 @@ internal static class PersonalContactLinkSupport
     }
 
     /// <summary>
-    /// Promote active relationships that still reference this contact to the linked Personal user.
-    /// Same relationship ID / history / balance — Contact participant → User participant.
+    /// Private Personal debts stay owner-private after ExItS ID link.
+    /// Sharing is opt-in per new debt (Share with …) or via explicit Utang invitation accept —
+    /// never by silently promoting historical private ledgers.
     /// </summary>
-    public static async Task PromoteRelationshipsForLinkedContactAsync(
+    public static Task PromoteRelationshipsForLinkedContactAsync(
         PlatformUserId ownerUserIdentityId,
         PersonalContact contact,
         PlatformUserId linkedUserIdentityId,
         IPersonalDebtRelationshipRepository relationships,
         IAuditWriter auditWriter,
         IClock clock,
-        CancellationToken cancellationToken)
-    {
-        if (contact.LinkedUserIdentityId is null || contact.LinkedUserIdentityId != linkedUserIdentityId)
-        {
-            return;
-        }
-
-        var owned = await relationships.ListForUserAsync(ownerUserIdentityId, cancellationToken)
-            .ConfigureAwait(false);
-        foreach (var relationship in owned)
-        {
-            if (relationship.Status is not PersonalDebtRelationshipStatus.Active)
-            {
-                continue;
-            }
-
-            var isCreditorContact = relationship.CreditorContactId == contact.Id;
-            var isDebtorContact = relationship.DebtorContactId == contact.Id;
-            if (!isCreditorContact && !isDebtorContact)
-            {
-                continue;
-            }
-
-            if (relationship.IsSharedLinked)
-            {
-                continue;
-            }
-
-            relationship.AuthorizeLinkedParticipant(contact.Id, linkedUserIdentityId, clock.UtcNow);
-            await relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
-
-            await auditWriter.WriteAsync(
-                $"platform-user:{ownerUserIdentityId.Value:D}",
-                AuditActorType.PlatformUser,
-                PlatformAuditActions.PersonalUtangParticipantAuthorized,
-                nameof(PersonalDebtRelationship),
-                relationship.Id.Value.ToString("D"),
-                AuditOutcome.Succeeded,
-                summary: "Personal Utang relationship promoted to linked Personal user after ExItS ID link.",
-                cancellationToken: cancellationToken).ConfigureAwait(false);
-        }
-    }
+        CancellationToken cancellationToken) =>
+        Task.CompletedTask;
 }

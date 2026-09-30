@@ -18,6 +18,13 @@ export const personalContactSchema = z.object({
   createdAtUtc: z.string(),
 });
 
+export const personalDebtShareOutcomeSchema = z.enum([
+  "Private",
+  "SharedPending",
+  "SharedAutoSynced",
+  "PrivateNotReceiving",
+]);
+
 export const personalDebtRelationshipSummarySchema = z.object({
   id: guidSchema,
   perspective: z.string(),
@@ -33,6 +40,7 @@ export const personalDebtRelationshipSummarySchema = z.object({
   updatedAtUtc: z.string(),
   isSharedLedger: z.boolean().optional().default(false),
   isPrivate: z.boolean().optional().default(true),
+  shareOutcome: personalDebtShareOutcomeSchema.nullable().optional().default(null),
 });
 
 export const personalUtangBalanceSchema = z.object({
@@ -66,6 +74,19 @@ export const personalUtangEntrySchema = z.object({
   intent: z.string().optional().default("Regular"),
   settlementBalanceSnapshot: z.number().nullable().optional().default(null),
   isSettlement: z.boolean().optional().default(false),
+  confirmationSource: z.string().optional().default("None"),
+  wasAutoSynced: z.boolean().optional().default(false),
+});
+
+export const personalSharedUtangPreferenceSchema = z.object({
+  id: guidSchema,
+  ownerUserIdentityId: guidSchema,
+  counterpartyUserIdentityId: guidSchema,
+  receiveSharedUtang: z.boolean(),
+  autoAcceptSharedUtang: z.boolean(),
+  sharedUtangNotifications: z.boolean(),
+  version: z.number().int(),
+  updatedAtUtc: z.string(),
 });
 
 export const settlePersonalDebtRelationshipResultSchema = z.object({
@@ -83,8 +104,12 @@ export type PersonalContactDto = z.infer<typeof personalContactSchema>;
 export type PersonalDebtRelationshipSummaryDto = z.infer<
   typeof personalDebtRelationshipSummarySchema
 >;
+export type PersonalDebtShareOutcome = z.infer<typeof personalDebtShareOutcomeSchema>;
 export type PersonalUtangBalanceDto = z.infer<typeof personalUtangBalanceSchema>;
 export type PersonalUtangEntryDto = z.infer<typeof personalUtangEntrySchema>;
+export type PersonalSharedUtangPreferenceDto = z.infer<
+  typeof personalSharedUtangPreferenceSchema
+>;
 export type SettlePersonalDebtRelationshipResultDto = z.infer<
   typeof settlePersonalDebtRelationshipResultSchema
 >;
@@ -134,6 +159,15 @@ export type CreatePersonalDebtRelationshipRequest = {
   relationshipId?: string | null;
   /** Client-stable id for the initial loan entry when initialLoanAmount is set. */
   initialLoanEntryId?: string | null;
+  /** Share with linked counterparty (default false = private). Online-required when true. */
+  shareWithCounterparty?: boolean;
+};
+
+export type UpdatePersonalSharedUtangPreferenceRequest = {
+  receiveSharedUtang: boolean;
+  autoAcceptSharedUtang: boolean;
+  sharedUtangNotifications: boolean;
+  expectedVersion?: number | null;
 };
 
 export type RecordPersonalUtangEntryRequest = {
@@ -181,6 +215,20 @@ function normalizeContact(raw: unknown): unknown {
   };
 }
 
+function normalizeShareOutcome(raw: unknown): string | null {
+  if (raw == null || raw === "") return null;
+  const value = String(raw);
+  if (
+    value === "Private" ||
+    value === "SharedPending" ||
+    value === "SharedAutoSynced" ||
+    value === "PrivateNotReceiving"
+  ) {
+    return value;
+  }
+  return null;
+}
+
 function normalizeRelationship(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
   const r = raw as Record<string, unknown>;
@@ -201,6 +249,7 @@ function normalizeRelationship(raw: unknown): unknown {
     updatedAtUtc: pick(r, "updatedAtUtc", "UpdatedAtUtc"),
     isSharedLedger,
     isPrivate: isPrivateRaw == null ? !isSharedLedger : Boolean(isPrivateRaw),
+    shareOutcome: normalizeShareOutcome(pick(r, "shareOutcome", "ShareOutcome")),
   };
 }
 
@@ -250,6 +299,31 @@ function normalizeEntry(raw: unknown): unknown {
         ? null
         : Number(settlementSnapshotRaw),
     isSettlement,
+    confirmationSource: String(pick(r, "confirmationSource", "ConfirmationSource") ?? "None"),
+    wasAutoSynced: Boolean(pick(r, "wasAutoSynced", "WasAutoSynced") ?? false),
+  };
+}
+
+function normalizeSharedUtangPreference(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  return {
+    id: pick(r, "id", "Id"),
+    ownerUserIdentityId: pick(r, "ownerUserIdentityId", "OwnerUserIdentityId"),
+    counterpartyUserIdentityId: pick(
+      r,
+      "counterpartyUserIdentityId",
+      "CounterpartyUserIdentityId",
+    ),
+    receiveSharedUtang: Boolean(pick(r, "receiveSharedUtang", "ReceiveSharedUtang") ?? true),
+    autoAcceptSharedUtang: Boolean(
+      pick(r, "autoAcceptSharedUtang", "AutoAcceptSharedUtang") ?? false,
+    ),
+    sharedUtangNotifications: Boolean(
+      pick(r, "sharedUtangNotifications", "SharedUtangNotifications") ?? true,
+    ),
+    version: Number(pick(r, "version", "Version") ?? 0),
+    updatedAtUtc: pick(r, "updatedAtUtc", "UpdatedAtUtc"),
   };
 }
 
@@ -274,6 +348,7 @@ function normalizeCloseResult(raw: unknown): unknown {
 }
 
 const UTANG = "/api/v1/personal/utang";
+const SHARED_UTANG_PREFS = "/api/v1/personal/shared-utang-preferences";
 
 export async function listPersonalContacts(signal?: AbortSignal): Promise<PersonalContactDto[]> {
   const raw = await platformRequest<unknown>({ path: `${UTANG}/contacts`, signal });
@@ -508,6 +583,31 @@ export async function getPersonalMe(signal?: AbortSignal): Promise<{ userIdentit
   const r = (raw ?? {}) as Record<string, unknown>;
   const userIdentityId = String(r.userIdentityId ?? r.UserIdentityId ?? "");
   return { userIdentityId: guidSchema.parse(userIdentityId) };
+}
+
+export async function getPersonalSharedUtangPreference(
+  counterpartyUserIdentityId: string,
+  signal?: AbortSignal,
+): Promise<PersonalSharedUtangPreferenceDto> {
+  const raw = await platformRequest<unknown>({
+    path: `${SHARED_UTANG_PREFS}/${counterpartyUserIdentityId}`,
+    signal,
+  });
+  return personalSharedUtangPreferenceSchema.parse(normalizeSharedUtangPreference(raw));
+}
+
+export async function updatePersonalSharedUtangPreference(
+  counterpartyUserIdentityId: string,
+  body: UpdatePersonalSharedUtangPreferenceRequest,
+  signal?: AbortSignal,
+): Promise<PersonalSharedUtangPreferenceDto> {
+  const raw = await platformRequest<unknown>({
+    method: "PUT",
+    path: `${SHARED_UTANG_PREFS}/${counterpartyUserIdentityId}`,
+    body,
+    signal,
+  });
+  return personalSharedUtangPreferenceSchema.parse(normalizeSharedUtangPreference(raw));
 }
 
 export function isUtangConcurrencyConflict(error: unknown): boolean {

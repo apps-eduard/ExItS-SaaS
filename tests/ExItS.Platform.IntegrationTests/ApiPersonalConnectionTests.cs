@@ -108,6 +108,18 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         return (await contacts.Content.ReadFromJsonAsync<JsonElement>())!.EnumerateArray().Count();
     }
 
+    private async Task<Guid> GetPendingConnectionForContactAsync(string token, Guid contactId)
+    {
+        using var list = Authed(HttpMethod.Get, "/api/v1/personal/connections", token);
+        var response = await _client.SendAsync(list);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var pending = body!.EnumerateArray().Single(item =>
+            item.GetProperty("requesterContactId").GetGuid() == contactId
+            && item.GetProperty("status").GetString() == "Pending");
+        return pending.GetProperty("id").GetGuid();
+    }
+
     private async Task<Guid> RequestConnectionAsync(string token, Guid contactId)
     {
         using var requestConnection = Authed(
@@ -120,13 +132,14 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
     }
 
     [Fact]
-    public async Task Add_identified_contact_persists_resolved_identity_without_request_or_notification()
+    public async Task Add_identified_contact_auto_sends_connection_request_and_notification()
     {
         var (tokenA, _) = await SeedPersonalUserAsync("conn-a");
         var (tokenB, userB) = await SeedPersonalUserAsync("conn-b");
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
 
         var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+        var requestId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var listContacts = Authed(HttpMethod.Get, "/api/v1/personal/utang/contacts", tokenA);
         var contacts = await _client.SendAsync(listContacts);
@@ -136,16 +149,33 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
             .Single(c => c.GetProperty("id").GetGuid() == contactId);
         Assert.Equal(userB, contact.GetProperty("resolvedUserIdentityId").GetGuid());
         Assert.Equal(publicB, contact.GetProperty("resolvedPublicUserId").GetString());
+        Assert.True(contact.GetProperty("linkedUserIdentityId").ValueKind is JsonValueKind.Null);
 
-        using var listConnections = Authed(HttpMethod.Get, "/api/v1/personal/connections", tokenA);
+        using var listConnections = Authed(HttpMethod.Get, "/api/v1/personal/connections", tokenB);
         var connectionList = await _client.SendAsync(listConnections);
         connectionList.EnsureSuccessStatusCode();
-        Assert.Empty((await connectionList.Content.ReadFromJsonAsync<JsonElement>())!.EnumerateArray());
+        Assert.Contains(
+            (await connectionList.Content.ReadFromJsonAsync<JsonElement>())!.EnumerateArray(),
+            item =>
+                item.GetProperty("id").GetGuid() == requestId
+                && item.GetProperty("status").GetString() == "Pending"
+                && item.GetProperty("direction").GetString() == "Received");
 
         using var notifications = Authed(HttpMethod.Get, "/api/v1/personal/notifications", tokenB);
         var notificationList = await _client.SendAsync(notifications);
         notificationList.EnsureSuccessStatusCode();
-        Assert.Empty((await notificationList.Content.ReadFromJsonAsync<JsonElement>())!.EnumerateArray());
+        var notification = (await notificationList.Content.ReadFromJsonAsync<JsonElement>())!
+            .EnumerateArray()
+            .Single(n =>
+                string.Equals(
+                    n.GetProperty("relatedType").GetString(),
+                    "PersonalConnectionRequest",
+                    StringComparison.Ordinal));
+        Assert.Contains(
+            "wants to connect with you",
+            notification.GetProperty("preview").GetString()!,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(requestId.ToString("D"), notification.GetProperty("relatedId").GetString());
     }
 
     [Fact]
@@ -156,15 +186,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
 
-        using var requestConnection = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/people/{contactId}/connection-request",
-            tokenA);
-        var requestResponse = await _client.SendAsync(requestConnection);
-        Assert.Equal(HttpStatusCode.Created, requestResponse.StatusCode);
-        var requestBody = await requestResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var requestId = requestBody!.GetProperty("id").GetGuid();
-        Assert.Equal("Pending", requestBody.GetProperty("status").GetString());
+        var requestId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var duplicateRequest = Authed(
             HttpMethod.Post,
@@ -248,12 +270,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
 
-        using var request = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/people/{contactId}/connection-request",
-            tokenA);
-        var requestId = (await (await _client.SendAsync(request)).Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("id").GetGuid();
+        var requestId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var decline = Authed(HttpMethod.Post, $"/api/v1/personal/connections/{requestId}/decline", tokenB);
         (await _client.SendAsync(decline)).EnsureSuccessStatusCode();
@@ -290,12 +307,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
 
-        using var request = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/people/{contactId}/connection-request",
-            tokenA);
-        var requestId = (await (await _client.SendAsync(request)).Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("id").GetGuid();
+        var requestId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var notificationsReq = Authed(HttpMethod.Get, "/api/v1/personal/notifications", tokenB);
         var notifications = await (await _client.SendAsync(notificationsReq)).Content.ReadFromJsonAsync<JsonElement>();
@@ -393,6 +405,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var (tokenB, userB) = await SeedPersonalUserAsync("fin-b");
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "Borrower Friend", userB, publicB);
+        var requestId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var relationshipRequest = Authed(
             HttpMethod.Post,
@@ -404,17 +417,11 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
                 debtorContactId = contactId,
                 currencyCode = "PHP",
                 initialLoanAmount = 500m,
+                initialLoanNotes = "Test purpose",
             });
         var relationshipResponse = await _client.SendAsync(relationshipRequest);
         relationshipResponse.EnsureSuccessStatusCode();
         var relationshipId = (await relationshipResponse.Content.ReadFromJsonAsync<JsonElement>())!
-            .GetProperty("id").GetGuid();
-
-        using var requestConnection = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/people/{contactId}/connection-request",
-            tokenA);
-        var requestId = (await (await _client.SendAsync(requestConnection)).Content.ReadFromJsonAsync<JsonElement>())!
             .GetProperty("id").GetGuid();
 
         using var accept = Authed(HttpMethod.Post, $"/api/v1/personal/connections/{requestId}/accept", tokenB);
@@ -501,7 +508,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
 
         var contactId = await CreateIdentifiedContactAsync(tokenA, "Mislabeled As B", userB, publicB);
-        var requestId = await RequestConnectionAsync(tokenA, contactId);
+        var requestId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var listIncoming = Authed(HttpMethod.Get, "/api/v1/personal/connections", tokenB);
         var incoming = await _client.SendAsync(listIncoming);
@@ -526,7 +533,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var (tokenB, userB) = await SeedPersonalUserAsync("nreq-b");
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "Wrong Contact Label", userB, publicB);
-        await RequestConnectionAsync(tokenA, contactId);
+        await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var notificationsReq = Authed(HttpMethod.Get, "/api/v1/personal/notifications", tokenB);
         var notifications = await (await _client.SendAsync(notificationsReq)).Content.ReadFromJsonAsync<JsonElement>();
@@ -548,7 +555,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var (tokenB, userB) = await SeedPersonalUserAsync("blkp-b");
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
-        var oldRequestId = await RequestConnectionAsync(tokenA, contactId);
+        var oldRequestId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var block = Authed(HttpMethod.Post, $"/api/v1/personal/people/{contactId}/block", tokenA);
         (await _client.SendAsync(block)).EnsureSuccessStatusCode();
@@ -591,7 +598,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
 
         var contactAForB = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
-        await RequestConnectionAsync(tokenA, contactAForB);
+        await GetPendingConnectionForContactAsync(tokenA, contactAForB);
 
         var contactBForA = await CreateIdentifiedContactAsync(tokenB, "User A", userA, publicA);
         using var reverseRequest = Authed(
@@ -608,7 +615,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var (tokenB, userB) = await SeedPersonalUserAsync("dup-b");
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
-        await RequestConnectionAsync(tokenA, contactId);
+        await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var duplicate = Authed(
             HttpMethod.Post,
@@ -624,7 +631,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         var (tokenB, userB) = await SeedPersonalUserAsync("fresh-b");
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
         var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
-        var firstId = await RequestConnectionAsync(tokenA, contactId);
+        var firstId = await GetPendingConnectionForContactAsync(tokenA, contactId);
 
         using var decline = Authed(HttpMethod.Post, $"/api/v1/personal/connections/{firstId}/decline", tokenB);
         (await _client.SendAsync(decline)).EnsureSuccessStatusCode();
@@ -634,37 +641,14 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
     }
 
     [Fact]
-    public async Task Concurrent_opposite_pending_requests_persist_at_most_one_pending_row()
+    public async Task Mutual_identified_add_persists_at_most_one_pending_request()
     {
         var (tokenA, userA) = await SeedPersonalUserAsync("race-a");
         var (tokenB, userB) = await SeedPersonalUserAsync("race-b");
         var publicA = await GetPublicUserIdAsync(_client, tokenA);
         var publicB = await GetPublicUserIdAsync(_client, tokenB);
-        var contactAForB = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
-        var contactBForA = await CreateIdentifiedContactAsync(tokenB, "User A", userA, publicA);
-
-        async Task<HttpResponseMessage> RequestFromAAsync()
-        {
-            var request = Authed(
-                HttpMethod.Post,
-                $"/api/v1/personal/people/{contactAForB}/connection-request",
-                tokenA);
-            return await _client.SendAsync(request);
-        }
-
-        async Task<HttpResponseMessage> RequestFromBAsync()
-        {
-            var request = Authed(
-                HttpMethod.Post,
-                $"/api/v1/personal/people/{contactBForA}/connection-request",
-                tokenB);
-            return await _client.SendAsync(request);
-        }
-
-        var responses = await Task.WhenAll(RequestFromAAsync(), RequestFromBAsync());
-        var statusCodes = responses.Select(r => r.StatusCode).ToArray();
-        Assert.Contains(HttpStatusCode.Created, statusCodes);
-        Assert.Contains(HttpStatusCode.Conflict, statusCodes);
+        await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+        await CreateIdentifiedContactAsync(tokenB, "User A", userA, publicA);
 
         var pendingIds = new HashSet<Guid>();
         foreach (var token in new[] { tokenA, tokenB })
@@ -682,11 +666,6 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         }
 
         Assert.Single(pendingIds);
-
-        foreach (var response in responses)
-        {
-            response.Dispose();
-        }
     }
 
     [Fact]

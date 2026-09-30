@@ -323,6 +323,8 @@ builder.Services.AddScoped<GetPersonalProfile>();
 builder.Services.AddScoped<UpdatePersonalProfile>();
 builder.Services.AddScoped<GetPersonalAccountSettings>();
 builder.Services.AddScoped<UpdatePersonalAccountSettings>();
+builder.Services.AddScoped<GetPersonalSharedUtangPreference>();
+builder.Services.AddScoped<UpdatePersonalSharedUtangPreference>();
 builder.Services.AddScoped<PlatformSettingsProvisioner>();
 builder.Services.AddScoped<GetPlatformGeneralSettings>();
 builder.Services.AddScoped<UpdatePlatformGeneralSettings>();

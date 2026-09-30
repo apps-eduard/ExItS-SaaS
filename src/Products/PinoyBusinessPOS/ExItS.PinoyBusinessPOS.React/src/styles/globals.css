@@ -17185,6 +17185,21 @@ textarea.exits-input {
   color: var(--exits-text-muted);
 }
 
+.exits-currency-field--emphasis {
+  min-height: var(--exits-control-height-lg);
+}
+
+.exits-currency-field--emphasis .exits-currency-field__prefix,
+.exits-currency-field--emphasis .exits-currency-field__input {
+  font-size: var(--exits-text-xl);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.exits-currency-field--emphasis .exits-currency-field__input {
+  min-height: calc(var(--exits-control-height-lg) - 2px);
+}
+
 /* ---- ExItS Search Field (Control Shape; not a form exits-input) ---- */
 .exits-search-field {
   --exits-search-radius: var(--exits-control-radius);
@@ -23309,6 +23324,29 @@ a.exits-chip--primary:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* People filters: horizontal scroll on small screens (do not wrap). */
+.people-page__filters.exits-chip-bar--scroll {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .people-page__filters.exits-chip-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .people-page__filters.exits-chip-bar .exits-chip {
+    flex: 0 0 auto;
+    max-width: none;
+    scroll-snap-align: start;
+  }
 }
 
 .personal-page .personal-section.catalog-form-section:nth-of-type(1) {

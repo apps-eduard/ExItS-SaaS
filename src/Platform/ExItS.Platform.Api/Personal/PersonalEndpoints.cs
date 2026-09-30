@@ -569,6 +569,41 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        personal.MapGet("/shared-utang-preferences/{counterpartyUserIdentityId:guid}", async (
+            HttpContext http,
+            Guid counterpartyUserIdentityId,
+            GetPersonalSharedUtangPreference getPreference,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getPreference
+                .ExecuteAsync(PlatformUserId.From(userId), counterpartyUserIdentityId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        personal.MapPut("/shared-utang-preferences/{counterpartyUserIdentityId:guid}", async (
+            HttpContext http,
+            Guid counterpartyUserIdentityId,
+            UpdatePersonalSharedUtangPreferenceRequest body,
+            UpdatePersonalSharedUtangPreference updatePreference,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await updatePreference
+                .ExecuteAsync(PlatformUserId.From(userId), counterpartyUserIdentityId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         personal.MapPost("/start-business", async (
             HttpContext http,
             StartBusinessRequest body,
