@@ -8884,6 +8884,10 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "personal.home.active": "Aktibo",
 
+  "personal.home.activeMine": "Akong aktibo",
+
+  "personal.home.activeShared": "Gi-share nako",
+
   "personal.home.attentionDueSoon": "{count} payments due soon",
 
   "personal.home.attentionDueSoonOne": "{name} ? due soon",
@@ -10042,6 +10046,17 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.viewPending": "View pending entries",
 
   "personal.utang.sharedLedger": "Shared ledger",
+  "personal.utang.sharedBy": "Shared by {name}",
+  "personal.utang.ownerManagesRecord": "{name} manages this record. You can view updates.",
+  "personal.utang.ownershipMine": "My record",
+  "personal.utang.ownershipSharedWithMe": "Shared with me",
+  "personal.utang.managedByMe": "Managed by me",
+  "personal.utang.managedByOther": "Managed by {name}",
+  "personal.utang.readOnly": "Read only",
+  "personal.utang.counterpartyAlreadyShared":
+    "{name} already shared an Utang record with you.",
+  "personal.utang.viewSharedRecord": "View record",
+  "personal.utang.createOwnRecordHint": "You can still create your own record.",
 
   "personal.utang.statusCancelled": "Gikansela",
   "personal.utang.statusPrivate": "Private",
@@ -10051,14 +10066,14 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.shareWithPerson": "Share with {name}",
   "personal.utang.shareOffHint": "Saved only on your ledger. They will not see this.",
   "personal.utang.shareOnHint":
-    "Shared online with {name}. They will see it right away; confirmation may still be required.",
+    "Shared online with {name}. They will see updates right away.",
   "personal.utang.shareRequiresOnline": "Sharing with another person requires an internet connection.",
-  "personal.utang.sharedEntryHint": "This updates your shared ledger with {name}.",
+  "personal.utang.sharedEntryHint":
+    "This updates the shared record {name} can view. Only you can change the balance.",
   "personal.utang.savedPrivatelyNotReceiving":
     "Saved privately. This person is not receiving shared Utang entries.",
   "personal.utang.prefsTitle": "Shared Utang from {name}",
   "personal.utang.prefsReceive": "Show shared Utang",
-  "personal.utang.prefsAutoSync": "Automatically sync {name}'s entries",
   "personal.utang.prefsNotifications": "Notifications",
   "personal.utang.prefsRequiresOnline": "Shared Utang preferences require an internet connection.",
 

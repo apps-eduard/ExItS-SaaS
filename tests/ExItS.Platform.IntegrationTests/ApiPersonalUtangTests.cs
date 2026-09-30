@@ -135,8 +135,9 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         Assert.Equal(HttpStatusCode.Created, linkedResponse.StatusCode);
         var linked = await linkedResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(linked.GetProperty("isSharedLedger").GetBoolean());
-        // Shared initial loan is Pending until counterparty confirms — confirmed balance stays 0.
-        Assert.Equal(0m, linked.GetProperty("currentBalance").GetDecimal());
+        // Owner-model: shared initial loan is Confirmed immediately.
+        Assert.Equal(250m, linked.GetProperty("currentBalance").GetDecimal());
+        Assert.True(linked.GetProperty("isLedgerOwner").GetBoolean());
 
         using var borrowedRequest = Authed(HttpMethod.Get, "/api/v1/personal/utang/relationships/borrowed", borrowerToken);
         var borrowedList = await _client.SendAsync(borrowedRequest);
@@ -241,7 +242,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
     }
 
     [Fact]
-    public async Task Shared_ledger_confirm_dispute_and_idempotent_retry()
+    public async Task Shared_ledger_owner_writes_confirmed_and_non_owner_mutations_denied()
     {
         var (lenderToken, lenderId) = await SeedPersonalUserAsync("shrl");
         var (borrowerToken, borrowerId) = await SeedPersonalUserAsync("shrb");
@@ -260,6 +261,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var created = await contactResponse(await _client.SendAsync(createRequest));
         var relationshipId = created.GetProperty("id").GetGuid();
         Assert.Equal(0m, created.GetProperty("currentBalance").GetDecimal());
+        Assert.True(created.GetProperty("isLedgerOwner").GetBoolean());
+        Assert.Equal(lenderId, created.GetProperty("ledgerOwnerUserIdentityId").GetGuid());
 
         using var loanRequest = Authed(
             HttpMethod.Post,
@@ -275,40 +278,18 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var loanResponse = await _client.SendAsync(loanRequest);
         Assert.Equal(HttpStatusCode.Created, loanResponse.StatusCode);
         var loan = await loanResponse.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("Pending", loan.GetProperty("status").GetString());
-        Assert.Equal(0m, loan.GetProperty("balanceAfter").GetDecimal());
+        Assert.Equal("Confirmed", loan.GetProperty("status").GetString());
+        Assert.Equal(1000m, loan.GetProperty("balanceAfter").GetDecimal());
         var entryId = loan.GetProperty("id").GetGuid();
 
-        using var balancePending = Authed(
+        using var balanceConfirmed = Authed(
             HttpMethod.Get,
             $"/api/v1/personal/utang/relationships/{relationshipId}/balance",
             lenderToken);
-        Assert.Equal(0m, (await contactResponse(await _client.SendAsync(balancePending)))
+        Assert.Equal(1000m, (await contactResponse(await _client.SendAsync(balanceConfirmed)))
             .GetProperty("currentBalance").GetDecimal());
 
-        using var selfConfirm = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{entryId}/confirm",
-            lenderToken,
-            new { expectedVersion = (int?)null });
-        Assert.Equal(HttpStatusCode.Forbidden, (await _client.SendAsync(selfConfirm)).StatusCode);
-
-        using var strangerConfirm = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{entryId}/confirm",
-            strangerToken,
-            new { });
-        Assert.Equal(HttpStatusCode.Forbidden, (await _client.SendAsync(strangerConfirm)).StatusCode);
-
-        using var confirmRequest = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{entryId}/confirm",
-            borrowerToken,
-            new { });
-        var confirmed = await contactResponse(await _client.SendAsync(confirmRequest));
-        Assert.Equal("Confirmed", confirmed.GetProperty("status").GetString());
-        Assert.Equal(1000m, confirmed.GetProperty("balanceAfter").GetDecimal());
-
+        // Confirm on already-Confirmed is idempotent for counterparty.
         using var confirmRetry = Authed(
             HttpMethod.Post,
             $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{entryId}/confirm",
@@ -318,45 +299,43 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         Assert.Equal("Confirmed", retry.GetProperty("status").GetString());
         Assert.Equal(1000m, retry.GetProperty("balanceAfter").GetDecimal());
 
-        using var balanceConfirmed = Authed(
-            HttpMethod.Get,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/balance",
-            borrowerToken);
-        Assert.Equal(1000m, (await contactResponse(await _client.SendAsync(balanceConfirmed)))
-            .GetProperty("currentBalance").GetDecimal());
-
-        using var paymentRequest = Authed(
+        // Non-owner (borrower) cannot record payment.
+        using var paymentDenied = Authed(
             HttpMethod.Post,
             $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
             borrowerToken,
             new { entryType = "Payment", amount = 300m });
-        var payment = await contactResponse(await _client.SendAsync(paymentRequest));
-        Assert.Equal("Pending", payment.GetProperty("status").GetString());
-        var paymentId = payment.GetProperty("id").GetGuid();
+        var denied = await _client.SendAsync(paymentDenied);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal(
+            ApplicationErrorCodes.PersonalUtangNotLedgerOwner,
+            (await denied.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
 
-        using var paymentConfirm = Authed(
+        // Stranger cannot record either.
+        using var strangerEntry = Authed(
             HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{paymentId}/confirm",
-            lenderToken,
-            new { });
-        Assert.Equal(700m, (await contactResponse(await _client.SendAsync(paymentConfirm)))
-            .GetProperty("balanceAfter").GetDecimal());
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            strangerToken,
+            new { entryType = "Loan", amount = 10m, notes = "Nope" });
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.SendAsync(strangerEntry)).StatusCode);
 
-        using var disputedLoanRequest = Authed(
+        // Owner payment confirms immediately.
+        using var paymentRequest = Authed(
             HttpMethod.Post,
             $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
             lenderToken,
-            new { entryType = "Loan", amount = 500m, notes = "Test purpose" });
-        var disputedLoan = await contactResponse(await _client.SendAsync(disputedLoanRequest));
-        var disputedId = disputedLoan.GetProperty("id").GetGuid();
+            new { entryType = "Payment", amount = 300m });
+        var payment = await contactResponse(await _client.SendAsync(paymentRequest));
+        Assert.Equal("Confirmed", payment.GetProperty("status").GetString());
+        Assert.Equal(700m, payment.GetProperty("balanceAfter").GetDecimal());
 
+        // Dispute on Confirmed is rejected (legacy Pending-only path).
         using var disputeRequest = Authed(
             HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{disputedId}/dispute",
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{entryId}/dispute",
             borrowerToken,
             new { reason = "Amount is incorrect." });
-        var disputed = await contactResponse(await _client.SendAsync(disputeRequest));
-        Assert.Equal("Disputed", disputed.GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.SendAsync(disputeRequest)).StatusCode);
 
         using var finalBalance = Authed(
             HttpMethod.Get,
@@ -367,7 +346,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
     }
 
     [Fact]
-    public async Task Private_to_linked_preserves_balance_and_new_entries_pending()
+    public async Task Private_to_linked_preserves_balance_and_new_entries_confirmed()
     {
         var (ownerToken, ownerId) = await SeedPersonalUserAsync("p2lo");
         var (inviteeToken, _, inviteeEmail) = await SeedPersonalUserWithEmailAsync("p2li");
@@ -431,6 +410,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var detail = await contactResponse(await _client.SendAsync(detailRequest));
         Assert.Equal(1500m, detail.GetProperty("currentBalance").GetDecimal());
         Assert.True(detail.GetProperty("isSharedLedger").GetBoolean());
+        Assert.True(detail.GetProperty("isLedgerOwner").GetBoolean());
 
         using var historyRequest = Authed(
             HttpMethod.Get,
@@ -439,6 +419,13 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var history = await contactResponse(await _client.SendAsync(historyRequest));
         Assert.Equal(2, history.GetArrayLength());
         Assert.All(history.EnumerateArray(), e => Assert.Equal("Confirmed", e.GetProperty("status").GetString()));
+
+        using var inviteeDetail = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}",
+            inviteeToken);
+        var inviteeView = await contactResponse(await _client.SendAsync(inviteeDetail));
+        Assert.False(inviteeView.GetProperty("isLedgerOwner").GetBoolean());
 
         using var postLinkLoan = Authed(
             HttpMethod.Post,
@@ -449,23 +436,16 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
                 entryType = "Loan", amount = 400m, notes = "Test purpose",
                 expectedVersion = detail.GetProperty("version").GetInt32()
             });
-        var pendingLoan = await contactResponse(await _client.SendAsync(postLinkLoan));
-        Assert.Equal("Pending", pendingLoan.GetProperty("status").GetString());
+        var confirmedLoan = await contactResponse(await _client.SendAsync(postLinkLoan));
+        Assert.Equal("Confirmed", confirmedLoan.GetProperty("status").GetString());
+        Assert.Equal(1900m, confirmedLoan.GetProperty("balanceAfter").GetDecimal());
 
-        using var balanceStill = Authed(
+        using var balanceAfter = Authed(
             HttpMethod.Get,
             $"/api/v1/personal/utang/relationships/{relationshipId}/balance",
             ownerToken);
-        Assert.Equal(1500m, (await contactResponse(await _client.SendAsync(balanceStill)))
+        Assert.Equal(1900m, (await contactResponse(await _client.SendAsync(balanceAfter)))
             .GetProperty("currentBalance").GetDecimal());
-
-        using var confirmPostLink = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{pendingLoan.GetProperty("id").GetGuid()}/confirm",
-            inviteeToken,
-            new { });
-        Assert.Equal(1900m, (await contactResponse(await _client.SendAsync(confirmPostLink)))
-            .GetProperty("balanceAfter").GetDecimal());
     }
 
     [Fact]
@@ -691,12 +671,15 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             });
         var rel = await contactResponse(await _client.SendAsync(createRel));
         Assert.True(rel.GetProperty("isSharedLedger").GetBoolean());
-        Assert.Equal("SharedPending", rel.GetProperty("shareOutcome").GetString());
+        Assert.Equal("Shared", rel.GetProperty("shareOutcome").GetString());
         Assert.Equal(ownerId, rel.GetProperty("creditorUserIdentityId").GetGuid());
         Assert.Equal(targetId, rel.GetProperty("debtorUserIdentityId").GetGuid());
+        Assert.Equal(ownerId, rel.GetProperty("ledgerOwnerUserIdentityId").GetGuid());
+        Assert.True(rel.GetProperty("isLedgerOwner").GetBoolean());
         Assert.True(rel.TryGetProperty("debtorContactId", out var debtorContact)
             && debtorContact.ValueKind is JsonValueKind.Null);
-        Assert.Equal(0m, rel.GetProperty("currentBalance").GetDecimal());
+        // Owner-model: Confirmed immediately — currentBalance is live.
+        Assert.Equal(1000m, rel.GetProperty("currentBalance").GetDecimal());
 
         var relationshipId = rel.GetProperty("id").GetGuid();
         using var historyAsTarget = Authed(
@@ -706,8 +689,43 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var history = await contactResponse(await _client.SendAsync(historyAsTarget));
         Assert.Contains(
             history.EnumerateArray(),
-            e => e.GetProperty("status").GetString() == "Pending"
+            e => e.GetProperty("status").GetString() == "Confirmed"
                  && e.GetProperty("amount").GetDecimal() == 1000m);
+
+        using var asTarget = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}",
+            targetToken);
+        var targetView = await contactResponse(await _client.SendAsync(asTarget));
+        Assert.False(targetView.GetProperty("isLedgerOwner").GetBoolean());
+        Assert.Equal(ownerId, targetView.GetProperty("ledgerOwnerUserIdentityId").GetGuid());
+
+        using var listLent = Authed(HttpMethod.Get, "/api/v1/personal/utang/relationships/lent", ownerToken);
+        var lentList = await contactResponse(await _client.SendAsync(listLent));
+        var lentRow = lentList.EnumerateArray().Single(r => r.GetProperty("id").GetGuid() == relationshipId);
+        Assert.Equal(1000m, lentRow.GetProperty("currentBalance").GetDecimal());
+
+        using var getRel = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}",
+            ownerToken);
+        Assert.Equal(1000m, (await contactResponse(await _client.SendAsync(getRel)))
+            .GetProperty("currentBalance").GetDecimal());
+
+        using var ownerDash = Authed(HttpMethod.Get, "/api/v1/personal/dashboard", ownerToken);
+        var ownerDashBody = await contactResponse(await _client.SendAsync(ownerDash));
+        Assert.Equal(1000m, ownerDashBody.GetProperty("totalLentBalance").GetDecimal());
+        Assert.Equal(0m, ownerDashBody.GetProperty("totalBorrowedBalance").GetDecimal());
+        Assert.Equal(0, ownerDashBody.GetProperty("pendingConfirmationCount").GetInt32());
+
+        using var targetDash = Authed(HttpMethod.Get, "/api/v1/personal/dashboard", targetToken);
+        var targetDashBody = await contactResponse(await _client.SendAsync(targetDash));
+        Assert.Equal(0m, targetDashBody.GetProperty("totalLentBalance").GetDecimal());
+        // Shared-with-me must not inflate My Records money totals.
+        Assert.Equal(0m, targetDashBody.GetProperty("totalBorrowedBalance").GetDecimal());
+        Assert.Equal(1000m, targetDashBody.GetProperty("sharedWithMeBorrowedBalance").GetDecimal());
+        Assert.Equal(1, targetDashBody.GetProperty("sharedWithMeActiveCount").GetInt32());
+        Assert.Equal(0, targetDashBody.GetProperty("pendingConfirmationCount").GetInt32());
     }
 
     [Fact]
@@ -854,7 +872,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
     }
 
     [Fact]
-    public async Task Share_on_with_auto_sync_confirms_immediately()
+    public async Task Share_on_confirms_immediately_and_ignores_auto_accept_preference()
     {
         var (ownerToken, ownerId) = await SeedPersonalUserAsync("autA");
         var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("autB");
@@ -895,6 +913,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             new { linkedUserIdentityId = ownerId, publicUserId = ownerPublicUserId });
         (await _client.SendAsync(reverseLink)).EnsureSuccessStatusCode();
 
+        // AutoAccept is accepted for compatibility but forced false / ignored for new entries.
         using var prefsPut = Authed(
             HttpMethod.Put,
             $"/api/v1/personal/shared-utang-preferences/{ownerId}",
@@ -905,7 +924,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
                 autoAcceptSharedUtang = true,
                 sharedUtangNotifications = true
             });
-        (await _client.SendAsync(prefsPut)).EnsureSuccessStatusCode();
+        var prefsBody = await contactResponse(await _client.SendAsync(prefsPut));
+        Assert.False(prefsBody.GetProperty("autoAcceptSharedUtang").GetBoolean());
 
         using var createRel = Authed(
             HttpMethod.Post,
@@ -921,7 +941,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             });
         var rel = await contactResponse(await _client.SendAsync(createRel));
         Assert.True(rel.GetProperty("isSharedLedger").GetBoolean());
-        Assert.Equal("SharedAutoSynced", rel.GetProperty("shareOutcome").GetString());
+        Assert.Equal("Shared", rel.GetProperty("shareOutcome").GetString());
         Assert.Equal(500m, rel.GetProperty("currentBalance").GetDecimal());
 
         var relationshipId = rel.GetProperty("id").GetGuid();
@@ -932,9 +952,67 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var history = await contactResponse(await _client.SendAsync(historyAsTarget));
         var entry = Assert.Single(history.EnumerateArray());
         Assert.Equal("Confirmed", entry.GetProperty("status").GetString());
-        Assert.Equal("RecipientAutoAccept", entry.GetProperty("confirmationSource").GetString());
-        Assert.True(entry.GetProperty("wasAutoSynced").GetBoolean());
-        Assert.Equal(targetId, entry.GetProperty("resolvedByUserIdentityId").GetGuid());
+        Assert.False(entry.GetProperty("wasAutoSynced").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Non_owner_cannot_record_entry_on_shared_relationship()
+    {
+        var (ownerToken, ownerId) = await SeedPersonalUserAsync("nowA");
+        var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("nowB");
+
+        using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", targetToken);
+        var publicUserId = (await contactResponse(await _client.SendAsync(identityRequest)))
+            .GetProperty("publicUserId").GetString()!;
+
+        using var createContact = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new { displayName = "NonOwner B", linkedUserIdentityId = targetId, publicUserId });
+        var contactId = (await contactResponse(await _client.SendAsync(createContact)))
+            .GetProperty("id").GetGuid();
+
+        using var linkContact = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/contacts/{contactId}/link",
+            ownerToken,
+            new { linkedUserIdentityId = targetId, publicUserId });
+        (await _client.SendAsync(linkContact)).EnsureSuccessStatusCode();
+
+        using var createRel = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            ownerToken,
+            new
+            {
+                creditorUserIdentityId = ownerId,
+                debtorContactId = contactId,
+                initialLoanAmount = 250m,
+                initialLoanNotes = "Owner writes",
+                shareWithCounterparty = true
+            });
+        var rel = await contactResponse(await _client.SendAsync(createRel));
+        var relationshipId = rel.GetProperty("id").GetGuid();
+        Assert.True(rel.GetProperty("isLedgerOwner").GetBoolean());
+
+        using var denied = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            targetToken,
+            new
+            {
+                entryType = "Payment",
+                amount = 50m,
+                notes = "Counterparty attempt",
+                expectedVersion = rel.GetProperty("version").GetInt32()
+            });
+        var response = await _client.SendAsync(denied);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            ApplicationErrorCodes.PersonalUtangNotLedgerOwner,
+            body.GetProperty("errorCode").GetString());
     }
 
     [Fact]
@@ -1209,6 +1287,106 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         using var otherGet = Authed(HttpMethod.Get, $"/api/v1/personal/utang/entries/{paymentEntryId}", otherToken);
         var otherStatus = (await _client.SendAsync(otherGet)).StatusCode;
         Assert.NotEqual(HttpStatusCode.OK, otherStatus);
+    }
+
+    [Fact]
+    public async Task Connected_pair_may_own_independent_ledgers_with_same_direction()
+    {
+        var (micaTok, micaId) = await SeedPersonalUserAsync("indm");
+        var (paulTok, paulId) = await SeedPersonalUserAsync("indp");
+
+        // Mica creates I Lent to Paul (shared).
+        using var micaCreate = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            micaTok,
+            new
+            {
+                creditorUserIdentityId = micaId,
+                debtorUserIdentityId = paulId,
+                currencyCode = "PHP",
+                initialLoanAmount = 1000m,
+                initialLoanNotes = "Mica book",
+                shareWithCounterparty = true
+            });
+        var micaRel = await contactResponse(await _client.SendAsync(micaCreate));
+        var micaRelId = micaRel.GetProperty("id").GetGuid();
+        Assert.Equal(micaId, micaRel.GetProperty("ledgerOwnerUserIdentityId").GetGuid());
+        Assert.True(micaRel.GetProperty("isLedgerOwner").GetBoolean());
+        Assert.Equal(1000m, micaRel.GetProperty("currentBalance").GetDecimal());
+
+        using var paulViewMica = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{micaRelId}",
+            paulTok);
+        var paulSeesMica = await contactResponse(await _client.SendAsync(paulViewMica));
+        Assert.Equal("Borrowed", paulSeesMica.GetProperty("perspective").GetString());
+        Assert.False(paulSeesMica.GetProperty("isLedgerOwner").GetBoolean());
+
+        // Paul creates his own I Borrowed from Mica (same direction, different owner).
+        using var paulCreate = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            paulTok,
+            new
+            {
+                creditorUserIdentityId = micaId,
+                debtorUserIdentityId = paulId,
+                currencyCode = "PHP",
+                initialLoanAmount = 1000m,
+                initialLoanNotes = "Paul book",
+                shareWithCounterparty = true
+            });
+        var paulRel = await contactResponse(await _client.SendAsync(paulCreate));
+        var paulRelId = paulRel.GetProperty("id").GetGuid();
+        Assert.NotEqual(micaRelId, paulRelId);
+        Assert.Equal(paulId, paulRel.GetProperty("ledgerOwnerUserIdentityId").GetGuid());
+        Assert.True(paulRel.GetProperty("isLedgerOwner").GetBoolean());
+        Assert.Equal("Borrowed", paulRel.GetProperty("perspective").GetString());
+        Assert.Equal(1000m, paulRel.GetProperty("currentBalance").GetDecimal());
+
+        // Cross-owner mutations denied.
+        using var paulPayMica = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{micaRelId}/entries",
+            paulTok,
+            new { entryType = "Payment", amount = 200m });
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.SendAsync(paulPayMica)).StatusCode);
+
+        using var micaPayPaul = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{paulRelId}/entries",
+            micaTok,
+            new { entryType = "Payment", amount = 200m });
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.SendAsync(micaPayPaul)).StatusCode);
+
+        // Each owner pays only their own ledger; the other stays unchanged.
+        using var micaPayOwn = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{micaRelId}/entries",
+            micaTok,
+            new { entryType = "Payment", amount = 200m, expectedVersion = micaRel.GetProperty("version").GetInt32() });
+        await contactResponse(await _client.SendAsync(micaPayOwn));
+        using var micaBal = Authed(HttpMethod.Get, $"/api/v1/personal/utang/relationships/{micaRelId}/balance", micaTok);
+        Assert.Equal(800m, (await contactResponse(await _client.SendAsync(micaBal))).GetProperty("currentBalance").GetDecimal());
+        using var paulBal = Authed(HttpMethod.Get, $"/api/v1/personal/utang/relationships/{paulRelId}/balance", paulTok);
+        Assert.Equal(1000m, (await contactResponse(await _client.SendAsync(paulBal))).GetProperty("currentBalance").GetDecimal());
+
+        // Both appear on Paul's borrowed list; ownership flags differ.
+        using var paulList = Authed(HttpMethod.Get, "/api/v1/personal/utang/relationships/borrowed", paulTok);
+        var borrowed = await contactResponse(await _client.SendAsync(paulList));
+        var micaRow = borrowed.EnumerateArray().Single(r => r.GetProperty("id").GetGuid() == micaRelId);
+        var paulRow = borrowed.EnumerateArray().Single(r => r.GetProperty("id").GetGuid() == paulRelId);
+        Assert.False(micaRow.GetProperty("isLedgerOwner").GetBoolean());
+        Assert.True(paulRow.GetProperty("isLedgerOwner").GetBoolean());
+
+        // Dashboard: My Records for Paul = only Paul's ledger; shared-with-me is separate.
+        using var paulDash = Authed(HttpMethod.Get, "/api/v1/personal/dashboard", paulTok);
+        var dash = await contactResponse(await _client.SendAsync(paulDash));
+        Assert.Equal(1000m, dash.GetProperty("totalBorrowedBalance").GetDecimal());
+        Assert.Equal(800m, dash.GetProperty("sharedWithMeBorrowedBalance").GetDecimal());
+        Assert.Equal(1, dash.GetProperty("sharedWithMeActiveCount").GetInt32());
+        Assert.Equal(1, dash.GetProperty("activeRelationshipCount").GetInt32());
     }
 
     private static async Task<JsonElement> contactResponse(HttpResponseMessage response)

@@ -50,6 +50,7 @@ internal sealed class PersonalConnectionRequestRecord
 internal sealed class PersonalDebtRelationshipRecord
 {
     public Guid Id { get; set; }
+    public Guid LedgerOwnerUserIdentityId { get; set; }
     public Guid? CreditorUserIdentityId { get; set; }
     public Guid? CreditorContactId { get; set; }
     public Guid? DebtorUserIdentityId { get; set; }

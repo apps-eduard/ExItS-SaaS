@@ -75,8 +75,9 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
             notes: LocalValidationPersonalUtangSeedMarkers.LuisToSofiaNotes,
             cancellationToken).ConfigureAwait(false);
 
+        // Ledger owner (Luis) records financial entries; Sofia is a shared viewer only.
         await EnsurePaymentAsync(
-            actingUserId: sofia.Id,
+            actingUserId: luis.Id,
             relationshipId: luisToSofia.Id.Value,
             amount: LocalValidationPersonalUtangSeedMarkers.LuisToSofiaPayment,
             notes: LocalValidationPersonalUtangSeedMarkers.LuisToSofiaPaymentNotes,
@@ -151,6 +152,7 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
                     e.EntryType == PersonalUtangEntryType.Loan
                     && string.Equals(e.Notes, notes, StringComparison.Ordinal)))
             {
+                // Legacy Pending rows (pre ledger-owner): confirm if still unresolved.
                 await ConfirmPendingByNotesAsync(debtorUserId, existing.Id.Value, notes, ct)
                     .ConfigureAwait(false);
                 return (await _relationships.GetByIdAsync(existing.Id, ct).ConfigureAwait(false)) ?? existing;
@@ -186,16 +188,7 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
             throw new InvalidOperationException("Local Validation Personal Utang relationship was created but not found.");
         }
 
-        // Shared ledger: initial loan starts Pending — counterparty confirms for deterministic seed balances.
-        await ConfirmPendingByNotesAsync(
-            confirmerUserId: debtorUserId,
-            relationshipId: reloaded.Id.Value,
-            notes: notes,
-            ct).ConfigureAwait(false);
-
-        reloaded = await _relationships.GetByIdAsync(reloaded.Id, ct).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("Local Validation Personal Utang relationship missing after confirm.");
-
+        // Owner-model: initial loan is Confirmed immediately — no counterparty ConfirmEntry.
         return reloaded;
     }
 
@@ -231,6 +224,7 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
             && e.Status == PersonalUtangEntryStatus.Pending);
         if (pendingExisting is not null)
         {
+            // Legacy Pending payment: counterparty confirm path retained for re-seed of old data.
             var counterparty = relationship.GetCounterpartyUserIdentityId(actingUserId)
                 ?? relationship.CreditorUserIdentityId
                 ?? throw new InvalidOperationException("Local Validation payment confirm requires counterparty.");
@@ -259,15 +253,7 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
                 $"Local Validation Personal Utang payment seed failed: {recorded.ErrorCode} {recorded.ErrorMessage}");
         }
 
-        relationship = await _relationships
-            .GetByIdAsync(PersonalDebtRelationshipId.From(relationshipId), ct)
-            .ConfigureAwait(false)
-            ?? throw new InvalidOperationException("Local Validation Personal Utang payment target relationship missing.");
-
-        var confirmer = relationship.GetCounterpartyUserIdentityId(actingUserId)
-            ?? throw new InvalidOperationException("Local Validation payment confirm requires counterparty.");
-        await ConfirmEntryAsync(confirmer, relationshipId, recorded.Value.Id, relationship.Version, ct)
-            .ConfigureAwait(false);
+        // Owner-model: payment is Confirmed on record — no ConfirmEntry.
     }
 
     private async Task ConfirmPendingByNotesAsync(

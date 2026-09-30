@@ -280,6 +280,9 @@ vi.mock("@/api/platform/personal-dashboard-client", () => ({
     activeRelationshipCount: 2,
     totalLentBalance: 300,
     totalBorrowedBalance: 0,
+    sharedWithMeLentBalance: 0,
+    sharedWithMeBorrowedBalance: 0,
+    sharedWithMeActiveCount: 0,
     pendingConfirmationCount: 2,
   })),
 }));
@@ -399,10 +402,14 @@ describe("Personal Utang shared-ledger UI", () => {
     ]);
   });
 
-  it("shows hub owed/i-owe totals, pending confirmation, and active accounts", async () => {
+  it("shows hub My record / Shared with me cards for owed and I owe", async () => {
     renderPath("/personal/utang");
     expect(await screen.findByTestId("utang-hub-owed-to-me")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-hub-owed-to-me-mine")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-hub-owed-to-me-shared")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-i-owe")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-hub-i-owe-mine")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-hub-i-owe-shared")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-record")).toHaveTextContent("Record money lent");
     expect(screen.getByTestId("utang-hub-pending")).toHaveTextContent("Waiting for you (2)");
     expect(await screen.findByTestId("utang-hub-segments")).toBeInTheDocument();
@@ -556,7 +563,7 @@ describe("Personal Utang shared-ledger UI", () => {
     );
   });
 
-  it("disables Loan submit and shows limit message when 3 outgoing proposals are pending", async () => {
+  it("shows pending-limit hint when 3 outgoing proposals are pending without blocking Loan submit", async () => {
     const user = userEvent.setup();
     vi.mocked(listPersonalUtangHistory).mockResolvedValueOnce([
       {
@@ -639,8 +646,9 @@ describe("Personal Utang shared-ledger UI", () => {
     );
     expect(screen.getByTestId("utang-view-pending")).toHaveTextContent("View pending entries");
 
+    // Ledger owner records Confirmed entries; client no longer blocks Loan at the pending limit.
     await user.selectOptions(screen.getByTestId("utang-entry-type"), "Loan");
-    expect(screen.getByTestId("utang-entry-submit")).toBeDisabled();
+    expect(screen.getByTestId("utang-entry-submit")).not.toBeDisabled();
 
     await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
     expect(screen.getByTestId("utang-entry-submit")).not.toBeDisabled();

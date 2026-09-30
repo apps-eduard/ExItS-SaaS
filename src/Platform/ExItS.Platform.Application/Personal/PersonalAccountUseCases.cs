@@ -17,9 +17,16 @@ public sealed record PersonalDashboardDto(
     bool UtangAvailable,
     int ContactCount,
     int ActiveRelationshipCount,
+    /// <summary>Sum of balances on relationships the viewer owns (My Records).</summary>
     decimal TotalLentBalance,
+    /// <summary>Sum of balances on relationships the viewer owns (My Records).</summary>
     decimal TotalBorrowedBalance,
-    int PendingConfirmationCount);
+    int PendingConfirmationCount,
+    /// <summary>Informational: shared-with-me Lent perspective (not included in TotalLentBalance).</summary>
+    decimal SharedWithMeLentBalance = 0m,
+    /// <summary>Informational: shared-with-me Borrowed perspective (not included in TotalBorrowedBalance).</summary>
+    decimal SharedWithMeBorrowedBalance = 0m,
+    int SharedWithMeActiveCount = 0);
 
 public sealed record PersonalProfileDto(
     Guid UserIdentityId,
@@ -100,23 +107,67 @@ public sealed class GetPersonalDashboard
 
         decimal lent = 0m;
         decimal borrowed = 0m;
+        decimal sharedLent = 0m;
+        decimal sharedBorrowed = 0m;
+        var sharedWithMeActive = 0;
+        var ownedActive = 0;
         foreach (var relationship in active)
         {
+            // Display totals may include legacy Pending signed amounts; CurrentBalance stays confirmed-only.
+            var history = await _entries
+                .ListByRelationshipAsync(relationship.Id, cancellationToken)
+                .ConfigureAwait(false);
+            var pendingDelta = history
+                .Where(e => e.Status is PersonalUtangEntryStatus.Pending)
+                .Sum(e => e.SignedDelta);
+            var effectiveBalance = relationship.CurrentBalance + pendingDelta;
+
+            var isOwned = relationship.IsLedgerOwner(userIdentityId);
+            decimal? lentDelta = null;
+            decimal? borrowedDelta = null;
+
             if (relationship.CreditorUserIdentityId == userIdentityId)
             {
-                lent += relationship.CurrentBalance;
+                lentDelta = effectiveBalance;
             }
             else if (relationship.DebtorUserIdentityId == userIdentityId)
             {
-                borrowed += relationship.CurrentBalance;
+                borrowedDelta = effectiveBalance;
             }
-            else if (relationship.CreditorContactId is not null)
+            else if (isOwned && relationship.DebtorContactId is not null)
             {
-                lent += relationship.CurrentBalance;
+                // Private owner ledger: viewer is creditor (I Lent to contact).
+                lentDelta = effectiveBalance;
             }
-            else if (relationship.DebtorContactId is not null)
+            else if (isOwned && relationship.CreditorContactId is not null)
             {
-                borrowed += relationship.CurrentBalance;
+                // Private owner ledger: viewer is debtor (I Borrowed from contact).
+                borrowedDelta = effectiveBalance;
+            }
+
+            if (isOwned)
+            {
+                ownedActive++;
+                if (lentDelta is not null)
+                {
+                    lent += lentDelta.Value;
+                }
+                else if (borrowedDelta is not null)
+                {
+                    borrowed += borrowedDelta.Value;
+                }
+            }
+            else
+            {
+                sharedWithMeActive++;
+                if (lentDelta is not null)
+                {
+                    sharedLent += lentDelta.Value;
+                }
+                else if (borrowedDelta is not null)
+                {
+                    sharedBorrowed += borrowedDelta.Value;
+                }
             }
         }
 
@@ -130,10 +181,13 @@ public sealed class GetPersonalDashboard
             AccountClass.Personal.ToString(),
             UtangAvailable: true,
             contacts.Count,
-            active.Count,
+            ownedActive,
             lent,
             borrowed,
-            pendingConfirmationCount));
+            pendingConfirmationCount,
+            sharedLent,
+            sharedBorrowed,
+            sharedWithMeActive));
     }
 }
 

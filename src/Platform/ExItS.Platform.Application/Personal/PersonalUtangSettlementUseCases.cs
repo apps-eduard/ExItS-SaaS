@@ -162,7 +162,11 @@ public sealed class SettlePersonalDebtRelationship
 
             if (entry.Status is PersonalUtangEntryStatus.Confirmed && relationship.CurrentBalance == 0m)
             {
-                relationship.CloseAsSettled(_clock.UtcNow, expectedVersion: null, hasUnresolvedPending: false);
+                relationship.CloseAsSettled(
+                    actingUserIdentityId,
+                    _clock.UtcNow,
+                    expectedVersion: null,
+                    hasUnresolvedPending: false);
                 await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
                 await CancelScheduledRemindersAsync(relationship.Id, cancellationToken).ConfigureAwait(false);
             }
@@ -322,7 +326,7 @@ public sealed class ClosePersonalDebtRelationship
 
         try
         {
-            relationship.CloseAsSettled(_clock.UtcNow, request.ExpectedVersion, hasPending);
+            relationship.CloseAsSettled(actingUserIdentityId, _clock.UtcNow, request.ExpectedVersion, hasPending);
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
 
             var reminders = await _reminders.ListByRelationshipAsync(relationship.Id, cancellationToken)
@@ -374,6 +378,7 @@ internal static class PersonalUtangSettlementErrors
             ApplicationErrorCodes.PersonalUtangPendingBlocksSettlement,
         DomainErrorCodes.PersonalUtangCloseInvalid => ApplicationErrorCodes.PersonalUtangCloseInvalid,
         DomainErrorCodes.PersonalUtangUnauthorized => ApplicationErrorCodes.PersonalUtangUnauthorized,
+        DomainErrorCodes.PersonalUtangNotLedgerOwner => ApplicationErrorCodes.PersonalUtangNotLedgerOwner,
         _ => ex.ErrorCode
     };
 }

@@ -53,6 +53,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { TableActionButton } from "@/components/exits/TableActionButton";
 import { useExitsToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
+import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { CreatableCombobox } from "@/components/exits/CreatableCombobox";
 import { Button, buttonIconMotion } from "@/components/ui/button";
 import {
@@ -577,52 +578,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           </Card>
         ) : null}
 
-        {show("toasts") ? (
-          <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-toasts">
-            <CardTitle>Toasts</CardTitle>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="success"
-                data-testid="ui-standard-toast-success"
-                onClick={() =>
-                  toast.success("Changes saved", "Your changes were saved successfully.")
-                }
-              >
-                Success
-              </Button>
-              <Button
-                type="button"
-                variant="info"
-                data-testid="ui-standard-toast-info"
-                onClick={() => toast.info("Quotation saved", "Quotation was saved as a draft.")}
-              >
-                Info
-              </Button>
-              <Button
-                type="button"
-                variant="warning"
-                data-testid="ui-standard-toast-warning"
-                onClick={() =>
-                  toast.warning("Check pending", "The check is waiting for clearing.")
-                }
-              >
-                Warning
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                data-testid="ui-standard-toast-error"
-                onClick={() =>
-                  toast.error("Payment failed", "The payment could not be recorded.")
-                }
-              >
-                Error
-              </Button>
-            </div>
-          </Card>
-        ) : null}
-
         {show("confirm") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-confirm">
             <CardTitle>Confirm Dialog</CardTitle>
@@ -690,111 +645,197 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         ) : null}
 
         {show("status") ? (
-          <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-status">
-            <CardTitle>Status & Chips</CardTitle>
-            <UiStandardsStatusPlayground />
-            <div className="flex flex-col gap-2">
-              <SectionLabel>Tone</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                <StatusChip tone="neutral">Draft</StatusChip>
-                <StatusChip tone="info">Processing</StatusChip>
-                <StatusChip tone="success">Active</StatusChip>
-                <StatusChip tone="warning">Pending</StatusChip>
-                <StatusChip tone="danger">Declined</StatusChip>
-                <StatusChip tone="primary">Preferred</StatusChip>
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Tone = semantic meaning. All samples use Soft appearance (default).
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Appearance</SectionLabel>
-              <div className="flex flex-col gap-2.5">
-                {(
-                  [
-                    ["Soft", "soft"],
-                    ["Outline", "outline"],
-                    ["Solid", "solid"],
-                  ] as const
-                ).map(([label, appearance]) => (
-                  <div key={appearance} className="flex min-w-0 flex-col gap-1.5">
-                    <span className="text-[length:var(--exits-text-xs)] text-muted">{label}</span>
-                    <div className="flex flex-wrap gap-2">
-                      <StatusChip appearance={appearance} tone="neutral">
-                        Draft
-                      </StatusChip>
-                      <StatusChip appearance={appearance} tone="info">
-                        Processing
-                      </StatusChip>
-                      <StatusChip appearance={appearance} tone="success">
-                        Active
-                      </StatusChip>
-                      <StatusChip appearance={appearance} tone="warning">
-                        Pending
-                      </StatusChip>
-                      <StatusChip appearance={appearance} tone="danger">
-                        Declined
-                      </StatusChip>
-                      <StatusChip appearance={appearance} tone="primary">
-                        Preferred
-                      </StatusChip>
+          <>
+            <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-status">
+              <CardTitle>Status & Chips</CardTitle>
+              <UiStandardsStatusPlayground />
+              <div className="flex flex-col gap-2 border-t border-border pt-3">
+                <SectionLabel>Tone — color variation</SectionLabel>
+                <div className="flex flex-col gap-2.5" data-testid="ui-standard-status-tone-colors">
+                  {(
+                    [
+                      ["Soft", "soft"],
+                      ["Emphasis", "emphasis"],
+                    ] as const
+                  ).map(([label, appearance]) => (
+                    <div
+                      key={appearance}
+                      className="flex min-w-0 flex-col gap-1.5"
+                      data-testid={`ui-standard-status-tone-${appearance}`}
+                    >
+                      <span className="text-[length:var(--exits-text-xs)] text-muted">{label}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          [
+                            ["primary", "Primary"],
+                            ["secondary", "Secondary"],
+                            ["success", "Success"],
+                            ["info", "Info"],
+                            ["warning", "Warn"],
+                            ["help", "Help"],
+                            ["danger", "Danger"],
+                            ["contrast", "Contrast"],
+                            ["neutral", "Neutral"],
+                          ] as const
+                        ).map(([tone, text]) => (
+                          <StatusChip
+                            key={`${appearance}-${tone}`}
+                            tone={tone}
+                            appearance={appearance}
+                            data-testid={`ui-standard-status-tone-${appearance}-${tone}`}
+                          >
+                            {text}
+                          </StatusChip>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <SectionLabel>Square — color variation (emphasis)</SectionLabel>
+                <div className="flex flex-wrap gap-2" data-testid="ui-standard-status-square-colors">
+                  {(
+                    [
+                      ["primary", "Primary"],
+                      ["secondary", "Secondary"],
+                      ["success", "Success"],
+                      ["info", "Info"],
+                      ["warning", "Warn"],
+                      ["help", "Help"],
+                      ["danger", "Danger"],
+                      ["contrast", "Contrast"],
+                      ["neutral", "Neutral"],
+                    ] as const
+                  ).map(([tone, text]) => (
+                    <StatusChip
+                      key={`square-${tone}`}
+                      tone={tone}
+                      appearance="emphasis"
+                      shape="square"
+                      data-testid={`ui-standard-status-square-${tone}`}
+                    >
+                      {text}
+                    </StatusChip>
+                  ))}
+                </div>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  Tone = semantic color (Diamond severity row + Neutral). Soft is the quiet product
+                  default; Emphasis is bold tone-colored ink. Square + Emphasis is the compact
+                  metadata / ownership tag pattern.
+                </p>
               </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Appearance = how it is drawn. Soft is default; Outline / Solid are optional.
-                Independent from shape (geometry).
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Shape</SectionLabel>
-              <div
-                className="grid min-w-0 grid-cols-[auto_repeat(3,minmax(0,auto))] items-center justify-items-start gap-x-3 gap-y-2"
-                data-testid="ui-standard-status-shape-grid"
-              >
-                <span aria-hidden className="min-w-[4.5rem]" />
-                <span className="text-[length:var(--exits-text-xs)] text-muted">Soft</span>
-                <span className="text-[length:var(--exits-text-xs)] text-muted">Outline</span>
-                <span className="text-[length:var(--exits-text-xs)] text-muted">Solid</span>
-                {(
-                  [
-                    ["Auto", "auto"],
-                    ["Standard", "standard"],
-                    ["Soft", "soft"],
-                    ["Pill", "pill"],
-                  ] as const
-                ).map(([label, shape]) => (
-                  <div key={shape} className="contents">
-                    <span className="text-[length:var(--exits-text-xs)] text-muted">{label}</span>
-                    {(
-                      [
-                        ["soft", "soft"],
-                        ["outline", "outline"],
-                        ["solid", "solid"],
-                      ] as const
-                    ).map(([appearanceLabel, appearance]) => (
-                      <StatusChip
-                        key={`${shape}-${appearance}`}
-                        className="w-fit justify-self-start"
-                        tone="success"
-                        appearance={appearance}
-                        shape={shape}
-                        data-testid={`ui-standard-status-shape-${shape}-${appearance}`}
-                        aria-label={`${label} ${appearanceLabel}`}
-                      >
-                        Active
-                      </StatusChip>
-                    ))}
-                  </div>
-                ))}
+            </Card>
+            <Card
+              className="flex min-w-0 flex-col gap-3 p-3"
+              data-testid="ui-standard-card-status-treatments"
+            >
+              <CardTitle>Appearance & Shape</CardTitle>
+              <div className="flex flex-col gap-2">
+                <SectionLabel>Appearance</SectionLabel>
+                <div className="flex flex-col gap-2.5">
+                  {(
+                    [
+                      ["Soft", "soft"],
+                      ["Emphasis", "emphasis"],
+                      ["Outline", "outline"],
+                      ["Solid", "solid"],
+                    ] as const
+                  ).map(([label, appearance]) => (
+                    <div
+                      key={appearance}
+                      className="flex min-w-0 flex-col gap-1.5"
+                      data-testid={`ui-standard-status-appearance-${appearance}`}
+                    >
+                      <span className="text-[length:var(--exits-text-xs)] text-muted">{label}</span>
+                      <div className="flex flex-wrap gap-2">
+                        <StatusChip appearance={appearance} tone="primary">
+                          Primary
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="secondary">
+                          Secondary
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="success">
+                          Success
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="info">
+                          Info
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="warning">
+                          Warn
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="help">
+                          Help
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="danger">
+                          Danger
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="contrast">
+                          Contrast
+                        </StatusChip>
+                        <StatusChip appearance={appearance} tone="neutral">
+                          Neutral
+                        </StatusChip>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  Soft = quiet tint + soft border. Emphasis = bold tone-colored ink on a pale wash
+                  (Diamond Tag soft). Outline = border only. Solid = filled + contrast ink.
+                </p>
               </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Auto follows the global Control Shape preference. Explicit shapes remain fixed.
-                Columns show Soft / Outline / Solid appearance on the same geometry.
-              </p>
-            </div>
-          </Card>
+              <div className="flex flex-col gap-2 border-t border-border pt-3">
+                <SectionLabel>Shape</SectionLabel>
+                <div
+                  className="grid min-w-0 grid-cols-[auto_repeat(4,minmax(0,auto))] items-center justify-items-start gap-x-3 gap-y-2"
+                  data-testid="ui-standard-status-shape-grid"
+                >
+                  <span aria-hidden className="min-w-[4.5rem]" />
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">Soft</span>
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">Emphasis</span>
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">Outline</span>
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">Solid</span>
+                  {(
+                    [
+                      ["Auto", "auto"],
+                      ["Standard", "standard"],
+                      ["Soft (radius)", "soft"],
+                      ["Pill", "pill"],
+                      ["Square", "square"],
+                    ] as const
+                  ).map(([label, shape]) => (
+                    <div key={shape} className="contents">
+                      <span className="text-[length:var(--exits-text-xs)] text-muted">{label}</span>
+                      {(
+                        [
+                          ["soft", "soft"],
+                          ["emphasis", "emphasis"],
+                          ["outline", "outline"],
+                          ["solid", "solid"],
+                        ] as const
+                      ).map(([appearanceLabel, appearance]) => (
+                        <StatusChip
+                          key={`${shape}-${appearance}`}
+                          className="w-fit justify-self-start"
+                          tone="success"
+                          appearance={appearance}
+                          shape={shape}
+                          data-testid={`ui-standard-status-shape-${shape}-${appearance}`}
+                          aria-label={`${label} ${appearanceLabel}`}
+                        >
+                          Active
+                        </StatusChip>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  Auto follows the global Control Shape preference. Explicit shapes remain fixed.
+                  Pill is the StatusChip default capsule. Square is compact metadata (TagChip
+                  default). Columns show Soft / Emphasis / Outline / Solid on the same geometry.
+                </p>
+              </div>
+            </Card>
+          </>
         ) : null}
 
         {show("forms") ? (
@@ -1383,25 +1424,24 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           >
             <CardTitle>Navigation & Selection</CardTitle>
             <div className="flex flex-col gap-2">
-              <SectionLabel>Tabs — same-view sections</SectionLabel>
-              <UnderlineTabBar
-                ariaLabel="Demo content tabs"
-                activeKey={contentTab}
-                onChange={setContentTab}
+              <SectionLabel>Underline / Soft / Pill tabs</SectionLabel>
+              <ExitsTabs
+                variant="underline"
+                ariaLabel="Demo underline tabs"
+                value={kindTab}
+                onValueChange={setKindTab}
+                testId="ui-standard-tabs-underline"
                 items={[
-                  { key: "overview", label: "Overview", icon: LayoutDashboard },
-                  { key: "transactions", label: "Transactions", icon: Receipt, count: 12 },
-                  { key: "payments", label: "Payments", icon: Wallet, count: 3 },
+                  { key: "personal", label: "Personal" },
+                  { key: "business", label: "Business" },
                 ]}
               />
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Soft / Pill tabs</SectionLabel>
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Demo kind soft tabs"
                 value={kindTab}
                 onValueChange={setKindTab}
+                testId="ui-standard-tabs-soft"
                 items={[
                   { key: "personal", label: "Personal" },
                   { key: "business", label: "Business" },
@@ -1412,12 +1452,24 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 ariaLabel="Demo kind pill tabs"
                 value={kindTab}
                 onValueChange={setKindTab}
+                testId="ui-standard-tabs-pill"
                 items={[
                   { key: "personal", label: "Personal" },
                   { key: "business", label: "Business" },
                 ]}
               />
               <SectionLabel>With icon</SectionLabel>
+              <ExitsTabs
+                variant="underline"
+                ariaLabel="Demo underline tabs with icons"
+                value={kindTab}
+                onValueChange={setKindTab}
+                testId="ui-standard-tabs-underline-icons"
+                items={[
+                  { key: "personal", label: "Personal", icon: UserRound },
+                  { key: "business", label: "Business", icon: Building2 },
+                ]}
+              />
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Demo soft tabs with icons"
@@ -1441,6 +1493,29 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 ]}
               />
               <SectionLabel>With count</SectionLabel>
+              <ExitsTabs
+                variant="underline"
+                ariaLabel="Demo underline tabs with counts"
+                value={kindTab}
+                onValueChange={setKindTab}
+                testId="ui-standard-tabs-underline-counts"
+                items={[
+                  {
+                    key: "personal",
+                    label: "Personal",
+                    icon: UserRound,
+                    count: 8,
+                    countTone: kindTab === "personal" ? "primary" : "neutral",
+                  },
+                  {
+                    key: "business",
+                    label: "Business",
+                    icon: Building2,
+                    count: 24,
+                    countTone: kindTab === "business" ? "primary" : "neutral",
+                  },
+                ]}
+              />
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Demo soft tabs with counts"
@@ -1501,8 +1576,81 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   { key: "inactive", label: "Inactive", count: 11 },
                 ]}
               />
+              <SectionLabel>Filter chip tabs — page sections (ExitsChipBar)</SectionLabel>
+              <UnderlineTabBar
+                ariaLabel="Demo content tabs"
+                activeKey={contentTab}
+                onChange={setContentTab}
+                testId="ui-standard-tabs-filter-chips"
+                items={[
+                  { key: "overview", label: "Overview", icon: LayoutDashboard },
+                  { key: "transactions", label: "Transactions", icon: Receipt, count: 12 },
+                  { key: "payments", label: "Payments", icon: Wallet, count: 3 },
+                ]}
+              />
             </div>
             <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Underline — module destinations</SectionLabel>
+              <ModuleSubnav
+                variant="underline"
+                ariaLabel="Purchasing destinations underline"
+                testId="ui-standard-subnav-underline"
+                value={purchasingDest}
+                onValueChange={setPurchasingDest}
+                items={[
+                  { key: "po", label: "Purchase orders", to: "/demo/po" },
+                  { key: "incoming", label: "Incoming orders", to: "/demo/incoming" },
+                  { key: "receive", label: "Ready to receive", to: "/demo/receive" },
+                  { key: "direct", label: "Direct purchases", to: "/demo/direct" },
+                  { key: "suppliers", label: "Suppliers", to: "/demo/suppliers" },
+                ]}
+              />
+              <SectionLabel>Underline — with icon + count</SectionLabel>
+              <ModuleSubnav
+                variant="underline"
+                scrollable
+                ariaLabel="Purchasing destinations underline with icons"
+                testId="ui-standard-subnav-underline-icons"
+                value={purchasingDest}
+                onValueChange={setPurchasingDest}
+                items={[
+                  {
+                    key: "po",
+                    label: "Purchase orders",
+                    to: "/demo/po",
+                    icon: ClipboardList,
+                    count: 0,
+                  },
+                  {
+                    key: "incoming",
+                    label: "Incoming orders",
+                    to: "/demo/incoming",
+                    icon: Inbox,
+                    count: 2,
+                  },
+                  {
+                    key: "receive",
+                    label: "Ready to receive",
+                    to: "/demo/receive",
+                    icon: Truck,
+                    count: 0,
+                  },
+                  {
+                    key: "direct",
+                    label: "Direct purchases",
+                    to: "/demo/direct",
+                    icon: PackageCheck,
+                    count: 0,
+                  },
+                  {
+                    key: "suppliers",
+                    label: "Suppliers",
+                    to: "/demo/suppliers",
+                    icon: Users,
+                    count: 0,
+                  },
+                ]}
+              />
               <SectionLabel>Pill bar — module destinations</SectionLabel>
               <ModuleSubnav
                 variant="pillBar"
@@ -1977,6 +2125,114 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             </div>
 
             <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Accent — color (start edge)</SectionLabel>
+              <div
+                className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                data-testid="ui-standard-card-accent-start"
+              >
+                {(
+                  [
+                    ["primary", "Primary", "Brand / My record emphasis"],
+                    ["info", "Info", "Shared / informational"],
+                    ["success", "Success", "Positive / completed"],
+                    ["warning", "Warn", "Attention / caution"],
+                    ["danger", "Danger", "Critical / overdue"],
+                  ] as const
+                ).map(([tone, label, description]) => (
+                  <Card
+                    key={`start-${tone}`}
+                    treatment="accent"
+                    accentTone={tone}
+                    accentPosition="start"
+                    data-testid={`ui-standard-card-accent-start-${tone}`}
+                  >
+                    <CardTitle as="h4">{label}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                  </Card>
+                ))}
+              </div>
+              <SectionLabel>Accent — color (tint fill)</SectionLabel>
+              <div
+                className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                data-testid="ui-standard-card-accent-tint"
+              >
+                {(
+                  [
+                    ["primary", "Primary", "Brand tint surface"],
+                    ["info", "Info", "Shared tint surface"],
+                    ["success", "Success", "Positive tint surface"],
+                    ["warning", "Warn", "Attention tint surface"],
+                    ["danger", "Danger", "Critical tint surface"],
+                  ] as const
+                ).map(([tone, label, description]) => (
+                  <Card
+                    key={`tint-${tone}`}
+                    treatment="accent"
+                    accentTone={tone}
+                    accentPosition="tint"
+                    data-testid={`ui-standard-card-accent-tint-${tone}`}
+                  >
+                    <CardTitle as="h4">{label}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                  </Card>
+                ))}
+              </div>
+              <SectionLabel>Metric cards — tone color</SectionLabel>
+              <div
+                className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                role="list"
+                data-testid="ui-standard-card-metric-tones"
+              >
+                <DashboardMetricCard
+                  label="Default"
+                  icon={Coins}
+                  tone="default"
+                  testId="ui-standard-card-metric-default"
+                >
+                  ₱12,400.00
+                </DashboardMetricCard>
+                <DashboardMetricCard
+                  label="Emphasis"
+                  icon={Coins}
+                  tone="emphasis"
+                  testId="ui-standard-card-metric-emphasis"
+                >
+                  ₱12,400.00
+                </DashboardMetricCard>
+                <DashboardMetricCard
+                  label="Shared"
+                  icon={Wallet}
+                  tone="shared"
+                  testId="ui-standard-card-metric-shared"
+                >
+                  ₱3,250.00
+                </DashboardMetricCard>
+                <DashboardMetricCard
+                  label="Attention"
+                  icon={Wallet}
+                  tone="attention"
+                  testId="ui-standard-card-metric-attention"
+                >
+                  ₱1,890.00
+                </DashboardMetricCard>
+                <DashboardMetricCard
+                  label="Success"
+                  icon={Coins}
+                  tone="success"
+                  testId="ui-standard-card-metric-success"
+                >
+                  ₱24,850.00
+                </DashboardMetricCard>
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Accent cards use <code>treatment=&quot;accent&quot;</code> with{" "}
+                <code>accentTone</code> + <code>accentPosition</code> (start edge or tint fill).
+                Metric cards use DashboardMetricCard tones for ownership / severity surfaces
+                (emphasis, shared, attention, success).
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
               <SectionLabel>Selectable</SectionLabel>
               <div
                 className="grid gap-2 sm:grid-cols-2"
@@ -2001,7 +2257,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                     onClick={() => setSelectableWarehouse(key)}
                     data-testid={`ui-standard-card-selectable-${key}`}
                   >
-                    <CardTitle as="h4">{label}</CardTitle>
+                    <CardTitle as="p">{label}</CardTitle>
                     <CardDescription>Selectable option</CardDescription>
                   </Card>
                 ))}
@@ -2010,26 +2266,37 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
 
             <div className="flex flex-col gap-2 border-t border-border pt-3">
               <SectionLabel>Treatments</SectionLabel>
-              <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <div
+                className="grid min-w-0 gap-3 rounded-[var(--exits-radius-md)] bg-[color-mix(in_srgb,var(--exits-surface-muted)_55%,var(--exits-bg))] p-3 sm:grid-cols-2 lg:grid-cols-3"
+                data-testid="ui-standard-card-treatments"
+              >
                 {(
                   [
-                    ["Surface", "surface"],
-                    ["Bordered", "bordered"],
-                    ["Elevated", "elevated"],
-                    ["Interactive", "interactive"],
+                    ["Surface", "surface", "Quiet / flush with page"],
+                    ["Bordered", "bordered", "Default outlined surface"],
+                    ["Elevated", "elevated", "Raised shadow"],
+                    ["Interactive", "interactive", "Clickable (hover)"],
+                    ["Selected", "selected", "Chosen option"],
+                    ["Featured", "featured", "Promoted / preferred"],
                   ] as const
-                ).map(([label, treatment]) => (
+                ).map(([label, treatment, description]) => (
                   <Card
                     key={treatment}
                     treatment={treatment}
                     interactive={treatment === "interactive"}
+                    selected={treatment === "selected"}
                     data-testid={`ui-standard-card-treatment-${treatment}`}
                   >
-                    <CardTitle as="h4">{label}</CardTitle>
-                    <CardDescription>treatment=&quot;{treatment}&quot;</CardDescription>
+                    <CardTitle as="p">{label}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
                   </Card>
                 ))}
               </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Treatments are independent of accent color. Surface is flush, Bordered is the
+                default outline, Elevated lifts with shadow, Interactive hints clickability,
+                Selected uses Primary soft, Featured uses Primary emphasis.
+              </p>
             </div>
 
             <div className="flex flex-col gap-2 border-t border-border pt-3">

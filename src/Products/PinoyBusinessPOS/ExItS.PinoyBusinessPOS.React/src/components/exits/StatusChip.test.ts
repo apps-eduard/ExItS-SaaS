@@ -51,7 +51,17 @@ describe("slim global status chips", () => {
   });
 
   it("renders outlined tones and StatusPill alias", () => {
-    for (const tone of ["success", "warning", "info", "danger", "neutral", "primary"] as const) {
+    for (const tone of [
+      "success",
+      "warning",
+      "info",
+      "danger",
+      "neutral",
+      "primary",
+      "secondary",
+      "help",
+      "contrast",
+    ] as const) {
       const { unmount } = render(
         createElement(StatusChip, { tone, children: tone.toUpperCase() }),
       );
@@ -65,23 +75,39 @@ describe("slim global status chips", () => {
     expect(screen.getByText("Available").className).toContain("exits-status-chip--success");
   });
 
-  it("CSS uses slim height, full pill, outlined border, and subtle tint", () => {
+  it("CSS uses slim height, full pill, outlined border, and soft tone fills", () => {
     const block = globalsCss.match(/\.exits-status-chip\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     expect(block).toMatch(/height:\s*var\(--exits-status-chip-height\)/);
     expect(block).toMatch(/border-radius:\s*9999px/);
     expect(block).toMatch(/pointer-events:\s*none/);
+    expect(block).toMatch(/font-weight:\s*var\(--exits-font-weight-medium\)/);
     expect(block).not.toMatch(/cursor:\s*pointer/);
 
     expect(globalsCss).toMatch(
       /\.exits-status-chip--success\s*\{[\s\S]*?border-color:\s*color-mix/,
     );
-    expect(globalsCss).toMatch(
-      /\.exits-status-chip--success\s*\{[\s\S]*?background:\s*color-mix[\s\S]*?5%/,
-    );
+    expect(globalsCss).toMatch(/\.exits-status-chip--appearance-emphasis\s*\{/);
+    expect(globalsCss).toMatch(/\.exits-status-chip--secondary\s*\{/);
+    expect(globalsCss).toMatch(/\.exits-status-chip--help\s*\{/);
+    expect(globalsCss).toMatch(/\.exits-status-chip--contrast\s*\{/);
     expect(globalsCss).toContain("--exits-radius-xs");
     expect(globalsCss).toContain("--exits-chip-square-height");
-    expect(globalsCss).toMatch(/\.exits-status-chip--shape-soft\s*\{[\s\S]*?border-radius:\s*var\(--exits-radius-sm\)/);
+    expect(globalsCss).toMatch(/\.exits-status-chip--shape-soft\s*\{[\s\S]*?border-radius:\s*var\(--exits-radius-soft\)/);
     expect(globalsCss).toMatch(/\.exits-status-chip--shape-square\s*\{[\s\S]*?border-radius:\s*var\(--exits-radius-xs\)/);
+  });
+
+  it("emits emphasis appearance class for Diamond Tag soft look", () => {
+    render(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "emphasis",
+        children: "Success",
+      }),
+    );
+    const el = screen.getByText("Success");
+    expect(el).toHaveAttribute("data-appearance", "emphasis");
+    expect(el.className).toContain("exits-status-chip--appearance-emphasis");
+    expect(el.className).toContain("exits-status-chip--success");
   });
 
   it("Branches Primary/Active still use shared StatusChip", () => {

@@ -4,7 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-export type DashboardMetricTone = "default" | "emphasis" | "attention" | "success";
+export type DashboardMetricTone = "default" | "emphasis" | "attention" | "success" | "shared";
 
 export function DashboardScopeBadge({
   label,
@@ -88,8 +88,9 @@ export function DashboardMetricCard({
   testId,
   className,
   to,
+  tag,
 }: {
-  label: string;
+  label: ReactNode;
   children: ReactNode;
   meta?: ReactNode;
   icon?: LucideIcon;
@@ -100,12 +101,14 @@ export function DashboardMetricCard({
   testId: string;
   className?: string;
   to?: string;
+  tag?: ReactNode;
 }) {
   const cardClassName = cn(
     "dashboard-metric-card",
     tone === "emphasis" && "dashboard-metric-card--emphasis",
     tone === "attention" && "dashboard-metric-card--attention",
     tone === "success" && "dashboard-metric-card--success",
+    tone === "shared" && "dashboard-metric-card--shared",
     to && "dashboard-metric-card--interactive",
     className,
   );
@@ -120,6 +123,7 @@ export function DashboardMetricCard({
         ) : null}
         <span className="dashboard-metric-card__label">{label}</span>
         {scopeLabel ? <DashboardScopeBadge label={scopeLabel} testId={scopeTestId} /> : null}
+        {tag ? <span className="dashboard-metric-card__tag">{tag}</span> : null}
       </div>
       <div className="dashboard-metric-card__value">{children}</div>
       {meta ? <div className="dashboard-metric-card__meta">{meta}</div> : null}

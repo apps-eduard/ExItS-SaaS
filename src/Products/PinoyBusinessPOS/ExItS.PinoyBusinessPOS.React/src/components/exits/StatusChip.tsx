@@ -8,7 +8,13 @@ export type StatusChipTone =
   | "danger"
   | "neutral"
   /** Brand / selected emphasis — uses --exits-primary (Preferences-ready). */
-  | "primary";
+  | "primary"
+  /** Diamond Secondary — muted metadata / read-only attributes. */
+  | "secondary"
+  /** Diamond Help — advisory / guidance emphasis. */
+  | "help"
+  /** Diamond Contrast — high-emphasis inverse chip. */
+  | "contrast";
 
 /**
  * Geometry — independent from tone and appearance.
@@ -19,7 +25,7 @@ export type StatusChipTone =
 export type StatusChipShape = "auto" | "standard" | "soft" | "pill" | "square";
 
 /** Fill treatment — independent from tone and shape. Soft is the locked default. */
-export type StatusChipAppearance = "soft" | "outline" | "solid";
+export type StatusChipAppearance = "soft" | "emphasis" | "outline" | "solid";
 
 export type StatusChipProps = {
   children: ReactNode;
@@ -29,7 +35,10 @@ export type StatusChipProps = {
    * Default remains pill for existing call-site compatibility; prefer `auto` for new code.
    */
   shape?: StatusChipShape;
-  /** Soft (default) / Outline / Solid — independent from tone and shape. */
+  /**
+   * Soft (default quiet tint) / Emphasis (bold tone ink on pale wash) /
+   * Outline / Solid — independent from tone and shape.
+   */
   appearance?: StatusChipAppearance;
   className?: string;
   /** Optional leading icon — scales via --exits-status-chip-icon-size / square icon token. */

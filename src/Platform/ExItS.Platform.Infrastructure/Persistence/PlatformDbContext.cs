@@ -2017,6 +2017,7 @@ public sealed class PlatformDbContext : DbContext
             });
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LedgerOwnerUserIdentityId).HasColumnName("ledger_owner_user_identity_id");
             entity.Property(e => e.CreditorUserIdentityId).HasColumnName("creditor_user_identity_id");
             entity.Property(e => e.CreditorContactId).HasColumnName("creditor_contact_id");
             entity.Property(e => e.DebtorUserIdentityId).HasColumnName("debtor_user_identity_id");
@@ -2031,6 +2032,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.AggregateVersion).HasColumnName("aggregate_version").IsConcurrencyToken();
+            entity.HasIndex(e => e.LedgerOwnerUserIdentityId);
             entity.HasIndex(e => e.CreditorUserIdentityId);
             entity.HasIndex(e => e.DebtorUserIdentityId);
             entity.HasIndex(e => e.CreditorContactId);
@@ -2040,6 +2042,12 @@ public sealed class PlatformDbContext : DbContext
                 .HasColumnType("xid")
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.LedgerOwnerUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
 
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()

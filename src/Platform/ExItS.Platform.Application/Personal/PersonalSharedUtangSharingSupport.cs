@@ -8,16 +8,21 @@ using ExItS.Platform.Domain.Personal;
 namespace ExItS.Platform.Application.Personal;
 
 /// <summary>
-/// Recipient preference resolution and post-record shared-entry outcomes
-/// (pending review vs standing auto-accept).
+/// Recipient preference resolution and shared-visibility notifications.
+/// Financial authority is ledger-owner only; AutoAccept is obsolete for new entries.
 /// </summary>
 internal static class PersonalSharedUtangSharingSupport
 {
     public const string ShareOutcomePrivate = "Private";
+    /// <summary>Shared visibility; owner writes Confirmed immediately.</summary>
+    public const string ShareOutcomeShared = "Shared";
+    /// <summary>Legacy outcome string retained for older clients.</summary>
     public const string ShareOutcomeSharedPending = "SharedPending";
+    /// <summary>Legacy outcome string; auto-accept no longer applied to new entries.</summary>
     public const string ShareOutcomeSharedAutoSynced = "SharedAutoSynced";
     public const string ShareOutcomePrivateNotReceiving = "PrivateNotReceiving";
 
+    public const string SharedEntryRelatedType = "PersonalUtangSharedEntry";
     public const string AutoSyncedRelatedType = "PersonalUtangAutoSynced";
 
     public static async Task<PersonalSharedUtangPreference> GetEffectiveAsync(
@@ -38,9 +43,8 @@ internal static class PersonalSharedUtangSharingSupport
     }
 
     /// <summary>
-    /// After a shared Regular entry is recorded as Pending: auto-confirm when allowed,
-    /// otherwise aggregate pending review notification when enabled.
-    /// Settlement is never auto-accepted.
+    /// After the ledger owner records a shared Confirmed entry: notify counterparty when enabled.
+    /// Does not Pending or AutoAccept — owner-model entries are already Confirmed.
     /// </summary>
     public static async Task<string> ApplySharedEntryOutcomeAsync(
         PersonalDebtRelationship relationship,
@@ -55,15 +59,49 @@ internal static class PersonalSharedUtangSharingSupport
         IClock clock,
         CancellationToken cancellationToken)
     {
-        if (!relationship.IsSharedLinked || entry.Status is not PersonalUtangEntryStatus.Pending)
+        _ = relationships;
+        _ = entries;
+
+        if (!relationship.IsSharedLinked)
         {
             return ShareOutcomePrivate;
+        }
+
+        // Legacy Pending entries: keep aggregate pending notification only (no AutoAccept).
+        if (entry.Status is PersonalUtangEntryStatus.Pending)
+        {
+            var legacyRecipient = relationship.GetCounterpartyUserIdentityId(proposerUserIdentityId);
+            if (legacyRecipient is null)
+            {
+                return ShareOutcomeSharedPending;
+            }
+
+            var legacyPrefs = await GetEffectiveAsync(
+                legacyRecipient,
+                proposerUserIdentityId,
+                preferences,
+                clock,
+                cancellationToken).ConfigureAwait(false);
+            if (legacyPrefs.SharedUtangNotifications)
+            {
+                await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
+                    relationship,
+                    proposerUserIdentityId,
+                    users,
+                    accountSettings,
+                    notifications,
+                    entries,
+                    clock,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            return ShareOutcomeSharedPending;
         }
 
         var recipient = relationship.GetCounterpartyUserIdentityId(proposerUserIdentityId);
         if (recipient is null)
         {
-            return ShareOutcomeSharedPending;
+            return ShareOutcomeShared;
         }
 
         var prefs = await GetEffectiveAsync(
@@ -73,50 +111,23 @@ internal static class PersonalSharedUtangSharingSupport
             clock,
             cancellationToken).ConfigureAwait(false);
 
-        if (!entry.IsSettlement && prefs.AutoAcceptSharedUtang && prefs.ReceiveSharedUtang)
-        {
-            relationship.ConfirmEntry(
-                entry,
-                recipient,
-                clock.UtcNow,
-                expectedVersion: null,
-                PersonalUtangConfirmationSource.RecipientAutoAccept);
-            await relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
-            await entries.UpdateAsync(entry, cancellationToken).ConfigureAwait(false);
-
-            if (prefs.SharedUtangNotifications)
-            {
-                await NotifyAutoSyncedAsync(
-                    recipient,
-                    proposerUserIdentityId,
-                    entry,
-                    users,
-                    accountSettings,
-                    notifications,
-                    clock,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            return ShareOutcomeSharedAutoSynced;
-        }
-
         if (prefs.SharedUtangNotifications)
         {
-            await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
-                relationship,
+            await NotifySharedConfirmedAsync(
+                recipient,
                 proposerUserIdentityId,
+                entry,
                 users,
                 accountSettings,
                 notifications,
-                entries,
                 clock,
                 cancellationToken).ConfigureAwait(false);
         }
 
-        return ShareOutcomeSharedPending;
+        return ShareOutcomeShared;
     }
 
-    public static async Task NotifyAutoSyncedAsync(
+    public static async Task NotifySharedConfirmedAsync(
         PlatformUserId recipientUserIdentityId,
         PlatformUserId proposerUserIdentityId,
         PersonalUtangEntry entry,
@@ -140,13 +151,11 @@ internal static class PersonalSharedUtangSharingSupport
             ? "Someone"
             : proposer!.DisplayName.Trim();
 
-        var title = "Shared Utang updated";
-        var preview = $"{proposerName} recorded a shared Utang entry that was synced automatically.";
         var created = PersonalInAppNotification.Create(
             recipientUserIdentityId,
-            title,
-            preview,
-            AutoSyncedRelatedType,
+            "Shared Utang updated",
+            $"{proposerName} updated a shared Utang with you.",
+            SharedEntryRelatedType,
             clock.UtcNow,
             relatedId: entry.Id.Value.ToString("N"));
         await notifications.AddAsync(created, cancellationToken).ConfigureAwait(false);
