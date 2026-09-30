@@ -629,32 +629,53 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         backTo={personalPageBackNav.utang.to}
         backLabel={t("personal.utang.back")}
         backTestId={mode === "lent" ? "page-header-back-utang-lent" : "page-header-back-utang-owe"}
+        actions={
+          <button
+            type="button"
+            className={cn(
+              "utang-record-header-action inline-flex w-full min-h-[var(--exits-control-height)] shrink-0 items-center justify-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-sm)] font-semibold transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)] md:w-auto",
+              recordFormOpen && "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_8%,var(--exits-surface))]",
+            )}
+            aria-expanded={recordFormOpen}
+            aria-controls="utang-record-panel"
+            data-testid="utang-record-toggle"
+            onClick={() => setRecordFormOpen((open) => !open)}
+          >
+            <RecordFormIcon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            <span className="min-w-0 truncate">{recordFormLabel}</span>
+            <ChevronDown
+              className={cn(
+                "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+                recordFormOpen && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
+          </button>
+        }
       />
 
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
 
+      {recordFormOpen ? (
       <form
+        id="utang-record-panel"
         className="catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
           if (!contactId) {
-            setRecordFormOpen(true);
             setFormError(t("personal.utang.personRequired"));
             return;
           }
           if (!(Number(amount) > 0)) {
-            setRecordFormOpen(true);
             setFormError(t("personal.utang.amountRequired"));
             return;
           }
           if (!notes.trim()) {
-            setRecordFormOpen(true);
             setFormError(t("personal.utang.purposeRequired"));
             return;
           }
           if (pendingAtLimit) {
-            setRecordFormOpen(true);
             setFormError(
               t("personal.utang.pendingLimitReached").replace(
                 "{name}",
@@ -666,59 +687,52 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           createMutation.mutate();
         }}
       >
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-left font-semibold transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)]"
-          aria-expanded={recordFormOpen}
-          aria-controls="utang-record-panel"
-          data-testid="utang-record-toggle"
-          onClick={() => setRecordFormOpen((open) => !open)}
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <RecordFormIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
-            <span>{recordFormLabel}</span>
-          </span>
-          <ChevronDown
-            className={cn(
-              "size-5 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-              recordFormOpen && "rotate-180",
-            )}
-            aria-hidden="true"
-          />
-        </button>
-        {recordFormOpen ? (
-          <div id="utang-record-panel" className="flex flex-col gap-2">
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {mode === "lent" ? t("personal.utang.whatHappenedLent") : t("personal.utang.whatHappenedBorrowed")}
             </p>
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("personal.utang.person")}
-          <select
-            data-testid="utang-rel-contact"
-            className="exits-select"
-            value={contactId}
-            onChange={(e) => setContactId(e.target.value)}
-            required
-          >
-            <option value="">{t("personal.utang.choosePerson")}</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("personal.utang.amount")}
-          <input
-            data-testid="utang-rel-amount"
-            inputMode="decimal"
-            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
-        </label>
+        <div
+          className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-end"
+          data-testid="utang-rel-primary-fields"
+        >
+          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("personal.utang.person")}
+            <select
+              data-testid="utang-rel-contact"
+              className="exits-select"
+              value={contactId}
+              onChange={(e) => setContactId(e.target.value)}
+              required
+            >
+              <option value="">{t("personal.utang.choosePerson")}</option>
+              {contacts.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("personal.utang.amount")}
+            <input
+              data-testid="utang-rel-amount"
+              inputMode="decimal"
+              className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+          </label>
+          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("personal.utang.dueDate")}
+            <input
+              data-testid="utang-rel-due"
+              type="date"
+              className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </label>
+        </div>
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <UtangFieldLabel required>
             {t("personal.utang.purpose")}
@@ -734,16 +748,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             required
             aria-required="true"
             onChange={(e) => setNotes(e.target.value)}
-          />
-        </label>
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("personal.utang.dueDate")}
-          <input
-            data-testid="utang-rel-due"
-            type="date"
-            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
           />
         </label>
         {contactId && Number(amount) > 0 && notes.trim() ? (
@@ -794,37 +798,42 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             {formError}
           </p>
         ) : null}
-        <Button
-          type="submit"
-          disabled={
-            createMutation.isPending ||
-            statusLocked ||
-            contacts.length === 0 ||
-            pendingAtLimit ||
-            !online
-          }
-          data-testid="utang-rel-submit"
+        <div
+          className="flex w-full min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-end"
+          data-testid="utang-rel-actions"
         >
-          {createMutation.isPending ? (
-            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-          ) : mode === "lent" ? (
-            <HandCoins className="size-4 shrink-0" aria-hidden />
-          ) : (
-            <Wallet className="size-4 shrink-0" aria-hidden />
-          )}
-          {submitLabel}
-        </Button>
-        {contacts.length === 0 ? (
-          <Button asChild variant="ghost">
-            <Link to="/personal/people">
+          <Button
+            type="submit"
+            className="order-1 lg:order-2"
+            disabled={
+              createMutation.isPending ||
+              statusLocked ||
+              contacts.length === 0 ||
+              pendingAtLimit ||
+              !online
+            }
+            data-testid="utang-rel-submit"
+          >
+            {createMutation.isPending ? (
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+            ) : mode === "lent" ? (
+              <HandCoins className="size-4 shrink-0" aria-hidden />
+            ) : (
+              <Wallet className="size-4 shrink-0" aria-hidden />
+            )}
+            {submitLabel}
+          </Button>
+          <Button asChild variant="ghost" className="order-2 lg:order-1">
+            <Link to="/personal/people" data-testid="utang-rel-add-person">
               <UserPlus className="size-4 shrink-0" aria-hidden />
-              {t("personal.utang.addPersonFirst")}
+              {contacts.length === 0
+                ? t("personal.utang.addPersonFirst")
+                : t("personal.utang.addPerson")}
             </Link>
           </Button>
-        ) : null}
-          </div>
-        ) : null}
+        </div>
       </form>
+      ) : null}
 
       {rows.length === 0 ? (
         <EmptyState

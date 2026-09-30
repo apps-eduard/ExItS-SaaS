@@ -22890,6 +22890,88 @@ a.exits-chip--primary:hover {
 }
 
 /*
+ * Personal top bar (all breakpoints): cancel AppShell bleed margins.
+ * Shell already applies page gutter + safe-area; negative margins clipped the chrome
+ * inside overflow-hidden and misaligned the bar on phone widths.
+ */
+.personal-shell .app-top-bar--personal {
+  position: relative;
+  top: auto;
+  z-index: 20;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin-inline: 0;
+  margin-right: 0;
+  padding-block: 0.35rem;
+  padding-inline: 0.15rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
+  background: color-mix(in srgb, var(--exits-surface) 96%, transparent);
+  backdrop-filter: blur(12px);
+  animation: none;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__row--personal {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__brand--personal {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__actions--personal {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action,
+.personal-shell .app-top-bar--personal .app-top-bar__avatar,
+.personal-shell .app-top-bar--personal .shell-connection-trigger,
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+  box-sizing: border-box;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border-radius: var(--exits-radius-md) !important;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action svg,
+.personal-shell .app-top-bar--personal .shell-connection-trigger svg,
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"] svg,
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] svg,
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__workspace-org,
+.personal-shell .app-top-bar--personal .app-top-bar__workspace-branch {
+  line-height: 1.2;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__workspace-branch {
+  font-size: var(--exits-text-xs);
+}
+
+.personal-bottom-nav {
+  /* Keep above page cards / sticky chrome; below drawers (z-70). */
+  z-index: 50;
+}
+
+/*
  * Personal desktop — Gmail-style floating content:
  * large radius on all four corners, clear gap from top bar / sidebar / edges.
  */
@@ -22912,10 +22994,25 @@ a.exits-chip--primary:hover {
   }
 
   .personal-shell .app-top-bar--personal {
+    height: var(--exits-shell-chrome-height);
+    min-height: var(--exits-shell-chrome-height);
+    max-height: var(--exits-shell-chrome-height);
+    padding-block: 0;
+    padding-inline: 0.35rem;
+    justify-content: center;
     border-bottom: none;
     background: transparent;
     backdrop-filter: none;
-    padding-inline: 0.35rem 0.35rem;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
+    height: 100%;
+    min-height: 0;
+    gap: 0.5rem;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__actions--personal {
+    gap: 0.15rem;
   }
 
   .personal-shell .admin-shell__content.personal-shell__content {
@@ -23094,9 +23191,11 @@ a.exits-chip--primary:hover {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  /* Owed to me / I owe: full-width two-up row on tablet+. */
   .personal-summary-grid--balances {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 28rem;
+    width: 100%;
+    max-width: none;
   }
 }
 
