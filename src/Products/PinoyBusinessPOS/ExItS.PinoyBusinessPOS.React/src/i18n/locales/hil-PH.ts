@@ -8884,6 +8884,10 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.home.active": "Aktibo",
 
+  "personal.home.activeMine": "Akon aktibo",
+
+  "personal.home.activeShared": "Gin-share sa akon",
+
   "personal.home.attentionDueSoon": "{count} payments due soon",
 
   "personal.home.attentionDueSoonOne": "{name} ? due soon",

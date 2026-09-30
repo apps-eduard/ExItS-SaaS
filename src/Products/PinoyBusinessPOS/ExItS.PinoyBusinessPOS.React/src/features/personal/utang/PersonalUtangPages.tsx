@@ -34,6 +34,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { UtangDueCaption, UtangLinkedIcon } from "@/features/personal/utang/UtangListMeta";
 import {
   isSharedRelationship as workspaceIsSharedRelationship,
@@ -125,10 +126,21 @@ function loanActivityLabel(
     : t("personal.utang.activityYouLent").replace("{name}", personName);
 }
 
-function entryTypeLabelKey(entryType: string): MessageKey {
-  if (entryType === "Payment") return "personal.utang.entryTypePayment";
-  if (entryType === "Adjustment") return "personal.utang.entryTypeAdjustment";
-  return "personal.utang.entryTypeLoan";
+function entryActionLabel(
+  entryType: string,
+  options: { isSettlement?: boolean },
+  t: (key: MessageKey) => string,
+): string {
+  if (options.isSettlement) {
+    return t("personal.utang.settlementEntry");
+  }
+  if (entryType === "Payment") {
+    return t("personal.utang.recordPayment");
+  }
+  if (entryType === "Adjustment") {
+    return t("personal.utang.adjustBalance");
+  }
+  return t("personal.utang.addAmount");
 }
 
 function entryStatusLabel(
@@ -876,7 +888,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             }
           />
         ) : null}
-        {willShare && existingSharedForContact && pendingOutgoingCount > 0 ? (
+        {willShare && existingSharedOwnedByMe && pendingOutgoingCount > 0 ? (
           <PendingOutgoingHint
             count={pendingOutgoingCount}
             name={selectedContactName}
@@ -960,16 +972,28 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               <li key={row.id}>
                 <Link
                   to={`/personal/utang/relationships/${row.id}`}
-                  className="exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
+                  className={cn(
+                    "exits-list__card utang-account-card flex items-center justify-between gap-3 text-foreground no-underline",
+                    !owned && "utang-account-card--shared",
+                  )}
                   data-testid={`utang-rel-row-${row.id}`}
                 >
                   <PersonAvatar name={name} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p
-                      className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                      className="m-0 flex min-w-0 items-center justify-between gap-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                      data-utang-ownership=""
                       data-testid={`utang-rel-ownership-${row.id}`}
                     >
-                      {ownershipLabel}
+                      <span className="min-w-0 truncate">{ownershipLabel}</span>
+                      {!owned ? (
+                        <StatusChip
+                          tone="secondary"
+                          data-testid={`utang-rel-readonly-${row.id}`}
+                        >
+                          {t("personal.utang.readOnly")}
+                        </StatusChip>
+                      ) : null}
                     </p>
                     <p className="exits-list__name m-0 truncate font-semibold">{name}</p>
                     <p className="m-0 flex min-w-0 items-center gap-1 truncate text-[length:var(--exits-text-sm)] text-muted">
@@ -1108,9 +1132,18 @@ export function PersonalRelationshipDetailPage() {
       detailQuery.data?.currentBalance ??
       0)
     : (balanceQuery.data?.currentBalance ?? 0);
-  const history: CachedPersonalEntry[] | PersonalUtangEntryDto[] = usingCache
-    ? (historyQuery.data ?? cachedHistory)
-    : (historyQuery.data ?? []);
+  const history: CachedPersonalEntry[] | PersonalUtangEntryDto[] = useMemo(() => {
+    const rows = usingCache
+      ? (historyQuery.data ?? cachedHistory)
+      : (historyQuery.data ?? []);
+    return [...rows].sort((a, b) => {
+      const byTime = b.createdAtUtc.localeCompare(a.createdAtUtc);
+      if (byTime !== 0) {
+        return byTime;
+      }
+      return b.id.localeCompare(a.id);
+    });
+  }, [usingCache, historyQuery.data, cachedHistory]);
   const relationshipIsLocal = cachedDetail?.origin === "Local";
   const pendingOutgoingCount = useMemo(
     () =>
@@ -1776,16 +1809,20 @@ export function PersonalRelationshipDetailPage() {
                   ? t("personal.utang.confirmReceived")
                   : t("personal.utang.confirm");
               const isDisputing = disputeEntryId === entry.id;
-              const entryTitle = isSettlement
-                ? t("personal.utang.settlementEntry")
-                : entry.entryType === "Loan"
+              const entryTitle = entryActionLabel(
+                entry.entryType,
+                { isSettlement },
+                t,
+              );
+              const loanPerspectiveHint =
+                !isSettlement && entry.entryType === "Loan"
                   ? loanActivityLabel(
                       detail.perspective,
                       personName,
                       pendingIncoming,
                       t,
                     )
-                  : t(entryTypeLabelKey(entry.entryType));
+                  : null;
 
               return (
                 <li key={entry.id}>
@@ -1795,9 +1832,20 @@ export function PersonalRelationshipDetailPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="exits-list__name m-0 font-medium">
+                        <p
+                          className="exits-list__name m-0 font-medium"
+                          data-testid={`utang-entry-action-${entry.id}`}
+                        >
                           {entryTitle}
                         </p>
+                        {loanPerspectiveHint ? (
+                          <p
+                            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                            data-testid={`utang-entry-perspective-${entry.id}`}
+                          >
+                            {loanPerspectiveHint}
+                          </p>
+                        ) : null}
                         {pendingIncoming ? (
                           <p
                             className="m-0 text-[length:var(--exits-text-sm)] font-medium"

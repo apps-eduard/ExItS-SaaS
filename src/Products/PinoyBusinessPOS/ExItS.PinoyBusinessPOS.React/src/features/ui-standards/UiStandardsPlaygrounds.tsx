@@ -50,16 +50,20 @@ const BUTTON_SIZES = [
 ] as const;
 
 const STATUS_TONES: ReadonlyArray<{ label: string; value: StatusChipTone }> = [
-  { label: "Neutral", value: "neutral" },
-  { label: "Info", value: "info" },
+  { label: "Primary", value: "primary" },
+  { label: "Secondary", value: "secondary" },
   { label: "Success", value: "success" },
-  { label: "Warning", value: "warning" },
+  { label: "Info", value: "info" },
+  { label: "Warn", value: "warning" },
+  { label: "Help", value: "help" },
   { label: "Danger", value: "danger" },
-  { label: "Preferred", value: "primary" },
+  { label: "Contrast", value: "contrast" },
+  { label: "Neutral", value: "neutral" },
 ];
 
 const STATUS_APPEARANCES: ReadonlyArray<{ label: string; value: StatusChipAppearance }> = [
   { label: "Soft", value: "soft" },
+  { label: "Emphasis", value: "emphasis" },
   { label: "Outline", value: "outline" },
   { label: "Solid", value: "solid" },
 ];
@@ -67,8 +71,9 @@ const STATUS_APPEARANCES: ReadonlyArray<{ label: string; value: StatusChipAppear
 const STATUS_SHAPES: ReadonlyArray<{ label: string; value: StatusChipShape }> = [
   { label: "Auto", value: "auto" },
   { label: "Standard", value: "standard" },
-  { label: "Soft", value: "soft" },
+  { label: "Soft (radius)", value: "soft" },
   { label: "Pill", value: "pill" },
+  { label: "Square", value: "square" },
 ];
 
 function CompactSelect<T extends string>({
@@ -254,8 +259,9 @@ export function UiStandardsStatusPlayground() {
         />
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
           <span className="text-muted">Label</span>
-          <Input
+          <input
             name="ui-std-status-label"
+            className="exits-input h-8 min-w-0 rounded-[var(--exits-field-radius)] px-2 text-[length:var(--exits-text-sm)]"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             data-testid="ui-standard-status-pg-label"

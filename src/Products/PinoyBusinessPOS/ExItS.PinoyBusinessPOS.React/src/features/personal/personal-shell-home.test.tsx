@@ -55,6 +55,9 @@ function createPersonalFetchMock() {
           activeRelationshipCount: 1,
           totalLentBalance: 500,
           totalBorrowedBalance: 150,
+          sharedWithMeLentBalance: 75,
+          sharedWithMeBorrowedBalance: 25,
+          sharedWithMeActiveCount: 1,
           pendingConfirmationCount: 1,
         });
     }
@@ -168,6 +171,77 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-qa-people")).toBeInTheDocument();
     expect(screen.queryByTestId("personal-qa-todo")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
+    expect(screen.getByTestId("personal-stat-lent-mine")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-borrowed-mine")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-borrowed-shared")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute("data-tone", "primary");
+    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveAttribute(
+      "data-tone",
+      "primary",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveAttribute("data-tone", "info");
+    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveAttribute(
+      "data-tone",
+      "info",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(screen.getByTestId("personal-stat-lent-shared-readonly")).toHaveAttribute(
+      "data-tone",
+      "warning",
+    );
+    expect(screen.getByTestId("personal-stat-lent-shared-readonly")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-lent-shared-readonly")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-shared-readonly")).toHaveAttribute(
+      "data-tone",
+      "warning",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-shared-readonly")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-shared-readonly")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(screen.getByTestId("personal-stat-active-shared")).toHaveTextContent("1");
     expect(await screen.findByTestId("personal-needs-attention")).toBeInTheDocument();
     expect(screen.getByTestId("personal-attention-pendingConfirmation")).toBeInTheDocument();
   });

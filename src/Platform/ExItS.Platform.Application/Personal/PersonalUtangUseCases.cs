@@ -1226,8 +1226,11 @@ public sealed class ListPersonalUtangHistory
             .ListByRelationshipAsync(PersonalDebtRelationshipId.From(relationshipId), cancellationToken)
             .ConfigureAwait(false);
         var isShared = access.Value!.IsSharedLedger;
+        // Newest activity first for relationship detail Activity feed.
         return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Success(
             list
+                .OrderByDescending(e => e.CreatedAtUtc)
+                .ThenByDescending(e => e.Id.Value)
                 .Select(e => RecordPersonalUtangEntry.ToDto(e, userIdentityId, isShared))
                 .ToList());
     }

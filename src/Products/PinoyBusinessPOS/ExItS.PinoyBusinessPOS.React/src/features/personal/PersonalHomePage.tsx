@@ -33,6 +33,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
@@ -198,25 +199,109 @@ export function PersonalHomePage() {
           />
           {t("personal.home.personalTracker")}
         </h2>
-        <div className="personal-summary-grid personal-summary-grid--balances" role="list">
-          <DashboardMetricCard
-            label={t("personal.home.owedToMe")}
-            icon={HandCoins}
-            tone="emphasis"
-            testId="personal-stat-lent"
-            to="/personal/utang/lent"
-          >
-            <MoneyDisplay amount={dashboard.totalLentBalance} />
-          </DashboardMetricCard>
-          <DashboardMetricCard
-            label={t("personal.home.iOwe")}
-            icon={Wallet}
-            tone={dashboard.totalBorrowedBalance > 0 ? "attention" : "default"}
-            testId="personal-stat-borrowed"
-            to="/personal/utang/owe"
-          >
-            <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
-          </DashboardMetricCard>
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-2" data-testid="personal-utang-owed-to-me">
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              {t("personal.home.owedToMe")}
+            </h3>
+            <div className="personal-summary-grid personal-summary-grid--balances" role="list">
+              <DashboardMetricCard
+                label={
+                  <StatusChip
+                    tone="primary"
+                    appearance="emphasis"
+                    shape="square"
+                    data-testid="personal-stat-lent-mine-label"
+                  >
+                    {t("personal.utang.ownershipMine")}
+                  </StatusChip>
+                }
+                icon={HandCoins}
+                testId="personal-stat-lent-mine"
+                to="/personal/utang/lent"
+              >
+                <MoneyDisplay amount={dashboard.totalLentBalance} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={
+                  <StatusChip
+                    tone="info"
+                    appearance="emphasis"
+                    shape="square"
+                    data-testid="personal-stat-lent-shared-label"
+                  >
+                    {t("personal.utang.ownershipSharedWithMe")}
+                  </StatusChip>
+                }
+                icon={HandCoins}
+                testId="personal-stat-lent-shared"
+                to="/personal/utang/lent"
+                tag={
+                  <StatusChip
+                    tone="warning"
+                    appearance="emphasis"
+                    shape="square"
+                    data-testid="personal-stat-lent-shared-readonly"
+                  >
+                    {t("personal.utang.readOnly")}
+                  </StatusChip>
+                }
+              >
+                <MoneyDisplay amount={dashboard.sharedWithMeLentBalance} />
+              </DashboardMetricCard>
+            </div>
+          </div>
+          <div className="flex min-w-0 flex-col gap-2" data-testid="personal-utang-i-owe">
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              {t("personal.home.iOwe")}
+            </h3>
+            <div className="personal-summary-grid personal-summary-grid--balances" role="list">
+              <DashboardMetricCard
+                label={
+                  <StatusChip
+                    tone="primary"
+                    appearance="emphasis"
+                    shape="square"
+                    data-testid="personal-stat-borrowed-mine-label"
+                  >
+                    {t("personal.utang.ownershipMine")}
+                  </StatusChip>
+                }
+                icon={Wallet}
+                testId="personal-stat-borrowed-mine"
+                to="/personal/utang/owe"
+              >
+                <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={
+                  <StatusChip
+                    tone="info"
+                    appearance="emphasis"
+                    shape="square"
+                    data-testid="personal-stat-borrowed-shared-label"
+                  >
+                    {t("personal.utang.ownershipSharedWithMe")}
+                  </StatusChip>
+                }
+                icon={Wallet}
+                testId="personal-stat-borrowed-shared"
+                to="/personal/utang/owe"
+                tag={
+                  <StatusChip
+                    tone="warning"
+                    appearance="emphasis"
+                    shape="square"
+                    data-testid="personal-stat-borrowed-shared-readonly"
+                  >
+                    {t("personal.utang.readOnly")}
+                  </StatusChip>
+                }
+              >
+                <MoneyDisplay amount={dashboard.sharedWithMeBorrowedBalance} />
+              </DashboardMetricCard>
+            </div>
+          </div>
         </div>
         <div
           className="personal-home-meta flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)] text-muted"
@@ -229,9 +314,16 @@ export function PersonalHomePage() {
           </Link>
           <Link to="/personal/utang" className="text-muted no-underline hover:underline">
             <span data-testid="personal-stat-active">
-              {t("personal.home.active")}: {dashboard.activeRelationshipCount}
+              {t("personal.home.activeMine")}: {dashboard.activeRelationshipCount}
             </span>
           </Link>
+          {(dashboard.sharedWithMeActiveCount ?? 0) > 0 ? (
+            <Link to="/personal/utang" className="text-muted no-underline hover:underline">
+              <span data-testid="personal-stat-active-shared">
+                {t("personal.home.activeShared")}: {dashboard.sharedWithMeActiveCount}
+              </span>
+            </Link>
+          ) : null}
         </div>
       </section>
 

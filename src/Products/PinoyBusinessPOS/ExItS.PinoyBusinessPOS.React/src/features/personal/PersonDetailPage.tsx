@@ -21,6 +21,8 @@ import { PageHeader } from "@/components/exits/PageHeader";
 
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 
+import { StatusChip as ExitsStatusChip } from "@/components/exits/StatusChip";
+
 import { StatusChip } from "@/components/ui/badge";
 
 import { Button } from "@/components/ui/button";
@@ -428,13 +430,29 @@ export function PersonDetailPage() {
                 <li key={rel.id}>
                   <Link
                     to={`/personal/utang/relationships/${rel.id}`}
-                    className="flex flex-col gap-0.5 text-foreground no-underline"
+                    className={cn(
+                      "flex flex-col gap-0.5 rounded-[var(--exits-radius-md)] border border-transparent px-2 py-1.5 text-foreground no-underline",
+                      !owned && "utang-account-card--shared",
+                    )}
                     data-testid={`person-detail-utang-row-${rel.id}`}
                   >
-                    <span className="text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-                      {owned
-                        ? t("personal.utang.ownershipMine")
-                        : t("personal.utang.ownershipSharedWithMe")}
+                    <span
+                      className="flex min-w-0 items-center justify-between gap-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                      data-utang-ownership=""
+                    >
+                      <span className="min-w-0 truncate">
+                        {owned
+                          ? t("personal.utang.ownershipMine")
+                          : t("personal.utang.ownershipSharedWithMe")}
+                      </span>
+                      {!owned ? (
+                        <ExitsStatusChip
+                          tone="secondary"
+                          data-testid={`person-detail-utang-readonly-${rel.id}`}
+                        >
+                          {t("personal.utang.readOnly")}
+                        </ExitsStatusChip>
+                      ) : null}
                     </span>
                     <span className="font-medium">
                       {rel.perspective} · {formatMoney(rel.currentBalance, rel.currencyCode)}
@@ -446,7 +464,6 @@ export function PersonDetailPage() {
                             "{name}",
                             contact.displayName,
                           )}
-                      {!owned ? ` · ${t("personal.utang.readOnly")}` : null}
                     </span>
                   </Link>
                 </li>

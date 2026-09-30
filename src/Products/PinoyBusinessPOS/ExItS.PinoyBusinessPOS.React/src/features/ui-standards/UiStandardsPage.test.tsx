@@ -319,44 +319,157 @@ describe("UiStandardsPage", () => {
 
   it("shows Soft Outline Solid appearances on the Status live card", () => {
     renderPage();
-    const status = screen.getByTestId("ui-standard-card-status");
-    expect(within(status).getAllByText("Tone").length).toBeGreaterThanOrEqual(1);
-    expect(within(status).getAllByText("Appearance").length).toBeGreaterThanOrEqual(1);
-    expect(within(status).getAllByText("Soft").length).toBeGreaterThanOrEqual(2);
-    expect(within(status).getAllByText("Outline").length).toBeGreaterThanOrEqual(2);
-    expect(within(status).getAllByText("Solid").length).toBeGreaterThanOrEqual(2);
-    expect(status.querySelectorAll('[data-appearance="solid"]').length).toBeGreaterThan(0);
-    expect(status.querySelectorAll('[data-appearance="outline"]').length).toBeGreaterThan(0);
+    const treatments = screen.getByTestId("ui-standard-card-status-treatments");
+    expect(within(treatments).getAllByText("Appearance").length).toBeGreaterThanOrEqual(1);
+    expect(within(treatments).getByTestId("ui-standard-status-appearance-soft")).toBeInTheDocument();
+    expect(within(treatments).getByTestId("ui-standard-status-appearance-emphasis")).toBeInTheDocument();
+    expect(within(treatments).getByTestId("ui-standard-status-appearance-outline")).toBeInTheDocument();
+    expect(within(treatments).getByTestId("ui-standard-status-appearance-solid")).toBeInTheDocument();
+    expect(within(treatments).getAllByText("Soft").length).toBeGreaterThanOrEqual(1);
+    expect(within(treatments).getAllByText("Emphasis").length).toBeGreaterThanOrEqual(1);
+    expect(within(treatments).getAllByText("Outline").length).toBeGreaterThanOrEqual(2);
+    expect(within(treatments).getAllByText("Solid").length).toBeGreaterThanOrEqual(2);
+    expect(treatments.querySelectorAll('[data-appearance="emphasis"]').length).toBeGreaterThan(0);
+    expect(treatments.querySelectorAll('[data-appearance="solid"]').length).toBeGreaterThan(0);
+    expect(treatments.querySelectorAll('[data-appearance="outline"]').length).toBeGreaterThan(0);
   });
 
   it("shows Auto and explicit Control Shape samples on the Status live card", () => {
     renderPage();
-    const status = screen.getByTestId("ui-standard-card-status");
-    expect(within(status).getAllByText("Shape").length).toBeGreaterThanOrEqual(1);
-    expect(within(status).getByTestId("ui-standard-status-shape-auto-soft")).toHaveAttribute(
+    const treatments = screen.getByTestId("ui-standard-card-status-treatments");
+    expect(within(treatments).getAllByText("Shape").length).toBeGreaterThanOrEqual(1);
+    expect(within(treatments).getByTestId("ui-standard-status-shape-auto-soft")).toHaveAttribute(
       "data-shape",
       "auto",
     );
-    expect(within(status).getByTestId("ui-standard-status-shape-standard-outline")).toHaveAttribute(
+    expect(within(treatments).getByTestId("ui-standard-status-shape-standard-outline")).toHaveAttribute(
       "data-shape",
       "standard",
     );
-    expect(within(status).getByTestId("ui-standard-status-shape-soft-solid")).toHaveAttribute(
+    expect(within(treatments).getByTestId("ui-standard-status-shape-soft-solid")).toHaveAttribute(
       "data-shape",
       "soft",
     );
-    expect(within(status).getByTestId("ui-standard-status-shape-pill-soft")).toHaveAttribute(
+    expect(within(treatments).getByTestId("ui-standard-status-shape-pill-soft")).toHaveAttribute(
       "data-shape",
       "pill",
     );
-    expect(within(status).getByTestId("ui-standard-status-shape-grid").className).toMatch(
-      /repeat\(3/,
+    expect(within(treatments).getByTestId("ui-standard-status-shape-square-soft")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(within(treatments).getByTestId("ui-standard-status-shape-grid").className).toMatch(
+      /repeat\(4/,
     );
     expect(
-      within(status).getByText(/Auto follows the global Control Shape preference/, {
+      within(treatments).getByText(/Auto follows the global Control Shape preference/, {
         exact: false,
       }),
     ).toBeInTheDocument();
+  });
+
+  it("shows Soft and Emphasis tone color variations on the Status live card", () => {
+    renderPage();
+    const status = screen.getByTestId("ui-standard-card-status");
+    expect(within(status).getByTestId("ui-standard-status-tone-colors")).toBeInTheDocument();
+    expect(within(status).getByTestId("ui-standard-status-tone-soft-primary")).toHaveAttribute(
+      "data-tone",
+      "primary",
+    );
+    expect(within(status).getByTestId("ui-standard-status-tone-soft-info")).toHaveAttribute(
+      "data-appearance",
+      "soft",
+    );
+    expect(within(status).getByTestId("ui-standard-status-tone-emphasis-primary")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(within(status).getByTestId("ui-standard-status-tone-emphasis-info")).toHaveAttribute(
+      "data-tone",
+      "info",
+    );
+    expect(within(status).getByTestId("ui-standard-status-square-primary")).toHaveAttribute(
+      "data-shape",
+      "square",
+    );
+    expect(within(status).getByTestId("ui-standard-status-square-info")).toHaveAttribute(
+      "data-appearance",
+      "emphasis",
+    );
+    expect(within(status).getByTestId("ui-standard-status-square-warning")).toHaveAttribute(
+      "data-tone",
+      "warning",
+    );
+  });
+
+  it("shows accent and metric card color variations on the Cards live card", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("ui-standards-filter-cards"));
+    const cards = screen.getByTestId("ui-standard-card-cards");
+    expect(within(cards).getByTestId("ui-standard-card-accent-start-primary")).toHaveAttribute(
+      "data-treatment",
+      "accent",
+    );
+    expect(within(cards).getByTestId("ui-standard-card-accent-start-info")).toBeInTheDocument();
+    expect(within(cards).getByTestId("ui-standard-card-accent-tint-primary")).toBeInTheDocument();
+    expect(within(cards).getByTestId("ui-standard-card-accent-tint-info")).toBeInTheDocument();
+    expect(within(cards).getByTestId("ui-standard-card-metric-emphasis")).toBeInTheDocument();
+    expect(within(cards).getByTestId("ui-standard-card-metric-shared")).toBeInTheDocument();
+    expect(within(cards).getByTestId("ui-standard-card-metric-attention")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
+  });
+
+  it("toggles selectable Cards selection on click", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("ui-standards-filter-cards"));
+    const main = screen.getByTestId("ui-standard-card-selectable-main");
+    const iloilo = screen.getByTestId("ui-standard-card-selectable-iloilo");
+    expect(main).toHaveAttribute("aria-checked", "true");
+    expect(main.className).toMatch(/exits-card--selected/);
+    expect(iloilo).toHaveAttribute("aria-checked", "false");
+
+    await user.click(iloilo);
+    expect(iloilo).toHaveAttribute("aria-checked", "true");
+    expect(iloilo).toHaveAttribute("data-selected", "true");
+    expect(iloilo.className).toMatch(/exits-card--selected/);
+    expect(main).toHaveAttribute("aria-checked", "false");
+    expect(main).not.toHaveAttribute("data-selected");
+  });
+
+  it("shows distinct treatment samples including Selected and Featured", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("ui-standards-filter-cards"));
+    const treatments = screen.getByTestId("ui-standard-card-treatments");
+    expect(within(treatments).getByTestId("ui-standard-card-treatment-surface")).toHaveAttribute(
+      "data-treatment",
+      "surface",
+    );
+    expect(within(treatments).getByTestId("ui-standard-card-treatment-bordered")).toHaveAttribute(
+      "data-treatment",
+      "bordered",
+    );
+    expect(within(treatments).getByTestId("ui-standard-card-treatment-elevated")).toHaveAttribute(
+      "data-treatment",
+      "elevated",
+    );
+    expect(within(treatments).getByTestId("ui-standard-card-treatment-interactive")).toHaveAttribute(
+      "data-treatment",
+      "interactive",
+    );
+    expect(within(treatments).getByTestId("ui-standard-card-treatment-selected")).toHaveAttribute(
+      "data-treatment",
+      "selected",
+    );
+    expect(within(treatments).getByTestId("ui-standard-card-treatment-featured")).toHaveAttribute(
+      "data-treatment",
+      "featured",
+    );
   });
 
   it("filters live cards and catalog rows by category + search", async () => {
@@ -383,9 +496,28 @@ describe("UiStandardsPage", () => {
     expect(search).toBeTruthy();
     await user.clear(search!);
     await user.type(search!, "toast");
-    expect(screen.getByTestId("ui-standard-card-toasts")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-messages")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-toasts")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-table")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-toast")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-catalog-row-message-gallery")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-row-toast")).not.toBeInTheDocument();
+  });
+
+  it("Navigation filter surfaces underline ExitsTabs and ModuleSubnav samples", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("ui-standards-filter-navigation"));
+    const nav = screen.getByTestId("ui-standard-card-nav");
+    expect(nav).toBeInTheDocument();
+    expect(within(nav).getByTestId("ui-standard-tabs-underline")).toBeInTheDocument();
+    expect(within(nav).getByTestId("ui-standard-tabs-underline-icons")).toBeInTheDocument();
+    expect(within(nav).getByTestId("ui-standard-tabs-underline-counts")).toBeInTheDocument();
+    expect(within(nav).getByTestId("ui-standard-subnav-underline")).toBeInTheDocument();
+    expect(within(nav).getByTestId("ui-standard-subnav-underline-icons")).toBeInTheDocument();
+    expect(within(nav).getByText("Underline / Soft / Pill tabs")).toBeInTheDocument();
+    expect(within(nav).getByText("Underline — module destinations")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
   });
 
   it("Data filter surfaces the locked ExitsTable reference demo", async () => {

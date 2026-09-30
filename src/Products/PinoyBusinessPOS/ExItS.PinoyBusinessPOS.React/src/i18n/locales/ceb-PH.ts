@@ -8884,6 +8884,10 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "personal.home.active": "Aktibo",
 
+  "personal.home.activeMine": "Akong aktibo",
+
+  "personal.home.activeShared": "Gi-share nako",
+
   "personal.home.attentionDueSoon": "{count} payments due soon",
 
   "personal.home.attentionDueSoonOne": "{name} ? due soon",

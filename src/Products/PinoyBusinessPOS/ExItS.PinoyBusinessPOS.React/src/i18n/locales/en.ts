@@ -1695,6 +1695,8 @@ export const en = {
   "personal.home.iOwe": "I owe",
   "personal.home.people": "People",
   "personal.home.active": "Active",
+  "personal.home.activeMine": "My active",
+  "personal.home.activeShared": "Shared with me",
   "personal.home.quickActions": "Quick actions",
   "personal.home.actionStartBusiness": "Start a Business",
   "personal.home.actionLent": "Money I lent",

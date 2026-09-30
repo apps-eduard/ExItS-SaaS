@@ -10,13 +10,18 @@ export const chipToneClasses = {
     "border-[color-mix(in_srgb,var(--exits-border-strong)_55%,transparent)] bg-[color-mix(in_srgb,var(--exits-surface-muted)_35%,transparent)] text-[var(--exits-text-muted)]",
   primary:
     "border-[color-mix(in_srgb,var(--exits-primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-primary)_8%,transparent)] text-[var(--exits-primary)]",
+  secondary:
+    "border-[color-mix(in_srgb,var(--exits-severity-secondary-foreground)_18%,transparent)] bg-[var(--exits-severity-secondary)] text-[var(--exits-severity-secondary-foreground)]",
   info: "border-[color-mix(in_srgb,var(--exits-info)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-info)_5%,transparent)] text-[var(--exits-info)]",
   success:
     "border-[color-mix(in_srgb,var(--exits-success)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-success)_5%,transparent)] text-[var(--exits-success)]",
   warning:
     "border-[color-mix(in_srgb,var(--exits-warning)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-warning)_5%,transparent)] text-[var(--exits-warning)]",
+  help: "border-[color-mix(in_srgb,var(--exits-severity-help)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-severity-help)_12%,transparent)] text-[var(--exits-severity-help)]",
   danger:
     "border-[color-mix(in_srgb,var(--exits-danger)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-danger)_5%,transparent)] text-[var(--exits-danger)]",
+  contrast:
+    "border-[var(--exits-severity-contrast)] bg-[var(--exits-severity-contrast)] text-[var(--exits-severity-contrast-foreground)]",
 } as const;
 
 export type ChipTone = keyof typeof chipToneClasses;

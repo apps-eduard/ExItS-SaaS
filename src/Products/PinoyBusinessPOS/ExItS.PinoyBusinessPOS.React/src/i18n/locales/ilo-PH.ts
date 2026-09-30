@@ -8884,6 +8884,10 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "personal.home.active": "Aktibo",
 
+  "personal.home.activeMine": "Ti aktibok",
+
+  "personal.home.activeShared": "Na-share kaniak",
+
   "personal.home.attentionDueSoon": "{count} payments due soon",
 
   "personal.home.attentionDueSoonOne": "{name} ? due soon",

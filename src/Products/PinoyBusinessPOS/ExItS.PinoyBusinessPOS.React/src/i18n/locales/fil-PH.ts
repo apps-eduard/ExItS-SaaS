@@ -8851,6 +8851,10 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "personal.home.active": "Aktibo",
 
+  "personal.home.activeMine": "Aking aktibo",
+
+  "personal.home.activeShared": "Na-share sa akin",
+
   "personal.home.attentionDueSoon": "{count} bayad ang malapit nang due",
 
   "personal.home.attentionDueSoonOne": "{name} ? malapit nang due",
