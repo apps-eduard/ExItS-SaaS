@@ -215,6 +215,7 @@ public static class DomainErrorCodes
     public const string PersonalUtangDailyLimitReached = "platform.personal.utang.daily_limit_reached";
     public const string PersonalUtangDuplicateSubmission = "platform.personal.utang.duplicate_submission";
     public const string PersonalUtangUnauthorized = "platform.personal.utang.unauthorized";
+    public const string PersonalUtangNotLedgerOwner = "platform.personal.utang.not_ledger_owner";
     public const string PersonalUtangConcurrencyConflict = "platform.personal.utang.concurrency_conflict";
     public const string PersonalUtangSettlementInvalid = "platform.personal.utang.settlement.invalid";
     public const string PersonalUtangSettlementStale = "platform.personal.utang.settlement.stale";

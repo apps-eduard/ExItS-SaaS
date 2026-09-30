@@ -47,6 +47,9 @@ const relationship: PersonalDebtRelationshipSummaryDto = {
   updatedAtUtc: "2026-02-02T00:00:00.000Z",
   isSharedLedger: false,
   isPrivate: true,
+  ledgerOwnerUserIdentityId: "99999999-9999-4999-8999-999999999999",
+  isLedgerOwner: true,
+  shareOutcome: "Private",
 };
 
 const entry: PersonalUtangEntryDto = {
@@ -72,6 +75,8 @@ const entry: PersonalUtangEntryDto = {
   intent: "Regular",
   settlementBalanceSnapshot: null,
   isSettlement: false,
+  confirmationSource: "None",
+  wasAutoSynced: false,
 };
 
 async function openPersonal(userId: string) {

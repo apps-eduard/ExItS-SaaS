@@ -296,7 +296,18 @@ public sealed class ApiPersonalUtangInvitationTests(PostgreSqlFixture fixture) :
         var notificationsResponse = await _client.SendAsync(notificationsRequest);
         Assert.Equal(HttpStatusCode.OK, notificationsResponse.StatusCode);
         var notifications = await notificationsResponse.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(0, notifications.GetArrayLength());
+        // Add-by-ExItS-ID may auto-send a connection request notification; it must not
+        // create Utang invitations or an "Added to People" contact notification.
+        Assert.DoesNotContain(
+            notifications.EnumerateArray(),
+            n => n.GetProperty("relatedType").GetString() == "personal_contact"
+                 && n.GetProperty("title").GetString() == "Added to People");
+        Assert.DoesNotContain(
+            notifications.EnumerateArray(),
+            n => (n.GetProperty("relatedType").GetString() ?? string.Empty)
+                .Contains("Utang", StringComparison.OrdinalIgnoreCase)
+                && (n.GetProperty("relatedType").GetString() ?? string.Empty)
+                    .Contains("Invitation", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

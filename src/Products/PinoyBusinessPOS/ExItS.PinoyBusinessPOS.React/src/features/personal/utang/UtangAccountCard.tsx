@@ -15,6 +15,9 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
   const { t } = useI18n();
   const direction =
     row.perspective === "lent" ? t("personal.utang.owesYou") : t("personal.utang.youOwe");
+  const ownershipLabel = row.isLedgerOwner
+    ? t("personal.utang.ownershipMine")
+    : t("personal.utang.ownershipSharedWithMe");
 
   return (
     <Link
@@ -24,6 +27,12 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
     >
       <PersonAvatar name={row.displayName} size="sm" />
       <div className="min-w-0 flex-1">
+        <p
+          className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+          data-testid={`utang-account-ownership-${row.relationshipId}`}
+        >
+          {ownershipLabel}
+        </p>
         <p className="exits-list__name m-0 truncate font-semibold">{row.displayName}</p>
         <p className="m-0 flex min-w-0 items-center gap-1 truncate text-[length:var(--exits-text-sm)] text-muted">
           <span className="truncate">{direction}</span>
@@ -31,6 +40,12 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
             <>
               <span aria-hidden="true">·</span>
               <UtangLinkedIcon testId={`utang-account-linked-${row.relationshipId}`} />
+            </>
+          ) : null}
+          {!row.isLedgerOwner ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="truncate">{t("personal.utang.readOnly")}</span>
             </>
           ) : null}
         </p>

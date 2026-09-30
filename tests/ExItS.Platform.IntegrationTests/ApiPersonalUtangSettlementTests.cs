@@ -117,7 +117,7 @@ public sealed class ApiPersonalUtangSettlementTests(PostgreSqlFixture fixture) :
     }
 
     [Fact]
-    public async Task Shared_settle_awaits_confirm_then_closes()
+    public async Task Shared_owner_settle_completes_immediately_and_non_owner_denied()
     {
         var (lenderToken, lenderId) = await SeedPersonalUserAsync("slnd");
         var (borrowerToken, borrowerId) = await SeedPersonalUserAsync("sbor");
@@ -132,61 +132,47 @@ public sealed class ApiPersonalUtangSettlementTests(PostgreSqlFixture fixture) :
                 debtorUserIdentityId = borrowerId,
                 currencyCode = "PHP",
                 initialLoanAmount = 1200m,
-                initialLoanNotes = "Shared seed"
+                initialLoanNotes = "Shared seed",
+                shareWithCounterparty = true
             });
         var relationship = await ReadOk(await _client.SendAsync(relationshipRequest));
         var relationshipId = relationship.GetProperty("id").GetGuid();
+        var version = relationship.GetProperty("version").GetInt32();
+        Assert.Equal(1200m, relationship.GetProperty("currentBalance").GetDecimal());
+        Assert.True(relationship.GetProperty("isLedgerOwner").GetBoolean());
 
-        using var historyRequest = Authed(
-            HttpMethod.Get,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/history",
-            lenderToken);
-        var history = await ReadOk(await _client.SendAsync(historyRequest));
-        var loanId = history.EnumerateArray().First().GetProperty("id").GetGuid();
-
-        using var confirmLoan = Authed(
+        using var borrowerSettle = Authed(
             HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{loanId}/confirm",
+            $"/api/v1/personal/utang/relationships/{relationshipId}/settle",
             borrowerToken,
-            new { expectedVersion = (int?)null });
-        await ReadOk(await _client.SendAsync(confirmLoan));
-
-        using var getRel = Authed(
-            HttpMethod.Get,
-            $"/api/v1/personal/utang/relationships/{relationshipId}",
-            lenderToken);
-        var active = await ReadOk(await _client.SendAsync(getRel));
-        var version = active.GetProperty("version").GetInt32();
-        Assert.Equal(1200m, active.GetProperty("currentBalance").GetDecimal());
+            new { expectedVersion = version });
+        var denied = await _client.SendAsync(borrowerSettle);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal(
+            "application.personal.utang.not_ledger_owner",
+            (await denied.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
 
         var settlementEntryId = Guid.NewGuid();
         using var settleRequest = Authed(
             HttpMethod.Post,
             $"/api/v1/personal/utang/relationships/{relationshipId}/settle",
-            borrowerToken,
+            lenderToken,
             new { expectedVersion = version, settlementEntryId });
         var settled = await ReadOk(await _client.SendAsync(settleRequest));
-        Assert.Equal("AwaitingCounterpartyConfirmation", settled.GetProperty("outcome").GetString());
-        Assert.Equal("Active", settled.GetProperty("relationship").GetProperty("status").GetString());
-        Assert.Equal(1200m, settled.GetProperty("relationship").GetProperty("currentBalance").GetDecimal());
-        Assert.Equal("Pending", settled.GetProperty("settlementEntry").GetProperty("status").GetString());
-
-        using var confirmSettlement = Authed(
-            HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{settlementEntryId}/confirm",
-            lenderToken,
-            new { expectedVersion = (int?)null });
-        var confirmed = await ReadOk(await _client.SendAsync(confirmSettlement));
-        Assert.Equal("Confirmed", confirmed.GetProperty("status").GetString());
-        Assert.True(confirmed.GetProperty("isSettlement").GetBoolean());
+        Assert.Equal("Completed", settled.GetProperty("outcome").GetString());
+        Assert.Equal("Closed", settled.GetProperty("relationship").GetProperty("status").GetString());
+        Assert.Equal(0m, settled.GetProperty("relationship").GetProperty("currentBalance").GetDecimal());
+        Assert.Equal("Confirmed", settled.GetProperty("settlementEntry").GetProperty("status").GetString());
+        Assert.True(settled.GetProperty("settlementEntry").GetProperty("isSettlement").GetBoolean());
 
         using var getClosed = Authed(
             HttpMethod.Get,
             $"/api/v1/personal/utang/relationships/{relationshipId}",
-            lenderToken);
+            borrowerToken);
         var closed = await ReadOk(await _client.SendAsync(getClosed));
         Assert.Equal("Closed", closed.GetProperty("status").GetString());
         Assert.Equal(0m, closed.GetProperty("currentBalance").GetDecimal());
+        Assert.False(closed.GetProperty("isLedgerOwner").GetBoolean());
     }
 
     [Fact]
@@ -235,7 +221,7 @@ public sealed class ApiPersonalUtangSettlementTests(PostgreSqlFixture fixture) :
     }
 
     [Fact]
-    public async Task Settle_blocked_when_pending_entry_exists()
+    public async Task Non_owner_cannot_close_shared_relationship()
     {
         var (lenderToken, lenderId) = await SeedPersonalUserAsync("spnd");
         var (borrowerToken, borrowerId) = await SeedPersonalUserAsync("bpnd");
@@ -250,21 +236,29 @@ public sealed class ApiPersonalUtangSettlementTests(PostgreSqlFixture fixture) :
                 debtorUserIdentityId = borrowerId,
                 currencyCode = "PHP",
                 initialLoanAmount = 500m,
-                initialLoanNotes = "Pending seed"
+                initialLoanNotes = "Owner seed",
+                shareWithCounterparty = true
             });
         var relationship = await ReadOk(await _client.SendAsync(relationshipRequest));
         var relationshipId = relationship.GetProperty("id").GetGuid();
+        var version = relationship.GetProperty("version").GetInt32();
 
-        using var settleRequest = Authed(
+        using var pay = Authed(
             HttpMethod.Post,
-            $"/api/v1/personal/utang/relationships/{relationshipId}/settle",
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
             lenderToken,
+            new { entryType = "Payment", amount = 500m, expectedVersion = version });
+        await ReadOk(await _client.SendAsync(pay));
+
+        using var closeDenied = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/close",
+            borrowerToken,
             new { expectedVersion = (int?)null });
-        var response = await _client.SendAsync(settleRequest);
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var response = await _client.SendAsync(closeDenied);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal(
-            "application.personal.utang.settlement.pending_entries",
-            problem.GetProperty("errorCode").GetString());
+            "application.personal.utang.not_ledger_owner",
+            (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
     }
 }

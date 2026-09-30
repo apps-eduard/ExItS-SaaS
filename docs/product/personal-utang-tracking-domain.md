@@ -8,6 +8,15 @@ This document defines the free personal Utang Tracking feature, its relationship
 
 ## Product Decision
 
+Personal Utang is creator-owned bookkeeping with optional read-only sharing.
+The creator is the sole financial writer; the connected counterparty receives a
+mirrored read-only view.
+
+Ledger ownership is per debt record, not per connected-person pair.
+Connected users may independently maintain separate records involving each
+other. Sharing provides a read-only view only. ExItS does not automatically
+merge, reconcile, or synchronize separately owned ledgers.
+
 Utang Tracking is the main entry point for mobile users.
 
 A person can register and use Utang Tracking for free without creating or joining an organization.
@@ -149,7 +158,13 @@ Rules:
 
 Connection consent and Utang sharing are **separate**. A connected contact does **not** automatically create a shared ledger.
 
-Creating a new I Lent / I Borrowed debt may optionally **Share with {person}** (default **OFF**).
+**Core rule: creator = ledger owner.** Whoever creates "I Lent" or "I Borrowed" owns that debt record for its lifetime (`LedgerOwnerUserIdentityId`, immutable). There is **one ledger, one writer, two views** — never mirrored duplicate transactions.
+
+Ownership is **per debt record**, not per connected-person pair. Paul ↔ Mica may have **0..N** independent `PersonalDebtRelationship` rows (same or opposite creditor/debtor direction). Creating a new debt never reuses another owner's relationship merely because the same users/contact/direction already exist. Client `RelationshipId` idempotency still converges retries of the same request.
+
+Dashboard money totals (`TotalLentBalance` / `TotalBorrowedBalance`) count **My Records** only (viewer is ledger owner). Shared-with-me balances are separate informational fields and must not double-count into primary totals. Payments on one owner's ledger never alter another owner's ledger.
+
+Creating a new I Lent / I Borrowed debt may optionally **Share with {person}** (default **OFF**). Sharing controls **visibility**, not financial authority.
 
 ### Private mode (Share OFF, or unlinked contact)
 
@@ -160,53 +175,64 @@ Creating a new I Lent / I Borrowed debt may optionally **Share with {person}** (
 
 Connecting / linking an ExItS ID must **not** silently promote historical private relationships into a shared ledger. Explicit Utang invitation accept may still authorize that specific relationship.
 
-### Share ON = shared Personal↔Personal
+### Share ON = shared Personal↔Personal (owner-authoritative)
 
 Share ON is **online required**. The server canonicalizes the linked contact to a user participant so both sides share **one** authoritative `PersonalDebtRelationship` (no dual ledgers / no duplicate financial entry). Perspective mirrors automatically (I Lent ↔ I Borrowed).
+
+The **ledger owner** may add Loan / Payment / Adjustment, settle, close, and correct using append-only rules. The **counterparty** may view the mirrored perspective, balance, history, and due date; pause receiving future shares / notifications; and block/unlink. The counterparty must **not** mutate financial balance (server-enforced via `LedgerOwnerUserIdentityId`).
 
 Recipient-owned preferences (keyed by recipient + connected counterparty; **not** global account settings):
 
 | Preference | Default | Meaning |
 |---|---|---|
 | `ReceiveSharedUtang` | true | Show shared Utang from this person |
-| `AutoAcceptSharedUtang` | false | Automatically sync (confirm) their regular entries |
 | `SharedUtangNotifications` | true | Notify about shared activity from them |
+
+`AutoAcceptSharedUtang` is **obsolete** under the owner model (accepted in DTOs for compatibility but forced off / ignored). New owner-model entries are Confirmed immediately; there is no Confirm / Dispute / auto-accept workflow for new writes.
 
 If `ReceiveSharedUtang` is **OFF**, Share ON falls back to **private** for the sender with a soft outcome (`PrivateNotReceiving`) — no notification and no counterparty visibility. Turning receive back ON affects **future** shared creates only.
 
-Block / unlink overrides sharing and auto-sync.
+Block / unlink overrides sharing.
 
-### Shared entry confirmation
+### Shared entry authority (owner-model)
 
-When both sides are linked Personal users (`IsSharedLinked`):
+When both sides are linked Personal users (`IsSharedLinked`) on an owner-model relationship:
 
-- Default (`Receive` ON, `AutoAccept` OFF): new **regular** entries start as **Pending**, appear immediately to the counterparty (e.g. "Reported by {proposer}"), and do **not** change confirmed relationship `CurrentBalance` until Confirm. **Personal home / Utang hub / I Lent / I Borrowed list / relationship detail display totals** still include Pending signed amounts so both sides see the amount while review is outstanding.
-- With `AutoAccept` ON: future regular Loan / Payment / Adjustment entries are confirmed server-side by standing recipient preference (`ConfirmationSource = RecipientAutoAccept`). Audit text must state auto-confirm by preference, not a manual button click. **Settlement** entries are never auto-accepted.
+- Owner records Loan / Payment / Adjustment → **Confirmed immediately** → `CurrentBalance` updates immediately → counterparty sees the same single entry read-only
+- Sharing does **not** create Pending for new entries
 - Only **Confirmed** entries change relationship `CurrentBalance` (Loan +, Payment −, Adjustment ±)
-- Pending / Disputed / Cancelled have zero effect on confirmed `CurrentBalance` (Pending still rolls into dashboard totals as above)
-- Proposer may cancel their own Pending entry
-- Confirm is idempotent; concurrent Confirm/Dispute participates in relationship optimistic concurrency
-- Legacy shared Pending/Confirmed history remains compatible; rows confirmed before auto-sync use `ConfirmationSource = Manual` when resolved
+- Legacy Pending / Disputed / Cancelled history remains identifiable; Pending / Disputed / Cancelled have zero effect on confirmed `CurrentBalance` (display totals may still include legacy Pending signed amounts while unresolved)
+- Legacy Confirm / Dispute paths remain only for resolving historical Pending rows; they must not reopen two-writer behavior for new entries
 
 Entry statuses: `Pending` | `Confirmed` | `Disputed` | `Cancelled`.
 
 Recommended shared visibility:
 
-- confirmed current balance
-- confirmed history and pending / disputed proposals (visible before confirm)
+- current balance (confirmed; plus legacy pending display where applicable)
+- history (owner-confirmed entries; legacy pending / disputed if present)
 - due dates
-- participant identities
+- participant identities and ledger-owner attribution ("Shared by {owner}")
 - reminder status where appropriate
 
 Recommended controls:
 
-- only authorized participants may propose transactions
-- disputed entries remain in history without balance effect
+- only the ledger owner may mutate financial balance / lifecycle
+- disputed legacy entries remain in history without balance effect
 - confirmed historical amounts are not silently rewritten in place
-- corrections use append-only adjustments (also confirmed on shared ledgers unless auto-synced)
+- corrections use append-only adjustments by the ledger owner
 - every meaningful change should be timestamped and attributable
 
-Anti-spam (shared Loan proposals): preserve block checks, duplicate submission protection, rolling daily limit, and advisory locking. Unresolved-pending limit applies when review is required; auto-sync must not be incorrectly blocked by pending-count.
+### Legacy ledger-owner backfill
+
+Existing relationships receive `LedgerOwnerUserIdentityId` from:
+
+1. earliest financial entry `CreatedByUserIdentityId` (deterministic creator);
+2. sole user participant when the other side is contact-only;
+3. contact `OwnerUserIdentityId` when no user participant remains.
+
+Do **not** guess owner among two user participants. Migration fails rather than assigning the wrong person when creator cannot be determined.
+
+Anti-spam (shared Loan creation): preserve block checks, duplicate submission protection, rolling daily limit, and advisory locking. Unresolved-pending limit does **not** apply to new owner-model Confirmed writes (`skipUnresolvedPendingLimit`).
 ## Reminders and Notifications
 
 The lender may create reminder rules such as:

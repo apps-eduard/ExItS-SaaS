@@ -53,7 +53,15 @@ export type PersonalDebtRelationshipSummaryDto = {
   updatedAtUtc: string;
   isSharedLedger?: boolean;
   isPrivate?: boolean;
-  shareOutcome?: "Private" | "SharedPending" | "SharedAutoSynced" | "PrivateNotReceiving" | null;
+  ledgerOwnerUserIdentityId?: string | null;
+  isLedgerOwner?: boolean;
+  shareOutcome?:
+    | "Private"
+    | "Shared"
+    | "SharedPending"
+    | "SharedAutoSynced"
+    | "PrivateNotReceiving"
+    | null;
 };
 
 export type CreatePersonalDebtRelationshipRequest = {

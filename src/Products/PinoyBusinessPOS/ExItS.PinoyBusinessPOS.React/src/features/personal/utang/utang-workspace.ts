@@ -4,6 +4,14 @@ import type {
 } from "@/api/platform/personal-utang-client";
 import { formatDueLabel } from "@/api/platform/personal-utang-client";
 
+export function isSharedRelationship(
+  row: Pick<PersonalDebtRelationshipSummaryDto, "isSharedLedger" | "isPrivate">,
+): boolean {
+  if (row.isSharedLedger === true) return true;
+  if (row.isPrivate === true) return false;
+  return false;
+}
+
 export type UtangPerspective = "lent" | "owe";
 
 export type UtangAccountSegment = "all" | "lent" | "owe";
@@ -16,6 +24,7 @@ export type UtangAccountRow = {
   dueDateUtc: string | null;
   updatedAtUtc: string;
   isSharedLedger: boolean;
+  isLedgerOwner: boolean;
   status: string;
   dueKind: "none" | "overdue" | "dueSoon" | "upcoming";
 };
@@ -80,6 +89,7 @@ export function toUtangAccountRow(
     dueDateUtc: relationship.dueDateUtc ?? null,
     updatedAtUtc: relationship.updatedAtUtc,
     isSharedLedger: Boolean(relationship.isSharedLedger),
+    isLedgerOwner: relationship.isLedgerOwner !== false,
     status: relationship.status,
     dueKind: due.kind,
   };

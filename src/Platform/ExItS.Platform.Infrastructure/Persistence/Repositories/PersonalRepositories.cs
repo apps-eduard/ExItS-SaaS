@@ -483,6 +483,7 @@ internal sealed class PersonalDebtRelationshipRepository(PlatformDbContext db) :
             return;
         }
 
+        record.LedgerOwnerUserIdentityId = relationship.LedgerOwnerUserIdentityId.Value;
         record.CreditorUserIdentityId = relationship.CreditorUserIdentityId?.Value;
         record.CreditorContactId = relationship.CreditorContactId?.Value;
         record.DebtorUserIdentityId = relationship.DebtorUserIdentityId?.Value;
@@ -500,6 +501,7 @@ internal sealed class PersonalDebtRelationshipRepository(PlatformDbContext db) :
     private static PersonalDebtRelationship ToDomain(PersonalDebtRelationshipRecord record) =>
         PersonalDebtRelationship.Rehydrate(
             PersonalDebtRelationshipId.From(record.Id),
+            PlatformUserId.From(record.LedgerOwnerUserIdentityId),
             record.CreditorUserIdentityId is Guid cu ? PlatformUserId.From(cu) : null,
             record.CreditorContactId is Guid cc ? PersonalContactId.From(cc) : null,
             record.DebtorUserIdentityId is Guid du ? PlatformUserId.From(du) : null,
@@ -519,6 +521,7 @@ internal sealed class PersonalDebtRelationshipRepository(PlatformDbContext db) :
         new()
         {
             Id = relationship.Id.Value,
+            LedgerOwnerUserIdentityId = relationship.LedgerOwnerUserIdentityId.Value,
             CreditorUserIdentityId = relationship.CreditorUserIdentityId?.Value,
             CreditorContactId = relationship.CreditorContactId?.Value,
             DebtorUserIdentityId = relationship.DebtorUserIdentityId?.Value,

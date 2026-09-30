@@ -60,6 +60,7 @@ import {
 } from "@/features/personal/people-queries";
 
 import { deriveConnectionStatus, formatShortDate } from "@/features/personal/people-status";
+import { isSharedRelationship } from "@/features/personal/utang/utang-workspace";
 
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -168,36 +169,43 @@ export function PersonDetailPage() {
 
 
   const related = useMemo(() => {
-
     if (!contact || !utangQuery.data) {
-
       return [];
-
     }
 
     return [...utangQuery.data.lent, ...utangQuery.data.borrowed].filter(
-
       (rel) =>
-
         rel.creditorContactId === contact.id ||
-
         rel.debtorContactId === contact.id ||
-
         (contact.linkedUserIdentityId &&
-
           (rel.creditorUserIdentityId === contact.linkedUserIdentityId ||
-
             rel.debtorUserIdentityId === contact.linkedUserIdentityId)),
-
     );
-
   }, [contact, utangQuery.data]);
 
+  const activeRelated = useMemo(
+    () => related.filter((rel) => rel.status.toLowerCase() === "active"),
+    [related],
+  );
 
+  const ownedActiveForMode = useMemo(() => {
+    const expectedPerspective = mode === "lent" ? "lent" : "borrowed";
+    return activeRelated.find(
+      (rel) =>
+        rel.isLedgerOwner !== false &&
+        rel.perspective.toLowerCase() === expectedPerspective,
+    );
+  }, [activeRelated, mode]);
 
-  const activeRel = related.find((rel) => rel.status.toLowerCase() === "active");
-
-
+  const sharedWithMeForMode = useMemo(() => {
+    const expectedPerspective = mode === "lent" ? "lent" : "borrowed";
+    return activeRelated.find(
+      (rel) =>
+        rel.isLedgerOwner === false &&
+        isSharedRelationship(rel) &&
+        rel.perspective.toLowerCase() === expectedPerspective,
+    );
+  }, [activeRelated, mode]);
 
   async function submitUtang(kind: "lent" | "borrowed") {
     if (!contact) {
@@ -220,20 +228,22 @@ export function PersonDetailPage() {
     }
 
     const expectedPerspective = kind === "lent" ? "lent" : "borrowed";
-    const matchingRel = related.find(
+    // Only append to a ledger this viewer owns — never reuse a shared-with-me record.
+    const matchingOwnedRel = related.find(
       (rel) =>
         rel.status.toLowerCase() === "active" &&
+        rel.isLedgerOwner !== false &&
         rel.perspective.toLowerCase() === expectedPerspective,
     );
 
     setSavingUtang(true);
     try {
-      if (matchingRel) {
-        await recordPersonalUtangEntry(matchingRel.id, {
+      if (matchingOwnedRel) {
+        await recordPersonalUtangEntry(matchingOwnedRel.id, {
           entryType: "Loan",
           amount: parsed,
           notes: purpose,
-          expectedVersion: matchingRel.version,
+          expectedVersion: matchingOwnedRel.version,
         });
         await invalidatePersonal();
       } else {
@@ -406,24 +416,44 @@ export function PersonDetailPage() {
 
 
 
-      {activeRel ? (
-
-        <Card>
-
+      {activeRelated.length > 0 ? (
+        <Card data-testid="person-detail-utang-records">
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold uppercase tracking-wide">
-
             {t("people.detail.utang")}
-
           </h2>
-
-          <p className="m-0 mt-2 text-muted">
-
-            {activeRel.perspective} · {formatMoney(activeRel.currentBalance, activeRel.currencyCode)}
-
-          </p>
-
+          <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
+            {activeRelated.map((rel) => {
+              const owned = rel.isLedgerOwner !== false;
+              return (
+                <li key={rel.id}>
+                  <Link
+                    to={`/personal/utang/relationships/${rel.id}`}
+                    className="flex flex-col gap-0.5 text-foreground no-underline"
+                    data-testid={`person-detail-utang-row-${rel.id}`}
+                  >
+                    <span className="text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+                      {owned
+                        ? t("personal.utang.ownershipMine")
+                        : t("personal.utang.ownershipSharedWithMe")}
+                    </span>
+                    <span className="font-medium">
+                      {rel.perspective} · {formatMoney(rel.currentBalance, rel.currencyCode)}
+                    </span>
+                    <span className="text-[length:var(--exits-text-xs)] text-muted">
+                      {owned
+                        ? t("personal.utang.managedByMe")
+                        : t("personal.utang.managedByOther").replace(
+                            "{name}",
+                            contact.displayName,
+                          )}
+                      {!owned ? ` · ${t("personal.utang.readOnly")}` : null}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </Card>
-
       ) : null}
 
 
@@ -505,7 +535,28 @@ export function PersonDetailPage() {
             />
           </label>
 
-          {isConnected && !activeRel ? (
+          {sharedWithMeForMode && !ownedActiveForMode ? (
+            <Notice
+              tone="info"
+              testId="person-detail-shared-exists-hint"
+              className="text-[length:var(--exits-text-sm)]"
+            >
+              {t("personal.utang.counterpartyAlreadyShared").replace(
+                "{name}",
+                contact?.displayName ?? t("personal.utang.person"),
+              )}{" "}
+              <Link
+                to={`/personal/utang/relationships/${sharedWithMeForMode.id}`}
+                data-testid="person-detail-view-shared-record"
+              >
+                {t("personal.utang.viewSharedRecord")}
+              </Link>
+              {" · "}
+              {t("personal.utang.createOwnRecordHint")}
+            </Notice>
+          ) : null}
+
+          {isConnected && !ownedActiveForMode ? (
             <label
               className="flex min-w-0 cursor-pointer items-start gap-2 text-[length:var(--exits-text-sm)]"
               data-testid="person-detail-share-toggle"
@@ -546,7 +597,7 @@ export function PersonDetailPage() {
               <Check className="size-4 shrink-0" aria-hidden />
               {savingUtang || createUtang.isPending
                 ? t("loading.label")
-                : isConnected && shareWithCounterparty && !activeRel
+                : isConnected && shareWithCounterparty && !ownedActiveForMode
                   ? t("personal.utang.shareWithPerson").replace(
                       "{name}",
                       contact?.displayName ?? t("personal.utang.person"),
@@ -586,35 +637,7 @@ export function PersonDetailPage() {
                     const receive = event.target.checked;
                     void updateSharedPrefs.mutateAsync({
                       receiveSharedUtang: receive,
-                      autoAcceptSharedUtang: receive
-                        ? Boolean(sharedPrefsQuery.data?.autoAcceptSharedUtang)
-                        : false,
-                      sharedUtangNotifications:
-                        sharedPrefsQuery.data?.sharedUtangNotifications ?? true,
-                      expectedVersion: sharedPrefsQuery.data?.version,
-                    });
-                  }}
-                />
-              </label>
-              <label className="flex items-center justify-between gap-3 text-[length:var(--exits-text-sm)]">
-                <span>
-                  {t("personal.utang.prefsAutoSync").replace(
-                    "{name}",
-                    contact?.displayName ?? t("personal.utang.person"),
-                  )}
-                </span>
-                <input
-                  type="checkbox"
-                  data-testid="person-detail-prefs-autosync"
-                  checked={sharedPrefsQuery.data?.autoAcceptSharedUtang ?? false}
-                  disabled={
-                    updateSharedPrefs.isPending ||
-                    !(sharedPrefsQuery.data?.receiveSharedUtang ?? true)
-                  }
-                  onChange={(event) => {
-                    void updateSharedPrefs.mutateAsync({
-                      receiveSharedUtang: sharedPrefsQuery.data?.receiveSharedUtang ?? true,
-                      autoAcceptSharedUtang: event.target.checked,
+                      autoAcceptSharedUtang: false,
                       sharedUtangNotifications:
                         sharedPrefsQuery.data?.sharedUtangNotifications ?? true,
                       expectedVersion: sharedPrefsQuery.data?.version,
@@ -632,8 +655,7 @@ export function PersonDetailPage() {
                   onChange={(event) => {
                     void updateSharedPrefs.mutateAsync({
                       receiveSharedUtang: sharedPrefsQuery.data?.receiveSharedUtang ?? true,
-                      autoAcceptSharedUtang:
-                        sharedPrefsQuery.data?.autoAcceptSharedUtang ?? false,
+                      autoAcceptSharedUtang: false,
                       sharedUtangNotifications: event.target.checked,
                       expectedVersion: sharedPrefsQuery.data?.version,
                     });
