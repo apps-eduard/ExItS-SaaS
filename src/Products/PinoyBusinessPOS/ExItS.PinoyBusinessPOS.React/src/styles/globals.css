@@ -16326,16 +16326,50 @@ a.dashboard-metric-card:focus-visible {
 
   /* Personal keeps its brand label in the top bar (not hidden like org shell-desktop). */
   .personal-shell .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand {
-    display: flex;
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
   }
 
   /*
    * Desktop shell branding lives in the sidebar only.
-   * Higher specificity than .app-top-bar__brand { display: flex } so Tailwind lg:hidden
-   * is not overridden (that override left a duplicate logo / clipped "OS" fragment).
+   * !important beats the unlayered .app-top-bar__brand { display: flex }, which
+   * otherwise overrides Tailwind lg:hidden and leaves a stacked duplicate logo.
    */
-  .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand {
-    display: none;
+  .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand,
+  .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand--shell-mobile {
+    display: none !important;
+  }
+}
+
+/* Match Tailwind lg (64rem), not only 1024px, so zoomed roots still hide the duplicate. */
+@media (min-width: 64rem) {
+  .personal-shell .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand {
+    display: flex !important;
+  }
+
+  .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand,
+  .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand--shell-mobile {
+    display: none !important;
+  }
+
+  .app-top-bar--shell-desktop:not(.app-top-bar--personal) {
+    box-sizing: border-box;
+    height: var(--exits-shell-chrome-height);
+    min-height: var(--exits-shell-chrome-height);
+    max-height: var(--exits-shell-chrome-height);
+    padding-block: 0;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .app-top-bar--shell-desktop:not(.app-top-bar--personal) .app-top-bar__row,
+  .app-top-bar__row--shell-desktop {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -16356,6 +16390,8 @@ a.dashboard-metric-card:focus-visible {
 
 .app-top-bar__brand {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   min-width: 0;
   align-items: center;
   gap: 0.65rem;
@@ -22427,24 +22463,24 @@ a.exits-chip--primary:hover {
 
 .manager-metric-strip {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.55rem;
   min-width: 0;
 }
 
 @media (min-width: 40rem) {
   .manager-metric-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 @media (min-width: 64rem) {
   .manager-metric-strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 
   .manager-metric-strip:has(> :nth-child(3):last-child) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
@@ -25387,6 +25423,15 @@ button.branch-mgmt-overview__item--action:focus-visible {
   width: var(--exits-shell-sidebar-width);
   flex: 0 0 var(--exits-shell-sidebar-width);
   min-width: 0;
+}
+
+/* Below Tailwind lg the rail must stay off, even if a later display rule wins over .hidden. */
+@media (max-width: 63.99rem) {
+  .admin-shell > .admin-sidebar-rail,
+  .operations-shell > .admin-sidebar-rail,
+  .personal-shell > .admin-sidebar-rail {
+    display: none !important;
+  }
 }
 
 html[data-navigation-mode="standard"] {
