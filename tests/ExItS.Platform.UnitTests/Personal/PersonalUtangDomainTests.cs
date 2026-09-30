@@ -293,72 +293,60 @@ public sealed class PersonalUtangDomainTests
     }
 
     [Fact]
-    public void Linked_loan_starts_pending_without_balance_effect_until_counterparty_confirms()
+    public void Linked_loan_confirms_immediately_with_balance_effect()
     {
-        var (relationship, creditor, debtor) = CreateSharedRelationship();
+        var (relationship, creditor, _) = CreateSharedRelationship();
         var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 1000m, 1000m, UtcNow(), null, notes: "Test purpose");
-        Assert.Equal(PersonalUtangEntryStatus.Pending, loan.Status);
-        Assert.Equal(0m, relationship.CurrentBalance);
-        Assert.Equal(0m, loan.BalanceAfter);
-
-        relationship.ConfirmEntry(loan, debtor, UtcNow(), relationship.Version);
         Assert.Equal(PersonalUtangEntryStatus.Confirmed, loan.Status);
         Assert.Equal(1000m, relationship.CurrentBalance);
         Assert.Equal(1000m, loan.BalanceAfter);
+        Assert.Equal(creditor, relationship.LedgerOwnerUserIdentityId);
     }
 
     [Fact]
-    public void Proposer_cannot_self_confirm_or_dispute()
+    public void Non_owner_cannot_record_shared_entry()
     {
-        var (relationship, creditor, _) = CreateSharedRelationship();
-        var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 100m, 100m, UtcNow(), null, notes: "Test purpose");
+        var (relationship, creditor, debtor) = CreateSharedRelationship();
+        relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 100m, 100m, UtcNow(), null, notes: "Test purpose");
 
-        var confirmEx = Assert.Throws<DomainException>(() =>
-            relationship.ConfirmEntry(loan, creditor, UtcNow(), relationship.Version));
-        Assert.Equal(DomainErrorCodes.PersonalUtangUnauthorized, confirmEx.ErrorCode);
+        var ex = Assert.Throws<DomainException>(() =>
+            relationship.RecordEntry(
+                debtor, PersonalUtangEntryType.Payment, 50m, -50m, UtcNow(), relationship.Version));
+        Assert.Equal(DomainErrorCodes.PersonalUtangNotLedgerOwner, ex.ErrorCode);
+        Assert.Equal(100m, relationship.CurrentBalance);
+    }
+
+    [Fact]
+    public void Dispute_on_confirmed_entry_is_rejected()
+    {
+        var (relationship, creditor, debtor) = CreateSharedRelationship();
+        var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 700m, 700m, UtcNow(), null, notes: "Test purpose");
+        Assert.Equal(700m, relationship.CurrentBalance);
 
         var disputeEx = Assert.Throws<DomainException>(() =>
-            relationship.DisputeEntry(loan, creditor, UtcNow(), relationship.Version));
-        Assert.Equal(DomainErrorCodes.PersonalUtangUnauthorized, disputeEx.ErrorCode);
+            relationship.DisputeEntry(loan, debtor, UtcNow(), relationship.Version, "Amount is incorrect."));
+        Assert.Equal(DomainErrorCodes.PersonalUtangEntryInvalid, disputeEx.ErrorCode);
+        Assert.Equal(700m, relationship.CurrentBalance);
+        Assert.Equal(PersonalUtangEntryStatus.Confirmed, loan.Status);
     }
 
     [Fact]
-    public void Counterparty_dispute_leaves_balance_unchanged()
+    public void Linked_payment_by_owner_reduces_balance_immediately()
     {
-        var (relationship, creditor, debtor) = CreateSharedRelationship();
-        var established = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 700m, 700m, UtcNow(), null, notes: "Test purpose");
-        relationship.ConfirmEntry(established, debtor, UtcNow(), relationship.Version);
-        Assert.Equal(700m, relationship.CurrentBalance);
-
-        var disputedLoan = relationship.RecordEntry(
-            creditor, PersonalUtangEntryType.Loan, 500m, 500m, UtcNow(), relationship.Version, notes: "Test purpose");
-        relationship.DisputeEntry(disputedLoan, debtor, UtcNow(), relationship.Version, "Amount is incorrect.");
-        Assert.Equal(PersonalUtangEntryStatus.Disputed, disputedLoan.Status);
-        Assert.Equal(700m, relationship.CurrentBalance);
-    }
-
-    [Fact]
-    public void Linked_payment_requires_confirmation_before_reducing_balance()
-    {
-        var (relationship, creditor, debtor) = CreateSharedRelationship();
-        var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 1000m, 1000m, UtcNow(), null, notes: "Test purpose");
-        relationship.ConfirmEntry(loan, debtor, UtcNow(), relationship.Version);
+        var (relationship, creditor, _) = CreateSharedRelationship();
+        relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 1000m, 1000m, UtcNow(), null, notes: "Test purpose");
 
         var payment = relationship.RecordEntry(
-            debtor, PersonalUtangEntryType.Payment, 300m, -300m, UtcNow(), relationship.Version);
-        Assert.Equal(PersonalUtangEntryStatus.Pending, payment.Status);
-        Assert.Equal(1000m, relationship.CurrentBalance);
-
-        relationship.ConfirmEntry(payment, creditor, UtcNow(), relationship.Version);
+            creditor, PersonalUtangEntryType.Payment, 300m, -300m, UtcNow(), relationship.Version);
+        Assert.Equal(PersonalUtangEntryStatus.Confirmed, payment.Status);
         Assert.Equal(700m, relationship.CurrentBalance);
     }
 
     [Fact]
-    public void Linked_adjustment_requires_confirmation()
+    public void Linked_adjustment_by_owner_applies_immediately()
     {
-        var (relationship, creditor, debtor) = CreateSharedRelationship();
-        var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 1000m, 1000m, UtcNow(), null, notes: "Test purpose");
-        relationship.ConfirmEntry(loan, debtor, UtcNow(), relationship.Version);
+        var (relationship, creditor, _) = CreateSharedRelationship();
+        relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 1000m, 1000m, UtcNow(), null, notes: "Test purpose");
 
         var adjustment = relationship.RecordEntry(
             creditor,
@@ -368,39 +356,20 @@ public sealed class PersonalUtangDomainTests
             UtcNow(),
             relationship.Version,
             notes: "Adjustment reason");
-        Assert.Equal(PersonalUtangEntryStatus.Pending, adjustment.Status);
-        Assert.Equal(1000m, relationship.CurrentBalance);
-
-        relationship.ConfirmEntry(adjustment, debtor, UtcNow(), relationship.Version);
+        Assert.Equal(PersonalUtangEntryStatus.Confirmed, adjustment.Status);
         Assert.Equal(900m, relationship.CurrentBalance);
     }
 
     [Fact]
-    public void Confirm_is_idempotent_and_does_not_double_apply_balance()
+    public void Confirm_on_already_confirmed_is_idempotent()
     {
         var (relationship, creditor, debtor) = CreateSharedRelationship();
         var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 1000m, 1000m, UtcNow(), null, notes: "Test purpose");
-        relationship.ConfirmEntry(loan, debtor, UtcNow(), relationship.Version);
         Assert.Equal(1000m, relationship.CurrentBalance);
 
         relationship.ConfirmEntry(loan, debtor, UtcNow(), expectedVersion: null);
         Assert.Equal(1000m, relationship.CurrentBalance);
         Assert.Equal(PersonalUtangEntryStatus.Confirmed, loan.Status);
-    }
-
-    [Fact]
-    public void Concurrent_confirm_then_dispute_leaves_confirmed_winner()
-    {
-        var (relationship, creditor, debtor) = CreateSharedRelationship();
-        var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 400m, 400m, UtcNow(), null, notes: "Test purpose");
-        var versionAtPending = relationship.Version;
-        relationship.ConfirmEntry(loan, debtor, UtcNow(), versionAtPending);
-
-        var disputeEx = Assert.Throws<DomainException>(() =>
-            relationship.DisputeEntry(loan, debtor, UtcNow(), versionAtPending));
-        Assert.Equal(DomainErrorCodes.PersonalUtangConcurrencyConflict, disputeEx.ErrorCode);
-        Assert.Equal(PersonalUtangEntryStatus.Confirmed, loan.Status);
-        Assert.Equal(400m, relationship.CurrentBalance);
     }
 
     [Fact]
@@ -414,23 +383,20 @@ public sealed class PersonalUtangDomainTests
     }
 
     [Fact]
-    public void Unrelated_user_cannot_confirm_or_dispute()
+    public void Unrelated_user_cannot_record_entry()
     {
         var (relationship, creditor, _) = CreateSharedRelationship();
         var stranger = PlatformUserId.New();
-        var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 50m, 50m, UtcNow(), null, notes: "Test purpose");
+        relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 50m, 50m, UtcNow(), null, notes: "Test purpose");
 
-        var confirmEx = Assert.Throws<DomainException>(() =>
-            relationship.ConfirmEntry(loan, stranger, UtcNow(), relationship.Version));
-        Assert.Equal(DomainErrorCodes.PersonalUtangUnauthorized, confirmEx.ErrorCode);
-
-        var disputeEx = Assert.Throws<DomainException>(() =>
-            relationship.DisputeEntry(loan, stranger, UtcNow(), relationship.Version));
-        Assert.Equal(DomainErrorCodes.PersonalUtangUnauthorized, disputeEx.ErrorCode);
+        var ex = Assert.Throws<DomainException>(() =>
+            relationship.RecordEntry(
+                stranger, PersonalUtangEntryType.Loan, 10m, 10m, UtcNow(), relationship.Version, notes: "Nope"));
+        Assert.Equal(DomainErrorCodes.PersonalUtangNotLedgerOwner, ex.ErrorCode);
     }
 
     [Fact]
-    public void Invite_link_preserves_relationship_history_and_balance_then_new_entries_pending()
+    public void Invite_link_preserves_relationship_history_and_balance_then_new_entries_confirmed()
     {
         var owner = PlatformUserId.New();
         var invitee = PlatformUserId.New();
@@ -454,10 +420,7 @@ public sealed class PersonalUtangDomainTests
 
         var postLinkLoan = relationship.RecordEntry(
             owner, PersonalUtangEntryType.Loan, 400m, 400m, now, relationship.Version, notes: "Test purpose");
-        Assert.Equal(PersonalUtangEntryStatus.Pending, postLinkLoan.Status);
-        Assert.Equal(1500m, relationship.CurrentBalance);
-
-        relationship.ConfirmEntry(postLinkLoan, invitee, now, relationship.Version);
+        Assert.Equal(PersonalUtangEntryStatus.Confirmed, postLinkLoan.Status);
         Assert.Equal(1900m, relationship.CurrentBalance);
     }
 
@@ -479,19 +442,20 @@ public sealed class PersonalUtangDomainTests
     }
 
     [Fact]
-    public void Proposer_may_cancel_pending_entry()
+    public void Cancel_on_confirmed_entry_is_rejected()
     {
         var (relationship, creditor, debtor) = CreateSharedRelationship();
         var loan = relationship.RecordEntry(creditor, PersonalUtangEntryType.Loan, 200m, 200m, UtcNow(), null, notes: "Test purpose");
-        relationship.CancelPendingEntry(loan, creditor, UtcNow(), relationship.Version);
-        Assert.Equal(PersonalUtangEntryStatus.Cancelled, loan.Status);
-        Assert.Equal(0m, relationship.CurrentBalance);
+        Assert.Equal(PersonalUtangEntryStatus.Confirmed, loan.Status);
 
-        var cancelByCounterparty = relationship.RecordEntry(
-            creditor, PersonalUtangEntryType.Loan, 50m, 50m, UtcNow(), relationship.Version, notes: "Test purpose");
         var ex = Assert.Throws<DomainException>(() =>
-            relationship.CancelPendingEntry(cancelByCounterparty, debtor, UtcNow(), relationship.Version));
-        Assert.Equal(DomainErrorCodes.PersonalUtangUnauthorized, ex.ErrorCode);
+            relationship.CancelPendingEntry(loan, creditor, UtcNow(), relationship.Version));
+        Assert.Equal(DomainErrorCodes.PersonalUtangEntryInvalid, ex.ErrorCode);
+        Assert.Equal(200m, relationship.CurrentBalance);
+
+        var cancelByCounterparty = Assert.Throws<DomainException>(() =>
+            relationship.CancelPendingEntry(loan, debtor, UtcNow(), relationship.Version));
+        Assert.Equal(DomainErrorCodes.PersonalUtangEntryInvalid, cancelByCounterparty.ErrorCode);
     }
 
     private static DateTimeOffset UtcNow() => DateTimeOffset.UtcNow;

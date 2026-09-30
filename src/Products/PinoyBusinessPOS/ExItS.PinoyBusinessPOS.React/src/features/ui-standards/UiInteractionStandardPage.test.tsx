@@ -39,7 +39,7 @@ describe("UiInteractionStandardPage alias", () => {
 describe("ui-standard-catalog filters", () => {
   it("filters live cards and catalog rows by search", () => {
     const toastCards = filterLiveCards("all", "toast");
-    expect(toastCards.map((c) => c.id)).toEqual(expect.arrayContaining(["toasts", "messages"]));
+    expect(toastCards.map((c) => c.id)).toEqual(["messages"]);
     const danger = filterCatalogRows("all", "danger");
     expect(danger.some((r) => r.id === "button")).toBe(true);
     expect(danger.some((r) => r.id === "confirm")).toBe(true);

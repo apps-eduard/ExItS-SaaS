@@ -5,11 +5,14 @@ namespace ExItS.Platform.Domain.Personal;
 
 /// <summary>
 /// Peer debt relationship between a creditor and debtor participant.
-/// At least one participant must belong to the authenticated Personal account owner.
+/// <see cref="LedgerOwnerUserIdentityId"/> (creator) is the sole financial writer;
+/// a shared counterparty receives a mirrored read-only view.
 /// </summary>
 public sealed class PersonalDebtRelationship
 {
     public PersonalDebtRelationshipId Id { get; }
+    /// <summary>Immutable creator; sole financial writer for the relationship lifetime.</summary>
+    public PlatformUserId LedgerOwnerUserIdentityId { get; private set; }
     public PlatformUserId? CreditorUserIdentityId { get; private set; }
     public PersonalContactId? CreditorContactId { get; private set; }
     public PlatformUserId? DebtorUserIdentityId { get; private set; }
@@ -27,6 +30,7 @@ public sealed class PersonalDebtRelationship
 
     private PersonalDebtRelationship(
         PersonalDebtRelationshipId id,
+        PlatformUserId ledgerOwnerUserIdentityId,
         PlatformUserId? creditorUserIdentityId,
         PersonalContactId? creditorContactId,
         PlatformUserId? debtorUserIdentityId,
@@ -43,6 +47,7 @@ public sealed class PersonalDebtRelationship
         int version)
     {
         Id = id;
+        LedgerOwnerUserIdentityId = ledgerOwnerUserIdentityId;
         CreditorUserIdentityId = creditorUserIdentityId;
         CreditorContactId = creditorContactId;
         DebtorUserIdentityId = debtorUserIdentityId;
@@ -99,6 +104,7 @@ public sealed class PersonalDebtRelationship
 
         return new PersonalDebtRelationship(
             id ?? PersonalDebtRelationshipId.New(),
+            actingUserIdentityId,
             creditorUserIdentityId,
             creditorContactId,
             debtorUserIdentityId,
@@ -117,6 +123,7 @@ public sealed class PersonalDebtRelationship
 
     public static PersonalDebtRelationship Rehydrate(
         PersonalDebtRelationshipId id,
+        PlatformUserId ledgerOwnerUserIdentityId,
         PlatformUserId? creditorUserIdentityId,
         PersonalContactId? creditorContactId,
         PlatformUserId? debtorUserIdentityId,
@@ -133,6 +140,7 @@ public sealed class PersonalDebtRelationship
         Guid? migrationBatchId = null) =>
         new(
             id,
+            ledgerOwnerUserIdentityId,
             creditorUserIdentityId,
             creditorContactId,
             debtorUserIdentityId,
@@ -157,12 +165,23 @@ public sealed class PersonalDebtRelationship
         || (DebtorContactId is not null && contact.Id == DebtorContactId && contact.IsOwnedBy(ownerUserIdentityId));
 
     /// <summary>
-    /// Both sides are linked Personal users — shared ledger.
-    /// Regular entries start Pending unless the recipient has auto-accept enabled;
-    /// only Confirmed entries affect <see cref="CurrentBalance"/>.
+    /// Both sides are linked Personal users — shared visibility (one owner-writer ledger).
     /// </summary>
     public bool IsSharedLinked =>
         CreditorUserIdentityId is not null && DebtorUserIdentityId is not null;
+
+    public bool IsLedgerOwner(PlatformUserId userIdentityId) =>
+        LedgerOwnerUserIdentityId == userIdentityId;
+
+    public void EnsureIsLedgerOwner(PlatformUserId actingUserIdentityId)
+    {
+        if (!IsLedgerOwner(actingUserIdentityId))
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangNotLedgerOwner,
+                "Only the ledger owner can change this Utang record.");
+        }
+    }
 
     public bool IsLinkedParticipant(PlatformUserId userIdentityId) =>
         CreditorUserIdentityId == userIdentityId || DebtorUserIdentityId == userIdentityId;
@@ -252,8 +271,10 @@ public sealed class PersonalDebtRelationship
         PersonalUtangEntryIntent intent = PersonalUtangEntryIntent.Regular,
         decimal? settlementBalanceSnapshot = null)
     {
+        ArgumentNullException.ThrowIfNull(actingUserIdentityId);
         EnsureUtc(utcNow);
         EnsureVersion(expectedVersion);
+        EnsureIsLedgerOwner(actingUserIdentityId);
 
         if (Status is not PersonalDebtRelationshipStatus.Active)
         {
@@ -291,12 +312,10 @@ public sealed class PersonalDebtRelationship
             EnsureUtc(dueDateUtc.Value);
         }
 
-        // Shared Personal↔Personal: propose Pending without changing confirmed balance.
-        // Private/unlinked: Confirmed immediately (existing behavior).
-        var requiresConfirmation = IsSharedLinked;
-        var status = requiresConfirmation
-            ? PersonalUtangEntryStatus.Pending
-            : PersonalUtangEntryStatus.Confirmed;
+        // Owner-model: creator writes Confirmed immediately (sharing is visibility only).
+        // Legacy dual-writer Pending path is not used for new writes.
+        var requiresConfirmation = false;
+        var status = PersonalUtangEntryStatus.Confirmed;
 
         decimal balanceAfter;
         if (requiresConfirmation)
@@ -334,7 +353,7 @@ public sealed class PersonalDebtRelationship
 
     /// <summary>
     /// Records an explicit full-balance settlement Payment against the existing ledger.
-    /// Shared ledgers remain Pending until counterparty confirmation; private settles immediately.
+    /// Owner-model: Confirmed immediately.
     /// </summary>
     public PersonalUtangEntry RecordSettlementPayment(
         PlatformUserId actingUserIdentityId,
@@ -345,6 +364,7 @@ public sealed class PersonalDebtRelationship
     {
         ArgumentNullException.ThrowIfNull(actingUserIdentityId);
         EnsureUtc(utcNow);
+        EnsureIsLedgerOwner(actingUserIdentityId);
 
         if (Status is not PersonalDebtRelationshipStatus.Active)
         {
@@ -387,12 +407,15 @@ public sealed class PersonalDebtRelationship
     /// Idempotent when already Closed. Does not create a Payment entry.
     /// </summary>
     public void CloseAsSettled(
+        PlatformUserId actingUserIdentityId,
         DateTimeOffset utcNow,
         int? expectedVersion = null,
         bool hasUnresolvedPending = false)
     {
+        ArgumentNullException.ThrowIfNull(actingUserIdentityId);
         EnsureUtc(utcNow);
         EnsureVersion(expectedVersion);
+        EnsureIsLedgerOwner(actingUserIdentityId);
 
         if (Status is PersonalDebtRelationshipStatus.Closed)
         {

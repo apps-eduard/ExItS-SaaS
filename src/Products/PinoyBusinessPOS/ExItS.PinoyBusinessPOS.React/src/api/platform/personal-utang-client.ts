@@ -20,6 +20,7 @@ export const personalContactSchema = z.object({
 
 export const personalDebtShareOutcomeSchema = z.enum([
   "Private",
+  "Shared",
   "SharedPending",
   "SharedAutoSynced",
   "PrivateNotReceiving",
@@ -40,6 +41,8 @@ export const personalDebtRelationshipSummarySchema = z.object({
   updatedAtUtc: z.string(),
   isSharedLedger: z.boolean().optional().default(false),
   isPrivate: z.boolean().optional().default(true),
+  ledgerOwnerUserIdentityId: guidSchema.nullable().optional().default(null),
+  isLedgerOwner: z.boolean().optional().default(true),
   shareOutcome: personalDebtShareOutcomeSchema.nullable().optional().default(null),
 });
 
@@ -220,6 +223,7 @@ function normalizeShareOutcome(raw: unknown): string | null {
   const value = String(raw);
   if (
     value === "Private" ||
+    value === "Shared" ||
     value === "SharedPending" ||
     value === "SharedAutoSynced" ||
     value === "PrivateNotReceiving"
@@ -234,6 +238,7 @@ function normalizeRelationship(raw: unknown): unknown {
   const r = raw as Record<string, unknown>;
   const isSharedLedger = Boolean(pick(r, "isSharedLedger", "IsSharedLedger") ?? false);
   const isPrivateRaw = pick(r, "isPrivate", "IsPrivate");
+  const isLedgerOwnerRaw = pick(r, "isLedgerOwner", "IsLedgerOwner");
   return {
     id: pick(r, "id", "Id"),
     perspective: pick(r, "perspective", "Perspective"),
@@ -249,6 +254,9 @@ function normalizeRelationship(raw: unknown): unknown {
     updatedAtUtc: pick(r, "updatedAtUtc", "UpdatedAtUtc"),
     isSharedLedger,
     isPrivate: isPrivateRaw == null ? !isSharedLedger : Boolean(isPrivateRaw),
+    ledgerOwnerUserIdentityId:
+      pick(r, "ledgerOwnerUserIdentityId", "LedgerOwnerUserIdentityId") ?? null,
+    isLedgerOwner: isLedgerOwnerRaw == null ? true : Boolean(isLedgerOwnerRaw),
     shareOutcome: normalizeShareOutcome(pick(r, "shareOutcome", "ShareOutcome")),
   };
 }

@@ -34,7 +34,12 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { UtangDueCaption, UtangLinkedIcon } from "@/features/personal/utang/UtangListMeta";
+import {
+  isSharedRelationship as workspaceIsSharedRelationship,
+  resolveRelationshipContactName,
+} from "@/features/personal/utang/utang-workspace";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { RelationshipInviteReminderPanel } from "@/features/personal/social/PersonalSocialPages";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -58,7 +63,6 @@ import {
   type CachedPersonalEntry,
   type CachedPersonalRelationship,
 } from "@/offline/personal-utang-cache";
-import { resolveRelationshipContactName } from "@/features/personal/utang/utang-workspace";
 import {
   isNotFoundStatus,
   resolveAmbiguousMutationOutcome,
@@ -122,10 +126,21 @@ function loanActivityLabel(
     : t("personal.utang.activityYouLent").replace("{name}", personName);
 }
 
-function entryTypeLabelKey(entryType: string): MessageKey {
-  if (entryType === "Payment") return "personal.utang.entryTypePayment";
-  if (entryType === "Adjustment") return "personal.utang.entryTypeAdjustment";
-  return "personal.utang.entryTypeLoan";
+function entryActionLabel(
+  entryType: string,
+  options: { isSettlement?: boolean },
+  t: (key: MessageKey) => string,
+): string {
+  if (options.isSettlement) {
+    return t("personal.utang.settlementEntry");
+  }
+  if (entryType === "Payment") {
+    return t("personal.utang.recordPayment");
+  }
+  if (entryType === "Adjustment") {
+    return t("personal.utang.adjustBalance");
+  }
+  return t("personal.utang.addAmount");
 }
 
 function entryStatusLabel(
@@ -157,9 +172,7 @@ function entryStatusLabel(
 function isSharedRelationship(
   row: Pick<PersonalDebtRelationshipSummaryDto, "isSharedLedger" | "isPrivate">,
 ): boolean {
-  if (row.isSharedLedger) return true;
-  if (row.isPrivate) return false;
-  return false;
+  return workspaceIsSharedRelationship(row);
 }
 
 function contactLooksLinked(
@@ -230,6 +243,7 @@ function findSharedRelationshipForContact(
       | "id"
       | "isSharedLedger"
       | "isPrivate"
+      | "isLedgerOwner"
       | "debtorContactId"
       | "creditorContactId"
       | "debtorUserIdentityId"
@@ -239,6 +253,7 @@ function findSharedRelationshipForContact(
   contacts: ReadonlyArray<PersonalContactDto | CachedPersonalContact>,
   contactId: string,
   mode: "lent" | "owe",
+  options?: { ownedOnly?: boolean; sharedWithMeOnly?: boolean },
 ): { id: string } | null {
   if (!contactId) {
     return null;
@@ -247,6 +262,12 @@ function findSharedRelationshipForContact(
     contacts.find((c) => c.id === contactId)?.linkedUserIdentityId?.trim() || null;
   const match = rows.find((row) => {
     if (!isSharedRelationship(row)) {
+      return false;
+    }
+    if (options?.ownedOnly && row.isLedgerOwner === false) {
+      return false;
+    }
+    if (options?.sharedWithMeOnly && row.isLedgerOwner !== false) {
       return false;
     }
     if (mode === "lent") {
@@ -467,23 +488,31 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
     ? (cachedRows.length > 0 ? cachedRows : (listQuery.data ?? []))
     : (listQuery.data ?? []);
   const selectedLinked = contactId ? contactLooksLinked(contacts, contactId) : false;
-  const existingSharedForContact =
+  const existingSharedOwnedByMe =
     selectedLinked && contactId
-      ? findSharedRelationshipForContact(rows, contacts, contactId, mode)
+      ? findSharedRelationshipForContact(rows, contacts, contactId, mode, {
+          ownedOnly: true,
+        })
+      : null;
+  const existingSharedWithMe =
+    selectedLinked && contactId
+      ? findSharedRelationshipForContact(rows, contacts, contactId, mode, {
+          sharedWithMeOnly: true,
+        })
       : null;
 
   const sharedHistoryQuery = useQuery({
-    queryKey: ["personal", "utang", "history", existingSharedForContact?.id ?? ""],
-    enabled: Boolean(existingSharedForContact?.id) && online && selectedLinked,
-    queryFn: ({ signal }) => listPersonalUtangHistory(existingSharedForContact!.id, signal),
+    queryKey: ["personal", "utang", "history", existingSharedOwnedByMe?.id ?? ""],
+    enabled: Boolean(existingSharedOwnedByMe?.id) && online && selectedLinked,
+    queryFn: ({ signal }) => listPersonalUtangHistory(existingSharedOwnedByMe!.id, signal),
   });
 
   const pendingOutgoingCount = useMemo(
     () =>
-      selectedLinked && existingSharedForContact
+      selectedLinked && existingSharedOwnedByMe
         ? countPendingOutgoingLoanProposals(sharedHistoryQuery.data ?? [])
         : 0,
-    [existingSharedForContact, selectedLinked, sharedHistoryQuery.data],
+    [existingSharedOwnedByMe, selectedLinked, sharedHistoryQuery.data],
   );
   const pendingAtLimit = pendingOutgoingCount >= PERSONAL_UTANG_MAX_PENDING_OUTGOING;
 
@@ -643,12 +672,12 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const recordFormLabel =
     mode === "lent" ? t("personal.utang.recordLent") : t("personal.utang.recordOwe");
   const RecordFormIcon = mode === "lent" ? HandCoins : Wallet;
-  const viewPendingTo = existingSharedForContact
-    ? `/personal/utang/relationships/${existingSharedForContact.id}`
+  const viewPendingTo = existingSharedOwnedByMe
+    ? `/personal/utang/relationships/${existingSharedOwnedByMe.id}`
     : "/personal/utang";
-  // Pending limit only applies when sharing into an existing shared ledger for review.
+  // Pending limit only applies when sharing into the viewer's own existing shared ledger.
   const sharePendingBlocked =
-    willShare && Boolean(existingSharedForContact) && pendingAtLimit;
+    willShare && Boolean(existingSharedOwnedByMe) && pendingAtLimit;
 
   return (
     <div
@@ -707,7 +736,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             setFormError(t("personal.utang.purposeRequired"));
             return;
           }
-          if (pendingAtLimit) {
+          // New independent ledgers are never blocked by pending-count on another record.
+          if (willShare && existingSharedOwnedByMe && pendingAtLimit) {
             setFormError(
               t("personal.utang.pendingLimitReached").replace(
                 "{name}",
@@ -722,6 +752,26 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {mode === "lent" ? t("personal.utang.whatHappenedLent") : t("personal.utang.whatHappenedBorrowed")}
             </p>
+            {existingSharedWithMe ? (
+              <p
+                className="m-0 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="utang-rel-shared-exists-hint"
+                role="status"
+              >
+                {t("personal.utang.counterpartyAlreadyShared").replace(
+                  "{name}",
+                  selectedContactName || t("personal.utang.person"),
+                )}{" "}
+                <Link
+                  to={`/personal/utang/relationships/${existingSharedWithMe.id}`}
+                  data-testid="utang-rel-view-shared-record"
+                >
+                  {t("personal.utang.viewSharedRecord")}
+                </Link>
+                {" · "}
+                {t("personal.utang.createOwnRecordHint")}
+              </p>
+            ) : null}
         <div
           className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-end"
           data-testid="utang-rel-primary-fields"
@@ -838,7 +888,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             }
           />
         ) : null}
-        {willShare && existingSharedForContact && pendingOutgoingCount > 0 ? (
+        {willShare && existingSharedOwnedByMe && pendingOutgoingCount > 0 ? (
           <PendingOutgoingHint
             count={pendingOutgoingCount}
             name={selectedContactName}
@@ -907,20 +957,44 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           {rows.map((row) => {
             const name = contactLabel(contacts, row);
             const shared = isSharedRelationship(row);
+            const owned = row.isLedgerOwner !== false;
             const ledgerLabel = shared
-              ? t("personal.utang.linked")
+              ? owned
+                ? t("personal.utang.sharedLedger")
+                : t("personal.utang.readOnly")
               : t("personal.utang.notLinkedToExits");
+            const ownershipLabel = owned
+              ? t("personal.utang.ownershipMine")
+              : t("personal.utang.ownershipSharedWithMe");
             const perspectiveLabel =
               mode === "lent" ? t("personal.utang.owesYou") : t("personal.utang.youOwe");
             return (
               <li key={row.id}>
                 <Link
                   to={`/personal/utang/relationships/${row.id}`}
-                  className="exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
+                  className={cn(
+                    "exits-list__card utang-account-card flex items-center justify-between gap-3 text-foreground no-underline",
+                    !owned && "utang-account-card--shared",
+                  )}
                   data-testid={`utang-rel-row-${row.id}`}
                 >
                   <PersonAvatar name={name} size="sm" />
                   <div className="min-w-0 flex-1">
+                    <p
+                      className="m-0 flex min-w-0 items-center justify-between gap-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                      data-utang-ownership=""
+                      data-testid={`utang-rel-ownership-${row.id}`}
+                    >
+                      <span className="min-w-0 truncate">{ownershipLabel}</span>
+                      {!owned ? (
+                        <StatusChip
+                          tone="secondary"
+                          data-testid={`utang-rel-readonly-${row.id}`}
+                        >
+                          {t("personal.utang.readOnly")}
+                        </StatusChip>
+                      ) : null}
+                    </p>
                     <p className="exits-list__name m-0 truncate font-semibold">{name}</p>
                     <p className="m-0 flex min-w-0 items-center gap-1 truncate text-[length:var(--exits-text-sm)] text-muted">
                       <span className="truncate">{perspectiveLabel}</span>
@@ -937,6 +1011,12 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                           </span>
                         </>
                       )}
+                      {!owned ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="truncate">{t("personal.utang.managedByOther").replace("{name}", name)}</span>
+                        </>
+                      ) : null}
                     </p>
                     <WaitingChip origin={rowOrigin(row)} />
                   </div>
@@ -1052,9 +1132,18 @@ export function PersonalRelationshipDetailPage() {
       detailQuery.data?.currentBalance ??
       0)
     : (balanceQuery.data?.currentBalance ?? 0);
-  const history: CachedPersonalEntry[] | PersonalUtangEntryDto[] = usingCache
-    ? (historyQuery.data ?? cachedHistory)
-    : (historyQuery.data ?? []);
+  const history: CachedPersonalEntry[] | PersonalUtangEntryDto[] = useMemo(() => {
+    const rows = usingCache
+      ? (historyQuery.data ?? cachedHistory)
+      : (historyQuery.data ?? []);
+    return [...rows].sort((a, b) => {
+      const byTime = b.createdAtUtc.localeCompare(a.createdAtUtc);
+      if (byTime !== 0) {
+        return byTime;
+      }
+      return b.id.localeCompare(a.id);
+    });
+  }, [usingCache, historyQuery.data, cachedHistory]);
   const relationshipIsLocal = cachedDetail?.origin === "Local";
   const pendingOutgoingCount = useMemo(
     () =>
@@ -1062,6 +1151,10 @@ export function PersonalRelationshipDetailPage() {
         ? countPendingOutgoingLoanProposals(history)
         : 0,
     [detail, history],
+  );
+  const unresolvedPendingCount = useMemo(
+    () => history.filter((entry) => entry.status === "Pending").length,
+    [history],
   );
   const pendingAtLimit = pendingOutgoingCount >= PERSONAL_UTANG_MAX_PENDING_OUTGOING;
 
@@ -1325,6 +1418,7 @@ export function PersonalRelationshipDetailPage() {
   }
 
   const shared = isSharedRelationship(detail);
+  const isLedgerOwner = detail.isLedgerOwner !== false;
   const relationshipClosed = detail.status.toLowerCase() === "closed";
   const relationshipActive = detail.status.toLowerCase() === "active";
   const awaitingSettlement = history.some((entry) => {
@@ -1337,9 +1431,13 @@ export function PersonalRelationshipDetailPage() {
     detail.perspective === "Borrowed"
       ? t("personal.utang.perspectiveDebtor")
       : t("personal.utang.perspectiveCreditor");
-  const ledgerLabel = shared
-    ? t("personal.utang.sharedLedger")
-    : t("personal.utang.privateRecord");
+  const ownerDisplayName =
+    personName === EM_DASH ? t("personal.utang.person") : personName;
+  const ledgerLabel = !shared
+    ? t("personal.utang.privateRecord")
+    : isLedgerOwner
+      ? t("personal.utang.sharedLedger")
+      : t("personal.utang.sharedBy").replace("{name}", ownerDisplayName);
   const statusLabel = relationshipClosed
     ? t("personal.utang.statusSettled")
     : t("personal.utang.statusActive");
@@ -1347,10 +1445,12 @@ export function PersonalRelationshipDetailPage() {
     detail.perspective === "Borrowed" ? personalPageBackNav.utangOwe : personalPageBackNav.utangLent;
   // An Adjustment rewrites a balance against a version this device may no longer be showing.
   const adjustmentBlocked = !online && entryType === "Adjustment";
-  const loanBlockedByPendingLimit = shared && pendingAtLimit && entryType === "Loan";
+  // Owner-model: unresolved-pending limit does not apply to new Confirmed writes.
+  const loanBlockedByPendingLimit = false;
   const submitLabel = t("personal.utang.saveEntry");
   const viewPendingTo = `/personal/utang/relationships/${relationshipId}`;
   const settleBlockedOffline = !online;
+  const canMutateFinances = isLedgerOwner;
 
   const disputeReasonText = (): string | null => {
     if (disputeReasonKey === "amount") return t("personal.utang.disputeReasonAmount");
@@ -1389,6 +1489,14 @@ export function PersonalRelationshipDetailPage() {
         </p>
         <DueChip dueDateUtc={detail.dueDateUtc} />
         <WaitingChip origin={relationshipIsLocal ? "Local" : "Server"} />
+        {shared && !isLedgerOwner ? (
+          <p
+            className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="utang-detail-owner-manages"
+          >
+            {t("personal.utang.ownerManagesRecord").replace("{name}", ownerDisplayName)}
+          </p>
+        ) : null}
       </div>
 
       {awaitingSettlement ? (
@@ -1410,7 +1518,10 @@ export function PersonalRelationshipDetailPage() {
         </p>
       ) : null}
 
-      {relationshipActive && currentBalance > 0 ? (
+      {canMutateFinances &&
+      relationshipActive &&
+      currentBalance > 0 &&
+      unresolvedPendingCount === 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
           {settleBlockedOffline ? (
             <OfflineNotice
@@ -1471,7 +1582,10 @@ export function PersonalRelationshipDetailPage() {
         </div>
       ) : null}
 
-      {relationshipActive && currentBalance === 0 ? (
+      {canMutateFinances &&
+      relationshipActive &&
+      currentBalance === 0 &&
+      unresolvedPendingCount === 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
           {settleBlockedOffline ? (
             <OfflineNotice
@@ -1493,7 +1607,7 @@ export function PersonalRelationshipDetailPage() {
         </div>
       ) : null}
 
-      {!relationshipClosed ? (
+      {canMutateFinances && !relationshipClosed ? (
       <form
         className="catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
         noValidate
@@ -1593,7 +1707,7 @@ export function PersonalRelationshipDetailPage() {
         {!online && !adjustmentBlocked ? (
           <OfflineNotice message={t("offline.requiredPersonalUtangRecord")} />
         ) : null}
-        {shared && online ? (
+        {shared && online && isLedgerOwner ? (
           <p
             className="m-0 text-[length:var(--exits-text-sm)] text-muted"
             data-testid="utang-entry-confirm-hint"
@@ -1695,16 +1809,20 @@ export function PersonalRelationshipDetailPage() {
                   ? t("personal.utang.confirmReceived")
                   : t("personal.utang.confirm");
               const isDisputing = disputeEntryId === entry.id;
-              const entryTitle = isSettlement
-                ? t("personal.utang.settlementEntry")
-                : entry.entryType === "Loan"
+              const entryTitle = entryActionLabel(
+                entry.entryType,
+                { isSettlement },
+                t,
+              );
+              const loanPerspectiveHint =
+                !isSettlement && entry.entryType === "Loan"
                   ? loanActivityLabel(
                       detail.perspective,
                       personName,
                       pendingIncoming,
                       t,
                     )
-                  : t(entryTypeLabelKey(entry.entryType));
+                  : null;
 
               return (
                 <li key={entry.id}>
@@ -1714,9 +1832,20 @@ export function PersonalRelationshipDetailPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="exits-list__name m-0 font-medium">
+                        <p
+                          className="exits-list__name m-0 font-medium"
+                          data-testid={`utang-entry-action-${entry.id}`}
+                        >
                           {entryTitle}
                         </p>
+                        {loanPerspectiveHint ? (
+                          <p
+                            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                            data-testid={`utang-entry-perspective-${entry.id}`}
+                          >
+                            {loanPerspectiveHint}
+                          </p>
+                        ) : null}
                         {pendingIncoming ? (
                           <p
                             className="m-0 text-[length:var(--exits-text-sm)] font-medium"

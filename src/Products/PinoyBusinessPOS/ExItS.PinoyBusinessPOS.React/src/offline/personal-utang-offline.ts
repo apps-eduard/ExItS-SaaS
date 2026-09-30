@@ -301,6 +301,8 @@ export async function enqueuePersonalRelationshipCreate(
     updatedAtUtc: operation.createdAt,
     isSharedLedger: false,
     isPrivate: true,
+    ledgerOwnerUserIdentityId: input.ownerUserIdentityId,
+    isLedgerOwner: true,
     shareOutcome: "Private",
   };
   await cacheLocalPersonalRelationship(

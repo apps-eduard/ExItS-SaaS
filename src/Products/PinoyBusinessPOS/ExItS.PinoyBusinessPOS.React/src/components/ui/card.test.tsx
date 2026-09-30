@@ -53,6 +53,7 @@ describe("ExItS Card foundation (APPROVED / LOCKED)", () => {
     );
     expect(screen.getByTestId("card-selected")).toHaveAttribute("data-treatment", "selected");
     expect(screen.getByTestId("card-selected")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByTestId("card-selected").className).toMatch(/exits-card--selected/);
 
     rerender(
       createElement(
@@ -67,6 +68,7 @@ describe("ExItS Card foundation (APPROVED / LOCKED)", () => {
       ),
     );
     expect(screen.getByTestId("card-accent")).toHaveAttribute("data-treatment", "accent");
+    expect(screen.getByTestId("card-accent")).toHaveAttribute("data-accent-tone", "warning");
     expect(screen.getByTestId("card-accent").className).toMatch(/border-s-\[var\(--exits-warning\)\]/);
   });
 

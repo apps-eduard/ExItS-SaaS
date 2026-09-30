@@ -30,6 +30,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { Button } from "@/components/ui/button";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
@@ -129,6 +130,8 @@ export function PersonalUtangHubPage() {
     allActive.length === 0 &&
     (dashboard?.totalLentBalance ?? 0) === 0 &&
     (dashboard?.totalBorrowedBalance ?? 0) === 0 &&
+    (dashboard?.sharedWithMeLentBalance ?? 0) === 0 &&
+    (dashboard?.sharedWithMeBorrowedBalance ?? 0) === 0 &&
     pendingCount === 0;
 
   return (
@@ -150,31 +153,84 @@ export function PersonalUtangHubPage() {
           aria-label={t("personal.home.utangSummary")}
           data-testid="utang-hub-summary"
         >
-          <div className="personal-summary-grid personal-summary-grid--balances" role="list">
-            <DashboardMetricCard
-              label={t("personal.home.owedToMe")}
-              icon={HandCoins}
-              tone="emphasis"
-              testId="utang-hub-owed-to-me"
-              to="/personal/utang/lent"
-            >
-              <MoneyDisplay amount={dashboard.totalLentBalance} />
-            </DashboardMetricCard>
-            <DashboardMetricCard
-              label={t("personal.home.iOwe")}
-              icon={Wallet}
-              tone={dashboard.totalBorrowedBalance > 0 ? "attention" : "default"}
-              testId="utang-hub-i-owe"
-              to="/personal/utang/owe"
-            >
-              <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
-            </DashboardMetricCard>
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex min-w-0 flex-col gap-2" data-testid="utang-hub-owed-to-me">
+              <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+                {t("personal.home.owedToMe")}
+              </h3>
+              <div className="personal-summary-grid personal-summary-grid--balances" role="list">
+                <DashboardMetricCard
+                  label={t("personal.utang.ownershipMine")}
+                  icon={HandCoins}
+                  tone="emphasis"
+                  testId="utang-hub-owed-to-me-mine"
+                  to="/personal/utang/lent"
+                >
+                  <MoneyDisplay amount={dashboard.totalLentBalance} />
+                </DashboardMetricCard>
+                <DashboardMetricCard
+                  label={t("personal.utang.ownershipSharedWithMe")}
+                  icon={HandCoins}
+                  tone="shared"
+                  testId="utang-hub-owed-to-me-shared"
+                  to="/personal/utang/lent"
+                  tag={
+                    <StatusChip
+                      tone="secondary"
+                      data-testid="utang-hub-owed-to-me-shared-readonly"
+                    >
+                      {t("personal.utang.readOnly")}
+                    </StatusChip>
+                  }
+                >
+                  <MoneyDisplay amount={dashboard.sharedWithMeLentBalance} />
+                </DashboardMetricCard>
+              </div>
+            </div>
+            <div className="flex min-w-0 flex-col gap-2" data-testid="utang-hub-i-owe">
+              <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+                {t("personal.home.iOwe")}
+              </h3>
+              <div className="personal-summary-grid personal-summary-grid--balances" role="list">
+                <DashboardMetricCard
+                  label={t("personal.utang.ownershipMine")}
+                  icon={Wallet}
+                  tone={dashboard.totalBorrowedBalance > 0 ? "attention" : "default"}
+                  testId="utang-hub-i-owe-mine"
+                  to="/personal/utang/owe"
+                >
+                  <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
+                </DashboardMetricCard>
+                <DashboardMetricCard
+                  label={t("personal.utang.ownershipSharedWithMe")}
+                  icon={Wallet}
+                  tone="shared"
+                  testId="utang-hub-i-owe-shared"
+                  to="/personal/utang/owe"
+                  tag={
+                    <StatusChip
+                      tone="secondary"
+                      data-testid="utang-hub-i-owe-shared-readonly"
+                    >
+                      {t("personal.utang.readOnly")}
+                    </StatusChip>
+                  }
+                >
+                  <MoneyDisplay amount={dashboard.sharedWithMeBorrowedBalance} />
+                </DashboardMetricCard>
+              </div>
+            </div>
           </div>
-          {dashboard.activeRelationshipCount > 0 || dashboard.contactCount > 0 ? (
+          {dashboard.activeRelationshipCount > 0 ||
+          dashboard.contactCount > 0 ||
+          (dashboard.sharedWithMeActiveCount ?? 0) > 0 ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="utang-hub-meta">
               {t("personal.utang.workspaceMeta")
                 .replace("{active}", String(dashboard.activeRelationshipCount))
                 .replace("{people}", String(dashboard.contactCount))}
+              {(dashboard.sharedWithMeActiveCount ?? 0) > 0
+                ? ` · ${t("personal.home.activeShared")}: ${dashboard.sharedWithMeActiveCount}`
+                : ""}
             </p>
           ) : null}
         </section>

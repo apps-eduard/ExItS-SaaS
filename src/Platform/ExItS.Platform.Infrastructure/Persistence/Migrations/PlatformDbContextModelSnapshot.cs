@@ -5262,6 +5262,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_date_utc");
 
+                    b.Property<Guid>("LedgerOwnerUserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ledger_owner_user_identity_id");
+
                     b.Property<Guid?>("MigrationBatchId")
                         .HasColumnType("uuid")
                         .HasColumnName("migration_batch_id");
@@ -5291,6 +5295,8 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasIndex("DebtorContactId");
 
                     b.HasIndex("DebtorUserIdentityId");
+
+                    b.HasIndex("LedgerOwnerUserIdentityId");
 
                     b.ToTable("personal_debt_relationships", "platform", t =>
                         {
@@ -7657,6 +7663,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("DebtorUserIdentityId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("LedgerOwnerUserIdentityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalFeatureEntitlementRecord", b =>

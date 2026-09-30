@@ -3756,10 +3756,83 @@ html:has(.personal-shell) #root {
   box-shadow: var(--exits-shadow-sm);
 }
 
+.exits-card[data-treatment="surface"] {
+  background: color-mix(in srgb, var(--exits-surface-muted) 35%, var(--exits-surface));
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.exits-card[data-treatment="bordered"] {
+  background: var(--exits-surface);
+  border-color: color-mix(in srgb, var(--exits-border) 88%, transparent);
+  box-shadow: none;
+}
+
+.exits-card[data-treatment="elevated"],
+.exits-card--raised {
+  background: var(--exits-surface);
+  border-color: color-mix(in srgb, var(--exits-border) 70%, transparent);
+  box-shadow: var(--exits-shadow-md);
+}
+
+.exits-card[data-treatment="interactive"],
+.exits-card--interactive {
+  background: var(--exits-surface);
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.exits-card[data-treatment="interactive"]:hover,
+.exits-card--interactive:hover {
+  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+  box-shadow: var(--exits-shadow-sm);
+}
+
 .exits-card--selected,
-.exits-panel--selected {
+.exits-panel--selected,
+.exits-card[data-treatment="selected"],
+.exits-card[data-selected="true"] {
   background: var(--exits-primary-soft);
   border-color: color-mix(in srgb, var(--exits-primary) 55%, var(--exits-border));
+  box-shadow: none;
+}
+
+.exits-card[data-treatment="featured"] {
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.exits-card[data-treatment="accent"][data-accent-position="tint"][data-accent-tone="primary"] {
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+}
+
+.exits-card[data-treatment="accent"][data-accent-position="tint"][data-accent-tone="info"] {
+  background: color-mix(in srgb, var(--exits-info) 8%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-info) 35%, var(--exits-border));
+}
+
+.exits-card[data-treatment="accent"][data-accent-position="tint"][data-accent-tone="success"] {
+  background: color-mix(in srgb, var(--exits-success) 8%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-success) 35%, var(--exits-border));
+}
+
+.exits-card[data-treatment="accent"][data-accent-position="tint"][data-accent-tone="warning"] {
+  background: color-mix(in srgb, var(--exits-warning) 8%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-warning) 35%, var(--exits-border));
+}
+
+.exits-card[data-treatment="accent"][data-accent-position="tint"][data-accent-tone="danger"] {
+  background: color-mix(in srgb, var(--exits-danger) 8%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-danger) 35%, var(--exits-border));
+}
+
+button.exits-card {
+  font: inherit;
+  color: inherit;
 }
 
 .exits-metric-surface {
@@ -3893,7 +3966,7 @@ html:has(.personal-shell) #root {
   height: 100%;
 }
 
-/* Soft appearance (default) — tinted fill + quiet border. */
+/* Soft appearance (default) — quiet tinted fill + soft border. */
 .exits-status-chip--success {
   color: var(--exits-success);
   border-color: color-mix(in srgb, var(--exits-success) 28%, transparent);
@@ -3930,6 +4003,113 @@ html:has(.personal-shell) #root {
   background: var(--exits-primary-soft);
 }
 
+.exits-status-chip--secondary {
+  color: var(--exits-severity-secondary-foreground);
+  border-color: color-mix(in srgb, var(--exits-severity-secondary-foreground) 18%, transparent);
+  background: var(--exits-severity-secondary);
+}
+
+.exits-status-chip--help {
+  color: var(--exits-severity-help);
+  border-color: color-mix(in srgb, var(--exits-severity-help) 28%, transparent);
+  background: color-mix(in srgb, var(--exits-severity-help) 12%, var(--exits-surface));
+}
+
+.exits-status-chip--contrast {
+  color: var(--exits-severity-contrast-foreground);
+  border-color: var(--exits-severity-contrast);
+  background: var(--exits-severity-contrast);
+}
+
+/*
+ * Emphasis — Diamond Tag soft look: bold tone-colored ink on a pale wash.
+ * Separate from Soft (quiet), Outline (border only), and Solid (filled contrast ink).
+ */
+.exits-status-chip--appearance-emphasis {
+  font-weight: var(--exits-font-weight-bold);
+  border-color: transparent;
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--success {
+  color: color-mix(in srgb, var(--exits-severity-success) 42%, #14532d);
+  background: color-mix(in srgb, var(--exits-severity-success) 16%, #ffffff);
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--info {
+  color: color-mix(in srgb, var(--exits-severity-info) 48%, #0c4a6e);
+  background: color-mix(in srgb, var(--exits-severity-info) 14%, #ffffff);
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--warning {
+  color: color-mix(in srgb, var(--exits-severity-warn) 40%, #9a3412);
+  background: color-mix(in srgb, var(--exits-severity-warn) 16%, #ffffff);
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--danger {
+  color: color-mix(in srgb, var(--exits-severity-danger) 42%, #991b1b);
+  background: color-mix(in srgb, var(--exits-severity-danger) 14%, #ffffff);
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--neutral {
+  color: var(--exits-text-muted);
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--primary {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 14%, #ffffff);
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--secondary {
+  color: var(--exits-severity-secondary-foreground);
+  background: var(--exits-severity-secondary);
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--help {
+  color: color-mix(in srgb, var(--exits-severity-help) 45%, #6b21a8);
+  background: color-mix(in srgb, var(--exits-severity-help) 14%, #ffffff);
+}
+
+.exits-status-chip--appearance-emphasis.exits-status-chip--contrast {
+  color: var(--exits-severity-contrast-foreground);
+  background: var(--exits-severity-contrast);
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-emphasis.exits-status-chip--success {
+  color: var(--exits-severity-success);
+  background: color-mix(in srgb, var(--exits-severity-success) 18%, var(--exits-surface));
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-emphasis.exits-status-chip--info {
+  color: var(--exits-severity-info);
+  background: color-mix(in srgb, var(--exits-severity-info) 18%, var(--exits-surface));
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-emphasis.exits-status-chip--warning {
+  color: var(--exits-severity-warn);
+  background: color-mix(in srgb, var(--exits-severity-warn) 18%, var(--exits-surface));
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-emphasis.exits-status-chip--danger {
+  color: var(--exits-severity-danger);
+  background: color-mix(in srgb, var(--exits-severity-danger) 18%, var(--exits-surface));
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-emphasis.exits-status-chip--primary {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-surface));
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-emphasis.exits-status-chip--help {
+  color: var(--exits-severity-help);
+  background: color-mix(in srgb, var(--exits-severity-help) 18%, var(--exits-surface));
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-emphasis.exits-status-chip--neutral {
+  color: var(--exits-text-muted);
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, var(--exits-surface));
+}
+
 /* Outline — border + label only; transparent fill. */
 .exits-status-chip--appearance-outline {
   background: transparent;
@@ -3959,7 +4139,22 @@ html:has(.personal-shell) #root {
   border-color: color-mix(in srgb, var(--exits-primary) 55%, transparent);
 }
 
-/* Solid — filled tone surface; contrast ink (light themes use white, dark themes use dark ink). */
+.exits-status-chip--appearance-outline.exits-status-chip--secondary {
+  border-color: color-mix(in srgb, var(--exits-severity-secondary-foreground) 35%, transparent);
+  color: var(--exits-severity-secondary-foreground);
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--help {
+  border-color: color-mix(in srgb, var(--exits-severity-help) 55%, transparent);
+  color: var(--exits-severity-help);
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--contrast {
+  border-color: var(--exits-severity-contrast);
+  color: var(--exits-severity-contrast);
+}
+
+/* Solid — filled tone surface; contrast ink. */
 .exits-status-chip--appearance-solid.exits-status-chip--success {
   color: #ffffff;
   border-color: var(--exits-success);
@@ -3996,10 +4191,29 @@ html:has(.personal-shell) #root {
   background: var(--exits-primary);
 }
 
+.exits-status-chip--appearance-solid.exits-status-chip--secondary {
+  color: var(--exits-severity-secondary-foreground);
+  border-color: var(--exits-severity-secondary);
+  background: var(--exits-severity-secondary);
+}
+
+.exits-status-chip--appearance-solid.exits-status-chip--help {
+  color: var(--exits-severity-help-foreground);
+  border-color: var(--exits-severity-help);
+  background: var(--exits-severity-help);
+}
+
+.exits-status-chip--appearance-solid.exits-status-chip--contrast {
+  color: var(--exits-severity-contrast-foreground);
+  border-color: var(--exits-severity-contrast);
+  background: var(--exits-severity-contrast);
+}
+
 [data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--success,
 [data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--info,
 [data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--warning,
-[data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--danger {
+[data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--danger,
+[data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--help {
   color: var(--exits-bg);
 }
 
@@ -12682,11 +12896,37 @@ a.dashboard-metric-card:focus-visible {
   background: color-mix(in srgb, var(--exits-success) 7%, var(--exits-surface));
 }
 
+.dashboard-metric-card--shared {
+  border-color: color-mix(in srgb, var(--exits-info) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 8%, var(--exits-surface));
+}
+
 .dashboard-metric-card__head {
   display: flex;
   align-items: center;
   gap: 0.45rem;
   min-width: 0;
+}
+
+.dashboard-metric-card__label {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+  line-height: var(--exits-leading-normal);
+}
+
+.dashboard-metric-card__tag {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dashboard-metric-card__label:has(.exits-status-chip) {
+  flex: 0 1 auto;
 }
 
 .dashboard-metric-card__icon {
@@ -12711,17 +12951,19 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-success);
 }
 
+.dashboard-metric-card--shared .dashboard-metric-card__icon {
+  background: color-mix(in srgb, var(--exits-info) 16%, var(--exits-surface-muted));
+  color: var(--exits-info);
+}
+
+.dashboard-metric-card--shared .dashboard-metric-card__label,
+.dashboard-metric-card--shared .dashboard-metric-card__meta {
+  color: var(--exits-info);
+}
+
 .dashboard-metric-card__icon svg {
   width: 0.95rem;
   height: 0.95rem;
-}
-
-.dashboard-metric-card__label {
-  min-width: 0;
-  font-size: var(--exits-text-xs);
-  font-weight: var(--exits-font-weight-medium);
-  color: var(--exits-text-muted);
-  line-height: var(--exits-leading-normal);
 }
 
 .dashboard-metric-card__value {
@@ -23449,6 +23691,15 @@ a.exits-chip--primary:hover {
 
 .utang-account-card {
   width: 100%;
+}
+
+.utang-account-card--shared {
+  border-color: color-mix(in srgb, var(--exits-info) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 7%, var(--exits-surface));
+}
+
+.utang-account-card--shared [data-utang-ownership] {
+  color: var(--exits-info);
 }
 
 .personal-attention-row {

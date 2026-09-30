@@ -14,11 +14,16 @@ public sealed record PersonalSharedUtangPreferenceDto(
     Guid OwnerUserIdentityId,
     Guid CounterpartyUserIdentityId,
     bool ReceiveSharedUtang,
+    /// <summary>Retained for API compatibility; always false under ledger-owner model.</summary>
     bool AutoAcceptSharedUtang,
     bool SharedUtangNotifications,
     int Version,
     DateTimeOffset UpdatedAtUtc);
 
+/// <summary>
+/// Update request. <see cref="AutoAcceptSharedUtang"/> is accepted for compatibility but ignored
+/// (forced false) — financial writes are ledger-owner only.
+/// </summary>
 public sealed record UpdatePersonalSharedUtangPreferenceRequest(
     bool ReceiveSharedUtang,
     bool AutoAcceptSharedUtang,
@@ -152,6 +157,9 @@ public sealed class UpdatePersonalSharedUtangPreference
                 .GetByOwnerAndCounterpartyAsync(ownerUserIdentityId, counterparty, cancellationToken)
                 .ConfigureAwait(false);
 
+            // AutoAccept is obsolete under single-writer ledger-owner; keep DTO field but never store true.
+            const bool autoAcceptForcedOff = false;
+
             PersonalSharedUtangPreference prefs;
             if (existing is null)
             {
@@ -161,7 +169,7 @@ public sealed class UpdatePersonalSharedUtangPreference
                     _clock.UtcNow);
                 prefs.Update(
                     request.ReceiveSharedUtang,
-                    request.AutoAcceptSharedUtang,
+                    autoAcceptForcedOff,
                     request.SharedUtangNotifications,
                     _clock.UtcNow,
                     expectedVersion: null);
@@ -171,7 +179,7 @@ public sealed class UpdatePersonalSharedUtangPreference
             {
                 existing.Update(
                     request.ReceiveSharedUtang,
-                    request.AutoAcceptSharedUtang,
+                    autoAcceptForcedOff,
                     request.SharedUtangNotifications,
                     _clock.UtcNow,
                     request.ExpectedVersion);
@@ -189,7 +197,7 @@ public sealed class UpdatePersonalSharedUtangPreference
                 prefs.Id.Value.ToString("D"),
                 AuditOutcome.Succeeded,
                 summary:
-                    $"Shared Utang preferences updated (receive={prefs.ReceiveSharedUtang}, autoSync={prefs.AutoAcceptSharedUtang}, notifications={prefs.SharedUtangNotifications}).",
+                    $"Shared Utang preferences updated (receive={prefs.ReceiveSharedUtang}, notifications={prefs.SharedUtangNotifications}).",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<PersonalSharedUtangPreferenceDto>.Success(

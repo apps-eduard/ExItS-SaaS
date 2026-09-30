@@ -194,12 +194,17 @@ Existing `StatusChip` without `shape` / `appearance` remains **pill** + **soft**
 
 | Tone | Meaning | Tokens (conceptually) |
 |------|---------|------------------------|
-| **NEUTRAL** | General / muted metadata | muted text / border / soft surface |
 | **PRIMARY** | Brand / selected / preferred emphasis | `--exits-primary`, soft mixes |
-| **INFO** | Informational | `--exits-info` |
+| **SECONDARY** | Muted metadata / read-only attributes | `--exits-severity-secondary` |
 | **SUCCESS** | Positive / completed / active | `--exits-success` |
-| **WARNING** | Pending / caution / attention | `--exits-warning` |
+| **INFO** | Informational | `--exits-info` |
+| **WARNING** | Pending / caution / attention (Warn) | `--exits-warning` |
+| **HELP** | Advisory / guidance | `--exits-severity-help` |
 | **DANGER** | Failure / overdue / critical | `--exits-danger` |
+| **CONTRAST** | High-emphasis inverse | `--exits-severity-contrast` |
+| **NEUTRAL** | General / quiet draft metadata | muted text / border / soft surface |
+
+Diamond severity row for StatusChip soft samples: Primary · Secondary · Success · Info · Warn · Help · Danger · Contrast (Neutral remains available for draft/quiet product states).
 
 ---
 
@@ -207,11 +212,12 @@ Existing `StatusChip` without `shape` / `appearance` remains **pill** + **soft**
 
 | Appearance | Role |
 |------------|------|
-| **SOFT** (default) | Tinted fill + quiet border — default status treatment |
+| **SOFT** (default) | Quiet tinted fill + soft border — default status treatment |
+| **EMPHASIS** | **Bold** tone-colored ink on a pale wash (Diamond Tag soft look) — no heavy border |
 | **OUTLINE** | Transparent fill + stronger border — quieter density |
 | **SOLID** | Filled tone surface + contrast label — high emphasis |
 
-Do **not** confuse appearance **SOFT** with shape **SOFT** (radius). Appearance is fill treatment; shape is corner radius.
+Emphasis is the appearance that matches Diamond’s bold colored-text soft tags. Soft stays the quieter product default. Do **not** confuse appearance **SOFT** with shape **SOFT** (radius).
 
 ```tsx
 {/* Soft fill, pill radius (defaults) */}
