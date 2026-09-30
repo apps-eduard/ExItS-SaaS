@@ -102,21 +102,31 @@ public sealed class GetPersonalDashboard
         decimal borrowed = 0m;
         foreach (var relationship in active)
         {
+            // Home totals include Pending shared proposals so both sides see the amount
+            // before Confirm. Relationship CurrentBalance remains confirmed-only.
+            var history = await _entries
+                .ListByRelationshipAsync(relationship.Id, cancellationToken)
+                .ConfigureAwait(false);
+            var pendingDelta = history
+                .Where(e => e.Status is PersonalUtangEntryStatus.Pending)
+                .Sum(e => e.SignedDelta);
+            var effectiveBalance = relationship.CurrentBalance + pendingDelta;
+
             if (relationship.CreditorUserIdentityId == userIdentityId)
             {
-                lent += relationship.CurrentBalance;
+                lent += effectiveBalance;
             }
             else if (relationship.DebtorUserIdentityId == userIdentityId)
             {
-                borrowed += relationship.CurrentBalance;
+                borrowed += effectiveBalance;
             }
             else if (relationship.CreditorContactId is not null)
             {
-                lent += relationship.CurrentBalance;
+                lent += effectiveBalance;
             }
             else if (relationship.DebtorContactId is not null)
             {
-                borrowed += relationship.CurrentBalance;
+                borrowed += effectiveBalance;
             }
         }
 

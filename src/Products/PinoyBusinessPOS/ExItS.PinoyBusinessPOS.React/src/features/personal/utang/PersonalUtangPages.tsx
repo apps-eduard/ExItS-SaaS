@@ -1063,6 +1063,10 @@ export function PersonalRelationshipDetailPage() {
         : 0,
     [detail, history],
   );
+  const unresolvedPendingCount = useMemo(
+    () => history.filter((entry) => entry.status === "Pending").length,
+    [history],
+  );
   const pendingAtLimit = pendingOutgoingCount >= PERSONAL_UTANG_MAX_PENDING_OUTGOING;
 
   const invalidateUtang = async () => {
@@ -1410,7 +1414,7 @@ export function PersonalRelationshipDetailPage() {
         </p>
       ) : null}
 
-      {relationshipActive && currentBalance > 0 ? (
+      {relationshipActive && currentBalance > 0 && unresolvedPendingCount === 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
           {settleBlockedOffline ? (
             <OfflineNotice
@@ -1471,7 +1475,7 @@ export function PersonalRelationshipDetailPage() {
         </div>
       ) : null}
 
-      {relationshipActive && currentBalance === 0 ? (
+      {relationshipActive && currentBalance === 0 && unresolvedPendingCount === 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
           {settleBlockedOffline ? (
             <OfflineNotice

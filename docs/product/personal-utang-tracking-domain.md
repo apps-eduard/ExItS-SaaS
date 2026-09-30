@@ -180,10 +180,10 @@ Block / unlink overrides sharing and auto-sync.
 
 When both sides are linked Personal users (`IsSharedLinked`):
 
-- Default (`Receive` ON, `AutoAccept` OFF): new **regular** entries start as **Pending**, appear immediately to the counterparty (e.g. "Reported by {proposer}"), and do **not** affect confirmed `CurrentBalance` until Confirm.
+- Default (`Receive` ON, `AutoAccept` OFF): new **regular** entries start as **Pending**, appear immediately to the counterparty (e.g. "Reported by {proposer}"), and do **not** change confirmed relationship `CurrentBalance` until Confirm. **Personal home / Utang hub / I Lent / I Borrowed list / relationship detail display totals** still include Pending signed amounts so both sides see the amount while review is outstanding.
 - With `AutoAccept` ON: future regular Loan / Payment / Adjustment entries are confirmed server-side by standing recipient preference (`ConfirmationSource = RecipientAutoAccept`). Audit text must state auto-confirm by preference, not a manual button click. **Settlement** entries are never auto-accepted.
-- Only **Confirmed** entries change balance (Loan +, Payment −, Adjustment ±)
-- Pending / Disputed / Cancelled have zero balance effect
+- Only **Confirmed** entries change relationship `CurrentBalance` (Loan +, Payment −, Adjustment ±)
+- Pending / Disputed / Cancelled have zero effect on confirmed `CurrentBalance` (Pending still rolls into dashboard totals as above)
 - Proposer may cancel their own Pending entry
 - Confirm is idempotent; concurrent Confirm/Dispute participates in relationship optimistic concurrency
 - Legacy shared Pending/Confirmed history remains compatible; rows confirmed before auto-sync use `ConfirmationSource = Manual` when resolved

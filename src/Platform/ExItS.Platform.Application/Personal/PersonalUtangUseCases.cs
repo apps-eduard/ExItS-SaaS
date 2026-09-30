@@ -1010,13 +1010,26 @@ public sealed class CreatePersonalDebtRelationship
                 cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
-        return ToSummary(relationship, actingUserIdentityId, shareOutcome);
+        decimal? displayBalance = null;
+        if (initialEntry is not null
+            && initialEntry.Status is PersonalUtangEntryStatus.Pending)
+        {
+            displayBalance = relationship.CurrentBalance + initialEntry.SignedDelta;
+        }
+        else if (initialEntry is not null
+                 && initialEntry.Status is PersonalUtangEntryStatus.Confirmed)
+        {
+            displayBalance = relationship.CurrentBalance;
+        }
+
+        return ToSummary(relationship, actingUserIdentityId, shareOutcome, displayBalance);
     }
 
     internal static PersonalDebtRelationshipSummaryDto ToSummary(
         PersonalDebtRelationship relationship,
         PlatformUserId viewerUserIdentityId,
-        string? shareOutcome = null)
+        string? shareOutcome = null,
+        decimal? balanceOverride = null)
     {
         var perspective = relationship.DebtorUserIdentityId == viewerUserIdentityId ? "Borrowed" : "Lent";
         var isShared = relationship.IsSharedLinked;
@@ -1028,7 +1041,7 @@ public sealed class CreatePersonalDebtRelationship
             relationship.DebtorUserIdentityId?.Value,
             relationship.DebtorContactId?.Value,
             relationship.CurrencyCode,
-            relationship.CurrentBalance,
+            balanceOverride ?? relationship.CurrentBalance,
             relationship.DueDateUtc,
             relationship.Status.ToString(),
             relationship.Version,
@@ -1037,19 +1050,28 @@ public sealed class CreatePersonalDebtRelationship
             IsPrivate: !isShared,
             ShareOutcome: shareOutcome);
     }
+
+    internal static decimal EffectiveBalanceIncludingPending(
+        PersonalDebtRelationship relationship,
+        IReadOnlyList<PersonalUtangEntry> history) =>
+        relationship.CurrentBalance
+        + history.Where(e => e.Status is PersonalUtangEntryStatus.Pending).Sum(e => e.SignedDelta);
 }
 
 public sealed class ListPersonalUtangRelationships
 {
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalUtangEntryRepository _entries;
 
     public ListPersonalUtangRelationships(
         IPersonalDebtRelationshipRepository relationships,
-        IPersonalContactRepository contacts)
+        IPersonalContactRepository contacts,
+        IPersonalUtangEntryRepository entries)
     {
         _relationships = relationships;
         _contacts = contacts;
+        _entries = entries;
     }
 
     public async Task<IReadOnlyList<PersonalDebtRelationshipSummaryDto>> ExecuteAsync(
@@ -1091,9 +1113,21 @@ public sealed class ListPersonalUtangRelationships
             }
         }
 
-        return filtered
-            .Select(r => CreatePersonalDebtRelationship.ToSummary(r, userIdentityId))
-            .ToList();
+        var result = new List<PersonalDebtRelationshipSummaryDto>(filtered.Count);
+        foreach (var relationship in filtered)
+        {
+            var history = await _entries
+                .ListByRelationshipAsync(relationship.Id, cancellationToken)
+                .ConfigureAwait(false);
+            result.Add(CreatePersonalDebtRelationship.ToSummary(
+                relationship,
+                userIdentityId,
+                balanceOverride: CreatePersonalDebtRelationship.EffectiveBalanceIncludingPending(
+                    relationship,
+                    history)));
+        }
+
+        return result;
     }
 }
 
@@ -1101,13 +1135,16 @@ public sealed class GetPersonalUtangRelationship
 {
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalUtangEntryRepository _entries;
 
     public GetPersonalUtangRelationship(
         IPersonalDebtRelationshipRepository relationships,
-        IPersonalContactRepository contacts)
+        IPersonalContactRepository contacts,
+        IPersonalUtangEntryRepository entries)
     {
         _relationships = relationships;
         _contacts = contacts;
+        _entries = entries;
     }
 
     public async Task<ApplicationResult<PersonalDebtRelationshipSummaryDto>> ExecuteAsync(
@@ -1133,8 +1170,16 @@ public sealed class GetPersonalUtangRelationship
                 "Personal debt relationship is not visible to this account.");
         }
 
+        var history = await _entries
+            .ListByRelationshipAsync(relationship.Id, cancellationToken)
+            .ConfigureAwait(false);
         return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Success(
-            CreatePersonalDebtRelationship.ToSummary(relationship, userIdentityId));
+            CreatePersonalDebtRelationship.ToSummary(
+                relationship,
+                userIdentityId,
+                balanceOverride: CreatePersonalDebtRelationship.EffectiveBalanceIncludingPending(
+                    relationship,
+                    history)));
     }
 }
 

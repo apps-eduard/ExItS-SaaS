@@ -696,7 +696,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         Assert.Equal(targetId, rel.GetProperty("debtorUserIdentityId").GetGuid());
         Assert.True(rel.TryGetProperty("debtorContactId", out var debtorContact)
             && debtorContact.ValueKind is JsonValueKind.Null);
-        Assert.Equal(0m, rel.GetProperty("currentBalance").GetDecimal());
+        // Display balance includes Pending proposal (confirmed CurrentBalance remains 0 until Confirm).
+        Assert.Equal(1000m, rel.GetProperty("currentBalance").GetDecimal());
 
         var relationshipId = rel.GetProperty("id").GetGuid();
         using var historyAsTarget = Authed(
@@ -708,6 +709,30 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             history.EnumerateArray(),
             e => e.GetProperty("status").GetString() == "Pending"
                  && e.GetProperty("amount").GetDecimal() == 1000m);
+
+        using var listLent = Authed(HttpMethod.Get, "/api/v1/personal/utang/relationships/lent", ownerToken);
+        var lentList = await contactResponse(await _client.SendAsync(listLent));
+        var lentRow = lentList.EnumerateArray().Single(r => r.GetProperty("id").GetGuid() == relationshipId);
+        Assert.Equal(1000m, lentRow.GetProperty("currentBalance").GetDecimal());
+
+        using var getRel = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}",
+            ownerToken);
+        Assert.Equal(1000m, (await contactResponse(await _client.SendAsync(getRel)))
+            .GetProperty("currentBalance").GetDecimal());
+
+        using var ownerDash = Authed(HttpMethod.Get, "/api/v1/personal/dashboard", ownerToken);
+        var ownerDashBody = await contactResponse(await _client.SendAsync(ownerDash));
+        Assert.Equal(1000m, ownerDashBody.GetProperty("totalLentBalance").GetDecimal());
+        Assert.Equal(0m, ownerDashBody.GetProperty("totalBorrowedBalance").GetDecimal());
+        Assert.Equal(0, ownerDashBody.GetProperty("pendingConfirmationCount").GetInt32());
+
+        using var targetDash = Authed(HttpMethod.Get, "/api/v1/personal/dashboard", targetToken);
+        var targetDashBody = await contactResponse(await _client.SendAsync(targetDash));
+        Assert.Equal(0m, targetDashBody.GetProperty("totalLentBalance").GetDecimal());
+        Assert.Equal(1000m, targetDashBody.GetProperty("totalBorrowedBalance").GetDecimal());
+        Assert.Equal(1, targetDashBody.GetProperty("pendingConfirmationCount").GetInt32());
     }
 
     [Fact]
