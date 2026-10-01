@@ -1,4 +1,4 @@
-import { ArrowLeft, Info, Plus } from "lucide-react";
+import { ArrowLeft, ChevronDown, Info, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
@@ -171,12 +171,12 @@ export function PeoplePage() {
       {isInitialLoading ? <PageSkeleton label={t("loading.label")} /> : null}
       {!isInitialLoading ? (
         <>
-      <Card className="flex flex-col gap-3" data-testid="people-add-panel">
+      <Card className="people-add-card flex flex-col gap-3" data-testid="people-add-panel">
         <button
           type="button"
           className={cn(
-            "flex w-full min-h-[var(--exits-row-min-height)] items-start gap-3 rounded-[var(--exits-radius-md)] border-0 bg-transparent p-0 text-left text-inherit",
-            "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "flex w-full items-center gap-3 rounded-[var(--exits-radius-md)] border-0 bg-transparent p-0 text-left text-inherit",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           )}
           data-testid="people-add-toggle"
           aria-label={t("people.add.toggle")}
@@ -193,14 +193,16 @@ export function PeoplePage() {
           >
             <Plus className="size-5" />
           </span>
-          <span className="min-w-0 flex-1 pt-0.5">
-            <span className="block text-[length:var(--exits-text-lg)] font-semibold">
-              {t("people.newTitle")}
-            </span>
-            <span className="mt-1 block text-[length:var(--exits-text-sm)] text-muted">
-              {addOpen ? t("people.createKindLede") : t("people.howToAdd.lede")}
-            </span>
+          <span className="min-w-0 flex-1 text-[length:var(--exits-text-lg)] font-semibold">
+            {t("people.newTitle")}
           </span>
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+              addOpen && "rotate-180",
+            )}
+            aria-hidden="true"
+          />
         </button>
 
         {addOpen ? (

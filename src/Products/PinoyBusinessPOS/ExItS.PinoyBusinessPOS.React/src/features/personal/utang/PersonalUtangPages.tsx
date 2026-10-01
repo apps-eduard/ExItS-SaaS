@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, UserPlus, Users, Wallet } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, Plus, UserPlus, Users, Wallet } from "lucide-react";
 import {
   cancelPersonalUtangEntry,
   closePersonalDebtRelationship,
@@ -533,8 +533,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       const me = meQuery.data?.userIdentityId;
       if (!me) throw new Error("missing me");
       if (!contactId) throw new Error("missing contact");
-      const initial = Number(amount);
-      if (!(initial > 0)) throw new Error("amount");
+      const initial = parseMoneyAmountInput(amount);
+      if (initial == null || !(initial > 0)) throw new Error("amount");
       const purpose = notes.trim();
       if (!purpose) throw new Error("purpose");
 
@@ -677,7 +677,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
     : t("personal.utang.savePrivately");
   const recordFormLabel =
     mode === "lent" ? t("personal.utang.recordLent") : t("personal.utang.recordOwe");
-  const RecordFormIcon = mode === "lent" ? HandCoins : Wallet;
   const viewPendingTo = existingSharedOwnedByMe
     ? `/personal/utang/relationships/${existingSharedOwnedByMe.id}`
     : "/personal/utang";
@@ -696,37 +695,47 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         backTo={personalPageBackNav.utang.to}
         backLabel={t("personal.utang.back")}
         backTestId={mode === "lent" ? "page-header-back-utang-lent" : "page-header-back-utang-owe"}
-        actions={
-          <button
-            type="button"
-            className={cn(
-              "utang-record-header-action inline-flex w-full min-h-[var(--exits-control-height)] shrink-0 items-center justify-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-sm)] font-semibold transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)] md:w-auto",
-              recordFormOpen && "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_8%,var(--exits-surface))]",
-            )}
-            aria-expanded={recordFormOpen}
-            aria-controls="utang-record-panel"
-            data-testid="utang-record-toggle"
-            onClick={() => setRecordFormOpen((open) => !open)}
-          >
-            <RecordFormIcon className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <span className="min-w-0 truncate">{recordFormLabel}</span>
-            <ChevronDown
-              className={cn(
-                "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-                recordFormOpen && "rotate-180",
-              )}
-              aria-hidden="true"
-            />
-          </button>
-        }
       />
 
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
 
+      <section
+        className="catalog-form-section exits-animate-panel personal-section utang-record-card flex min-w-0 flex-col gap-2 overflow-hidden"
+        data-testid="utang-record-card"
+      >
+        <button
+          type="button"
+          className="catalog-form-section__title m-0 flex w-full items-center gap-2 border-0 bg-transparent p-0 text-left text-muted"
+          aria-expanded={recordFormOpen}
+          aria-controls="utang-record-panel"
+          data-testid="utang-record-toggle"
+          onClick={() => setRecordFormOpen((open) => !open)}
+        >
+          <span
+            className={cn(
+              "inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-primary transition-transform",
+              recordFormOpen && "rotate-45",
+            )}
+            aria-hidden="true"
+          >
+            <Plus className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1 truncate">{recordFormLabel}</span>
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+              recordFormOpen && "rotate-180",
+            )}
+            aria-hidden="true"
+          />
+        </button>
       {recordFormOpen ? (
       <form
         id="utang-record-panel"
-        className="catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
+        className={cn(
+          "flex min-w-0 flex-col gap-2",
+          mode === "lent" && "utang-record-form",
+        )}
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
@@ -734,7 +743,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             setFormError(t("personal.utang.personRequired"));
             return;
           }
-          if (!(Number(amount) > 0)) {
+          if (!((parseMoneyAmountInput(amount) ?? 0) > 0)) {
             setFormError(t("personal.utang.amountRequired"));
             return;
           }
@@ -779,7 +788,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               </p>
             ) : null}
         <div
-          className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-end"
+          className="utang-record-fields grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-end"
           data-testid="utang-rel-primary-fields"
         >
           <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
@@ -801,14 +810,28 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           </label>
           <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("personal.utang.amount")}
-            <input
-              data-testid="utang-rel-amount"
-              inputMode="decimal"
-              className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
+            <div className="exits-currency-field">
+              <span className="exits-currency-field__prefix" aria-hidden>
+                ₱
+              </span>
+              <input
+                data-testid="utang-rel-amount"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                className="exits-currency-field__input"
+                value={amount}
+                onChange={(e) => setAmount(normalizeMoneyAmountTyping(e.target.value))}
+                onBlur={() => {
+                  const parsed = parseMoneyAmountInput(amount);
+                  if (parsed != null) {
+                    setAmount(formatMoneyAmountInput(parsed));
+                  }
+                }}
+                required
+                aria-label={t("personal.utang.amount")}
+              />
+            </div>
           </label>
           <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("personal.utang.dueDate")}
@@ -838,7 +861,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             onChange={(e) => setNotes(e.target.value)}
           />
         </label>
-        {contactId && Number(amount) > 0 && notes.trim() ? (
+        {contactId && (parseMoneyAmountInput(amount) ?? 0) > 0 && notes.trim() ? (
           <div
             className="rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface)_92%,var(--exits-muted)_8%)] p-3 text-[length:var(--exits-text-sm)]"
             data-testid="utang-rel-review"
@@ -847,10 +870,10 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               {mode === "lent"
                 ? t("personal.utang.reviewLent")
                     .replace("{name}", selectedContactName)
-                    .replace("{amount}", amount)
+                    .replace("{amount}", formatMoneyAmountInput(parseMoneyAmountInput(amount) ?? 0))
                 : t("personal.utang.reviewBorrowed")
                     .replace("{name}", selectedContactName)
-                    .replace("{amount}", amount)}
+                    .replace("{amount}", formatMoneyAmountInput(parseMoneyAmountInput(amount) ?? 0))}
             </p>
             <p className="m-0 mt-1 text-muted">
               {t("personal.utang.purpose")}: {notes.trim()}
@@ -928,16 +951,20 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           >
             {createMutation.isPending ? (
               <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : mode === "lent" ? (
-              <HandCoins className="size-4 shrink-0" aria-hidden />
+            ) : willShare ? (
+              mode === "lent" ? (
+                <HandCoins className="size-4 shrink-0" aria-hidden />
+              ) : (
+                <Wallet className="size-4 shrink-0" aria-hidden />
+              )
             ) : (
-              <Wallet className="size-4 shrink-0" aria-hidden />
+              <Check className="size-4 shrink-0" aria-hidden />
             )}
             {submitLabel}
           </Button>
-          <Button asChild variant="ghost" className="order-2 lg:order-1">
+          <Button asChild intent="primary" appearance="ghost" className="order-2 lg:order-1">
             <Link to="/personal/people" data-testid="utang-rel-add-person">
-              <UserPlus className="size-4 shrink-0" aria-hidden />
+              <UserPlus className="size-4 shrink-0 text-primary" aria-hidden />
               {contacts.length === 0
                 ? t("personal.utang.addPersonFirst")
                 : t("personal.utang.addPerson")}
@@ -946,6 +973,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         </div>
       </form>
       ) : null}
+      </section>
 
       {rows.length === 0 ? (
         <EmptyState

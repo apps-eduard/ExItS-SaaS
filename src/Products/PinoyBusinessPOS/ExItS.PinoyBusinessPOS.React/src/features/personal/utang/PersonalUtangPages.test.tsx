@@ -410,10 +410,9 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(screen.getByTestId("utang-hub-i-owe")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-i-owe-mine")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-i-owe-shared")).toBeInTheDocument();
-    expect(screen.getByTestId("utang-hub-record")).toHaveTextContent("Record money lent");
+    expect(screen.queryByTestId("utang-hub-record")).not.toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-pending")).toHaveTextContent("Waiting for you (2)");
     const actions = screen.getByTestId("utang-hub-actions");
-    expect(actions).toContainElement(screen.getByTestId("utang-hub-record"));
     expect(actions).toContainElement(screen.getByTestId("utang-open-lent"));
     expect(actions).toContainElement(screen.getByTestId("utang-open-owe"));
     expect(actions).toContainElement(screen.getByTestId("utang-open-people"));

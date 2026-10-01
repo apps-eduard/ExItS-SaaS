@@ -9969,9 +9969,9 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "personal.utang.recordUtang": "Record Utang",
 
-  "personal.utang.reviewBorrowed": "You owe {name} ?{amount}",
+  "personal.utang.reviewBorrowed": "You owe {name} \u20B1{amount}",
 
-  "personal.utang.reviewLent": "You lent {name} ?{amount}",
+  "personal.utang.reviewLent": "You lent {name} \u20B1{amount}",
 
   "personal.utang.saveUtang": "Save Utang",
 

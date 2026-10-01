@@ -382,7 +382,7 @@ export function PersonalHomePage() {
           </div>
         </div>
         <div
-          className="personal-home-meta flex flex-wrap items-center gap-2 border-t border-border pt-3"
+          className="personal-home-meta personal-home-meta--scroll flex flex-wrap items-center gap-2 border-t border-border pt-3"
           data-testid="personal-home-meta"
         >
           <Button asChild intent="success" appearance="solid" emphasis="soft" shape="auto">
