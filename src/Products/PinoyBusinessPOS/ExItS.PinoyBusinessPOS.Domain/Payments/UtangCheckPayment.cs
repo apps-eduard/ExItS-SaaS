@@ -95,8 +95,7 @@ public static class UtangCheckPayment
         string? checkNumber,
         string? bankName,
         DateOnly? checkDate,
-        string? accountName,
-        string? reference)
+        string? accountName)
     {
         if (paymentMethod == UtangPaymentMethod.Check)
         {
@@ -106,8 +105,7 @@ public static class UtangCheckPayment
         if (!string.IsNullOrWhiteSpace(checkNumber)
             || !string.IsNullOrWhiteSpace(bankName)
             || checkDate is not null
-            || !string.IsNullOrWhiteSpace(accountName)
-            || !string.IsNullOrWhiteSpace(reference))
+            || !string.IsNullOrWhiteSpace(accountName))
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidUtangCheckFieldsForMethod,

@@ -221,6 +221,17 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
       : Math.max(0, Math.round((props.outstandingBalance - amount) * 100) / 100);
   const isCheck = paymentMethod === "Check";
 
+  function onPaymentMethodChange(next: UtangRepaymentPaymentMethod) {
+    setFormError(null);
+    setPaymentMethod(next);
+    if (next !== "Check") {
+      setCheckNumber("");
+      setBankName("");
+      setCheckDate("");
+      setAccountName("");
+    }
+  }
+
   useEffect(() => {
     if (!props.open || !isBusiness || allocationMode !== "manual" || !preselectSeedActive) {
       return;
@@ -353,10 +364,10 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
           amount,
           remarks,
           paymentMethod,
-          checkNumber,
-          bankName,
-          checkDate,
-          accountName,
+          checkNumber: isCheck ? checkNumber : undefined,
+          bankName: isCheck ? bankName : undefined,
+          checkDate: isCheck ? checkDate : undefined,
+          accountName: isCheck ? accountName : undefined,
           reference,
         };
         await createCustomerRepayment(workspace, props.customerId, payload);
@@ -594,7 +605,7 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
                 value: method,
                 label: t(methodLabelKey(method)),
               }))}
-              onChange={setPaymentMethod}
+              onChange={onPaymentMethodChange}
               menuLabel={t("customers.paymentMethod")}
               testId="record-payment-method"
             />

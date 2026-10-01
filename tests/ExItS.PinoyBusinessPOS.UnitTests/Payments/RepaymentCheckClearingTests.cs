@@ -43,6 +43,36 @@ public sealed class RepaymentCheckClearingTests
     }
 
     [Fact]
+    public void Cash_keeps_optional_reference_and_rejects_leftover_check_fields()
+    {
+        var cash = Repayment.Create(
+            OrgA,
+            CustomerA,
+            1500m,
+            "june payment",
+            Actor,
+            Now,
+            paymentMethod: UtangPaymentMethod.Cash,
+            reference: "1001");
+
+        Assert.Equal("1001", cash.Reference);
+        Assert.Null(cash.CheckNumber);
+        Assert.True(cash.ReducesOutstanding);
+
+        var ex = Assert.Throws<DomainException>(() => Repayment.Create(
+            OrgA,
+            CustomerA,
+            1500m,
+            "june payment",
+            Actor,
+            Now,
+            paymentMethod: UtangPaymentMethod.Cash,
+            checkNumber: "001245",
+            reference: "1001"));
+        Assert.Equal(DomainErrorCodes.InvalidUtangCheckFieldsForMethod, ex.ErrorCode);
+    }
+
+    [Fact]
     public void Check_cleared_reduces_outstanding_exactly_once_and_is_idempotent()
     {
         var repayment = CreatePendingCheck();
