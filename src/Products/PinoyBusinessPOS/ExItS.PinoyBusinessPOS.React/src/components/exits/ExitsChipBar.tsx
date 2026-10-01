@@ -18,6 +18,8 @@ export type ExitsChipItem = {
   emphasis?: "default" | "primary";
   testId?: string;
   disabled?: boolean;
+  /** Sets aria-expanded when this chip toggles a panel. */
+  expanded?: boolean;
   onSelect?: () => void;
   /** When set, renders a density-aware chip link instead of a button. */
   href?: string;
@@ -141,6 +143,7 @@ export function ExitsChipBar({
                 variant === "steps" && (item.state ?? "idle") === "active" ? "step" : undefined
               }
               aria-label={accessibleName}
+              aria-expanded={item.expanded}
               disabled={item.disabled}
               data-testid={item.testId}
               className={classNameChip}

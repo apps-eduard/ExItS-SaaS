@@ -174,10 +174,14 @@ describe("People lifecycle UX", () => {
     expect(await screen.findByTestId("people-add-toggle")).toBeInTheDocument();
     expect(screen.queryByTestId("person-form-page")).not.toBeInTheDocument();
     expect(screen.getByText(/0 with ExItS ID · 0 local only/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Connection requests/i })).toBeInTheDocument();
+    const searchRow = screen.getByTestId("people-search-row");
+    const requests = screen.getByTestId("people-connection-requests");
+    expect(searchRow).toContainElement(requests);
+    expect(requests).toHaveAttribute("href", "/personal/invitations");
+    expect(searchRow.lastElementChild).toBe(requests);
   });
 
-  it("opens people info dialog from info button", async () => {
+  it("opens people info popover beside the title", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(
@@ -199,8 +203,12 @@ describe("People lifecycle UX", () => {
 
     const user = userEvent.setup();
     renderPeopleApp("/personal/people");
-    await user.click(await screen.findByRole("button", { name: "About People" }));
-    expect(await screen.findByRole("heading", { name: "About People" })).toBeInTheDocument();
+    const title = await screen.findByRole("heading", { name: "People" });
+    const infoButton = await screen.findByRole("button", { name: "About People" });
+    expect(infoButton).toHaveAttribute("data-intent", "info");
+    await user.click(infoButton);
+    const popover = await screen.findByRole("dialog", { name: "About People" });
+    expect(popover).not.toHaveAttribute("aria-modal");
     expect(screen.getByText(/Connection consent and Utang records are separate/i)).toBeInTheDocument();
   });
 

@@ -3,8 +3,9 @@ import { ChevronRight } from "lucide-react";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { UtangDueCaption, UtangLinkedIcon } from "@/features/personal/utang/UtangListMeta";
+import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
 import type { UtangAccountRow } from "@/features/personal/utang/utang-workspace";
+import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -14,8 +15,6 @@ type UtangAccountCardProps = {
 
 export function UtangAccountCard({ row }: UtangAccountCardProps) {
   const { t } = useI18n();
-  const direction =
-    row.perspective === "lent" ? t("personal.utang.owesYou") : t("personal.utang.youOwe");
   const ownershipLabel = row.isLedgerOwner
     ? t("personal.utang.ownershipMine")
     : t("personal.utang.ownershipSharedWithMe");
@@ -25,45 +24,44 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
       to={`/personal/utang/relationships/${row.relationshipId}`}
       className={cn(
         "utang-account-card exits-list__card flex items-center justify-between gap-3 text-foreground no-underline",
-        !row.isLedgerOwner && "utang-account-card--shared",
+        row.isLedgerOwner ? "utang-account-card--mine" : "utang-account-card--shared",
       )}
       data-testid={`utang-account-${row.relationshipId}`}
     >
       <PersonAvatar name={row.displayName} size="sm" />
       <div className="min-w-0 flex-1">
         <p
-          className="m-0 flex min-w-0 items-center justify-between gap-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+          className="m-0 truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
           data-utang-ownership=""
           data-testid={`utang-account-ownership-${row.relationshipId}`}
         >
-          <span className="min-w-0 truncate">{ownershipLabel}</span>
-          {!row.isLedgerOwner ? (
-            <StatusChip
-              tone="secondary"
-              data-testid={`utang-account-readonly-${row.relationshipId}`}
-            >
-              {t("personal.utang.readOnly")}
-            </StatusChip>
-          ) : null}
+          {ownershipLabel}
         </p>
         <p className="exits-list__name m-0 truncate font-semibold">{row.displayName}</p>
-        <p className="m-0 flex min-w-0 items-center gap-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-          <span className="truncate">{direction}</span>
-          {row.isSharedLedger ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <UtangLinkedIcon testId={`utang-account-linked-${row.relationshipId}`} />
-            </>
-          ) : null}
-        </p>
+        <UtangDirectionTags
+          direction={row.perspective}
+          shared={row.isSharedLedger}
+          linkTestId={`utang-account-linked-${row.relationshipId}`}
+        />
+        <UtangDueCaption
+          dueDateUtc={row.dueDateUtc}
+          dueKind={row.dueKind}
+          testId={`utang-account-due-${row.relationshipId}`}
+        />
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <div className="flex flex-col items-end gap-0.5">
-          <UtangDueCaption
-            dueDateUtc={row.dueDateUtc}
-            dueKind={row.dueKind}
-            testId={`utang-account-due-${row.relationshipId}`}
-          />
+      <div className="grid shrink-0 justify-items-start self-stretch">
+        {!row.isLedgerOwner ? (
+          <StatusChip
+            tone={UTANG_READ_ONLY_CHIP.tone}
+            appearance={UTANG_READ_ONLY_CHIP.appearance}
+            shape={UTANG_READ_ONLY_CHIP.shape}
+            className="col-start-1 row-start-1 self-start"
+            data-testid={`utang-account-readonly-${row.relationshipId}`}
+          >
+            {t("personal.utang.readOnly")}
+          </StatusChip>
+        ) : null}
+        <div className="col-start-1 row-start-1 flex items-center gap-1 self-center">
           <MoneyDisplay
             amount={row.currentBalance}
             className={cn(
@@ -72,8 +70,8 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
             )}
             testId={`utang-account-balance-${row.relationshipId}`}
           />
+          <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
         </div>
-        <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
       </div>
     </Link>
   );

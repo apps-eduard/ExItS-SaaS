@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
@@ -17,26 +17,23 @@ function renderHeader(ui: React.ReactElement) {
 }
 
 describe("PageHeader", () => {
-  it("renders title and optional always-visible description by default", () => {
+  it("keeps the description in an info popover beside the title", async () => {
+    const user = userEvent.setup();
     renderHeader(
       <PageHeader title="Manager home" description="Operations hub" />,
     );
     expect(screen.queryByTestId("page-header-back")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Manager home" })).toBeInTheDocument();
-    expect(screen.getByTestId("page-header-description")).toHaveTextContent("Operations hub");
-    expect(screen.queryByTestId("page-header-info-toggle")).not.toBeInTheDocument();
+    const title = screen.getByRole("heading", { name: "Manager home" });
+    const info = screen.getByTestId("page-header-info-toggle");
+    expect(title.parentElement).toContainElement(info);
+    expect(info).toHaveAttribute("data-intent", "info");
+    expect(screen.queryByTestId("page-header-description")).not.toBeInTheDocument();
     expect(screen.getByTestId("page-header").className).toMatch(/page-header/);
-  });
 
-  it("renders icon-only info control when description is collapsible", () => {
-    renderHeader(
-      <PageHeader
-        title="Manager home"
-        description="Operations hub"
-        descriptionCollapsible
-      />,
-    );
-    expect(screen.getByTestId("page-header-info-toggle")).toBeInTheDocument();
+    await user.click(info);
+    const popover = screen.getByRole("dialog", { name: "Manager home" });
+    expect(popover).not.toHaveAttribute("aria-modal");
+    expect(screen.getByTestId("page-header-description")).toHaveTextContent("Operations hub");
   });
 
   it("supports compact operational variant without description chrome", () => {
@@ -87,52 +84,25 @@ describe("PageHeader", () => {
     expect(screen.queryByTestId("page-header-description")).not.toBeInTheDocument();
   });
 
-  it("reveals description on hover when collapsible", () => {
-    renderHeader(
-      <PageHeader
-        title="Products"
-        description="Manage catalog products for this organization."
-        descriptionCollapsible
-      />,
-    );
-
-    const toggle = screen.getByTestId("page-header-info-toggle");
-    const shell = screen.getByTestId("page-header-description-shell");
-    expect(shell).toHaveAttribute("aria-hidden", "true");
-
-    fireEvent.mouseEnter(toggle);
-    expect(shell).toHaveAttribute("aria-hidden", "false");
-    expect(screen.getByTestId("page-header-description")).toHaveTextContent(
-      "Manage catalog products for this organization.",
-    );
-
-    fireEvent.mouseLeave(screen.getByText("Products").closest(".page-header__main")!);
-    expect(shell).toHaveAttribute("aria-hidden", "true");
-  });
-
-  it("pins description open on tap until tapped again when collapsible", async () => {
+  it("closes the info popover on a second tap", async () => {
     const user = userEvent.setup();
     renderHeader(
       <PageHeader
         title="Products"
         description="Manage catalog products for this organization."
-        descriptionCollapsible
       />,
     );
 
     const toggle = screen.getByTestId("page-header-info-toggle");
-    const shell = screen.getByTestId("page-header-description-shell");
-
     await user.click(toggle);
-    expect(shell).toHaveAttribute("aria-hidden", "false");
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-
-    fireEvent.mouseLeave(screen.getByText("Products").closest(".page-header__main")!);
-    expect(shell).toHaveAttribute("aria-hidden", "false");
+    expect(screen.getByTestId("page-header-description")).toHaveTextContent(
+      "Manage catalog products for this organization.",
+    );
 
     await user.click(toggle);
-    expect(shell).toHaveAttribute("aria-hidden", "true");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("page-header-description")).not.toBeInTheDocument();
   });
 
   it("renders subtitle when provided", () => {
@@ -142,7 +112,8 @@ describe("PageHeader", () => {
     expect(screen.getByTestId("page-header-subtitle")).toHaveTextContent("Coke 330ml");
   });
 
-  it("can keep description always visible when collapsible is disabled", () => {
+  it("still opens the info popover when an older collapsible flag is passed", async () => {
+    const user = userEvent.setup();
     renderHeader(
       <PageHeader
         title="Products"
@@ -150,7 +121,8 @@ describe("PageHeader", () => {
         descriptionCollapsible={false}
       />,
     );
-    expect(screen.queryByTestId("page-header-info-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("page-header-description")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("page-header-info-toggle"));
     expect(screen.getByTestId("page-header-description")).toHaveTextContent("Always visible lede");
   });
 });

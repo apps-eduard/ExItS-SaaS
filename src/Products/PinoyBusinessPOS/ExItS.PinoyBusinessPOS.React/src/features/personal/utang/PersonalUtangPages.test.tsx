@@ -412,8 +412,15 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(screen.getByTestId("utang-hub-i-owe-shared")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-record")).toHaveTextContent("Record money lent");
     expect(screen.getByTestId("utang-hub-pending")).toHaveTextContent("Waiting for you (2)");
+    const actions = screen.getByTestId("utang-hub-actions");
+    expect(actions).toContainElement(screen.getByTestId("utang-hub-record"));
+    expect(actions).toContainElement(screen.getByTestId("utang-open-lent"));
+    expect(actions).toContainElement(screen.getByTestId("utang-open-owe"));
+    expect(actions).toContainElement(screen.getByTestId("utang-open-people"));
     expect(await screen.findByTestId("utang-hub-segments")).toBeInTheDocument();
-    expect(screen.getByTestId(`utang-account-${relationshipId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`utang-account-${relationshipId}`)).toHaveClass(
+      "utang-account-card--mine",
+    );
     expect(screen.getByTestId(`utang-account-${sharedRelationshipId}`)).toBeInTheDocument();
     expect(screen.getByTestId("utang-open-lent")).toBeInTheDocument();
     expect(screen.getByTestId("utang-open-owe")).toBeInTheDocument();
@@ -456,10 +463,18 @@ describe("Personal Utang shared-ledger UI", () => {
       "Owes you",
     );
     expect(screen.getByTestId(`utang-rel-ledger-${relationshipId}`)).toHaveTextContent(
-      "Not linked to ExItS",
+      "Local contact",
+    );
+    expect(screen.getByTestId(`utang-rel-ledger-${relationshipId}`)).toHaveAttribute(
+      "data-tone",
+      "info",
     );
     expect(screen.getByTestId(`utang-rel-ledger-${sharedRelationshipId}`)).toHaveTextContent(
       "Connected",
+    );
+    expect(screen.getByTestId(`utang-rel-ledger-${sharedRelationshipId}`)).toHaveAttribute(
+      "data-tone",
+      "success",
     );
     expect(screen.getByTestId("personal-utang-lent").textContent).not.toMatch(
       /[0-9a-f]{8}-[0-9a-f]{4}-/i,
@@ -554,7 +569,9 @@ describe("Personal Utang shared-ledger UI", () => {
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
     await screen.findByTestId("utang-entry-type");
     await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
-    await user.type(screen.getByTestId("utang-entry-amount"), "10");
+    const amountInput = screen.getByTestId("utang-entry-amount");
+    await user.clear(amountInput);
+    await user.type(amountInput, "10");
     await user.type(screen.getByTestId("utang-entry-notes"), "Partial payment");
     await user.click(screen.getByTestId("utang-entry-submit"));
 

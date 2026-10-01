@@ -13,4 +13,12 @@ describe("personal-nav-config", () => {
     expect(matchPersonalNavItem("/personal/people", items)).toBe("people");
     expect(matchPersonalNavItem("/personal/linked-merchants", items)).toBe("stores");
   });
+
+  it("opens connection invitations from the sidebar, not the empty Utang invite list", () => {
+    const items = flattenPersonalNavItems(buildPersonalSidebarGroups());
+    const invitations = items.find((item) => item.id === "invitations");
+    expect(invitations?.to).toBe("/personal/invitations");
+    expect(matchPersonalNavItem("/personal/invitations", items)).toBe("invitations");
+    expect(matchPersonalNavItem("/personal/utang/invitations", items)).toBe("invitations");
+  });
 });
