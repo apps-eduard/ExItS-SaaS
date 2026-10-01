@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { IdCard, Loader2, Save, UserRound } from "lucide-react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { PageHeader } from "@/components/exits/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/exits/Notice";
@@ -202,10 +203,7 @@ export function PersonCreateForm({
       onSubmit={(event) => void onSubmit(event)}
     >
       {!embedded ? (
-        <header className="flex min-w-0 flex-col gap-1">
-          <h2 className="m-0 text-[length:var(--exits-text-xl)] font-bold">{t("people.newTitle")}</h2>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{formLede}</p>
-        </header>
+        <PageHeader title={t("people.newTitle")} description={formLede} />
       ) : (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{formLede}</p>
       )}

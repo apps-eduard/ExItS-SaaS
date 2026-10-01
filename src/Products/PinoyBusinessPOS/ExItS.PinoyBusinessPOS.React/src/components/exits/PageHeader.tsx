@@ -1,7 +1,9 @@
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, Info } from "lucide-react";
 import { Link } from "react-router-dom";
+import { InfoPopover } from "@/components/exits/InfoPopover";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -13,15 +15,19 @@ export type PageHeaderProps = {
   titleIcon?: LucideIcon;
   /** Muted line under the title (e.g. branch name or record name). */
   subtitle?: string;
+  /**
+   * Help text. Shown in the info popover beside the title, not as a line under it.
+   * Ignored for `variant="compact"`.
+   */
   description?: string;
   /**
-   * When true, description stays behind the info control until revealed.
-   * Default false — major pages show a one-line lede under the title.
-   * Ignored for `variant="compact"` (no description chrome).
+   * Kept for existing call sites. Descriptions always open from the info icon.
    */
   descriptionCollapsible?: boolean;
   /** Accessible name for the info icon control. */
   infoToggleLabel?: string;
+  /** Optional id for the title element. */
+  titleTestId?: string;
   /**
    * Optional trailing / right-slot content (badge, primary action, etc.).
    * Prefer `actions` for new call sites; `trailing` remains as an alias.
@@ -48,16 +54,16 @@ export type PageHeaderProps = {
 };
 
 /**
- * Canonical ExItS page header: optional back, title, description, badge/actions.
- * Structural surface — not a heavy Card; not Control Shape / Primary-tinted.
+ * Canonical ExItS page header. Sits outside content cards.
+ * When a description is set, an info icon beside the title opens it in a popover.
  */
 export function PageHeader({
   title,
   titleIcon: TitleIcon,
   subtitle,
   description,
-  descriptionCollapsible = false,
   infoToggleLabel,
+  titleTestId,
   actions,
   trailing,
   backTo,
@@ -67,21 +73,47 @@ export function PageHeader({
   variant = "default",
 }: PageHeaderProps) {
   const { t } = useI18n();
-  const [infoPinned, setInfoPinned] = useState(false);
-  const [infoHovered, setInfoHovered] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const infoButtonRef = useRef<HTMLButtonElement>(null);
   const descriptionId = useId();
+  const popoverTitleId = useId();
   const compact = variant === "compact";
   const showBack = Boolean(backTo && backLabel);
   const hasDescription = Boolean(description?.trim()) && !compact;
-  const collapsible = hasDescription && descriptionCollapsible;
-  const alwaysVisible = hasDescription && !descriptionCollapsible;
-  const infoVisible = infoPinned || infoHovered;
   const toggleLabel = infoToggleLabel ?? t("pageHeader.infoToggle");
   const rightSlot = actions ?? trailing;
 
+  useEffect(() => {
+    if (!infoOpen) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setInfoOpen(false);
+      }
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (!headerRef.current?.contains(event.target as Node)) {
+        setInfoOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [infoOpen]);
+
   return (
     <header
-      className={cn("page-header flex min-w-0 flex-col", compact ? "page-header--compact gap-0" : "gap-1")}
+      ref={headerRef}
+      className={cn(
+        "page-header relative flex min-w-0 flex-col",
+        compact ? "page-header--compact gap-0" : "gap-1",
+        infoOpen && "z-30",
+      )}
       data-testid="page-header"
       data-variant={variant}
     >
@@ -130,12 +162,11 @@ export function PageHeader({
             "page-header__main flex min-w-0 flex-1",
             compact ? "flex-row items-center gap-1.5" : "flex-col gap-1",
           )}
-          onMouseLeave={() => setInfoHovered(false)}
         >
           <div className={cn("page-header__head", compact && "page-header__head--compact")}>
             <div
               className={cn(
-                "page-header__title-row flex min-w-0 items-center gap-1.5",
+                "page-header__title-row flex min-w-0 items-center gap-1",
                 compact ? "min-h-8" : "min-h-[var(--exits-control-height)]",
               )}
             >
@@ -146,35 +177,29 @@ export function PageHeader({
               ) : null}
               <h1
                 className={cn(
-                  "page-header__title exits-type-page-title m-0 min-w-0 flex-1 truncate",
+                  "page-header__title exits-type-page-title m-0 min-w-0 truncate",
                   compact && "page-header__title--compact",
                 )}
+                data-testid={titleTestId}
               >
                 {title}
               </h1>
-              {collapsible ? (
-                <button
+              {hasDescription ? (
+                <Button
+                  ref={infoButtonRef}
                   type="button"
-                  className={cn(
-                    "page-header__info",
-                    infoVisible && "page-header__info--visible",
-                    infoPinned && "page-header__info--pinned",
-                  )}
+                  intent="info"
+                  appearance="ghost"
+                  size="icon"
+                  className="shrink-0"
                   data-testid="page-header-info-toggle"
                   aria-label={toggleLabel}
-                  aria-expanded={infoVisible}
+                  aria-expanded={infoOpen}
                   aria-controls={descriptionId}
-                  onMouseEnter={() => setInfoHovered(true)}
-                  onFocus={() => setInfoHovered(true)}
-                  onBlur={(event) => {
-                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                      setInfoHovered(false);
-                    }
-                  }}
-                  onClick={() => setInfoPinned((pinned) => !pinned)}
+                  onClick={() => setInfoOpen((open) => !open)}
                 >
-                  <Info className="size-4 shrink-0" aria-hidden />
-                </button>
+                  <Info className="size-5 shrink-0" aria-hidden />
+                </Button>
               ) : null}
             </div>
             {rightSlot ? (
@@ -195,41 +220,20 @@ export function PageHeader({
               {subtitle}
             </p>
           ) : null}
-
-          {collapsible ? (
-            <div
-              id={descriptionId}
-              className={cn(
-                "page-header__description-shell",
-                infoVisible && "page-header__description-shell--open",
-              )}
-              data-testid="page-header-description-shell"
-              aria-hidden={!infoVisible}
-              onMouseEnter={() => setInfoHovered(true)}
-            >
-              <div className="page-header__description-clip">
-                <p
-                  data-testid="page-header-description"
-                  className="page-header__description m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted"
-                >
-                  {description}
-                </p>
-              </div>
-            </div>
-          ) : null}
         </div>
       </div>
 
-      {alwaysVisible ? (
-        <p
-          data-testid="page-header-description"
-          className={cn(
-            "page-header__description m-0 text-[length:var(--exits-text-sm)] leading-snug text-muted",
-            showBack && "ps-10",
-          )}
+      {infoOpen && hasDescription ? (
+        <InfoPopover
+          id={descriptionId}
+          titleId={popoverTitleId}
+          title={title}
+          anchorRef={infoButtonRef}
         >
-          {description}
-        </p>
+          <p data-testid="page-header-description" className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
+            {description}
+          </p>
+        </InfoPopover>
       ) : null}
     </header>
   );

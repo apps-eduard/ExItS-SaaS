@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronRight, History, Users } from "lucide-react";
+import { ChevronRight, HandCoins, History, Users } from "lucide-react";
 import {
   getLinkedCustomerStatement,
   isExtendedHistoryRequiredError,
@@ -13,6 +13,8 @@ import {
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -128,6 +130,7 @@ export function LinkedMerchantStatementPage() {
   }>();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [openDebtPage, setOpenDebtPage] = useState(1);
+  const [openDebtOpen, setOpenDebtOpen] = useState(false);
   const [recentPage, setRecentPage] = useState(1);
   const [olderPage, setOlderPage] = useState(1);
   const [olderItems, setOlderItems] = useState<LinkedCustomerActivityItem[]>([]);
@@ -425,6 +428,7 @@ export function LinkedMerchantStatementPage() {
   const { summary, openDebt, openDebtHasMore, recent, recentHasMore } = state;
   const hasNoActivity =
     summary.outstandingBalance <= 0 && openDebt.length === 0 && recent.length === 0;
+  const showOpenDebtButton = summary.outstandingBalance > 0 || openDebt.length > 0;
   const statementStoreName =
     personalStoreDisplayName(summary.merchantDisplayName) || storeName;
   const statementRelationshipLabel =
@@ -461,26 +465,102 @@ export function LinkedMerchantStatementPage() {
         className="pc-store-card pc-store-card--static exits-animate-panel flex flex-col gap-2"
         data-testid="linked-merchant-commerce-projection"
       >
-        <p data-testid="linked-merchant-online-shopping">
-          {shoppingAllowed
-            ? t("personal.merchantStatement.onlineShoppingAllowed")
-            : t("personal.merchantStatement.onlineShoppingBlocked")}
-        </p>
-        {summary.creditLimit != null ? (
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-            <dt>{t("personal.merchantStatement.creditLimit")}</dt>
-            <dd data-testid="linked-merchant-credit-limit">
-              {formatPeso(summary.creditLimit)}
+        <h2 className="pc-commerce-nav__heading">{t("personal.merchantStatement.creditSection")}</h2>
+        <dl className="pc-credit-facts">
+          {summary.creditLimit != null ? (
+            <>
+              <div className="pc-credit-facts__item">
+                <dt>{t("personal.merchantStatement.creditLimit")}</dt>
+                <dd data-testid="linked-merchant-credit-limit">
+                  {formatPeso(summary.creditLimit)}
+                </dd>
+              </div>
+              <div className="pc-credit-facts__item">
+                <dt>{t("personal.merchantStatement.pendingOnlineUtang")}</dt>
+                <dd data-testid="linked-merchant-pending-utang">
+                  {formatPeso(summary.pendingOnlineUtangCommitment)}
+                </dd>
+              </div>
+              <div className="pc-credit-facts__item">
+                <dt>{t("personal.merchantStatement.availableCredit")}</dt>
+                <dd data-testid="linked-merchant-available-credit">
+                  {formatPeso(summary.availableCredit)}
+                </dd>
+              </div>
+            </>
+          ) : null}
+          <div className="pc-credit-facts__item" data-testid="linked-merchant-online-shopping">
+            <dt>{t("personal.merchantStatement.onlineShoppingLabel")}</dt>
+            <dd>
+              {shoppingAllowed ? (
+                t("personal.merchantStatement.onlineShoppingStatusAllowed")
+              ) : (
+                <StatusChip
+                  appearance="emphasis"
+                  shape="square"
+                  tone="danger"
+                  data-testid="linked-merchant-online-shopping-blocked"
+                >
+                  {t("personal.merchantStatement.onlineShoppingStatusBlocked")}
+                </StatusChip>
+              )}
             </dd>
-            <dt>{t("personal.merchantStatement.pendingOnlineUtang")}</dt>
-            <dd data-testid="linked-merchant-pending-utang">
-              {formatPeso(summary.pendingOnlineUtangCommitment)}
-            </dd>
-            <dt>{t("personal.merchantStatement.availableCredit")}</dt>
-            <dd data-testid="linked-merchant-available-credit">
-              {formatPeso(summary.availableCredit)}
-            </dd>
-          </dl>
+          </div>
+        </dl>
+        {showOpenDebtButton ? (
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("personal.merchantStatement.openDebtSection")}
+            items={[
+              {
+                key: "open-debt",
+                label: t("personal.merchantStatement.openDebtSection"),
+                icon: <HandCoins />,
+                state: openDebtOpen ? "active" : "idle",
+                expanded: openDebtOpen,
+                testId: "linked-merchant-open-debt-button",
+                onSelect: () => setOpenDebtOpen((open) => !open),
+              },
+            ]}
+          />
+        ) : null}
+        {openDebtOpen && showOpenDebtButton ? (
+          <div
+            className="flex flex-col gap-3 border-t border-border pt-3"
+            data-testid="linked-merchant-open-debt"
+          >
+            <h3 className="pc-section-heading">{t("personal.merchantStatement.openDebtSection")}</h3>
+            {openDebt.length === 0 ? (
+              <EmptyState
+                align="center"
+                icon={<Users className="size-5" strokeWidth={1.75} />}
+                title={t("personal.merchantStatement.openDebtEmptyTitle")}
+                detail={t("personal.merchantStatement.openDebtEmptyDetail")}
+              />
+            ) : (
+              <ul className="pc-activity-list">
+                {openDebt.map((item) => (
+                  <li key={item.activityId}>
+                    <ActivityRow
+                      item={item}
+                      organizationId={organizationId}
+                      businessCustomerId={businessCustomerId}
+                      openReceiptLabel={t("personal.merchantStatement.openReceipt")}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {openDebt.length > 0 && openDebtHasMore ? (
+              <CommerceLoadMore
+                label={t("personal.merchantStatement.loadMore")}
+                loadingLabel={t("loading.label")}
+                busy={busyOpenDebt}
+                testId="linked-merchant-open-debt-load-more"
+                onClick={() => void loadMoreOpenDebt()}
+              />
+            ) : null}
+          </div>
         ) : null}
       </section>
 
@@ -491,42 +571,6 @@ export function LinkedMerchantStatementPage() {
         />
       ) : (
         <>
-      {summary.outstandingBalance > 0 ? (
-        <section className="flex flex-col gap-3 exits-animate-panel">
-          <h2 className="pc-section-heading">{t("personal.merchantStatement.openDebtSection")}</h2>
-          {openDebt.length === 0 ? (
-            <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
-              title={t("personal.merchantStatement.openDebtEmptyTitle")}
-              detail={t("personal.merchantStatement.openDebtEmptyDetail")}
-            />
-          ) : (
-            <ul className="pc-activity-list">
-              {openDebt.map((item) => (
-                <li key={item.activityId}>
-                  <ActivityRow
-                    item={item}
-                    organizationId={organizationId}
-                    businessCustomerId={businessCustomerId}
-                    openReceiptLabel={t("personal.merchantStatement.openReceipt")}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-          {openDebt.length > 0 && openDebtHasMore ? (
-            <CommerceLoadMore
-              label={t("personal.merchantStatement.loadMore")}
-              loadingLabel={t("loading.label")}
-              busy={busyOpenDebt}
-              testId="linked-merchant-open-debt-load-more"
-              onClick={() => void loadMoreOpenDebt()}
-            />
-          ) : null}
-        </section>
-      ) : null}
-
       <section className="flex flex-col gap-3 exits-animate-panel">
         <h2 className="pc-section-heading">{t("personal.merchantStatement.recentSection")}</h2>
         {recent.length === 0 ? (

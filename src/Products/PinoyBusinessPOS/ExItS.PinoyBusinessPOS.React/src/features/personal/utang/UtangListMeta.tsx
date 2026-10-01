@@ -1,5 +1,5 @@
-import { Link2 } from "lucide-react";
 import { formatDueLabel } from "@/api/platform/personal-utang-client";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -47,17 +47,36 @@ export function UtangDueCaption({
   );
 }
 
-export function UtangLinkedIcon({ testId }: { testId?: string }) {
+export function UtangDirectionTags({
+  direction,
+  shared,
+  linkTestId,
+}: {
+  direction: "lent" | "owe";
+  shared: boolean;
+  linkTestId?: string;
+}) {
   const { t } = useI18n();
-  const label = t("people.status.connected");
+  const owesYou = direction === "lent";
 
   return (
-    <span
-      className="inline-flex shrink-0 items-center gap-0.5 text-[length:var(--exits-text-xs)] font-bold text-[var(--exits-success)]"
-      data-testid={testId}
-    >
-      <Link2 className="size-3.5 shrink-0" aria-hidden="true" />
-      <span>{label}</span>
+    <span className="flex min-w-0 flex-wrap items-center gap-1">
+      <StatusChip
+        tone={owesYou ? "success" : "warning"}
+        appearance="emphasis"
+        shape="square"
+      >
+        {owesYou ? t("personal.utang.owesYou") : t("personal.utang.youOwe")}
+      </StatusChip>
+      <span className="text-muted" aria-hidden="true">·</span>
+      <StatusChip
+        tone={shared ? "success" : "info"}
+        appearance="emphasis"
+        shape="square"
+        data-testid={linkTestId}
+      >
+        {shared ? t("people.status.connected") : t("people.localContact")}
+      </StatusChip>
     </span>
   );
 }

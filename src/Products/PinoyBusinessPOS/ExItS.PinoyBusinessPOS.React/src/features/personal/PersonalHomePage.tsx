@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -6,6 +6,7 @@ import {
   ChevronRight,
   HandCoins,
   Home,
+  Info,
   ListPlus,
   ListTodo,
   RefreshCw,
@@ -32,7 +33,8 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
-import { PageHeader } from "@/components/exits/PageHeader";
+import { InfoPopover } from "@/components/exits/InfoPopover";
+import { cn } from "@/lib/cn";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
@@ -54,6 +56,9 @@ import { listCachedPersonalTodos } from "@/offline/personal-todo-cache";
 
 export function PersonalHomePage() {
   const { t } = useI18n();
+  const [infoOpen, setInfoOpen] = useState(false);
+  const infoRootRef = useRef<HTMLDivElement>(null);
+  const infoButtonRef = useRef<HTMLButtonElement>(null);
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
   const [cachedTodos, setCachedTodos] = useState<
@@ -70,6 +75,28 @@ export function PersonalHomePage() {
     enabled: online,
     meta: { suppressGlobalError: true, operation: "list personal todos" },
   });
+
+  useEffect(() => {
+    if (!infoOpen) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setInfoOpen(false);
+      }
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (!infoRootRef.current?.contains(event.target as Node)) {
+        setInfoOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [infoOpen]);
 
   useEffect(() => {
     if (!offline) {
@@ -182,11 +209,44 @@ export function PersonalHomePage() {
       className="personal-page personal-home-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="personal-home-page"
     >
-      <PageHeader
-        title={t("personal.title")}
-        titleIcon={Home}
-        description={t("personal.lede")}
-      />
+      <header
+        ref={infoRootRef}
+        className={cn("relative flex items-center gap-2", infoOpen && "z-30")}
+      >
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="page-header__title-icon shrink-0" aria-hidden>
+            <Home className="size-5" />
+          </span>
+          <h1 className="page-header__title exits-type-page-title m-0 min-w-0 truncate">
+            {t("personal.title")}
+          </h1>
+          <Button
+            ref={infoButtonRef}
+            type="button"
+            intent="info"
+            appearance="ghost"
+            size="icon"
+            className="shrink-0"
+            aria-label={t("personal.info.open")}
+            aria-expanded={infoOpen}
+            aria-controls="personal-home-info-popover"
+            data-testid="personal-home-info"
+            onClick={() => setInfoOpen((open) => !open)}
+          >
+            <Info className="size-5" aria-hidden="true" />
+          </Button>
+        </div>
+        {infoOpen ? (
+          <InfoPopover
+            id="personal-home-info-popover"
+            titleId="personal-home-info-title"
+            title={t("personal.info.title")}
+            anchorRef={infoButtonRef}
+          >
+            <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">{t("personal.lede")}</p>
+          </InfoPopover>
+        ) : null}
+      </header>
 
       <PersonalGuideHomeCard />
 

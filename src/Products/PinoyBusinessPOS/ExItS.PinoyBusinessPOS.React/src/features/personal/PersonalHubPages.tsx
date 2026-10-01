@@ -13,6 +13,7 @@ import {
   QrCode,
   Search,
   Settings,
+  PenLine,
   UserPen,
   UserPlus,
   Users,
@@ -301,11 +302,32 @@ export function PersonalUtangHubPage() {
         </section>
       ) : null}
 
-      <div className="exits-animate-panel">
-        <Button asChild className="w-full sm:w-auto" data-testid="utang-hub-record">
+      <div
+        className="exits-animate-panel flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto"
+        data-testid="utang-hub-actions"
+      >
+        <Button asChild className="shrink-0" data-testid="utang-hub-record">
           <Link to="/personal/utang/lent">
-            <HandCoins className="size-4 shrink-0" aria-hidden />
+            <PenLine className="size-4 shrink-0" aria-hidden />
             {t("personal.utang.recordLent")}
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="shrink-0">
+          <Link to="/personal/utang/lent" data-testid="utang-open-lent">
+            <HandCoins className="size-4 shrink-0 text-primary" aria-hidden />
+            {t("personal.utang.lent")}
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="shrink-0">
+          <Link to="/personal/utang/owe" data-testid="utang-open-owe">
+            <Wallet className="size-4 shrink-0 text-primary" aria-hidden />
+            {t("personal.utang.owe")}
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="shrink-0">
+          <Link to="/personal/people" data-testid="utang-open-people">
+            <Users className="size-4 shrink-0 text-primary" aria-hidden />
+            {t("personal.utang.people")}
           </Link>
         </Button>
       </div>
@@ -348,35 +370,6 @@ export function PersonalUtangHubPage() {
             title={t("personal.utang.workspaceEmptyTitle")}
             detail={t("personal.utang.workspaceEmptyDetail")}
           />
-          <div className="mt-3">
-            <ActionTileGrid
-              emphasizePrimary
-              tiles={[
-                {
-                  key: "lent",
-                  label: t("personal.utang.lent"),
-                  icon: HandCoins,
-                  testId: "utang-open-lent",
-                  to: "/personal/utang/lent",
-                  primary: true,
-                },
-                {
-                  key: "owe",
-                  label: t("personal.utang.owe"),
-                  icon: Wallet,
-                  testId: "utang-open-owe",
-                  to: "/personal/utang/owe",
-                },
-                {
-                  key: "people",
-                  label: t("personal.utang.people"),
-                  icon: Users,
-                  testId: "utang-open-people",
-                  to: "/personal/people",
-                },
-              ]}
-            />
-          </div>
         </div>
       ) : (
         <>
@@ -467,38 +460,6 @@ export function PersonalUtangHubPage() {
                 ))}
               </ul>
             )}
-          </section>
-
-          <section
-            className="catalog-form-section exits-animate-panel personal-section gap-2"
-            aria-label={t("personal.home.quickActions")}
-          >
-            <ActionTileGrid
-              tiles={[
-                {
-                  key: "lent",
-                  label: t("personal.utang.lent"),
-                  icon: HandCoins,
-                  testId: "utang-open-lent",
-                  to: "/personal/utang/lent",
-                  primary: true,
-                },
-                {
-                  key: "owe",
-                  label: t("personal.utang.owe"),
-                  icon: Wallet,
-                  testId: "utang-open-owe",
-                  to: "/personal/utang/owe",
-                },
-                {
-                  key: "people",
-                  label: t("personal.utang.people"),
-                  icon: Users,
-                  testId: "utang-open-people",
-                  to: "/personal/people",
-                },
-              ]}
-            />
           </section>
         </>
       )}

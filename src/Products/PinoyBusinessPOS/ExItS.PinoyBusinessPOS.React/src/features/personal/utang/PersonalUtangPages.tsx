@@ -35,7 +35,7 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { UtangDueCaption, UtangLinkedIcon } from "@/features/personal/utang/UtangListMeta";
+import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import {
   isSharedRelationship as workspaceIsSharedRelationship,
@@ -964,16 +964,9 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             const name = contactLabel(contacts, row);
             const shared = isSharedRelationship(row);
             const owned = row.isLedgerOwner !== false;
-            const ledgerLabel = shared
-              ? owned
-                ? t("personal.utang.sharedLedger")
-                : t("personal.utang.readOnly")
-              : t("personal.utang.notLinkedToExits");
             const ownershipLabel = owned
               ? t("personal.utang.ownershipMine")
               : t("personal.utang.ownershipSharedWithMe");
-            const perspectiveLabel =
-              mode === "lent" ? t("personal.utang.owesYou") : t("personal.utang.youOwe");
             return (
               <li key={row.id}>
                 <Link
@@ -987,50 +980,43 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                   <PersonAvatar name={name} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p
-                      className="m-0 flex min-w-0 items-center justify-between gap-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                      className="m-0 truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
                       data-utang-ownership=""
                       data-testid={`utang-rel-ownership-${row.id}`}
                     >
-                      <span className="min-w-0 truncate">{ownershipLabel}</span>
-                      {!owned ? (
-                        <StatusChip
-                          tone={UTANG_READ_ONLY_CHIP.tone}
-                          appearance={UTANG_READ_ONLY_CHIP.appearance}
-                          shape={UTANG_READ_ONLY_CHIP.shape}
-                          data-testid={`utang-rel-readonly-${row.id}`}
-                        >
-                          {t("personal.utang.readOnly")}
-                        </StatusChip>
-                      ) : null}
+                      {ownershipLabel}
                     </p>
                     <p className="exits-list__name m-0 truncate font-semibold">{name}</p>
-                    <p className="m-0 flex min-w-0 items-center gap-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-                      <span className="truncate">{perspectiveLabel}</span>
-                      {shared ? (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <UtangLinkedIcon testId={`utang-rel-ledger-${row.id}`} />
-                        </>
-                      ) : (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="truncate" data-testid={`utang-rel-ledger-${row.id}`}>
-                            {ledgerLabel}
-                          </span>
-                        </>
-                      )}
+                    <p className="m-0 flex min-w-0 flex-wrap items-center gap-1 text-[length:var(--exits-text-sm)] text-muted">
+                      <UtangDirectionTags
+                        direction={mode === "lent" ? "lent" : "owe"}
+                        shared={shared}
+                        linkTestId={`utang-rel-ledger-${row.id}`}
+                      />
                       {!owned ? (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="truncate">{t("personal.utang.managedByOther").replace("{name}", name)}</span>
-                        </>
+                        <span className="truncate">
+                          {t("personal.utang.managedByOther").replace("{name}", name)}
+                        </span>
                       ) : null}
                     </p>
                     <WaitingChip origin={rowOrigin(row)} />
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-0.5">
                     <UtangDueCaption dueDateUtc={row.dueDateUtc} />
-                    <MoneyDisplay amount={row.currentBalance} />
+                  </div>
+                  <div className="grid shrink-0 justify-items-start self-stretch">
+                    {!owned ? (
+                      <StatusChip
+                        tone={UTANG_READ_ONLY_CHIP.tone}
+                        appearance={UTANG_READ_ONLY_CHIP.appearance}
+                        shape={UTANG_READ_ONLY_CHIP.shape}
+                        className="col-start-1 row-start-1 self-start"
+                        data-testid={`utang-rel-readonly-${row.id}`}
+                      >
+                        {t("personal.utang.readOnly")}
+                      </StatusChip>
+                    ) : null}
+                    <span className="col-start-1 row-start-1 self-center">
+                      <MoneyDisplay amount={row.currentBalance} />
+                    </span>
                   </div>
                 </Link>
               </li>

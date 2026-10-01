@@ -12,13 +12,21 @@ export type PeopleConnectionStatus =
   | "connected"
   | "blocked";
 
+export type PeopleUtangSnapshot = {
+  direction: "lent" | "owe";
+  balance: number;
+  dueDateUtc: string | null;
+  isLedgerOwner: boolean;
+  isSharedLedger: boolean;
+};
+
 export type PeopleRowModel = {
   contact: PersonalContactDto;
   connectionStatus: PeopleConnectionStatus;
   identityLine: "local" | "exits";
   publicUserId?: string;
   pendingConnectionRequest?: PersonalConnectionRequestDto;
-  utangSummary?: string;
+  utang?: PeopleUtangSnapshot;
 };
 
 export function isPendingConnectionRequest(request: PersonalConnectionRequestDto): boolean {
@@ -82,18 +90,6 @@ export function deriveConnectionStatus(
   return { status: "not_connected" };
 }
 
-function formatMoney(amount: number, currencyCode: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currencyCode || "PHP",
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${currencyCode} ${amount.toFixed(2)}`;
-  }
-}
-
 export function buildPeopleRows(input: {
   contacts: PersonalContactDto[];
   connectionRequests: PersonalConnectionRequestDto[];
@@ -119,18 +115,16 @@ export function buildPeopleRows(input: {
             rel.debtorUserIdentityId === contact.linkedUserIdentityId)),
     );
     const open = related.find((rel) => rel.status.toLowerCase() === "active");
-    let utangSummary: string | undefined;
-    if (open && open.currentBalance !== 0) {
-      const perspective = open.perspective.toLowerCase();
-      const money = formatMoney(open.currentBalance, open.currencyCode);
-      if (perspective.includes("lent") || open.creditorContactId === null) {
-        utangSummary = `You lent ${money}`;
-      } else if (perspective.includes("borrow")) {
-        utangSummary = `You borrowed ${money}`;
-      } else {
-        utangSummary = money;
-      }
-    }
+    const utang: PeopleUtangSnapshot | undefined =
+      open && open.currentBalance !== 0
+        ? {
+            direction: open.perspective.toLowerCase().includes("borrow") ? "owe" : "lent",
+            balance: open.currentBalance,
+            dueDateUtc: open.dueDateUtc ?? null,
+            isLedgerOwner: open.isLedgerOwner !== false,
+            isSharedLedger: open.isSharedLedger === true,
+          }
+        : undefined;
 
     return {
       contact,
@@ -138,7 +132,7 @@ export function buildPeopleRows(input: {
       identityLine: publicUserId ? ("exits" as const) : ("local" as const),
       publicUserId,
       pendingConnectionRequest,
-      utangSummary,
+      utang,
     };
   });
 

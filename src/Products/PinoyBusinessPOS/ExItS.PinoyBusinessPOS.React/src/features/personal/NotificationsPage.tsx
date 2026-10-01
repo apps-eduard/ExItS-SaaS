@@ -40,7 +40,7 @@ export function NotificationsPage() {
       className="personal-page exits-page flex w-full min-w-0 flex-col gap-4"
       data-testid="personal-notifications-page"
     >
-      <PageHeader title={t("notifications.title")} subtitle={t("notifications.lede")} />
+      <PageHeader title={t("notifications.title")} description={t("notifications.lede")} />
       <PersonalNotificationsPanel />
     </section>
   );
