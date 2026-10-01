@@ -13,7 +13,7 @@ For PinoyBusinessPOS React chip / badge / filter / tag / count work:
 3. Do **not** invent page-local chip / pill / badge visual systems when the shared foundation can express the need.
 4. Use locked families + tones + shapes (`family` / `tone` / `shape`) — no `SquareTagChip`-style explosion.
 5. Default shapes: STATUS/FILTER/REMOVABLE → **PILL**; TAG → **SQUARE**; COUNT → **SOFT**; COUNT BADGE → **PILL**.
-6. Style through ExItS semantic tokens — **PRIMARY is not hardcoded green** (`--exits-primary`); SUCCESS/WARNING/DANGER/INFO stay semantic.
+6. Style tones from the locked severity palette (`pos-react-severity-palette.mdc`). **PRIMARY** follows Preferences (`--exits-primary`), not a hardcoded green. **INFO** is `--exits-severity-info` (sky blue), not `--exits-info` (teal).
 7. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort), including `--exits-chip-square-*`.
 8. Read-only chips (Status / Tag / Count) must not imitate buttons; Filter / Removable need keyboard, focus, and correct ARIA.
 9. Respect `prefers-reduced-motion` on interactive chips.

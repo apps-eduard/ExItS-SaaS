@@ -10763,7 +10763,12 @@ button.exits-card {
 }
 
 .personal-todo-tasklist-rail__icon {
-  opacity: 0.9;
+  color: var(--exits-primary);
+  opacity: 1;
+}
+
+.personal-todo-tasklist-rail__item--active .personal-todo-tasklist-rail__icon {
+  color: inherit;
 }
 
 .personal-todo-tasklist-rail__label {

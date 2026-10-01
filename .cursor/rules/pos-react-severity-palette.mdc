@@ -1,0 +1,34 @@
+---
+description: PinoyBusinessPOS severity palette — Diamond Severities colors; Info is sky blue, not the teal --exits-info token
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# Severity palette
+
+Visual authority: `/ui-standards` → **Buttons** → **Severities**. Tokens live in `src/styles/globals.css` as `--exits-severity-*` (light and dark).
+
+When a control is Primary, Secondary, Success, Info, Warn, Help, Danger, or Contrast, use this palette. Do not invent a page-local hue, and do not paint Info with `--exits-info`.
+
+| Gallery | API | Token |
+|---------|-----|--------|
+| Primary | `primary` | `--exits-primary` (Preferences palette — not a fixed green or emerald) |
+| Secondary | `neutral` | `--exits-severity-secondary` |
+| Success | `success` | `--exits-severity-success` (`#22c55e` / dark `#4ade80`) |
+| Info | `info` | `--exits-severity-info` (`#0ea5e9` / dark `#38bdf8`) |
+| Warn | `warning` | `--exits-severity-warn` |
+| Help | `help` | `--exits-severity-help` |
+| Danger | `danger` | `--exits-severity-danger` |
+| Contrast | `contrast` | `--exits-severity-contrast` |
+
+## Info is sky blue
+
+`--exits-info` is `#0f766e` (dark `#2dd4bf`), a teal. On a soft wash it reads as light green and collides with Success.
+
+Shared `Button` `intent="info"` still resolves to that teal. For severity Info, set the color from `--exits-severity-info` (soft wash or solid). Do not treat `intent="info"` alone as the Severities Info chip.
+
+```tsx
+className="border border-border bg-[color-mix(in_srgb,var(--exits-severity-info)_12%,var(--exits-surface))] text-[var(--exits-severity-info)] hover:border-[var(--exits-severity-info)]"
+```
+
+Same rule for chips and other severity chrome: Info uses `--exits-severity-info`, not `--exits-info`.
