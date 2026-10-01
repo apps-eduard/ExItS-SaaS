@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, ChevronRight, HandCoins, Hourglass, Loader2, UserRound, Users, X } from "lucide-react";
+import { CalendarClock, Check, ChevronRight, HandCoins, Hourglass, Loader2, UserRound, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import type { PersonalConnectionRequestDto } from "@/api/platform/personal-types";
@@ -134,20 +134,23 @@ function ConnectionRequestCard({
         <div className="customer-link-card__actions grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button
             type="button"
-            variant="outline"
+            intent="danger"
+            appearance="solid"
+            emphasis="soft"
             className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onDecline}
           >
             {isDeclining ? (
               <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : (
-              <X className="size-4 shrink-0" aria-hidden />
-            )}
+            ) : null}
             {t("invitations.decline")}
           </Button>
           <Button
             type="button"
+            intent="primary"
+            appearance="solid"
+            emphasis="soft"
             className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onAccept}
@@ -317,25 +320,18 @@ export function InvitationsPage() {
       className="personal-page invitations-page exits-page flex w-full min-w-0 flex-col gap-4"
       data-testid="invitations-page"
     >
-      <header className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="icon" className="shrink-0" aria-label={t("shell.back")}>
-          <Link to="/personal/people">
-            <ArrowLeft className="size-5" aria-hidden="true" />
-          </Link>
-        </Button>
-        <h1
-          className="m-0 min-w-0 flex-1 text-[length:var(--exits-text-2xl)] font-bold tracking-tight"
-          data-testid="invitations-page-title"
-        >
-          {t("invitations.title")}
-        </h1>
-      </header>
+      <PageHeader
+        title={t("invitations.title")}
+        description={t("invitations.lede")}
+        titleTestId="invitations-page-title"
+        backTo="/personal/people"
+        backLabel={t("people.backToList")}
+        backTestId="page-header-back-invitations"
+      />
 
       {(connectionsQuery.isFetching || contactsQuery.isFetching) && connectionsQuery.data ? (
         <BackgroundRefreshIndicator active label={t("loading.updating")} />
       ) : null}
-
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("invitations.lede")}</p>
 
       <div className="flex flex-wrap gap-2" data-testid="invitations-summary">
         <StatusChip tone={receivedGroups.length > 0 ? "warning" : "neutral"}>

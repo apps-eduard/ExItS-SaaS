@@ -31,6 +31,8 @@ import { Card } from "@/components/ui/card";
 
 import { LoadingState } from "@/components/ui/skeleton";
 
+import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
+
 import { cn } from "@/lib/cn";
 
 import {
@@ -431,39 +433,45 @@ export function PersonDetailPage() {
                   <Link
                     to={`/personal/utang/relationships/${rel.id}`}
                     className={cn(
-                      "flex flex-col gap-0.5 rounded-[var(--exits-radius-md)] border border-transparent px-2 py-1.5 text-foreground no-underline",
+                      "flex items-center justify-between gap-3 rounded-[var(--exits-radius-md)] border border-transparent px-2 py-1.5 text-foreground no-underline",
                       !owned && "utang-account-card--shared",
                     )}
                     data-testid={`person-detail-utang-row-${rel.id}`}
                   >
-                    <span
-                      className="flex min-w-0 items-center justify-between gap-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
-                      data-utang-ownership=""
-                    >
-                      <span className="min-w-0 truncate">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span
+                        className="truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                        data-utang-ownership=""
+                      >
                         {owned
                           ? t("personal.utang.ownershipMine")
                           : t("personal.utang.ownershipSharedWithMe")}
                       </span>
+                      <span className="font-medium">{rel.perspective}</span>
+                      <span className="text-[length:var(--exits-text-xs)] text-muted">
+                        {owned
+                          ? t("personal.utang.managedByMe")
+                          : t("personal.utang.managedByOther").replace(
+                              "{name}",
+                              contact.displayName,
+                            )}
+                      </span>
+                    </span>
+                    <span className="grid shrink-0 justify-items-start self-stretch font-medium">
                       {!owned ? (
                         <ExitsStatusChip
-                          tone="secondary"
+                          tone={UTANG_READ_ONLY_CHIP.tone}
+                          appearance={UTANG_READ_ONLY_CHIP.appearance}
+                          shape={UTANG_READ_ONLY_CHIP.shape}
+                          className="col-start-1 row-start-1 self-start"
                           data-testid={`person-detail-utang-readonly-${rel.id}`}
                         >
                           {t("personal.utang.readOnly")}
                         </ExitsStatusChip>
                       ) : null}
-                    </span>
-                    <span className="font-medium">
-                      {rel.perspective} · {formatMoney(rel.currentBalance, rel.currencyCode)}
-                    </span>
-                    <span className="text-[length:var(--exits-text-xs)] text-muted">
-                      {owned
-                        ? t("personal.utang.managedByMe")
-                        : t("personal.utang.managedByOther").replace(
-                            "{name}",
-                            contact.displayName,
-                          )}
+                      <span className="col-start-1 row-start-1 self-center">
+                        {formatMoney(rel.currentBalance, rel.currencyCode)}
+                      </span>
                     </span>
                   </Link>
                 </li>

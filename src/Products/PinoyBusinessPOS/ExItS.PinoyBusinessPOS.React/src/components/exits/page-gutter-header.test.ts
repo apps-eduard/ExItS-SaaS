@@ -58,10 +58,10 @@ describe("POS-GLOBAL-CONTENT-GUTTER-AND-PAGE-HEADER-STANDARD-18", () => {
 
   it("styles PageHeader as a calm structural surface", () => {
     expect(globalsCss).toMatch(
-      /\.page-header\s*\{[\s\S]*?background:\s*var\(--exits-surface\)[\s\S]*?box-shadow:\s*none/,
+      /\.page-header\s*\{[\s\S]*?background:\s*transparent[\s\S]*?box-shadow:\s*none/,
     );
     expect(pageHeaderSrc).toContain('data-testid="page-header"');
-    expect(pageHeaderSrc).toContain("descriptionCollapsible = false");
+    expect(pageHeaderSrc).toContain("InfoPopover");
     expect(pageHeaderSrc).toContain("actions");
     expect(pageHeaderSrc).toContain("rtl:rotate-180");
   });

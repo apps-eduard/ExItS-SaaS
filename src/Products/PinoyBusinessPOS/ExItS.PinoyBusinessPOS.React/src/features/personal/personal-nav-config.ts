@@ -146,11 +146,11 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
         },
         {
           id: "invitations",
-          to: "/personal/utang/invitations",
+          to: "/personal/invitations",
           labelKey: "personal.social.invitationsTitle",
           icon: UserPlus,
           testId: "personal-nav-invitations",
-          matchPrefixes: ["/personal/utang/invitations", "/personal/invitations"],
+          matchPrefixes: ["/personal/invitations", "/personal/utang/invitations"],
         },
         {
           id: "qr",

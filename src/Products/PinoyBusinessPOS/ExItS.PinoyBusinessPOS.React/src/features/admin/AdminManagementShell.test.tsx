@@ -101,7 +101,7 @@ describe("AdminManagementShell", () => {
       "utf8",
     );
     expect(globalsCss).toMatch(
-      /\.app-top-bar\.app-top-bar--shell-desktop\s+\.app-top-bar__brand\s*\{[^}]*display:\s*none/,
+      /\.app-top-bar\.app-top-bar--shell-desktop\s+\.app-top-bar__brand(?:,[\s\S]*?)?\{[^}]*display:\s*none\s*!important/,
     );
   });
 

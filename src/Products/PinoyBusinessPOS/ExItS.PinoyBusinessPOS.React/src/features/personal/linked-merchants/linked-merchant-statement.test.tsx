@@ -6,7 +6,7 @@ vi.mock("@/session/SessionProvider", () => ({
   }),
 }));
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as linkedClient from "@/api/pos/pos-linked-customers-client";
@@ -116,6 +116,7 @@ describe("LinkedMerchantStatementPage", () => {
       expect(screen.getByTestId("linked-merchant-statement-page")).toBeInTheDocument();
     });
     expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("0.00 PHP");
+    expect(screen.queryByTestId("linked-merchant-open-debt-button")).not.toBeInTheDocument();
     const receiptLink = screen.getByTestId("linked-merchant-activity-receipt-link");
     expect(receiptLink).toBeInTheDocument();
     expect(receiptLink).toHaveAttribute(
@@ -212,5 +213,89 @@ describe("LinkedMerchantStatementPage", () => {
       expect(screen.getByTestId("merchant-statement-status-empty")).toBeInTheDocument();
     });
     expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("0.00 PHP");
+    expect(screen.queryByTestId("linked-merchant-open-debt-button")).not.toBeInTheDocument();
+  });
+
+  it("shows open debt activity in the credit card only when there is debt", async () => {
+    vi.mocked(linkedClient.getLinkedCustomerStatement).mockResolvedValue({
+      organizationId,
+      platformBusinessCustomerId: businessCustomerId,
+      posCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      linkedCustomerAppUserId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      merchantDisplayName: "Kizy Store",
+      customerDisplayName: "Ana Reyes",
+      outstandingBalance: 250,
+      currency: "PHP",
+      asOfUtc: "2026-08-22T00:00:00Z",
+      creditLimit: 5000,
+      pendingOnlineUtangCommitment: 0,
+      availableCredit: 3395,
+    });
+    vi.mocked(linkedClient.listLinkedCustomerOpenDebtActivity).mockResolvedValue({
+      organizationId,
+      platformBusinessCustomerId: businessCustomerId,
+      posCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      items: [
+        {
+          activityId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          occurredAtUtc: "2026-08-20T02:00:00Z",
+          type: "Charge",
+          referenceNumber: "UT-44",
+          chargeAmount: 250,
+          paymentAmount: null,
+          adjustmentAmount: null,
+          balanceAfter: 250,
+          status: "Open",
+          hasDetails: false,
+          sourceSaleId: null,
+        },
+      ],
+      page: 1,
+      pageSize: 10,
+      hasMore: false,
+      canAccessExtendedHistory: false,
+      freeHistoryStartsAtUtc: "2026-05-01T00:00:00Z",
+    });
+    vi.mocked(linkedClient.listLinkedCustomerRecentActivity).mockResolvedValue({
+      organizationId,
+      platformBusinessCustomerId: businessCustomerId,
+      posCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      items: [],
+      page: 1,
+      pageSize: 10,
+      hasMore: false,
+      canAccessExtendedHistory: false,
+      freeHistoryStartsAtUtc: "2026-05-01T00:00:00Z",
+    });
+
+    renderStatement();
+
+    const button = await screen.findByTestId("linked-merchant-open-debt-button");
+    const creditCard = screen.getByTestId("linked-merchant-commerce-projection");
+    expect(creditCard).toHaveTextContent("Credit");
+    const blocked = screen.getByTestId("linked-merchant-online-shopping-blocked");
+    const factItems = creditCard.querySelectorAll(".pc-credit-facts__item");
+    expect(factItems[factItems.length - 1]).toContainElement(blocked);
+    expect(blocked).toHaveTextContent("Blocked");
+    expect(blocked).toHaveAttribute("data-tone", "danger");
+    expect(blocked).toHaveAttribute("data-appearance", "emphasis");
+    expect(blocked).toHaveAttribute("data-shape", "square");
+    expect(creditCard.querySelector(".pc-credit-facts")).not.toBeNull();
+    expect(screen.getByTestId("linked-merchant-credit-limit")).toHaveTextContent("5,000.00");
+    expect(screen.getByTestId("linked-merchant-pending-utang")).toHaveTextContent("0.00");
+    expect(screen.getByTestId("linked-merchant-available-credit")).toHaveTextContent("3,395.00");
+    expect(creditCard).toContainElement(button);
+    expect(screen.getByTestId("linked-merchants-toolbar")).not.toContainElement(button);
+    expect(button).toHaveTextContent("Open debt activity");
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("UT-44")).not.toBeInTheDocument();
+
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    const debtList = await screen.findByTestId("linked-merchant-open-debt");
+    expect(creditCard).toContainElement(debtList);
+    expect(debtList).toHaveTextContent("Open debt activity");
+    expect(debtList).toHaveTextContent("UT-44");
   });
 });

@@ -1,17 +1,22 @@
-import { ChevronRight, Link2, Users } from "lucide-react";
+import { ChevronRight, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { SearchField } from "@/components/exits/SearchField";
-import { StatusChip } from "@/components/ui/badge";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { Button } from "@/components/ui/button";
 import {
   type PeopleConnectionStatus,
   type PeopleRowModel,
 } from "@/features/personal/people-status";
+import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
+import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
 export type PeopleListFilter = "all" | "connected" | "pending" | "local" | "not_connected";
 
@@ -33,11 +38,14 @@ const FILTERS: ReadonlyArray<{
 
 function statusTone(
   status: PeopleConnectionStatus,
-): "neutral" | "success" | "warning" | "info" {
+): "neutral" | "success" | "warning" | "info" | "danger" {
   if (status === "connected") {
     return "success";
   }
-  if (status === "request_sent" || status === "request_received" || status === "blocked") {
+  if (status === "blocked") {
+    return "danger";
+  }
+  if (status === "request_sent" || status === "request_received") {
     return "warning";
   }
   if (status === "local") {
@@ -90,37 +98,81 @@ function PeopleListRow({
 }) {
   const { t } = useI18n();
 
+  const utang = row.utang;
+  const owned = utang?.isLedgerOwner !== false;
+
   return (
     <li>
       <Link
         to={`/personal/people/${row.contact.id}`}
-        className="exits-list__card people-row block min-w-0 text-foreground no-underline"
+        className={cn(
+          "exits-list__card people-row utang-account-card flex min-w-0 items-center justify-between gap-3 text-foreground no-underline",
+          utang && (owned ? "utang-account-card--mine" : "utang-account-card--shared"),
+        )}
         data-testid={`people-row-${row.contact.id}`}
       >
         <PersonAvatar name={row.contact.displayName} size="sm" className="people-row__avatar" />
-        <span className="people-row__main min-w-0 flex-1">
+        <span className="min-w-0 flex-1">
+          {utang ? (
+            <span
+              className="block truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+              data-utang-ownership=""
+            >
+              {owned
+                ? t("personal.utang.ownershipMine")
+                : t("personal.utang.ownershipSharedWithMe")}
+            </span>
+          ) : null}
           <span className="exits-list__name block truncate font-semibold">
             {row.contact.displayName}
           </span>
-          <span className="people-row__meta mt-1 flex min-w-0 items-center gap-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-            {row.identityLine === "exits" && row.publicUserId ? (
-              <>
-                <Link2 className="size-3.5 shrink-0" aria-hidden="true" />
-                <span className="truncate">{row.publicUserId}</span>
-              </>
-            ) : (
-              <span className="truncate">{t("people.localContact")}</span>
-            )}
-          </span>
-          {row.utangSummary ? (
-            <span className="people-row__utang mt-1 block truncate text-[length:var(--exits-text-sm)] font-medium text-primary">
-              {row.utangSummary}
-            </span>
+          {utang ? (
+            <UtangDirectionTags
+              direction={utang.direction}
+              shared={utang.isSharedLedger}
+              linkTestId={`people-row-linked-${row.contact.id}`}
+            />
+          ) : (
+            <StatusChip
+              tone={statusTone(row.connectionStatus)}
+              appearance="emphasis"
+              shape="square"
+            >
+              {statusLabel}
+            </StatusChip>
+          )}
+          {utang ? (
+            <UtangDueCaption
+              dueDateUtc={utang.dueDateUtc}
+              testId={`people-row-due-${row.contact.id}`}
+            />
           ) : null}
         </span>
-        <span className="customer-row__aside">
-          <StatusChip tone={statusTone(row.connectionStatus)}>{statusLabel}</StatusChip>
-          <ChevronRight className="customer-row__chevron size-4 shrink-0 text-muted" aria-hidden />
+        <span className="grid shrink-0 justify-items-start self-stretch">
+          {utang && !owned ? (
+            <StatusChip
+              tone={UTANG_READ_ONLY_CHIP.tone}
+              appearance={UTANG_READ_ONLY_CHIP.appearance}
+              shape={UTANG_READ_ONLY_CHIP.shape}
+              className="col-start-1 row-start-1 self-start"
+              data-testid={`people-row-readonly-${row.contact.id}`}
+            >
+              {t("personal.utang.readOnly")}
+            </StatusChip>
+          ) : null}
+          <span className="col-start-1 row-start-1 flex items-center gap-1 self-center">
+            {utang ? (
+              <MoneyDisplay
+                amount={utang.balance}
+                className={cn(
+                  "text-[length:var(--exits-text-base)] leading-tight",
+                  utang.direction === "owe" && utang.balance > 0 && "text-[var(--exits-warning)]",
+                )}
+                testId={`people-row-balance-${row.contact.id}`}
+              />
+            ) : null}
+            <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+          </span>
         </span>
       </Link>
     </li>
@@ -208,15 +260,23 @@ export function PeopleListSection({
         ) : null}
       </div>
 
-      <SearchField
-        label={t("people.search")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={t("people.searchPlaceholder")}
-        data-testid="people-search"
-        containerClassName="people-page__search exits-page__search"
-      />
+      <div className="flex min-w-0 items-center gap-2" data-testid="people-search-row">
+        <SearchField
+          label={t("people.search")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          placeholder={t("people.searchPlaceholder")}
+          data-testid="people-search"
+          containerClassName="people-page__search exits-page__search min-w-0 flex-1"
+        />
+        <Button asChild variant="outline" className="shrink-0">
+          <Link to="/personal/invitations" data-testid="people-connection-requests">
+            <UserPlus className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            {t("people.connectionInbox")}
+          </Link>
+        </Button>
+      </div>
 
       <ExitsChipBar
         variant="filter"

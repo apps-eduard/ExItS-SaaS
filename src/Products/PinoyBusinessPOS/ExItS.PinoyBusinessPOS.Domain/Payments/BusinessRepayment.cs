@@ -130,7 +130,7 @@ public sealed class BusinessRepayment
         }
 
         UtangCheckPayment.EnsureNonCheckHasNoCheckFields(
-            paymentMethod, checkNumber, bankName, checkDate, accountName, reference);
+            paymentMethod, checkNumber, bankName, checkDate, accountName);
 
         string? normalizedCheckNumber = null;
         string? normalizedBankName = null;
@@ -153,6 +153,10 @@ public sealed class BusinessRepayment
             throw new DomainException(
                 DomainErrorCodes.InvalidUtangPaymentMethod,
                 "Payment method must be Cash, ManualGCash, or Check.");
+        }
+        else
+        {
+            normalizedReference = UtangCheckPayment.NormalizeOptionalReference(reference);
         }
 
         return new BusinessRepayment(

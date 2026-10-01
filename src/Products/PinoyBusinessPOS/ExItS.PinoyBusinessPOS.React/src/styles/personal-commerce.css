@@ -251,7 +251,9 @@
 
 .pc-store-card__manage-panel {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
   gap: 0.5rem;
   padding-top: 0.35rem;
 }
@@ -1055,6 +1057,61 @@
   margin: 0;
   font-size: var(--exits-text-xs);
   color: var(--exits-text-muted);
+}
+
+.pc-credit-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  font-size: var(--exits-text-sm);
+}
+
+.pc-credit-facts__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: baseline;
+}
+
+.pc-credit-facts dt,
+.pc-credit-facts dd {
+  margin: 0;
+}
+
+.pc-credit-facts dd {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 1024px) {
+  .pc-credit-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .pc-credit-facts__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-lg);
+    background: var(--exits-surface);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--exits-text) 4%, transparent);
+  }
+
+  .pc-credit-facts__item dt {
+    color: var(--exits-text-muted);
+    font-weight: 600;
+  }
+
+  .pc-credit-facts__item dd {
+    font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+    font-weight: 700;
+    line-height: 1.2;
+  }
 }
 
 .pc-activity-list {

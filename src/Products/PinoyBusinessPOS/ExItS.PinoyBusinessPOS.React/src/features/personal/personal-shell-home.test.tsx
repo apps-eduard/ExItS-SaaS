@@ -163,6 +163,19 @@ describe("Personal shell and home (RMAP-22B)", () => {
       expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("0");
     });
     expect(screen.getByTestId("personal-home-layout")).toBeInTheDocument();
+    const homeTitle = screen.getByRole("heading", { name: "Personal home" });
+    const homeInfo = screen.getByTestId("personal-home-info");
+    expect(homeTitle.parentElement).toContainElement(homeInfo);
+    expect(homeInfo).toHaveAttribute("data-intent", "info");
+    expect(
+      screen.queryByText("Track personal Utang, to-dos, and your connected stores."),
+    ).not.toBeInTheDocument();
+    await userEvent.setup().click(homeInfo);
+    const homeInfoPopover = screen.getByRole("dialog", { name: "About Personal home" });
+    expect(homeInfoPopover).not.toHaveAttribute("aria-modal");
+    expect(homeInfoPopover).toHaveTextContent(
+      "Track personal Utang, to-dos, and your connected stores.",
+    );
     expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-start-business")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();
@@ -175,6 +188,18 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-shared")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveClass(
+      "dashboard-metric-card--emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-lent-shared")).toHaveClass(
+      "dashboard-metric-card--shared",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveClass(
+      "dashboard-metric-card--emphasis",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-shared")).toHaveClass(
+      "dashboard-metric-card--shared",
+    );
     expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute("data-tone", "primary");
     expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute(
       "data-appearance",

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Ban, CalendarClock, ChevronDown, Loader2, Package, Receipt, ShoppingBag, Truck, Users } from "lucide-react";
+import { CalendarClock, ChevronDown, Loader2, Package, Receipt, ShoppingBag, Truck, Users } from "lucide-react";
 import type { LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
 import {
   disconnectAndBlockLinkedMerchant,
@@ -220,8 +220,10 @@ function LinkedMerchantStoreCard({
             <div className="pc-store-card__manage-panel">
               <Button
                 type="button"
-                variant="outline"
-                className="min-h-10 w-full"
+                intent="warning"
+                appearance="solid"
+                emphasis="soft"
+                className="min-h-10 min-w-0 flex-1 basis-0 whitespace-normal text-center"
                 disabled={disconnect.isPending}
                 data-testid={`disconnect-merchant-${merchant.organizationId}`}
                 onClick={() => {
@@ -237,8 +239,10 @@ function LinkedMerchantStoreCard({
               </Button>
               <Button
                 type="button"
-                variant="ghost"
-                className="min-h-10 w-full text-destructive"
+                intent="danger"
+                appearance="solid"
+                emphasis="soft"
+                className="min-h-10 min-w-0 flex-1 basis-0 whitespace-normal text-center"
                 disabled={disconnect.isPending}
                 data-testid={`disconnect-block-merchant-${merchant.organizationId}`}
                 onClick={() => {
@@ -247,7 +251,6 @@ function LinkedMerchantStoreCard({
                   }
                 }}
               >
-                <Ban className="size-4 shrink-0" aria-hidden />
                 {t("personal.merchants.disconnectAndBlock")}
               </Button>
             </div>

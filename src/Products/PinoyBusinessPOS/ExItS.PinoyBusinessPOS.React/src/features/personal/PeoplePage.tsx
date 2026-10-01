@@ -1,14 +1,13 @@
-import { ArrowLeft, ChevronRight, Info, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Info, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
-import { StatusChip } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
-import { PeopleInfoDialog } from "@/features/personal/PeopleInfoDialog";
+import { PeopleInfoPopover } from "@/features/personal/PeopleInfoDialog";
 import {
   parsePersonCreateKind,
   PersonCreateForm,
@@ -34,7 +33,31 @@ export function PeoplePage() {
   const linkPublicId = searchParams.get("linkPublicId");
 
   const [infoOpen, setInfoOpen] = useState(false);
+  const infoRootRef = useRef<HTMLDivElement>(null);
+  const infoButtonRef = useRef<HTMLButtonElement>(null);
   const [addOpen, setAddOpen] = useState(addFromUrl);
+
+  useEffect(() => {
+    if (!infoOpen) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setInfoOpen(false);
+      }
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (!infoRootRef.current?.contains(event.target as Node)) {
+        setInfoOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [infoOpen]);
 
   useEffect(() => {
     setAddOpen(addFromUrl);
@@ -113,25 +136,35 @@ export function PeoplePage() {
 
   return (
     <section className="personal-page people-page exits-page flex w-full min-w-0 flex-col gap-4">
-      <header className="flex items-center gap-2">
+      <header
+        ref={infoRootRef}
+        className={cn("relative flex items-center gap-2", infoOpen && "z-30")}
+      >
         <Button asChild variant="ghost" size="icon" className="shrink-0" aria-label={t("shell.back")}>
           <Link to="/personal">
             <ArrowLeft className="size-5" aria-hidden="true" />
           </Link>
         </Button>
-        <h1 className="m-0 min-w-0 flex-1 text-[length:var(--exits-text-2xl)] font-bold tracking-tight">
-          {t("people.title")}
-        </h1>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0"
-          aria-label={t("people.info.open")}
-          onClick={() => setInfoOpen(true)}
-        >
-          <Info className="size-5" aria-hidden="true" />
-        </Button>
+        <div className="flex min-w-0 items-center gap-1">
+          <h1 className="m-0 min-w-0 text-[length:var(--exits-text-2xl)] font-bold tracking-tight">
+            {t("people.title")}
+          </h1>
+          <Button
+            ref={infoButtonRef}
+            type="button"
+            intent="info"
+            appearance="ghost"
+            size="icon"
+            className="shrink-0"
+            aria-label={t("people.info.open")}
+            aria-expanded={infoOpen}
+            aria-controls="people-info-popover"
+            onClick={() => setInfoOpen((open) => !open)}
+          >
+            <Info className="size-5" aria-hidden="true" />
+          </Button>
+        </div>
+        {infoOpen ? <PeopleInfoPopover anchorRef={infoButtonRef} /> : null}
       </header>
 
       {isRefreshing ? <BackgroundRefreshIndicator active label={t("loading.updating")} /> : null}
@@ -183,40 +216,9 @@ export function PeoplePage() {
         ) : null}
       </Card>
 
-      <Card className="flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("people.connectionInbox")}
-            </h2>
-            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-              {t("people.connectionInboxHelp")}
-            </p>
-          </div>
-          {(() => {
-            const pendingCount = (connectionsQuery.data ?? []).filter(
-              (item) => item.status.toLowerCase() === "pending",
-            ).length;
-            return pendingCount > 0 ? (
-              <StatusChip tone="warning">
-                {t("people.connectionInboxBadge").replace("{count}", String(pendingCount))}
-              </StatusChip>
-            ) : null;
-          })()}
-        </div>
-        <Button asChild variant="outline" className="justify-between">
-          <Link to="/personal/invitations">
-            <span>{t("people.connectionInbox")}</span>
-            <ChevronRight className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
-      </Card>
-
       <PeopleListSection rows={rows} summary={summary} />
         </>
       ) : null}
-
-      <PeopleInfoDialog open={infoOpen} onClose={() => setInfoOpen(false)} />
     </section>
   );
 }

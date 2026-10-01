@@ -51,7 +51,7 @@ export function ManagerMetricCard({
   to?: string;
 }) {
   const classes = cn(
-    "manager-metric-cell",
+    "manager-metric-cell flex min-w-0 flex-col",
     tone === "primary" && "manager-metric-cell--primary",
     tone === "attention" && "manager-metric-cell--attention",
     tone === "success" && "manager-metric-cell--success",
@@ -106,7 +106,10 @@ export function ManagerMetricCard({
 
 export function ManagerMetricStrip({ children }: { children: ReactNode }) {
   return (
-    <div className="manager-metric-strip min-w-0" role="group">
+    <div
+      className="manager-metric-strip grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4"
+      role="group"
+    >
       {children}
     </div>
   );

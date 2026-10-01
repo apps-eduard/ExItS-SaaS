@@ -2451,7 +2451,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.onlineOrdering.blocked": "Blocked",
   "customers.onlineOrdering.effectiveAllowed": "Online ordering allowed",
   "customers.onlineOrdering.effectiveBlocked": "Online ordering blocked",
+  "personal.merchantStatement.creditSection": "Credit",
   "personal.merchantStatement.onlineShoppingAllowed": "Online shopping: Allowed",
+  "personal.merchantStatement.onlineShoppingLabel": "Online shopping",
+  "personal.merchantStatement.onlineShoppingStatusAllowed": "Allowed",
+  "personal.merchantStatement.onlineShoppingStatusBlocked": "Blocked",
   "personal.merchantStatement.onlineShoppingBlocked": "Online shopping: Blocked",
   "personal.merchantStatement.creditLimit": "Credit limit",
   "personal.merchantStatement.pendingOnlineUtang": "Pending online Utang orders",
@@ -9554,6 +9558,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.validationRequired": "Isulat ang ngalan sang negosyo.",
 
   "personal.title": "Personal home",
+
+  "personal.info.open": "[HIL] About Personal home",
+
+  "personal.info.title": "[HIL] About Personal home",
 
   "personal.todo.add": "Magdugang ihimo",
 

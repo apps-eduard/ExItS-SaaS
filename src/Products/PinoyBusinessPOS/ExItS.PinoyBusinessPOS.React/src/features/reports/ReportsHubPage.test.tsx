@@ -69,10 +69,12 @@ describe("POS-REPORTS-HUB-V2", () => {
     });
   });
 
-  it("uses shared Page Header and canonical search field", () => {
+  it("uses shared Page Header and canonical search field", async () => {
+    const user = userEvent.setup();
     renderHub();
     expect(screen.getByTestId("page-header")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Reports" })).toBeInTheDocument();
+    await user.click(screen.getByTestId("page-header-info-toggle"));
     expect(screen.getByTestId("page-header-description")).toHaveTextContent(
       "Analyze your business across the locations you can access.",
     );
