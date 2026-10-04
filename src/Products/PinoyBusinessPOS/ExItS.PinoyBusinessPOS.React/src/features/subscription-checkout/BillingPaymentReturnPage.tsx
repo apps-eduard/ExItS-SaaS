@@ -71,7 +71,12 @@ export function BillingPaymentReturnPage({
   const paid = payment ? isPaidStatus(payment.status) : false;
   const failed = payment ? isFailedStatus(payment.status) : false;
   const cancelled = outcome === "cancelled" || (payment ? isCancelledStatus(payment.status) : false);
-  const delayed = outcome === "success" && !paid && !failed && !cancelled && attempts >= maxAttempts;
+  const delayed =
+    outcome === "success" &&
+    !paid &&
+    !failed &&
+    !cancelled &&
+    (attempts >= maxAttempts || paymentQuery.isError);
   const verifying = outcome === "success" && !paid && !failed && !cancelled && !delayed;
 
   return (

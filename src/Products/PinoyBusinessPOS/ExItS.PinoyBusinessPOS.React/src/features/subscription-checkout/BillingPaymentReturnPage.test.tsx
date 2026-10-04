@@ -116,6 +116,18 @@ describe("BillingPaymentReturnPage", () => {
     expect(screen.queryByTestId("billing-payment-missing")).not.toBeInTheDocument();
   });
 
+  it("stops on a provider error without showing the provider message", async () => {
+    syncPersonalSubscriptionHostedCheckout.mockRejectedValue(
+      new Error("PayMongo request failed with provider payload"),
+    );
+    renderReturn("success", 8);
+    expect(await screen.findByTestId("billing-payment-delayed")).toHaveTextContent(
+      "still being confirmed",
+    );
+    expect(screen.queryByText(/PayMongo request failed/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("billing-payment-paid")).not.toBeInTheDocument();
+  });
+
   it("stops polling with a calm delay message", async () => {
     syncPersonalSubscriptionHostedCheckout.mockResolvedValue(payment("Processing"));
     renderReturn("success", 1);

@@ -960,6 +960,14 @@ public sealed class PlatformDbContext : DbContext
             entity.HasIndex(e => e.ProviderReference)
                 .IsUnique()
                 .HasFilter("provider_reference IS NOT NULL");
+            entity.HasIndex(e => new { e.InitiatedByUserId, e.PlanKey, e.BillingCycle })
+                .IsUnique()
+                .HasDatabaseName("ux_subscription_payment_one_open_personal")
+                .HasFilter("organization_id IS NULL AND status IN ('Pending', 'Processing')");
+            entity.HasIndex(e => new { e.InitiatedByUserId, e.OrganizationId, e.PlanKey, e.BillingCycle })
+                .IsUnique()
+                .HasDatabaseName("ux_subscription_payment_one_open_organization")
+                .HasFilter("organization_id IS NOT NULL AND status IN ('Pending', 'Processing')");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.ProcessingAtUtc).HasColumnName("processing_at_utc");
             entity.Property(e => e.PaidAtUtc).HasColumnName("paid_at_utc");

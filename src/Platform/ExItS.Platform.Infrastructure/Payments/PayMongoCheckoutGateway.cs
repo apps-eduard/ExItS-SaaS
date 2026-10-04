@@ -15,6 +15,12 @@ public sealed class PayMongoCheckoutGateway(
     public const string HttpClientName = "PayMongo";
     private const string CheckoutPath = "v1/checkout_sessions";
 
+    /// <summary>
+    /// Hosted Checkout method codes PayMongo accepts for ExItS subscription billing:
+    /// card, GCash, Maya (<c>paymaya</c>), and QR Ph (<c>qrph</c>).
+    /// </summary>
+    public static readonly string[] SubscriptionPaymentMethodTypes = ["card", "gcash", "paymaya", "qrph"];
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(options.Value.SecretKey);
 
     public async Task<HostedCheckoutSessionResult> CreateSessionAsync(
@@ -41,7 +47,7 @@ public sealed class PayMongoCheckoutGateway(
                             description = request.BillingPeriod
                         }
                     },
-                    payment_method_types = new[] { "card", "gcash", "paymaya", "grab_pay" },
+                    payment_method_types = SubscriptionPaymentMethodTypes,
                     success_url = request.SuccessUrl,
                     cancel_url = request.CancelUrl,
                     description = "ExItS subscription",

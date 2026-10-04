@@ -40,6 +40,7 @@ public sealed class ProductCodeTests
         Assert.Equal(ProductCode.PinoyLoanManager, ProductCode.Create("pinoy-loan-manager").Value);
         Assert.Equal(ProductCode.PinoyBuyNowPayLater, ProductCode.Create("pinoy-buy-now-pay-later").Value);
         Assert.Equal(ProductCode.PinoyPawnManager, ProductCode.Create("pinoy-pawn-manager").Value);
+        Assert.Equal(ProductCode.PinoyServicePro, ProductCode.Create("pinoy-service-pro").Value);
     }
 
     [Fact]
