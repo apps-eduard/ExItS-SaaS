@@ -43,8 +43,8 @@ const COMMERCIAL_STALE_TIME = 60_000;
 
 /**
  * Organization Subscription & Billing (Owner-only, `/org/subscription`).
- * Plan changes use Platform commercial APIs; payment execution is Simulated
- * via Local Validation — subscription and entitlement domain stay real.
+ * Plan changes use Platform commercial APIs. Upgrades continue to hosted checkout.
+ * Subscription and entitlement records stay on the platform.
  */
 export function OrgSubscriptionBillingPage() {
   const { t } = useI18n();
@@ -543,7 +543,7 @@ function PaymentHistoryList({
           </div>
           <div className="flex items-center gap-2">
             <StatusChip tone="info" shape="auto">
-              {t("orgSubscription.invoiceSimulated")}
+              {item.method ?? t("orgSubscription.invoiceSimulated")}
             </StatusChip>
             <StatusChip
               tone={item.status?.toLowerCase() === "confirmed" ? "success" : "neutral"}

@@ -22,6 +22,10 @@ import {
   getPersonalUtangBalance,
 } from "@/api/platform/personal-utang-client";
 import { en } from "@/i18n/locales/en";
+import {
+  defaultUiPreferences,
+  writeUiPreferences,
+} from "@/lib/preferences/ui-preferences";
 
 const onlineMock = vi.hoisted(() => ({ current: true }));
 
@@ -434,6 +438,17 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(screen.getByTestId(`utang-account-${relationshipId}`)).toBeInTheDocument();
     await user.click(screen.getByTestId("utang-segment-owe"));
     expect(screen.queryByTestId(`utang-account-${relationshipId}`)).not.toBeInTheDocument();
+  });
+
+  it("uses underline tabs for Active accounts when that preference is saved", async () => {
+    writeUiPreferences({ ...defaultUiPreferences, tabStyle: "underline" });
+    try {
+      renderPath("/personal/utang");
+      expect(await screen.findByTestId("utang-hub-segments")).toHaveAttribute("data-variant", "underline");
+      expect(screen.getByRole("tab", { name: /All/i })).toHaveAttribute("aria-selected", "true");
+    } finally {
+      writeUiPreferences(defaultUiPreferences);
+    }
   });
 
   it("redirects legacy utang people route to authoritative people page", () => {

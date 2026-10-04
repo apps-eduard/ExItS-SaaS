@@ -7438,7 +7438,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.reviewEffective": "Effective",
 
-  "orgSubscription.reviewEffectiveImmediate": "Immediately after simulated payment",
+  "orgSubscription.reviewEffectiveImmediate": "Kalpasan a makumpirma ti bayad",
 
   "orgSubscription.reviewEffectiveRenewal": "At next renewal ({date})",
 
@@ -7446,7 +7446,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.reviewLimitRow": "{label}: {current} Ã¢â â {target}",
 
-  "orgSubscription.continueToPayment": "Continue to simulated payment",
+  "orgSubscription.continueToPayment": "Ituloy ti panagbayad",
 
   "orgSubscription.scheduleDowngrade": "Schedule downgrade",
 
@@ -7472,7 +7472,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.downgradeSuccess": "Downgrade scheduled successfully.",
 
-  "orgSubscription.paymentFailedTitle": "Simulated payment failed",
+  "orgSubscription.paymentFailedTitle": "Saan a simmangpet ti bayad",
 
   "orgSubscription.paymentFailedDetail": "Your plan and entitlements were not changed. You can try again or choose another plan.",
 
@@ -7480,11 +7480,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.billingModeLabel": "Billing mode",
 
-  "orgSubscription.billingModeSimulated": "Simulated",
+  "orgSubscription.billingModeSimulated": "Secure checkout",
 
-  "orgSubscription.invoicesTitle": "Simulated invoices & payments",
+  "orgSubscription.invoicesTitle": "Pakasaritaan ti billing",
 
-  "orgSubscription.invoiceSimulated": "Simulated",
+  "orgSubscription.invoiceSimulated": "Subscription",
 
   "orgSubscription.historyTitle": "Recent plan-change payments",
 
@@ -7724,15 +7724,15 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.previewLostFeatures": "Dagiti feature a mapukaw",
 
-  "orgSubscription.billingManagedTitle": "Billing mode: Simulated",
+  "orgSubscription.billingManagedTitle": "Secure a subscription checkout",
 
   "orgSubscription.billingManagedDetail":
-    "Subscription payments in this environment use ExItS Local Validation simulation. Plan changes update the real subscription and entitlements; only the payment provider is simulated.",
+    "Pilien ti plan, usigen ti gatad, kalpasanna ituloy iti secure a payment provider. Awan ti pudno a bayad iti test mode. Saan a subscription payment ti lako iti tienda.",
 
   "orgSubscription.invoicesEmptyTitle": "Awan ti invoice a maipakita",
 
   "orgSubscription.invoicesEmptyDetail":
-    "Successful simulated plan-change payments appear here after they are linked. Store sales and supplier payables are not subscription invoices.",
+    "Ditoy agparang dagiti nakumpirma a subscription payment. Saan nga invoice ti subscription ti lako iti tienda ken utang iti supplier.",
 
   "admin.nav.preferences": "Preferences",
 
@@ -8281,7 +8281,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.baseAmount": "Base",
   "personal.startBusiness.discount": "Discount ({percent}%)",
   "personal.startBusiness.totalDueNow": "Total due now",
-  "personal.startBusiness.paymentMethodsHint": "Payment method: GCash / Maya / Card (simulated in Local Validation).",
+  "personal.startBusiness.paymentMethodsHint": "Usigen nga umuna ti total, kalpasanna ituloy iti secure a payment provider.",
 
   "personal.explore.billingToggleAria": "Billing period",
 
@@ -8517,9 +8517,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "personal.explore.loading": "Loading plans?",
 
-  "personal.explore.localValidationNote": "Local Validation mode: Subscribe uses the simulated payment provider (not a production card charge).",
+  "personal.explore.localValidationNote": "Test mode: Ti Subscribe ket agtuloy iti secure a payment provider. Awan ti pudno a bayad.",
   "subscriptionCheckout.title": "Subscription checkout",
-  "subscriptionCheckout.lede": "Review your plan total, then complete a simulated payment.",
+  "subscriptionCheckout.lede": "Usigen ti total ti plan, kalpasanna ituloy ti secure a panagbayad.",
   "subscriptionCheckout.loading": "Loading payment?",
   "subscriptionCheckout.retry": "Retry",
   "subscriptionCheckout.errorTitle": "Could not load payment",
@@ -8528,7 +8528,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.alreadyPaid": "This payment is already marked paid.",
   "subscriptionCheckout.viewReceipt": "View receipt",
   "subscriptionCheckout.testBannerTitle": "TEST PAYMENT",
-  "subscriptionCheckout.testBannerBody": "No real charge will be made. This is a simulated checkout environment.",
+  "subscriptionCheckout.testBannerBody": "Awan ti pudno a bayad. Test mode ti payment provider daytoy a checkout.",
   "subscriptionCheckout.summaryTitle": "Order summary",
   "subscriptionCheckout.plan": "Plan",
   "subscriptionCheckout.billing": "Billing",
@@ -8537,6 +8537,27 @@ export const iloPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.discount": "Discount",
   "subscriptionCheckout.total": "Total due",
   "subscriptionCheckout.methodTitle": "Payment method",
+  "subscriptionCheckout.continueSecure": "Ituloy iti secure a panagbayad",
+  "subscriptionCheckout.secureProviderHint": "Ituloyka iti secure a payment provider tapno malpas ti bayad.",
+  "subscriptionCheckout.redirecting": "Luklukatan ti secure a panagbayad...",
+  "subscriptionCheckout.hostedFailed": "Saan a narugian ti bayad. Padasem manen.",
+  "billingPayment.verifyingTitle": "Naawat ti bayad",
+  "billingPayment.verifyingBody": "Ma-verify ti bayadmo...",
+  "billingPayment.paidTitle": "Aktibo ti subscription",
+  "billingPayment.paidBody": "Aktibo ti subscriptionmo.",
+  "billingPayment.pendingTitle": "Agur-uray ti bayad",
+  "billingPayment.pendingBody": "Saan pay a kinumpirma ti payment provider daytoy a bayad.",
+  "billingPayment.failedTitle": "Napaay ti bayad",
+  "billingPayment.failedBody": "Awan ti nabaliw iti subscription. Mabalinmo a padasen manen.",
+  "billingPayment.cancelledTitle": "Naikansela ti bayad",
+  "billingPayment.cancelledBody": "Awan ti nabaliw iti subscription. Mabalinmo ti agsubli kadagiti plan ken agpadas manen.",
+  "billingPayment.delayedTitle": "Ma-kumpirma pay laeng",
+  "billingPayment.delayedBody": "Ma-kumpirma pay laeng ti bayadmo. Mabalinmo ti pumanaw ken kitaen manen ti Billing iti mabiit.",
+  "billingPayment.tryAgain": "Padasem manen",
+  "billingPayment.backToBilling": "Agsubli iti billing",
+  "orgSubscription.continueSecure": "Ituloy iti secure a panagbayad",
+  "orgSubscription.currency": "Kuarta",
+  "orgSubscription.secureProviderHint": "Ituloyka iti secure a payment provider tapno malpas ti bayad.",
   "subscriptionCheckout.methodHint": "Choose GCash, Maya, or Card (simulator only).",
   "subscriptionCheckout.method.gcash": "GCash",
   "subscriptionCheckout.method.maya": "Maya",
@@ -8611,7 +8632,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "personal.explore.retry": "Retry",
 
-  "personal.explore.selectHint": "Start a trial when available. Paid subscribe uses Local Validation payment only in non-production.",
+  "personal.explore.selectHint": "Mangrugi iti trial no adda. Dagiti bayad a plan ket agtuloy iti secure checkout. Awan ti pudno a bayad iti test mode.",
 
   "personal.explore.startTrial": "Start trial",
 
@@ -8908,6 +8929,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardContinue": "Ituloy ti guide",
 
   "personal.home.guideCardDismiss": "Ilemmeng ti guide card",
+  "personal.home.guideCardHideNextLogin": "Saan nga ipakita iti sumaruno a panag-sign in",
 
   "personal.home.guideCardLede": "Ammoem dagiti features a available iti Personal accountmo.",
 

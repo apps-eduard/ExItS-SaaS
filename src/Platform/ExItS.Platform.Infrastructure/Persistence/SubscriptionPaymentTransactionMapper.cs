@@ -32,6 +32,8 @@ internal static class SubscriptionPaymentTransactionMapper
                 ? null
                 : Enum.Parse<SubscriptionPaymentChannel>(record.Channel),
             Enum.Parse<SubscriptionPaymentProvider>(record.Provider),
+            record.CheckoutUrl,
+            record.ProviderEventId,
             Enum.Parse<SubscriptionPaymentEnvironment>(record.Environment),
             Enum.Parse<SubscriptionPaymentStatus>(record.Status),
             record.ProviderReference,
@@ -74,6 +76,8 @@ internal static class SubscriptionPaymentTransactionMapper
         record.CurrencyCode = payment.CurrencyCode;
         record.Channel = payment.Channel?.ToString();
         record.Provider = payment.Provider.ToString();
+        record.CheckoutUrl = payment.CheckoutUrl;
+        record.ProviderEventId = payment.ProviderEventId;
         record.Environment = payment.Environment.ToString();
         record.Status = payment.Status.ToString();
         record.ProviderReference = payment.ProviderReference;

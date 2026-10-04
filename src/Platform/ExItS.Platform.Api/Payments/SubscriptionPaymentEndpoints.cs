@@ -8,7 +8,9 @@ using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Subscriptions;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Payments;
 
@@ -32,6 +34,10 @@ internal static class SubscriptionPaymentEndpoints
 
         // Single MapPost only — registering both "" and "/" causes AmbiguousMatchException (HTTP 500).
         group.MapPost("/", CreatePersonalPaymentAsync);
+        group.MapPost("/checkout", StartPersonalCheckoutAsync);
+        group.MapPost("/{paymentId:guid}/hosted-checkout", StartPersonalHostedCheckoutAsync);
+        group.MapPost("/{paymentId:guid}/hosted-checkout/sync", SyncPersonalHostedCheckoutAsync);
+        group.MapPost("/{paymentId:guid}/cancel-hosted", CancelPersonalHostedCheckoutAsync);
 
         async Task<IResult> CreatePersonalPaymentAsync(
             HttpContext http,
@@ -149,6 +155,94 @@ internal static class SubscriptionPaymentEndpoints
                 result,
                 dto => Results.Created($"/api/v1/personal/subscription-payments/{dto.Id}", dto));
         });
+
+        async Task<IResult> StartPersonalCheckoutAsync(
+            HttpContext http,
+            StartSubscriptionCheckoutBody body,
+            StartHostedSubscriptionCheckout start,
+            IOptions<PayMongoOptions> payMongo,
+            IHostEnvironment environment,
+            CancellationToken ct)
+        {
+            if (!TryGetPersonalUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryParseCheckout(body, out var cycle, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await start
+                .ExecuteForPlanAsync(
+                    PlatformUserId.From(userId),
+                    body.PlanId,
+                    cycle,
+                    organizationId: null,
+                    ResolveReturnBase(http, payMongo.Value, environment) ?? "",
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        }
+
+        async Task<IResult> StartPersonalHostedCheckoutAsync(
+            HttpContext http,
+            Guid paymentId,
+            StartHostedSubscriptionCheckout start,
+            IOptions<PayMongoOptions> payMongo,
+            IHostEnvironment environment,
+            CancellationToken ct)
+        {
+            if (!TryGetPersonalUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await start
+                .ExecuteForPaymentAsync(
+                    paymentId,
+                    PlatformUserId.From(userId),
+                    expectedOrganizationId: null,
+                    ResolveReturnBase(http, payMongo.Value, environment) ?? "",
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        }
+
+        async Task<IResult> SyncPersonalHostedCheckoutAsync(
+            HttpContext http,
+            Guid paymentId,
+            SyncHostedSubscriptionCheckout sync,
+            CancellationToken ct)
+        {
+            if (!TryGetPersonalUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await sync
+                .ExecuteAsync(paymentId, PlatformUserId.From(userId), expectedOrganizationId: null, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        }
+
+        async Task<IResult> CancelPersonalHostedCheckoutAsync(
+            HttpContext http,
+            Guid paymentId,
+            CancelHostedSubscriptionCheckout cancel,
+            CancellationToken ct)
+        {
+            if (!TryGetPersonalUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await cancel
+                .ExecuteAsync(paymentId, PlatformUserId.From(userId), expectedOrganizationId: null, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        }
     }
 
     private static bool TryGetPersonalUserId(HttpContext http, out Guid userId, out IResult? unauthorized)
@@ -176,6 +270,118 @@ internal static class SubscriptionPaymentEndpoints
     private static void MapOrganizationScoped(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/platform/organizations/{organizationId:guid}/subscription-payments");
+
+        group.MapPost("/checkout", async (
+            HttpContext http,
+            Guid organizationId,
+            StartSubscriptionCheckoutBody body,
+            StartHostedSubscriptionCheckout start,
+            IOptions<PayMongoOptions> payMongo,
+            IHostEnvironment environment,
+            CancellationToken ct) =>
+        {
+            if (!TryGetUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!SessionMatchesOrganization(http, organizationId))
+            {
+                return OrganizationMismatch();
+            }
+
+            if (!TryParseCheckout(body, out var cycle, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await start
+                .ExecuteForPlanAsync(
+                    PlatformUserId.From(userId),
+                    body.PlanId,
+                    cycle,
+                    PlatformOrganizationId.From(organizationId),
+                    ResolveReturnBase(http, payMongo.Value, environment) ?? "",
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        group.MapPost("/{paymentId:guid}/hosted-checkout", async (
+            HttpContext http,
+            Guid organizationId,
+            Guid paymentId,
+            StartHostedSubscriptionCheckout start,
+            IOptions<PayMongoOptions> payMongo,
+            IHostEnvironment environment,
+            CancellationToken ct) =>
+        {
+            if (!TryGetUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!SessionMatchesOrganization(http, organizationId))
+            {
+                return OrganizationMismatch();
+            }
+
+            var result = await start
+                .ExecuteForPaymentAsync(
+                    paymentId,
+                    PlatformUserId.From(userId),
+                    organizationId,
+                    ResolveReturnBase(http, payMongo.Value, environment) ?? "",
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        group.MapPost("/{paymentId:guid}/hosted-checkout/sync", async (
+            HttpContext http,
+            Guid organizationId,
+            Guid paymentId,
+            SyncHostedSubscriptionCheckout sync,
+            CancellationToken ct) =>
+        {
+            if (!TryGetUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!SessionMatchesOrganization(http, organizationId))
+            {
+                return OrganizationMismatch();
+            }
+
+            var result = await sync
+                .ExecuteAsync(paymentId, PlatformUserId.From(userId), organizationId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        group.MapPost("/{paymentId:guid}/cancel-hosted", async (
+            HttpContext http,
+            Guid organizationId,
+            Guid paymentId,
+            CancelHostedSubscriptionCheckout cancel,
+            CancellationToken ct) =>
+        {
+            if (!TryGetUserId(http, out var userId, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!SessionMatchesOrganization(http, organizationId))
+            {
+                return OrganizationMismatch();
+            }
+
+            var result = await cancel
+                .ExecuteAsync(paymentId, PlatformUserId.From(userId), organizationId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
 
         group.MapGet("/{paymentId:guid}", async (
             HttpContext http,
@@ -311,6 +517,55 @@ internal static class SubscriptionPaymentEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
     }
+
+    private sealed record StartSubscriptionCheckoutBody(string PlanId, string? BillingCycle);
+
+    private static bool TryParseCheckout(
+        StartSubscriptionCheckoutBody? body,
+        out BillingCycle billingCycle,
+        out IResult? problem)
+    {
+        billingCycle = BillingCycle.Monthly;
+        problem = null;
+        if (body is null || string.IsNullOrWhiteSpace(body.PlanId))
+        {
+            problem = PlatformApiResults.Problem(
+                DomainErrorCodes.InvalidPlanCode,
+                "Plan id is required.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        try
+        {
+            billingCycle = string.IsNullOrWhiteSpace(body.BillingCycle)
+                ? BillingCycle.Monthly
+                : BillingCycleParsing.ParseRequired(body.BillingCycle);
+            return true;
+        }
+        catch (DomainException ex)
+        {
+            problem = PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+            return false;
+        }
+    }
+
+    private static string? ResolveReturnBase(HttpContext http, PayMongoOptions options, IHostEnvironment environment)
+    {
+        return SubscriptionCheckoutReturnUrls.TryResolveBase(
+            options.PublicAppBaseUrl,
+            http.Request.Headers.Origin.ToString(),
+            allowLoopbackOrigin: !environment.IsProduction(),
+            out var baseUrl)
+            ? baseUrl
+            : null;
+    }
+
+    private static IResult OrganizationMismatch() =>
+        PlatformApiResults.Problem(
+            DomainErrorCodes.AuthorizationDenied,
+            "Organization context does not match the payment organization.",
+            StatusCodes.Status403Forbidden);
 
     private static bool SessionMatchesOrganization(HttpContext http, Guid organizationId)
     {

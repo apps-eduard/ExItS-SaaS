@@ -9,12 +9,15 @@ export type PersonalGuideProgress = {
   version: number;
   learned: string[];
   homeCardDismissed: boolean;
+  /** Session that opted out. The card stays until a later sign-in. */
+  hideGuideAfterSessionId: string | null;
 };
 
 export const EMPTY_PERSONAL_GUIDE_PROGRESS: PersonalGuideProgress = {
   version: PERSONAL_GUIDE_SCHEMA_VERSION,
   learned: [],
   homeCardDismissed: false,
+  hideGuideAfterSessionId: null,
 };
 
 export function personalGuideStorageKey(accountKey: string): string {
@@ -53,10 +56,14 @@ export function parsePersonalGuideProgress(raw: unknown): PersonalGuideProgress 
     learnedRaw.filter((code): code is string => typeof code === "string" && code.trim().length > 0),
   );
 
+  const hideSession = doc.hideGuideAfterSessionId;
   return {
     version: PERSONAL_GUIDE_SCHEMA_VERSION,
     learned,
     homeCardDismissed: doc.homeCardDismissed === true,
+    hideGuideAfterSessionId: typeof hideSession === "string" && hideSession.trim().length > 0
+      ? hideSession
+      : null,
   };
 }
 
@@ -87,6 +94,7 @@ export function savePersonalGuideProgress(
       version: PERSONAL_GUIDE_SCHEMA_VERSION,
       learned: uniqueCodes(progress.learned),
       homeCardDismissed: progress.homeCardDismissed === true,
+      hideGuideAfterSessionId: progress.hideGuideAfterSessionId?.trim() || null,
     };
     window.localStorage.setItem(personalGuideStorageKey(accountKey), JSON.stringify(payload));
   } catch {
@@ -109,6 +117,7 @@ export function markPersonalGuideFeatureLearned(
     version: PERSONAL_GUIDE_SCHEMA_VERSION,
     learned: [...next],
     homeCardDismissed: progress.homeCardDismissed,
+    hideGuideAfterSessionId: progress.hideGuideAfterSessionId,
   };
 }
 
@@ -120,5 +129,38 @@ export function setPersonalGuideHomeCardDismissed(
     version: PERSONAL_GUIDE_SCHEMA_VERSION,
     learned: [...progress.learned],
     homeCardDismissed: dismissed,
+    hideGuideAfterSessionId: null,
+  };
+}
+
+export function setPersonalGuideHideOnNextLogin(
+  progress: PersonalGuideProgress,
+  hide: boolean,
+  sessionId: string,
+): PersonalGuideProgress {
+  const trimmed = sessionId.trim();
+  return {
+    version: PERSONAL_GUIDE_SCHEMA_VERSION,
+    learned: [...progress.learned],
+    homeCardDismissed: progress.homeCardDismissed,
+    hideGuideAfterSessionId: hide && trimmed.length > 0 ? trimmed : null,
+  };
+}
+
+/** A later sign-in turns the next-login opt-out into a hidden home card. */
+export function applyPersonalGuideSession(
+  progress: PersonalGuideProgress,
+  sessionId: string | null | undefined,
+): PersonalGuideProgress {
+  const saved = progress.hideGuideAfterSessionId;
+  const current = sessionId?.trim() || null;
+  if (!saved || !current || saved === current) {
+    return progress;
+  }
+  return {
+    version: PERSONAL_GUIDE_SCHEMA_VERSION,
+    learned: [...progress.learned],
+    homeCardDismissed: true,
+    hideGuideAfterSessionId: null,
   };
 }

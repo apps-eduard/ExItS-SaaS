@@ -19,6 +19,8 @@ internal sealed class SubscriptionPaymentTransactionRecord
     public string Environment { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string? ProviderReference { get; set; }
+    public string? CheckoutUrl { get; set; }
+    public string? ProviderEventId { get; set; }
     public string? CardBrand { get; set; }
     public string? CardLast4 { get; set; }
     public string? FailureCode { get; set; }

@@ -23,6 +23,7 @@ import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscr
 import { SubscriptionCheckoutPage } from "@/features/subscription-checkout/SubscriptionCheckoutPage";
 import { SubscriptionPaymentSimulatorPage } from "@/features/subscription-checkout/SubscriptionPaymentSimulatorPage";
 import { PaymentResultPage } from "@/features/subscription-checkout/PaymentResultPage";
+import { BillingPaymentReturnPage } from "@/features/subscription-checkout/BillingPaymentReturnPage";
 import { PreOrgCheckoutShell } from "@/features/subscription-checkout/PreOrgCheckoutShell";
 import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
@@ -333,6 +334,22 @@ export const appRoutes = [
           <AllowInvitationAccept>
             <PersonalUtangInviteAcceptPage />
           </AllowInvitationAccept>
+        ),
+      },
+      {
+        path: "/billing/payment/success",
+        element: (
+          <RequireSession>
+            <BillingPaymentReturnPage outcome="success" />
+          </RequireSession>
+        ),
+      },
+      {
+        path: "/billing/payment/cancelled",
+        element: (
+          <RequireSession>
+            <BillingPaymentReturnPage outcome="cancelled" />
+          </RequireSession>
         ),
       },
       {

@@ -56,6 +56,34 @@ export type SubscriptionPaymentTransactionDto = z.infer<
 
 export type SubscriptionPaymentChannel = "GCash" | "Maya" | "Card";
 
+const hostedCheckoutSchema = z.object({
+  paymentId: guidSchema,
+  checkoutUrl: z.string().min(1),
+  status: z.string(),
+  amount: z.number(),
+  currencyCode: z.string(),
+  planKey: z.string(),
+  billingCycle: z.string(),
+  organizationId: guidSchema.nullable().optional().default(null),
+});
+
+export type HostedSubscriptionCheckoutDto = z.infer<typeof hostedCheckoutSchema>;
+
+function normalizeHostedCheckout(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const record = raw as Record<string, unknown>;
+  return {
+    paymentId: String(pick(record, "paymentId", "PaymentId") ?? ""),
+    checkoutUrl: String(pick(record, "checkoutUrl", "CheckoutUrl") ?? ""),
+    status: String(pick(record, "status", "Status") ?? ""),
+    amount: Number(pick(record, "amount", "Amount") ?? 0),
+    currencyCode: String(pick(record, "currencyCode", "CurrencyCode") ?? "PHP"),
+    planKey: String(pick(record, "planKey", "PlanKey") ?? ""),
+    billingCycle: String(pick(record, "billingCycle", "BillingCycle") ?? ""),
+    organizationId: pick(record, "organizationId", "OrganizationId") ?? null,
+  };
+}
+
 export type ProcessSubscriptionPaymentRequest = {
   channel: SubscriptionPaymentChannel;
   /** Card fields are submitted once; never persisted client-side after the request. */
@@ -254,6 +282,81 @@ export async function processSubscriptionPaymentSimulator(
     method: "POST",
     path: paymentPath(organizationId, paymentId, "/process"),
     body,
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function startPersonalSubscriptionHostedCheckout(
+  paymentId: string,
+  signal?: AbortSignal,
+): Promise<HostedSubscriptionCheckoutDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: personalPaymentPath(paymentId, "/hosted-checkout"),
+    signal,
+  });
+  return hostedCheckoutSchema.parse(normalizeHostedCheckout(raw));
+}
+
+export async function syncPersonalSubscriptionHostedCheckout(
+  paymentId: string,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: personalPaymentPath(paymentId, "/hosted-checkout/sync"),
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function cancelPersonalSubscriptionHostedCheckout(
+  paymentId: string,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: personalPaymentPath(paymentId, "/cancel-hosted"),
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function startOrganizationSubscriptionCheckout(
+  request: { organizationId: string; planId: string; billingCycle: string },
+  signal?: AbortSignal,
+): Promise<HostedSubscriptionCheckoutDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `/api/v1/platform/organizations/${request.organizationId}/subscription-payments/checkout`,
+    body: { planId: request.planId, billingCycle: request.billingCycle },
+    signal,
+  });
+  return hostedCheckoutSchema.parse(normalizeHostedCheckout(raw));
+}
+
+export async function syncOrganizationSubscriptionHostedCheckout(
+  organizationId: string,
+  paymentId: string,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: paymentPath(organizationId, paymentId, "/hosted-checkout/sync"),
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function cancelOrganizationSubscriptionHostedCheckout(
+  organizationId: string,
+  paymentId: string,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: paymentPath(organizationId, paymentId, "/cancel-hosted"),
     signal,
   });
   return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));

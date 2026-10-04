@@ -22,6 +22,8 @@ const getOrganizationPlanChangePreview = vi.fn();
 const upgradeOrganizationSubscription = vi.fn();
 const downgradeOrganizationSubscription = vi.fn();
 const listOrganizationSaasPayments = vi.fn();
+const startOrganizationSubscriptionCheckout = vi.fn();
+const redirectToHostedCheckout = vi.fn();
 const refreshSessionGrant = vi.fn(async () => null);
 
 let membershipRole: string | null = "OrganizationOwner";
@@ -58,6 +60,15 @@ vi.mock("@/api/platform/organization-plan-change-client", () => ({
 
 vi.mock("@/api/platform/organization-saas-payments-client", () => ({
   listOrganizationSaasPayments: (...args: unknown[]) => listOrganizationSaasPayments(...args),
+}));
+
+vi.mock("@/api/platform/subscription-payment-client", () => ({
+  startOrganizationSubscriptionCheckout: (...args: unknown[]) =>
+    startOrganizationSubscriptionCheckout(...args),
+}));
+
+vi.mock("@/features/subscription-checkout/hosted-checkout-redirect", () => ({
+  redirectToHostedCheckout: (...args: unknown[]) => redirectToHostedCheckout(...args),
 }));
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
@@ -321,11 +332,11 @@ describe("OrgSubscriptionBillingPage", () => {
     expect(screen.getByTestId("org-subscription-plan-pro-plus")).toBeInTheDocument();
   });
 
-  it("states that billing mode is Simulated instead of showing a card form", async () => {
+  it("describes secure checkout instead of showing a card form", async () => {
     renderPage("/org/subscription?tab=billing");
 
     const notice = await screen.findByTestId("org-subscription-billing-managed");
-    expect(notice).toHaveTextContent(/Simulated/i);
+    expect(notice).toHaveTextContent(/secure payment provider/i);
     expect(screen.queryByLabelText(/card number/i)).not.toBeInTheDocument();
   });
 
@@ -362,7 +373,7 @@ describe("OrgSubscriptionBillingPage", () => {
 
     expect(await screen.findByTestId("org-subscription-invoices")).toBeInTheDocument();
     expect(screen.getByTestId("org-subscription-invoice-row")).toHaveTextContent("lvp_pay_000001");
-    expect(screen.getByTestId("org-subscription-invoice-row")).toHaveTextContent("Simulated");
+    expect(screen.getByTestId("org-subscription-invoice-row")).toHaveTextContent("Card");
   });
 
   it("blocks a lower plan when the preview reports blocking usage conflicts", async () => {
@@ -405,78 +416,55 @@ describe("OrgSubscriptionBillingPage", () => {
     expect(downgradeOrganizationSubscription).not.toHaveBeenCalled();
   });
 
-  it("upgrades immediately after a successful simulated payment", async () => {
+  it("reviews the upgrade and redirects to secure checkout", async () => {
+    startOrganizationSubscriptionCheckout.mockResolvedValue({
+      paymentId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      checkoutUrl: "https://checkout.paymongo.test/cs_org",
+      status: "Processing",
+      amount: 26988,
+      currencyCode: "PHP",
+      planKey: "pro",
+      billingCycle: "Annual",
+      organizationId: ORG_ID,
+    });
     renderPage("/org/subscription?tab=plan");
 
     await userEvent.click(await screen.findByTestId("org-subscription-check-pro"));
     expect(await screen.findByTestId("org-subscription-preview-ok")).toBeInTheDocument();
 
     await userEvent.click(screen.getByTestId("org-subscription-continue-payment"));
-    expect(await screen.findByTestId("org-subscription-simulated-payment")).toBeInTheDocument();
-    expect(screen.getByTestId("org-subscription-simulated-banner")).toHaveTextContent(
-      "not a real payment gateway",
+    expect(await screen.findByTestId("org-subscription-payment-review")).toBeInTheDocument();
+    expect(screen.getByText(/secure payment provider/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("org-subscription-continue-secure"));
+    await waitFor(() =>
+      expect(redirectToHostedCheckout).toHaveBeenCalledWith("https://checkout.paymongo.test/cs_org"),
     );
-
-    getOrganizationCurrentPlan.mockResolvedValue({
-      ok: true,
-      value: currentPlanValue({
-        currentPlan: planPayload({
-          id: PRO_PLAN_ID,
-          planKey: "pro",
-          code: "PRO",
-          displayName: "Pro",
-          sortOrder: 30,
-          maxBranches: 10,
-          monthlyPrice: 2499,
-          annualPrice: 26988,
-          advancedReportsEnabled: true,
-        }),
-        currentSubscription: {
-          ...currentPlanValue().currentSubscription,
-          planId: PRO_PLAN_ID,
-          planKey: "pro",
-          planDisplayName: "Pro",
-          agreedPrice: 26988,
-        },
-        planDisplayName: "Pro",
-        planKey: "pro",
-      }),
-    });
-
-    await userEvent.click(screen.getByTestId("org-subscription-simulate-success"));
-
-    expect(await screen.findByTestId("org-subscription-upgrade-success")).toHaveTextContent(
-      "Plan upgraded successfully.",
-    );
-    expect(upgradeOrganizationSubscription).toHaveBeenCalledWith(
+    expect(startOrganizationSubscriptionCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationId: ORG_ID,
-        subscriptionId: SUBSCRIPTION_ID,
         planId: PRO_PLAN_ID,
-        paymentSimulation: "succeed",
+        billingCycle: "Annual",
       }),
     );
-    expect(refreshSessionGrant).toHaveBeenCalled();
+    expect(upgradeOrganizationSubscription).not.toHaveBeenCalled();
   });
 
-  it("leaves the plan unchanged when simulated payment fails", async () => {
-    upgradeOrganizationSubscription.mockResolvedValue({
-      ok: false,
-      status: 409,
-      body: { detail: "Upgrade payment was not successful (Failed)." },
-    });
+  it("leaves the plan unchanged when checkout cannot start", async () => {
+    startOrganizationSubscriptionCheckout.mockRejectedValue(new Error("provider down"));
 
     renderPage("/org/subscription?tab=plan");
 
     await userEvent.click(await screen.findByTestId("org-subscription-check-pro"));
     await userEvent.click(await screen.findByTestId("org-subscription-continue-payment"));
-    await userEvent.click(await screen.findByTestId("org-subscription-simulate-failure"));
+    await userEvent.click(await screen.findByTestId("org-subscription-continue-secure"));
 
-    expect(await screen.findByTestId("org-subscription-payment-failed")).toBeInTheDocument();
-    expect(screen.queryByTestId("org-subscription-upgrade-success")).not.toBeInTheDocument();
-    expect(upgradeOrganizationSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ paymentSimulation: "fail" }),
+    expect(await screen.findByTestId("org-subscription-payment-failed")).toHaveTextContent(
+      "provider down",
     );
+    expect(screen.queryByTestId("org-subscription-upgrade-success")).not.toBeInTheDocument();
+    expect(upgradeOrganizationSubscription).not.toHaveBeenCalled();
+    expect(redirectToHostedCheckout).not.toHaveBeenCalled();
     expect(refreshSessionGrant).not.toHaveBeenCalled();
   });
 
