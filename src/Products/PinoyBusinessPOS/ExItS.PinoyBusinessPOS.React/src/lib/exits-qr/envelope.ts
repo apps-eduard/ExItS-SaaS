@@ -78,6 +78,14 @@ export function parseExItsQr(payload: string | null | undefined): ParsedExItsQr 
   }
   const trimmed = payload.trim();
 
+  if (/^https?:\/\//i.test(trimmed)) {
+    const connectId = publicUserIdFromConnectUrl(trimmed);
+    if (connectId) {
+      return { purpose: "personal", subject: connectId, version: 1 };
+    }
+    throw new ExItsQrParseError("unrecognized", "QR payload scheme is not recognized.");
+  }
+
   if (trimmed.toLowerCase().startsWith(LEGACY_PERSONAL_PREFIX)) {
     const subject = normalizePublicUserId(trimmed.slice(LEGACY_PERSONAL_PREFIX.length));
     if (!isPublicUserId(subject)) {
@@ -131,6 +139,30 @@ export function parseExItsQr(payload: string | null | undefined): ParsedExItsQr 
   }
 
   throw new ExItsQrParseError("unknown_purpose", "Unknown ExItS QR purpose.");
+}
+
+/**
+ * Personal HTTPS onboarding URLs only.
+ * Organization store links and device QR payloads are left unrecognized.
+ */
+export function publicUserIdFromConnectUrl(payload: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(payload.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    return null;
+  }
+  if (url.username || url.password) {
+    return null;
+  }
+  const match = url.pathname.match(/^\/connect\/(EX-\d{4}-\d{4})\/?$/i);
+  if (!match || !isPublicUserId(match[1])) {
+    return null;
+  }
+  return normalizePublicUserId(match[1]);
 }
 
 /** Rejects payloads that do not match the expected purpose for a given flow. */

@@ -15,6 +15,7 @@ import {
   captureEmailCallbackToken,
   scrubTokenFromBrowserLocation,
 } from "@/features/auth/callback-token";
+import { ToastProvider } from "@/components/exits/ToastProvider";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { SessionProvider } from "@/session/SessionProvider";
@@ -56,6 +57,7 @@ function renderRoute(route: string) {
       <PreferencesProvider>
         <I18nProvider>
           <SessionProvider>
+            <ToastProvider>
             <MemoryRouter initialEntries={[route]}>
               <Routes>
                 <Route path="/sign-in" element={<SignInPage />} />
@@ -63,6 +65,7 @@ function renderRoute(route: string) {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
               </Routes>
             </MemoryRouter>
+            </ToastProvider>
           </SessionProvider>
         </I18nProvider>
       </PreferencesProvider>

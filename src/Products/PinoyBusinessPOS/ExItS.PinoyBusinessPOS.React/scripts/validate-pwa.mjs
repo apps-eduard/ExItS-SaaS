@@ -18,6 +18,29 @@ function read(fileName) {
   }
 }
 
+const personalManifest = JSON.parse(read("manifest-personal.webmanifest"));
+if (personalManifest.name !== "ExItS" || personalManifest.short_name !== "ExItS") {
+  fail("Personal manifest name must be ExItS.");
+}
+if (personalManifest.start_url !== "/personal") {
+  fail("Personal manifest start_url must be /personal.");
+}
+if (personalManifest.scope !== "/") {
+  fail("Personal manifest scope must be /.");
+}
+if (personalManifest.display !== "standalone") {
+  fail("Personal manifest display must be standalone.");
+}
+for (const icon of personalManifest.icons ?? []) {
+  const iconPath = path.join(distDir, String(icon.src).replace(/^\//, ""));
+  if (!existsSync(iconPath)) {
+    fail(`Missing built personal icon ${icon.src}.`);
+  }
+}
+if (!existsSync(path.join(distDir, "icons", "apple-touch-icon.png"))) {
+  fail("Missing apple-touch-icon.");
+}
+
 const manifest = JSON.parse(read("manifest.webmanifest"));
 if (manifest.name !== "Pinoy Business POS") {
   fail("Manifest name must be Pinoy Business POS.");

@@ -9375,6 +9375,18 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.more.switchingBusiness": "Switching?",
 
   "personal.more.title": "Iba pa",
+  "personal.install.title": "Idagdag ang ExItS sa iyong telepono",
+  "personal.install.detail": "Buksan ang ExItS mula sa Home Screen sa susunod.",
+  "personal.install.accept": "I-install ang ExItS",
+  "personal.install.later": "Sa ibang pagkakataon",
+  "personal.install.iosTitle": "Idagdag ang ExItS sa Home Screen",
+  "personal.install.iosStep1": "Pindutin ang Share",
+  "personal.install.iosStep2": "Piliin ang \"Add to Home Screen\"",
+  "personal.install.iosStep3": "Pindutin ang \"Add\"",
+  "personal.install.gotIt": "Naintindihan",
+  "personal.install.more": "I-install ang ExItS",
+  "personal.install.unsupported": "I-install ang ExItS kapag kaya na ng browser ang Home Screen icon.",
+  "personal.install.accepted": "Kumpirmahin ang prompt ng browser para matapos ang pagdagdag ng ExItS.",
 
   "personal.myOrdersLede": "Mga pickup at delivery order na inilagay mo sa mga naka-konektang tindahan.",
 
@@ -9558,7 +9570,20 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "personal.social.qrSafety": "No passwords or secrets are in this ID.",
 
-  "personal.social.qrShareText": "My ExItS ID:",
+  "personal.social.qrShareText": "Kumonekta sa akin sa ExItS",
+  "personal.connect.with": "Kumonekta kay",
+  "personal.connect.action": "Kumonekta",
+  "personal.connect.cancel": "Kanselahin",
+  "personal.connect.continue": "Magpatuloy",
+  "personal.connect.sent": "Naipadala na ang hiling",
+  "personal.connect.alreadyConnected": "Konektado na kayo",
+  "personal.connect.requestSent": "Naipadala na ang hiling na koneksyon",
+  "personal.connect.requestReceived": "Pinadalhan ka na ng hiling na koneksyon ng taong ito.",
+  "personal.connect.viewInvitations": "Tingnan ang mga imbitasyon",
+  "personal.connect.self": "Ito ang sarili mong ExItS QR.",
+  "personal.connect.unavailable": "Hindi available ang ExItS ID na ito.",
+  "personal.connect.blocked": "Hindi available ang koneksyon.",
+  "personal.connect.invalid": "Hindi wasto ang link na ito.",
 
   "personal.social.qrTitle": "Aking QR",
 

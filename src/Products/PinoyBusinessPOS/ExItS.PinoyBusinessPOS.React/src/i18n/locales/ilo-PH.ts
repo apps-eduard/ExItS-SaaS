@@ -9408,6 +9408,18 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.more.switchingBusiness": "Switching?",
 
   "personal.more.title": "Ad-adu pay",
+  "personal.install.title": "Inayon ti ExItS iti teleponom",
+  "personal.install.detail": "Luktam ti ExItS manipud iti Home Screen iti sumaruno.",
+  "personal.install.accept": "Inayon ti ExItS",
+  "personal.install.later": "Inton sabali",
+  "personal.install.iosTitle": "Inayon ti ExItS iti Home Screen",
+  "personal.install.iosStep1": "Pindutem ti Share",
+  "personal.install.iosStep2": "Pilien ti \"Add to Home Screen\"",
+  "personal.install.iosStep3": "Pindutem ti \"Add\"",
+  "personal.install.gotIt": "Nalpasen",
+  "personal.install.more": "Inayon ti ExItS",
+  "personal.install.unsupported": "Inayon ti ExItS inton kabaelan ti browser ti Home Screen icon.",
+  "personal.install.accepted": "Pasingkedam ti prompt ti browser tapno malpas ti pananginayon ti ExItS.",
 
   "personal.myOrdersLede": "Dagiti pickup ken delivery order a naiyulogmo kadagiti naka-konekta a tendaan.",
 
@@ -9591,7 +9603,20 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "personal.social.qrSafety": "No passwords or secrets are in this ID.",
 
-  "personal.social.qrShareText": "My ExItS ID:",
+  "personal.social.qrShareText": "Makikonekta kaniak iti ExItS",
+  "personal.connect.with": "Makikonekta ken ni",
+  "personal.connect.action": "Ikonekta",
+  "personal.connect.cancel": "Ukasen",
+  "personal.connect.continue": "Ituloy",
+  "personal.connect.sent": "Naipatulod ti kiddaw",
+  "personal.connect.alreadyConnected": "Nakonekta kayon",
+  "personal.connect.requestSent": "Naipatulod ti kiddaw a koneksion",
+  "personal.connect.requestReceived": "Imbaon nan ti kiddaw a koneksion kenka.",
+  "personal.connect.viewInvitations": "Kitaen dagiti imbitasion",
+  "personal.connect.self": "Daytoy ti bukodmo nga ExItS QR.",
+  "personal.connect.unavailable": "Saan a magun-od daytoy nga ExItS ID.",
+  "personal.connect.blocked": "Saan a magun-od ti koneksion.",
+  "personal.connect.invalid": "Saan a husto daytoy a link.",
 
   "personal.social.qrTitle": "QR Ko",
 

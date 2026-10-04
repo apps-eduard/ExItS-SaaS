@@ -1,6 +1,7 @@
 ﻿import { createBrowserRouter, Navigate, Outlet, useParams } from "react-router-dom";
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
+import { ExternalLoginCallbackPage } from "@/features/auth/ExternalLoginCallbackPage";
 import { SessionEstablishPage } from "@/features/auth/SessionEstablishPage";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
@@ -49,6 +50,7 @@ import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { ArchivedNotificationsPage } from "@/features/personal/ArchivedNotificationsPage";
 import { PeoplePage } from "@/features/personal/PeoplePage";
 import { PersonDetailPage } from "@/features/personal/PersonDetailPage";
+import { PersonalConnectPage } from "@/features/personal/social/PersonalConnectPage";
 import {
   PersonalInvitationsPage,
   PersonalMyQrPage,
@@ -280,6 +282,10 @@ export const appRoutes = [
     errorElement: <RouteErrorPage />,
     children: [
       {
+        path: "/connect/:publicUserId",
+        element: <PersonalConnectPage />,
+      },
+      {
         path: "/store/:publicOrganizationId",
         element: <PublicStoreLandingPage />,
       },
@@ -290,6 +296,10 @@ export const appRoutes = [
       {
         path: "/session/establish",
         element: <SessionEstablishPage />,
+      },
+      {
+        path: "/external-login-callback",
+        element: <ExternalLoginCallbackPage />,
       },
       {
         path: "/sign-in",

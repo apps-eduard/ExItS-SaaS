@@ -119,6 +119,9 @@ services:
       PlatformEmail__PinoyBusinessPosPublicBaseUrl: ${LOCAL_VALIDATION_REACT_POS_ORIGIN:-http://localhost:5177}
       PlatformEmail__AllowHttpLoopbackPublicUrls: "true"
       DataProtection__KeysPath: /var/exits/dataprotection
+      PlatformAuthentication__External__Google__Enabled: "true"
+      PlatformAuthentication__External__Google__ClientId: ${LOCAL_VALIDATION_GOOGLE_CLIENT_ID:-}
+      PlatformAuthentication__External__Google__ClientSecret: ${LOCAL_VALIDATION_GOOGLE_CLIENT_SECRET:-}
     volumes:
       - exits_local_validation_platform_api_dataprotection_keys:/var/exits/dataprotection
     ports:

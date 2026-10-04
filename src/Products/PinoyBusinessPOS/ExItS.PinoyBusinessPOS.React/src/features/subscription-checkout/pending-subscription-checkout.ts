@@ -91,6 +91,7 @@ export function shouldSkipOnboardingResume(pathname: string): boolean {
   return (
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/personal") ||
+    pathname.startsWith("/connect") ||
     pathname.startsWith("/subscription-checkout")
   );
 }

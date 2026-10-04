@@ -46,8 +46,33 @@ describe("PersonalMyQrPage", () => {
     expect(await screen.findByTestId("personal-public-id")).toHaveTextContent("EX-4827-1936");
     expect(screen.getByTestId("personal-qr-display-name")).toHaveTextContent("Ada Owner");
     const img = screen.getByTestId("personal-my-qr-image");
-    expect(img).toHaveAttribute("data-payload", "exits://qr/v1/personal/EX-4827-1936");
+    expect(img).toHaveAttribute(
+      "data-payload",
+      "https://my.exitsapps.com/connect/EX-4827-1936",
+    );
+    const payload = img.getAttribute("data-payload") ?? "";
+    expect(payload).not.toMatch(/@|token|session/i);
+    expect(payload).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
     expect(screen.getByTestId("personal-my-qr-page").textContent).not.toMatch(/@/);
     await waitFor(() => expect(screen.getByTestId("personal-qr-copy")).toBeVisible());
+  });
+
+  it("copies the public ID and shares the same connect URL", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const share = vi.fn(async () => undefined);
+    Object.assign(navigator, { share });
+    renderPage();
+    await screen.findByTestId("personal-qr-copy");
+    screen.getByTestId("personal-qr-copy").click();
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("EX-4827-1936"));
+    screen.getByTestId("personal-qr-share").click();
+    await waitFor(() =>
+      expect(share).toHaveBeenCalledWith({
+        title: "Connect with me on ExItS",
+        text: "Connect with me on ExItS",
+        url: "https://my.exitsapps.com/connect/EX-4827-1936",
+      }),
+    );
   });
 });

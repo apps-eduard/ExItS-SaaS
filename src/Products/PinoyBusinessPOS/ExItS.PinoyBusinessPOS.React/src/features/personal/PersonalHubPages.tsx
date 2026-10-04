@@ -29,6 +29,7 @@ import {
   listPersonalContacts,
 } from "@/api/platform/personal-utang-client";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { PersonalInstallMoreEntry } from "@/features/personal/PersonalInstallOffer";
 import { CountChip } from "@/components/exits/CountChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -501,6 +502,8 @@ export function PersonalMorePage() {
         backLabel={t(personalPageBackNav.home.labelKey)}
         backTestId="page-header-back-more"
       />
+
+      <PersonalInstallMoreEntry />
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"

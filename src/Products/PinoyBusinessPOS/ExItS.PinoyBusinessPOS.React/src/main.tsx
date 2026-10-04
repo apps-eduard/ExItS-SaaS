@@ -3,10 +3,12 @@ import { createRoot } from "react-dom/client";
 import { App } from "@/app/App";
 import { readPosBuildLabel } from "@/diagnostics/pos-build-info";
 import { recoverDevelopmentOriginFromStaleServiceWorker } from "@/pwa/dev-service-worker-guard";
+import { startPersonalInstallCapture } from "@/pwa/personal-install-prompt";
 import "@/styles/globals.css";
 import "@/styles/personal-commerce.css";
 
 async function bootstrap() {
+  startPersonalInstallCapture();
   const recovery = await recoverDevelopmentOriginFromStaleServiceWorker();
   if (recovery.willReload) {
     return;

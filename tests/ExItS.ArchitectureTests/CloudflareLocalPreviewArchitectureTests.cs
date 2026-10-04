@@ -108,6 +108,31 @@ public class CloudflareLocalPreviewArchitectureTests
     }
 
     [Fact]
+    public void Preview_google_callback_stays_on_the_public_react_origin()
+    {
+        var overlay = Read("deploy", "docker", "compose.cloudflare-preview.yaml");
+        var nginx = Read("deploy", "docker", "nginx", "pos-react.conf.template");
+        var example = Read("deploy", "docker", ".env.local-validation.example");
+
+        Assert.Contains("PlatformAuthentication__External__PublicBrowserOrigin: https://my.exitsapps.com", overlay, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_GOOGLE_CLIENT_ID:-}", overlay, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_GOOGLE_CLIENT_SECRET:-}", overlay, StringComparison.Ordinal);
+        Assert.Contains("TrustedProxyHost: react-pos", overlay, StringComparison.Ordinal);
+        Assert.DoesNotContain("GOCSPX-", overlay, StringComparison.Ordinal);
+        Assert.DoesNotContain("GOCSPX-", example, StringComparison.Ordinal);
+        Assert.Contains("LOCAL_VALIDATION_GOOGLE_CLIENT_SECRET=", example, StringComparison.Ordinal);
+        Assert.DoesNotContain("rewrite ^/platform-api/", nginx, StringComparison.Ordinal);
+        Assert.Contains("Google's redirect_uri stays on this public origin", nginx, StringComparison.Ordinal);
+        Assert.Contains("my.exitsapps.com /manifest-personal.webmanifest;", nginx, StringComparison.Ordinal);
+        Assert.Contains("default          /manifest.webmanifest;", nginx, StringComparison.Ordinal);
+        var program = Read("src", "Platform", "ExItS.Platform.Api", "Program.cs");
+        Assert.Contains(
+            "options.CorrelationCookie.SameSite = SameSiteMode.Lax;",
+            program,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Tracked_preview_files_do_not_contain_a_tunnel_token()
     {
         var example = Read("deploy", "docker", ".env.local-validation.example");

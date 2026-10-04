@@ -9408,6 +9408,18 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.more.switchingBusiness": "Nagbalhin?",
 
   "personal.more.title": "Uban pa",
+  "personal.install.title": "Ibutang ang ExItS sa imong telepono",
+  "personal.install.detail": "Ablihi ang ExItS gikan sa Home Screen sa sunod.",
+  "personal.install.accept": "Ibutang ang ExItS",
+  "personal.install.later": "Unya lang",
+  "personal.install.iosTitle": "Ibutang ang ExItS sa Home Screen",
+  "personal.install.iosStep1": "Pindota ang Share",
+  "personal.install.iosStep2": "Pilia ang \"Add to Home Screen\"",
+  "personal.install.iosStep3": "Pindota ang \"Add\"",
+  "personal.install.gotIt": "Sige na",
+  "personal.install.more": "Ibutang ang ExItS",
+  "personal.install.unsupported": "Ibutang ang ExItS inig makasuporta na ang browser og Home Screen icon.",
+  "personal.install.accepted": "Kumpirmaha ang prompt sa browser aron mahuman ang pagbutang sa ExItS.",
 
   "personal.myOrdersLede": "Mga pickup ug delivery order nga imong gibutang sa naka-konektang tindahan.",
 
@@ -9591,7 +9603,20 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "personal.social.qrSafety": "No passwords or secrets are in this ID.",
 
-  "personal.social.qrShareText": "My ExItS ID:",
+  "personal.social.qrShareText": "Konektaha ko sa ExItS",
+  "personal.connect.with": "Konektaha si",
+  "personal.connect.action": "Konekta",
+  "personal.connect.cancel": "Kanselaha",
+  "personal.connect.continue": "Padayon",
+  "personal.connect.sent": "Napadala na ang hangyo",
+  "personal.connect.alreadyConnected": "Konektado na kamo",
+  "personal.connect.requestSent": "Napadala na ang hangyo sa koneksyon",
+  "personal.connect.requestReceived": "Gipadala na nimo niini og hangyo sa koneksyon.",
+  "personal.connect.viewInvitations": "Tan-awa ang mga imbitasyon",
+  "personal.connect.self": "Kini imong kaugalingong ExItS QR.",
+  "personal.connect.unavailable": "Dili magamit kini nga ExItS ID.",
+  "personal.connect.blocked": "Dili magamit ang koneksyon.",
+  "personal.connect.invalid": "Dili balido kini nga link.",
 
   "personal.social.qrTitle": "Akong QR",
 

@@ -23,14 +23,21 @@ if (!existsSync(distDir)) {
 }
 
 const manifest = JSON.parse(read("manifest.webmanifest").toString("utf8"));
-if (manifest.name !== "ExItS Mobile" || manifest.short_name !== "ExItS Mobile") {
-  fail("Manifest app identity is incorrect.");
+if (manifest.name !== "Pinoy Business POS" || manifest.short_name !== "ExItS POS") {
+  fail("POS manifest app identity is incorrect.");
 }
 if (manifest.display !== "standalone") {
   fail("Manifest display must be standalone.");
 }
 if (manifest.start_url !== "/") {
-  fail("Manifest start_url must be /.");
+  fail("POS manifest start_url must be /.");
+}
+const personalManifest = JSON.parse(read("manifest-personal.webmanifest").toString("utf8"));
+if (personalManifest.name !== "ExItS" || personalManifest.short_name !== "ExItS") {
+  fail("Personal manifest app identity is incorrect.");
+}
+if (personalManifest.start_url !== "/personal" || personalManifest.scope !== "/" || personalManifest.display !== "standalone") {
+  fail("Personal manifest start identity is incorrect.");
 }
 
 const requiredIcons = [
@@ -66,8 +73,8 @@ if (!/\\\/api\\\//.test(serviceWorker) && !serviceWorker.includes("/api/")) {
 if (!serviceWorker.includes("platform-api")) {
   fail("Production service worker must keep /platform-api traffic NetworkOnly.");
 }
-if (!serviceWorker.includes("8091") || !serviceWorker.includes("8092")) {
-  fail("Production service worker must keep Platform/POS API ports NetworkOnly.");
+if (!serviceWorker.includes("/pos-api/") || !serviceWorker.includes("(auth|session)")) {
+  fail("Production service worker must keep /pos-api and auth/session traffic NetworkOnly.");
 }
 if (/BackgroundSyncPlugin|workbox-background-sync/.test(serviceWorker)) {
   fail("Service worker must not register a Background Sync financial queue.");

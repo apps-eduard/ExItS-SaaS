@@ -34,6 +34,10 @@ import {
   buildAuthLoginFailure,
   type AuthLoginFailureDiagnostic,
 } from "@/diagnostics/auth-login-failure";
+import {
+  buildExternalAuthChallengeUrl,
+  PERSONAL_EXTERNAL_AUTH_RETURN_PATH,
+} from "@/api/platform/external-auth-flow";
 import { clearPosAccessToken, setPosAccessToken } from "@/api/platform/pos-access-token";
 import { clearPosSessionGrant, setPosSessionGrant } from "@/api/platform/pos-session-grant";
 
@@ -590,10 +594,12 @@ export async function probeOrganizationSessionGrant(
 
 export type ExternalAuthProviderAvailability = "available" | "disabled" | "offline";
 
-export function buildExternalAuthChallengeUrl(provider: "google" | "facebook", returnUrl: string): string {
-  const safeReturn = encodeURIComponent(returnUrl);
-  return `/platform-api/api/v1/platform/auth/external/${provider}/challenge?returnUrl=${safeReturn}`;
-}
+export {
+  PERSONAL_EXTERNAL_AUTH_RETURN_PATH,
+  buildExternalAuthChallengeUrl,
+  isSafeExternalReturnPath,
+  stripSessionTokenFromLocation,
+} from "@/api/platform/external-auth-flow";
 
 export async function probeExternalAuthProvider(
   provider: "google" | "facebook",
@@ -603,15 +609,24 @@ export async function probeExternalAuthProvider(
   }
 
   try {
-    const response = await fetch(buildExternalAuthChallengeUrl(provider, `${window.location.origin}/sign-in`), {
+    const response = await fetch(
+      buildExternalAuthChallengeUrl(provider, PERSONAL_EXTERNAL_AUTH_RETURN_PATH),
+      {
       method: "GET",
       redirect: "manual",
       credentials: "include",
-    });
+    },
+    );
     if (response.status === 404 || response.status === 403) {
       return "disabled";
     }
-    if (response.status === 302 || response.status === 301 || response.status === 200) {
+    // redirect:"manual" hides the Google 302 as an opaque redirect (status 0).
+    if (
+      response.type === "opaqueredirect" ||
+      response.status === 302 ||
+      response.status === 301 ||
+      response.status === 200
+    ) {
       return "available";
     }
     return "disabled";

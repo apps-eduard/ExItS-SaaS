@@ -8,6 +8,12 @@
 # PLATFORM_API_PROXY_HOST / POS_API_PROXY_HOST must be AllowedHosts values
 # (e.g. platform-api:8080 in Compose DNS, or 127.0.0.1:8091 for host-run APIs).
 
+# One built app. my.exitsapps.com installs as ExItS; other hosts keep the POS manifest.
+map $host $pwa_manifest_file {
+    my.exitsapps.com /manifest-personal.webmanifest;
+    default          /manifest.webmanifest;
+}
+
 server {
     listen 80;
     server_name _;
@@ -29,8 +35,9 @@ server {
 
     location /platform-api/ {
         proxy_http_version 1.1;
+        # Keep /platform-api on the upstream URI. The API applies that PathBase so
+        # Google's redirect_uri stays on this public origin.
         set $platform_api_upstream ${PLATFORM_API_UPSTREAM};
-        rewrite ^/platform-api/(.*)$ /$1 break;
         proxy_pass $platform_api_upstream;
         proxy_set_header Host ${PLATFORM_API_PROXY_HOST};
         proxy_set_header X-Real-IP $remote_addr;
@@ -67,6 +74,12 @@ server {
 
     location = /pos-api {
         return 308 /pos-api/;
+    }
+
+    location = /manifest.webmanifest {
+        default_type application/manifest+json;
+        add_header Cache-Control "no-cache";
+        try_files $pwa_manifest_file =404;
     }
 
     # PWA / static assets
