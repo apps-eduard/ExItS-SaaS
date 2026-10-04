@@ -4,8 +4,7 @@
 **Package:** MOBILE-REACT-DOC-03 (AMEND-03 workspace/product context)
 **Depends on:** [current-state-and-replacement-boundaries.md](current-state-and-replacement-boundaries.md), [product-surfaces-and-ux.md](product-surfaces-and-ux.md)
 
-This file freezes the **PROPOSED_REPLACEMENT_CLIENT_ARCHITECTURE** for a future React host.
-It does not change MAUI, Organization Web, Personal Web, DesignSystem Razor components, or .NET APIs.
+This file freezes an earlier planning snapshot. Blazor frontend hosts, `ExItS.Web.UI`, and `ExItS.DesignSystem` are removed. The React client is the canonical Personal, Organization, and POS experience. The tables below are historical audit notes, not a live host inventory.
 
 CURRENT_IMPLEMENTATION_REQUIREMENT for MAUI remains: native CSS / Razor, no Ant Design, no Tailwind.
 

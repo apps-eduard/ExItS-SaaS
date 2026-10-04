@@ -66,8 +66,7 @@ public sealed class PosPermissionsReportsScopeArchitectureTests
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Permissions"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Application"), "Permissions"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "Permissions"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Permissions"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Maui"), "Components", "Pages", "Permissions")
+            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Permissions")
         };
 
         foreach (var root in roots)

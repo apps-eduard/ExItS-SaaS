@@ -1136,7 +1136,7 @@ export function InventoryTransferReceiveMode({
         otherReasons={otherReasonOptions}
         otherDescriptionLabel={t("purchasing.otherReasonDescription")}
         remarksLabel={t("transfer.remarks")}
-        remarksRequiredLabel={t("purchasing.required")}
+        remarksRequiredLabel={t("purchasing.discrepancyNoteRequired")}
         remainingToClassifyLabel={t("purchasing.remainingToClassify")}
         decreaseQtyLabel={t("purchasing.decreaseQty")}
         increaseQtyLabel={t("purchasing.increaseQty")}

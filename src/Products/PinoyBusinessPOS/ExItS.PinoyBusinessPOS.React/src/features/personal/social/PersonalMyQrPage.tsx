@@ -9,6 +9,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { QrCodeImage } from "@/features/qr/QrCodeImage";
 import { useI18n } from "@/i18n/I18nProvider";
+import { buildCanonicalPersonalConnectUrl } from "@/lib/personal-connect-url";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 export function PersonalMyQrPage() {
@@ -32,10 +33,12 @@ export function PersonalMyQrPage() {
 
   async function share() {
     if (!query.data || typeof navigator.share !== "function") return;
+    const url = buildCanonicalPersonalConnectUrl(query.data.publicUserId);
     try {
       await navigator.share({
-        title: query.data.displayName || t("personal.social.qrTitle"),
-        text: `${t("personal.social.qrShareText")} ${query.data.publicUserId}`,
+        title: t("personal.social.qrShareText"),
+        text: t("personal.social.qrShareText"),
+        url,
       });
     } catch {
       /* user cancelled */
@@ -53,6 +56,7 @@ export function PersonalMyQrPage() {
   }
 
   const shareAvailable = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const connectUrl = buildCanonicalPersonalConnectUrl(query.data.publicUserId);
 
   return (
     <div
@@ -68,7 +72,7 @@ export function PersonalMyQrPage() {
       />
       <Card className="catalog-form-section exits-animate-panel personal-section flex flex-col items-center gap-3 p-4 text-center">
         <QrCodeImage
-          payload={query.data.qrPayload}
+          payload={connectUrl}
           label={t("personal.social.qrImageAlt")}
           testId="personal-my-qr-image"
         />

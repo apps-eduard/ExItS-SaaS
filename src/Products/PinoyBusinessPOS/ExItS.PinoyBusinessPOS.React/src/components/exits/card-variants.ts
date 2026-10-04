@@ -26,7 +26,7 @@ export type ExitsCardMotion =
 export type ExitsCardExpandScale = "subtle" | "standard" | "strong";
 
 export type ExitsCardRadius = "standard" | "soft";
-export type ExitsCardPadding = "default" | "compact";
+export type ExitsCardPadding = "default" | "compact" | "none";
 export type ExitsCardLayout = "vertical" | "horizontal";
 export type ExitsCardAccentTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 /** start = inline-start accent (RTL-aware); top = block-start; tint = soft fill */
@@ -109,6 +109,7 @@ export const exitsCardVariants = cva(
       padding: {
         default: "px-4 py-4",
         compact: "px-3 py-2.5",
+        none: "p-0",
       },
       layout: {
         vertical: "flex flex-col gap-3",

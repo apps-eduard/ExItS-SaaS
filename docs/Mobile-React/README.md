@@ -17,7 +17,7 @@ It does **not** authorize implementation.
 - Capacitor production rollout: **NOT AUTHORIZED**
 - Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) for the planning baseline — does **not** authorize implementation. This readiness branch is **not** authorized to merge to `main`.
 - MOBILE-D-060: **OPEN**
-- Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
+- Blazor frontend hosts are removed. The React client is the canonical Personal, Organization, and POS experience. Platform APIs and POS APIs stay.
 
 ## Authoritative domain + migration map (current)
 

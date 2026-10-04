@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { MessageKey } from "@/i18n/messages";
 import type { PosInventoryLotDto } from "@/api/pos/pos-inventory-client";
 import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {
 } from "@/features/inventory/inventory-transfer-fefo-allocate";
 import { cn } from "@/lib/cn";
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 export type TransferChangeLotsDialogProps = {
   open: boolean;

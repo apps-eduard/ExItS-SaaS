@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import type { MessageKey } from "@/i18n/messages";
 import type { ReplenishmentCatalogItemDto } from "@/api/pos/pos-stock-requests-client";
 import { Button } from "@/components/ui/button";
 import type { ResponsiveDataLayout } from "@/components/exits/responsive-data-view";
@@ -11,7 +12,7 @@ import { isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { requestStockDisplayUom } from "@/features/warehouse/retail-warehouse-request-math";
 import { cn } from "@/lib/cn";
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 export type RequestStockProductSelectionProps = {
   layout: ResponsiveDataLayout;

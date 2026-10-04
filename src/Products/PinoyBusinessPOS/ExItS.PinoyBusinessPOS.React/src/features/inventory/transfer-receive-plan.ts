@@ -23,8 +23,10 @@ export const TRANSFER_MISSING_DISPOSITIONS = [
 ] as const;
 export type TransferMissingDispositionCode = (typeof TRANSFER_MISSING_DISPOSITIONS)[number];
 
+type ReceivePlanError = Extract<BuildReceivePlanResult, { ok: false }>["error"];
+
 export type BuildTransferReceivePayloadError =
-  | NonNullable<BuildReceivePlanResult extends { ok: false } ? BuildReceivePlanResult["error"] : never>
+  | ReceivePlanError
   | "other_actual_product_required"
   | "other_actual_product_same_as_expected"
   | "other_custody_required";

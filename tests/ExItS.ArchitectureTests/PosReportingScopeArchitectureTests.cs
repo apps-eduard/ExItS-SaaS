@@ -69,8 +69,7 @@ public sealed class PosReportingScopeArchitectureTests
                  {
                      "ExItS.PinoyBusinessPOS.Application",
                      "ExItS.PinoyBusinessPOS.Api",
-                     "ExItS.PinoyBusinessPOS.ApiClient",
-                     "ExItS.PinoyBusinessPOS.Maui"
+                     "ExItS.PinoyBusinessPOS.ApiClient"
                  })
         {
             var root = PosProject(project);

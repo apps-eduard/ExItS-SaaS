@@ -1,9 +1,8 @@
 namespace ExItS.PinoyBusinessPOS.Application.Abstractions;
 
 /// <summary>
-/// Platform-agnostic abstraction over device network reachability. MAUI implementations
-/// typically wrap <c>Microsoft.Maui.Networking.IConnectivity</c>; test/host implementations
-/// can stub this without depending on MAUI.
+/// Platform-agnostic abstraction over device network reachability.
+/// Host and test implementations can stub this without a device runtime.
 /// </summary>
 public interface IConnectivityService
 {

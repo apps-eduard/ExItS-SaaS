@@ -5,6 +5,8 @@
 **Status:** Accepted for Phase 16 implementation (2026-08-02)
 **Recommended project path:** `docs/architecture/saas-scopes-users-boundaries-navigation.md`
 
+Domain and public hostname naming is owned by [domain and subdomain strategy](domain-and-subdomain-strategy.md). This document does not define production domains.
+
 > **Security decision**
 >
 > Platform, Organization, and Personal access are separate security domains.

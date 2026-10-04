@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved for MVP.
+Approved for MVP. Client technology is React + TypeScript, with PWA/Capacitor for mobile. .NET MAUI and the Blazor frontend hosts are retired. The React client is the canonical Personal, Organization, and POS experience. See [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md).
 
 ## Purpose
 
@@ -22,13 +22,13 @@ The MVP client boundaries are:
 
 These boundaries define where features are presented. They do not replace server-side authorization.
 
-**Future client-host planning (does not change this table):** “Mobile” in this document means the current MAUI Mobile Client (`ExItS.PinoyBusinessPOS.Maui`) until an explicit cutover. Future React / PWA / Capacitor replacement planning is documented under [docs/Mobile-React](../Mobile-React/README.md). That planning does **not** authorize implementation, PWA or Capacitor production, or MAUI retirement. It does **not** move Platform Administration onto Mobile, and it does **not** make Organization Web a POS checkout client. A future browser/PWA delivery of the Mobile Client is not the historical deferred “POS Web client” in §15.
+**Current client standard:** “Mobile” in the table below is the experience, not a MAUI host. .NET MAUI is retired. The React client in `ExItS.PinoyBusinessPOS.React` owns Personal, Organization, and POS experiences. Platform Administration stays on the Platform Admin client. See [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md). Historical Mobile-React planning notes are not the current runtime.
 
 ---
 
 ## 1. Platform Administration
 
-Platform Administration is available only through the Web application.
+Platform Administration is available only through the React Web application (`src/Platform/ExItS.Platform.Admin.Web`). The Blazor Platform Admin host is removed.
 
 It is used by authorized Platform Administrators to manage the SaaS platform.
 

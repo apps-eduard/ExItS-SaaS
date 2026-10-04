@@ -66,7 +66,7 @@ export function PersonalHomePage() {
   const { t } = useI18n();
   const [infoOpen, setInfoOpen] = useState(false);
   const infoRootRef = useRef<HTMLDivElement>(null);
-  const infoButtonRef = useRef<HTMLButtonElement>(null);
+  const infoButtonRef = useRef<HTMLElement | null>(null);
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
   const [cachedTodos, setCachedTodos] = useState<
@@ -228,21 +228,22 @@ export function PersonalHomePage() {
           <h1 className="page-header__title exits-type-page-title m-0 min-w-0 truncate">
             {t("personal.title")}
           </h1>
-          <Button
-            ref={infoButtonRef}
-            type="button"
-            intent="info"
-            appearance="ghost"
-            size="icon"
-            className="shrink-0"
-            aria-label={t("personal.info.open")}
-            aria-expanded={infoOpen}
-            aria-controls="personal-home-info-popover"
-            data-testid="personal-home-info"
-            onClick={() => setInfoOpen((open) => !open)}
-          >
-            <Info className="size-5" aria-hidden="true" />
-          </Button>
+          <span ref={infoButtonRef} className="inline-flex shrink-0">
+            <Button
+              type="button"
+              intent="info"
+              appearance="ghost"
+              size="icon"
+              className="shrink-0"
+              aria-label={t("personal.info.open")}
+              aria-expanded={infoOpen}
+              aria-controls="personal-home-info-popover"
+              data-testid="personal-home-info"
+              onClick={() => setInfoOpen((open) => !open)}
+            >
+              <Info className="size-5" aria-hidden="true" />
+            </Button>
+          </span>
         </div>
         {infoOpen ? (
           <InfoPopover

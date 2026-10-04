@@ -42,7 +42,7 @@ internal static class PosRootEndpoints
                                 ("Liveness", "/health"),
                                 ("Readiness", "/health/ready"),
                                 ("Platform API", "http://127.0.0.1:8091/"),
-                                ("Platform Admin UI", "http://127.0.0.1:8090/admin/login")
+                                ("Platform Admin UI", "http://127.0.0.1:8095/admin/login")
                             ],
                             note: "JSON API only — POS UI is the MAUI app, not this URL."),
                         MediaTypeNames.Text.Html,

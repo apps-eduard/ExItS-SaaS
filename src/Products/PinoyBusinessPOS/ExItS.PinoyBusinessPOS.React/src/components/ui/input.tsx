@@ -12,18 +12,23 @@ export function Input({
   id,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
-  label: string;
+  /** Omit when the caller already renders an external field label. */
+  label?: string;
   labelAccessory?: ReactNode;
 }) {
   const fieldId = id ?? props.name;
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <div className="flex items-center gap-1.5">
-        <label htmlFor={fieldId} className="exits-type-label">
-          {label}
-        </label>
-        {labelAccessory}
-      </div>
+      {label || labelAccessory ? (
+        <div className="flex items-center gap-1.5">
+          {label ? (
+            <label htmlFor={fieldId} className="exits-type-label">
+              {label}
+            </label>
+          ) : null}
+          {labelAccessory}
+        </div>
+      ) : null}
       <input
         id={fieldId}
         className={cn(

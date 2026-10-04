@@ -17,6 +17,8 @@ interface ExitsPlatformAdminWebRuntimeConfig {
   platformApiSameOrigin?: boolean;
   localValidationToolsEnabled?: boolean;
   buildSha?: string;
+  organizationWebOrigin?: string;
+  personalWebOrigin?: string;
 }
 
 interface Window {

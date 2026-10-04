@@ -62,11 +62,8 @@ public sealed class Phase16AccountSeedArchitectureTests
         Assert.Contains("updatedutc", repo, StringComparison.OrdinalIgnoreCase);
 
         var usersPage = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
-        Assert.Contains("@page \"/admin/users/personal\"", usersPage, StringComparison.Ordinal);
-        Assert.Contains("OnUsersTableChangeAsync", usersPage, StringComparison.Ordinal);
-        Assert.Contains("sortBy", usersPage, StringComparison.Ordinal);
-        Assert.Contains("ActionColumn", usersPage, StringComparison.Ordinal);
+            root, "src", "Platform", "ExItS.Platform.Admin.Web", "src", "app", "App.tsx"));
+        Assert.Contains("path=\"users\"", usersPage, StringComparison.Ordinal);
     }
 
     [Fact]

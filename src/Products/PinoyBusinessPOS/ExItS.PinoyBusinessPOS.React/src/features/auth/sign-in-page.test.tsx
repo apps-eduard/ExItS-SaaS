@@ -44,7 +44,7 @@ vi.mock("@/session/SessionProvider", async (importOriginal) => {
   };
 });
 
-function renderSignInPage() {
+function renderSignInPage(initialEntry = "/sign-in") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -52,8 +52,12 @@ function renderSignInPage() {
         <I18nProvider>
           <ToastProvider>
             <SessionProvider>
-              <MemoryRouter>
-                <SignInPage />
+              <MemoryRouter initialEntries={[initialEntry]}>
+                <Routes>
+                  <Route path="/sign-in" element={<SignInPage />} />
+                  <Route path="/connect/:publicUserId" element={<div data-testid="connect-resumed" />} />
+                  <Route path="/" element={<div data-testid="home-landed" />} />
+                </Routes>
               </MemoryRouter>
             </SessionProvider>
           </ToastProvider>
@@ -104,11 +108,26 @@ describe("SignInPage LOGIN-UX-01", () => {
     expect(screen.getByRole("button", { name: "Use Offline PIN" })).toBeInTheDocument();
   });
 
-  it("does not probe external auth providers on sign-in load", async () => {
+  it("probes Google when online and shows Continue with Google only when available", async () => {
+    vi.mocked(probeExternalAuthProvider).mockResolvedValueOnce("available");
     renderSignInPage();
+    await waitFor(() => {
+      expect(probeExternalAuthProvider).toHaveBeenCalledWith("google");
+    });
+    const googleButton = await screen.findByTestId("auth-google-button");
+    expect(googleButton).toHaveAccessibleName("Continue with Google");
+    expect(googleButton.querySelector("[data-testid='auth-google-mark']")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Continue with Facebook" })).not.toBeInTheDocument();
+  });
+
+  it("does not offer Google while offline", async () => {
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false });
+    renderSignInPage();
+    expect(screen.queryByTestId("auth-google-button")).not.toBeInTheDocument();
     await waitFor(() => {
       expect(probeExternalAuthProvider).not.toHaveBeenCalled();
     });
+    expect(screen.getByRole("button", { name: "Use Offline PIN" })).toBeInTheDocument();
   });
 
   it("submits username and password sign-in", async () => {
@@ -290,6 +309,25 @@ describe("SignInPage LOGIN-UX-01", () => {
     renderSignInPage();
     expect(screen.queryByText(/Development Test User/i)).not.toBeInTheDocument();
     vi.unstubAllEnvs();
+  });
+
+  it("resumes the connect route after password sign-in", async () => {
+    const user = userEvent.setup();
+    renderSignInPage(`/sign-in?continue=${encodeURIComponent("/connect/EX-4827-1936")}`);
+    await user.type(screen.getByLabelText("Email or staff login"), "owner@example.com");
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByTestId("sign-in-submit"));
+    expect(await screen.findByTestId("connect-resumed")).toBeInTheDocument();
+  });
+
+  it("does not follow an unsafe continue path", async () => {
+    const user = userEvent.setup();
+    renderSignInPage(`/sign-in?continue=${encodeURIComponent("https://evil.example/connect/EX-4827-1936")}`);
+    await user.type(screen.getByLabelText("Email or staff login"), "owner@example.com");
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByTestId("sign-in-submit"));
+    expect(await screen.findByTestId("home-landed")).toBeInTheDocument();
+    expect(screen.queryByTestId("connect-resumed")).not.toBeInTheDocument();
   });
 
   it("renders MAUI-inspired hero branding", () => {

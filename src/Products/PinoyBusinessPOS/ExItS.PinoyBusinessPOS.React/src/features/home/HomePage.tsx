@@ -38,6 +38,7 @@ export function HomePage() {
     <BoundHomeRedirect
       experienceRoute={experienceRoute}
       canSwitchWorkspace={!isOrganizationContextLocked(session)}
+      preferencesReturnTo={preferencesReturnTo}
     />
   );
 }
@@ -45,9 +46,11 @@ export function HomePage() {
 function BoundHomeRedirect({
   experienceRoute,
   canSwitchWorkspace,
+  preferencesReturnTo,
 }: {
   experienceRoute: string;
   canSwitchWorkspace: boolean;
+  preferencesReturnTo: string;
 }) {
   const { t } = useI18n();
   const { boundWorkspace } = useWorkspace();

@@ -77,17 +77,13 @@ public sealed class MobileReactBrowserAuthArchitectureTests
         var root = FindRepositoryRoot();
         var policy = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Api", "Identity", "PlatformSessionCookiePolicy.cs"));
-        var webUi = File.ReadAllText(Path.Combine(
-            root, "src", "Shared", "ExItS.Web.UI", "ExItSLocalValidationCookies.cs"));
         var auth = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Api", "Identity", "AuthEndpoints.cs"));
 
         Assert.Contains("LocalValidation:Enabled", policy, StringComparison.Ordinal);
         Assert.Contains("IsProduction()", policy, StringComparison.Ordinal);
         Assert.Contains("localValidationEnabled && !isProduction", policy, StringComparison.Ordinal);
-        Assert.Contains("LocalValidation:Enabled", webUi, StringComparison.Ordinal);
-        Assert.Contains("!environment.IsProduction()", webUi, StringComparison.Ordinal);
-        Assert.Contains("SessionCookieSecure", webUi, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(root, "src", "Shared", "ExItS.Web.UI", "ExItSLocalValidationCookies.cs")));
         Assert.Contains("PlatformSessionCookiePolicy.IsSecure", auth, StringComparison.Ordinal);
         Assert.Contains("HttpOnly = true", auth, StringComparison.Ordinal);
         Assert.Contains("SameSite = SameSiteMode.Lax", auth, StringComparison.Ordinal);
@@ -109,9 +105,11 @@ public sealed class MobileReactBrowserAuthArchitectureTests
         Assert.DoesNotContain("4175", launch, StringComparison.Ordinal);
         Assert.DoesNotContain("5175", pipeline, StringComparison.Ordinal);
         Assert.DoesNotContain("4175", pipeline, StringComparison.Ordinal);
-        Assert.Contains("http://localhost:8090", launch, StringComparison.Ordinal);
-        Assert.Contains("http://localhost:8093", launch, StringComparison.Ordinal);
-        Assert.Contains("http://localhost:8094", launch, StringComparison.Ordinal);
+        Assert.Contains("http://localhost:8095", launch, StringComparison.Ordinal);
+        Assert.DoesNotContain("http://localhost:8090", launch, StringComparison.Ordinal);
+        Assert.Contains("http://localhost:5177", launch, StringComparison.Ordinal);
+        Assert.DoesNotContain("http://localhost:8093", launch, StringComparison.Ordinal);
+        Assert.DoesNotContain("http://localhost:8094", launch, StringComparison.Ordinal);
     }
 
     [Fact]

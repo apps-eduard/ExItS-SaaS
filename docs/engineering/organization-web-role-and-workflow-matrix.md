@@ -1,11 +1,11 @@
-# Organization Web — role and workflow matrix
+# Organization administration — role and workflow matrix
 
-**Status:** Engineering remediation (Phase 25 remains Open; this is not P25-WP10 closeout).  
-**Related:** [phase-25-organization-web-admin.md](../phases/phase-25-organization-web-admin.md), [client-experience-boundaries.md](../architecture/client-experience-boundaries.md), [authorization-matrix.md](authorization-matrix.md), [organization-branch-capability-matrix.md](organization-branch-capability-matrix.md).
+**Status:** The Blazor Organization Web host (`ExItS.PinoyBusinessPOS.Web`, port 8093) is removed. The React client is the canonical Organization experience. The authority rules below still apply to that React administration experience. Phase 25 historical notes are not a live host.  
+**Related:** [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md), [client-experience-boundaries.md](../architecture/client-experience-boundaries.md), [authorization-matrix.md](authorization-matrix.md), [organization-branch-capability-matrix.md](organization-branch-capability-matrix.md).
 
 ## Boundary
 
-Organization Web (`:8093`) is the **ADMIN / business management** host.
+The React Organization experience is the **ADMIN / business management** surface. It is not a POS checkout client.
 
 **RMAP-02R:** POS `StoreManager` / Manager is **operations**, not automatic Organization Web admin.
 

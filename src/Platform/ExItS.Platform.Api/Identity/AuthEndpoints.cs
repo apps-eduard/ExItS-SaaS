@@ -71,10 +71,31 @@ internal static class AuthEndpoints
             HttpContext http,
             ValidateAndRenewPlatformSession useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
-            var token = ExtractSessionToken(http, sessionOptions.Value);
+            var options = sessionOptions.Value;
+            var hadCookie = http.Request.Cookies.TryGetValue(options.CookieName, out var existingCookie)
+                && !string.IsNullOrWhiteSpace(existingCookie);
+            var token = ExtractSessionToken(http, options);
             var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
+            // Header-presented sessions (external callback, handoff adopt) become the
+            // HttpOnly cookie on this origin. An existing cookie is never replaced.
+            if (!hadCookie
+                && result.IsSuccess
+                && result.Value is not null
+                && !string.IsNullOrWhiteSpace(token))
+            {
+                AppendSessionCookie(
+                    http,
+                    token,
+                    result.Value.ExpiresAtUtc,
+                    options,
+                    env,
+                    configuration);
+            }
+
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
         .AllowAnonymous()

@@ -86,12 +86,12 @@ services:
   platform-admin:
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile.platform-admin
+      dockerfile: deploy/docker/Dockerfile.platform-admin-web
     depends_on:
       - platform-api
     environment:
-      ASPNETCORE_ENVIRONMENT: Staging
-      AllowedHosts: ${PILOT_ALLOWED_HOSTS}
+      PLATFORM_API_PUBLIC_URL: ${PILOT_PLATFORM_API_PUBLIC_URL:-http://platform-api:8080}
+      PLATFORM_API_SAME_ORIGIN: "false"
     expose:
       - "8080"
     networks:

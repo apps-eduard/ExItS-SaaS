@@ -19,13 +19,14 @@ import {
 } from "@/api/platform/personal-people-client";
 import {
   createPersonalDebtRelationship,
+  type CreatePersonalDebtRelationshipRequest,
   getPersonalSharedUtangPreference,
   listBorrowedRelationships,
   listLentRelationships,
   updatePersonalSharedUtangPreference,
   type UpdatePersonalSharedUtangPreferenceRequest,
 } from "@/api/platform/personal-utang-client";
-import type { CreatePersonalContactRequest, CreatePersonalDebtRelationshipRequest } from "@/api/platform/personal-types";
+import type { CreatePersonalContactRequest } from "@/api/platform/personal-types";
 import {
   PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY,
   PERSONAL_NOTIFICATIONS_QUERY_KEY,

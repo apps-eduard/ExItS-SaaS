@@ -42,7 +42,7 @@ public sealed class RepositorySafetyTests
     {
         var root = FindRepositoryRoot();
         Assert.True(Directory.Exists(Path.Combine(root, "src", "Products", "PinoyBusinessPOS")));
-        Assert.True(Directory.Exists(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem")));
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem")));
         Assert.False(Directory.Exists(Path.Combine(root, "Shared")));
         Assert.False(Directory.Exists(Path.Combine(root, "Products")));
 
@@ -52,9 +52,9 @@ public sealed class RepositorySafetyTests
             .Select(Path.GetFileNameWithoutExtension)
             .ToArray();
 
-        Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Maui", StringComparison.Ordinal));
-        Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Web", StringComparison.Ordinal));
-        Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.DesignSystem", StringComparison.Ordinal));
+        Assert.DoesNotContain(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Maui", StringComparison.Ordinal));
+        Assert.DoesNotContain(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Web", StringComparison.Ordinal));
+        Assert.DoesNotContain(csprojs, name => name is not null && name.Equals("ExItS.DesignSystem", StringComparison.Ordinal));
         Assert.DoesNotContain(csprojs, name => name is not null && name.Contains(ForbiddenToken, StringComparison.OrdinalIgnoreCase));
     }
 

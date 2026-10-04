@@ -13,7 +13,7 @@
 | `docker-compose.pilot.yml` | Controlled **pilot** stack with Admin + nginx TLS template (NON-PRODUCTION) |
 | `Dockerfile.platform-api` | Platform API image |
 | `Dockerfile.pos-api` | PinoyBusinessPOS API image |
-| `Dockerfile.platform-admin` | Platform Admin image |
+| `Dockerfile.platform-admin-web` | React Platform Admin image |
 | `nginx/pilot.conf` | Pilot reverse-proxy template (NON-PRODUCTION) |
 | `nginx/production.conf` | Production reverse-proxy template (P14-WP03) |
 | `certs/README.md` | Operator TLS mount guidance (no real certs in repo) |
@@ -61,7 +61,7 @@ docker compose -f compose.production.yaml --env-file .env.production up -d
 | Reverse proxy HTTPS | **443** | Sole intended app entry |
 | Platform API / POS API / Admin / DBs | internal only | No host ports published |
 
-Routes: `/admin/*`, `/platform/*`, `/pos/*`. Proxy technology: **nginx** (same family as pilot; production conf is separate). Forwarded headers are constrained via `ForwardedHeaders:KnownNetworks`. Local Validation ports **8090–8092 / 15533–15534** are unchanged. **Not Production-ready** — see [P14-WP03 report](../../docs/reports/P14-WP03-reverse-proxy-tls-network-hardening.md).
+Routes: `/admin/*`, `/platform/*`, `/pos/*`. Proxy technology: **nginx** (same family as pilot; production conf is separate). Forwarded headers are constrained via `ForwardedHeaders:KnownNetworks`. Local Validation app ports are **8091–8095 / 15533–15534**. **Not Production-ready** — see [P14-WP03 report](../../docs/reports/P14-WP03-reverse-proxy-tls-network-hardening.md).
 
 ## Local Validation — recommended daily workflow
 
@@ -81,7 +81,7 @@ Copy-Item deploy\docker\.env.local-validation.example deploy\docker\.env.local-v
 
 | Surface | Default | Open |
 |---|---|---|
-| **Admin (local)** | **8090** | http://localhost:8090/ |
+| **Admin (local)** | **8095** | http://127.0.0.1:8095/admin |
 | Platform API (local) | 8091 | http://localhost:8091/health |
 | POS API (local) | 8092 | http://localhost:8092/health |
 | platform-db (Docker) | 15533 | Postgres volume preserved |

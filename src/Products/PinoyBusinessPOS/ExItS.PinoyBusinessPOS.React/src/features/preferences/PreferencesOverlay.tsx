@@ -5,7 +5,10 @@ import { AppearancePreferences } from "@/features/preferences/AppearancePreferen
 import { LanguageRegionPreferences } from "@/features/preferences/LanguageRegionPreferences";
 import { NavigationPreferences } from "@/features/preferences/NavigationPreferences";
 import { PreferencesSectionNav } from "@/features/preferences/PreferencesSectionNav";
-import { PreferencesOverlayContext } from "@/features/preferences/preferences-overlay-context";
+import {
+  PreferencesOverlayContext,
+  type PreferencesOverlayContextValue,
+} from "@/features/preferences/preferences-overlay-context";
 import {
   clearPreferencesReturnTo,
   rememberPreferencesReturnTo,

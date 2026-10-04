@@ -9,6 +9,8 @@
 **Final closeout:** P16-WP12 — Not Started  
 **Last reconciled:** 2026-08-03
 
+.NET MAUI, Blazor frontend hosts, ExItS.Web.UI, and Ant Design Blazor are retired. The React client is the canonical Personal, Organization, and POS browser experience. See [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md).
+
 ---
 
 ## 1. Current implementation focus
@@ -259,10 +261,10 @@ Navigation visibility is not authorization. Every API and domain operation must 
 
 | Surface | Technology / ownership |
 |---|---|
-| Platform Admin | Blazor Web App + Ant Design Blazor |
+| Platform Admin | React (`ExItS.Platform.Admin.Web`); Blazor Platform Admin removed |
 | Personal web | Web client using Personal scope |
-| Organization web | Web client using Organization scope |
-| Pinoy Business POS | Product APIs, Product database, MAUI Blazor Hybrid |
+| Organization web | React client (`ExItS.PinoyBusinessPOS.React`); Organization Web Blazor removed |
+| Pinoy Business POS | Product APIs, Product database, React client |
 | Platform database | Identity, profiles, Organizations, Plans, Subscriptions, SaaS Payments, Entitlements, Platform audit |
 | POS database | `ExItS_PinoyBusinessPOS`, schema `pos`, Product operational truth |
 

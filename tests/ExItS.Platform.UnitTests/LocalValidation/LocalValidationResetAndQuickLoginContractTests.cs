@@ -50,14 +50,10 @@ public sealed class LocalValidationResetAndQuickLoginContractTests
     public void Quick_login_and_reset_are_unavailable_in_production()
     {
         var endpoints = Read("src", "Platform", "ExItS.Platform.Api", "LocalValidation", "LocalValidationEndpoints.cs");
-        var program = Read("src", "Platform", "ExItS.Platform.Admin", "Program.cs");
         var reset = Read("tools", "Reset-LocalValidation.ps1");
         Assert.Contains("env.IsProduction()", endpoints, StringComparison.Ordinal);
         Assert.Contains("Results.NotFound()", endpoints, StringComparison.Ordinal);
         Assert.Contains("quick-login-identities", endpoints, StringComparison.Ordinal);
-        Assert.Contains("env.IsProduction() || !localValidation.IsAvailable", program, StringComparison.Ordinal);
-        Assert.Contains("Results.NotFound()", program, StringComparison.Ordinal);
-        Assert.Contains("Unknown Local Validation identity", Read("src", "Platform", "ExItS.Platform.Admin", "Services", "LocalValidationSignInService.cs"), StringComparison.Ordinal);
         Assert.Contains("ConfirmReset", reset, StringComparison.Ordinal);
         Assert.Contains("PlatformAdministratorsOnly", reset, StringComparison.Ordinal);
         Assert.Contains("Production", reset, StringComparison.Ordinal);
@@ -66,11 +62,10 @@ public sealed class LocalValidationResetAndQuickLoginContractTests
     [Fact]
     public void Quick_login_routes_by_authoritative_account_class()
     {
-        var program = Read("src", "Platform", "ExItS.Platform.Admin", "Program.cs");
-        Assert.Contains("\"Organization\" => WebApps.Organization", program, StringComparison.Ordinal);
-        Assert.Contains("\"Personal\" => WebApps.Personal", program, StringComparison.Ordinal);
-        Assert.Contains("\"Platform\" => WebApps.Platform", program, StringComparison.Ordinal);
-        Assert.Contains("selected?.OrganizationId", program, StringComparison.Ordinal);
+        var chooser = Read("src", "Platform", "ExItS.Platform.Admin.Web", "src", "lib", "auth", "cutover-routing.ts");
+        Assert.Contains("platform", chooser, StringComparison.Ordinal);
+        Assert.Contains("personal", chooser, StringComparison.Ordinal);
+        Assert.Contains("organization", chooser, StringComparison.Ordinal);
     }
 
     [Fact]

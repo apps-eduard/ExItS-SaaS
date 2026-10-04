@@ -272,5 +272,29 @@ describe("operations navigation stays free of Subscription & Billing", () => {
   it("treats /org/subscription as an admin-only path for the operations shell", () => {
     expect(isAdminOnlyOperationsPath("/org/subscription")).toBe(true);
     expect(isAdminOnlyOperationsPath("/org/subscription?tab=billing")).toBe(true);
+    expect(isAdminOnlyOperationsPath("/org/tax-compliance")).toBe(true);
+    expect(isAdminOnlyOperationsPath("/org/audit")).toBe(true);
+    expect(isAdminOnlyOperationsPath("/org/sales-documents")).toBe(true);
+  });
+
+  it("keeps tax compliance and governance audit out of cashier operations navigation", () => {
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+      organizationManagementAuthority: false,
+    });
+    const items = flattenAdminNavItems(buildAdminNavGroups(cashier));
+    expect(items.some((item) => item.id === "taxCompliance" || item.id === "audit" || item.id === "salesDocuments")).toBe(false);
+    const ops = flattenOperationsSidebarItems(
+      buildOperationsSidebarGroups({ grant: cashier, experience: "operations" }),
+    );
+    expect(
+      ops.some(
+        (item) =>
+          item.to.includes("tax-compliance") ||
+          item.to.includes("/audit") ||
+          item.to.includes("sales-documents"),
+      ),
+    ).toBe(false);
   });
 });

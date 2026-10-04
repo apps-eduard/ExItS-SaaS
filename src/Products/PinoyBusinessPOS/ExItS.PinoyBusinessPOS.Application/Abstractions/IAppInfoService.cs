@@ -1,8 +1,7 @@
 namespace ExItS.PinoyBusinessPOS.Application.Abstractions;
 
 /// <summary>
-/// Platform-agnostic abstraction over host application identity/version metadata. MAUI
-/// implementations typically wrap <c>Microsoft.Maui.ApplicationModel.AppInfo</c>.
+/// Platform-agnostic abstraction over host application identity and version metadata.
 /// </summary>
 public interface IAppInfoService
 {

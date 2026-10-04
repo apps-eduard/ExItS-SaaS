@@ -2532,7 +2532,7 @@ export function PurchaseOrderReceivePage() {
         >
           <PurchaseOrderBusinessDocument
             po={po}
-            supplierName={po.supplierName}
+            supplierName={po.supplierName ?? ""}
             settings={documentSettings}
             identity={identity}
             headerVisibility={headerVisibility(documentSettings.header)}

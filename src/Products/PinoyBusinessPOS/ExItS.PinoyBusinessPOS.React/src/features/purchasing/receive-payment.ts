@@ -1,3 +1,5 @@
+import type { MessageKey } from "@/i18n/messages";
+
 /** Shared receive-at-receipt payment helpers (ADR-023 supplier credit). */
 
 import {
@@ -333,7 +335,7 @@ export function validateLockedSettlementFields(
   method: ReceivePaymentMethodCode | null,
   fields: ReceiveSettlementFields,
   options?: { skipSettlement?: boolean },
-): string | null {
+): MessageKey | null {
   if (options?.skipSettlement) {
     return null;
   }
@@ -373,7 +375,7 @@ export function validateLockedReceivePaymentMatrix(
   config: LockedReceivePaymentConfig,
   fields: ReceiveSettlementFields,
   estimatedTotal: number,
-): string | null {
+): MessageKey | null {
   if (config.prepaidIntegrityMissing) {
     return "purchasing.prepaidSettlementMissing";
   }

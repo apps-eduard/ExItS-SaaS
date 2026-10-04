@@ -19,10 +19,19 @@ public static class ExternalAuthReturnUrl
             return DefaultAdminCallback;
         }
 
-        if (Uri.TryCreate(returnUrl, UriKind.Relative, out _))
+        var candidate = returnUrl.Trim();
+        if (IsUnsafeReturn(candidate))
         {
-            return returnUrl.StartsWith('/') ? returnUrl : DefaultAdminCallback;
+            return DefaultAdminCallback;
         }
+
+        if (Uri.TryCreate(candidate, UriKind.Relative, out _)
+            && !candidate.Contains("://", StringComparison.Ordinal))
+        {
+            return candidate.StartsWith('/') ? candidate : DefaultAdminCallback;
+        }
+
+        returnUrl = candidate;
 
         if (!Uri.TryCreate(returnUrl, UriKind.Absolute, out var absolute))
         {
@@ -44,4 +53,11 @@ public static class ExternalAuthReturnUrl
 
         return DefaultAdminCallback;
     }
+
+    private static bool IsUnsafeReturn(string value) =>
+        value.Contains('\\')
+        || value.Contains('\0')
+        || value.StartsWith("//", StringComparison.Ordinal)
+        || value.Contains("javascript:", StringComparison.OrdinalIgnoreCase)
+        || value.Contains("data:", StringComparison.OrdinalIgnoreCase);
 }

@@ -8,11 +8,17 @@ import {
   registerCartLineCountGetter,
 } from "@/pwa/apply-pwa-update";
 import { PwaUpdateNotice } from "@/pwa/PwaUpdateNotice";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
+  createPersonalPwaManifest,
   createPwaManifest,
   PWA_API_PATH_PATTERN,
   PWA_AUTH_PATH_PATTERN,
+  PWA_PLATFORM_API_PATH_PATTERN,
   PWA_THEME_COLOR,
+  pwaManifestFileForHost,
 } from "@/pwa/pwa-manifest";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 
@@ -27,6 +33,34 @@ describe("PWA manifest", () => {
     expect(PWA_API_PATH_PATTERN.test("/api/v1/sales")).toBe(true);
     expect(PWA_AUTH_PATH_PATTERN.test("/api/v1/platform/auth/me")).toBe(true);
     expect(PWA_API_PATH_PATTERN.test("/appearance")).toBe(false);
+    expect(PWA_PLATFORM_API_PATH_PATTERN.test("/platform-api/api/v1/platform/auth/me")).toBe(true);
+  });
+
+  it("keeps a separate Personal install identity for my.exitsapps.com", () => {
+    const manifest = createPersonalPwaManifest();
+    expect(manifest.name).toBe("ExItS");
+    expect(manifest.short_name).toBe("ExItS");
+    expect(manifest.start_url).toBe("/personal");
+    expect(manifest.scope).toBe("/");
+    expect(manifest.display).toBe("standalone");
+    expect(manifest.icons.map((icon) => icon.sizes)).toEqual([
+      "192x192",
+      "512x512",
+      "192x192",
+      "512x512",
+    ]);
+    expect(manifest.icons.filter((icon) => icon.purpose === "maskable")).toHaveLength(2);
+    const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+    const file = JSON.parse(readFileSync(path.join(root, "public/manifest-personal.webmanifest"), "utf8"));
+    expect(file).toEqual(manifest);
+    expect(pwaManifestFileForHost("my.exitsapps.com")).toBe("manifest-personal.webmanifest");
+    expect(pwaManifestFileForHost("pos.exitsapps.com")).toBe("manifest.webmanifest");
+    expect(pwaManifestFileForHost("app.exitsapps.com")).toBe("manifest.webmanifest");
+    const vite = readFileSync(path.join(root, "vite.config.ts"), "utf8");
+    expect(vite).toContain('handler: "NetworkOnly"');
+    expect(vite).toContain("/platform-api/");
+    expect(vite).toContain("/pos-api/");
+    expect(vite).toContain("auth|session");
   });
 });
 

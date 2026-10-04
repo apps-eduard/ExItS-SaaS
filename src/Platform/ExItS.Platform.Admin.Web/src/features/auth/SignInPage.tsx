@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { DevelopmentTestUserTools } from "@/features/auth/DevelopmentTestUserTools";
+import { externalSignInHref } from "@/features/auth/ExternalLoginCallbackPage";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useSession } from "@/hooks/use-session";
 import { resolvePostLoginPath } from "@/lib/auth/safe-return-path";
@@ -91,6 +92,13 @@ export function SignInPage() {
   const passwordError = form.formState.errors.password?.message;
   const submitting = form.formState.isSubmitting;
   const sessionExpired = params.get("notice") === "session-expired";
+  const [passwordChanged] = useState(() => {
+    const pending = sessionStorage.getItem("exits.admin.passwordChanged") === "1";
+    if (pending) {
+      sessionStorage.removeItem("exits.admin.passwordChanged");
+    }
+    return pending;
+  });
 
   async function onSubmit(values: SignInValues) {
     setFormError(null);
@@ -133,6 +141,7 @@ export function SignInPage() {
       </header>
 
       {sessionExpired ? <Alert className="mb-4" title={t("auth.notice.sessionExpired")} /> : null}
+      {passwordChanged ? <Alert className="mb-4" title={t("account.changePassword.success.title")} /> : null}
 
       {formError ? (
         <Alert className="mb-4" tone="danger" title={t(failureMessageKey(formError))} />
@@ -225,6 +234,12 @@ export function SignInPage() {
         >
           {t("auth.createAccount")}
         </Link>
+        <a className="text-primary underline-offset-4 hover:underline" href={externalSignInHref("google")}>
+          {t("external.google")}
+        </a>
+        <a className="text-primary underline-offset-4 hover:underline" href={externalSignInHref("facebook")}>
+          {t("external.facebook")}
+        </a>
       </div>
 
       <DevelopmentTestUserTools

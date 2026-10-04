@@ -274,8 +274,8 @@ function ContactRow({
 export function OrgProfilePage() {
   const { t } = useI18n();
   const { showToast } = useToast();
-  const { sessionGrant } = useWorkspace();
-  const organizationId = sessionGrant?.organizationId ?? null;
+  const { sessionGrant, boundWorkspace } = useWorkspace();
+  const organizationId = boundWorkspace?.organizationId ?? null;
   const canEdit = hasOrganizationManagementAuthority(sessionGrant);
   const [editOpen, setEditOpen] = useState(false);
   const [idCopied, setIdCopied] = useState(false);

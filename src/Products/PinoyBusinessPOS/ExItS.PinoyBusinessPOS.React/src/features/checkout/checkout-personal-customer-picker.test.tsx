@@ -9,6 +9,7 @@ import {
   searchCheckoutCustomers,
 } from "@/api/pos/pos-customers-client";
 import { buildExItsQr } from "@/lib/exits-qr/envelope";
+import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import * as cameraAccess from "@/lib/qr/camera-access";
 import * as decodeFrame from "@/lib/qr/decode-qr-frame";
@@ -61,11 +62,7 @@ function renderPicker(
   options: {
     canLinkCustomer?: boolean;
     selectedCustomerId?: string | null;
-    onCustomerSelected?: (customer: {
-      customerId: string;
-      displayName: string;
-      status: string;
-    }) => void;
+    onCustomerSelected?: (customer: CheckoutCustomerOption) => void;
   } = {},
 ) {
   const onCustomerSelected = options.onCustomerSelected ?? vi.fn();
@@ -126,6 +123,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     vi.mocked(searchCheckoutCustomers).mockResolvedValue({
       items: [
         {
+          kind: "Customer",
           customerId,
           displayName: "Rosa Santos",
           mobileNumber: "09171234567",
@@ -154,6 +152,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     const user = userEvent.setup();
     vi.mocked(resolvePublicUserId).mockResolvedValue(resolvedPersonal);
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      kind: "Customer",
       customerId,
       displayName: "Rosa Santos",
       mobileNumber: "09171234567",
@@ -189,6 +188,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     const user = userEvent.setup();
     vi.mocked(resolvePublicUserId).mockResolvedValue(resolvedPersonal);
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      kind: "Customer",
       customerId,
       displayName: "Local Walkin 20260826230002",
       mobileNumber: "09171110001",
@@ -218,6 +218,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     const payload = buildExItsQr("personal", publicId);
     vi.mocked(resolvePublicUserId).mockResolvedValue(resolvedPersonal);
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      kind: "Customer",
       customerId,
       displayName: "Rosa Santos",
       mobileNumber: null,
@@ -340,6 +341,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.mocked(resolvePublicUserId).mockResolvedValue(resolvedPersonal);
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      kind: "Customer",
       customerId,
       displayName: "Rosa Santos",
       mobileNumber: null,

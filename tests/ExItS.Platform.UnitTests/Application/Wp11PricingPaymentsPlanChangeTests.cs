@@ -524,65 +524,24 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public void Personal_start_business_uses_commercial_plans_endpoint_not_view_portfolio_catalog()
     {
         var root = FindRepoRoot();
+        var plans = File.ReadAllText(Path.Combine(
+            root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.React", "src", "api", "platform", "commercial-plans-client.ts"));
         var startBusiness = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor"));
-        var adminRedirect = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
-        var commercial = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationCommercial.razor"));
-        var client = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Services", "PlatformApiClient.cs"));
-
-        Assert.Contains("GetCommercialPlansAsync", startBusiness, StringComparison.Ordinal);
-        Assert.DoesNotContain("GetPlansAsync", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("StartBusinessAsync", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("Open Organization Web", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("/start-business", adminRedirect, StringComparison.Ordinal);
-        Assert.Contains("try", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("finally", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("GetCommercialPlansAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("GetOrganizationCurrentPlanAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("StartOrganizationCommercialSubscriptionAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("ConvertTrialSubscriptionAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("UpgradeSubscriptionAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("/api/v1/commercial/plans", client, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("/current-plan", client, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("/from-catalog", client, StringComparison.OrdinalIgnoreCase);
+            root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.React", "src", "api", "platform", "start-business-client.ts"));
+        Assert.Contains("/api/v1/commercial/plans", plans, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/personal/start-business", startBusiness, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin")));
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Platform", "ExItS.Personal.Web")));
     }
 
     [Fact]
     public void Admin_commercial_ui_exposes_pricing_preview_and_test_payments()
     {
         var root = FindRepoRoot();
-        var plans = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Plans.razor"));
-        Assert.Contains("MonthlyPrice", plans, StringComparison.Ordinal);
-        Assert.Contains("AnnualPrice", plans, StringComparison.Ordinal);
-        Assert.Contains("Currency", plans, StringComparison.Ordinal);
-
-        var commercial = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationCommercial.razor"));
-        Assert.Contains("PreviewPlanChangeAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("UsageConflicts", commercial, StringComparison.Ordinal);
-        Assert.Contains("SimulateLocalValidationPaymentAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("ConvertTrialSubscriptionAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("StartOrganizationCommercialSubscriptionAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("Available Plans", commercial, StringComparison.Ordinal);
-        Assert.Contains("Subscription Summary", commercial, StringComparison.Ordinal);
-        Assert.Contains("Existing data is not deleted", commercial, StringComparison.Ordinal);
-        Assert.Contains("Confirm upgrade", commercial, StringComparison.Ordinal);
-        Assert.Contains("scrollIntoView", commercial, StringComparison.Ordinal);
-        Assert.Contains("ScrollToElementAsync", commercial, StringComparison.Ordinal);
-        Assert.DoesNotContain("Nav.Uri.Split('#')", commercial, StringComparison.Ordinal);
-
-        var lvPayments = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "LocalValidationTestPayments.razor"));
-        Assert.Contains("IsAvailable", lvPayments, StringComparison.Ordinal);
-
-        var nav = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        Assert.Contains("LocalValidationAvailable", nav, StringComparison.Ordinal);
-        Assert.Contains("local-validation/test-payments", nav, StringComparison.OrdinalIgnoreCase);
+        var app = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin.Web", "src", "app", "App.tsx"));
+        Assert.Contains("path=\"plans\"", app, StringComparison.Ordinal);
+        Assert.Contains("local-validation/test-payments", app, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -599,22 +558,12 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public void Platform_admin_ui_has_no_personal_or_organization_account_creation_buttons()
     {
         var root = FindRepoRoot();
-        var users = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
-        var orgs = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Organizations.razor"));
-        Assert.Contains("CanCreatePlatformStaff", users, StringComparison.Ordinal);
-        Assert.DoesNotContain("Create Personal", users, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Create Organization account", users, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("CanManageLifecycle", orgs, StringComparison.Ordinal);
-        Assert.DoesNotContain("assign Plan to Personal", File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor")), StringComparison.OrdinalIgnoreCase);
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin")));
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Platform", "ExItS.Personal.Web")));
         var startBusiness = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor"));
-        Assert.Contains("Start Free Trial", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("Subscribe Now", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("AssignPosOwnerRole: true", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("Processing test payment", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("Task.Delay(2500)", startBusiness, StringComparison.Ordinal);
-        Assert.DoesNotContain("Try Business Free First", startBusiness, StringComparison.Ordinal);
+            root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.React", "src", "api", "platform", "start-business-client.ts"));
+        Assert.Contains("assignPosOwnerRole: request.assignPosOwnerRole ?? true", startBusiness, StringComparison.Ordinal);
+        Assert.DoesNotContain("assign Plan to Personal", startBusiness, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

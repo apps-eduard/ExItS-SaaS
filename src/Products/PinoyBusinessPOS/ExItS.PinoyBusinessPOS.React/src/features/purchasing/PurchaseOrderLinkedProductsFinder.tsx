@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
+import type { MessageKey } from "@/i18n/messages";
 import { Button } from "@/components/ui/button";
 import type { ResponsiveDataLayout } from "@/components/exits/responsive-data-view";
 import {
@@ -12,7 +13,7 @@ import {
   type ConnectedPoReadyProduct,
 } from "@/features/purchasing/purchase-order-create-connected";
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 type PurchaseOrderLinkedProductsFinderProps = {
   layout: ResponsiveDataLayout;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
@@ -489,6 +489,7 @@ export function PurchaseOrderDetailPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
   const { purchaseOrderId } = useParams<{ purchaseOrderId: string }>();
+  const navigate = useNavigate();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
   const organizationId = boundWorkspace?.organizationId ?? null;
@@ -615,7 +616,7 @@ export function PurchaseOrderDetailPage() {
     po != null
       ? (po.confirmedTotalAmount != null && po.confirmedTotalAmount > 0
           ? po.confirmedTotalAmount
-          : (orderTotal ?? 0))
+          : (orderTotal?.amount ?? 0))
       : 0;
   const payBeforeDue =
     po != null &&
@@ -675,7 +676,11 @@ export function PurchaseOrderDetailPage() {
 
   async function runAction(
     action: () => Promise<unknown>,
-    successKey: "purchasing.submitted" | "purchasing.cancelled" | "purchasing.changesAccepted",
+    successKey:
+      | "purchasing.submitted"
+      | "purchasing.cancelled"
+      | "purchasing.changesAccepted"
+      | "purchasing.changesDeclined",
     options?: { reconcile?: () => Promise<boolean> },
   ) {
     if (!workspace || !purchaseOrderId || busy) {

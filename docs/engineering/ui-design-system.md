@@ -10,7 +10,7 @@ This document defines the ExItS UI architecture and reusable presentation standa
 
 | Product | UI stack | Notes |
 |---|---|---|
-| **ExItS Platform Admin** | **Ant Design Blazor** (`AntDesign`, ADR-015) | Pro Blazor as design reference only; **no Tailwind**; **no Fluent UI**; compact enterprise console |
+| **ExItS Platform Admin** | **React** (`ExItS.Platform.Admin.Web`) | Canonical Platform Administration frontend. Blazor Platform Admin is removed. |
 | PinoyBusinessPOS | **Native foundation** (MAUI Blazor Hybrid) | Shared DesignSystem tokens/localization with POS; **no Ant**; **no Tailwind** |
 | Shared | Models, token **names**, localization keys, validation/formatting | Not one framework-switching component; Admin uses Ant; POS uses DesignSystem |
 
@@ -43,10 +43,10 @@ Products/PinoyBusinessPOS/
 ├── ExItS.PinoyBusinessPOS.Infrastructure
 ├── ExItS.PinoyBusinessPOS.Api
 ├── ExItS.PinoyBusinessPOS.ApiClient
-└── ExItS.PinoyBusinessPOS.Maui   # Android-first MAUI Blazor Hybrid
+└── ExItS.PinoyBusinessPOS.React  # canonical React client; MAUI is retired
 ```
 
-Platform Admin: Blazor Web App. POS: .NET MAUI Blazor Hybrid (Android-first; future iOS/Windows). Both use native shared conventions above.
+Platform Admin, Personal, Organization, and POS are React. Blazor frontend hosts, `ExItS.Web.UI`, `ExItS.DesignSystem`, and Ant Design Blazor are removed. See [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md).
 
 ---
 
@@ -251,6 +251,6 @@ Naming in earlier drafts (`ExTextField`, …) remains the documentation conventi
 ## Explicit non-goals
 
 - No Tailwind in **current** POS MAUI or **current** Platform Admin Blazor hosts.
-- No Ant Design in **current** PinoyBusinessPOS MAUI (Organization Web / Personal Web use Ant Design Blazor per ADR-022).
+- Ant Design Blazor is retired. MAUI is retired. The React client is the visual standard.
 - No single component that switches Ant vs native at runtime.
 - Future replacement-host planning (Platform Admin React; PinoyBusinessPOS React/PWA/Capacitor) lives under `docs/Platform-Admin-Web` and `docs/Mobile-React`. Completing those documents does **not** authorize adding React packages or Tailwind to the current MAUI or current Admin hosts.

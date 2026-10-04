@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import type { MessageKey } from "@/i18n/messages";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -10,7 +11,7 @@ import {
   type ProductSelectionRow,
 } from "@/components/exits/ProductSelectionView";
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 type ReceiveStockFindProductsViewProps = {
   layout: ResponsiveDataLayout;

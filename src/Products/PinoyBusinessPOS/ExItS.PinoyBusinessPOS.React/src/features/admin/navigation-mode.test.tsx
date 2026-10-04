@@ -10,6 +10,7 @@ import { AdminSidebar } from "@/features/admin/AdminSidebar";
 import { OperationsSidebar } from "@/features/operations/OperationsSidebar";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
+import { PreferencesOverlayProvider } from "@/features/preferences/PreferencesOverlay";
 import {
   defaultUiPreferences,
   UI_PREFERENCES_STORAGE_KEY,
@@ -36,7 +37,9 @@ function renderWithProviders(ui: ReactNode, path: string) {
     <QueryClientProvider client={client}>
       <PreferencesProvider>
         <I18nProvider>
-          <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
+          <PreferencesOverlayProvider>
+            <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
+          </PreferencesOverlayProvider>
         </I18nProvider>
       </PreferencesProvider>
     </QueryClientProvider>,

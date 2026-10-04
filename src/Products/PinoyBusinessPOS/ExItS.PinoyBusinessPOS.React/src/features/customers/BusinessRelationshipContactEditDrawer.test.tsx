@@ -29,7 +29,7 @@ const workspace = {
 };
 
 function baseCustomer(overrides: Partial<BusinessCustomer> = {}): BusinessCustomer {
-  return {
+  const row: BusinessCustomer = {
     connectionId: "33333333-3333-3333-3333-333333333333",
     supplierOrganizationId: workspace.organizationId,
     buyerOrganizationId: "44444444-4444-4444-4444-444444444444",
@@ -62,8 +62,11 @@ function baseCustomer(overrides: Partial<BusinessCustomer> = {}): BusinessCustom
     deliveryInstructions: null,
     billingContactNotes: null,
     internalNotes: null,
-    ...overrides,
+    customerDeliveryOverride: "inherit",
+    orgOfferDelivery: false,
+    effectiveDeliveryAllowed: false,
   };
+  return Object.assign(row, overrides);
 }
 
 const owner = {

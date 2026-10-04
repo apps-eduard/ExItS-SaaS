@@ -1,6 +1,6 @@
 # Platform Admin Web — Frontend Architecture (React, Security, Dependencies)
 
-**Status:** Documentation Only — implementation not authorized  
+**Status:** React Platform Admin is canonical. The Blazor host described below is removed. This file keeps the original architecture notes.  
 **Purpose (DOC-03):** Define the target React frontend architecture for the future `src/Platform/ExItS.Platform.Admin.Web/` application, based on existing Platform API authentication/session evidence.
 
 ---

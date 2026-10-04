@@ -436,16 +436,17 @@ export function StockRequestDetailPage() {
   const documentTitle = dto.requestNumber?.trim() || t("stockRequest.detailTitle");
   const activityEvents = activityQuery.data ?? [];
 
+  const stockRequest = dto;
   async function runStockRequestOutput(action: "csv" | "xlsx" | "pdf" | "print") {
     try {
       const stamp = new Date().toISOString().slice(0, 10);
       const numberPart = sanitizeCsvFilenamePart(
-        dto.requestNumber?.trim() || dto.stockRequestId.slice(0, 8),
+        stockRequest.requestNumber?.trim() || stockRequest.stockRequestId.slice(0, 8),
       );
       if (action === "csv") {
         const csv = buildCsvWithMetadata(
           [
-            ["Stock request", dto.requestNumber ?? dto.stockRequestId],
+            ["Stock request", stockRequest.requestNumber ?? stockRequest.stockRequestId],
             ["Status", statusLabel],
             ["Route", `${sourceName} → ${destName}`],
             ["Generated", stamp],
@@ -460,7 +461,7 @@ export function StockRequestDetailPage() {
               t("transfer.inTransit"),
               remainingDispatchColumnLabel,
             ],
-            rows: dto.lines.map((line) => {
+            rows: stockRequest.lines.map((line) => {
               const approved = displayApprovedQuantity(line.approvedQuantity);
               return [
                 line.nameSnapshot,
@@ -479,7 +480,7 @@ export function StockRequestDetailPage() {
       }
       if (action === "xlsx") {
         const sheet = XLSX.utils.aoa_to_sheet([
-          ["Stock request", dto.requestNumber ?? dto.stockRequestId],
+          ["Stock request", stockRequest.requestNumber ?? stockRequest.stockRequestId],
           ["Status", statusLabel],
           ["Route", `${sourceName} → ${destName}`],
           [],
@@ -492,7 +493,7 @@ export function StockRequestDetailPage() {
             t("transfer.inTransit"),
             remainingDispatchColumnLabel,
           ],
-          ...dto.lines.map((line) => {
+          ...stockRequest.lines.map((line) => {
             const approved = displayApprovedQuantity(line.approvedQuantity);
             return [
               line.nameSnapshot,

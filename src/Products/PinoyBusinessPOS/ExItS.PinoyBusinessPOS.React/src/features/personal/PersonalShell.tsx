@@ -6,6 +6,7 @@ import { ShellNotificationButton } from "@/components/exits/ShellNotificationBut
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
 import { ShellSidebarModeButton } from "@/components/exits/ShellSidebarModeButton";
 import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
+import { PersonalInstallHomeOffer } from "@/features/personal/PersonalInstallOffer";
 import { useNotificationsOverlay } from "@/features/personal/NotificationsOverlay";
 import { PersonalSidebar } from "@/features/personal/PersonalSidebar";
 import { formatUnreadNotificationBadge } from "@/features/personal/personal-notifications";
@@ -136,6 +137,7 @@ export function PersonalShell() {
                 className="admin-shell__content personal-shell__content min-h-0 min-w-0 flex-1"
                 tabIndex={-1}
               >
+                <PersonalInstallHomeOffer />
                 <Outlet />
               </main>
             </div>

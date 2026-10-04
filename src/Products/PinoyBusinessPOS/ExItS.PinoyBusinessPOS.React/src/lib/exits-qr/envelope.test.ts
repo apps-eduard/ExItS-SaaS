@@ -46,4 +46,17 @@ describe("exits-qr envelope", () => {
     expect(() => parseExItsQr("https://evil.example/qr")).toThrow(ExItsQrParseError);
     expect(() => parseExItsQr("")).toThrow(ExItsQrParseError);
   });
+
+  it("parses a personal HTTPS connect URL and leaves other HTTPS QR unrecognized", () => {
+    expect(parseExItsQr("https://my.exitsapps.com/connect/EX-4827-1936")).toEqual({
+      purpose: "personal",
+      subject: "EX-4827-1936",
+      version: 1,
+    });
+    expect(() => parseExItsQr("https://my.exitsapps.com/store/ORG000123")).toThrow(ExItsQrParseError);
+    expect(() =>
+      parseExItsQr("exits://qr/v1/pos-device-registration/opaque-token"),
+    ).not.toThrow();
+    expect(parseExItsQr("exits://qr/v1/organization/ORG000123").purpose).toBe("organization");
+  });
 });

@@ -4,7 +4,6 @@ import type {
   InventoryTransferLineDto,
 } from "@/api/pos/pos-inventory-transfer-client";
 import type { ReceivedQuantityParse } from "@/features/inventory/inventory-transfer-labels";
-import { parseNonNegativeQty } from "@/features/purchasing/receive-math";
 import type {
   TransferDamagedOtherFollowUp,
   TransferMissingFollowUp,
@@ -51,7 +50,7 @@ export function lineOutstandingQty(
 
 /** Damaged qty received for a transfer line (from immutable receipt classification). */
 export function lineDamagedQty(
-  transfer: Pick<InventoryTransferDto, "receipts">,
+  transfer: { receipts?: InventoryTransferDto["receipts"] },
   lineId: string,
 ): number {
   let total = 0;

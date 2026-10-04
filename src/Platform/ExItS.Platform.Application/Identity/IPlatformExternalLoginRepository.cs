@@ -25,6 +25,17 @@ public sealed class PlatformExternalAuthOptions
     /// Dev/Testing-only simulated external login completion. Forbidden in Production.
     /// </summary>
     public bool TestingEndpointEnabled { get; set; }
+
+    /// <summary>
+    /// Browser origin used to build the Google redirect URI behind the React proxy.
+    /// Example: https://my.exitsapps.com. Empty keeps the request host.
+    /// </summary>
+    public string? PublicBrowserOrigin { get; set; }
+
+    /// <summary>
+    /// Docker DNS name of the only proxy allowed to apply <see cref="PublicBrowserOrigin"/>.
+    /// </summary>
+    public string? TrustedProxyHost { get; set; }
 }
 
 public sealed class PlatformExternalProviderOptions

@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import type { MessageKey } from "@/i18n/messages";
 import type { TransferLotAllocationSlice } from "@/features/inventory/inventory-transfer-fefo-allocate";
 import { Button } from "@/components/ui/button";
 import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
@@ -36,7 +37,7 @@ export type InventoryTransferSelectedLine = {
   onChangeLots: (() => void) | null;
 };
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 export type InventoryTransferLineActionMode = "remove" | "none";
 

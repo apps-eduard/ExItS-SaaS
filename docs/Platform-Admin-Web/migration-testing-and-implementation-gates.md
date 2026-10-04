@@ -1,6 +1,6 @@
 # Platform Admin Web — Migration, Testing, and Implementation Gates
 
-**Status:** Documentation Only — implementation not authorized  
+**Status:** Gate G complete — Blazor Platform Admin is removed. React Platform Admin is canonical. The staged plan below is the historical record.  
 **Source:** PLATFORM-WEB-DOC-10  
 **Branch:** `docs/platform-admin-web-v2`
 

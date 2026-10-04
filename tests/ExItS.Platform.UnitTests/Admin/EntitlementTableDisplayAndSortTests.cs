@@ -89,8 +89,7 @@ public sealed class EntitlementTableDisplayAndSortTests
         }
 
         Assert.NotNull(root);
-        var tableSort = File.ReadAllText(Path.Combine(root.FullName, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminTableSort.cs"));
-        Assert.DoesNotContain(".ConfigureAwait(false)", tableSort, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(root.FullName, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminTableSort.cs")));
     }
 
     [Fact]

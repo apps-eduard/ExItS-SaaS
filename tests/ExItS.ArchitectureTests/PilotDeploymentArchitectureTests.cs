@@ -32,7 +32,9 @@ public sealed class PilotDeploymentArchitectureTests
             StringComparison.OrdinalIgnoreCase);
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.platform-api")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.pos-api")));
-        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.platform-admin")));
+        Assert.False(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.platform-admin")));
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.platform-admin-web")));
+        Assert.Contains("Dockerfile.platform-admin-web", compose, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1441,7 +1441,12 @@ export async function createBusinessCustomerRepayment(
   input: CreateBusinessRepaymentInput,
   signal?: AbortSignal,
 ): Promise<BusinessRepayment> {
-  const repaymentId = input.repaymentId?.trim() || createSecureMutationId();
+  const suppliedRepaymentId = input.repaymentId?.trim();
+  const createdRepaymentId = suppliedRepaymentId ? null : createSecureMutationId();
+  if (!suppliedRepaymentId && createdRepaymentId && !createdRepaymentId.ok) {
+    throw new Error("Secure randomness is unavailable.");
+  }
+  const repaymentId = suppliedRepaymentId || (createdRepaymentId && createdRepaymentId.ok ? createdRepaymentId.id : "");
   const body = buildCreateBusinessRepaymentPayload({ ...input, repaymentId });
   const headers = await buildPosMutationIdempotencyHeaders(
     repaymentId,

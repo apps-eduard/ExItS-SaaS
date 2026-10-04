@@ -77,38 +77,11 @@ public sealed class SecurityHardeningArchitectureTests
     }
 
     [Fact]
-    public void Android_network_security_config_documents_cleartext_as_development_only()
+    public void Maui_android_cleartext_config_is_retired()
     {
-        var root = FindRepositoryRoot();
-        var debugPath = Path.Combine(root,
-            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
-            "Platforms", "Android", "Resources", "xml", "network_security_config.xml");
-        var releasePath = Path.Combine(root,
-            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
-            "Platforms", "Android", "Resources", "xml", "network_security_config.Release.xml");
-        var xml = File.ReadAllText(debugPath);
-        Assert.Contains("before any production release", xml, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("10.0.2.2", xml, StringComparison.Ordinal);
-        Assert.Contains("localhost", xml, StringComparison.Ordinal);
-        Assert.Contains("127.0.0.1", xml, StringComparison.Ordinal);
-        Assert.Contains("Release builds replace this file with network_security_config.Release.xml", xml, StringComparison.Ordinal);
-
-        // Approved Debug/Local Validation cleartext block only (loopback + optional PublicHost).
-        var withoutApprovedCleartext = System.Text.RegularExpressions.Regex.Replace(
-            xml,
-            """
-            <domain-config cleartextTrafficPermitted="true">[\s\S]*?</domain-config>
-            """,
-            string.Empty,
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        Assert.DoesNotContain(
-            "cleartextTrafficPermitted=\"true\"",
-            withoutApprovedCleartext,
-            StringComparison.Ordinal);
-
-        Assert.True(File.Exists(releasePath), "Release network security config must exist.");
-        var releaseXml = File.ReadAllText(releasePath);
-        Assert.DoesNotContain("cleartextTrafficPermitted=\"true\"", releaseXml, StringComparison.Ordinal);
+        var maui = Path.Combine(FindRepositoryRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui");
+        Assert.False(Directory.Exists(maui), maui);
     }
 
     [Fact]
@@ -190,10 +163,8 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.Contains("NullPlatformMfaFactorStore", mfa, StringComparison.Ordinal);
         Assert.DoesNotContain("MapPost(\"/api/v1/platform/auth/mfa", authEndpoints, StringComparison.Ordinal);
 
-        var adminGuard = File.ReadAllText(Path.Combine(root,
-            "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminProductionSecurityGuard.cs"));
-        Assert.Contains("PlatformApi:BaseUrl", adminGuard, StringComparison.Ordinal);
-        Assert.Contains("HTTPS", adminGuard, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminProductionSecurityGuard.cs")));
 
         var posGuard = File.ReadAllText(Path.Combine(root,
             "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Api", "Common", "PosDevelopmentEnvironment.cs"));

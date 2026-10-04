@@ -26,11 +26,10 @@ Use the Local Validation stack (not a nested product tree):
 
 | Port | Service |
 |---|---|
-| **8090** | Platform Admin (canonical browser sign-in) |
+| **8095** | Platform Admin (React; canonical browser sign-in) |
 | **8091** | Platform API |
 | **8092** | POS API |
-| **8093** | Organization Web |
-| **8094** | Personal Web |
+| **5177** | React Personal, Organization, and POS |
 | **15533** | Platform PostgreSQL (Docker; do not expose) |
 | **15534** | POS PostgreSQL (Docker; do not expose) |
 | **8025** | Mailpit UI |
@@ -62,59 +61,9 @@ Prefer `dotnet user-secrets` for non-local credentials. Integration tests use Te
 | .NET SDK **10.x** | Platform + POS | Verified `10.0.302` |
 | Docker Desktop + Compose | Local Validation DBs / packaging | Required for Local Validation |
 | Git 2.x | All work | |
-| Android SDK + workloads | POS MAUI Android | Required only for MAUI Android builds |
+| Node.js | React clients | Platform Admin Web and PinoyBusinessPOS React |
 
-Target frameworks: managed `net10.0`; POS MAUI host `net10.0-android`.
-
-## PinoyBusinessPOS MAUI — PhysicalDevice (preferred)
-
-Physical-device Local Validation is **preferred** over the Android emulator (emulator is slow/unreliable in this environment). Preserve the existing PhysicalDevice / Tailscale Debug profile.
-
-| Item | Value |
-|---|---|
-| Package id | `com.exits.pinoybusinesspos` |
-| Profile | `-p:PosLocalValidationTarget=PhysicalDevice` |
-| Default Tailscale host | `100.120.79.81` (override with `-p:PosLocalValidationPublicHost=...`) |
-| Embedded settings | `appsettings.LocalValidation.PhysicalDevice.json` |
-
-```powershell
-$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-$env:PATH = "$env:ANDROID_HOME\platform-tools;$env:PATH"
-
-dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" `
-  -c Debug -f net10.0-android `
-  -p:PosLocalValidationTarget=PhysicalDevice `
-  -p:AndroidSdkDirectory="$env:ANDROID_HOME" `
-  -t:Install
-```
-
-Phone must reach Platform/POS on the Tailscale/LAN host ports **8091** / **8092**. Keep `AllowedHosts` / cleartext domains aligned with that public host.
-
-## PinoyBusinessPOS MAUI — Emulator
-
-Emulator uses the **same** Tailscale PublicHost as physical devices (`100.120.79.81`). Start Local Validation with `-PublicHost 100.120.79.81`.
-
-| Item | Value |
-|---|---|
-| Package id | `com.exits.pinoybusinesspos` |
-| Profile | `-p:PosLocalValidationTarget=PhysicalDevice` (**default** Debug) |
-| API base URLs | `http://100.120.79.81:8091` / `http://100.120.79.81:8092` |
-| AVD | Create/use an ExItS-named AVD (for example `ExItS_Pixel_API34`) |
-
-```powershell
-$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-$env:PATH = "$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:PATH"
-
-emulator -avd ExItS_Pixel_API34
-
-dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" `
-  -c Debug -f net10.0-android `
-  -p:PosLocalValidationTarget=PhysicalDevice `
-  -p:AndroidSdkDirectory="$env:ANDROID_HOME" `
-  -t:Install
-```
-
-Legacy `10.0.2.2` loopback is no longer the default; only use `-p:PosLocalValidationTarget=Emulator` for experiments.
+Target framework: `net10.0`. .NET MAUI and the Android workload are retired. Mobile delivery is the React PWA, with Capacitor when native packaging is added. See [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md).
 
 ## Secrets
 

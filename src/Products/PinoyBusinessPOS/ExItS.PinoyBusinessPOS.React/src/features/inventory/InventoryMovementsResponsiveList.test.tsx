@@ -72,7 +72,7 @@ function renderList(
         <InventoryMovementsResponsiveList
           movements={movements}
           unitOfMeasure="Kilogram"
-          resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+          resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
           actorsLoading={false}
           onOpenMovement={onOpenMovement}
         />

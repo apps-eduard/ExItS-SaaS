@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import type { MessageKey } from "@/i18n/messages";
 import { isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { Button } from "@/components/ui/button";
 import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
@@ -30,7 +31,7 @@ export type RequestStockSelectedLine = {
   onRemove: () => void;
 };
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 type RequestStockItemsViewProps = {
   lines: readonly RequestStockSelectedLine[];
