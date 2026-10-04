@@ -138,6 +138,21 @@ public static class SubscriptionCheckoutReturnUrls
         Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) && uri.IsLoopback;
 }
 
+internal static class SubscriptionCheckoutAccess
+{
+    public static bool OrganizationContextMatches(
+        SubscriptionPaymentTransaction payment,
+        Guid? expectedOrganizationId)
+    {
+        if (expectedOrganizationId is Guid orgId)
+        {
+            return payment.OrganizationId?.Value == orgId;
+        }
+
+        return payment.OrganizationId is null;
+    }
+}
+
 public sealed class StartHostedSubscriptionCheckout(
     ISubscriptionPaymentTransactionRepository payments,
     IPlanRepository plans,
@@ -145,13 +160,29 @@ public sealed class StartHostedSubscriptionCheckout(
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
-    public Task<ApplicationResult<HostedSubscriptionCheckoutDto>> ExecuteForPaymentAsync(
+    public async Task<ApplicationResult<HostedSubscriptionCheckoutDto>> ExecuteForPaymentAsync(
         Guid paymentId,
         PlatformUserId userId,
         Guid? expectedOrganizationId,
         string returnBaseUrl,
-        CancellationToken cancellationToken = default) =>
-        ExecuteExistingAsync(paymentId, userId, expectedOrganizationId, returnBaseUrl, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await payments
+            .GetByIdAsync(SubscriptionPaymentTransactionId.From(paymentId), cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is null)
+        {
+            return ApplicationResult<HostedSubscriptionCheckoutDto>.Failure(
+                ApplicationErrorCodes.PaymentNotFound,
+                "Payment was not found.");
+        }
+
+        return await ExecuteUnderOpenCheckoutLockAsync(
+            existing.InitiatedByUserId.Value,
+            existing.OrganizationId?.Value ?? Guid.Empty,
+            ct => ExecuteExistingAsync(paymentId, userId, expectedOrganizationId, returnBaseUrl, ct),
+            cancellationToken).ConfigureAwait(false);
+    }
 
     public async Task<ApplicationResult<HostedSubscriptionCheckoutDto>> ExecuteForPlanAsync(
         PlatformUserId userId,
@@ -195,6 +226,59 @@ public sealed class StartHostedSubscriptionCheckout(
             return ApplicationResult<HostedSubscriptionCheckoutDto>.Failure(ex.ErrorCode, ex.Message);
         }
 
+        return await ExecuteUnderOpenCheckoutLockAsync(
+            userId.Value,
+            organizationId?.Value ?? Guid.Empty,
+            ct => StartOpenCheckoutAsync(userId, plan, billingCycle, quote, organizationId, returnBaseUrl, ct),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Serializes find-or-create and the provider call for one subscriber and organization.
+    /// The PostgreSQL advisory lock is held until the authoritative checkout URL is stored.
+    /// </summary>
+    private async Task<ApplicationResult<HostedSubscriptionCheckoutDto>> ExecuteUnderOpenCheckoutLockAsync(
+        Guid lockKeyA,
+        Guid lockKeyB,
+        Func<CancellationToken, Task<ApplicationResult<HostedSubscriptionCheckoutDto>>> action,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                ApplicationResult<HostedSubscriptionCheckoutDto>? outcome = null;
+                await unitOfWork.ExecuteWithAdvisoryLockAsync(
+                    lockKeyA,
+                    lockKeyB,
+                    async ct =>
+                    {
+                        outcome = await action(ct).ConfigureAwait(false);
+                    },
+                    cancellationToken).ConfigureAwait(false);
+                return outcome ?? ApplicationResult<HostedSubscriptionCheckoutDto>.Failure(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "Checkout could not be started. Try again.");
+            }
+            catch (PersistenceConflictException) when (attempt == 0)
+            {
+            }
+        }
+
+        return ApplicationResult<HostedSubscriptionCheckoutDto>.Failure(
+            ApplicationErrorCodes.ConcurrencyConflict,
+            "An open subscription checkout already exists for this plan.");
+    }
+
+    private async Task<ApplicationResult<HostedSubscriptionCheckoutDto>> StartOpenCheckoutAsync(
+        PlatformUserId userId,
+        Plan plan,
+        BillingCycle billingCycle,
+        SubscriptionPriceQuote quote,
+        PlatformOrganizationId? organizationId,
+        string returnBaseUrl,
+        CancellationToken cancellationToken)
+    {
         var open = await payments
             .FindLatestOpenAsync(userId, organizationId, plan.PlanKey, billingCycle, cancellationToken)
             .ConfigureAwait(false);
@@ -514,7 +598,7 @@ public sealed class SyncHostedSubscriptionCheckout(
                 "Payment does not belong to the current user.");
         }
 
-        if (expectedOrganizationId is Guid orgId && payment.OrganizationId?.Value != orgId)
+        if (!SubscriptionCheckoutAccess.OrganizationContextMatches(payment, expectedOrganizationId))
         {
             return ApplicationResult<SubscriptionPaymentTransactionDto>.Failure(
                 DomainErrorCodes.AuthorizationDenied,
@@ -607,7 +691,7 @@ public sealed class CancelHostedSubscriptionCheckout(
                 "Payment does not belong to the current user.");
         }
 
-        if (expectedOrganizationId is Guid orgId && payment.OrganizationId?.Value != orgId)
+        if (!SubscriptionCheckoutAccess.OrganizationContextMatches(payment, expectedOrganizationId))
         {
             return ApplicationResult<SubscriptionPaymentTransactionDto>.Failure(
                 DomainErrorCodes.AuthorizationDenied,

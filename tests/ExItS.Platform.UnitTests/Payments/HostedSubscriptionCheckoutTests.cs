@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Payments;
@@ -195,6 +196,181 @@ public sealed class HostedSubscriptionCheckoutTests
     }
 
     [Fact]
+    public void Checkout_requests_card_gcash_maya_and_qr_ph()
+    {
+        Assert.Equal(["card", "gcash", "paymaya", "qrph"], PayMongoCheckoutGateway.SubscriptionPaymentMethodTypes);
+        Assert.DoesNotContain("grab_pay", PayMongoCheckoutGateway.SubscriptionPaymentMethodTypes);
+    }
+
+    [Fact]
+    public async Task Personal_context_cannot_confirm_an_organization_checkout()
+    {
+        var gateway = new FakeGateway
+        {
+            SessionState = new HostedCheckoutProviderState("cs_test_1", true, false, false, 1499m, "PHP", "pay_1"),
+        };
+        var repo = new MemoryPayments();
+        var payment = Pending(OrgId);
+        payment.AttachHostedCheckout("cs_test_1", "https://checkout.paymongo.test/cs_test_1", Now);
+        await repo.AddAsync(payment);
+        var activator = new CountingActivator();
+        var sync = new SyncHostedSubscriptionCheckout(
+            repo,
+            gateway,
+            new ApplyTrustedHostedCheckoutPayment(repo, activator, new MemoryUnitOfWork(), new FixedClock(Now)),
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var result = await sync.ExecuteAsync(payment.Id.Value, UserId, expectedOrganizationId: null);
+
+        Assert.Equal(DomainErrorCodes.AuthorizationDenied, result.ErrorCode);
+        Assert.Equal(0, gateway.GetCount);
+        Assert.Equal(0, activator.Calls);
+        Assert.Equal(SubscriptionPaymentStatus.Processing, payment.Status);
+    }
+
+    [Fact]
+    public async Task Concurrent_personal_checkout_starts_create_one_session()
+    {
+        var gateway = new FakeGateway { CreateDelay = TimeSpan.FromMilliseconds(150) };
+        var repo = new MemoryPayments();
+        var start = new StartHostedSubscriptionCheckout(
+            repo,
+            new MemoryPlans(ActivePlan(monthly: 1499m)),
+            gateway,
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var results = await Task.WhenAll(
+            start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, null, "http://127.0.0.1:5177"),
+            start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, null, "http://127.0.0.1:5177"));
+
+        Assert.All(results, result => Assert.True(result.IsSuccess));
+        Assert.Equal(results[0].Value!.PaymentId, results[1].Value!.PaymentId);
+        Assert.Equal(results[0].Value!.CheckoutUrl, results[1].Value!.CheckoutUrl);
+        Assert.Equal(1, gateway.CreateCount);
+        Assert.Equal(1, gateway.MaxInFlight);
+    }
+
+    [Fact]
+    public async Task Concurrent_organization_checkout_starts_create_one_session()
+    {
+        var gateway = new FakeGateway { CreateDelay = TimeSpan.FromMilliseconds(150) };
+        var repo = new MemoryPayments();
+        var start = new StartHostedSubscriptionCheckout(
+            repo,
+            new MemoryPlans(ActivePlan(monthly: 1499m)),
+            gateway,
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var results = await Task.WhenAll(
+            start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, OrgId, "http://127.0.0.1:5177"),
+            start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, OrgId, "http://127.0.0.1:5177"));
+
+        Assert.All(results, result => Assert.True(result.IsSuccess));
+        Assert.Equal(results[0].Value!.PaymentId, results[1].Value!.PaymentId);
+        Assert.Equal(results[0].Value!.CheckoutUrl, results[1].Value!.CheckoutUrl);
+        Assert.Equal(OrgId.Value, results[0].Value!.OrganizationId);
+        Assert.Equal(1, gateway.CreateCount);
+        Assert.Equal(1, gateway.MaxInFlight);
+    }
+
+    [Fact]
+    public async Task Concurrent_starts_of_the_same_payment_create_one_session()
+    {
+        var gateway = new FakeGateway { CreateDelay = TimeSpan.FromMilliseconds(150) };
+        var repo = new MemoryPayments();
+        var payment = Pending(null);
+        await repo.AddAsync(payment);
+        var start = new StartHostedSubscriptionCheckout(
+            repo,
+            new MemoryPlans(),
+            gateway,
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var results = await Task.WhenAll(
+            start.ExecuteForPaymentAsync(payment.Id.Value, UserId, null, "http://127.0.0.1:5177"),
+            start.ExecuteForPaymentAsync(payment.Id.Value, UserId, null, "http://127.0.0.1:5177"));
+
+        Assert.All(results, result => Assert.True(result.IsSuccess));
+        Assert.Equal(payment.Id.Value, results[0].Value!.PaymentId);
+        Assert.Equal(results[0].Value!.CheckoutUrl, results[1].Value!.CheckoutUrl);
+        Assert.Equal(1, gateway.CreateCount);
+        Assert.Equal(1, gateway.MaxInFlight);
+    }
+
+    [Fact]
+    public async Task Another_subscriber_or_organization_does_not_reuse_the_checkout()
+    {
+        var gateway = new FakeGateway();
+        var repo = new MemoryPayments();
+        var plans = new MemoryPlans(ActivePlan(monthly: 1499m));
+        var start = new StartHostedSubscriptionCheckout(repo, plans, gateway, new MemoryUnitOfWork(), new FixedClock(Now));
+
+        var owner = await start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, null, "http://127.0.0.1:5177");
+        var otherUser = await start.ExecuteForPlanAsync(OtherUserId, "pro", BillingCycle.Monthly, null, "http://127.0.0.1:5177");
+        var denied = await start.ExecuteForPaymentAsync(owner.Value!.PaymentId, OtherUserId, null, "http://127.0.0.1:5177");
+
+        Assert.True(owner.IsSuccess);
+        Assert.True(otherUser.IsSuccess);
+        Assert.NotEqual(owner.Value!.PaymentId, otherUser.Value!.PaymentId);
+        Assert.NotEqual(owner.Value.CheckoutUrl, otherUser.Value.CheckoutUrl);
+        Assert.Equal(DomainErrorCodes.AuthorizationDenied, denied.ErrorCode);
+        Assert.Equal(2, gateway.CreateCount);
+
+        var org = await start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, OrgId, "http://127.0.0.1:5177");
+        var otherOrg = await start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, OtherOrgId, "http://127.0.0.1:5177");
+        var wrongOrg = await start.ExecuteForPaymentAsync(org.Value!.PaymentId, UserId, OtherOrgId.Value, "http://127.0.0.1:5177");
+
+        Assert.True(org.IsSuccess);
+        Assert.True(otherOrg.IsSuccess);
+        Assert.NotEqual(org.Value!.CheckoutUrl, otherOrg.Value!.CheckoutUrl);
+        Assert.Equal(DomainErrorCodes.AuthorizationDenied, wrongOrg.ErrorCode);
+        Assert.Equal(4, gateway.CreateCount);
+    }
+
+    [Fact]
+    public async Task Paid_cancelled_and_failed_payments_keep_their_terminal_behavior()
+    {
+        var gateway = new FakeGateway();
+        var repo = new MemoryPayments();
+        var start = new StartHostedSubscriptionCheckout(
+            repo,
+            new MemoryPlans(ActivePlan(monthly: 1499m)),
+            gateway,
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var paidStart = await start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, null, "http://127.0.0.1:5177");
+        var paid = (await repo.GetByIdAsync(SubscriptionPaymentTransactionId.From(paidStart.Value!.PaymentId)))!;
+        paid.MarkPaid(Now, Now, Now.AddMonths(1));
+        var paidAgain = await start.ExecuteForPaymentAsync(paid.Id.Value, UserId, null, "http://127.0.0.1:5177");
+        var afterPaid = await start.ExecuteForPlanAsync(UserId, "pro", BillingCycle.Monthly, null, "http://127.0.0.1:5177");
+
+        Assert.Equal(ApplicationErrorCodes.PaymentAlreadyConfirmed, paidAgain.ErrorCode);
+        Assert.True(afterPaid.IsSuccess);
+        Assert.NotEqual(paid.Id.Value, afterPaid.Value!.PaymentId);
+        Assert.Equal(2, gateway.CreateCount);
+
+        var cancelled = Pending(OrgId);
+        cancelled.AttachHostedCheckout("cs_cancelled", "https://checkout.paymongo.test/cs_cancelled", Now);
+        cancelled.CancelOpenCheckout(Now, "Customer cancelled");
+        await repo.AddAsync(cancelled);
+        var cancelledAgain = await start.ExecuteForPaymentAsync(cancelled.Id.Value, UserId, OrgId.Value, "http://127.0.0.1:5177");
+
+        var failed = Pending(OrgId);
+        failed.MarkFailed("card_declined", "Declined", Now);
+        await repo.AddAsync(failed);
+        var failedAgain = await start.ExecuteForPaymentAsync(failed.Id.Value, UserId, OrgId.Value, "http://127.0.0.1:5177");
+
+        Assert.Equal(ApplicationErrorCodes.PaymentInvalidTransition, cancelledAgain.ErrorCode);
+        Assert.Equal(ApplicationErrorCodes.PaymentInvalidTransition, failedAgain.ErrorCode);
+        Assert.Equal(2, gateway.CreateCount);
+    }
+
+    [Fact]
     public async Task Another_user_cannot_start_checkout()
     {
         var gateway = new FakeGateway();
@@ -264,7 +440,27 @@ public sealed class HostedSubscriptionCheckoutTests
 
     private sealed class MemoryUnitOfWork : IPlatformUnitOfWork
     {
+        private readonly ConcurrentDictionary<(Guid, Guid), SemaphoreSlim> _locks = new();
+
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public async Task ExecuteWithAdvisoryLockAsync(
+            Guid lockKeyA,
+            Guid lockKeyB,
+            Func<CancellationToken, Task> action,
+            CancellationToken cancellationToken = default)
+        {
+            var gate = _locks.GetOrAdd((lockKeyA, lockKeyB), _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await action(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }
     }
 
     private sealed class CountingActivator : IHostedCheckoutSubscriptionActivator
@@ -283,24 +479,57 @@ public sealed class HostedSubscriptionCheckoutTests
 
     private sealed class FakeGateway : ISubscriptionCheckoutGateway
     {
-        public int CreateCount { get; private set; }
+        private int _createCount;
+        private int _inFlight;
+        private int _maxInFlight;
+
+        public int CreateCount => _createCount;
+        public int MaxInFlight => _maxInFlight;
+        public int GetCount { get; private set; }
+        public TimeSpan CreateDelay { get; set; }
         public HostedCheckoutCreateRequest? LastRequest { get; private set; }
+        public HostedCheckoutProviderState SessionState { get; set; } =
+            new("cs_test_1", false, false, false, null, null, null);
         public bool IsConfigured => true;
 
-        public Task<HostedCheckoutSessionResult> CreateSessionAsync(
+        public async Task<HostedCheckoutSessionResult> CreateSessionAsync(
             HostedCheckoutCreateRequest request,
             CancellationToken cancellationToken = default)
         {
-            CreateCount++;
-            LastRequest = request;
-            return Task.FromResult(new HostedCheckoutSessionResult(
-                "cs_test_1",
-                "https://checkout.paymongo.test/cs_test_1",
-                IsTest: true));
+            var current = Interlocked.Increment(ref _inFlight);
+            int observed;
+            do
+            {
+                observed = _maxInFlight;
+            }
+            while (current > observed
+                && Interlocked.CompareExchange(ref _maxInFlight, current, observed) != observed);
+
+            try
+            {
+                if (CreateDelay > TimeSpan.Zero)
+                {
+                    await Task.Delay(CreateDelay, cancellationToken).ConfigureAwait(false);
+                }
+
+                var n = Interlocked.Increment(ref _createCount);
+                LastRequest = request;
+                return new HostedCheckoutSessionResult(
+                    $"cs_test_{n}",
+                    $"https://checkout.paymongo.test/cs_test_{n}",
+                    IsTest: true);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _inFlight);
+            }
         }
 
-        public Task<HostedCheckoutProviderState> GetSessionAsync(string sessionId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new HostedCheckoutProviderState(sessionId, false, false, false, null, null, null));
+        public Task<HostedCheckoutProviderState> GetSessionAsync(string sessionId, CancellationToken cancellationToken = default)
+        {
+            GetCount++;
+            return Task.FromResult(SessionState);
+        }
     }
 
     private sealed class MemoryPlans(params Plan[] plans) : IPlanRepository
@@ -354,7 +583,25 @@ public sealed class HostedSubscriptionCheckoutTests
 
         public Task AddAsync(SubscriptionPaymentTransaction payment, CancellationToken cancellationToken = default)
         {
-            _items.Add(payment);
+            lock (_items)
+            {
+                var duplicateOpen = payment.Status is SubscriptionPaymentStatus.Pending or SubscriptionPaymentStatus.Processing
+                    && _items.Any(item =>
+                        item.InitiatedByUserId == payment.InitiatedByUserId
+                        && item.OrganizationId == payment.OrganizationId
+                        && item.PlanKey == payment.PlanKey
+                        && item.BillingCycle == payment.BillingCycle
+                        && item.Status is SubscriptionPaymentStatus.Pending or SubscriptionPaymentStatus.Processing);
+                if (duplicateOpen)
+                {
+                    throw new PersistenceConflictException(
+                        ApplicationErrorCodes.ConcurrencyConflict,
+                        "An open subscription checkout already exists for this plan.");
+                }
+
+                _items.Add(payment);
+            }
+
             return Task.CompletedTask;
         }
 

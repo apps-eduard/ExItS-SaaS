@@ -5019,6 +5019,16 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ReferenceNumber")
                         .IsUnique();
 
+                    b.HasIndex("InitiatedByUserId", "PlanKey", "BillingCycle")
+                        .IsUnique()
+                        .HasDatabaseName("ux_subscription_payment_one_open_personal")
+                        .HasFilter("organization_id IS NULL AND status IN ('Pending', 'Processing')");
+
+                    b.HasIndex("InitiatedByUserId", "OrganizationId", "PlanKey", "BillingCycle")
+                        .IsUnique()
+                        .HasDatabaseName("ux_subscription_payment_one_open_organization")
+                        .HasFilter("organization_id IS NOT NULL AND status IN ('Pending', 'Processing')");
+
                     b.ToTable("subscription_payment_transactions", "platform");
                 });
 

@@ -28,6 +28,14 @@ public static class PersistenceExceptionMapper
         // Check payment-, subscription-, and organization-specific constraints first: their detail
         // text can also contain "product_code" / generic substrings that would otherwise be caught
         // by the broader catalog checks below.
+        if (detail.Contains("ux_subscription_payment_one_open_personal", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("ux_subscription_payment_one_open_organization", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.ConcurrencyConflict;
+            message = "An open subscription checkout already exists for this plan.";
+            return true;
+        }
+
         if (detail.Contains("ux_saas_payments_reference", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("saas_payments", StringComparison.OrdinalIgnoreCase))
         {

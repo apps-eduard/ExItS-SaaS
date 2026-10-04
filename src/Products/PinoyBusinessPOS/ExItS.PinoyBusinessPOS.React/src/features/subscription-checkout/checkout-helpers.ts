@@ -1,4 +1,5 @@
 import type { SubscriptionPaymentTransactionDto } from "@/api/platform/subscription-payment-client";
+import type { MessageKey } from "@/i18n/messages";
 
 export function formatPaymentMoney(amount: number, currency: string): string {
   return `${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currency}`;
@@ -47,7 +48,7 @@ export function paymentChannelPath(
   return `/subscription-checkout/${paymentId}/${channel}`;
 }
 
-export function checkoutTitleKey(payment: SubscriptionPaymentTransactionDto): string {
+export function checkoutTitleKey(payment: SubscriptionPaymentTransactionDto): MessageKey {
   const status = normalizePaymentStatus(payment.status);
   if (status === "paid") return "subscriptionCheckout.state.paidTitle";
   if (status === "processing") return "subscriptionCheckout.state.processingTitle";
@@ -58,7 +59,7 @@ export function checkoutTitleKey(payment: SubscriptionPaymentTransactionDto): st
   return "subscriptionCheckout.state.chooseMethodTitle";
 }
 
-export function summaryCardTitleKey(payment: SubscriptionPaymentTransactionDto): string {
+export function summaryCardTitleKey(payment: SubscriptionPaymentTransactionDto): MessageKey {
   return isPaidStatus(payment.status)
     ? "subscriptionCheckout.receiptTitle"
     : "subscriptionCheckout.paymentDetailsTitle";
