@@ -10,8 +10,10 @@ import {
   ListPlus,
   ListTodo,
   RefreshCw,
+  Share2,
   Store,
   UserPlus,
+  Users,
   Wallet,
   Zap,
 } from "lucide-react";
@@ -28,7 +30,7 @@ import {
 } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
-import { CountChip } from "@/components/exits/CountChip";
+import { CountBadge, CountChip } from "@/components/exits/CountChip";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -53,6 +55,12 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import { listCachedPersonalTodos } from "@/offline/personal-todo-cache";
+
+const personalSoftPrimaryButtonClass =
+  "border border-border bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))] text-[var(--exits-primary)] hover:border-[var(--exits-primary)] hover:bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))]";
+
+const personalSoftInfoButtonClass =
+  "border border-border bg-[color-mix(in_srgb,var(--exits-severity-info)_12%,var(--exits-surface))] text-[var(--exits-severity-info)] hover:border-[var(--exits-severity-info)] hover:bg-[color-mix(in_srgb,var(--exits-severity-info)_16%,var(--exits-surface))]";
 
 export function PersonalHomePage() {
   const { t } = useI18n();
@@ -374,36 +382,44 @@ export function PersonalHomePage() {
           </div>
         </div>
         <div
-          className="personal-home-meta flex flex-wrap items-center gap-2 border-t border-border pt-3"
+          className="personal-home-meta personal-home-meta--scroll flex flex-wrap items-center gap-2 border-t border-border pt-3"
           data-testid="personal-home-meta"
         >
-          <Link to="/personal/people" className="inline-flex no-underline">
-            <span data-testid="personal-stat-people">
-              <CountChip
-                label={t("personal.home.people")}
-                count={dashboard.contactCount}
-                tone="info"
-              />
-            </span>
-          </Link>
-          <Link to="/personal/utang" className="inline-flex no-underline">
-            <span data-testid="personal-stat-active">
-              <CountChip
-                label={t("personal.home.activeMine")}
-                count={dashboard.activeRelationshipCount}
-                tone="primary"
-              />
-            </span>
-          </Link>
-          <Link to="/personal/utang" className="inline-flex no-underline">
-            <span data-testid="personal-stat-active-shared">
-              <CountChip
-                label={t("personal.home.activeShared")}
-                count={dashboard.sharedWithMeActiveCount ?? 0}
-                tone="info"
-              />
-            </span>
-          </Link>
+          <Button asChild intent="success" appearance="solid" emphasis="soft" shape="auto">
+            <Link to="/personal/people" data-testid="personal-stat-people">
+              <Users className="size-4 shrink-0" aria-hidden="true" />
+              {t("personal.home.people")}
+              <CountBadge count={dashboard.contactCount} tone="primary" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            intent="primary"
+            appearance="solid"
+            emphasis="soft"
+            shape="auto"
+            className={personalSoftPrimaryButtonClass}
+          >
+            <Link to="/personal/utang" data-testid="personal-stat-active">
+              <HandCoins className="size-4 shrink-0" aria-hidden="true" />
+              {t("personal.home.activeMine")}
+              <CountBadge count={dashboard.activeRelationshipCount} tone="primary" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            intent="info"
+            appearance="solid"
+            emphasis="soft"
+            shape="auto"
+            className={personalSoftInfoButtonClass}
+          >
+            <Link to="/personal/utang" data-testid="personal-stat-active-shared">
+              <Share2 className="size-4 shrink-0" aria-hidden="true" />
+              {t("personal.home.activeShared")}
+              <CountBadge count={dashboard.sharedWithMeActiveCount ?? 0} tone="primary" />
+            </Link>
+          </Button>
         </div>
       </section>
 
@@ -462,25 +478,37 @@ export function PersonalHomePage() {
               </p>
             )}
             <div
-              className="personal-home-meta flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)] text-muted"
+              className="personal-home-meta flex flex-wrap items-center gap-2"
               data-testid="personal-stores-to-pay-meta"
             >
-              <Link
-                to="/personal/linked-merchants"
-                className="text-muted no-underline hover:underline"
+              <Button
+                asChild
+                intent="info"
+                appearance="solid"
+                emphasis="soft"
+                shape="auto"
+                className={personalSoftInfoButtonClass}
               >
-                <span data-testid="personal-stat-stores">
-                  {t("personal.home.stores")}: {storesToPayQuery.data.storeCount}
-                </span>
-              </Link>
-              <Link
-                to="/personal/linked-merchants"
-                className="text-muted no-underline hover:underline"
+                <Link to="/personal/linked-merchants" data-testid="personal-stat-stores">
+                  <Store className="size-4 shrink-0" aria-hidden="true" />
+                  {t("personal.home.stores")}
+                  <CountBadge count={storesToPayQuery.data.storeCount} tone="primary" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                intent="primary"
+                appearance="solid"
+                emphasis="soft"
+                shape="auto"
+                className={personalSoftPrimaryButtonClass}
               >
-                <span data-testid="personal-stat-stores-active">
-                  {t("personal.home.active")}: {storesToPayQuery.data.activeCount}
-                </span>
-              </Link>
+                <Link to="/personal/linked-merchants" data-testid="personal-stat-stores-active">
+                  <Wallet className="size-4 shrink-0" aria-hidden="true" />
+                  {t("personal.home.active")}
+                  <CountBadge count={storesToPayQuery.data.activeCount} tone="primary" />
+                </Link>
+              </Button>
             </div>
           </>
         ) : null}
@@ -606,33 +634,46 @@ export function PersonalHomePage() {
               </p>
             ) : null}
             <div
-              className="personal-todo-compact flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)]"
+              className="personal-todo-compact flex flex-wrap items-center gap-2"
               data-testid="personal-todo-counts"
               role="list"
             >
               <Link
                 to={todoAgendaTabHref("today")}
-                className="text-foreground no-underline"
+                className="no-underline"
                 data-testid="personal-todo-stat-today"
               >
-                {t("personal.todo.countToday")}{" "}
-                <span className="font-semibold tabular-nums">{counts.today}</span>
+                <CountChip
+                  label={t("personal.todo.countToday")}
+                  count={counts.today}
+                  tone="primary"
+                  shape="soft"
+                />
               </Link>
               <Link
                 to={todoAgendaTabHref("overdue")}
-                className="text-foreground no-underline"
+                className="no-underline"
                 data-testid="personal-todo-stat-overdue"
               >
-                {t("personal.todo.countOverdue")}{" "}
-                <span className="font-semibold tabular-nums">{counts.overdue}</span>
+                <CountChip
+                  label={t("personal.todo.countOverdue")}
+                  count={counts.overdue}
+                  tone="danger"
+                  shape="soft"
+                />
               </Link>
               <Link
                 to={todoAgendaTabHref("upcoming")}
-                className="text-foreground no-underline"
+                className="no-underline"
                 data-testid="personal-todo-stat-upcoming"
               >
-                {t("personal.todo.countUpcoming")}{" "}
-                <span className="font-semibold tabular-nums">{counts.upcoming}</span>
+                <CountChip
+                  label={t("personal.todo.countUpcoming")}
+                  count={counts.upcoming}
+                  tone="info"
+                  shape="soft"
+                  className="border-[color-mix(in_srgb,var(--exits-severity-info)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-severity-info)_12%,transparent)] text-[var(--exits-severity-info)]"
+                />
               </Link>
             </div>
             {counts.open === 0 && counts.completed === 0 ? (

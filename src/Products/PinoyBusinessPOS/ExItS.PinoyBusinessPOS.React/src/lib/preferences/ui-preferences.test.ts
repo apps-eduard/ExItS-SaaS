@@ -22,6 +22,7 @@ describe("ui preferences", () => {
       controlShape: "standard",
       motion: "system",
       navigationMode: "standard",
+      tabStyle: "tabs",
     });
     expect(parseUiPreferences(null)).toEqual(defaultUiPreferences);
   });
@@ -47,6 +48,7 @@ describe("ui preferences", () => {
       controlShape: "standard",
       motion: "system",
       navigationMode: "standard",
+      tabStyle: "tabs",
     });
     expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ar" }))).toEqual(
       defaultUiPreferences,
@@ -62,6 +64,7 @@ describe("ui preferences", () => {
       controlShape: "standard",
       motion: "system",
       navigationMode: "standard",
+      tabStyle: "tabs",
     });
   });
 

@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { ExitsTabs } from "@/components/exits/ExitsTabs";
+import { usePreferences } from "@/hooks/usePreferences";
 
 export type UnderlineTabItem = {
   key: string;
@@ -33,6 +35,30 @@ export function UnderlineTabBar({
   testId,
   className,
 }: UnderlineTabBarProps) {
+  const { preferences } = usePreferences();
+
+  if (preferences.tabStyle === "underline") {
+    return (
+      <ExitsTabs
+        variant="underline"
+        scrollable
+        ariaLabel={ariaLabel}
+        testId={testId}
+        className={className}
+        value={activeKey}
+        onValueChange={onChange}
+        items={items.map((item) => ({
+          key: item.key,
+          label: item.label,
+          icon: item.icon,
+          count: item.count ?? undefined,
+          disabled: item.disabled,
+          testId: item.testId,
+        }))}
+      />
+    );
+  }
+
   return (
     <ExitsChipBar
       variant="filter"

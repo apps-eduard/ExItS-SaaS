@@ -7,6 +7,7 @@ import {
   categoriesAvailableForPricingOverride,
   filterCategoryPricingOverrides,
   formatCategoryPricingDiscountLabel,
+  normalizeDiscountPercentTyping,
 } from "@/features/connected-commerce/category-pricing-overrides";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { PreferencesProvider } from "@/hooks/usePreferences";
@@ -52,6 +53,9 @@ describe("category-pricing-overrides helpers", () => {
   it("formats discount labels and filters by search", () => {
     expect(formatCategoryPricingDiscountLabel({ discountPercent: 12.5 })).toBe("12.5%");
     expect(formatCategoryPricingDiscountLabel({ discountPercent: 0 })).toBe("0%");
+    expect(normalizeDiscountPercentTyping("")).toBe("");
+    expect(normalizeDiscountPercentTyping("0")).toBe("0");
+    expect(normalizeDiscountPercentTyping("12.5")).toBe("12.5");
 
     const nameById = new Map(categories.map((c) => [c.categoryId, c.name]));
     const filtered = filterCategoryPricingOverrides(sampleRules, {
@@ -122,6 +126,16 @@ describe("CategoryPricingOverridesPanel", () => {
       "Baked Goods",
     );
     expect(screen.getByTestId("category-pricing-override-discount")).toHaveValue(12.5);
+  });
+
+  it("lets a zero discount be cleared with backspace", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByTestId(`category-pricing-override-edit-${CAT_C}`));
+    const input = screen.getByTestId("category-pricing-override-discount");
+    expect(input).toHaveValue(0);
+    await user.clear(input);
+    expect(input).toHaveValue(null);
   });
 
   it("remove override confirms fallback to organization default", async () => {

@@ -55,6 +55,8 @@ Intent = meaning. Appearance = treatment. Shape = geometry.
 Do **not** treat Outline / Ghost / Elevated / Gradient as semantic intents.  
 Prefer `shape="auto"` so global Control Shape applies.
 
+Severity color (Primary through Contrast) comes from `pos-react-severity-palette.mdc`. Info is `--exits-severity-info` (sky blue). `--exits-info` is teal and reads as light green — do not use it for severity Info.
+
 ### Action hierarchy
 
 Prefer **one Primary** per action group (hierarchy, not verb):

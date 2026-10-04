@@ -150,19 +150,22 @@ public sealed class SuggestBuyerProductMatches
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly ICatalogProductRepository _products;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
 
     public SuggestBuyerProductMatches(
         IConnectedSupplierRelationshipRepository relationships,
         ISupplierProductExposureRepository exposures,
         IConnectedBuyerProductShareRepository shares,
         ICatalogProductRepository products,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = relationships;
         _exposures = exposures;
         _shares = shares;
         _products = products;
         _access = access;
+        _commerceSettings = commerceSettings;
     }
 
     public async Task<ApplicationResult<SuggestBuyerProductMatchesResultDto>> ExecuteAsync(
@@ -203,14 +206,22 @@ public sealed class SuggestBuyerProductMatches
         }
 
         var share = await _shares.FindAsync(relationship.Id, exposure.ProductId, ct).ConfigureAwait(false);
+        var supplierProduct = await _products
+            .GetByIdAsync(relationship.SupplierOrganizationId, exposure.ProductId, ct)
+            .ConfigureAwait(false);
+        var commerceSettings = await ConnectedCommerceSettingsLookup
+            .GetOrDefaultAsync(_commerceSettings, relationship.SupplierOrganizationId, ct)
+            .ConfigureAwait(false);
         if (!ConnectedPoPricing.TryResolveEffectivePrice(
                 exposure,
                 share,
                 relationship.CatalogSharingMode,
-                relationship.CustomerDiscountPercent,
-                sellingPrice: null,
+                commerceSettings,
+                relationship,
+                supplierProduct?.CategoryId?.Value,
                 out var poPrice,
-                out _))
+                out _,
+                supplierProduct is { SellingPrice: > 0m } ? supplierProduct.SellingPrice : null))
         {
             return ConnectedSupplierUseCaseGuard.Failure<SuggestBuyerProductMatchesResultDto>(
                 ConnectedSupplierErrorCodes.ExposureNotFound, "This product is not shared with your business.");
@@ -283,6 +294,7 @@ public sealed class CreateBuyerProductAndLink
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IClock _clock;
     private readonly TimeProvider _time;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
 
     public CreateBuyerProductAndLink(
         IConnectedSupplierRelationshipRepository relationships,
@@ -298,7 +310,8 @@ public sealed class CreateBuyerProductAndLink
         IPosCommercialAccessAccessor access,
         IClock clock,
         TimeProvider? time = null,
-        IPurchaseOrderRepository? purchaseOrders = null)
+        IPurchaseOrderRepository? purchaseOrders = null,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = relationships;
         _exposures = exposures;
@@ -314,6 +327,7 @@ public sealed class CreateBuyerProductAndLink
         _access = access;
         _clock = clock;
         _time = time ?? TimeProvider.System;
+        _commerceSettings = commerceSettings;
     }
 
     public async Task<ApplicationResult<CreateBuyerProductAndLinkResultDto>> ExecuteAsync(
@@ -388,14 +402,22 @@ public sealed class CreateBuyerProductAndLink
         }
 
         var share = await _shares.FindAsync(relationship.Id, exposure.ProductId, ct).ConfigureAwait(false);
+        var supplierProduct = await _products
+            .GetByIdAsync(relationship.SupplierOrganizationId, exposure.ProductId, ct)
+            .ConfigureAwait(false);
+        var commerceSettings = await ConnectedCommerceSettingsLookup
+            .GetOrDefaultAsync(_commerceSettings, relationship.SupplierOrganizationId, ct)
+            .ConfigureAwait(false);
         if (!ConnectedPoPricing.TryResolveEffectivePrice(
                 exposure,
                 share,
                 relationship.CatalogSharingMode,
-                relationship.CustomerDiscountPercent,
-                sellingPrice: null,
+                commerceSettings,
+                relationship,
+                supplierProduct?.CategoryId?.Value,
                 out var effectivePrice,
-                out _))
+                out _,
+                supplierProduct is { SellingPrice: > 0m } ? supplierProduct.SellingPrice : null))
         {
             return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(
                 ConnectedSupplierErrorCodes.ExposureNotFound, "This product is not shared with your business.");

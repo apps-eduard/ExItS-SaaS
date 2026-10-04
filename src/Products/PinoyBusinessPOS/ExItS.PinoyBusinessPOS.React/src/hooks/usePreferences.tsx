@@ -9,6 +9,7 @@ import {
   type MotionPreference,
   type NavigationModePreference,
   type PrimaryColorPreference,
+  type TabStylePreference,
   type ThemePreference,
   type UiPreferences,
 } from "@/lib/preferences/ui-preferences";
@@ -22,6 +23,7 @@ type PreferencesContextValue = {
   setControlShape: (controlShape: ControlShapePreference) => void;
   setMotion: (motion: MotionPreference) => void;
   setNavigationMode: (navigationMode: NavigationModePreference) => void;
+  setTabStyle: (tabStyle: TabStylePreference) => void;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -96,6 +98,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setTabStyle = useCallback((tabStyle: TabStylePreference) => {
+    setPreferences((current) => {
+      const next = { ...current, tabStyle };
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       preferences,
@@ -106,6 +116,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setControlShape,
       setMotion,
       setNavigationMode,
+      setTabStyle,
     }),
     [
       preferences,
@@ -116,6 +127,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setControlShape,
       setMotion,
       setNavigationMode,
+      setTabStyle,
     ],
   );
 

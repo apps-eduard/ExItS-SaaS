@@ -204,7 +204,7 @@ export function PersonCreateForm({
     >
       {!embedded ? (
         <PageHeader title={t("people.newTitle")} description={formLede} />
-      ) : (
+      ) : createKind === null ? null : (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{formLede}</p>
       )}
 
@@ -234,9 +234,11 @@ export function PersonCreateForm({
           data-testid="person-create-kind"
         >
           <h2 className="catalog-form-section__title">{t("people.createKindTitle")}</h2>
-          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-            {t("people.createKindLede")}
-          </p>
+          {embedded ? null : (
+            <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+              {t("people.createKindLede")}
+            </p>
+          )}
           <div
             className="customer-create-kind__grid"
             role="group"

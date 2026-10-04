@@ -2,6 +2,7 @@ import { DensityControl } from "@/components/exits/DensityControl";
 import { ThemeControl } from "@/components/exits/ThemeControl";
 import { PrimaryColorControl } from "@/components/exits/PrimaryColorControl";
 import { ControlShapeControl } from "@/components/exits/ControlShapeControl";
+import { TabStyleControl } from "@/components/exits/TabStyleControl";
 import { MotionControl } from "@/components/exits/MotionControl";
 import { useI18n } from "@/i18n/I18nProvider";
 import { PreferencesSectionPanel } from "@/features/preferences/PreferencesSectionPanel";
@@ -24,6 +25,7 @@ export function AppearancePreferences() {
         <ThemeControl />
         <PrimaryColorControl />
         <ControlShapeControl />
+        <TabStyleControl />
         <DensityControl />
         <MotionControl />
       </div>

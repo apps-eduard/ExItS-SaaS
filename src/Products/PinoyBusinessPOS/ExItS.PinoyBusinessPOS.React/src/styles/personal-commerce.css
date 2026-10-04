@@ -1059,6 +1059,10 @@
   color: var(--exits-text-muted);
 }
 
+.pc-credit-kpi__icon {
+  color: var(--exits-primary);
+}
+
 .pc-credit-facts {
   display: flex;
   flex-direction: column;

@@ -1053,18 +1053,28 @@ public static class ConnectedPoPricing
         ConnectedSupplierRelationship relationship,
         Guid? supplierCategoryId,
         out decimal price,
-        out ConnectedCustomerPriceSource source)
+        out ConnectedCustomerPriceSource source,
+        decimal? sellingPrice = null)
     {
         var customerCategoryDiscount = relationship.CustomerCategoryDiscountOverrides
             .FirstOrDefault(x => x.CategoryId == supplierCategoryId)?.DiscountPercent;
-        var customerDefaultDiscount = relationship.CustomerDiscountPercent ?? organizationSettings.DefaultB2bDiscountPercent;
+        // Null customer discount inherits organization category, then organization default.
+        // Do not copy the organization default into the customer slot — that skips category rules.
+        decimal? customerDefaultDiscount = relationship.CustomerDiscountPercent;
         var organizationCategoryDiscount = organizationSettings.FindCategoryDiscountPercent(supplierCategoryId);
         var policy = new ConnectedB2bPricingPolicy(
             organizationSettings.DefaultB2bDiscountPercent,
             organizationCategoryDiscount,
             customerDefaultDiscount,
             customerCategoryDiscount);
-        return ConnectedB2bPricingResolver.TryResolve(exposure, share, mode, policy, out price, out source);
+        return ConnectedB2bPricingResolver.TryResolve(
+            exposure,
+            share,
+            mode,
+            policy,
+            out price,
+            out source,
+            sellingPrice);
     }
 
     public static decimal RoundMoney(decimal value) =>
