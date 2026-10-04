@@ -1083,6 +1083,7 @@ export function PersonalRelationshipDetailPage() {
   >("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [settleOpen, setSettleOpen] = useState(false);
+  const [balanceOpen, setBalanceOpen] = useState(true);
   const [settleError, setSettleError] = useState<string | null>(null);
   const pendingSettlementEntryIdRef = useRef<string | null>(null);
 
@@ -1494,8 +1495,38 @@ export function PersonalRelationshipDetailPage() {
         backTestId="page-header-back-utang-detail"
       />
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
-      <div className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3">
-        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{perspectiveLabel}</p>
+      <div
+        className="flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
+        data-testid="utang-balance-card"
+      >
+        <h2 className="m-0">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 border-0 bg-transparent p-0 text-left text-inherit"
+            aria-expanded={balanceOpen}
+            aria-controls="utang-balance-panel"
+            data-testid="utang-balance-toggle"
+            onClick={() => setBalanceOpen((open) => !open)}
+          >
+            {detail.perspective === "Borrowed" ? (
+              <Wallet className="size-5 shrink-0 text-primary" aria-hidden="true" />
+            ) : (
+              <HandCoins className="size-5 shrink-0 text-primary" aria-hidden="true" />
+            )}
+            <span className="min-w-0 flex-1 text-[length:var(--exits-text-base)] font-semibold">
+              {perspectiveLabel}
+            </span>
+            <ChevronDown
+              className={cn(
+                "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+                balanceOpen && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
+          </button>
+        </h2>
+        {balanceOpen ? (
+        <div id="utang-balance-panel" className="flex min-w-0 flex-col gap-2">
         <MoneyDisplay amount={currentBalance} className="text-[length:var(--exits-text-xl)]" />
         <p
           className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
@@ -1519,6 +1550,75 @@ export function PersonalRelationshipDetailPage() {
             {t("personal.utang.ownerManagesRecord").replace("{name}", ownerDisplayName)}
           </p>
         ) : null}
+
+        {canMutateFinances &&
+        relationshipActive &&
+        currentBalance > 0 &&
+        unresolvedPendingCount === 0 ? (
+          <div className="flex min-w-0 flex-col gap-2">
+            {settleBlockedOffline ? (
+              <OfflineNotice
+                message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangSettle))}
+              />
+            ) : null}
+            <Button
+              type="button"
+              className="w-auto self-start"
+              disabled={settleBlockedOffline || settleMutation.isPending}
+              data-testid="utang-settle"
+              onClick={() => {
+                setSettleError(null);
+                setSettleOpen(true);
+              }}
+            >
+              <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+              {t("personal.utang.settle")}
+            </Button>
+            {settleOpen ? (
+              <div
+                className="flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
+                data-testid="utang-settle-panel"
+              >
+                <h2 className="m-0 text-[length:var(--exits-text-base)] font-medium">
+                  {t("personal.utang.settleTitle")}
+                </h2>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("personal.utang.settleAmount")}: <MoneyDisplay amount={currentBalance} />
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("personal.utang.settleAfter")}: <MoneyDisplay amount={0} />
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {shared
+                    ? t("personal.utang.settleSharedHint")
+                    : t("personal.utang.settlePrivateHint")}
+                </p>
+                <div className="flex min-w-0 flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    className="w-auto self-start"
+                    disabled={settleBlockedOffline || settleMutation.isPending}
+                    data-testid="utang-settle-confirm"
+                    onClick={() => settleMutation.mutate()}
+                  >
+                    <Check className="size-4 shrink-0" aria-hidden="true" />
+                    {t("personal.utang.settleConfirm")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={settleMutation.isPending}
+                    onClick={() => setSettleOpen(false)}
+                  >
+                    {t("personal.utang.cancelEdit")}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        </div>
+        ) : null}
       </div>
 
       {awaitingSettlement ? (
@@ -1538,73 +1638,6 @@ export function PersonalRelationshipDetailPage() {
         >
           {settleError}
         </p>
-      ) : null}
-
-      {canMutateFinances &&
-      relationshipActive &&
-      currentBalance > 0 &&
-      unresolvedPendingCount === 0 ? (
-        <div className="flex min-w-0 flex-col gap-2">
-          {settleBlockedOffline ? (
-            <OfflineNotice
-              message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangSettle))}
-            />
-          ) : null}
-          <Button
-            type="button"
-            className="w-auto self-start"
-            disabled={settleBlockedOffline || settleMutation.isPending}
-            data-testid="utang-settle"
-            onClick={() => {
-              setSettleError(null);
-              setSettleOpen(true);
-            }}
-          >
-            <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
-            {t("personal.utang.settle")}
-          </Button>
-          {settleOpen ? (
-            <div
-              className="flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
-              data-testid="utang-settle-panel"
-            >
-              <h2 className="m-0 text-[length:var(--exits-text-base)] font-medium">
-                {t("personal.utang.settleTitle")}
-              </h2>
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("personal.utang.settleAmount")}: <MoneyDisplay amount={currentBalance} />
-              </p>
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("personal.utang.settleAfter")}: <MoneyDisplay amount={0} />
-              </p>
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {shared
-                  ? t("personal.utang.settleSharedHint")
-                  : t("personal.utang.settlePrivateHint")}
-              </p>
-              <div className="flex min-w-0 flex-wrap gap-2">
-                <Button
-                  type="button"
-                  className="w-auto self-start"
-                  disabled={settleBlockedOffline || settleMutation.isPending}
-                  data-testid="utang-settle-confirm"
-                  onClick={() => settleMutation.mutate()}
-                >
-                  <Check className="size-4 shrink-0" aria-hidden="true" />
-                  {t("personal.utang.settleConfirm")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={settleMutation.isPending}
-                  onClick={() => setSettleOpen(false)}
-                >
-                  {t("personal.utang.cancelEdit")}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </div>
       ) : null}
 
       {canMutateFinances &&
@@ -2083,7 +2116,7 @@ export function PersonalRelationshipDetailPage() {
         )}
       </section>
 
-      <Button asChild variant="ghost" className="w-full sm:w-fit">
+      <Button asChild intent="primary" appearance="ghost" className="utang-back-link w-full font-bold sm:w-fit">
         <Link to="/personal/utang">
           <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
           {t("personal.utang.back")}

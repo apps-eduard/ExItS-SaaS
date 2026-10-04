@@ -617,7 +617,7 @@ export function RelationshipInviteReminderPanel({
   }
 
   return (
-    <section className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
+    <section className="catalog-form-section exits-animate-panel personal-section utang-invite-card flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
       <button
         type="button"
         className="flex w-full min-w-0 items-center justify-between gap-2 border-0 bg-transparent p-0 text-left text-inherit"

@@ -23766,7 +23766,8 @@ a.exits-chip--primary:hover {
 }
 
 .utang-record-card,
-.people-add-card.exits-card {
+.people-add-card.exits-card,
+.utang-invite-card {
   border-color: var(--exits-primary);
   background: var(--exits-surface-elevated);
   box-shadow: var(--exits-shadow-md);
@@ -23781,6 +23782,11 @@ a.exits-chip--primary:hover {
 
 .utang-record-card [data-testid="utang-rel-add-person"] {
   color: var(--exits-primary);
+}
+
+.utang-back-link {
+  color: var(--exits-primary);
+  font-weight: 700;
 }
 
 .utang-record-fields {
