@@ -80,6 +80,62 @@ public sealed class ConnectedB2bPricingResolverTests
     }
 
     [Fact]
+    public void Organization_category_discount_applies_when_customer_discount_is_unset()
+    {
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var settings = OrganizationConnectedCommerceSettings.CreateDefault(supplier, Now);
+        var categoryId = Guid.NewGuid();
+        settings.ConfigurePricing(
+            0m,
+            [new OrganizationConnectedCommerceCategoryRule(categoryId, 25m)],
+            Now);
+        var relationship = ConnectedSupplierRelationship.Request(
+            PosOrganizationId.From(Guid.NewGuid()),
+            supplier,
+            Now);
+        relationship.Approve(Now);
+        var exposure = CreateExposure(100m);
+
+        Assert.True(ConnectedPoPricing.TryResolveEffectivePrice(
+            exposure,
+            share: null,
+            CatalogSharingMode.AllEligible,
+            settings,
+            relationship,
+            categoryId,
+            out var price,
+            out var source));
+        Assert.Equal(75m, price);
+        Assert.Equal(ConnectedCustomerPriceSource.OrganizationCategory, source);
+    }
+
+    [Fact]
+    public void Organization_default_discount_applies_when_customer_and_category_are_unset()
+    {
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var settings = OrganizationConnectedCommerceSettings.CreateDefault(supplier, Now);
+        settings.ConfigurePricing(10m, [], Now);
+        var relationship = ConnectedSupplierRelationship.Request(
+            PosOrganizationId.From(Guid.NewGuid()),
+            supplier,
+            Now);
+        relationship.Approve(Now);
+        var exposure = CreateExposure(100m);
+
+        Assert.True(ConnectedPoPricing.TryResolveEffectivePrice(
+            exposure,
+            share: null,
+            CatalogSharingMode.AllEligible,
+            settings,
+            relationship,
+            supplierCategoryId: null,
+            out var price,
+            out var source));
+        Assert.Equal(90m, price);
+        Assert.Equal(ConnectedCustomerPriceSource.OrganizationDefault, source);
+    }
+
+    [Fact]
     public void Payment_timing_effective_policy_is_intersection_when_customer_override_enabled()
     {
         var supplier = PosOrganizationId.From(Guid.NewGuid());

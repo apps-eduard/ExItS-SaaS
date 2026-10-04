@@ -505,3 +505,20 @@ public sealed class UpdateBusinessCustomerPricingOverrides(
                     .ToList()));
     }
 }
+
+public static class ConnectedCommerceSettingsLookup
+{
+    public static async Task<OrganizationConnectedCommerceSettings> GetOrDefaultAsync(
+        IOrganizationConnectedCommerceSettingsRepository? repository,
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        if (repository is null)
+        {
+            return OrganizationConnectedCommerceSettings.CreateDefault(organizationId, DateTimeOffset.UtcNow);
+        }
+
+        return await repository.GetAsync(organizationId, cancellationToken).ConfigureAwait(false)
+            ?? OrganizationConnectedCommerceSettings.CreateDefault(organizationId, DateTimeOffset.UtcNow);
+    }
+}

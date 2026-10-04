@@ -354,7 +354,8 @@ public static class ConnectedSupplierMapper
         ConnectedBuyerProductShare? share,
         SupplierProductExposure? exposure,
         string? categoryName,
-        bool isInventoryTracked = false) =>
+        bool isInventoryTracked = false,
+        OrganizationConnectedCommerceSettings? commerceSettings = null) =>
         MapForManagement(
             relationship.CatalogSharingMode,
             relationship.CustomerDiscountPercent,
@@ -368,7 +369,9 @@ public static class ConnectedSupplierMapper
             shareId: share?.Id.Value ?? Guid.Empty,
             createdAtUtc: share?.CreatedAtUtc ?? product.CreatedAtUtc,
             updatedAtUtc: share?.UpdatedAtUtc ?? product.UpdatedAtUtc,
-            isInventoryTracked: isInventoryTracked);
+            isInventoryTracked: isInventoryTracked,
+            commerceSettings: commerceSettings,
+            pricingRelationship: relationship);
 
     private static ConnectedBuyerProductShareDto MapForManagement(
         CatalogSharingMode mode,
@@ -383,7 +386,9 @@ public static class ConnectedSupplierMapper
         Guid shareId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
-        bool isInventoryTracked = false)
+        bool isInventoryTracked = false,
+        OrganizationConnectedCommerceSettings? commerceSettings = null,
+        ConnectedSupplierRelationship? pricingRelationship = null)
     {
         var isEligible = product is not null
             && Catalog.ConnectedBuyerCatalogProjection.IsEligible(product, isInventoryTracked);
@@ -411,6 +416,22 @@ public static class ConnectedSupplierMapper
         if (isEffectivelyShared)
         {
             if (exposure is not null
+                && commerceSettings is not null
+                && pricingRelationship is not null
+                && ConnectedPoPricing.TryResolveEffectivePrice(
+                    exposure,
+                    share,
+                    mode,
+                    commerceSettings,
+                    pricingRelationship,
+                    product?.CategoryId?.Value,
+                    out var fromPolicy,
+                    out _,
+                    selling is > 0m ? selling : null))
+            {
+                effective = fromPolicy;
+            }
+            else if (exposure is not null
                 && ConnectedPoPricing.TryResolveEffectivePrice(
                     exposure,
                     share,
@@ -1747,15 +1768,18 @@ public sealed class ListBuyerProductShares
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
 
     public ListBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = relationships;
         _shares = shares;
         _access = access;
+        _commerceSettings = commerceSettings;
     }
 
     public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
@@ -1782,6 +1806,9 @@ public sealed class ListBuyerProductShares
                 relationship.CatalogSharingMode)
             .ConfigureAwait(false);
 
+        var commerceSettings = await ConnectedCommerceSettingsLookup
+            .GetOrDefaultAsync(_commerceSettings, supplier, ct)
+            .ConfigureAwait(false);
         var result = new List<ConnectedBuyerProductShareDto>(page.Rows.Count);
         foreach (var row in page.Rows)
         {
@@ -1791,7 +1818,8 @@ public sealed class ListBuyerProductShares
                 row.Share,
                 row.Exposure,
                 row.CategoryName,
-                isInventoryTracked: row.IsInventoryTracked));
+                isInventoryTracked: row.IsInventoryTracked,
+                commerceSettings: commerceSettings));
         }
 
         return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
@@ -1814,6 +1842,7 @@ public sealed class SetBuyerProductShares
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
     public SetBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
         ISupplierProductExposureRepository exposures,
@@ -1822,7 +1851,8 @@ public sealed class SetBuyerProductShares
         Inventory.IInventoryRepository inventory,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = relationships;
         _exposures = exposures;
@@ -1832,6 +1862,7 @@ public sealed class SetBuyerProductShares
         _uow = uow;
         _access = access;
         _clock = clock ?? TimeProvider.System;
+        _commerceSettings = commerceSettings;
     }
 
     public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
@@ -1856,6 +1887,9 @@ public sealed class SetBuyerProductShares
         }
 
         var now = _clock.GetUtcNow();
+        var commerceSettings = await ConnectedCommerceSettingsLookup
+            .GetOrDefaultAsync(_commerceSettings, supplier, ct)
+            .ConfigureAwait(false);
         var result = new List<ConnectedBuyerProductShareDto>();
         foreach (var item in products.GroupBy(x => x.SupplierProductId).Select(x => x.Last()))
         {
@@ -2004,7 +2038,8 @@ public sealed class SetBuyerProductShares
                 share,
                 exposure,
                 categoryName: null,
-                isInventoryTracked: true));
+                isInventoryTracked: true,
+                commerceSettings: commerceSettings));
         }
 
         await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
@@ -2053,6 +2088,7 @@ public sealed class SearchExposedCatalog
     private readonly ICatalogProductRepository? _products;
     private readonly Inventory.IInventoryRepository? _inventory;
     private readonly IPosUnitOfWork? _uow;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
 
     public SearchExposedCatalog(
         IConnectedSupplierRelationshipRepository r,
@@ -2061,7 +2097,8 @@ public sealed class SearchExposedCatalog
         IConnectedBuyerProductShareRepository shares,
         ICatalogProductRepository? products = null,
         Inventory.IInventoryRepository? inventory = null,
-        IPosUnitOfWork? uow = null)
+        IPosUnitOfWork? uow = null,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = r;
         _exposures = e;
@@ -2070,6 +2107,7 @@ public sealed class SearchExposedCatalog
         _products = products;
         _inventory = inventory;
         _uow = uow;
+        _commerceSettings = commerceSettings;
     }
 
     public async Task<ApplicationResult<PagedResult<SupplierProductExposureDto>>> ExecuteAsync(
@@ -2124,17 +2162,33 @@ public sealed class SearchExposedCatalog
         var (items, shares, total) = await _shares.SearchSharedCatalogAsync(
             r.Id, r.SupplierOrganizationId, query, category, (p - 1) * size, size, ct, r.CatalogSharingMode);
         var sharesByProduct = shares.ToDictionary(x => x.SupplierProductId.Value);
+        var commerceSettings = _commerceSettings is null
+            ? OrganizationConnectedCommerceSettings.CreateDefault(r.SupplierOrganizationId, DateTimeOffset.UtcNow)
+            : await _commerceSettings.GetAsync(r.SupplierOrganizationId, ct).ConfigureAwait(false)
+              ?? OrganizationConnectedCommerceSettings.CreateDefault(r.SupplierOrganizationId, DateTimeOffset.UtcNow);
+        var productsById = new Dictionary<Guid, CatalogProduct>();
+        if (_products is not null && items.Count > 0)
+        {
+            var products = await _products
+                .ListByIdsAsync(r.SupplierOrganizationId, items.Select(x => x.ProductId).Distinct().ToList(), ct)
+                .ConfigureAwait(false);
+            productsById = products.ToDictionary(product => product.Id.Value);
+        }
+
         return ApplicationResult<PagedResult<SupplierProductExposureDto>>.Success(new(items.Select(x =>
         {
             sharesByProduct.TryGetValue(x.ProductId.Value, out var share);
+            productsById.TryGetValue(x.ProductId.Value, out var product);
             var resolved = ConnectedPoPricing.TryResolveEffectivePrice(
                 x,
                 share,
                 r.CatalogSharingMode,
-                r.CustomerDiscountPercent,
-                sellingPrice: null,
+                commerceSettings,
+                r,
+                product?.CategoryId?.Value,
                 out var price,
-                out _);
+                out _,
+                product is { SellingPrice: > 0m } ? product.SellingPrice : null);
             return ConnectedSupplierMapper.Map(x, resolved ? price : x.SupplierOrderPrice);
         }).ToList(), total, p, size));
     }
@@ -2148,10 +2202,12 @@ public sealed class LinkProduct
     private readonly ICatalogProductUnitRepository _units;
     private readonly IPurchaseOrderRepository? _purchaseOrders;
     private readonly IPosUnitOfWork _uow;private readonly IPosCommercialAccessAccessor _access;private readonly TimeProvider _clock;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
     public LinkProduct(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IBuyerSupplierProductLinkRepository l,
         ICatalogProductRepository p,ICatalogProductUnitRepository units,IPosUnitOfWork u,IPosCommercialAccessAccessor a,
-        IConnectedBuyerProductShareRepository shares,TimeProvider? c=null,IPurchaseOrderRepository? purchaseOrders=null)
-    {_relationships=r;_exposures=e;_links=l;_products=p;_units=units;_uow=u;_access=a;_shares=shares;_clock=c??TimeProvider.System;_purchaseOrders=purchaseOrders;}
+        IConnectedBuyerProductShareRepository shares,TimeProvider? c=null,IPurchaseOrderRepository? purchaseOrders=null,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings=null)
+    {_relationships=r;_exposures=e;_links=l;_products=p;_units=units;_uow=u;_access=a;_shares=shares;_clock=c??TimeProvider.System;_purchaseOrders=purchaseOrders;_commerceSettings=commerceSettings;}
     public async Task<ApplicationResult<BuyerSupplierProductLinkDto>> ExecuteAsync(Guid orgId,Guid relationshipId,LinkProductRequest request,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManagePurchasing);
      if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(gate.ErrorCode!,gate.ErrorMessage!);
@@ -2164,7 +2220,9 @@ public sealed class LinkProduct
      if(exposure is null||exposure.SupplierOrganizationId!=r.SupplierOrganizationId||!exposure.IsExposed||!exposure.IsOrderable)
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"Exposure was not found.");
      var share=await _shares.FindAsync(r.Id,exposure.ProductId,ct);
-     if(!ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,r.CatalogSharingMode,r.CustomerDiscountPercent,null,out var effectivePrice,out _))
+     var supplierProduct=await _products.GetByIdAsync(r.SupplierOrganizationId,exposure.ProductId,ct);
+     var commerceSettings=await ConnectedCommerceSettingsLookup.GetOrDefaultAsync(_commerceSettings,r.SupplierOrganizationId,ct);
+     if(!ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,r.CatalogSharingMode,commerceSettings,r,supplierProduct?.CategoryId?.Value,out var effectivePrice,out _,supplierProduct is { SellingPrice: > 0m } ? supplierProduct.SellingPrice : null))
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"This product is not shared with your business.");
      var existingBySupplier=await _links.FindBySupplierProductAsync(r.Id,exposure.ProductId,ct);
      if(existingBySupplier is not null)
@@ -3858,15 +3916,19 @@ public sealed class RevalidateConnectedPoDraft
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly ISupplierProductExposureRepository _exposures;private readonly IPosCommercialAccessAccessor _access;
     private readonly IConnectedBuyerProductShareRepository _shares;
-    public RevalidateConnectedPoDraft(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IPosCommercialAccessAccessor a,IConnectedBuyerProductShareRepository shares){_relationships=r;_exposures=e;_access=a;_shares=shares;}
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
+    private readonly ICatalogProductRepository? _products;
+    public RevalidateConnectedPoDraft(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IPosCommercialAccessAccessor a,IConnectedBuyerProductShareRepository shares,IOrganizationConnectedCommerceSettingsRepository? commerceSettings=null,ICatalogProductRepository? products=null){_relationships=r;_exposures=e;_access=a;_shares=shares;_commerceSettings=commerceSettings;_products=products;}
     public async Task<ApplicationResult<ConnectedPoDraftReviewDto>> ExecuteAsync(Guid orgId,Guid relationshipId,RevalidateConnectedPoDraftRequest request,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewPurchasing);if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<ConnectedPoDraftReviewDto>(gate.ErrorCode!,gate.ErrorMessage!);
      var r=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);if(r is null||r.BuyerOrganizationId!=PosOrganizationId.From(orgId))return ConnectedSupplierUseCaseGuard.Failure<ConnectedPoDraftReviewDto>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
      if(r.Status!=ConnectedSupplierRelationshipStatus.Active)return ApplicationResult<ConnectedPoDraftReviewDto>.Success(new(ConnectedPoDraftReviewStatus.RelationshipInactive,
        request.Lines.Select(l=>new ConnectedPoDraftReviewItem(l.SupplierProductId,ConnectedPoDraftReviewStatus.RelationshipInactive,l.UnitPriceSnapshot,null)).ToList()));
+     var commerceSettings=await ConnectedCommerceSettingsLookup.GetOrDefaultAsync(_commerceSettings,r.SupplierOrganizationId,ct);
      var items=new List<ConnectedPoDraftReviewItem>();foreach(var line in request.Lines){var productId=CatalogProductId.From(line.SupplierProductId);
        var e=await _exposures.GetByProductAsync(r.SupplierOrganizationId,productId,ct);var share=await _shares.FindAsync(r.Id,productId,ct);
-       var price=0m;var available=e is not null&&ConnectedPoPricing.TryResolveEffectivePrice(e,share,r.CatalogSharingMode,r.CustomerDiscountPercent,null,out price,out _);
+       var supplierProduct=_products is null?null:await _products.GetByIdAsync(r.SupplierOrganizationId,productId,ct);
+       var price=0m;var available=e is not null&&ConnectedPoPricing.TryResolveEffectivePrice(e,share,r.CatalogSharingMode,commerceSettings,r,supplierProduct?.CategoryId?.Value,out price,out _,supplierProduct is { SellingPrice: > 0m } ? supplierProduct.SellingPrice : null);
        var status=!available?ConnectedPoDraftReviewStatus.Unavailable:price!=Domain.Sales.SaleMoney.RoundMoney(line.UnitPriceSnapshot)?ConnectedPoDraftReviewStatus.PriceChanged:ConnectedPoDraftReviewStatus.Unchanged;
        items.Add(new(line.SupplierProductId,status,line.UnitPriceSnapshot,available?price:null));}
      var overall=items.Any(i=>i.Status==ConnectedPoDraftReviewStatus.Unavailable)?ConnectedPoDraftReviewStatus.Unavailable:

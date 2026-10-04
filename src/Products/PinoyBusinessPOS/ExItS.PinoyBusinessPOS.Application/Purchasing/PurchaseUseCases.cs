@@ -780,9 +780,10 @@ public static class ConnectedPurchaseOrderLineEligibility
                 .FindAsync(relationship.Id, CatalogProductId.From(supplierProductId.Value), cancellationToken)
                 .ConfigureAwait(false);
             Guid? supplierCategoryId = null;
+            CatalogProduct? supplierProduct = null;
             if (catalogProducts is not null)
             {
-                var supplierProduct = await catalogProducts
+                supplierProduct = await catalogProducts
                     .GetByIdAsync(
                         relationship.SupplierOrganizationId,
                         CatalogProductId.From(supplierProductId.Value),
@@ -799,7 +800,8 @@ public static class ConnectedPurchaseOrderLineEligibility
                     relationship,
                     supplierCategoryId,
                     out var effectivePrice,
-                    out _))
+                    out _,
+                    supplierProduct is { SellingPrice: > 0m } ? supplierProduct.SellingPrice : null))
             {
                 return ApplicationResult<Outcome>.Failure(
                     ConnectedSupplierErrorCodes.ExposureNotFound,

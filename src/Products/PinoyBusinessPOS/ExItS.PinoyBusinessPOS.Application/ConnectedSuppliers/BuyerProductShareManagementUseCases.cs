@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -75,6 +76,7 @@ public sealed class QueryBuyerProductShares
     private readonly ICatalogProductRepository? _products;
     private readonly ISupplierProductExposureRepository? _exposures;
     private readonly IPosUnitOfWork? _uow;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
 
     public QueryBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
@@ -83,7 +85,8 @@ public sealed class QueryBuyerProductShares
         Inventory.IInventoryRepository inventory,
         ICatalogProductRepository? products = null,
         ISupplierProductExposureRepository? exposures = null,
-        IPosUnitOfWork? uow = null)
+        IPosUnitOfWork? uow = null,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = relationships;
         _shares = shares;
@@ -92,6 +95,7 @@ public sealed class QueryBuyerProductShares
         _products = products;
         _exposures = exposures;
         _uow = uow;
+        _commerceSettings = commerceSettings;
     }
 
     public async Task<ApplicationResult<BuyerProductShareQueryResultDto>> ExecuteAsync(
@@ -150,6 +154,9 @@ public sealed class QueryBuyerProductShares
             relationship.CatalogSharingMode)
             .ConfigureAwait(false);
 
+        var commerceSettings = await ConnectedCommerceSettingsLookup
+            .GetOrDefaultAsync(_commerceSettings, supplier, ct)
+            .ConfigureAwait(false);
         var items = new List<ConnectedBuyerProductShareDto>(result.Rows.Count);
         foreach (var row in result.Rows)
         {
@@ -159,7 +166,8 @@ public sealed class QueryBuyerProductShares
                 row.Share,
                 row.Exposure,
                 row.CategoryName,
-                isInventoryTracked: row.IsInventoryTracked));
+                isInventoryTracked: row.IsInventoryTracked,
+                commerceSettings: commerceSettings));
         }
 
         return ApplicationResult<BuyerProductShareQueryResultDto>.Success(new(
