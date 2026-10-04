@@ -8,8 +8,6 @@ public static class SupervisorGuards
         "platform-admin",
         "platform-api",
         "pos-api",
-        "org-web",
-        "personal-web",
         "react-admin",
         "react-pos",
         "mailpit",

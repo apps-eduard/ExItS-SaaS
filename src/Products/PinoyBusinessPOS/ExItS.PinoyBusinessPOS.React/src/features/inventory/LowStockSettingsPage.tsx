@@ -418,7 +418,7 @@ export function LowStockSettingsPage() {
             >
               <option value="">{t("lowStockSettings.allCategories")}</option>
               {(categoriesQuery.data?.items ?? []).map((cat) => (
-                <option key={cat.id} value={cat.id}>
+                <option key={cat.categoryId} value={cat.categoryId}>
                   {cat.name}
                 </option>
               ))}

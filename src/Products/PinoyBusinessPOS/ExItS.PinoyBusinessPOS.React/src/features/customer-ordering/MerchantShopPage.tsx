@@ -113,7 +113,7 @@ export function MerchantShopPage() {
           fulfillmentBranchId: branchId ?? undefined,
           page: pageParam,
           pageSize: STOREFRONT_PAGE_SIZE,
-          platformBusinessCustomerId,
+          platformBusinessCustomerId: platformBusinessCustomerId ?? undefined,
         },
         signal,
       ),

@@ -2,6 +2,7 @@ import type {
   BuyerSupplierProductLink,
   SupplierProductExposure,
 } from "@/api/pos/pos-connected-suppliers-client";
+import type { MessageKey } from "@/i18n/messages";
 import type { ExitsSelectOption } from "@/components/exits/ExitsSelect";
 import { formatUnitOfMeasureSymbol } from "@/lib/unit-of-measure";
 
@@ -354,7 +355,7 @@ function formatAvailabilityQty(quantity: number): string {
 /** Finder/stock column label: qty only, "Out of stock", or not tracked. */
 export function formatSupplierAvailabilityLabel(
   product: ConnectedPoReadyProduct,
-  t: (key: string) => string,
+  t: (key: MessageKey) => string,
 ): string {
   const availability = resolveSupplierAvailability(product);
   if (availability.kind === "out_of_stock") {

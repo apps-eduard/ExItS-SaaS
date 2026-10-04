@@ -1,6 +1,6 @@
 # Pinoy Business POS Client
 
-Future Pinoy Business POS React host. Sibling of MAUI and Organization Web, not a replacement until later authorized packages.
+Canonical ExItS React client for Organization, Personal, and POS experiences. Organization Web Blazor is removed.
 
 - Path: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`
 - Package: `@exits/pinoy-business-pos-client` (private, ESM)

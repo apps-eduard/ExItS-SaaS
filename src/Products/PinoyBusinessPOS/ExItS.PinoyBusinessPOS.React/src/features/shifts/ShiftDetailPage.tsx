@@ -117,7 +117,7 @@ export function ShiftDetailPage() {
     return (
       <div data-testid="shift-detail-denied" className="flex flex-col gap-3">
         <PageHeader
-          title={t("shift.currentShiftTitle")}
+          title={t("shift.detailTitle")}
           description={t("shift.deniedDetail")}
           backTo={pageBackNav.managerHome.to}
           backLabel={t(pageBackNav.managerHome.labelKey)}
@@ -135,7 +135,7 @@ export function ShiftDetailPage() {
     return (
       <div data-testid="shift-detail-missing" className="flex flex-col gap-3">
         <PageHeader
-          title={t("shift.currentShiftTitle")}
+          title={t("shift.detailTitle")}
           description={t("shift.notFound")}
           backTo={pageBackNav.shifts.to}
           backLabel={t(pageBackNav.shifts.labelKey)}
@@ -227,7 +227,7 @@ export function ShiftDetailPage() {
       className="shift-detail-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-3"
     >
       <PageHeader
-        title={t("shift.currentShiftTitle")}
+        title={t("shift.detailTitle")}
         backTo={pageBackNav.shifts.to}
         backLabel={t(pageBackNav.shifts.labelKey)}
         backTestId="page-header-back-shifts"

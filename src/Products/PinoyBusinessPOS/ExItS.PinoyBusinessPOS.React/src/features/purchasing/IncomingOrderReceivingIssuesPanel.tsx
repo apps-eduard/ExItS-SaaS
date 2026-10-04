@@ -37,7 +37,7 @@ function missingPreview(resolution: string, qty: number, t: (k: MessageKey) => s
   if (resolution === "FoundAtSeller" || resolution === "NeverShipped") {
     return t("incomingOrders.receivingIssues.previewRestore").replace(
       "{qty}",
-      formatQuantityValue(qty),
+      formatQuantityValue(qty, 3),
     );
   }
   return t("incomingOrders.receivingIssues.previewNone");
@@ -99,7 +99,7 @@ export function IncomingOrderReceivingIssuesPanel({ workspace, orderId, issues, 
       });
     },
     onError: (err) => {
-      toast.error(describePosApiError(err, t("incomingOrders.actionFailed")));
+      toast.error(describePosApiError(err, t, "incomingOrders.actionFailed"));
     },
   });
 
@@ -218,16 +218,16 @@ function ReceivingIssueLineRow({
       <div className="font-medium">{line.nameSnapshot}</div>
       <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-4">
         <span>
-          {t("incomingOrders.receivingIssues.shipped")}: {formatQuantityValue(line.shippedQty)}
+          {t("incomingOrders.receivingIssues.shipped")}: {formatQuantityValue(line.shippedQty, 3)}
         </span>
         <span>
-          {t("incomingOrders.receivingIssues.good")}: {formatQuantityValue(line.goodQty)}
+          {t("incomingOrders.receivingIssues.good")}: {formatQuantityValue(line.goodQty, 3)}
         </span>
         <span>
-          {t("incomingOrders.receivingIssues.damaged")}: {formatQuantityValue(line.damagedQty)}
+          {t("incomingOrders.receivingIssues.damaged")}: {formatQuantityValue(line.damagedQty, 3)}
         </span>
         <span>
-          {t("incomingOrders.receivingIssues.missing")}: {formatQuantityValue(line.missingQty)}
+          {t("incomingOrders.receivingIssues.missing")}: {formatQuantityValue(line.missingQty, 3)}
         </span>
       </div>
       {line.buyerDiscrepancyNote ? (

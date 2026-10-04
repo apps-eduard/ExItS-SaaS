@@ -15,8 +15,6 @@ SECURITY.md
 Start-LocalValidation.md
 Reset-LocalValidation.md
 Reset-Products-And-Business-Templates.md
-Maui-Emulator-Install.md
-Maui-PhysicalDevice-Install.md
 FILE-MANIFEST.md
 global.json
 Directory.Build.props
@@ -26,27 +24,25 @@ src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode include
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; operations system-health DTOs)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, Magick.NET shared GlobalProduct WebP pipeline + local/dev filesystem object store, migrations through **`20260817220000_AddGlobalProductImages`**; `Health/PlatformDatabaseReadyHealthCheck`; operations system-health host/POS probes)
 src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs + `GET /api/v1/platform/operations/system-health` + org/public-identity + `/api/v1/qr/resolve` + POS device registration-tokens + Platform/merchant GlobalProduct image endpoints; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
-src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/ADR-022; canonical browser sign-in; Platform operator console; typed API client; GlobalProduct image preview/upload/replace/remove; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
-src/Platform/ExItS.Platform.Admin.Web/ (React + TypeScript + Vite Platform Admin Web; parallel to Blazor Admin; Login + shell + dashboard + organizations workspace + product/plan catalog; PA-COM-01 commercial mutation foundation + PA-COM-04 organization subscription lifecycle UI; no paid activation / PA-COM-06; consumes Platform API; no cutover)
-src/Platform/ExItS.Personal.Web/ (Personal Web — Ant Design Blazor presentation over existing Personal APIs; Local Validation :8094; no checkout)
-src/Shared/ExItS.Web.UI/ (shared AntDesign browser conventions: theme, culture, page header, pager, host options, handoff helpers; AntDesign 1.6.2)
-src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
+src/Platform/ExItS.Platform.Admin.Web/ (canonical React + TypeScript + Vite Platform Admin; Local Validation service admin-web on :8095; Blazor Platform Admin removed)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/ (canonical React client for Personal, Organization, and POS)
+src/Shared/ExItS.DesignSystem/ — removed with Organization Web Blazor; no retained runtime consumer
 src/Shared/ExItS.BackupRestore/ (PostgreSQL logical backup/restore helpers: manifests, SHA-256, retention, AES-GCM protect, restore validation)
 src/Shared/ExItS.Deployment/ (pilot/deployment config validation, backup gates, readiness, rollback advisor, Commercial MVP closeout board — P9-WP05/P9-WP06; phase marker `P10-WP08-phase-10-closeout`)
 tools/ExItS.BackupRestore.Cli/ (non-interactive backup/verify/restore/encrypt/retention CLI)
 tools/ExItS.Deployment.Cli/ (validate-config / backup-gate / readiness / smoke-catalog CLI)
 ops/backup/ (PowerShell operators scripts + disabled schedule notes + config.example.env)
 ops/deploy/ (pilot deploy orchestration, smoke, pre-deploy backup, env templates)
-deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation apps include Blazor Admin 8090 and React Admin 8095)
+deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation Admin is React admin-web on 8095)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; connected PO lifecycle + receiving discrepancies; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; ConnectedSuppliers client contracts + `ConnectedPoDisplayStatus` + linked-product delta sync; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through **`20260818223000_AddSaleBranchId`**; Magick.NET WebP merchant-override pipeline + local/dev filesystem object store; `Health/PosDatabaseReadyHealthCheck`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + suppliers + purchase-orders/goods-receipts + cashier-shifts + sale-returns + permissions + registers + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client incl. org public-identity, `/api/v1/qr/resolve`, POS device registration-token create/redeem; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite schema v9 + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections + selective connected-supplier linked products and local PO drafts + product usage/sell-unit offline cache; never a full supplier catalog; **not** part of server backup sets)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales (**multi-unit Sell as checkout**) + inventory + expenses + suppliers + **purchasing hub (Receive stock / POs / discrepancy-aware goods receipts)** + connected supplier request/catalog/linked products/incoming order list/detail + lifecycle actions + **connected buyers + post-accept share prompt + per-buyer shared products/pricing** + **unified org notifications (Read-on-open)** + dashboard/reports; onboarding/auth; sync-status shell; private product-image cache + explicit adopted-template thumbs + queueable offline catalog create (metadata JSON; pending photos as files, never SQLite bytes); offline foundation diagnostics; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/ (canonical React Organization, Personal, and POS client; Organization Web Blazor removed; Local Validation :5177)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/ (React Mobile Client host; Gate C/D shell + IMPL-02A product chrome + IMPL-03A same-origin cookie Sign In; not workspace/PIN/Capacitor/selling)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — AntDesign Blazor Server management/reporting per ADR-022; **not a POS checkout client**; unified org notifications + Connected buyers; Local Validation :8093)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ — removed; React client is the canonical Organization experience
 src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Domain/ (PPM-01 scaffold; product identity only — no pawn entities)
 src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Application/ (PPM-01 scaffold; no use cases)
 src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Infrastructure/ (PPM-01 scaffold; no DbContext/migrations)
@@ -56,12 +52,7 @@ src/Products/PinoyPawnManager/Docs/
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
-tests/ExItS.Platform.Admin.UnitTests/
-tests/ExItS.DesignSystem.Tests/
 tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/
-tests/ExItS.PinoyBusinessPOS.Maui.Tests/
-tests/ExItS.PinoyBusinessPOS.Web.Tests/
-tests/ExItS.Personal.Web.Tests/
 tests/ExItS.PinoyBusinessPOS.UnitTests/
 tests/ExItS.PinoyBusinessPOS.IntegrationTests/
 tests/ExItS.BackupRestore.Tests/

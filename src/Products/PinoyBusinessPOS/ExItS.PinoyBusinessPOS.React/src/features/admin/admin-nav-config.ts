@@ -5,6 +5,8 @@ import {
   ClipboardCheck,
   ContactRound,
   CreditCard,
+  FileSearch,
+  Receipt,
   FileText,
   KeyRound,
   LayoutDashboard,
@@ -17,6 +19,7 @@ import {
   PieChart,
   QrCode,
   Settings,
+  ScrollText,
   ShieldCheck,
   Store,
   UserCog,
@@ -51,6 +54,9 @@ export type AdminNavItemId =
   | "overview"
   | "profile"
   | "documents"
+  | "taxCompliance"
+  | "audit"
+  | "salesDocuments"
   | "areas"
   | "branches"
   | "staff"
@@ -154,6 +160,30 @@ export function buildAdminNavGroups(
       icon: FileText,
       testId: "admin-nav-documents-printing",
       matchPrefixes: ["/org/documents-printing"],
+    });
+    organizationItems.push({
+      id: "taxCompliance",
+      to: "/org/tax-compliance",
+      labelKey: "admin.nav.taxCompliance",
+      icon: FileSearch,
+      testId: "admin-nav-tax-compliance",
+      matchPrefixes: ["/org/tax-compliance"],
+    });
+    organizationItems.push({
+      id: "audit",
+      to: "/org/audit",
+      labelKey: "admin.nav.audit",
+      icon: ScrollText,
+      testId: "admin-nav-audit",
+      matchPrefixes: ["/org/audit"],
+    });
+    organizationItems.push({
+      id: "salesDocuments",
+      to: "/org/sales-documents",
+      labelKey: "admin.nav.salesDocuments",
+      icon: Receipt,
+      testId: "admin-nav-sales-documents",
+      matchPrefixes: ["/org/sales-documents"],
     });
   }
   if (canInvite) {
@@ -497,7 +527,10 @@ export function matchAdminMobileTab(
     path.startsWith("/org/staff") ||
     path.startsWith("/org/roles") ||
     path.startsWith("/org/devices") ||
-    path.startsWith("/org/subscription")
+    path.startsWith("/org/subscription") ||
+    path.startsWith("/org/tax-compliance") ||
+    path.startsWith("/org/audit") ||
+    path.startsWith("/org/sales-documents")
   ) {
     return "manage";
   }

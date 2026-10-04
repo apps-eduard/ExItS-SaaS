@@ -1,7 +1,7 @@
 # Start / stop Local Validation apps
 
 **Local Validation only. Not Production.**  
-Docker DBs + host Platform API, POS API, Platform Admin, Organization Web, and Personal Web (`dotnet watch`).
+Docker DBs + React Platform Admin, plus host Platform API, POS API, and Personal Web. The Organization experience is the React client on port 5177.
 
 ## Start (Tailscale / LAN PublicHost)
 
@@ -14,16 +14,14 @@ cd C:\Users\speed\Desktop\ExItS-SaaS
 
 Replace `100.120.79.81` with your current Tailscale or LAN host if it changed.
 
-### Five PowerShell windows (expected)
+### Host PowerShell windows (expected)
 
-Start **always opens 5 separate PowerShell windows** — one per app:
+Start opens separate PowerShell windows for the host apps. Platform Admin is the Docker `admin-web` container on port 8095, not one of those windows.
 
 | Window title | App | Port |
 |---|---|---|
 | ExItS LocalValidation - Platform API | Platform API | 8091 |
 | ExItS LocalValidation - POS API | POS API | 8092 |
-| ExItS LocalValidation - Admin | Platform Admin | 8090 |
-| ExItS LocalValidation - Org Web | Organization Web | 8093 |
 | ExItS LocalValidation - Personal Web | Personal Web | 8094 |
 
 That is normal. Leave those windows open while you work; closing one stops that app.
@@ -37,7 +35,7 @@ That is normal. Leave those windows open while you work; closing one stops that 
 
 ### Restart
 
-Run Start again. It stops stale repo-scoped apps first, then opens the 5 windows again:
+Run Start again. It stops stale repo-scoped apps first, then opens the host windows again:
 
 ```powershell
 .\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
@@ -52,13 +50,13 @@ Or stop explicitly, then start:
 
 ### Printed URLs (example)
 
-- Admin: `http://100.120.79.81:8090` (canonical sign-in)
+- Admin: `http://127.0.0.1:8095/admin` (canonical React sign-in)
 - Platform API: `http://100.120.79.81:8091`
 - POS API: `http://100.120.79.81:8092`
-- Org Web: `http://100.120.79.81:8093`
+- Organization app: `http://127.0.0.1:5177` (React)
 - Personal Web: `http://100.120.79.81:8094`
 
-Kestrel binds `0.0.0.0:8090|8091|8092|8093|8094` (localhost still works). DB ports stay `127.0.0.1:15533` / `15534`. These local ports are **not** public production ports; production uses HTTPS :443 via reverse proxy.
+Host Kestrel binds `0.0.0.0:8091|8092|8094`. The React Organization client uses port `5177`. Platform Admin is published on `8095`. DB ports stay `127.0.0.1:15533` / `15534`. These local ports are **not** public production ports; production uses HTTPS :443 via reverse proxy.
 
 ### If you omit `-PublicHost`
 
@@ -102,18 +100,17 @@ Apps + DB containers (volumes preserved):
 
 ## Windows Firewall (physical device / Tailscale)
 
-Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094**. Do **not** open **15533 / 15534**.
+Allow inbound TCP **8091 / 8092 / 8094 / 8095 / 5177**. Do **not** open **15533 / 15534**.
 
 ```powershell
-New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
-New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation React app 5177" -Direction Inbound -Protocol TCP -LocalPort 5177 -Action Allow -Profile Any
 ```
 
 ## Related
 
-- [Maui-Emulator-Install.md](Maui-Emulator-Install.md)
-- [Maui-PhysicalDevice-Install.md](Maui-PhysicalDevice-Install.md)
+- [ADR-024](docs/decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md) — MAUI is retired
 - [deploy/docker/README.local-validation-workflow.md](deploy/docker/README.local-validation-workflow.md)

@@ -32,7 +32,6 @@ import {
   receiveInventoryTransfer,
   receiveInventoryTransferDamageReturn,
   receiveInventoryTransferExceptionReturn,
-  type InventoryTransferDto,
   type ReceiveInventoryTransferRequest,
 } from "@/api/pos/pos-inventory-transfer-client";
 import { prepareStockRequestTransfer } from "@/api/pos/pos-stock-requests-client";
@@ -78,7 +77,6 @@ import {
 import {
   canDestinationCloseRemainder,
   canDestinationReceiveTransfer,
-  isTransferTerminalStatus,
   lineDamagedQty,
   lineNeedsFulfillmentQty,
   lineOutstandingQty,
@@ -652,7 +650,6 @@ export function InventoryTransferDetailPage() {
   const isDraft = transfer.status === "Draft";
   const isInTransit = transfer.status === "InTransit";
   const isPartiallyReceived = transfer.status === "PartiallyReceived";
-  const isFinal = isTransferTerminalStatus(transfer.status);
   const canMutate = allowManage && online && !busy;
   const canDispatch = canMutate && isSource && isDraft;
   const canEditDraft = canMutate && isSource && isDraft;
@@ -705,15 +702,19 @@ export function InventoryTransferDetailPage() {
     transfer.transferNumber?.trim() || t("transfer.summaryTitle");
 
   async function runTransferOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    const currentTransfer = transfer;
+    if (!currentTransfer) {
+      return;
+    }
     try {
       const stamp = new Date().toISOString().slice(0, 10);
       const numberPart = sanitizeCsvFilenamePart(
-        transfer.transferNumber?.trim() || transfer.transferId.slice(0, 8),
+        currentTransfer.transferNumber?.trim() || currentTransfer.transferId.slice(0, 8),
       );
       if (action === "csv") {
         const csv = buildCsvWithMetadata(
           [
-            ["Transfer", transfer.transferNumber ?? transfer.transferId],
+            ["Transfer", currentTransfer.transferNumber ?? currentTransfer.transferId],
             ["Status", statusLabel],
             ["Route", `${sourceName} → ${destName}`],
             ["Generated", stamp],
@@ -727,11 +728,11 @@ export function InventoryTransferDetailPage() {
               t("transfer.inTransit"),
               t("transfer.needsFulfillment"),
             ],
-            rows: transfer.lines.map((line) => [
+            rows: currentTransfer.lines.map((line) => [
               line.productName,
               formatTransferQty(line.sentQty),
               formatTransferQty(line.receivedQty),
-              formatTransferQty(lineDamagedQty(transfer, line.lineId)),
+              formatTransferQty(lineDamagedQty(currentTransfer, line.lineId)),
               formatTransferQty(lineOutstandingQty(line)),
               formatTransferQty(lineNeedsFulfillmentQty(line)),
             ]),
@@ -742,7 +743,7 @@ export function InventoryTransferDetailPage() {
       }
       if (action === "xlsx") {
         const sheet = XLSX.utils.aoa_to_sheet([
-          ["Transfer", transfer.transferNumber ?? transfer.transferId],
+          ["Transfer", currentTransfer.transferNumber ?? currentTransfer.transferId],
           ["Status", statusLabel],
           ["Route", `${sourceName} → ${destName}`],
           [],
@@ -754,11 +755,11 @@ export function InventoryTransferDetailPage() {
             t("transfer.inTransit"),
             t("transfer.needsFulfillment"),
           ],
-          ...transfer.lines.map((line) => [
+          ...currentTransfer.lines.map((line) => [
             line.productName,
             formatTransferQty(line.sentQty),
             formatTransferQty(line.receivedQty),
-            formatTransferQty(lineDamagedQty(transfer, line.lineId)),
+            formatTransferQty(lineDamagedQty(currentTransfer, line.lineId)),
             formatTransferQty(lineOutstandingQty(line)),
             formatTransferQty(lineNeedsFulfillmentQty(line)),
           ]),

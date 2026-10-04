@@ -300,7 +300,7 @@ function DemoToastStack({
         <div key={toast.id} className="pointer-events-auto shadow-[var(--exits-shadow-md)]">
           <GalleryMessage
             severity={toast.severity}
-            Icon={
+            icon={
               toast.severity === "success"
                 ? Check
                 : toast.severity === "info"
@@ -509,7 +509,7 @@ export function UiStandardsMessageGallery() {
             <GalleryMessage
               severity="error"
               closable={false}
-              Icon={CircleX}
+              icon={CircleX}
               testId="ui-standard-msg-inline-banner"
             >
               Validation Failed
@@ -568,7 +568,7 @@ export function UiStandardsMessageGallery() {
                 key={`filled-${severity}`}
                 severity={severity}
                 variant="filled"
-                Icon={Icon}
+                icon={Icon}
                 testId={`ui-standard-msg-filled-${severity}`}
               >
                 {MESSAGE_FILLED_COPY[severity]}
@@ -584,7 +584,7 @@ export function UiStandardsMessageGallery() {
                 key={`outlined-${severity}`}
                 severity={severity}
                 variant="outlined"
-                Icon={Icon}
+                icon={Icon}
                 testId={`ui-standard-msg-outlined-${severity}`}
               >
                 {text}
@@ -600,7 +600,7 @@ export function UiStandardsMessageGallery() {
                 key={`simple-${severity}`}
                 severity={severity}
                 variant="simple"
-                Icon={Icon}
+                icon={Icon}
                 testId={`ui-standard-msg-simple-${severity}`}
               >
                 {text}

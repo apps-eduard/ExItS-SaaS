@@ -12,18 +12,12 @@ $script:LocalValidationStack = [pscustomobject]@{
     PlatformApiContainer   = 'exits-local-validation-platform-api'
     PosApiContainer        = 'exits-local-validation-pos-api'
     AdminWebContainer      = 'exits-local-validation-admin-web'
-    AdminWebReactContainer = 'exits-local-validation-admin-web-react'
-    OrgWebContainer        = 'exits-local-validation-org-web'
-    PersonalWebContainer   = 'exits-local-validation-personal-web'
     ReactPosContainer      = 'exits-local-validation-react-pos'
-    AppComposeServices     = @('platform-api', 'pos-api', 'admin-web', 'org-web', 'personal-web', 'react-pos', 'admin-web-react')
+    AppComposeServices     = @('platform-api', 'pos-api', 'admin-web', 'react-pos')
     InfraComposeServices   = @('platform-db', 'pos-db', 'mailpit')
     AppMarkers             = @(
         'ExItS.Platform.Api',
-        'ExItS.PinoyBusinessPOS.Api',
-        'ExItS.Platform.Admin',
-        'ExItS.PinoyBusinessPOS.Web',
-        'ExItS.Personal.Web'
+        'ExItS.PinoyBusinessPOS.Api'
     )
     PlatformDbVolume       = 'exits_local_validation_platform_db_data'
     PosDbVolume            = 'exits_local_validation_pos_db_data'
@@ -31,15 +25,10 @@ $script:LocalValidationStack = [pscustomobject]@{
     PosDbName              = 'exits_pos'
     DefaultPlatformDbPort  = 15533
     DefaultPosDbPort       = 15534
-    DefaultAdminPort       = 8090
+    DefaultAdminPort       = 8095
     DefaultPlatformApiPort = 8091
     DefaultPosApiPort      = 8092
-    DefaultOrgWebPort      = 8093
-    DefaultPersonalWebPort = 8094
     DefaultReactPosPort    = 5177
-    # React Platform Admin (Vite) — owns Mailpit activation/reset pages (/admin/activate-account, etc.)
-    DefaultReactAdminPort  = 8095
-    DefaultAdminWebReactPort    = 8095
     DefaultSupervisorPort  = 8099
     DefaultSeedScope       = 'PlatformAdministratorsOnly'
     SupervisorAssembly     = 'ExItS.LocalValidation.Supervisor'
@@ -49,12 +38,9 @@ $script:LocalValidationStack = [pscustomobject]@{
 # Restartable=false means health-only (no ordinary Restart action).
 function Get-LocalValidationServiceCatalog {
     return @(
-        [pscustomobject]@{ Key = 'platform-admin'; Label = 'Platform Admin'; Port = [int]$LocalValidationStack.DefaultAdminPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.Platform.Admin'; HealthPath = '/admin/login'; RestartOrder = 30 }
+        [pscustomobject]@{ Key = 'platform-admin'; Label = 'Platform Admin'; Port = [int]$LocalValidationStack.DefaultAdminPort; Restartable = $true; Kind = 'docker'; Marker = 'admin-web'; HealthPath = '/nginx-health'; RestartOrder = 30 }
         [pscustomobject]@{ Key = 'platform-api'; Label = 'Platform API'; Port = [int]$LocalValidationStack.DefaultPlatformApiPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.Platform.Api'; HealthPath = '/health'; RestartOrder = 10 }
         [pscustomobject]@{ Key = 'pos-api'; Label = 'POS API'; Port = [int]$LocalValidationStack.DefaultPosApiPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.PinoyBusinessPOS.Api'; HealthPath = '/health'; RestartOrder = 20 }
-        [pscustomobject]@{ Key = 'org-web'; Label = 'Organization Web'; Port = [int]$LocalValidationStack.DefaultOrgWebPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.PinoyBusinessPOS.Web'; HealthPath = '/health'; RestartOrder = 40 }
-        [pscustomobject]@{ Key = 'personal-web'; Label = 'Personal Web'; Port = [int]$LocalValidationStack.DefaultPersonalWebPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.Personal.Web'; HealthPath = '/health'; RestartOrder = 50 }
-        [pscustomobject]@{ Key = 'react-admin'; Label = 'React Admin'; Port = [int]$LocalValidationStack.DefaultReactAdminPort; Restartable = $true; Kind = 'docker'; Marker = 'admin-web-react'; HealthPath = '/health'; RestartOrder = 60 }
         [pscustomobject]@{ Key = 'react-pos'; Label = 'React POS'; Port = [int]$LocalValidationStack.DefaultReactPosPort; Restartable = $true; Kind = 'npm'; Marker = 'ExItS.PinoyBusinessPOS.React'; HealthPath = '/'; RestartOrder = 70 }
         [pscustomobject]@{ Key = 'mailpit'; Label = 'Mailpit'; Port = 8025; Restartable = $true; Kind = 'docker'; Marker = 'mailpit'; HealthPath = '/'; RestartOrder = 80 }
         [pscustomobject]@{ Key = 'platform-db'; Label = 'Platform DB'; Port = [int]$LocalValidationStack.DefaultPlatformDbPort; Restartable = $false; Kind = 'infra'; Marker = 'platform-db'; HealthPath = $null; RestartOrder = 90 }
@@ -89,11 +75,11 @@ function Resolve-LocalValidationAuthPublicBaseUrl {
     <#
     .SYNOPSIS
       Public base URL embedded in PlatformEmail activation/reset links.
-      Must point at the frontend that hosts /admin/activate-account and /admin/reset-password
-      (React Admin Vite on :8095), not Blazor Admin :8090.
+      Must point at canonical React Platform Admin (:8095), which hosts
+      /admin/activate-account and /admin/reset-password.
 
       -PublicHost is NETWORK EXPOSURE only. It must NOT force Mailpit links onto Tailscale.
-      Explicit override: EXITS_ADMIN_PUBLIC_BASE_URL (or LOCAL_VALIDATION_REACT_ADMIN_ORIGIN).
+      Explicit override: EXITS_ADMIN_PUBLIC_BASE_URL (or LOCAL_VALIDATION_ADMIN_ORIGIN).
     #>
     param(
         [hashtable]$EnvMap,
@@ -102,7 +88,7 @@ function Resolve-LocalValidationAuthPublicBaseUrl {
     )
 
     if ($ReactAdminPort -le 0) {
-        $ReactAdminPort = [int]$LocalValidationStack.DefaultReactAdminPort
+        $ReactAdminPort = [int]$LocalValidationStack.DefaultAdminPort
     }
 
     # Keep parameter for call-site compatibility; PublicHost must not select email links.
@@ -113,8 +99,8 @@ function Resolve-LocalValidationAuthPublicBaseUrl {
         return $override.TrimEnd('/')
     }
 
-    $fromEnv = if ($EnvMap -and $EnvMap['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']) {
-        [string]$EnvMap['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']
+    $fromEnv = if ($EnvMap -and $EnvMap['LOCAL_VALIDATION_ADMIN_ORIGIN']) {
+        [string]$EnvMap['LOCAL_VALIDATION_ADMIN_ORIGIN']
     } else {
         ''
     }
@@ -141,7 +127,7 @@ function Add-LocalValidationReactCorsOrigins {
     )
 
     if ($ReactPosPort -le 0) { $ReactPosPort = [int]$LocalValidationStack.DefaultReactPosPort }
-    if ($ReactAdminPort -le 0) { $ReactAdminPort = [int]$LocalValidationStack.DefaultReactAdminPort }
+    if ($ReactAdminPort -le 0) { $ReactAdminPort = [int]$LocalValidationStack.DefaultAdminPort }
 
     $list = [System.Collections.Generic.List[string]]::new()
     foreach ($o in @($CorsOrigins)) {
@@ -163,7 +149,6 @@ function Add-LocalValidationReactCorsOrigins {
                 'LOCAL_VALIDATION_REACT_POS_ORIGIN',
                 'LOCAL_VALIDATION_REACT_POS_ORIGIN_LOCALHOST',
                 'LOCAL_VALIDATION_REACT_POS_ORIGIN_EMULATOR',
-                'LOCAL_VALIDATION_REACT_ADMIN_ORIGIN',
                 'LOCAL_VALIDATION_ADMIN_ORIGIN'
             )) {
             if ($EnvMap[$key]) { $candidates += [string]$EnvMap[$key] }
@@ -445,7 +430,7 @@ function Get-LocalValidationAllowedHostsList {
     )
 
     $hosts = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($hostName in @('localhost', '127.0.0.1', '10.0.2.2', 'platform-api', 'pos-api', 'admin-web', 'admin-web-react', 'org-web', 'personal-web', 'react-pos')) {
+    foreach ($hostName in @('localhost', '127.0.0.1', '10.0.2.2', 'platform-api', 'pos-api', 'admin-web', 'react-pos')) {
         if (-not $hosts.Contains($hostName)) { $hosts.Add($hostName) }
     }
     if (-not [string]::IsNullOrWhiteSpace($PublicHostValue) -and -not $hosts.Contains($PublicHostValue)) {
@@ -464,7 +449,7 @@ function Stop-LocalValidationDockerAppServices {
         [Parameter(Mandatory)][string]$EnvFile
     )
 
-    # admin-web-react (and other apps) live under profile "apps". Without --profile,
+    # App containers live under profile "apps". Without --profile,
     # compose stop skips them and :8095 stays occupied across host-mode restarts.
     $args = @(
         'compose', '-p', $LocalValidationStack.ComposeProjectName,
@@ -655,7 +640,7 @@ function Get-LocalValidationDockerComposeLabel {
     <#
     .SYNOPSIS
       StrictMode-safe read of a Docker Compose label. Newer/partial label sets
-      (e.g. admin-web-react) may omit working_dir/config_files.
+      (e.g. admin-web) may omit working_dir/config_files.
     #>
     param(
         $Labels,
@@ -674,10 +659,7 @@ function Get-LocalValidationDockerAppContainers {
         $LocalValidationStack.PlatformApiContainer,
         $LocalValidationStack.PosApiContainer,
         $LocalValidationStack.AdminWebContainer,
-        $LocalValidationStack.OrgWebContainer,
-        $LocalValidationStack.PersonalWebContainer,
-        $LocalValidationStack.ReactPosContainer,
-        $LocalValidationStack.AdminWebReactContainer
+        $LocalValidationStack.ReactPosContainer
     )
     $results = @()
     foreach ($name in $names) {

@@ -131,8 +131,7 @@ public sealed class PosPurchasingScopeArchitectureTests
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Purchasing"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Application"), "Purchasing"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "Purchasing"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Purchasing"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Maui"), "Components", "Pages", "Purchasing")
+            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Purchasing")
         };
 
         foreach (var root in roots)

@@ -1,7 +1,0 @@
-@inject IStringLocalizer<AdminResources> L
-
-<p class="state empty" role="status">@(Message ?? L["State_Empty"])</p>
-
-@code {
-    [Parameter] public string? Message { get; set; }
-}

@@ -64,10 +64,9 @@ describe("CountBadge filter embedding", () => {
         count: 25,
         onClick,
         children: "Pending",
-        "data-testid": "filter-pending",
       }),
     );
-    const chip = screen.getByTestId("filter-pending");
+    const chip = screen.getByRole("button", { name: "Pending, 25" });
     expect(chip).toHaveAccessibleName("Pending, 25");
     expect(within(chip).getByText("25")).toBeInTheDocument();
     await user.tab();

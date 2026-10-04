@@ -13,7 +13,7 @@
 #   docker compose -f compose.production.yaml --env-file .env.production config
 #   docker compose -f compose.production.yaml --env-file .env.production up -d
 #
-# Local Validation remains compose.local-validation.yaml (ports 8090–8092 / 15533–15534) — do not reuse those here.
+# Local Validation remains compose.local-validation.yaml (ports 8091–8095 / 15533–15534) — do not reuse those here.
 # Packaging baseline remains compose.yaml (local testing without TLS).
 # Pilot remains docker-compose.pilot.yml (NON-PRODUCTION).
 
@@ -123,21 +123,16 @@ services:
   platform-admin:
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile.platform-admin
+      dockerfile: deploy/docker/Dockerfile.platform-admin-web
       args:
-        EXITS_IMAGE_LABEL: p14-wp03-production-proxy
-    image: exits/platform-admin:${EXITS_IMAGE_TAG:-local}
+        EXITS_GIT_SHA: ${EXITS_GIT_SHA:-unknown}
+    image: exits/platform-admin-web:${EXITS_IMAGE_TAG:-local}
     depends_on:
       - platform-api
     environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
-      ASPNETCORE_URLS: http://+:8080
-      AllowedHosts: ${PRODUCTION_ALLOWED_HOSTS}
-      PlatformApi__BaseUrl: ${PRODUCTION_PLATFORM_API_PUBLIC_URL}
-      Security__EnforceHttps: "true"
-      ForwardedHeaders__Enabled: "true"
-      ForwardedHeaders__KnownNetworks__0: ${PRODUCTION_TRUSTED_PROXY_NETWORK:-172.16.0.0/12}
-      ForwardedHeaders__KnownNetworks__1: "10.0.0.0/8"
+      PLATFORM_API_PUBLIC_URL: ${PRODUCTION_PLATFORM_API_PUBLIC_URL}
+      PLATFORM_API_SAME_ORIGIN: "false"
+      EXITS_GIT_SHA: ${EXITS_GIT_SHA:-unknown}
     expose:
       - "8080"
     restart: unless-stopped
@@ -146,6 +141,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+      - /var/cache/nginx
+      - /var/run
     stop_grace_period: 30s
 
   reverse-proxy:

@@ -10,8 +10,10 @@ import type { BusinessCustomer } from "@/api/pos/pos-connected-suppliers-client"
 function posCustomer(
   overrides: Partial<PosCustomerListItem> & Pick<PosCustomerListItem, "customerId" | "displayName">,
 ): PosCustomerListItem {
-  return {
+  const row: PosCustomerListItem = {
+    customerId: overrides.customerId,
     organizationId: "11111111-1111-1111-1111-111111111111",
+    displayName: overrides.displayName,
     mobileNumber: null,
     address: null,
     notes: null,
@@ -23,16 +25,20 @@ function posCustomer(
     linkedBuyerOrganizationId: null,
     linkedBuyerPublicOrganizationId: null,
     partyKind: "Person",
-    ...overrides,
+    onlineOrderingAccess: "Default",
   };
+  return Object.assign(row, overrides);
 }
 
 function connection(
   overrides: Partial<BusinessCustomer> &
     Pick<BusinessCustomer, "connectionId" | "buyerOrganizationId" | "organizationDisplayName">,
 ): BusinessCustomer {
-  return {
+  const row: BusinessCustomer = {
+    connectionId: overrides.connectionId,
     supplierOrganizationId: "11111111-1111-1111-1111-111111111111",
+    buyerOrganizationId: overrides.buyerOrganizationId,
+    organizationDisplayName: overrides.organizationDisplayName,
     organizationPublicId: "ORG000001",
     relationshipStatus: "Active",
     catalogSharingMode: "SelectedOnly",
@@ -46,8 +52,26 @@ function connection(
     createdAtUtc: "2026-01-01T00:00:00Z",
     updatedAtUtc: "2026-01-01T00:00:00Z",
     displayNameIsLive: false,
-    ...overrides,
+    actionRequired: false,
+    supplierBranchId: null,
+    supplierBranchName: null,
+    contactSource: "Custom",
+    organizationMemberId: null,
+    organizationMemberAvailable: null,
+    contactPersonName: null,
+    contactDepartment: null,
+    contactRole: null,
+    contactPhone: null,
+    contactEmail: null,
+    preferredContactMethod: null,
+    deliveryInstructions: null,
+    billingContactNotes: null,
+    internalNotes: null,
+    customerDeliveryOverride: "inherit",
+    orgOfferDelivery: false,
+    effectiveDeliveryAllowed: false,
   };
+  return Object.assign(row, overrides);
 }
 
 describe("customer-business-list", () => {

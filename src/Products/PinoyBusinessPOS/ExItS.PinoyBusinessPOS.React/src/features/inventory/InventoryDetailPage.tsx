@@ -161,11 +161,15 @@ export function InventoryDetailPage() {
       workspace?.branchId,
       productId,
     ],
-    enabled:
-      Boolean(workspace) &&
-      Boolean(productId) &&
-      Boolean(accountQuery.data) &&
-      (accountQuery.data.isTracked === false || canAddOpeningStock(accountQuery.data)),
+    enabled: (() => {
+      const account = accountQuery.data;
+      return (
+        Boolean(workspace) &&
+        Boolean(productId) &&
+        account != null &&
+        (account.isTracked === false || canAddOpeningStock(account))
+      );
+    })(),
     queryFn: ({ signal }) => getCatalogProduct(workspace!, productId!, signal),
   });
 
@@ -880,7 +884,7 @@ export function InventoryDetailPage() {
                     className="w-fit"
                   >
                     <Link
-                      to={`/inventory/stock-status?productId=${encodeURIComponent(productId)}`}
+                      to={`/inventory/stock-status?productId=${encodeURIComponent(productId ?? "")}`}
                       data-testid="inventory-view-stock-details"
                     >
                       {t("inventory.viewStockDetails")}

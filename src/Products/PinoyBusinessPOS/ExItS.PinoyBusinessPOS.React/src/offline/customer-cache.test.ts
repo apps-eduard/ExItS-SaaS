@@ -39,6 +39,7 @@ function customer(id: string, displayName: string, mobile = "09171234567"): PosC
     status: "Active",
     createdAtUtc: "2026-08-01T00:00:00Z",
     updatedAtUtc: "2026-08-02T00:00:00Z",
+    onlineOrderingAccess: "Default",
   };
 }
 
@@ -47,6 +48,7 @@ function summary(id: string, outstanding: number): PosCustomerCreditSummary {
     customerId: id,
     organizationId,
     outstandingAmount: outstanding,
+    pendingCheckAmount: 0,
     activeEntryCount: 1,
     totalEntryCount: 1,
   };

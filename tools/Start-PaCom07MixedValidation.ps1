@@ -152,7 +152,7 @@ $platformDbPort = if ($envMap["LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT"]) { [int]
 $posDbPort = if ($envMap["LOCAL_VALIDATION_POS_DB_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_POS_DB_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultPosDbPort }
 $platformApiPort = if ($envMap["LOCAL_VALIDATION_PLATFORM_API_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_PLATFORM_API_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultPlatformApiPort }
 $posApiPort = if ($envMap["LOCAL_VALIDATION_POS_API_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_POS_API_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultPosApiPort }
-$adminWebReactPort = if ($envMap["LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultAdminWebReactPort }
+$adminWebReactPort = if ($envMap["LOCAL_VALIDATION_ADMIN_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_ADMIN_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultAdminPort }
 
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $PlatformRepoRoot
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $PosRepoRoot
@@ -224,13 +224,13 @@ Wait-TcpPort -Label "POS API" -HostName "127.0.0.1" -Port $posApiPort -TimeoutSe
 
 Write-Step "Starting React Platform Admin container on $adminWebReactPort..."
 Set-Item -LiteralPath "Env:LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL" -Value $loopbackPlatformApiUrl
-Set-Item -LiteralPath "Env:LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN" -Value $publicAdminWebReactUrl
+Set-Item -LiteralPath "Env:LOCAL_VALIDATION_ADMIN_ORIGIN" -Value $publicAdminWebReactUrl
 $reactUpExit = Invoke-LocalValidationDocker -DockerArgs @(
     "compose", "-p", $LocalValidationStack.ComposeProjectName,
     "-f", $composeFile, "--env-file", $envFile,
-    "--profile", "apps", "up", "-d", "--build", "admin-web-react"
+    "--profile", "apps", "up", "-d", "--build", "admin-web"
 )
-if ($reactUpExit -ne 0) { throw "admin-web-react compose up failed ($reactUpExit)." }
+if ($reactUpExit -ne 0) { throw "admin-web compose up failed ($reactUpExit)." }
 Wait-TcpPort -Label "React Platform Admin" -HostName "127.0.0.1" -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 
 $stateDir = Join-Path $env:LOCALAPPDATA "ExItS\LocalValidation"

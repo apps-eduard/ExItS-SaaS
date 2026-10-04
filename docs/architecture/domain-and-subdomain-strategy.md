@@ -25,11 +25,11 @@ The root domain is the umbrella for multiple ExItS products. It is not the domai
 | `https://exitsapps.com` | Public marketing website | **DECIDED** name. Deployment **PLANNED**. |
 | `www.exitsapps.com` | Redirect to `https://exitsapps.com` | **DECIDED**, unless a later implementation deliberately changes it. |
 | `app.exitsapps.com` | Business SaaS entry and organization product launcher | **DECIDED** name. Deployment **PLANNED**. |
-| `personal.exitsapps.com` | Personal account and Personal application | **DECIDED** name. Deployment **PLANNED**. |
+| `my.exitsapps.com` | Personal account and Personal application | **DECIDED** name. Deployment **PLANNED**. |
 | `admin.exitsapps.com` | ExItS Platform Administration | **DECIDED** name. Deployment **PLANNED**. |
 | `api.exitsapps.com` | Public production API entry and ASP.NET Core backend boundary | **DECIDED** name. Deployment **PLANNED**. |
 
-`app`, `personal`, `admin`, and `api` are platform surfaces. They are not additional SaaS products.
+`app`, `my`, `admin`, and `api` are platform surfaces. They are not additional SaaS products.
 
 Local development stays on localhost. Production hostnames are not required for local validation.
 
@@ -86,7 +86,7 @@ exitsapps.com
 │   └── /service-pro
 │
 ├── app.exitsapps.com       Business SaaS / organization launcher
-├── personal.exitsapps.com  Personal experience
+├── my.exitsapps.com        Personal experience
 ├── admin.exitsapps.com     Platform Admin
 ├── api.exitsapps.com       API
 │
@@ -138,7 +138,7 @@ These are principles for later deployment. They do not describe an existing prod
 | `api.exitsapps.com` | `api.staging.exitsapps.com` |
 | `pos.exitsapps.com` | `pos.staging.exitsapps.com` |
 
-The same `{name}.staging.exitsapps.com` pattern applies to `personal`, `admin`, `bnpl`, `loan`, `pawn`, and `service`.
+The same `{name}.staging.exitsapps.com` pattern applies to `my`, `admin`, `bnpl`, `loan`, `pawn`, and `service`.
 
 Do not invent separate environment domains such as `exits-pos-prod.com` or `api-prod-exits.com`.
 
@@ -153,7 +153,7 @@ Logical names only. A records, CNAME targets, origin addresses, hosting vendors,
 | `@` | Marketing site origin |
 | `www` | Redirect to the canonical root |
 | `app` | Business application |
-| `personal` | Personal application |
+| `my` | Personal application |
 | `admin` | Platform Admin |
 | `api` | Backend API |
 | `pos` | POS application |
@@ -206,3 +206,22 @@ No `exits.ph` references were present in the repository when this decision was r
 - These hosts are not live because they are documented.
 - Current production configuration is not migrated by this document.
 - Authorization and business rules are unchanged.
+
+---
+
+## 13. Local preview
+
+An optional Cloudflare Tunnel can publish the current FULL Docker Local Validation stack for outside testing. That mode is **local validation**, not a production deployment, and it is not the daily workflow.
+
+Operator guide: `deploy/docker/README.cloudflare-local-preview.md`.
+
+While that preview is on, the runnable surfaces are:
+
+| Hostname | Local Validation service |
+| --- | --- |
+| `app.exitsapps.com` | React client (`react-pos`) |
+| `my.exitsapps.com` | React client (`react-pos`) |
+| `pos.exitsapps.com` | React client (`react-pos`) |
+| `admin.exitsapps.com` | React Platform Admin (`admin-web`) |
+
+`bnpl.exitsapps.com`, `loan.exitsapps.com`, `pawn.exitsapps.com`, and `service.exitsapps.com` stay planned. The preview does not publish them, and it does not publish `api.exitsapps.com`, PostgreSQL, or Mailpit. Cloudflare Access is required before anyone outside uses the preview hostnames.

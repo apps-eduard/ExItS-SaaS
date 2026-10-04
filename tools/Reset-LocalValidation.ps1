@@ -280,7 +280,7 @@ Write-Host 'Baseline: Olivia Mendoza + Rafael Torres (both Platform Administrato
 Write-Host 'Quick Login: exactly those 2 Platform accounts'
 Write-Host 'Transactional orgs/customers/subscriptions/payments: cleared'
 Write-Host 'Catalog/plans/features/built-in roles: retained via migrate+seed'
-Write-Host 'Admin (Blazor): http://localhost:8090/'
+Write-Host 'Platform Admin (React): http://127.0.0.1:8095/admin'
 Write-Host 'React Admin (activate/reset): http://127.0.0.1:8095/'
 Write-Host 'React POS: http://127.0.0.1:5177/'
 Write-Host 'Platform API: http://localhost:8091/'

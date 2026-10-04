@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   formatUiStandardsCursorClipboard,
   UiStandardsCopyCommand,
   uiStandardsClipboardWriter,
+  writeUiStandardsClipboardText,
 } from "@/features/ui-standards/UiStandardsCopyCommand";
 
 describe("formatUiStandardsCursorClipboard", () => {
@@ -39,7 +40,7 @@ describe("formatUiStandardsCursorClipboard", () => {
 });
 
 describe("UiStandardsCopyCommand", () => {
-  let writeSpy: ReturnType<typeof vi.spyOn<typeof uiStandardsClipboardWriter, "write">>;
+  let writeSpy: MockInstance<typeof writeUiStandardsClipboardText>;
 
   beforeEach(() => {
     writeSpy = vi.spyOn(uiStandardsClipboardWriter, "write").mockResolvedValue(undefined);

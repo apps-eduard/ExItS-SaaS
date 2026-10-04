@@ -14,6 +14,19 @@ const transferId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 const cokeId = "11111111-1111-1111-1111-111111111111";
 const lineId = "22222222-2222-2222-2222-222222222222";
 
+const sessionGrant: {
+  productAccessAllowed: boolean;
+  membershipRole?: string | null;
+  productLocalRoleCode?: string | null;
+  mappedPosRoleCode?: string | null;
+  organizationManagementAuthority?: boolean;
+} = {
+  productAccessAllowed: true,
+  membershipRole: "OrganizationOwner",
+  productLocalRoleCode: "Owner",
+  mappedPosRoleCode: "Owner",
+};
+
 const workspaceMock = {
   boundWorkspace: {
     organizationId: orgId,
@@ -22,11 +35,7 @@ const workspaceMock = {
     branchName: "Main Store",
     experience: "operations" as const,
   },
-  sessionGrant: {
-    productAccessAllowed: true,
-    membershipRole: "OrganizationOwner",
-    productLocalRoleCode: "Owner",
-  },
+  sessionGrant,
   workspaces: [
     {
       organizationId: orgId,
@@ -177,6 +186,10 @@ describe("Inventory Transfer React flow", () => {
           updatedAtUtc: "2026-08-29T09:00:00Z",
           createdBy: "99999999-9999-9999-9999-999999999999",
           dispatchedBy: "99999999-9999-9999-9999-999999999999",
+          hasRequestReplacementFollowUp: false,
+          remainingToDispatchQty: 0,
+          openInTransitQty: 24,
+          hasOpenDiscrepancyFollowUp: false,
         },
       ],
       totalCount: 1,

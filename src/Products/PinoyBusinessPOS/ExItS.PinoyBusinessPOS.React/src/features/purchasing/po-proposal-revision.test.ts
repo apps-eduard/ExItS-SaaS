@@ -35,6 +35,7 @@ function proposedOrder(): ConnectedPurchaseOrder {
         unitOfMeasureCode: "Kilogram",
         proposedQty: 4,
         proposedLineTotal: 800,
+        confirmedLineTotal: 800,
         availability: "Available",
       },
       {
@@ -47,6 +48,7 @@ function proposedOrder(): ConnectedPurchaseOrder {
         unitOfMeasureCode: "Kilogram",
         proposedQty: 2,
         proposedLineTotal: 160,
+        confirmedLineTotal: 0,
         availability: "Available",
       },
     ],
@@ -57,6 +59,15 @@ function proposedOrder(): ConnectedPurchaseOrder {
     changesProposedAtUtc: "2026-09-17T01:00:00Z",
     paymentTerm: "Cash",
     paymentTermLabel: "Cash",
+    paymentTiming: "PayBeforeFulfillment",
+    confirmedTotalAmount: 0,
+    refundDueAmount: 0,
+    amountPaid: 0,
+    balanceDue: 1120,
+    financialSettlementStatus: "NotRequired",
+    remainingDueAmount: 1120,
+    unresolvedReceivingIssueCount: 0,
+    hasPendingReceivingIssueReview: false,
   };
 }
 
@@ -119,6 +130,7 @@ describe("po-proposal-revision", () => {
           receivedQty: 0,
           outstandingQty: 4,
           uomSnapshot: "Kilogram",
+          needsProductSetup: false,
         },
         {
           lineId: "11111111-1111-4111-8111-111111111102",
@@ -131,6 +143,7 @@ describe("po-proposal-revision", () => {
           receivedQty: 0,
           outstandingQty: 4,
           uomSnapshot: "Kilogram",
+          needsProductSetup: false,
         },
       ],
       displayStatus: "ChangesNeedApproval",
@@ -138,7 +151,12 @@ describe("po-proposal-revision", () => {
       connectedLines: proposedOrder().lines,
       inventoryReservationExpiresAtUtc: "2026-09-18T01:00:00Z",
       changesProposedAtUtc: "2026-09-17T01:00:00Z",
-    } as PosPurchaseOrderDto;
+      needsProductSetup: false,
+      productSetupRequiredCount: 0,
+      refundDueAmount: 0,
+      financialSettlementStatus: "NotRequired",
+      remainingDueAmount: 0,
+    } satisfies PosPurchaseOrderDto;
 
     const buyer = buildProposalRevisionFromBuyerPo(buyerPo)!;
     expect(buyer.originalTotal).toBe(supplier.originalTotal);

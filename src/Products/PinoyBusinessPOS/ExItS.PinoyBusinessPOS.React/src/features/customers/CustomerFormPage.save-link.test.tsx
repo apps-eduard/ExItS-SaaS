@@ -99,6 +99,7 @@ describe("CustomerFormPage save vs resolve link", () => {
       linkedPersonalPublicUserId: null,
       linkedBuyerOrganizationId: null,
       linkedBuyerPublicOrganizationId: null,
+      onlineOrderingAccess: "Default",
     });
     vi.mocked(publicIdentityClient.createBusinessCustomerWithPersonalLink).mockResolvedValue({
       customerId: platformBusinessCustomerId,
@@ -219,6 +220,7 @@ describe("CustomerFormPage save vs resolve link", () => {
   it("does not send add/link when that Personal ID is already a POS customer", async () => {
     const user = userEvent.setup();
     vi.mocked(customersClient.findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      kind: "Customer",
       customerId: posCustomerId,
       displayName: "Rosa Personal",
       mobileNumber: null,

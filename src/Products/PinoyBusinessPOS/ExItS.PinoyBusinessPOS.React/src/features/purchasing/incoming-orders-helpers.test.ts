@@ -12,7 +12,7 @@ import {
 } from "@/features/purchasing/incoming-orders-helpers";
 
 function order(overrides: Partial<ConnectedPurchaseOrder> = {}): ConnectedPurchaseOrder {
-  return {
+  const row: ConnectedPurchaseOrder = {
     connectedPurchaseOrderId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     relationshipId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
@@ -55,10 +55,19 @@ function order(overrides: Partial<ConnectedPurchaseOrder> = {}): ConnectedPurcha
     buyerDisplayName: "Paul Store",
     paymentTerm: "Cash",
     paymentTermLabel: "Cash",
+    paymentTiming: "PayBeforeFulfillment",
     proposedTotalAmount: 0,
     confirmedTotalAmount: 0,
-    ...overrides,
+    inventoryReservationState: "None",
+    refundDueAmount: 0,
+    amountPaid: 0,
+    balanceDue: 490,
+    financialSettlementStatus: "NotRequired",
+    remainingDueAmount: 490,
+    unresolvedReceivingIssueCount: 0,
+    hasPendingReceivingIssueReview: false,
   };
+  return Object.assign(row, overrides);
 }
 
 describe("incoming-orders-helpers", () => {

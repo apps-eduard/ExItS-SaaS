@@ -385,7 +385,7 @@ export function PersonalUtangHubPage() {
               className="exits-chip-bar--scroll utang-hub-filters"
               activeKey={segment}
               onChange={(key) => setSegment(parseSegment(key))}
-              items={[
+              items={([
                 {
                   key: "all",
                   label: t("personal.utang.filterAll"),
@@ -411,7 +411,7 @@ export function PersonalUtangHubPage() {
                   label: t("personal.utang.ownershipSharedWithMe"),
                   icon: Share2,
                 },
-              ].map((item) => ({
+              ] as const).map((item) => ({
                 ...item,
                 count: allActive.length > 0 ? countSegment(allActive, item.key) : undefined,
                 testId: `utang-segment-${item.key}`,

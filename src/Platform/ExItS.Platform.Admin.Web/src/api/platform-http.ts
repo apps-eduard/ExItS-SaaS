@@ -227,6 +227,9 @@ export type PlatformRequestOptions = {
   /** When true, 401 responses do not trigger the central session-expiry transition. */
   skipSessionExpiry?: boolean;
 
+  /** Extra headers. Do not put secrets into logs or storage. */
+  headers?: Record<string, string>;
+
 };
 
 
@@ -475,6 +478,14 @@ export async function platformRequest<T>(
 
     headers.set("Content-Type", "application/json");
 
+  }
+
+  if (options.headers) {
+    for (const [name, value] of Object.entries(options.headers)) {
+      if (value.trim().length > 0) {
+        headers.set(name, value);
+      }
+    }
   }
 
 

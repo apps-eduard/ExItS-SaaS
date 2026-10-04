@@ -613,7 +613,7 @@ export function BusinessCustomerDetailPage() {
               </div>
             ) : (
               <BranchFulfillmentSwitch
-                checked={customer.customerDeliveryOverride !== "block"}
+                checked
                 disabled={!allowManage || deliveryAllowanceMutation.isPending}
                 pending={deliveryAllowanceMutation.isPending}
                 label={t("customers.business.deliveryAllowance")}

@@ -163,6 +163,7 @@ describe("SupplierDetailPage: cancel connection request", () => {
         customerDiscountPercent: null,
         supplierBranchId: branchId,
         supplierBranchName: "Main Branch",
+        initiatedByParty: "Buyer",
       },
     ]);
 

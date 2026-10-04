@@ -13,8 +13,6 @@ export const DEV_PORT_TARGETS: readonly DevPortTarget[] = [
   { port: 8090, name: "Platform Admin" },
   { port: 8091, name: "Platform API" },
   { port: 8092, name: "POS API" },
-  { port: 8093, name: "Organization Web" },
-  { port: 8094, name: "Personal Web" },
   { port: 8095, name: "React Admin" },
   { port: 5177, name: "React POS" },
   { port: 8025, name: "Mailpit" },

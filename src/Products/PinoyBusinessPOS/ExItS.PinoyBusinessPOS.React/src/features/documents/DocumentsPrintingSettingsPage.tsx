@@ -222,10 +222,9 @@ export function DocumentsPrintingSettingsPage() {
                 </div>
               </dl>
               <p className="m-0 text-sm" data-testid="documents-bir-readiness">
-                {t("documentsPrinting.birReadinessSummary", {
-                  blockers: String(readinessQuery.data?.blockingCount ?? "—"),
-                  warnings: String(readinessQuery.data?.warningCount ?? "—"),
-                })}
+                {t("documentsPrinting.birReadinessSummary")
+                  .replaceAll("{{blockers}}", String(readinessQuery.data?.blockingCount ?? "—"))
+                  .replaceAll("{{warnings}}", String(readinessQuery.data?.warningCount ?? "—"))}
               </p>
             </>
           )}

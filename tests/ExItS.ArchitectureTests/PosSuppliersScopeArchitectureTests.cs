@@ -114,32 +114,9 @@ public sealed class PosSuppliersScopeArchitectureTests
     }
 
     [Fact]
-    public void Maui_supplier_pages_do_not_surface_payables_or_receiving()
+    public void Maui_supplier_ui_is_retired()
     {
-        var pages = Path.Combine(
-            PosProject("ExItS.PinoyBusinessPOS.Maui"), "Components", "Pages", "Suppliers");
-        Assert.True(Directory.Exists(pages), pages);
-
-        foreach (var file in Directory.EnumerateFiles(pages, "*.*", SearchOption.AllDirectories))
-        {
-            if (!file.EndsWith(".razor", StringComparison.OrdinalIgnoreCase)
-                && !file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var text = File.ReadAllText(file);
-            // Connected-supplier Phase 1 may navigate to purchase orders / linked catalog.
-            // Supplier master-data pages still must not embed receiving or accounts-payable.
-            foreach (var forbidden in new[]
-                     {
-                         "GoodsReceipt", "Receiving", "AccountsPayable",
-                         "SupplierInvoice", "AccountsPayableLedger", "CostHistory", "PurchaseReturn"
-                     })
-            {
-                Assert.DoesNotContain(forbidden, text, StringComparison.OrdinalIgnoreCase);
-            }
-        }
+        Assert.False(Directory.Exists(PosProject("ExItS.PinoyBusinessPOS.Maui")));
     }
 
     private static IEnumerable<string> SupplierSourceFiles()
@@ -149,8 +126,7 @@ public sealed class PosSuppliersScopeArchitectureTests
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Suppliers"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Application"), "Suppliers"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "Suppliers"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Suppliers"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Maui"), "Components", "Pages", "Suppliers")
+            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Suppliers")
         };
 
         foreach (var root in roots)

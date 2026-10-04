@@ -167,6 +167,30 @@ export async function declinePersonalUtangInvitation(
   });
 }
 
+export async function acceptPersonalUtangInvitationById(
+  invitationId: string,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  return platformRequest({
+    method: "POST",
+    path: `${UTANG}/invitations/accept-by-id`,
+    body: { invitationId },
+    signal,
+  });
+}
+
+export async function declinePersonalUtangInvitationById(
+  invitationId: string,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  return platformRequest({
+    method: "POST",
+    path: `${UTANG}/invitations/decline-by-id`,
+    body: { invitationId },
+    signal,
+  });
+}
+
 export async function resendPersonalUtangInvitation(
   invitationId: string,
   signal?: AbortSignal,

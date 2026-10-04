@@ -13,9 +13,7 @@ public sealed class PinoyLoanManagerArchitectureTests
             Path.Combine(root, "src", "Products", "PinoyLoanManager", "ExItS.PinoyLoanManager.Application",
                 "ExItS.PinoyLoanManager.Application.csproj"),
             Path.Combine(root, "src", "Products", "PinoyLoanManager", "ExItS.PinoyLoanManager.ApiClient",
-                "ExItS.PinoyLoanManager.ApiClient.csproj"),
-            Path.Combine(root, "src", "Products", "PinoyLoanManager", "ExItS.PinoyLoanManager.Web",
-                "ExItS.PinoyLoanManager.Web.csproj")
+                "ExItS.PinoyLoanManager.ApiClient.csproj")
         };
 
         foreach (var project in projects)
@@ -79,7 +77,7 @@ public sealed class PinoyLoanManagerArchitectureTests
         Assert.Contains("ExItS.PinoyLoanManager.Infrastructure.csproj", slnx, StringComparison.Ordinal);
         Assert.Contains("ExItS.PinoyLoanManager.Api.csproj", slnx, StringComparison.Ordinal);
         Assert.Contains("ExItS.PinoyLoanManager.ApiClient.csproj", slnx, StringComparison.Ordinal);
-        Assert.Contains("ExItS.PinoyLoanManager.Web.csproj", slnx, StringComparison.Ordinal);
+        Assert.DoesNotContain("ExItS.PinoyLoanManager.Web.csproj", slnx, StringComparison.Ordinal);
         Assert.Contains("ExItS.PinoyLoanManager.UnitTests.csproj", slnx, StringComparison.Ordinal);
         Assert.DoesNotContain("ExItS.PinoyLoanManager.Maui.csproj", slnx, StringComparison.Ordinal);
         Assert.DoesNotContain("ExItS.PinoyLoanManager.LocalStore.csproj", slnx, StringComparison.Ordinal);

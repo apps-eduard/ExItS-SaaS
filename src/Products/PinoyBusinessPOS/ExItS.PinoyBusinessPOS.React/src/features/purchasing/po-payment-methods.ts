@@ -1,3 +1,5 @@
+import type { MessageKey } from "@/i18n/messages";
+
 /** Connected PO intended payment methods (not proof of payment). */
 export type ConnectedPoPaymentMethodCode =
   | "Cash"
@@ -9,7 +11,7 @@ export type ConnectedPoPaymentMethodCode =
 
 export type ConnectedPoPaymentOption = {
   code: ConnectedPoPaymentMethodCode;
-  labelKey: string;
+  labelKey: MessageKey;
   /** Fallback help when timing is unknown — prefer resolveConnectedPoPaymentHelpKey. */
   helpKey: string;
   /** When true, option requires Utang eligibility. */
@@ -98,7 +100,7 @@ export function resolveConnectedPoPaymentHelpKey(
 
 export type PoUtangEligibility =
   | { eligible: true }
-  | { eligible: false; reasonKey: string };
+  | { eligible: false; reasonKey: MessageKey };
 
 /** Reuse B2B credit policy projection for Utang on Create PO. */
 export function resolvePoUtangEligibility(args: {

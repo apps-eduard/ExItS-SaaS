@@ -135,7 +135,7 @@ vi.mock("@/api/pos/pos-business-credit-policy-client", () => ({
 function businessCustomer(
   overrides: Partial<connectedClient.BusinessCustomer> = {},
 ): connectedClient.BusinessCustomer {
-  return {
+  const row: connectedClient.BusinessCustomer = {
     connectionId,
     supplierOrganizationId: orgId,
     buyerOrganizationId: buyerOrgId,
@@ -153,8 +153,26 @@ function businessCustomer(
     createdAtUtc: "2026-08-01T00:00:00Z",
     updatedAtUtc: "2026-08-01T00:00:00Z",
     displayNameIsLive: false,
-    ...overrides,
+    actionRequired: false,
+    supplierBranchId: null,
+    supplierBranchName: null,
+    contactSource: "Custom",
+    organizationMemberId: null,
+    organizationMemberAvailable: null,
+    contactPersonName: null,
+    contactDepartment: null,
+    contactRole: null,
+    contactPhone: null,
+    contactEmail: null,
+    preferredContactMethod: null,
+    deliveryInstructions: null,
+    billingContactNotes: null,
+    internalNotes: null,
+    customerDeliveryOverride: "inherit",
+    orgOfferDelivery: false,
+    effectiveDeliveryAllowed: false,
   };
+  return Object.assign(row, overrides);
 }
 
 describe("Business Customer identity display", () => {

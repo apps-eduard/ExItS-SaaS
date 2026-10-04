@@ -68,9 +68,6 @@ import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
 
-function lineQtyLabel(line: ConnectedPurchaseOrderLine): string {
-  return formatStockQtyLabel(line.qty, line.unitOfMeasureCode);
-}
 
 function confirmedLineTotal(unitPrice: number, confirmQty: number): number {
   return roundMoneyAmount(unitPrice * Math.max(0, confirmQty));

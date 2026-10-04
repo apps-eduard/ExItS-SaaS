@@ -15,7 +15,14 @@ const mocks = vi.hoisted(() => ({
     registerCode: string;
     registerName: string;
   },
-  listCashierShifts: vi.fn(async () => ({
+  listCashierShifts: vi.fn(
+    async (
+      _workspace: { organizationId: string; branchId?: string | null },
+      options?: { actorId?: string; status?: string; registerId?: string },
+    ) => {
+      void _workspace;
+      void options;
+      return {
     items: [
       {
         shiftId: "shift-paul-1",
@@ -41,7 +48,9 @@ const mocks = vi.hoisted(() => ({
     totalCount: 1,
     page: 1,
     pageSize: 30,
-  })),
+  };
+    },
+  ),
 }));
 
 vi.mock("@/i18n/I18nProvider", () => ({

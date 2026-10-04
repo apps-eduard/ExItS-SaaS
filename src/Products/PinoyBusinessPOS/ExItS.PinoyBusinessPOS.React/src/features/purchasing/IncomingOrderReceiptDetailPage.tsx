@@ -103,9 +103,10 @@ export function IncomingOrderReceiptDetailPage() {
       : t("incomingOrders.receiptPosted");
   const statusTone = receipt.status === "Voided" ? "danger" : "success";
 
+  const postedReceipt = receipt;
   function runReceiptOutput(action: "csv" | "xlsx" | "pdf" | "print") {
-    const filenameBase = sanitizeCsvFilenamePart(receipt.grnNumber || "grn");
-    const rows = receipt.lines.map((line) => [
+    const filenameBase = sanitizeCsvFilenamePart(postedReceipt.grnNumber || "grn");
+    const rows = postedReceipt.lines.map((line) => [
       line.nameSnapshot,
       line.goodQty,
       line.damagedQty,
@@ -117,7 +118,7 @@ export function IncomingOrderReceiptDetailPage() {
     if (action === "csv") {
       const text = buildCsvWithMetadata(
         [
-          ["Goods receipt", receipt.grnNumber],
+          ["Goods receipt", postedReceipt.grnNumber],
           ["PO", order.buyerPoNumber ?? ""],
           ["Status", statusLabel],
           ["Exported at", new Date().toISOString()],
@@ -134,7 +135,7 @@ export function IncomingOrderReceiptDetailPage() {
     if (action === "xlsx") {
       const workbook = XLSX.utils.book_new();
       const sheet = XLSX.utils.aoa_to_sheet([
-        ["Goods receipt", receipt.grnNumber],
+        ["Goods receipt", postedReceipt.grnNumber],
         ["PO", order.buyerPoNumber ?? ""],
         ["Status", statusLabel],
         [],
@@ -154,7 +155,7 @@ export function IncomingOrderReceiptDetailPage() {
     if (action === "pdf") {
       const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
       doc.setFontSize(14);
-      doc.text(receipt.grnNumber, 40, 40);
+      doc.text(postedReceipt.grnNumber, 40, 40);
       doc.setFontSize(10);
       doc.text(`${statusLabel} · ${new Date().toLocaleString()}`, 40, 58);
       autoTable(doc, {

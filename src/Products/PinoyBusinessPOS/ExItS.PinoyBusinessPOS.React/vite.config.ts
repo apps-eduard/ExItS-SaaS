@@ -89,6 +89,60 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalized = id.replaceAll("\\", "/");
+          if (normalized.includes("/src/i18n/locales/")) {
+            return "i18n-locales";
+          }
+          if (!normalized.includes("node_modules")) {
+            return undefined;
+          }
+          if (
+            /\/node_modules\/react-dom\//.test(normalized) ||
+            /\/node_modules\/react\//.test(normalized) ||
+            /\/node_modules\/scheduler\//.test(normalized)
+          ) {
+            return "vendor-react";
+          }
+          if (normalized.includes("/lucide-react/")) {
+            return "vendor-icons";
+          }
+          if (
+            normalized.includes("/recharts/") ||
+            normalized.includes("/d3-") ||
+            normalized.includes("/victory-vendor/")
+          ) {
+            return "vendor-charts";
+          }
+          if (normalized.includes("/xlsx/")) {
+            return "vendor-xlsx";
+          }
+          if (
+            normalized.includes("/jspdf/") ||
+            normalized.includes("/jspdf-autotable/") ||
+            normalized.includes("/html2canvas/") ||
+            normalized.includes("/canvg/")
+          ) {
+            return "vendor-pdf";
+          }
+          if (normalized.includes("/jsqr/")) {
+            return "vendor-jsqr";
+          }
+          if (
+            normalized.includes("/framer-motion/") ||
+            normalized.includes("/motion-dom/") ||
+            normalized.includes("/motion/")
+          ) {
+            return "vendor-motion";
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "src"),

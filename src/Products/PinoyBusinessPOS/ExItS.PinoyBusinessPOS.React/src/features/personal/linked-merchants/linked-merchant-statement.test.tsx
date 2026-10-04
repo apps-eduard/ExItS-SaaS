@@ -83,6 +83,10 @@ describe("LinkedMerchantStatementPage", () => {
       outstandingBalance: 0,
       currency: "PHP",
       asOfUtc: "2026-08-22T00:00:00Z",
+      onlineOrderingAccess: "Default",
+      onlineShoppingAllowed: false,
+      pendingOnlineUtangCommitment: 0,
+      availableCredit: 0,
     });
     vi.mocked(linkedClient.listLinkedCustomerRecentActivity).mockResolvedValue({
       organizationId,
@@ -194,6 +198,10 @@ describe("LinkedMerchantStatementPage", () => {
       outstandingBalance: 0,
       currency: "PHP",
       asOfUtc: "2026-08-22T00:00:00Z",
+      onlineOrderingAccess: "Default",
+      onlineShoppingAllowed: false,
+      pendingOnlineUtangCommitment: 0,
+      availableCredit: 0,
     });
     vi.mocked(linkedClient.listLinkedCustomerRecentActivity).mockResolvedValue({
       organizationId,
@@ -227,6 +235,8 @@ describe("LinkedMerchantStatementPage", () => {
       outstandingBalance: 250,
       currency: "PHP",
       asOfUtc: "2026-08-22T00:00:00Z",
+      onlineOrderingAccess: "Blocked",
+      onlineShoppingAllowed: false,
       creditLimit: 5000,
       pendingOnlineUtangCommitment: 0,
       availableCredit: 3395,
@@ -250,11 +260,10 @@ describe("LinkedMerchantStatementPage", () => {
           sourceSaleId: null,
         },
       ],
+      outstandingBalance: 250,
       page: 1,
       pageSize: 10,
       hasMore: false,
-      canAccessExtendedHistory: false,
-      freeHistoryStartsAtUtc: "2026-05-01T00:00:00Z",
     });
     vi.mocked(linkedClient.listLinkedCustomerRecentActivity).mockResolvedValue({
       organizationId,

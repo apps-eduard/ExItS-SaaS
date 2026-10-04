@@ -82,6 +82,7 @@ type SharedPolicyHistoryItem = {
 type SharedPolicyHistoryPaged = {
   items: SharedPolicyHistoryItem[];
   totalCount: number;
+  page: number;
   pageSize: number;
 };
 
@@ -119,15 +120,15 @@ type CreditTermsSectionProps = (PersonalProps | BusinessProps) & {
   onOpenReceivables?: () => void;
   subjectIdentity?: string | null;
   policyOverride?: SharedPolicy | null;
-  titleKey: string;
+  titleKey: MessageKey;
   hintKeys: {
-    notApproved: string;
-    pending: string;
-    disabled: string;
-    allowCreditOff: MessageKey | string;
-    allowCreditNeedsSetup: MessageKey | string;
+    notApproved: MessageKey;
+    pending: MessageKey;
+    disabled: MessageKey;
+    allowCreditOff: MessageKey;
+    allowCreditNeedsSetup: MessageKey;
   };
-  checkoutNoteKey: string;
+  checkoutNoteKey: MessageKey;
   sectionQueryPrefix: "customers" | "business-customers";
   statementPath: (id: string) => string;
   getPolicy: (

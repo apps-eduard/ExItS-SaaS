@@ -4,8 +4,8 @@
   Stops local Local Validation ExItS apps started by tools/Start-LocalValidation.ps1.
 
 .DESCRIPTION
-  - Stops only repo-scoped ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin /
-    ExItS.PinoyBusinessPOS.Web / ExItS.Personal.Web, launcher PowerShell windows recorded in launcher-state.json,
+  - Stops only repo-scoped ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api /
+    the React admin-web container, launcher PowerShell windows recorded in launcher-state.json,
     and React POS Vite listeners on :5177.
   - Leaves PostgreSQL containers running by default.
   - -StopDatabases stops DB containers without deleting volumes (never compose down with -v).
@@ -103,7 +103,7 @@ if ($stateMode -ne 'DockerApps' -and (Test-Path -LiteralPath $envFile) -and (Tes
     $null = Invoke-LocalValidationDocker -DockerArgs @(
         'compose', '-p', $LocalValidationStack.ComposeProjectName,
         '-f', $composeFile, '--env-file', $envFile,
-        'stop', 'admin-web-react'
+        'stop', 'admin-web'
     )
 }
 

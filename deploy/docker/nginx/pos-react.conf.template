@@ -16,6 +16,11 @@ server {
 
     client_max_body_size 25m;
 
+    # Docker's DNS. A literal proxy_pass host is resolved once at nginx start.
+    # Cloudflare preview recreates platform-api and pos-api, and a pinned address
+    # then answers /health while auth routes 404 on whichever container inherited it.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     # Do not cache the SPA shell — keep deployments honest.
     location = /index.html {
         add_header Cache-Control "no-cache";
@@ -24,7 +29,9 @@ server {
 
     location /platform-api/ {
         proxy_http_version 1.1;
-        proxy_pass ${PLATFORM_API_UPSTREAM}/;
+        set $platform_api_upstream ${PLATFORM_API_UPSTREAM};
+        rewrite ^/platform-api/(.*)$ /$1 break;
+        proxy_pass $platform_api_upstream;
         proxy_set_header Host ${PLATFORM_API_PROXY_HOST};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -43,7 +50,9 @@ server {
 
     location /pos-api/ {
         proxy_http_version 1.1;
-        proxy_pass ${POS_API_UPSTREAM}/;
+        set $pos_api_upstream ${POS_API_UPSTREAM};
+        rewrite ^/pos-api/(.*)$ /$1 break;
+        proxy_pass $pos_api_upstream;
         proxy_set_header Host ${POS_API_PROXY_HOST};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { MessageKey } from "@/i18n/messages";
 import {
   getInventoryProductReservations,
   type PosInventoryReservationItemDto,
@@ -88,7 +89,7 @@ export function resolveReservedCommitmentTotal(data: PosInventoryReservationsDto
 
 export function resolveTransferRouteLabel(
   item: PosInventoryReservationItemDto,
-  t: (key: string) => string,
+  t: (key: MessageKey) => string,
 ): string | null {
   if (!isTransferCommitmentItem(item)) {
     return null;
@@ -102,7 +103,7 @@ export function resolveTransferRouteLabel(
 
 function reservationTypeLabel(
   item: PosInventoryReservationItemDto,
-  t: (key: string) => string,
+  t: (key: MessageKey) => string,
 ): string {
   if (item.reservationType === "TemporaryProposal") {
     return t("inventory.reservationTypeTemporary");
@@ -121,7 +122,7 @@ function reservationTypeLabel(
 
 function reservationStatusLabel(
   item: PosInventoryReservationItemDto,
-  t: (key: string) => string,
+  t: (key: MessageKey) => string,
 ): string {
   if (item.status === "Temporary") {
     return t("inventory.reservationStatusTemporary");

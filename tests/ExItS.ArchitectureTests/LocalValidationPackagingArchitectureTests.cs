@@ -18,10 +18,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("name: exits-packaging", packaging, StringComparison.Ordinal);
         Assert.Contains("admin-web:", live, StringComparison.Ordinal);
         Assert.Contains("exits-local-validation-admin-web", live, StringComparison.Ordinal);
-        Assert.Contains("org-web:", live, StringComparison.Ordinal);
-        Assert.Contains("exits-local-validation-org-web", live, StringComparison.Ordinal);
-        Assert.Contains("personal-web:", live, StringComparison.Ordinal);
-        Assert.Contains("exits-local-validation-personal-web", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("org-web:", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("exits-local-validation-org-web", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("personal-web:", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("exits-local-validation-personal-web", live, StringComparison.Ordinal);
         Assert.Contains("profiles: [\"apps\"]", live, StringComparison.Ordinal);
         Assert.Contains("exits_local_validation_platform_db_data", live, StringComparison.Ordinal);
         Assert.Contains("exits_local_validation_pos_db_data", live, StringComparison.Ordinal);
@@ -50,8 +50,8 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.True(File.Exists(Path.Combine(root, "tools", "Start-DockerLocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Stop-DockerLocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Reset-LocalValidation.ps1")));
-        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.organization-web")));
-        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.personal-web")));
+        Assert.False(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.organization-web")));
+        Assert.False(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.personal-web")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Start-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Stop-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Reset-LocalValidation.ps1")));
@@ -84,11 +84,11 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("PlatformAuthentication__Password__MinimumLength", startScript, StringComparison.Ordinal);
         Assert.Contains("PlatformAuthentication__Password__RequireUppercase", startScript, StringComparison.Ordinal);
         Assert.Contains("New-NetFirewallRule", startScript, StringComparison.Ordinal);
-        Assert.Contains("LocalPort 8090", startScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalPort 8090", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8091", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8092", startScript, StringComparison.Ordinal);
-        Assert.Contains("LocalPort 8093", startScript, StringComparison.Ordinal);
-        Assert.Contains("LocalPort 8094", startScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalPort 8093", startScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalPort 8094", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8095", startScript, StringComparison.Ordinal);
         Assert.Contains("Profile Private", startScript, StringComparison.Ordinal);
         Assert.Contains("PLATFORM_API_SAME_ORIGIN", startScript, StringComparison.Ordinal);
@@ -116,10 +116,7 @@ public sealed class LocalValidationPackagingArchitectureTests
         var posLaunch = File.ReadAllText(Path.Combine(
             root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Api", "Properties", "launchSettings.json"));
         Assert.Contains("http://0.0.0.0:8092", posLaunch, StringComparison.Ordinal);
-        // Admin LV bind comes from Start-LocalValidation.ps1 ASPNETCORE_URLS (no LocalValidation launch profile).
-        var adminLaunch = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Properties", "launchSettings.json"));
-        Assert.DoesNotContain("LocalValidation", adminLaunch, StringComparison.OrdinalIgnoreCase);
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin")));
 
         var resetScript = File.ReadAllText(Path.Combine(root, "tools", "Reset-LocalValidation.ps1"));
         Assert.Contains("ConfirmReset", resetScript, StringComparison.Ordinal);
@@ -141,18 +138,21 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("exits_local_validation_platform_db_data", stackScript, StringComparison.Ordinal);
         Assert.Contains("exits_local_validation_pos_db_data", stackScript, StringComparison.Ordinal);
 
-        Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8095}:8080", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("admin-web-react", live, StringComparison.Ordinal);
+        Assert.Contains("Dockerfile.platform-admin-web", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080", live, StringComparison.Ordinal);
-        Assert.Contains("${LOCAL_VALIDATION_ORG_WEB_HOST_PORT:-8093}:8080", live, StringComparison.Ordinal);
-        Assert.Contains("${LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT:-8094}:8080", live, StringComparison.Ordinal);
-        Assert.Contains("${LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT:-8095}:8080", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("${LOCAL_VALIDATION_ORG_WEB_HOST_PORT:-8093}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_REACT_POS_HOST_PORT:-5177}:80", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("8094", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("${LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT:-8095}:8080", live, StringComparison.Ordinal);
         Assert.Contains("PLATFORM_API_SAME_ORIGIN", live, StringComparison.Ordinal);
         Assert.Contains("PLATFORM_API_PROXY_TARGET", live, StringComparison.Ordinal);
         Assert.Contains("http://localhost:8095", live, StringComparison.Ordinal);
         Assert.Contains("http://127.0.0.1:8095", live, StringComparison.Ordinal);
         Assert.Contains(
-            "PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}",
+            "PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://127.0.0.1:8095}",
             live,
             StringComparison.Ordinal);
         Assert.DoesNotContain("100.120.79.81", live, StringComparison.Ordinal);
@@ -179,7 +179,8 @@ public sealed class LocalValidationPackagingArchitectureTests
 
         var text = File.ReadAllText(liveEnv);
         Assert.Contains("REPLACE_LOCAL_VALIDATION_PLATFORM_DB_PASSWORD", text, StringComparison.Ordinal);
-        Assert.Contains("8090", text, StringComparison.Ordinal);
+        Assert.Contains("8095", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("8090", text, StringComparison.Ordinal);
         Assert.DoesNotContain("exits_platform_dev_only", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PLATFORM_API_HOST_PORT=8081", text, StringComparison.Ordinal);
     }

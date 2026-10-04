@@ -397,14 +397,14 @@ export function QuantityStepper({
       return;
     }
     if (hasParentSteps) {
-      onDecrement?.();
+      if (typeof onDecrement === "function") {
+        onDecrement();
+      }
       return;
     }
     if (onChange) {
       stepControlledValue(editable ? resolveDraftNumber() : numeric, -1);
-      return;
     }
-    onDecrement?.();
   }
 
   function handlePlus() {
@@ -412,14 +412,14 @@ export function QuantityStepper({
       return;
     }
     if (hasParentSteps) {
-      onIncrement?.();
+      if (typeof onIncrement === "function") {
+        onIncrement();
+      }
       return;
     }
     if (onChange) {
       stepControlledValue(editable ? resolveDraftNumber() : numeric, 1);
-      return;
     }
-    onIncrement?.();
   }
 
   function resolveDraftNumber(): number {

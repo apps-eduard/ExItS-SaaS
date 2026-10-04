@@ -97,6 +97,10 @@ describe("loadStoresToPayPreview", () => {
         outstandingBalance: 2000,
         currency: "PHP",
         asOfUtc: "2026-08-22T00:00:00Z",
+        onlineOrderingAccess: "Default",
+        onlineShoppingAllowed: false,
+        pendingOnlineUtangCommitment: 0,
+        availableCredit: 0,
       })
       .mockResolvedValueOnce({
         organizationId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
@@ -107,6 +111,10 @@ describe("loadStoresToPayPreview", () => {
         customerDisplayName: "Toto",
         outstandingBalance: 1500,
         currency: "PHP",
+        onlineOrderingAccess: "Default",
+        onlineShoppingAllowed: false,
+        pendingOnlineUtangCommitment: 0,
+        availableCredit: 0,
         asOfUtc: "2026-08-22T00:00:00Z",
       })
       .mockResolvedValueOnce({
@@ -119,6 +127,10 @@ describe("loadStoresToPayPreview", () => {
         outstandingBalance: 0,
         currency: "PHP",
         asOfUtc: "2026-08-22T00:00:00Z",
+        onlineOrderingAccess: "Default",
+        onlineShoppingAllowed: false,
+        pendingOnlineUtangCommitment: 0,
+        availableCredit: 0,
       });
 
     const result = await loadStoresToPayPreview();
@@ -205,6 +217,10 @@ describe("loadStoresToPayPreview", () => {
       outstandingBalance: 100,
       currency: "PHP",
       asOfUtc: "2026-08-27T00:00:00Z",
+      onlineOrderingAccess: "Default",
+      onlineShoppingAllowed: false,
+      pendingOnlineUtangCommitment: 0,
+      availableCredit: 0,
     });
 
     const result = await loadStoresToPayPreview();

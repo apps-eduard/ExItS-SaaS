@@ -1,12 +1,10 @@
 <Solution>
   <Folder Name="/src/" />
   <Folder Name="/src/Platform/">
-    <Project Path="src/Platform/ExItS.Platform.Admin/ExItS.Platform.Admin.csproj" />
     <Project Path="src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj" />
     <Project Path="src/Platform/ExItS.Platform.Application/ExItS.Platform.Application.csproj" />
     <Project Path="src/Platform/ExItS.Platform.Domain/ExItS.Platform.Domain.csproj" />
     <Project Path="src/Platform/ExItS.Platform.Infrastructure/ExItS.Platform.Infrastructure.csproj" />
-    <Project Path="src/Platform/ExItS.Personal.Web/ExItS.Personal.Web.csproj" />
   </Folder>
   <Folder Name="/src/Products/PinoyBusinessPOS/">
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ExItS.PinoyBusinessPOS.Api.csproj" />
@@ -15,8 +13,6 @@
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ExItS.PinoyBusinessPOS.Domain.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ExItS.PinoyBusinessPOS.Infrastructure.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ExItS.PinoyBusinessPOS.LocalStore.csproj" />
-    <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" />
-    <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ExItS.PinoyBusinessPOS.Web.csproj" />
   </Folder>
   <Folder Name="/src/Products/PinoyLoanManager/">
     <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Api/ExItS.PinoyLoanManager.Api.csproj" />
@@ -24,7 +20,6 @@
     <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Application/ExItS.PinoyLoanManager.Application.csproj" />
     <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Domain/ExItS.PinoyLoanManager.Domain.csproj" />
     <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Infrastructure/ExItS.PinoyLoanManager.Infrastructure.csproj" />
-    <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Web/ExItS.PinoyLoanManager.Web.csproj" />
   </Folder>
   <Folder Name="/src/Products/PinoyBuyNowPayLater/">
     <Project Path="src/Products/PinoyBuyNowPayLater/ExItS.PinoyBuyNowPayLater.Api/ExItS.PinoyBuyNowPayLater.Api.csproj" />
@@ -39,16 +34,13 @@
     <Project Path="src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Infrastructure/ExItS.PinoyPawnManager.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
-    <Project Path="src/Shared/ExItS.DesignSystem/ExItS.DesignSystem.csproj" />
     <Project Path="src/Shared/ExItS.BackupRestore/ExItS.BackupRestore.csproj" />
     <Project Path="src/Shared/ExItS.Deployment/ExItS.Deployment.csproj" />
-    <Project Path="src/Shared/ExItS.Web.UI/ExItS.Web.UI.csproj" />
   </Folder>
   <Folder Name="/src/Products/">
     <Folder Name="/src/Products/PinoyBusinessPOS/">
       <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ExItS.PinoyBusinessPOS.Application.csproj" />
       <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ExItS.PinoyBusinessPOS.ApiClient.csproj" />
-      <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" />
     </Folder>
   </Folder>
   <Folder Name="/tests/">
@@ -57,15 +49,10 @@
     <Project Path="tests/ExItS.PinoyLoanManager.UnitTests/ExItS.PinoyLoanManager.UnitTests.csproj" />
     <Project Path="tests/ExItS.PinoyBuyNowPayLater.UnitTests/ExItS.PinoyBuyNowPayLater.UnitTests.csproj" />
     <Project Path="tests/ExItS.PinoyPawnManager.UnitTests/ExItS.PinoyPawnManager.UnitTests.csproj" />
-    <Project Path="tests/ExItS.Platform.Admin.UnitTests/ExItS.Platform.Admin.UnitTests.csproj" />
     <Project Path="tests/ExItS.Platform.IntegrationTests/ExItS.Platform.IntegrationTests.csproj" />
     <Project Path="tests/ExItS.Platform.UnitTests/ExItS.Platform.UnitTests.csproj" />
-    <Project Path="tests/ExItS.DesignSystem.Tests/ExItS.DesignSystem.Tests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/ExItS.PinoyBusinessPOS.ApiClient.Tests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.IntegrationTests/ExItS.PinoyBusinessPOS.IntegrationTests.csproj" />
-    <Project Path="tests/ExItS.PinoyBusinessPOS.Maui.Tests/ExItS.PinoyBusinessPOS.Maui.Tests.csproj" />
-    <Project Path="tests/ExItS.PinoyBusinessPOS.Web.Tests/ExItS.PinoyBusinessPOS.Web.Tests.csproj" />
-    <Project Path="tests/ExItS.Personal.Web.Tests/ExItS.Personal.Web.Tests.csproj" />
     <Project Path="tests/ExItS.BackupRestore.Tests/ExItS.BackupRestore.Tests.csproj" />
     <Project Path="tests/ExItS.Deployment.Tests/ExItS.Deployment.Tests.csproj" />
     <Project Path="tests/ExItS.LocalValidation.Supervisor.Tests/ExItS.LocalValidation.Supervisor.Tests.csproj" />

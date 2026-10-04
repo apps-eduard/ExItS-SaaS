@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { formatLotBatchLabel } from "@/features/inventory/inventory-detail-helpers";
 import { resolveLotExpiryLabel } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 
 type InventoryLotListProps = {
   lots: PosInventoryLotDto[];
@@ -33,7 +34,7 @@ function statusBadgeClass(lot: PosInventoryLotDto): string {
 
 function lockReasonMessage(
   reason: string | null | undefined,
-  t: (key: string) => string,
+  t: (key: MessageKey) => string,
 ): string {
   switch (reason) {
     case "ActiveTransferDraft":

@@ -2,6 +2,8 @@
 
 Authoritative architecture notes for ExItS SaaS. Prefer these over ad-hoc chat summaries when they conflict with older drafts.
 
+Current client standard: React + TypeScript in the browser, and React PWA/Capacitor for mobile. .NET MAUI is removed. Blazor hosts remain only for the gaps in [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md). ASP.NET Core APIs stay.
+
 | Document | Purpose |
 |---|---|
 | [Domain and subdomain strategy](domain-and-subdomain-strategy.md) | Canonical `exitsapps.com` brand domain, marketing paths, and application subdomains |

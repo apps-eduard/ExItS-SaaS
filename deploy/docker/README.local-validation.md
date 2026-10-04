@@ -4,7 +4,7 @@ Production-equivalent **local deployment** for validation. Same application code
 
 **Not** packaging (`compose.yaml`). Does **not** close Phase 16 or start Phase 17. Production topology template remains `compose.production.yaml`.
 
-For an **isolated legacy MAUI + Blazor** stack that can run beside React (ports `8190–8194`, DBs `16533/16534`, Mailpit `8125`), see [README.maui-local-validation.md](./README.maui-local-validation.md) and `.\tools\Start-MauiLegacyLocalValidation.ps1`.
+.NET MAUI and its isolated Local Validation stack are retired. See [ADR-024](../../docs/decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md).
 
 ## FAST host mode (preferred daily command)
 
@@ -15,7 +15,7 @@ From repository root:
 ```
 
 This keeps PostgreSQL and Mailpit in Docker while the five .NET apps run with `dotnet watch`,
-React Admin on 8095 (Docker production image, parallel to Blazor Admin on 8090), and
+React Platform Admin on 8095 (`admin-web`), and
 canonical React POS Vite on `:5177` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`).
 
 After start, the launcher prints:
@@ -36,9 +36,11 @@ Use the production-shaped container topology for end-to-end image validation:
 .\tools\Start-DockerLocalValidation.ps1 -Build
 ```
 
-This runs the full application stack in Docker (Platform API `:8091`, POS API `:8092`, Blazor Admin `:8090`, React Admin `:8095`, org/personal web, React POS `:5177`, PostgreSQL, Mailpit).
+This runs the full application stack in Docker (Platform API `:8091`, POS API `:8092`, React Admin `:8095`, org/personal web, React POS `:5177`, PostgreSQL, Mailpit).
 
-The launcher automatically stops repo-scoped host apps before claiming ports 8090-8095 (and React POS `:5177` when that service is included).
+Optional external preview of that same stack (not the daily command, not Production): [README.cloudflare-local-preview.md](README.cloudflare-local-preview.md).
+
+The launcher automatically stops repo-scoped host apps before claiming ports 8091-8095 (and React POS `:5177` when that service is included).
 Use `-Build` to rebuild changed images during startup, or `-CleanBuild` for a no-cache image
 build. Neither option removes database volumes.
 
@@ -82,19 +84,16 @@ Docker
 
 Local .NET (dotnet watch)
 ├── Platform API         http://localhost:8091  (PlatformEmail → Mailpit SMTP :1025)
-├── POS API              http://localhost:8092
-├── Platform Admin Web   http://localhost:8090  (Blazor; optional legacy shell)
-├── Organization Web     http://localhost:8093
-└── Personal Web         http://localhost:8094
+└── POS API              http://localhost:8092
 
-Docker (FAST also starts this production image)
-└── React Platform Admin http://localhost:8095  (parallel; not a cutover)
+Docker (FAST also starts this image)
+└── Platform Admin       http://127.0.0.1:8095  (React admin-web)
 
-Separately (common daily React POS workflow):
-└── React POS            http://127.0.0.1:5177  (register + forgot-password UI)
+Canonical Personal, Organization, and POS React client:
+└── React app            http://127.0.0.1:5177
 
-**Auth / Mailpit:** `PlatformEmail__AdminPublicBaseUrl` must be the React Admin origin
-(`http://127.0.0.1:8095` / `LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN` or `LOCAL_VALIDATION_REACT_ADMIN_ORIGIN`).
+**Auth / Mailpit:** `PlatformEmail__AdminPublicBaseUrl` must be the canonical Admin origin
+(`http://127.0.0.1:8095` / `LOCAL_VALIDATION_ADMIN_ORIGIN`).
 Activation and password-reset emails open `/admin/activate-account` and `/admin/reset-password` on that host.
 Running Platform API **without** `PlatformEmail__*` silently drops outbound mail (null sink) while register/forgot still return success.
 
@@ -103,7 +102,7 @@ API-only helper with Mailpit + React Admin links: `.\tools\Start-PlatformApiOnly
 FULL Docker mode
 Docker Compose
 ├── Platform/POS PostgreSQL + Mailpit
-└── Platform API, POS API, Blazor Admin (8090), Organization Web, Personal Web, React Admin (8095), React POS (:5177)
+└── Platform API, POS API, React Admin (8095), Personal Web, React app (:5177)
 
 React POS Docker notes:
 - Image: `deploy/docker/Dockerfile.pos-react` (nginx static SPA)
@@ -112,8 +111,6 @@ React POS Docker notes:
 - Emulator: `http://10.0.2.2:5177` or `adb reverse tcp:5177 tcp:5177` → `http://127.0.0.1:5177`
 - Do not run `npm run dev` and Docker React POS on `:5177` at the same time
 
-Isolated MAUI legacy stack (separate compose / ports — does not collide with React LV)
-└── See README.maui-local-validation.md (8190–8194, Mailpit 8125, DBs 16533/16534)
 ```
 
 Tailscale/LAN: pass `-PublicHost <tailscale-ip>` to either start launcher. Firewall and

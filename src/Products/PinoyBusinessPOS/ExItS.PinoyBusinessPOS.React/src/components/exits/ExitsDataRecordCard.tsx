@@ -8,7 +8,7 @@ export type ExitsDataRecordField = {
   emphasize?: boolean;
 };
 
-export type ExitsDataRecordCardProps = HTMLAttributes<HTMLElement> & {
+export type ExitsDataRecordCardProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   title: ReactNode;
   subtitle?: ReactNode;
   status?: ReactNode;

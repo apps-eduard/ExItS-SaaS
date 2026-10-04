@@ -75,3 +75,58 @@ export type AuthWorkflowAck = {
   message: string;
   expiresAtUtc?: string | null;
 };
+
+export type CredentialStatus = {
+  userId: string;
+  hasPassword: boolean;
+  emailVerified: boolean;
+  recoveryEmail: string | null;
+  recoveryEmailVerified: boolean;
+  pendingRecoveryEmail: string | null;
+  needsRecoveryEmailPrompt: boolean;
+};
+
+export type ChangePasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type RecoveryEmailRequest = {
+  recoveryEmail: string;
+};
+
+export type ConfirmRecoveryEmailRequest = {
+  token: string;
+};
+
+export type AcceptInvitationResult = {
+  staffLogin: string;
+  contactEmail: string;
+  organizationDisplayName: string;
+};
+
+export type WebWorkspaceItem = {
+  app: string;
+  label: string;
+  organizationId: string | null;
+  organizationName: string | null;
+  roleLabel: string | null;
+};
+
+export type WebWorkspaceList = {
+  workspaces: WebWorkspaceItem[];
+};
+
+export type WebHandoffCreated = {
+  ticket: string;
+  targetApp: string;
+  returnPath: string;
+};
+
+export type ProductEntryIssue = {
+  accessToken: string;
+  expiresAtUtc: string;
+  productCode: string | null;
+  productAccessAllowed: boolean | null;
+  productAccessReasonCode: string | null;
+};

@@ -112,7 +112,11 @@ export function exportStockStatusXlsx(args: {
     [],
     table.headers,
     ...table.rows.map((row) =>
-      row.map((cell) => (cell == null ? "" : cell)),
+      row.map((cell) => {
+        if (cell == null) return "";
+        if (typeof cell === "boolean") return cell ? "Yes" : "No";
+        return cell;
+      }),
     ),
   ];
   const sheet = XLSX.utils.aoa_to_sheet(sheetRows);

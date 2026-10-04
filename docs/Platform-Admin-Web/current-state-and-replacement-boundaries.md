@@ -1,8 +1,8 @@
 # Platform Admin Web — Current State and Replacement Boundaries
 
-This file defines the boundaries between the current Blazor Platform Admin and the planned documentation-only replacement.
+React Platform Admin (`src/Platform/ExItS.Platform.Admin.Web`) is the canonical Platform Administration frontend. The Blazor project `src/Platform/ExItS.Platform.Admin` is removed. The notes below describe the removed host and are historical.
 
-## A. Existing application (`src/Platform/ExItS.Platform.Admin`)
+## A. Removed application (`src/Platform/ExItS.Platform.Admin`)
 
 Current application is a Blazor Web app using Ant Design Blazor components (verified via `ExItS.Platform.Admin` project references).
 
@@ -35,8 +35,7 @@ Key characteristics (working reference; not judged):
 
 Role during transition:
 
-- The current Admin must remain operational and preserved as a fallback reference.
-- Replacement work targets feature parity by explicitly comparing functionality, not by deleting the old console early.
+- Historical planning note. The Blazor host is no longer a fallback. Git history is the archive.
 
 ## B. Future application (`src/Platform/ExItS.Platform.Admin.Web`)
 

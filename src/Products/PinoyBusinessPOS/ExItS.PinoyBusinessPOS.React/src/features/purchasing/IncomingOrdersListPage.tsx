@@ -245,7 +245,7 @@ export function IncomingOrdersListPage() {
       if (kind === "xlsx") downloadIncomingOrderListXlsx(model);
       if (kind === "pdf") downloadIncomingOrderListPdf(model);
     } catch {
-      showToast({ tone: "danger", title: t("error.title"), detail: t("incomingOrders.loadFailed") });
+      showToast({ tone: "error", title: t("error.title"), description: t("incomingOrders.loadFailed") });
     }
   }
 

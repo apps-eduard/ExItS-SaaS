@@ -119,7 +119,7 @@ export function buildOverallFulfillmentView(
   return {
     target: familyFulfillmentTargetQty(transfer),
     goodReceived: transfer.satisfiedAtDestinationQty ?? transfer.totalReceivedQty,
-    openInTransit: transfer.openInTransitQty ?? transfer.totalOutstandingQty,
+    openInTransit: transfer.openInTransitQty ?? transfer.totalOutstandingQty ?? 0,
     waived: transfer.waivedQty ?? 0,
     remainingToDispatch: transfer.remainingToDispatchQty ?? 0,
   };

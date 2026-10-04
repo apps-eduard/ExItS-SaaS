@@ -8,17 +8,15 @@ public sealed class PosFoundationArchitectureTests
     public void DesignSystem_and_pos_projects_do_not_reference_platform_infrastructure()
     {
         var root = FindRepositoryRoot();
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem")));
         var projects = new[]
         {
-            Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "ExItS.DesignSystem.csproj"),
             Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Domain",
                 "ExItS.PinoyBusinessPOS.Domain.csproj"),
             Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Application",
                 "ExItS.PinoyBusinessPOS.Application.csproj"),
             Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient",
-                "ExItS.PinoyBusinessPOS.ApiClient.csproj"),
-            Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
-                "ExItS.PinoyBusinessPOS.Maui.csproj")
+                "ExItS.PinoyBusinessPOS.ApiClient.csproj")
         };
 
         foreach (var project in projects)
@@ -49,11 +47,9 @@ public sealed class PosFoundationArchitectureTests
     [Fact]
     public void DesignSystem_has_no_product_business_or_apiclient_dependency()
     {
-        var csproj = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "src", "Shared", "ExItS.DesignSystem",
-            "ExItS.DesignSystem.csproj"));
-        Assert.DoesNotContain("PinoyBusinessPOS", csproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Platform.Api", csproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Microsoft.Maui", csproj, StringComparison.OrdinalIgnoreCase);
+        Assert.False(Directory.Exists(Path.Combine(FindRepositoryRoot(), "src", "Shared", "ExItS.DesignSystem")));
+        Assert.False(File.Exists(Path.Combine(FindRepositoryRoot(), "src", "Shared", "ExItS.DesignSystem",
+            "ExItS.DesignSystem.csproj")));
     }
 
     private static string FindRepositoryRoot()

@@ -204,6 +204,7 @@ describe("People lifecycle UX", () => {
     const user = userEvent.setup();
     renderPeopleApp("/personal/people");
     const title = await screen.findByRole("heading", { name: "People" });
+    expect(title).toBeInTheDocument();
     const infoButton = await screen.findByRole("button", { name: "About People" });
     expect(infoButton).toHaveAttribute("data-intent", "info");
     await user.click(infoButton);

@@ -1,6 +1,7 @@
-﻿import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+﻿import { createBrowserRouter, Navigate, Outlet, useParams } from "react-router-dom";
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
+import { SessionEstablishPage } from "@/features/auth/SessionEstablishPage";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
 import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
@@ -103,6 +104,9 @@ import { AdminMoreHubPage } from "@/features/admin/AdminMoreHubPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
 import { OrgOwnershipTransferPage } from "@/features/org/ownership/OrgOwnershipTransferPage";
+import { OrgGovernanceAuditPage } from "@/features/organization/audit/OrgGovernanceAuditPage";
+import { OrgTaxCompliancePage } from "@/features/organization/compliance/OrgTaxCompliancePage";
+import { OrgSalesDocumentsPage } from "@/features/organization/sales-documents/OrgSalesDocumentsPage";
 import { OrgSubscriptionBillingPage } from "@/features/organization/subscription/OrgSubscriptionBillingPage";
 import { PublicStoreLandingPage } from "@/features/store/PublicStoreLandingPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
@@ -265,6 +269,11 @@ import {
 } from "@/session/SessionGuards";
 import { RouteErrorPage } from "@/diagnostics/RouteErrorPage";
 
+function LegacyUtangPersonRedirect() {
+  const { contactId = "" } = useParams();
+  return <Navigate to={`/personal/people/${contactId}`} replace />;
+}
+
 export const appRoutes = [
   {
     element: <SessionWorkspaceRoot />,
@@ -277,6 +286,10 @@ export const appRoutes = [
       {
         path: "/store/:publicOrganizationId/b/:branchId",
         element: <PublicStoreLandingPage />,
+      },
+      {
+        path: "/session/establish",
+        element: <SessionEstablishPage />,
       },
       {
         path: "/sign-in",
@@ -378,6 +391,18 @@ export const appRoutes = [
         ),
         children: [
           { index: true, element: <HomePage /> },
+          { path: "home", element: <Navigate to="/personal" replace /> },
+          { path: "utang/people/add", element: <Navigate to="/personal/people/add" replace /> },
+          { path: "utang/people/:contactId", element: <LegacyUtangPersonRedirect /> },
+          { path: "utang/people", element: <Navigate to="/personal/people" replace /> },
+          { path: "utang/lent", element: <Navigate to="/personal/utang/lent" replace /> },
+          { path: "utang/borrowed", element: <Navigate to="/personal/utang/owe" replace /> },
+          { path: "utang/invitations", element: <Navigate to="/personal/utang/invitations" replace /> },
+          { path: "notifications", element: <Navigate to="/personal/notifications" replace /> },
+          { path: "profile", element: <Navigate to="/personal/profile" replace /> },
+          { path: "settings", element: <Navigate to="/settings/preferences" replace /> },
+          { path: "start-business", element: <Navigate to="/personal/start-business" replace /> },
+          { path: "login", element: <Navigate to="/sign-in" replace /> },
           {
             path: "switching-context",
             element: <AccountContextSwitchPage />,
@@ -586,6 +611,18 @@ export const appRoutes = [
             ),
           },
           {
+            path: "organization/tax-compliance",
+            element: <Navigate to="/org/tax-compliance" replace />,
+          },
+          {
+            path: "organization/audit",
+            element: <Navigate to="/org/audit" replace />,
+          },
+          {
+            path: "organization/sales-documents",
+            element: <Navigate to="/org/sales-documents" replace />,
+          },
+          {
             path: "org/notifications",
             element: (
               <RequireOrganizationSession>
@@ -623,6 +660,9 @@ export const appRoutes = [
                 path: "profile",
                 element: <OrgProfilePage />,
               },
+              { path: "tax-compliance", element: <OrgTaxCompliancePage /> },
+              { path: "audit", element: <OrgGovernanceAuditPage /> },
+              { path: "sales-documents", element: <OrgSalesDocumentsPage /> },
               {
                 path: "subscription",
                 element: (

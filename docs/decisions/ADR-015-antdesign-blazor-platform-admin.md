@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Accepted** |
+| Status | **Superseded** by [ADR-024](ADR-024-react-only-client-standard-and-legacy-ui-retirement.md). Blazor Platform Admin is removed. Ant Design remains for Organization Web and Personal Web. |
 | Date | 2026-08-01 |
 | Related | ADR-010 (amended), Phase 15 |
 

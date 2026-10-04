@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CircleCheck, Contact, IdCard, Loader2, ArrowLeft, Save, UserRound, Users } from "lucide-react";
+import { Contact, IdCard, Loader2, ArrowLeft, Save, UserRound, Users } from "lucide-react";
 import {
   createBusinessCustomerWithPersonalLink,
   evaluateCustomerLinkEligibility,
@@ -23,7 +23,6 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { Notice } from "@/components/exits/Notice";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { pageBackNav } from "@/navigation/page-back-nav";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   CustomerPersonalLinkPanel,
@@ -469,7 +468,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           disabled={saving}
           initialSubject={linkPublicId}
           existingMatch={
-            existingContact
+            existingContact?.customerId
               ? {
                   customerId: existingContact.customerId,
                   displayName: existingContact.displayName,

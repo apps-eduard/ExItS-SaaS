@@ -1,0 +1,38 @@
+# Opt-in Cloudflare Tunnel for FULL Docker Local Validation.
+# LOCAL VALIDATION / NOT PRODUCTION.
+# Use with compose.local-validation.yaml. Do not start this file by itself as the daily stack.
+#
+# Public hostname targets are configured in the Cloudflare dashboard (remotely managed tunnel).
+# cloudflared joins exits-local-validation and must target Docker DNS, not localhost:
+#   https://app.exitsapps.com    -> http://react-pos:80
+#   https://my.exitsapps.com     -> http://react-pos:80
+#   https://pos.exitsapps.com    -> http://react-pos:80
+#   https://admin.exitsapps.com  -> http://admin-web:8080
+# admin-web is the canonical React Platform Admin. It does not use ASP.NET forwarded headers.
+# Do not publish bnpl, loan, pawn, or service. Do not publish databases or Mailpit.
+
+name: exits-local-validation
+
+services:
+  cloudflared:
+    container_name: exits-local-validation-cloudflared
+    image: cloudflare/cloudflared:2025.8.1
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${LOCAL_VALIDATION_CLOUDFLARE_TUNNEL_TOKEN:?Set LOCAL_VALIDATION_CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - exits-local-validation
+
+  platform-api:
+    environment:
+      AllowedHosts: ${LOCAL_VALIDATION_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;react-pos;app.exitsapps.com;my.exitsapps.com;admin.exitsapps.com;pos.exitsapps.com}
+      PlatformEmail__PinoyBusinessPosPublicBaseUrl: https://my.exitsapps.com
+
+  pos-api:
+    environment:
+      AllowedHosts: ${LOCAL_VALIDATION_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;react-pos;app.exitsapps.com;my.exitsapps.com;admin.exitsapps.com;pos.exitsapps.com}
+
+networks:
+  exits-local-validation:
+    name: exits-local-validation

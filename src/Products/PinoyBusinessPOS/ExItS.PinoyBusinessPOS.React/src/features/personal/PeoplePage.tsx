@@ -34,7 +34,7 @@ export function PeoplePage() {
 
   const [infoOpen, setInfoOpen] = useState(false);
   const infoRootRef = useRef<HTMLDivElement>(null);
-  const infoButtonRef = useRef<HTMLButtonElement>(null);
+  const infoButtonRef = useRef<HTMLElement | null>(null);
   const [addOpen, setAddOpen] = useState(addFromUrl);
 
   useEffect(() => {
@@ -149,20 +149,21 @@ export function PeoplePage() {
           <h1 className="m-0 min-w-0 text-[length:var(--exits-text-2xl)] font-bold tracking-tight">
             {t("people.title")}
           </h1>
-          <Button
-            ref={infoButtonRef}
-            type="button"
-            intent="info"
-            appearance="ghost"
-            size="icon"
-            className="shrink-0"
-            aria-label={t("people.info.open")}
-            aria-expanded={infoOpen}
-            aria-controls="people-info-popover"
-            onClick={() => setInfoOpen((open) => !open)}
-          >
-            <Info className="size-5" aria-hidden="true" />
-          </Button>
+          <span ref={infoButtonRef} className="inline-flex shrink-0">
+            <Button
+              type="button"
+              intent="info"
+              appearance="ghost"
+              size="icon"
+              className="shrink-0"
+              aria-label={t("people.info.open")}
+              aria-expanded={infoOpen}
+              aria-controls="people-info-popover"
+              onClick={() => setInfoOpen((open) => !open)}
+            >
+              <Info className="size-5" aria-hidden="true" />
+            </Button>
+          </span>
         </div>
         {infoOpen ? <PeopleInfoPopover anchorRef={infoButtonRef} /> : null}
       </header>

@@ -11,7 +11,7 @@ describe("EmptyState", () => {
       createElement(EmptyState, {
         title: "No customers yet",
         detail: "Add your first customer when you are ready.",
-        icon: createElement(Package, { "data-testid": "empty-icon" }),
+        icon: createElement("span", { "data-testid": "empty-icon" }, createElement(Package)),
         align: "center",
       }),
     );

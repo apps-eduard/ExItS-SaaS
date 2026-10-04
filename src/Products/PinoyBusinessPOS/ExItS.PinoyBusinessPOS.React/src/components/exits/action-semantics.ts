@@ -238,7 +238,13 @@ export function getActionButtonStyle(
 ): ActionButtonStyle {
   const def = EXITS_ACTIONS[action];
   const isPrimary = options?.isPrimaryInGroup !== false;
-  if (!isPrimary && def.secondaryIntent && def.secondaryAppearance) {
+  if (
+    !isPrimary &&
+    "secondaryIntent" in def &&
+    "secondaryAppearance" in def &&
+    def.secondaryIntent &&
+    def.secondaryAppearance
+  ) {
     return { intent: def.secondaryIntent, appearance: def.secondaryAppearance };
   }
   return { intent: def.intent, appearance: def.appearance };
@@ -255,10 +261,16 @@ export function getActionIntent(
   const style = getActionButtonStyle(action, options);
   const def = EXITS_ACTIONS[action];
   const isPrimary = options?.isPrimaryInGroup !== false;
-  if (!isPrimary && def.secondaryIntentLegacy) {
+  if (!isPrimary && "secondaryIntentLegacy" in def && def.secondaryIntentLegacy) {
     return def.secondaryIntentLegacy;
   }
-  if (!isPrimary && def.secondaryIntent && def.secondaryAppearance) {
+  if (
+    !isPrimary &&
+    "secondaryIntent" in def &&
+    "secondaryAppearance" in def &&
+    def.secondaryIntent &&
+    def.secondaryAppearance
+  ) {
     return toLegacyVariant(def.secondaryIntent, def.secondaryAppearance);
   }
   return def.defaultIntent ?? toLegacyVariant(style.intent, style.appearance);
