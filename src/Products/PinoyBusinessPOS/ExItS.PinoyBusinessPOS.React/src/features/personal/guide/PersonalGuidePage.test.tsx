@@ -12,7 +12,7 @@ const personalUserId = "11111111-1111-1111-1111-111111111111";
 const otherUserId = "22222222-2222-2222-2222-222222222222";
 const personalProfileId = "33333333-3333-3333-3333-333333333333";
 
-function createPersonalFetchMock(userId = personalUserId) {
+function createPersonalFetchMock(userId = personalUserId, sessionId = userId) {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
 
@@ -21,8 +21,8 @@ function createPersonalFetchMock(userId = personalUserId) {
     }
 
     if (url.includes("/api/v1/platform/auth/me")) {
-      return jsonResponse(200, {
-          sessionId: userId,
+        return jsonResponse(200, {
+          sessionId,
           userId,
           username: "ana",
           displayName: "Ana Reyes",
@@ -96,7 +96,7 @@ describe("Personal Explore ExItS guide page", () => {
     await waitFor(() => {
       expect(screen.getByTestId("personal-guide-page")).toBeInTheDocument();
     });
-    expect(screen.getByText("Explore ExItS")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Explore ExItS" })).toBeInTheDocument();
     expect(screen.getByTestId("guide-category-account")).toBeInTheDocument();
     expect(screen.getByTestId("guide-category-people")).toBeInTheDocument();
     expect(screen.getByTestId("guide-category-money")).toBeInTheDocument();
@@ -191,6 +191,33 @@ describe("Personal Explore ExItS guide page", () => {
     expect(screen.getByTestId("personal-guide-home-continue")).toHaveAttribute("href", "/personal/guide");
     await user.click(screen.getByTestId("personal-guide-home-dismiss"));
     expect(screen.queryByTestId("personal-guide-home-card")).not.toBeInTheDocument();
+  });
+
+  it("keeps the Home guide card until the next sign-in when opted out", async () => {
+    const user = userEvent.setup();
+    const firstSession = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    vi.stubGlobal("fetch", createPersonalFetchMock(personalUserId, firstSession));
+    const first = renderAt("/personal");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-guide-home-hide-next-login")).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("personal-guide-home-hide-next-login"));
+    expect(screen.getByTestId("personal-guide-home-card")).toBeInTheDocument();
+    const stored = JSON.parse(window.localStorage.getItem(personalGuideStorageKey(personalUserId)) ?? "{}") as {
+      hideGuideAfterSessionId?: string;
+      homeCardDismissed?: boolean;
+    };
+    expect(stored.hideGuideAfterSessionId).toBe(firstSession);
+    expect(stored.homeCardDismissed).toBe(false);
+    first.unmount();
+
+    vi.stubGlobal("fetch", createPersonalFetchMock(personalUserId, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"));
+    renderAt("/personal");
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-home-page")).toBeInTheDocument();
+      expect(screen.queryByTestId("personal-guide-home-card")).not.toBeInTheDocument();
+    });
   });
 });
 

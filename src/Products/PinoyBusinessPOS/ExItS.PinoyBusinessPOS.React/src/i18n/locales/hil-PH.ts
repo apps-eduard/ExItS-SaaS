@@ -8908,6 +8908,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardContinue": "Padayon sa giya",
 
   "personal.home.guideCardDismiss": "Tagoa ang guide card",
+  "personal.home.guideCardHideNextLogin": "Indi ipakita sa sunod nga pag-sign in",
 
   "personal.home.guideCardLede": "Hibalua ang features nga available sa imo Personal account.",
 

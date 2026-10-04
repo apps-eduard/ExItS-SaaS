@@ -8908,6 +8908,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardContinue": "Padayon sa giya",
 
   "personal.home.guideCardDismiss": "Tagoa ang guide card",
+  "personal.home.guideCardHideNextLogin": "Ayaw ipakita sa sunod nga pag-sign in",
 
   "personal.home.guideCardLede": "Hibaloi ang features nga available sa imong Personal account.",
 

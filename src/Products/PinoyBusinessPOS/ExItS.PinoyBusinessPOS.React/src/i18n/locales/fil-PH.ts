@@ -8875,6 +8875,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardContinue": "Ipagpatuloy ang gabay",
 
   "personal.home.guideCardDismiss": "Itago ang guide card",
+  "personal.home.guideCardHideNextLogin": "Huwag ipakita sa susunod na pag-sign in",
 
   "personal.home.guideCardLede": "Alamin ang features na available sa Personal account mo.",
 

@@ -8908,6 +8908,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardContinue": "Ituloy ti guide",
 
   "personal.home.guideCardDismiss": "Ilemmeng ti guide card",
+  "personal.home.guideCardHideNextLogin": "Saan nga ipakita iti sumaruno a panag-sign in",
 
   "personal.home.guideCardLede": "Ammoem dagiti features a available iti Personal accountmo.",
 

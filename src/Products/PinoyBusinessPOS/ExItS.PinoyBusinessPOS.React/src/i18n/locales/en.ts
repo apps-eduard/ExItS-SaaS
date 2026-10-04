@@ -2226,6 +2226,7 @@ export const en = {
   "personal.home.guideCardLede": "Discover features available in your Personal account.",
   "personal.home.guideCardContinue": "Continue guide",
   "personal.home.guideCardDismiss": "Hide guide card",
+  "personal.home.guideCardHideNextLogin": "Don't show on next sign-in",
   "personal.guide.title": "Explore ExItS",
   "personal.guide.lede": "Discover what you can do with your Personal account.",
   "personal.guide.progress": "{explored} of {total} features explored",
