@@ -4,6 +4,7 @@ Authoritative architecture notes for ExItS SaaS. Prefer these over ad-hoc chat s
 
 | Document | Purpose |
 |---|---|
+| [Domain and subdomain strategy](domain-and-subdomain-strategy.md) | Canonical `exitsapps.com` brand domain, marketing paths, and application subdomains |
 | [Client experience boundaries](client-experience-boundaries.md) | **Approved MVP** Mobile vs Web ownership (Platform Admin, Personal, Org Owner essentials, full Org Admin, POS ops) |
 | [SaaS scopes, users, boundaries, navigation](saas-scopes-users-boundaries-navigation.md) | Account classes, scopes, and navigation model |
 | [Product catalog, entitlement, and role model](product-catalog-entitlement-and-role-model.md) | Catalog, entitlements, product-local roles |

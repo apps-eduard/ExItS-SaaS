@@ -4,6 +4,8 @@
 > **Applies to:** ExITS Platform, Organizations, and Products  
 > **Current phase:** Phase 16 — P16-WP11 validation and stabilization
 
+Production domain and subdomain names are owned by [domain and subdomain strategy](domain-and-subdomain-strategy.md). Catalog, entitlement, and role rules in this document are unchanged.
+
 ---
 
 ## 1. Executive Summary
