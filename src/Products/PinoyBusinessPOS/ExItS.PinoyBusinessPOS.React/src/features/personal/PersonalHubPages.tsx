@@ -30,7 +30,7 @@ import {
 } from "@/api/platform/personal-utang-client";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { CountChip } from "@/components/exits/CountChip";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -379,45 +379,42 @@ export function PersonalUtangHubPage() {
               {t("personal.utang.activeAccounts")}
             </h2>
 
-            <ExitsChipBar
-              variant="filter"
+            <UnderlineTabBar
               ariaLabel={t("personal.utang.filterLabel")}
               testId="utang-hub-segments"
               className="exits-chip-bar--scroll utang-hub-filters"
+              activeKey={segment}
+              onChange={(key) => setSegment(parseSegment(key))}
               items={[
                 {
-                  id: "all",
+                  key: "all",
                   label: t("personal.utang.filterAll"),
-                  icon: <List />,
+                  icon: List,
                 },
                 {
-                  id: "lent",
+                  key: "lent",
                   label: t("personal.utang.filterOwedToMe"),
-                  icon: <HandCoins />,
+                  icon: HandCoins,
                 },
                 {
-                  id: "owe",
+                  key: "owe",
                   label: t("personal.utang.filterIOwe"),
-                  icon: <Wallet />,
+                  icon: Wallet,
                 },
                 {
-                  id: "mine",
+                  key: "mine",
                   label: t("personal.utang.ownershipMine"),
-                  icon: <User />,
+                  icon: User,
                 },
                 {
-                  id: "shared",
+                  key: "shared",
                   label: t("personal.utang.ownershipSharedWithMe"),
-                  icon: <Share2 />,
+                  icon: Share2,
                 },
-              ].map(({ id, label, icon }) => ({
-                key: id,
-                label,
-                icon,
-                count: allActive.length > 0 ? countSegment(allActive, id) : undefined,
-                state: segment === id ? "active" : "idle",
-                testId: `utang-segment-${id}`,
-                onSelect: () => setSegment(id),
+              ].map((item) => ({
+                ...item,
+                count: allActive.length > 0 ? countSegment(allActive, item.key) : undefined,
+                testId: `utang-segment-${item.key}`,
               }))}
             />
 

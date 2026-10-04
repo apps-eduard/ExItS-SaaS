@@ -8,7 +8,9 @@ import {
   parsePersonalGuideProgress,
   personalGuideStorageKey,
   savePersonalGuideProgress,
+  setPersonalGuideHideOnNextLogin,
   setPersonalGuideHomeCardDismissed,
+  applyPersonalGuideSession,
 } from "@/features/personal/guide/personal-guide-storage";
 
 const USER_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -61,6 +63,7 @@ describe("personal-guide-storage", () => {
       version: 1,
       learned: ["stores"],
       homeCardDismissed: false,
+      hideGuideAfterSessionId: null,
     });
     expect(loadPersonalGuideProgress(USER_B).learned).toEqual([]);
     expect(loadPersonalGuideProgress(USER_A).learned).toEqual(["stores"]);
@@ -82,7 +85,21 @@ describe("personal-guide-storage", () => {
       version: 1,
       learned: ["stores"],
       homeCardDismissed: true,
+      hideGuideAfterSessionId: null,
     });
     expect(window.localStorage.length).toBe(0);
+  });
+
+  it("keeps the home card until a later sign-in", () => {
+    const optedOut = setPersonalGuideHideOnNextLogin(EMPTY_PERSONAL_GUIDE_PROGRESS, true, "session-1");
+    expect(optedOut.homeCardDismissed).toBe(false);
+    expect(optedOut.hideGuideAfterSessionId).toBe("session-1");
+    expect(applyPersonalGuideSession(optedOut, "session-1").homeCardDismissed).toBe(false);
+    const nextLogin = applyPersonalGuideSession(optedOut, "session-2");
+    expect(nextLogin.homeCardDismissed).toBe(true);
+    expect(nextLogin.hideGuideAfterSessionId).toBeNull();
+    const restored = setPersonalGuideHomeCardDismissed(nextLogin, false);
+    expect(restored.homeCardDismissed).toBe(false);
+    expect(restored.hideGuideAfterSessionId).toBeNull();
   });
 });

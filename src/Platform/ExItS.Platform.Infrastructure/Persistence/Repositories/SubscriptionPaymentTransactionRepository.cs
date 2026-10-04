@@ -1,5 +1,8 @@
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Payments;
+using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +37,50 @@ internal sealed class SubscriptionPaymentTransactionRepository(PlatformDbContext
         return record is null ? null : SubscriptionPaymentTransactionMapper.ToDomain(record);
     }
 
+    public async Task<SubscriptionPaymentTransaction?> GetByProviderReferenceAsync(
+        string providerReference,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(providerReference))
+        {
+            return null;
+        }
+
+        var trimmed = providerReference.Trim();
+        var record = await db.SubscriptionPaymentTransactions
+            .Include(p => p.Activities)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ProviderReference == trimmed, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : SubscriptionPaymentTransactionMapper.ToDomain(record);
+    }
+
+    public async Task<SubscriptionPaymentTransaction?> FindLatestOpenAsync(
+        PlatformUserId initiatedByUserId,
+        PlatformOrganizationId? organizationId,
+        string planKey,
+        BillingCycle billingCycle,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = organizationId?.Value;
+        var cycle = billingCycle.ToString();
+        var record = await db.SubscriptionPaymentTransactions
+            .Include(p => p.Activities)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .Where(p => p.InitiatedByUserId == initiatedByUserId.Value
+                && p.PlanKey == planKey
+                && p.BillingCycle == cycle
+                && p.OrganizationId == orgId
+                && (p.Status == nameof(SubscriptionPaymentStatus.Pending)
+                    || p.Status == nameof(SubscriptionPaymentStatus.Processing)))
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : SubscriptionPaymentTransactionMapper.ToDomain(record);
+    }
+
     public async Task<long> GetNextSequenceAsync(CancellationToken cancellationToken = default)
     {
         var count = await db.SubscriptionPaymentTransactions.LongCountAsync(cancellationToken)
@@ -61,8 +108,11 @@ internal sealed class SubscriptionPaymentTransactionRepository(PlatformDbContext
                     .SetProperty(p => p.OrganizationId, payment.OrganizationId?.Value)
                     .SetProperty(p => p.SubscriptionId, payment.SubscriptionId?.Value)
                     .SetProperty(p => p.Channel, payment.Channel?.ToString())
+                    .SetProperty(p => p.Provider, payment.Provider.ToString())
                     .SetProperty(p => p.Status, payment.Status.ToString())
                     .SetProperty(p => p.ProviderReference, payment.ProviderReference)
+                    .SetProperty(p => p.CheckoutUrl, payment.CheckoutUrl)
+                    .SetProperty(p => p.ProviderEventId, payment.ProviderEventId)
                     .SetProperty(p => p.CardBrand, payment.CardBrand)
                     .SetProperty(p => p.CardLast4, payment.CardLast4)
                     .SetProperty(p => p.FailureCode, payment.FailureCode)

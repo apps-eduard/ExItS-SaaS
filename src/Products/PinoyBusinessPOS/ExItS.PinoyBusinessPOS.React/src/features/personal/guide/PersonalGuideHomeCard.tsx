@@ -10,7 +10,8 @@ export function PersonalGuideHomeCard() {
   const { t } = useI18n();
   const { session } = useSession();
   const accountKey = session?.userId?.trim() || null;
-  const guide = usePersonalGuideProgress(accountKey);
+  const sessionId = session?.sessionId?.trim() || null;
+  const guide = usePersonalGuideProgress(accountKey, sessionId);
 
   if (guide.homeCardDismissed) {
     return null;
@@ -53,6 +54,21 @@ export function PersonalGuideHomeCard() {
       <Button asChild className="w-full sm:w-auto" data-testid="personal-guide-home-continue">
         <Link to={PERSONAL_GUIDE_ROUTE}>{t("personal.home.guideCardContinue")}</Link>
       </Button>
+      <label className="flex cursor-pointer items-center gap-2 text-[length:var(--exits-text-sm)] text-muted">
+        <input
+          type="checkbox"
+          className="size-4 accent-[var(--exits-primary)]"
+          checked={guide.hideOnNextLogin}
+          disabled={!sessionId}
+          data-testid="personal-guide-home-hide-next-login"
+          onChange={(event) => {
+            if (sessionId) {
+              guide.setHideOnNextLogin(event.target.checked, sessionId);
+            }
+          }}
+        />
+        {t("personal.home.guideCardHideNextLogin")}
+      </label>
     </section>
   );
 }

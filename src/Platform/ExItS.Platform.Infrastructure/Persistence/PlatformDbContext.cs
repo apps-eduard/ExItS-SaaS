@@ -955,6 +955,8 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Environment).HasColumnName("environment").HasMaxLength(32).IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.ProviderReference).HasColumnName("provider_reference").HasMaxLength(64);
+            entity.Property(e => e.CheckoutUrl).HasColumnName("checkout_url").HasMaxLength(512);
+            entity.Property(e => e.ProviderEventId).HasColumnName("provider_event_id").HasMaxLength(128);
             entity.HasIndex(e => e.ProviderReference)
                 .IsUnique()
                 .HasFilter("provider_reference IS NOT NULL");

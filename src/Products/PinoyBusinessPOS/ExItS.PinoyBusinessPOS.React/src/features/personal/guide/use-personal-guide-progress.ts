@@ -1,22 +1,35 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PERSONAL_GUIDE_FEATURES } from "@/features/personal/guide/personal-guide-features";
 import {
+  applyPersonalGuideSession,
   knownLearnedCodes,
   loadPersonalGuideProgress,
   markPersonalGuideFeatureLearned,
   savePersonalGuideProgress,
+  setPersonalGuideHideOnNextLogin,
   setPersonalGuideHomeCardDismissed,
   type PersonalGuideProgress,
 } from "@/features/personal/guide/personal-guide-storage";
 
-export function usePersonalGuideProgress(accountKey: string | null | undefined) {
+export function usePersonalGuideProgress(
+  accountKey: string | null | undefined,
+  sessionId: string | null | undefined = null,
+) {
   const [progress, setProgress] = useState<PersonalGuideProgress>(() =>
-    loadPersonalGuideProgress(accountKey),
+    applyPersonalGuideSession(loadPersonalGuideProgress(accountKey), sessionId),
   );
 
   useEffect(() => {
-    setProgress(loadPersonalGuideProgress(accountKey));
-  }, [accountKey]);
+    const stored = loadPersonalGuideProgress(accountKey);
+    const loaded = applyPersonalGuideSession(stored, sessionId);
+    setProgress(loaded);
+    if (
+      loaded.hideGuideAfterSessionId !== stored.hideGuideAfterSessionId
+      || loaded.homeCardDismissed !== stored.homeCardDismissed
+    ) {
+      savePersonalGuideProgress(accountKey, loaded);
+    }
+  }, [accountKey, sessionId]);
 
   const persist = useCallback(
     (next: PersonalGuideProgress) => {
@@ -40,6 +53,13 @@ export function usePersonalGuideProgress(accountKey: string | null | undefined) 
     [persist, progress],
   );
 
+  const setHideOnNextLogin = useCallback(
+    (hide: boolean, currentSessionId: string) => {
+      persist(setPersonalGuideHideOnNextLogin(progress, hide, currentSessionId));
+    },
+    [persist, progress],
+  );
+
   const learnedCodes = useMemo(() => knownLearnedCodes(progress.learned), [progress.learned]);
   const total = PERSONAL_GUIDE_FEATURES.length;
   const explored = learnedCodes.length;
@@ -52,8 +72,11 @@ export function usePersonalGuideProgress(accountKey: string | null | undefined) 
     total,
     percent,
     homeCardDismissed: progress.homeCardDismissed,
+    hideOnNextLogin: progress.hideGuideAfterSessionId != null
+      && progress.hideGuideAfterSessionId === (sessionId?.trim() || null),
     setLearned,
     setHomeCardDismissed,
+    setHideOnNextLogin,
     isLearned: (code: string) => learnedCodes.includes(code),
   };
 }
