@@ -134,29 +134,59 @@ public sealed class CreatePendingSubscriptionPayment(
         }
 
         var quote = SubscriptionBillingPricing.Quote(plan, billingCycle);
-        var utcNow = clock.UtcNow;
-        var sequence = await payments.GetNextSequenceAsync(cancellationToken).ConfigureAwait(false);
-        var reference = SubscriptionPaymentReferences.FormatInternalReference(utcNow, sequence);
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                ApplicationResult<SubscriptionPaymentTransactionDto>? outcome = null;
+                await unitOfWork.ExecuteWithAdvisoryLockAsync(
+                    userId.Value,
+                    organizationId?.Value ?? Guid.Empty,
+                    async ct =>
+                    {
+                        var open = await payments
+                            .FindLatestOpenAsync(userId, organizationId, plan.PlanKey, billingCycle, ct)
+                            .ConfigureAwait(false);
+                        if (open is not null)
+                        {
+                            outcome = ApplicationResult<SubscriptionPaymentTransactionDto>.Success(
+                                SubscriptionPaymentMapping.ToDto(open));
+                            return;
+                        }
 
-        try
-        {
-            var payment = SubscriptionPaymentTransaction.CreatePending(
-                reference,
-                userId,
-                plan.PlanKey,
-                billingCycle,
-                quote,
-                utcNow,
-                organizationId);
-            await payments.AddAsync(payment, cancellationToken).ConfigureAwait(false);
-            await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<SubscriptionPaymentTransactionDto>.Success(
-                SubscriptionPaymentMapping.ToDto(payment));
+                        var utcNow = clock.UtcNow;
+                        var sequence = await payments.GetNextSequenceAsync(ct).ConfigureAwait(false);
+                        var reference = SubscriptionPaymentReferences.FormatInternalReference(utcNow, sequence);
+                        var payment = SubscriptionPaymentTransaction.CreatePending(
+                            reference,
+                            userId,
+                            plan.PlanKey,
+                            billingCycle,
+                            quote,
+                            utcNow,
+                            organizationId);
+                        await payments.AddAsync(payment, ct).ConfigureAwait(false);
+                        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                        outcome = ApplicationResult<SubscriptionPaymentTransactionDto>.Success(
+                            SubscriptionPaymentMapping.ToDto(payment));
+                    },
+                    cancellationToken).ConfigureAwait(false);
+                return outcome ?? ApplicationResult<SubscriptionPaymentTransactionDto>.Failure(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "Checkout could not be started. Try again.");
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<SubscriptionPaymentTransactionDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+            catch (PersistenceConflictException) when (attempt == 0)
+            {
+            }
         }
-        catch (DomainException ex)
-        {
-            return ApplicationResult<SubscriptionPaymentTransactionDto>.Failure(ex.ErrorCode, ex.Message);
-        }
+
+        return ApplicationResult<SubscriptionPaymentTransactionDto>.Failure(
+            ApplicationErrorCodes.ConcurrencyConflict,
+            "An open subscription checkout already exists for this plan.");
     }
 }
 

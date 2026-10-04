@@ -22,7 +22,7 @@ For each decision: ID, Question, Current direction, Status, What it blocks, Safe
 
 | ID | Question | Current direction | Status | What it blocks | Safe default until decided |
 |---|---|---|---|---|---|
-| PSP-D-00-01 | Final Platform product code / slug | Propose `pinoy-service-pro` | Open / Product Owner Decision Required | Catalog, plans, independent subscription | Use proposed slug in docs only; do not register catalog |
+| PSP-D-00-01 | Final Platform product code / slug | `pinoy-service-pro`, display name Pinoy Service Pro | Registered in the Platform catalog | Plans and independent subscription still open | Product row only; do not invent plans or subscriptions |
 | PSP-D-00-02 | Final DB name / schema | Propose DB `ExItS_PinoyServicePro`; schema unset | Open / Product Owner Decision Required | Persistence, migrations, ops | Planning name only; create neither |
 | PSP-D-00-03 | Initial implementation surface / project layout | Prefer Org Web + product API; MAUI later | Open / Product Owner Decision Required | PSP-01 scaffold | No projects until authorized; document preferred direction only |
 | PSP-D-00-04 | Offline scope | Do not inherit POS offline; classify per capability | Open / Product Owner Decision Required | PSP-11; device grants | Online-required for money and conflict-sensitive scheduling until decided |

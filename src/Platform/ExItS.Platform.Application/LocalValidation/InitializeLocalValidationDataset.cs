@@ -34,6 +34,7 @@ public sealed class InitializeLocalValidationDataset
     private readonly EnsurePlmLocalValidationCatalog _ensurePlmCatalog;
     private readonly EnsureBnplLocalValidationCatalog _ensureBnplCatalog;
     private readonly EnsurePpmLocalValidationCatalog _ensurePpmCatalog;
+    private readonly EnsurePspLocalValidationCatalog _ensurePspCatalog;
     private readonly CreateTrialDefinition _createTrial;
     private readonly StartTrialSubscription _startTrial;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
@@ -79,6 +80,7 @@ public sealed class InitializeLocalValidationDataset
         EnsurePlmLocalValidationCatalog ensurePlmCatalog,
         EnsureBnplLocalValidationCatalog ensureBnplCatalog,
         EnsurePpmLocalValidationCatalog ensurePpmCatalog,
+        EnsurePspLocalValidationCatalog ensurePspCatalog,
         CreateTrialDefinition createTrial,
         StartTrialSubscription startTrial,
         GenerateEntitlementSnapshot generateSnapshot,
@@ -123,6 +125,7 @@ public sealed class InitializeLocalValidationDataset
         _ensurePlmCatalog = ensurePlmCatalog;
         _ensureBnplCatalog = ensureBnplCatalog;
         _ensurePpmCatalog = ensurePpmCatalog;
+        _ensurePspCatalog = ensurePspCatalog;
         _createTrial = createTrial;
         _startTrial = startTrial;
         _generateSnapshot = generateSnapshot;
@@ -254,6 +257,7 @@ public sealed class InitializeLocalValidationDataset
         await _ensurePlmCatalog.EnsureReferenceAsync(cancellationToken).ConfigureAwait(false);
         await _ensureBnplCatalog.EnsureReferenceAsync(cancellationToken).ConfigureAwait(false);
         await _ensurePpmCatalog.EnsureReferenceAsync(cancellationToken).ConfigureAwait(false);
+        await _ensurePspCatalog.EnsureReferenceAsync(cancellationToken).ConfigureAwait(false);
 
         var identities = LocalValidationOptions.IdentitiesForSeedScope(seedScope);
         var usersByKey = new Dictionary<string, PlatformUser>(StringComparer.OrdinalIgnoreCase);

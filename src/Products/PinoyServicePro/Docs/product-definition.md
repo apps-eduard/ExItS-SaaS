@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product name | PinoyServicePro |
-| Platform product code | `pinoy-service-pro` (proposed — **Status: Open / Product Owner Decision Required**, PSP-D-00-01) |
+| Platform product code | `pinoy-service-pro` (registered in the Platform catalog; display name Pinoy Service Pro) |
 | Docs root | `src/Products/PinoyServicePro/Docs/` |
 | Status | PSP-00 Documentation Foundation Complete; Implementation Not Started; Product Owner Approval Pending |
 | Last updated | 2026-08-20 |
@@ -34,7 +34,7 @@ ExItS Platform
 |---|---|---|
 | Identity / production auth | Platform | **DECISION:** R-091 open — do not claim production-secure auth. Keep Dev/Testing vs Production language honest (D-P12-05). |
 | Organizations / account context | Platform | Product will store organization id as a `Guid` reference / contract only. Field name **Status: Open / Product Owner Decision Required**. |
-| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog registration of `pinoy-service-pro` is not done (PSP-D-00-01). |
+| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog product `pinoy-service-pro` is registered. Plans and subscriptions are not created. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace ServicePro product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
 | Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant **intent** recorded; identifiers open (PSP-D-00-18). |
