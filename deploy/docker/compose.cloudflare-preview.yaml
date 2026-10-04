@@ -4,10 +4,10 @@
 #
 # Public hostname targets are configured in the Cloudflare dashboard (remotely managed tunnel).
 # cloudflared joins exits-local-validation and must target Docker DNS, not localhost:
-#   https://app.exitsapps.com    -> http://react-pos:80
-#   https://my.exitsapps.com     -> http://react-pos:80
-#   https://pos.exitsapps.com    -> http://react-pos:80
-#   https://admin.exitsapps.com  -> http://admin-web:8080
+#   https://app.exitsapps.com      -> http://react-pos:80
+#   https://my.exitsapps.com       -> http://react-pos:80
+#   https://pos.exitsapps.com      -> http://react-pos:80
+#   https://admin.exitsapps.com    -> http://admin-web:8080
 # admin-web is the canonical React Platform Admin. It does not use ASP.NET forwarded headers.
 # Do not publish bnpl, loan, pawn, or service. Do not publish databases or Mailpit.
 

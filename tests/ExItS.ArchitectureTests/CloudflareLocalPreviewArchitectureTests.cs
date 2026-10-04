@@ -43,10 +43,10 @@ public class CloudflareLocalPreviewArchitectureTests
         var overlay = Read("deploy", "docker", "compose.cloudflare-preview.yaml");
         var guide = Read("deploy", "docker", "README.cloudflare-local-preview.md");
 
-        Assert.Contains("https://app.exitsapps.com    -> http://react-pos:80", overlay, StringComparison.Ordinal);
-        Assert.Contains("https://my.exitsapps.com     -> http://react-pos:80", overlay, StringComparison.Ordinal);
-        Assert.Contains("https://pos.exitsapps.com    -> http://react-pos:80", overlay, StringComparison.Ordinal);
-        Assert.Contains("https://admin.exitsapps.com  -> http://admin-web:8080", overlay, StringComparison.Ordinal);
+        Assert.Contains("https://app.exitsapps.com      -> http://react-pos:80", overlay, StringComparison.Ordinal);
+        Assert.Contains("https://my.exitsapps.com       -> http://react-pos:80", overlay, StringComparison.Ordinal);
+        Assert.Contains("https://pos.exitsapps.com      -> http://react-pos:80", overlay, StringComparison.Ordinal);
+        Assert.Contains("https://admin.exitsapps.com    -> http://admin-web:8080", overlay, StringComparison.Ordinal);
 
         foreach (var blocked in new[]
         {
