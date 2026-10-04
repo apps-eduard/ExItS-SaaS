@@ -128,14 +128,16 @@ describe("utang-workspace", () => {
         currentBalance: 5,
         dueDateUtc: null,
         updatedAtUtc: "2026-01-01T00:00:00Z",
-        isSharedLedger: false,
-        isLedgerOwner: true,
+        isSharedLedger: true,
+        isLedgerOwner: false,
         status: "Active",
         dueKind: "none",
       },
     ];
     expect(filterUtangAccounts(rows, "lent", "").map((r) => r.relationshipId)).toEqual(["1"]);
     expect(filterUtangAccounts(rows, "all", "ben").map((r) => r.relationshipId)).toEqual(["2"]);
+    expect(filterUtangAccounts(rows, "mine", "").map((r) => r.relationshipId)).toEqual(["1"]);
+    expect(filterUtangAccounts(rows, "shared", "").map((r) => r.relationshipId)).toEqual(["2"]);
   });
 
   it("builds attention items for pending and overdue", () => {

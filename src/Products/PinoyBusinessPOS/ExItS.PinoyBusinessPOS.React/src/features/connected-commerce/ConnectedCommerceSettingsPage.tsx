@@ -38,6 +38,10 @@ import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useToast } from "@/components/exits/ToastProvider";
 import { ConnectedCommerceFulfillmentPanel } from "@/features/connected-commerce/ConnectedCommerceFulfillmentPanel";
 import { CategoryPricingOverridesPanel } from "@/features/connected-commerce/CategoryPricingOverridesPanel";
+import {
+  normalizeDiscountPercentTyping,
+  parseDiscountPercentInput,
+} from "@/features/connected-commerce/category-pricing-overrides";
 import { CategoryReturnOverridesPanel } from "@/features/connected-commerce/CategoryReturnOverridesPanel";
 import {
   parseConnectedCommerceTab,
@@ -137,10 +141,12 @@ export function ConnectedCommerceSettingsPage() {
   });
 
   const [draft, setDraft] = useState<OrganizationConnectedCommerceSettingsDto | null>(null);
+  const [defaultDiscountText, setDefaultDiscountText] = useState("");
 
   useEffect(() => {
     if (settingsQuery.data) {
       setDraft(settingsQuery.data);
+      setDefaultDiscountText(String(settingsQuery.data.defaultB2bDiscountPercent));
     }
   }, [settingsQuery.data]);
 
@@ -557,18 +563,21 @@ export function ConnectedCommerceSettingsPage() {
                 min={0}
                 max={100}
                 step="0.01"
-                value={draft.defaultB2bDiscountPercent}
+                className="exits-input--no-spin"
+                value={defaultDiscountText}
                 disabled={!canEdit}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const next = normalizeDiscountPercentTyping(e.target.value);
+                  setDefaultDiscountText(next);
                   setDraft((current) =>
                     current
                       ? {
                           ...current,
-                          defaultB2bDiscountPercent: Number(e.target.value || 0),
+                          defaultB2bDiscountPercent: parseDiscountPercentInput(next),
                         }
                       : current,
-                  )
-                }
+                  );
+                }}
                 data-testid="connected-commerce-default-discount"
               />
             </div>

@@ -1,17 +1,11 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { SideDrawer } from "@/components/exits/SideDrawer";
 import { AccessibilityPreferences } from "@/features/preferences/AccessibilityPreferences";
 import { AppearancePreferences } from "@/features/preferences/AppearancePreferences";
 import { LanguageRegionPreferences } from "@/features/preferences/LanguageRegionPreferences";
 import { NavigationPreferences } from "@/features/preferences/NavigationPreferences";
 import { PreferencesSectionNav } from "@/features/preferences/PreferencesSectionNav";
+import { PreferencesOverlayContext } from "@/features/preferences/preferences-overlay-context";
 import {
   clearPreferencesReturnTo,
   rememberPreferencesReturnTo,
@@ -21,19 +15,6 @@ import {
   type PreferencesSectionId,
 } from "@/features/preferences/preferences-sections";
 import { useI18n } from "@/i18n/I18nProvider";
-
-type PreferencesOverlayContextValue = {
-  open: boolean;
-  section: PreferencesSectionId;
-  openPreferences: (options?: {
-    section?: PreferencesSectionId;
-    returnTo?: string;
-  }) => void;
-  setSection: (section: PreferencesSectionId) => void;
-  closePreferences: () => void;
-};
-
-const PreferencesOverlayContext = createContext<PreferencesOverlayContextValue | null>(null);
 
 export function PreferencesOverlayProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronRight, HandCoins, History, Users } from "lucide-react";
+import { ChevronRight, CreditCard, HandCoins, History, Users, Wallet } from "lucide-react";
 import {
   getLinkedCustomerStatement,
   isExtendedHistoryRequiredError,
@@ -12,6 +12,7 @@ import {
 } from "@/api/pos/pos-linked-customers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -466,28 +467,50 @@ export function LinkedMerchantStatementPage() {
         data-testid="linked-merchant-commerce-projection"
       >
         <h2 className="pc-commerce-nav__heading">{t("personal.merchantStatement.creditSection")}</h2>
+        {summary.creditLimit != null ? (
+          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+            <Card treatment="bordered" motion="none">
+              <CardHeader className="items-center justify-start gap-2">
+                <CreditCard className="pc-credit-kpi__icon size-4 shrink-0" aria-hidden />
+                <CardDescription className="uppercase tracking-wide">
+                  {t("personal.merchantStatement.creditLimit")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p
+                  className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums"
+                  data-testid="linked-merchant-credit-limit"
+                >
+                  {formatPeso(summary.creditLimit)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card treatment="bordered" motion="none">
+              <CardHeader className="items-center justify-start gap-2">
+                <Wallet className="pc-credit-kpi__icon size-4 shrink-0" aria-hidden />
+                <CardDescription className="uppercase tracking-wide">
+                  {t("personal.merchantStatement.availableCredit")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p
+                  className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums"
+                  data-testid="linked-merchant-available-credit"
+                >
+                  {formatPeso(summary.availableCredit)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
         <dl className="pc-credit-facts">
           {summary.creditLimit != null ? (
-            <>
-              <div className="pc-credit-facts__item">
-                <dt>{t("personal.merchantStatement.creditLimit")}</dt>
-                <dd data-testid="linked-merchant-credit-limit">
-                  {formatPeso(summary.creditLimit)}
-                </dd>
-              </div>
-              <div className="pc-credit-facts__item">
-                <dt>{t("personal.merchantStatement.pendingOnlineUtang")}</dt>
-                <dd data-testid="linked-merchant-pending-utang">
-                  {formatPeso(summary.pendingOnlineUtangCommitment)}
-                </dd>
-              </div>
-              <div className="pc-credit-facts__item">
-                <dt>{t("personal.merchantStatement.availableCredit")}</dt>
-                <dd data-testid="linked-merchant-available-credit">
-                  {formatPeso(summary.availableCredit)}
-                </dd>
-              </div>
-            </>
+            <div className="pc-credit-facts__item">
+              <dt>{t("personal.merchantStatement.pendingOnlineUtang")}</dt>
+              <dd data-testid="linked-merchant-pending-utang">
+                {formatPeso(summary.pendingOnlineUtangCommitment)}
+              </dd>
+            </div>
           ) : null}
           <div className="pc-credit-facts__item" data-testid="linked-merchant-online-shopping">
             <dt>{t("personal.merchantStatement.onlineShoppingLabel")}</dt>

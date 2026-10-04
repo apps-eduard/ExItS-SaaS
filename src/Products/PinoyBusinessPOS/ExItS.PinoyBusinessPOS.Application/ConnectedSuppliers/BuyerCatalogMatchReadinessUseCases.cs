@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
@@ -62,19 +63,22 @@ public sealed class ClassifyCatalogReadiness
     private readonly IBuyerSupplierProductLinkRepository _links;
     private readonly ICatalogProductRepository _products;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
 
     public ClassifyCatalogReadiness(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
         IBuyerSupplierProductLinkRepository links,
         ICatalogProductRepository products,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = relationships;
         _shares = shares;
         _links = links;
         _products = products;
         _access = access;
+        _commerceSettings = commerceSettings;
     }
 
     public async Task<ApplicationResult<CatalogReadinessResultDto>> ExecuteAsync(
@@ -96,7 +100,8 @@ public sealed class ClassifyCatalogReadiness
             _products,
             orgId,
             relationshipId,
-            ct).ConfigureAwait(false);
+            ct,
+            _commerceSettings).ConfigureAwait(false);
         if (!context.IsSuccess)
         {
             return ConnectedSupplierUseCaseGuard.Failure<CatalogReadinessResultDto>(
@@ -129,6 +134,7 @@ public sealed class AutoLinkExactMatches
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _commerceSettings;
 
     public AutoLinkExactMatches(
         IConnectedSupplierRelationshipRepository relationships,
@@ -139,7 +145,8 @@ public sealed class AutoLinkExactMatches
         ICatalogProductUnitRepository units,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         _relationships = relationships;
         _exposures = exposures;
@@ -148,6 +155,7 @@ public sealed class AutoLinkExactMatches
         _products = products;
         _units = units;
         _uow = uow;
+        _commerceSettings = commerceSettings;
         _access = access;
         _clock = clock ?? TimeProvider.System;
     }
@@ -181,7 +189,8 @@ public sealed class AutoLinkExactMatches
             _products,
             orgId,
             relationshipId,
-            ct).ConfigureAwait(false);
+            ct,
+            _commerceSettings).ConfigureAwait(false);
         if (!context.IsSuccess)
         {
             return ConnectedSupplierUseCaseGuard.Failure<AutoLinkExactMatchesResultDto>(
@@ -323,7 +332,8 @@ internal sealed class BuyerCatalogMatchContext
         ICatalogProductRepository products,
         Guid orgId,
         Guid relationshipId,
-        CancellationToken ct)
+        CancellationToken ct,
+        IOrganizationConnectedCommerceSettingsRepository? commerceSettings = null)
     {
         var buyer = PosOrganizationId.From(orgId);
         var relationship = await relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct)
@@ -381,6 +391,10 @@ internal sealed class BuyerCatalogMatchContext
         var supplierBarcodeByProductId = supplierProducts
             .Where(x => !string.IsNullOrWhiteSpace(x.Barcode))
             .ToDictionary(x => x.Id.Value, x => x.Barcode!);
+        var supplierById = supplierProducts.ToDictionary(x => x.Id.Value);
+        var settings = await ConnectedCommerceSettingsLookup
+            .GetOrDefaultAsync(commerceSettings, relationship.SupplierOrganizationId, ct)
+            .ConfigureAwait(false);
 
         var sharesByProduct = shareList
             .GroupBy(x => x.SupplierProductId.Value)
@@ -390,14 +404,17 @@ internal sealed class BuyerCatalogMatchContext
         foreach (var exposure in exposures)
         {
             sharesByProduct.TryGetValue(exposure.ProductId.Value, out var share);
+            supplierById.TryGetValue(exposure.ProductId.Value, out var supplierProduct);
             if (!ConnectedPoPricing.TryResolveEffectivePrice(
                     exposure,
                     share,
                     relationship.CatalogSharingMode,
-                    relationship.CustomerDiscountPercent,
-                    sellingPrice: null,
+                    settings,
+                    relationship,
+                    supplierProduct?.CategoryId?.Value,
                     out var poPrice,
-                    out _))
+                    out _,
+                    supplierProduct is { SellingPrice: > 0m } ? supplierProduct.SellingPrice : null))
             {
                 continue;
             }

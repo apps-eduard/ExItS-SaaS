@@ -228,6 +228,15 @@ describe("Preferences icon top navigation", () => {
       expect(document.documentElement.dataset.controlShape).toBe("standard");
     });
 
+    await user.click(screen.getByRole("radio", { name: "Tabs: Underline" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.tabStyle).toBe("underline");
+    });
+    await user.click(screen.getByRole("radio", { name: "Tabs: Tabs" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.tabStyle).toBe("tabs");
+    });
+
     expect(screen.getByTestId("preferences-animations")).toBeInTheDocument();
     expect(screen.getByText("Animations")).toBeInTheDocument();
     expect(

@@ -12,7 +12,7 @@ For PinoyBusinessPOS React button / CTA / icon-control work:
 2. Reuse the shared ExItS `Button` in `ExItS.PinoyBusinessPOS.React/src/components/ui/button.tsx`.
 3. Do **not** invent local visual button systems or third-party visual button skins when shared `Button` can express the action.
 4. Map Cursor shorthand to the real API (`PRIMARY` → `intent="primary" appearance="solid"`, secondary → `intent="neutral"`, etc.). Prefer canonical `intent` / `appearance` over legacy `variant` / `treatment`.
-5. Style through ExItS semantic tokens — not hardcoded brand greens or page-local palettes.
+5. Style severities from the locked palette in `pos-react-severity-palette.mdc`. Primary follows Preferences (`--exits-primary`). Info is `--exits-severity-info` (sky blue), not `--exits-info` (teal). No hardcoded brand greens or page-local palettes.
 6. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort).
 7. Icon-only controls need `size="icon"`, `aria-label`, and `title`/tooltip; `shape="round"` is for circular icon-only.
 8. Respect `prefers-reduced-motion` (no unnecessary lift / scale / rotate).

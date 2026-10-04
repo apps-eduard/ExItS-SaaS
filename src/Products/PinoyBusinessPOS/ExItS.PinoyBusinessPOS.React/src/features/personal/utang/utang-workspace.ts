@@ -14,7 +14,7 @@ export function isSharedRelationship(
 
 export type UtangPerspective = "lent" | "owe";
 
-export type UtangAccountSegment = "all" | "lent" | "owe";
+export type UtangAccountSegment = "all" | "lent" | "owe" | "mine" | "shared";
 
 export type UtangAccountRow = {
   relationshipId: string;
@@ -130,6 +130,8 @@ export function filterUtangAccounts(
   return rows.filter((row) => {
     if (segment === "lent" && row.perspective !== "lent") return false;
     if (segment === "owe" && row.perspective !== "owe") return false;
+    if (segment === "mine" && row.isLedgerOwner === false) return false;
+    if (segment === "shared" && row.isLedgerOwner !== false) return false;
     if (q && !row.displayName.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -221,6 +223,5 @@ export function buildHomeAttentionItems(input: {
 }
 
 export function countSegment(rows: UtangAccountRow[], segment: UtangAccountSegment): number {
-  if (segment === "all") return rows.length;
-  return rows.filter((r) => r.perspective === (segment === "lent" ? "lent" : "owe")).length;
+  return filterUtangAccounts(rows, segment, "").length;
 }

@@ -33,6 +33,36 @@ export function filterCategoryPricingOverrides<T extends CategoryPricingOverride
   });
 }
 
+/** Lets a percent field be cleared while typing. Empty stays empty. */
+export function normalizeDiscountPercentTyping(raw: string): string {
+  const cleaned = raw.replace(/[^\d.]/g, "");
+  if (cleaned === "" || cleaned === ".") {
+    return cleaned === "." ? "0." : "";
+  }
+  const dot = cleaned.indexOf(".");
+  const whole = dot === -1 ? cleaned : cleaned.slice(0, dot);
+  const fraction = dot === -1 ? "" : cleaned.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+  const joined = dot === -1 ? whole : `${whole}.${fraction}`;
+  const value = Number(joined);
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+  if (value > 100) {
+    return "100";
+  }
+  return joined;
+}
+
+/** Empty or unfinished input saves as 0. */
+export function parseDiscountPercentInput(raw: string): number {
+  const normalized = normalizeDiscountPercentTyping(raw);
+  if (normalized === "" || normalized === "." || normalized === "0.") {
+    return 0;
+  }
+  const value = Number(normalized);
+  return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
+}
+
 export function buildCategoryPricingOverrideDraft(
   categoryId: string,
   discountPercent: number,

@@ -5,6 +5,8 @@ import {
   categoriesAvailableForPricingOverride,
   filterCategoryPricingOverrides,
   formatCategoryPricingDiscountLabel,
+  normalizeDiscountPercentTyping,
+  parseDiscountPercentInput,
   type CategoryPricingOverrideRule,
 } from "@/features/connected-commerce/category-pricing-overrides";
 import {
@@ -132,7 +134,7 @@ export function CategoryPricingOverridesPanel({
 
   const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>([]);
   const [draftCategoryId, setDraftCategoryId] = useState("");
-  const [draftDiscountPercent, setDraftDiscountPercent] = useState(0);
+  const [draftDiscountText, setDraftDiscountText] = useState("");
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -163,14 +165,14 @@ export function CategoryPricingOverridesPanel({
   function openAdd() {
     setDraftCategoryIds([]);
     setDraftCategoryId("");
-    setDraftDiscountPercent(0);
+    setDraftDiscountText("");
     setEditor({ kind: "add" });
   }
 
   function openEdit(rule: CategoryPricingOverrideRule) {
     setDraftCategoryIds([]);
     setDraftCategoryId(rule.categoryId);
-    setDraftDiscountPercent(rule.discountPercent);
+    setDraftDiscountText(String(rule.discountPercent));
     setEditor({ kind: "edit", categoryId: rule.categoryId });
   }
 
@@ -183,6 +185,7 @@ export function CategoryPricingOverridesPanel({
     if (!editor) {
       return;
     }
+    const discountPercent = parseDiscountPercentInput(draftDiscountText);
     if (editor.kind === "add") {
       const existing = new Set(rules.map((r) => r.categoryId));
       const toAdd = draftCategoryIds.filter((id) => id && !existing.has(id));
@@ -191,7 +194,7 @@ export function CategoryPricingOverridesPanel({
       }
       onChange([
         ...rules,
-        ...toAdd.map((id) => buildCategoryPricingOverrideDraft(id, draftDiscountPercent)),
+        ...toAdd.map((id) => buildCategoryPricingOverrideDraft(id, discountPercent)),
       ]);
       closeEditor();
       return;
@@ -200,7 +203,7 @@ export function CategoryPricingOverridesPanel({
     onChange(
       rules.map((r) =>
         r.categoryId === editor.categoryId
-          ? buildCategoryPricingOverrideDraft(editor.categoryId, draftDiscountPercent)
+          ? buildCategoryPricingOverrideDraft(editor.categoryId, discountPercent)
           : r,
       ),
     );
@@ -425,8 +428,9 @@ export function CategoryPricingOverridesPanel({
                   min={0}
                   max={100}
                   step="0.01"
-                  value={draftDiscountPercent}
-                  onChange={(e) => setDraftDiscountPercent(Number(e.target.value || 0))}
+                  className="exits-input--no-spin"
+                  value={draftDiscountText}
+                  onChange={(e) => setDraftDiscountText(normalizeDiscountPercentTyping(e.target.value))}
                   data-testid="category-pricing-override-discount"
                 />
               </div>
@@ -458,9 +462,9 @@ export function CategoryPricingOverridesPanel({
                   min={0}
                   max={100}
                   step="0.01"
-                  className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] w-full rounded-[var(--exits-field-radius)] border border-border bg-surface px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-md)] text-foreground"
-                  value={draftDiscountPercent}
-                  onChange={(e) => setDraftDiscountPercent(Number(e.target.value || 0))}
+                  className="exits-input exits-input--no-spin h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] w-full rounded-[var(--exits-field-radius)] border border-border bg-surface px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-md)] text-foreground"
+                  value={draftDiscountText}
+                  onChange={(e) => setDraftDiscountText(normalizeDiscountPercentTyping(e.target.value))}
                   data-testid="category-pricing-override-discount"
                   aria-label={t("connectedCommerce.pricingOverride.discountLabel")}
                 />
