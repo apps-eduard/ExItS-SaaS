@@ -19,7 +19,7 @@ import {
   zodResolver,
   type PasswordConfirmValues,
 } from "@/features/auth/password-confirm-schema";
-import { resolveAuthContinuePath } from "@/features/store/store-acquisition";
+import { continuationAfterActivation } from "@/features/store/store-acquisition";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export function ActivateAccountPage() {
@@ -120,7 +120,7 @@ export function ActivateAccountPage() {
                 return;
               }
               scrubTokenFromBrowserLocation("/activate-account");
-              const continuePath = resolveAuthContinuePath(null);
+              const continuePath = continuationAfterActivation();
               await navigate(
                 continuePath
                   ? `/sign-in?continue=${encodeURIComponent(continuePath)}`

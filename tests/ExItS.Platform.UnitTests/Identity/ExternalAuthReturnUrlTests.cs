@@ -18,6 +18,18 @@ public sealed class ExternalAuthReturnUrlTests
     }
 
     [Fact]
+    public void Sanitize_keeps_personal_callback_and_rejects_open_redirects()
+    {
+        Assert.Equal(
+            "/external-login-callback?target=personal",
+            ExternalAuthReturnUrl.Sanitize("/external-login-callback?target=personal", false));
+        Assert.Equal(ExternalAuthReturnUrl.DefaultAdminCallback, ExternalAuthReturnUrl.Sanitize("//evil.example", false));
+        Assert.Equal(ExternalAuthReturnUrl.DefaultAdminCallback, ExternalAuthReturnUrl.Sanitize("/\\evil.example", false));
+        Assert.Equal(ExternalAuthReturnUrl.DefaultAdminCallback, ExternalAuthReturnUrl.Sanitize("javascript:alert(1)", false));
+        Assert.Equal(ExternalAuthReturnUrl.DefaultAdminCallback, ExternalAuthReturnUrl.Sanitize("data:text/html,hi", false));
+    }
+
+    [Fact]
     public void Sanitize_allows_maui_callback_scheme()
     {
         Assert.Equal(

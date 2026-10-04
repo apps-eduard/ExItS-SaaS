@@ -106,6 +106,15 @@ if (externalAuthOptions.Google.Enabled
         options.ClientSecret = externalAuthOptions.Google.ClientSecret;
         options.SignInScheme = PlatformExternalAuthDefaults.CorrelationScheme;
         options.CallbackPath = "/api/v1/platform/auth/external/google/callback";
+        if (ExternalAuthCallbackUri.TryCreate(externalAuthOptions.PublicBrowserOrigin, out _))
+        {
+            options.CorrelationCookie.Path = ExternalAuthCallbackUri.ReactPathBase + options.CallbackPath;
+        }
+
+        // Google returns on a top-level GET. Lax is included on that navigation.
+        // SameSite=None is discarded when the preview proxy removes Secure.
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+
         options.SaveTokens = false;
         options.Scope.Add("email");
         options.Scope.Add("profile");
@@ -653,8 +662,10 @@ builder.Services.AddHostedService<LocalValidationHostedService>();
 
 var app = builder.Build();
 
+app.UsePathBase(ExternalAuthCallbackUri.ReactPathBase);
 app.UsePlatformForwardedHeaders();
 app.UsePlatformSecurity();
+app.UseExternalAuthPublicOrigin();
 app.UseAuthentication();
 app.UsePlatformBrowserAntiforgery();
 app.UseMiddleware<AccountScopeGuardMiddleware>();

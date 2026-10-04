@@ -723,22 +723,12 @@ public sealed class LayerDependencyTests
     public void Admin_project_is_isolated_from_infrastructure_and_forbidden_ui_frameworks()
     {
         var root = FindRepositoryRoot();
-        var adminCsproj = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "ExItS.Platform.Admin.csproj"));
+        Assert.False(Directory.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin")));
         var packages = File.ReadAllText(Path.Combine(root, "Directory.Packages.props"));
-        Assert.Contains("AntDesign", adminCsproj, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Include=\"AntDesign\" Version=\"1.6.2\"", packages, StringComparison.Ordinal);
-        Assert.DoesNotContain("ExItS.Platform.Infrastructure", adminCsproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("EntityFrameworkCore", adminCsproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Npgsql", adminCsproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("FluentUI", adminCsproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Tailwind", adminCsproj, StringComparison.OrdinalIgnoreCase);
-
-        var adminSources = Directory.GetFiles(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin"), "*.cs", SearchOption.AllDirectories)
-            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
-                        && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-            .Select(File.ReadAllText);
-        Assert.DoesNotContain(adminSources, text => text.Contains("PlatformDbContext", StringComparison.Ordinal));
-        Assert.DoesNotContain(adminSources, text => text.Contains("DbContext", StringComparison.Ordinal));
+        Assert.DoesNotContain("AntDesign", packages, StringComparison.OrdinalIgnoreCase);
+        var reactPackage = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin.Web", "package.json"));
+        Assert.DoesNotContain("antdesign", reactPackage, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FindRepositoryRoot()

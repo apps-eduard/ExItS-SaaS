@@ -1,5 +1,7 @@
 # Platform Admin Web — Implementation Status
 
+Current status: React Platform Admin is the canonical Platform Administration frontend. The legacy Blazor project `src/Platform/ExItS.Platform.Admin` is removed. The sections below keep the historical gate record.
+
 Program: `Platform Admin Web (Modernization)`  
 Implementation start: `2026-08-19`  
 Authorization: Product Owner authorized implementation through the first visual foundation checkpoint only  
@@ -17,9 +19,7 @@ Application path: `src/Platform/ExItS.Platform.Admin.Web/`
 
 ## Scope boundaries
 
-- Existing Blazor Admin (`src/Platform/ExItS.Platform.Admin`) remains the active operator console
-- No cutover authorization
-- No old Admin retirement authorization
+- Historical record only: this section was written before cutover. React Platform Admin is now canonical and the Blazor project is removed.
 - No POS/PLM operational scope
 - Implementation authorized only through the first visual foundation checkpoint (Login + design foundation + shell + dashboard), after this scaffold package
 - PWEB-IMPL-01 stops after scaffold; Login/Dashboard/shell UI are later packages
@@ -176,7 +176,7 @@ Status: **COMPLETE**
 
 ## PWEB-IMPL-04C — Parallel React local-validation container
 
-Status: **COMPLETE**
+Status: **COMPLETE** (historical package record; the parallel `admin-web-react` service and port 8090 are retired)
 
 | Area | Record |
 |---|---|

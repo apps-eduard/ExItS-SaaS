@@ -80,7 +80,7 @@ describe("overlapping product capabilities", () => {
     expect(
       isSellFloorCapable({
         canBeSold: true,
-        canBeUsedAsIngredient: true,
+        businessUsage: "Ingredient",
       }),
     ).toBe(true);
   });

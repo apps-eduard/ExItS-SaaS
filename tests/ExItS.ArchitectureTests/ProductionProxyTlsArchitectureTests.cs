@@ -37,7 +37,7 @@ public sealed class ProductionProxyTlsArchitectureTests
             PortfolioIndependenceTokens.ForbiddenToken,
             compose,
             StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("8090–8092", compose, StringComparison.Ordinal); // Local Validation ports cited as preserved, not published
+        Assert.Contains("8091–8095", compose, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -55,7 +55,8 @@ public sealed class ProductionProxyTlsArchitectureTests
         Assert.Contains("location /platform/", conf, StringComparison.Ordinal);
         Assert.Contains("location /pos/", conf, StringComparison.Ordinal);
         Assert.Contains("location /admin/", conf, StringComparison.Ordinal);
-        Assert.Contains("location /admin/_blazor", conf, StringComparison.Ordinal);
+        Assert.DoesNotContain("location /admin/_blazor", conf, StringComparison.Ordinal);
+        Assert.Contains("location /assets/", conf, StringComparison.Ordinal);
         Assert.Contains("client_max_body_size 1m", conf, StringComparison.Ordinal);
         Assert.Contains("server_tokens off", conf, StringComparison.Ordinal);
         Assert.DoesNotContain("ssl_certificate     /etc/nginx/certs/fullchain.pem;\n    ssl_certificate_key     /committed", conf, StringComparison.Ordinal);
@@ -88,8 +89,7 @@ public sealed class ProductionProxyTlsArchitectureTests
         Assert.Contains("\"ForwardedHeaders\"", apiSettings, StringComparison.Ordinal);
         Assert.Contains("\"Enabled\": false", apiSettings, StringComparison.Ordinal);
 
-        var adminProgram = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs"));
-        Assert.Contains("UseAdminForwardedHeaders", adminProgram, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs")));
     }
 
     [Fact]
@@ -97,7 +97,8 @@ public sealed class ProductionProxyTlsArchitectureTests
     {
         var root = FindRepoRoot();
         var live = File.ReadAllText(Path.Combine(root, "deploy", "docker", "compose.local-validation.yaml"));
-        Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8095}:8080", live, StringComparison.Ordinal);
+        Assert.DoesNotContain("admin-web-react", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432", live, StringComparison.Ordinal);

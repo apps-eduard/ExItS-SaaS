@@ -1,13 +1,12 @@
 # Mobile React / PWA / Capacitor — Decisions
 
-Accepted decision identifiers for this planning track (documentation-only).
-These are planning decisions. They do not change current implementation.
+Superseded as a planning-only track by [ADR-024](../decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md). .NET MAUI is retired. The rows below are historical planning decisions.
 
 | ID | Decision | Status |
 |---|---|---|
 | MOBILE-D-001 | This track is documentation-only. Completing these documents does not authorize React, PWA, Capacitor, or MAUI retirement work. | Accepted |
 | MOBILE-D-002 | Current `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui` remains the active Mobile Client until an explicit cutover is separately authorized. | Accepted |
-| MOBILE-D-003 | Current Organization Web (`ExItS.PinoyBusinessPOS.Web`) and Personal Web (`ExItS.Personal.Web`) remain unchanged by this track. | Accepted |
+| MOBILE-D-003 | Blazor Organization and Personal hosts are removed. The React client is the canonical Personal, Organization, and POS experience. | Accepted |
 | MOBILE-D-004 | Current .NET backends remain the system of record path: Platform API, PinoyBusinessPOS API, PostgreSQL product databases. No backend rewrite is implied. | Accepted |
 | MOBILE-D-005 | The current MAUI project is a **client host**, not the POS product domain. Evidence shows it hosts Personal Mobile, Organization Owner Mobile, and POS Operations in one BlazorWebView. | Accepted |
 | MOBILE-D-006 | Canonical planning terms are defined in [current-state-and-replacement-boundaries.md](current-state-and-replacement-boundaries.md). Do not use “mobile” as a synonym for POS only. | Accepted |

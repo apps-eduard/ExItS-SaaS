@@ -31,6 +31,7 @@ import {
   type VisibilityBranch,
 } from "@/features/customers/customer-branch-visibility";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
 
 type CustomerBranchVisibilitySectionProps = {
@@ -41,7 +42,7 @@ type CustomerBranchVisibilitySectionProps = {
   online: boolean;
   canManage: boolean;
   kind?: "person" | "business";
-  helpKey?: string;
+  helpKey?: MessageKey;
 };
 
 function AreaIndeterminateCheckbox({

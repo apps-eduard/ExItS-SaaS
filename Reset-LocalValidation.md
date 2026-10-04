@@ -40,7 +40,7 @@ cd C:\Users\speed\Desktop\ExItS-SaaS
 
 Sign in with Olivia or Rafael and the shared password from `deploy/docker/.env.local-validation` (`LOCAL_VALIDATION_SHARED_PASSWORD`). Never commit that secret.
 
-Quick login on `http://127.0.0.1:8090/admin/login` is **database-backed (MODEL A)**:
+Quick login on `http://127.0.0.1:8095/admin/login` is **database-backed (MODEL A)**:
 
 - **Canonical baseline (always after this reset):** Olivia Mendoza, Rafael Torres — labeled `Baseline ·`.
 - **Owner-created accounts** (for example Mica Uy) appear only after you create them, and only in scopes they actually own.
@@ -61,6 +61,5 @@ If Admin antiforgery cookies fail after reset: Incognito window or clear localho
 ## Related
 
 - [Start-LocalValidation.md](Start-LocalValidation.md) — start / stop apps (Tailscale PublicHost)
-- [Maui-Emulator-Install.md](Maui-Emulator-Install.md) — emulator build + install
-- [Maui-PhysicalDevice-Install.md](Maui-PhysicalDevice-Install.md) — physical phone + Tailscale
+- [ADR-024](docs/decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md) — MAUI is retired
 - Deeper workflow: [deploy/docker/README.local-validation-workflow.md](deploy/docker/README.local-validation-workflow.md)

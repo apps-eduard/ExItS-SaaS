@@ -1,8 +1,0 @@
-@page "/select-organization"
-@inject NavigationManager Nav
-
-@code {
-    /// <summary>Legacy route — unified workspace selection lives at /workspace-select (P28-WP14).</summary>
-    protected override void OnInitialized() =>
-        Nav.NavigateTo("/workspace-select", replace: true);
-}

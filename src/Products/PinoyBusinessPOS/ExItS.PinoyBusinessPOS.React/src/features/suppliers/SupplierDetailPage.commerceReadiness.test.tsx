@@ -133,6 +133,15 @@ describe("SupplierDetailPage commerce readiness", () => {
       supportedFulfillmentMethods: ["Pickup", "Delivery"],
       requirements: null,
       blockerCategories: [],
+      allowPayBeforeFulfillment: true,
+      allowPayOnDeliveryOrReceipt: true,
+      allowSupplierCredit: false,
+      defaultPaymentTiming: "PayBeforeFulfillment",
+      orgOfferDelivery: true,
+      branchPickupReady: true,
+      branchDeliveryReady: true,
+      relationshipDeliveryBlocked: false,
+      buyerOrderableCount: 12,
     });
 
     renderPage();
@@ -153,6 +162,16 @@ describe("SupplierDetailPage commerce readiness", () => {
       supportedFulfillmentMethods: ["Pickup"],
       requirements: null,
       blockerCategories: ["Fulfillment"],
+      allowPayBeforeFulfillment: true,
+      allowPayOnDeliveryOrReceipt: true,
+      allowSupplierCredit: false,
+      defaultPaymentTiming: "PayBeforeFulfillment",
+      orgOfferDelivery: false,
+      branchPickupReady: true,
+      branchDeliveryReady: false,
+      relationshipDeliveryBlocked: false,
+      deliveryUnavailableReason: "BranchNotReady",
+      buyerOrderableCount: 0,
     });
 
     renderPage();
@@ -177,6 +196,17 @@ describe("SupplierDetailPage commerce readiness", () => {
       supportedFulfillmentMethods: [],
       requirements: null,
       blockerCategories: ["Payment", "Catalog"],
+      allowPayBeforeFulfillment: false,
+      allowPayOnDeliveryOrReceipt: false,
+      allowSupplierCredit: false,
+      defaultPaymentTiming: "PayBeforeFulfillment",
+      orgOfferDelivery: false,
+      branchPickupReady: false,
+      branchDeliveryReady: false,
+      relationshipDeliveryBlocked: false,
+      pickupUnavailableReason: "BranchNotReady",
+      deliveryUnavailableReason: "OrgOfferOff",
+      buyerOrderableCount: 0,
     });
 
     renderPage();

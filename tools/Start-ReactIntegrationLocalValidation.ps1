@@ -385,7 +385,7 @@ $platformDbPort = if ($envMap["LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT"]) { [int]
 $posDbPort = if ($envMap["LOCAL_VALIDATION_POS_DB_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_POS_DB_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultPosDbPort }
 $platformApiPort = if ($envMap["LOCAL_VALIDATION_PLATFORM_API_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_PLATFORM_API_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultPlatformApiPort }
 $posApiPort = if ($envMap["LOCAL_VALIDATION_POS_API_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_POS_API_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultPosApiPort }
-$adminWebReactPort = if ($envMap["LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultAdminWebReactPort }
+$adminWebReactPort = if ($envMap["LOCAL_VALIDATION_ADMIN_HOST_PORT"]) { [int]$envMap["LOCAL_VALIDATION_ADMIN_HOST_PORT"] } else { [int]$LocalValidationStack.DefaultAdminPort }
 $reactPosPort = 5177
 
 Write-Step "Stopping conflicting repo-scoped host apps..."
@@ -397,8 +397,8 @@ $composeProject = $LocalValidationStack.ComposeProjectName
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 try {
-    docker compose -p $composeProject -f $composeFile --env-file $envFile stop admin-web-react 2>$null | Out-Null
-    docker compose -p $composeProject -f $composeFile --env-file $envFile rm -f admin-web-react 2>$null | Out-Null
+    docker compose -p $composeProject -f $composeFile --env-file $envFile stop admin-web 2>$null | Out-Null
+    docker compose -p $composeProject -f $composeFile --env-file $envFile rm -f admin-web 2>$null | Out-Null
 }
 finally {
     $ErrorActionPreference = $prev

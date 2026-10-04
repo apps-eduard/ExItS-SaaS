@@ -29,6 +29,7 @@ import {
   listPersonalContacts,
 } from "@/api/platform/personal-utang-client";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { PersonalInstallMoreEntry } from "@/features/personal/PersonalInstallOffer";
 import { CountChip } from "@/components/exits/CountChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -385,7 +386,7 @@ export function PersonalUtangHubPage() {
               className="exits-chip-bar--scroll utang-hub-filters"
               activeKey={segment}
               onChange={(key) => setSegment(parseSegment(key))}
-              items={[
+              items={([
                 {
                   key: "all",
                   label: t("personal.utang.filterAll"),
@@ -411,7 +412,7 @@ export function PersonalUtangHubPage() {
                   label: t("personal.utang.ownershipSharedWithMe"),
                   icon: Share2,
                 },
-              ].map((item) => ({
+              ] as const).map((item) => ({
                 ...item,
                 count: allActive.length > 0 ? countSegment(allActive, item.key) : undefined,
                 testId: `utang-segment-${item.key}`,
@@ -501,6 +502,8 @@ export function PersonalMorePage() {
         backLabel={t(personalPageBackNav.home.labelKey)}
         backTestId="page-header-back-more"
       />
+
+      <PersonalInstallMoreEntry />
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"

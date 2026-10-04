@@ -386,9 +386,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [openingUnitCost, setOpeningUnitCost] = useState("");
 
-  const [openingExpiryDate, setOpeningExpiryDate] = useState("");
+  const [openingExpiryDate] = useState("");
 
-  const [openingBatchLot, setOpeningBatchLot] = useState("");
+  const [openingBatchLot] = useState("");
 
   const [unitOfMeasure, setUnitOfMeasure] = useState<PosUnitOfMeasureCode>(
     DEFAULT_CATALOG_UNIT_OF_MEASURE,
@@ -1090,7 +1090,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       byId.set(pendingCategoryOption.categoryId, pendingCategoryOption);
     }
     const currentCategoryId = categoryId || productQuery.data?.categoryId || "";
-    const currentCategoryName = productQuery.data?.categoryName;
+    const currentCategoryName = currentCategoryId;
     if (
       currentCategoryId &&
       !byId.has(currentCategoryId)

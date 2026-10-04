@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { MessageKey } from "@/i18n/messages";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
@@ -47,7 +48,7 @@ export type PurchaseOrderSelectedLine = {
   canEditQty?: boolean;
 };
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 type PurchaseOrderItemsViewProps = {
   layout: ResponsiveDataLayout;

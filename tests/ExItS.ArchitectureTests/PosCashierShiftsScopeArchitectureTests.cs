@@ -65,8 +65,7 @@ public sealed class PosCashierShiftsScopeArchitectureTests
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "CashierShifts"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Application"), "CashierShifts"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "CashierShifts"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "CashierShifts"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Maui"), "Components", "Pages", "Shifts")
+            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "CashierShifts")
         };
 
         foreach (var root in roots)

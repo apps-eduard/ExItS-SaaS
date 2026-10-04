@@ -10,7 +10,6 @@ import {
   laterPaymentsAmount,
   mapPoPaymentTermToReceiveMethod,
   parseMoneyInput,
-  receiptReverseErrorMessage,
   remainingCredit,
   resolveLockedReceivePaymentFromPo,
   roundMoney,

@@ -4,16 +4,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, BellPlus, BellRing, Check, CheckCheck, ChevronDown, ChevronRight, Send, Store, UserRoundCheck, Users, X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
+  acceptPersonalUtangInvitationById,
   cancelPersonalReminder,
   createPersonalUtangInvitation,
   createRelationshipReminder,
   declinePersonalUtangInvitation,
+  declinePersonalUtangInvitationById,
   listPersonalNotifications,
   listPersonalUtangInvitations,
   listRelationshipReminders,
   markPersonalNotificationRead,
   resendPersonalUtangInvitation,
   revokePersonalUtangInvitation,
+  type PersonalUtangInvitationDto,
 } from "@/api/platform/personal-social-client";
 import { listPendingCustomerLinkRequests } from "@/api/platform/customer-link-requests-client";
 import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
@@ -36,11 +39,27 @@ import {
   resolveNotificationsReturnTo,
 } from "@/features/personal/notifications-return";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useSession } from "@/session/SessionProvider";
 import { cn } from "@/lib/cn";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
+export function splitUtangInvitations(
+  invites: readonly PersonalUtangInvitationDto[],
+  userId: string | null | undefined,
+): { received: PersonalUtangInvitationDto[]; sent: PersonalUtangInvitationDto[] } {
+  const me = userId?.trim().toLowerCase() ?? "";
+  const sent = invites.filter(
+    (invite) => invite.invitedByUserIdentityId.toLowerCase() === me && me.length > 0,
+  );
+  const received = invites.filter(
+    (invite) => invite.invitedByUserIdentityId.toLowerCase() !== me || me.length === 0,
+  );
+  return { received, sent };
+}
+
 export function PersonalInvitationsPage() {
   const { t } = useI18n();
+  const { session } = useSession();
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ["personal", "utang", "invitations"],
@@ -59,6 +78,18 @@ export function PersonalInvitationsPage() {
       await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] });
     },
   });
+  const accept = useMutation({
+    mutationFn: (id: string) => acceptPersonalUtangInvitationById(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] });
+    },
+  });
+  const decline = useMutation({
+    mutationFn: (id: string) => declinePersonalUtangInvitationById(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] });
+    },
+  });
 
   if (query.isPending) return <LoadingSkeleton />;
   if (query.isError) {
@@ -67,6 +98,72 @@ export function PersonalInvitationsPage() {
         title={t("personal.social.loadErrorTitle")}
         detail={t("personal.social.loadErrorDetail")}
       />
+    );
+  }
+
+  const { received, sent } = splitUtangInvitations(query.data, session?.userId);
+  const busy = accept.isPending || decline.isPending || resend.isPending || revoke.isPending;
+
+  function renderInvite(invite: PersonalUtangInvitationDto, kind: "received" | "sent") {
+    return (
+      <li key={invite.id}>
+        <div className="exits-list__card" data-testid={`utang-invite-${invite.id}`}>
+          <p className="exits-list__name m-0 font-semibold">{invite.status}</p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {invite.inviteTargetEmailMasked || t("personal.social.inviteNoEmail")}
+          </p>
+          {invite.status === "Pending" && kind === "received" ? (
+            <div className="invitation-card__actions mt-2 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                className="w-full gap-2"
+                disabled={busy}
+                data-testid={`utang-invite-accept-${invite.id}`}
+                onClick={() => accept.mutate(invite.id)}
+              >
+                <Check className="size-4 shrink-0" aria-hidden />
+                {t("personal.social.accept")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full gap-2"
+                disabled={busy}
+                data-testid={`utang-invite-decline-${invite.id}`}
+                onClick={() => decline.mutate(invite.id)}
+              >
+                <X className="size-4 shrink-0" aria-hidden />
+                {t("personal.social.decline")}
+              </Button>
+            </div>
+          ) : null}
+          {invite.status === "Pending" && kind === "sent" ? (
+            <div className="invitation-card__actions mt-2 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                className="w-full gap-2"
+                disabled={busy}
+                data-testid={`utang-invite-resend-${invite.id}`}
+                onClick={() => resend.mutate(invite.id)}
+              >
+                <Send className="size-4 shrink-0" aria-hidden />
+                {t("personal.social.resend")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full gap-2"
+                disabled={busy}
+                data-testid={`utang-invite-revoke-${invite.id}`}
+                onClick={() => revoke.mutate(invite.id)}
+              >
+                <Ban className="size-4 shrink-0" aria-hidden />
+                {t("personal.social.revoke")}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </li>
     );
   }
 
@@ -81,52 +178,30 @@ export function PersonalInvitationsPage() {
       />
       {query.data.length === 0 ? (
         <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
+          align="center"
+          icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.social.invitationsEmptyTitle")}
           detail={t("personal.social.invitationsEmptyDetail")}
         />
       ) : (
-        <ul className="exits-list m-0 grid list-none gap-2 p-0">
-          {query.data.map((invite) => (
-            <li key={invite.id}>
-              <div
-                className="exits-list__card"
-                data-testid={`utang-invite-${invite.id}`}
-              >
-              <p className="exits-list__name m-0 font-semibold">{invite.status}</p>
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {invite.inviteTargetEmailMasked || t("personal.social.inviteNoEmail")}
-              </p>
-              {invite.status === "Pending" ? (
-                <div className="invitation-card__actions mt-2 grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    className="w-full gap-2"
-                    disabled={resend.isPending}
-                    data-testid={`utang-invite-resend-${invite.id}`}
-                    onClick={() => resend.mutate(invite.id)}
-                  >
-                    <Send className="size-4 shrink-0" aria-hidden />
-                    {t("personal.social.resend")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full gap-2"
-                    disabled={revoke.isPending}
-                    data-testid={`utang-invite-revoke-${invite.id}`}
-                    onClick={() => revoke.mutate(invite.id)}
-                  >
-                    <Ban className="size-4 shrink-0" aria-hidden />
-                    {t("personal.social.revoke")}
-                  </Button>
-                </div>
-              ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-4">
+          <section data-testid="utang-invitations-received">
+            <h2 className="m-0 mb-2 text-[length:var(--exits-text-md)] font-semibold">
+              {t("invitations.received")}
+            </h2>
+            <ul className="exits-list m-0 grid list-none gap-2 p-0">
+              {received.map((invite) => renderInvite(invite, "received"))}
+            </ul>
+          </section>
+          <section data-testid="utang-invitations-sent">
+            <h2 className="m-0 mb-2 text-[length:var(--exits-text-md)] font-semibold">
+              {t("invitations.sent")}
+            </h2>
+            <ul className="exits-list m-0 grid list-none gap-2 p-0">
+              {sent.map((invite) => renderInvite(invite, "sent"))}
+            </ul>
+          </section>
+        </div>
       )}
     </div>
   );

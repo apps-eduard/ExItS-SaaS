@@ -16,6 +16,7 @@ const workspace = {
 };
 
 const existing = {
+  kind: "Customer" as const,
   customerId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
   displayName: "Rosa Santos",
   mobileNumber: "09171234567",

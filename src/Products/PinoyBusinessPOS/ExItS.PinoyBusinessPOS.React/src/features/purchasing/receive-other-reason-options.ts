@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/i18n/messages";
 import type { ReceiveDiscrepancyOtherReasonOption } from "@/features/purchasing/ReceiveDiscrepancyDialog";
 
 export const RECEIVE_OTHER_REASON_CODES = [
@@ -11,17 +12,17 @@ export const RECEIVE_OTHER_REASON_CODES = [
 
 export type ReceiveOtherReasonCode = (typeof RECEIVE_OTHER_REASON_CODES)[number];
 
-const REASON_I18N_KEYS: Record<ReceiveOtherReasonCode, string> = {
+const REASON_I18N_KEYS = {
   WrongItem: "purchasing.otherReasonWrongItem",
   WrongVariant: "purchasing.otherReasonWrongVariant",
   Expired: "purchasing.otherReasonExpired",
   PackagingIssue: "purchasing.otherReasonPackagingIssue",
   QualityIssue: "purchasing.otherReasonQualityIssue",
   Other: "purchasing.otherReasonOther",
-};
+} as const satisfies Record<ReceiveOtherReasonCode, MessageKey>;
 
 export function buildReceiveOtherReasonOptions(
-  t: (key: string) => string,
+  t: (key: MessageKey) => string,
 ): ReceiveDiscrepancyOtherReasonOption[] {
   return RECEIVE_OTHER_REASON_CODES.map((value) => ({
     value,
@@ -30,7 +31,7 @@ export function buildReceiveOtherReasonOptions(
 }
 
 export function buildReceiveOtherReasonSummaryLabels(
-  t: (key: string) => string,
+  t: (key: MessageKey) => string,
 ): Record<string, string> {
   const out: Record<string, string> = {};
   for (const code of RECEIVE_OTHER_REASON_CODES) {

@@ -22,15 +22,17 @@ This document records Product Owner decisions for the **full** RMAP-B05 design. 
 
 ## 1. Canonical public URL
 
+The brand host is `exitsapps.com`, defined by [domain and subdomain strategy](../architecture/domain-and-subdomain-strategy.md). Earlier drafts of this section used `exitsapp.com`. That spelling is not the canonical domain. The store paths below remain a future design and are not live.
+
 Production example:
 
 | Surface | Example |
 |---------|---------|
-| Platform | `https://exitsapp.com` |
+| Platform | `https://exitsapps.com` |
 | Organization | Kizy Store |
 | Slug | `kizy-store` |
-| Canonical public landing | `https://exitsapp.com/store/kizy-store` |
-| Organization workforce login | `https://exitsapp.com/store/kizy-store/login` |
+| Canonical public landing | `https://exitsapps.com/store/kizy-store` |
+| Organization workforce login | `https://exitsapps.com/store/kizy-store/login` |
 
 - Slug is a friendly routing alias.
 - `OrganizationId` remains the database identity.
@@ -160,7 +162,7 @@ must preserve old public links through an immutable slug-history/alias mechanism
 
 Organization QR code points **only** to the canonical public landing URL.
 
-Example: `https://exitsapp.com/store/kizy-store`
+Example: `https://exitsapps.com/store/kizy-store`
 
 No password, access token, session token, or secret organization credential.
 
@@ -214,7 +216,7 @@ Future subscription capability may map:
 
 to the same Platform Organization as:
 
-`https://exitsapp.com/store/kizy-store`
+`https://exitsapps.com/store/kizy-store`
 
 - Custom domain never changes `OrganizationId` / `PublicOrganizationId`.
 - SSL/domain verification required before activation.

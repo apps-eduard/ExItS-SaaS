@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { WarehouseDashboardPage } from "@/features/warehouse/WarehouseDashboardPage";
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -36,7 +37,10 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
   }),
 }));
 
-const getManagementOverview = vi.fn(async () => ({
+const getManagementOverview = vi.fn(async (_workspace: PosWorkspaceScope, _signal?: AbortSignal) => {
+  void _workspace;
+  void _signal;
+  return {
   businessDate: "2026-09-04",
   todaySalesTotal: 0,
   todaySaleCount: 0,
@@ -50,21 +54,28 @@ const getManagementOverview = vi.fn(async () => ({
   pendingTransferCount: 1,
   openShiftCount: 0,
   activeRegisterCount: 0,
-}));
+};
+});
 
 vi.mock("@/api/pos/pos-reporting-client", () => ({
-  getManagementOverview: (...args: unknown[]) => getManagementOverview(...args),
+  getManagementOverview: (workspace: PosWorkspaceScope, signal?: AbortSignal) =>
+    getManagementOverview(workspace, signal),
 }));
 
-const getInventoryAttentionSummary = vi.fn(async () => ({
-  lowStockProductCount: 2,
-  outOfStockProductCount: 0,
-  expiredLotCount: 0,
-  nearExpiryLotCount: 0,
-}));
+const getInventoryAttentionSummary = vi.fn(async (_workspace: PosWorkspaceScope, _signal?: AbortSignal) => {
+  void _workspace;
+  void _signal;
+  return {
+    lowStockProductCount: 2,
+    outOfStockProductCount: 0,
+    expiredLotCount: 0,
+    nearExpiryLotCount: 0,
+  };
+});
 
 vi.mock("@/api/pos/pos-inventory-client", () => ({
-  getInventoryAttentionSummary: (...args: unknown[]) => getInventoryAttentionSummary(...args),
+  getInventoryAttentionSummary: (workspace: PosWorkspaceScope, signal?: AbortSignal) =>
+    getInventoryAttentionSummary(workspace, signal),
 }));
 
 vi.mock("@/api/pos/pos-inventory-transfer-client", () => ({

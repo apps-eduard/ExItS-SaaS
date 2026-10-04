@@ -95,6 +95,8 @@ const {
           intent: "Regular",
           settlementBalanceSnapshot: null,
           isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
         };
       },
     ),
@@ -148,6 +150,9 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         updatedAtUtc: "2026-08-21T00:00:00Z",
         isSharedLedger: false,
         isPrivate: true,
+      ledgerOwnerUserIdentityId: null,
+      isLedgerOwner: true,
+      shareOutcome: "Private",
       },
       {
         id: sharedRelationshipId,
@@ -164,6 +169,9 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         updatedAtUtc: "2026-08-21T00:00:00Z",
         isSharedLedger: true,
         isPrivate: false,
+      ledgerOwnerUserIdentityId: meId,
+      isLedgerOwner: true,
+      shareOutcome: "Shared",
       },
     ]),
     listBorrowedRelationships: vi.fn(async () => []),
@@ -182,6 +190,9 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
       updatedAtUtc: "2026-08-21T00:00:00Z",
       isSharedLedger: true,
       isPrivate: false,
+      ledgerOwnerUserIdentityId: meId,
+      isLedgerOwner: true,
+      shareOutcome: "Shared",
     })),
     getPersonalUtangBalance: vi.fn(async () => ({
       relationshipId: sharedRelationshipId,
@@ -214,6 +225,8 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
       {
         id: pendingOutgoingId,
@@ -238,6 +251,8 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
       {
         id: confirmedId,
@@ -262,6 +277,8 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
     ]),
     confirmPersonalUtangEntry: confirmMock,
@@ -354,6 +371,8 @@ describe("Personal Utang shared-ledger UI", () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
       {
         id: pendingOutgoingId,
@@ -378,6 +397,8 @@ describe("Personal Utang shared-ledger UI", () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
       {
         id: confirmedId,
@@ -402,6 +423,8 @@ describe("Personal Utang shared-ledger UI", () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
     ]);
   });
@@ -620,6 +643,8 @@ describe("Personal Utang shared-ledger UI", () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
       {
         id: "dddddddd-dddd-dddd-dddd-ddddddddddd2",
@@ -644,6 +669,8 @@ describe("Personal Utang shared-ledger UI", () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
       {
         id: "dddddddd-dddd-dddd-dddd-ddddddddddd3",
@@ -668,6 +695,8 @@ describe("Personal Utang shared-ledger UI", () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
     ]);
 
@@ -712,6 +741,9 @@ describe("Personal Utang settlement UI", () => {
       updatedAtUtc: "2026-08-21T00:00:00Z",
       isSharedLedger: false,
       isPrivate: true,
+      ledgerOwnerUserIdentityId: null,
+      isLedgerOwner: true,
+      shareOutcome: "Private",
     });
     vi.mocked(getPersonalUtangBalance).mockResolvedValue({
       relationshipId,
@@ -744,6 +776,9 @@ describe("Personal Utang settlement UI", () => {
       updatedAtUtc: "2026-08-21T00:00:00Z",
       isSharedLedger: false,
       isPrivate: true,
+      ledgerOwnerUserIdentityId: null,
+      isLedgerOwner: true,
+      shareOutcome: "Private",
     });
     vi.mocked(getPersonalUtangBalance).mockResolvedValue({
       relationshipId,
@@ -775,6 +810,9 @@ describe("Personal Utang settlement UI", () => {
       updatedAtUtc: "2026-08-21T00:00:00Z",
       isSharedLedger: false,
       isPrivate: true,
+      ledgerOwnerUserIdentityId: null,
+      isLedgerOwner: true,
+      shareOutcome: "Private",
     });
     vi.mocked(getPersonalUtangBalance).mockResolvedValue({
       relationshipId,
@@ -807,6 +845,8 @@ describe("Personal Utang settlement UI", () => {
         intent: "Settlement",
         settlementBalanceSnapshot: 200,
         isSettlement: true,
+          confirmationSource: "None",
+          wasAutoSynced: false,
       },
     ]);
 
@@ -838,6 +878,9 @@ describe("Personal Utang settlement UI", () => {
       updatedAtUtc: "2026-08-21T00:00:00Z",
       isSharedLedger: false,
       isPrivate: true,
+      ledgerOwnerUserIdentityId: null,
+      isLedgerOwner: true,
+      shareOutcome: "Private",
     });
     vi.mocked(getPersonalUtangBalance).mockResolvedValue({
       relationshipId,
@@ -902,6 +945,9 @@ describe("Personal Utang settlement UI", () => {
       updatedAtUtc: "2026-08-21T00:00:00Z",
       isSharedLedger: true,
       isPrivate: false,
+      ledgerOwnerUserIdentityId: meId,
+      isLedgerOwner: true,
+      shareOutcome: "Shared",
     });
     vi.mocked(getPersonalUtangBalance).mockResolvedValue({
       relationshipId: sharedRelationshipId,
@@ -934,6 +980,8 @@ describe("Personal Utang settlement UI", () => {
         intent: "Regular",
         settlementBalanceSnapshot: null,
         isSettlement: false,
+        confirmationSource: "None",
+        wasAutoSynced: false,
       },
     ]);
     vi.mocked(settlePersonalDebtRelationship).mockImplementation(async () => {
@@ -961,6 +1009,8 @@ describe("Personal Utang settlement UI", () => {
           intent: "Settlement",
           settlementBalanceSnapshot: 100,
           isSettlement: true,
+          confirmationSource: "None",
+          wasAutoSynced: false,
         },
       ]);
       return {
@@ -980,6 +1030,9 @@ describe("Personal Utang settlement UI", () => {
           updatedAtUtc: "2026-08-21T03:00:00Z",
           isSharedLedger: true,
           isPrivate: false,
+      ledgerOwnerUserIdentityId: meId,
+      isLedgerOwner: true,
+      shareOutcome: "Shared",
         },
         settlementEntry: {
           id: settlementId,
@@ -1004,6 +1057,8 @@ describe("Personal Utang settlement UI", () => {
           intent: "Settlement",
           settlementBalanceSnapshot: 100,
           isSettlement: true,
+          confirmationSource: "None",
+          wasAutoSynced: false,
         },
       };
     });

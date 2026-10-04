@@ -156,6 +156,7 @@ describe("FIX02 migration all-or-nothing", () => {
         status: "Active",
         createdAtUtc: "2026-01-01T12:00:00.000Z",
         updatedAtUtc: "2026-01-01T12:00:00.000Z",
+        onlineOrderingAccess: "Default",
       },
     ]);
 
@@ -231,6 +232,7 @@ describe("FIX02 migration all-or-nothing", () => {
         status: "Active",
         createdAtUtc: "2026-01-01T12:00:00.000Z",
         updatedAtUtc: "2026-01-01T12:00:00.000Z",
+        onlineOrderingAccess: "Default",
       },
     ]);
 

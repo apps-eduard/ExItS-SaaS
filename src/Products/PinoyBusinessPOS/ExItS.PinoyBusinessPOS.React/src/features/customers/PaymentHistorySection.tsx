@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   bounceBusinessRepaymentCheck,
@@ -59,7 +59,7 @@ function clearingTone(status: string) {
     case "PendingClearing":
       return "info";
     default:
-      return "default";
+      return "neutral";
   }
 }
 
@@ -96,28 +96,25 @@ export function PaymentHistorySection(props: PaymentHistorySectionProps) {
   const { showToast } = useToast();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
-  const queryKey = useMemo(() => {
-    if (!workspace) {
-      return [];
-    }
-    return props.customerKind === "personal"
-      ? ["customers", "repayments", workspace.organizationId, props.customerId]
-      : ["business-customers", "repayments", workspace.organizationId, props.connectionId];
-  }, [props.connectionId, props.customerId, props.customerKind, workspace]);
+  const personalCustomerId = props.customerKind === "personal" ? props.customerId : "";
+  const businessConnectionId = props.customerKind === "business" ? props.connectionId : "";
 
-  const repaymentsQuery = useQuery({
-    queryKey,
-    enabled: Boolean(workspace) && props.online && queryKey.length > 0,
+  const personalRepaymentsQuery = useQuery({
+    queryKey: ["customers", "repayments", workspace?.organizationId ?? "", personalCustomerId],
+    enabled: props.customerKind === "personal" && Boolean(workspace) && props.online && Boolean(personalCustomerId),
     queryFn: ({ signal }) =>
-      props.customerKind === "personal"
-        ? listCustomerRepayments(workspace!, props.customerId, { page: 1, pageSize: 50 }, signal)
-        : listBusinessCustomerRepayments(
-            workspace!,
-            props.connectionId,
-            { page: 1, pageSize: 50 },
-            signal,
-          ),
+      listCustomerRepayments(workspace!, personalCustomerId, { page: 1, pageSize: 50 }, signal),
   });
+
+  const businessRepaymentsQuery = useQuery({
+    queryKey: ["business-customers", "repayments", workspace?.organizationId ?? "", businessConnectionId],
+    enabled:
+      props.customerKind === "business" && Boolean(workspace) && props.online && Boolean(businessConnectionId),
+    queryFn: ({ signal }) =>
+      listBusinessCustomerRepayments(workspace!, businessConnectionId, { page: 1, pageSize: 50 }, signal),
+  });
+
+  const repaymentsQuery = props.customerKind === "personal" ? personalRepaymentsQuery : businessRepaymentsQuery;
 
   const actionMutation = useMutation({
     mutationFn: async (action: PendingAction) => {
@@ -144,7 +141,12 @@ export function PaymentHistorySection(props: PaymentHistorySectionProps) {
       if (!workspace) {
         return;
       }
-      await queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({
+        queryKey:
+          props.customerKind === "personal"
+            ? ["customers", "repayments", workspace.organizationId, personalCustomerId]
+            : ["business-customers", "repayments", workspace.organizationId, businessConnectionId],
+      });
       if (props.customerKind === "personal") {
         await queryClient.invalidateQueries({
           queryKey: ["customers", "credit-summary", workspace.organizationId, props.customerId],

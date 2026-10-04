@@ -124,6 +124,11 @@ export const actionChipItemVariants = cva(baseItem, {
         "bg-[color-mix(in_srgb,var(--exits-danger)_8%,var(--exits-surface))]",
         "text-[var(--exits-danger)]",
       ].join(" "),
+      secondary:
+        "border-[color-mix(in_srgb,var(--exits-severity-secondary-foreground)_18%,transparent)] bg-[var(--exits-severity-secondary)] text-[var(--exits-severity-secondary-foreground)]",
+      help: "border-[color-mix(in_srgb,var(--exits-severity-help)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-severity-help)_12%,transparent)] text-[var(--exits-severity-help)]",
+      contrast:
+        "border-[var(--exits-severity-contrast)] bg-[var(--exits-severity-contrast)] text-[var(--exits-severity-contrast-foreground)]",
     },
     iconOnly: {
       true: "aspect-square w-[var(--exits-chip-min-height)] min-w-[var(--exits-chip-min-height)] px-0",

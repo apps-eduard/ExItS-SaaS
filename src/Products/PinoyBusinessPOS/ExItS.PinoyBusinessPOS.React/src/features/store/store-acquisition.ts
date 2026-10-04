@@ -9,6 +9,8 @@ import {
   normalizePublicBranchId,
   normalizePublicOrganizationId,
 } from "@/features/store/business-qr-url";
+import { normalizePersonalConnectPath } from "@/lib/personal-connect-url";
+import { peekPersonalConnectIntent } from "@/features/personal/social/personal-connect-intent";
 
 export const STORE_ACQUISITION_STORAGE_KEY = "exits.acquisition.storeIntent";
 
@@ -66,6 +68,9 @@ export function isSafeAuthContinuePath(path: string | null | undefined): path is
     const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
     const branch = params.get("branchId");
     return branch == null || normalizePublicBranchId(branch) !== null;
+  }
+  if (normalizePersonalConnectPath(pathname) !== null && search.length === 0) {
+    return true;
   }
   return false;
 }
@@ -161,6 +166,21 @@ export function resolveAuthContinuePath(
     return buildStoreContinuePath(intent.publicOrganizationId, intent.branchId);
   }
   return null;
+}
+
+/** Post-auth landing from an external callback query. Unsafe values fall back to /personal. */
+export function landingPathAfterExternalAuth(search: string): string {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  params.delete("sessionToken");
+  return resolveAuthContinuePath(params.get("continue")) ?? "/personal";
+}
+
+/**
+ * Activation emails cannot carry a continue query. Resume a stored store intent,
+ * then a stored Personal connect intent, after the first successful login.
+ */
+export function continuationAfterActivation(): string | null {
+  return resolveAuthContinuePath(null) ?? peekPersonalConnectIntent()?.continuePath ?? null;
 }
 
 export function buildSignInHrefForStore(

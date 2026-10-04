@@ -167,6 +167,7 @@ describe("buildPurchaseOrderActivityEvents", () => {
             lineTotal: 1000,
             receivedQty: 10,
             outstandingQty: 0,
+            needsProductSetup: false,
           },
         ],
       }),

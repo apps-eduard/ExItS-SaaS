@@ -75,7 +75,7 @@ export function PageHeader({
   const { t } = useI18n();
   const [infoOpen, setInfoOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const infoButtonRef = useRef<HTMLButtonElement>(null);
+  const infoButtonRef = useRef<HTMLElement | null>(null);
   const descriptionId = useId();
   const popoverTitleId = useId();
   const compact = variant === "compact";
@@ -185,8 +185,8 @@ export function PageHeader({
                 {title}
               </h1>
               {hasDescription ? (
+                <span ref={infoButtonRef} className="inline-flex shrink-0">
                 <Button
-                  ref={infoButtonRef}
                   type="button"
                   intent="info"
                   appearance="ghost"
@@ -200,6 +200,7 @@ export function PageHeader({
                 >
                   <Info className="size-5 shrink-0" aria-hidden />
                 </Button>
+                </span>
               ) : null}
             </div>
             {rightSlot ? (

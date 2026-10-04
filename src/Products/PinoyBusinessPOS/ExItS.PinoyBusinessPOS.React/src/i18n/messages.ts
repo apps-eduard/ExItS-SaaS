@@ -9,6 +9,9 @@ export { en, filPH, cebPH, iloPH, hilPH };
 
 export type MessageKey = keyof typeof en;
 
+/** Catalog lookup. Parameter is a known key so callers cannot pass an arbitrary string. */
+export type TranslateFn = (key: MessageKey) => string;
+
 export const catalogs: Record<LocalePreference, Record<MessageKey, string>> = {
   en,
   "fil-PH": filPH,

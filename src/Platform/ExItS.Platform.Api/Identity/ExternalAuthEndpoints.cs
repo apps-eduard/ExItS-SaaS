@@ -36,7 +36,9 @@ internal static class ExternalAuthEndpoints
             var safeReturn = SanitizeReturnUrl(returnUrl, env);
             var props = new AuthenticationProperties
             {
-                RedirectUri = $"/api/v1/platform/auth/external/{provider}/complete"
+                RedirectUri = ExternalAuthCallbackUri.BrowserCompletePath(
+                    provider,
+                    ExternalAuthCallbackUri.TryCreate(options.Value.PublicBrowserOrigin, out _))
             };
             props.Items[PlatformExternalAuthDefaults.ReturnUrlItemKey] = safeReturn;
             return Results.Challenge(props, [scheme]);

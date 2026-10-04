@@ -10,6 +10,7 @@ import { AppBreadcrumbs } from "@/components/exits/AppBreadcrumbs";
 import { PreferencesMenu } from "@/components/exits/PreferencesMenu";
 import { initialsFromIdentity } from "@/lib/identity/initials";
 import { usePreferences } from "@/hooks/use-preferences";
+import { useNavigate } from "react-router-dom";
 import { useSession } from "@/hooks/use-session";
 
 export function AppTopBar({
@@ -21,6 +22,7 @@ export function AppTopBar({
 }) {
   const { t, sidebarCollapsed, setSidebarCollapsed } = usePreferences();
   const { session, signOut } = useSession();
+  const navigate = useNavigate();
   const initials = initialsFromIdentity(session?.displayName, session?.username, session?.email);
 
   return (
@@ -91,6 +93,10 @@ export function AppTopBar({
           </span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate("/admin/account")}>
+          <User aria-hidden="true" size={14} />
+          {t("account.title")}
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => {
             void signOut().catch(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -28,7 +28,6 @@ import {
   listPersonalTodos,
   parseTodoAgendaTab,
   priorityTextToneClass,
-  priorityToneClass,
   reopenPersonalTodo,
   summarizeTodoCounts,
   todoEmptyStateKeys,
@@ -101,49 +100,6 @@ function statusLabelKey(status: string): MessageKey {
     default:
       return "personal.todo.statusOpen";
   }
-}
-
-function todoStatusTone(status: string): "open" | "completed" | "cancelled" {
-  switch (status) {
-    case "Completed":
-      return "completed";
-    case "Cancelled":
-      return "cancelled";
-    default:
-      return "open";
-  }
-}
-
-function TodoMetaLine({ todo }: { todo: PersonalTodoDto }) {
-  const { t } = useI18n();
-  const tone = todoStatusTone(todo.status);
-  const priorityClass = priorityToneClass(todo.priority);
-  return (
-    <p className="personal-todo-meta m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
-      <span className={cn("personal-todo-meta__chip", `personal-todo-meta__chip--${tone}`)}>
-        {t(statusLabelKey(todo.status))}
-      </span>
-      <span className="personal-todo-meta__sep" aria-hidden>
-        ·
-      </span>
-      <span
-        className={cn(
-          "personal-todo-meta__chip",
-          priorityClass,
-        )}
-      >
-        {t(priorityLabelKey(todo.priority))}
-      </span>
-      <span className="personal-todo-meta__sep" aria-hidden>
-        ·
-      </span>
-      <span>
-        {todo.dueAtUtc
-          ? `${t("personal.todo.dueLabel")}: ${new Date(todo.dueAtUtc).toLocaleString()}`
-          : t("personal.todo.noDue")}
-      </span>
-    </p>
-  );
 }
 
 function TodoConflictBanner({

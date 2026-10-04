@@ -26,7 +26,7 @@ internal static class PlatformRootEndpoints
                     phase = PhaseMarker,
                     health = "/health",
                     readiness = "/health/ready",
-                    note = "This is an API service, not a website. Use Platform Admin on port 8090 for the UI."
+                    note = "This is an API service, not a website. Use Platform Admin on port 8095 for the UI."
                 };
 
                 if (WantsHtml(request))
@@ -41,7 +41,7 @@ internal static class PlatformRootEndpoints
                             [
                                 ("Liveness", "/health"),
                                 ("Readiness", "/health/ready"),
-                                ("Platform Admin UI", "http://127.0.0.1:8090/admin/login"),
+                                ("Platform Admin UI", "http://127.0.0.1:8095/admin/login"),
                                 ("POS API", "http://127.0.0.1:8092/")
                             ],
                             note: "JSON API only — open Platform Admin for the web console."),

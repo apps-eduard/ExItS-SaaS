@@ -5,11 +5,22 @@ import { AppErrorBoundary } from "@/app/AppErrorBoundary";
 import { RedirectIfAuthenticated } from "@/app/RedirectIfAuthenticated";
 import { RequireSession } from "@/app/RequireSession";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AccountPage } from "@/features/account/AccountPage";
+import { ChangePasswordPage } from "@/features/account/ChangePasswordPage";
+import {
+  ConfirmRecoveryEmailPage,
+  RecoveryEmailAccountPage,
+  RecoveryEmailPromptPage,
+} from "@/features/account/RecoveryEmailPages";
 import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
+import { ExternalLoginCallbackPage } from "@/features/auth/ExternalLoginCallbackPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
 import { RegisterPage } from "@/features/auth/RegisterPage";
 import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { SignInPage } from "@/features/auth/SignInPage";
+import { AcceptOrganizationInvitationPage } from "@/features/invitations/AcceptOrganizationInvitationPage";
+import { ProductEntryPage } from "@/features/product-entry/ProductEntryPage";
+import { WorkspaceChooserPage } from "@/features/workspaces/WorkspaceChooserPage";
 import { OrganizationBranchesPage } from "@/features/organizations/OrganizationBranchesPage";
 import { OrganizationPeoplePage } from "@/features/organizations/OrganizationPeoplePage";
 import { OrganizationProductsPage } from "@/features/organizations/OrganizationProductsPage";
@@ -170,11 +181,21 @@ export function App() {
                       />
                       <Route path="/admin/activate-account" element={<ActivateAccountPage />} />
                       <Route path="/admin/reset-password" element={<ResetPasswordPage />} />
+                      <Route path="/admin/accept-organization-invitation" element={<AcceptOrganizationInvitationPage />} />
+                      <Route path="/admin/external-login-callback" element={<ExternalLoginCallbackPage />} />
+                      <Route path="/admin/recovery-email/confirm" element={<ConfirmRecoveryEmailPage />} />
                     </Route>
                     <Route element={<ProtectedShell />}>
                       <Route path="/" element={<Navigate to="/admin" replace />} />
-                      <Route path="/admin" element={<Outlet />}>
+                        <Route path="/admin" element={<Outlet />}>
                         <Route index element={<OverviewPage />} />
+                        <Route path="account" element={<AccountPage />} />
+                        <Route path="account/change-password" element={<ChangePasswordPage />} />
+                        <Route path="change-password" element={<Navigate to="/admin/account/change-password" replace />} />
+                        <Route path="account/recovery-email" element={<RecoveryEmailAccountPage />} />
+                        <Route path="recovery-email" element={<RecoveryEmailPromptPage />} />
+                        <Route path="workspaces" element={<WorkspaceChooserPage />} />
+                        <Route path="product-entry" element={<ProductEntryPage />} />
                         <Route path="organizations">
                           <Route index element={<OrganizationsPage />} />
                           <Route path=":organizationId" element={<OrganizationWorkspaceLayout />}>

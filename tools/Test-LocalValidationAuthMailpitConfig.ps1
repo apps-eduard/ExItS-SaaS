@@ -14,20 +14,20 @@ function Assert-True([bool]$Condition, [string]$Message) {
     if (-not $Condition) { [void]$failures.Add($Message) }
 }
 
-Assert-True ($LocalValidationStack.DefaultReactAdminPort -eq 8095) 'DefaultReactAdminPort must be 8095'
+Assert-True ($LocalValidationStack.DefaultAdminPort -eq 8095) 'DefaultAdminPort must be 8095'
 Assert-True ($LocalValidationStack.DefaultReactPosPort -eq 5177) 'DefaultReactPosPort must be 5177'
 
 $resolved = Resolve-LocalValidationAuthPublicBaseUrl -EnvMap @{} -ResolvedPublicHost '' -ReactAdminPort 8095
 Assert-True ($resolved -eq 'http://127.0.0.1:8095') "Default auth base expected http://127.0.0.1:8095, got $resolved"
 
 $withEnv = Resolve-LocalValidationAuthPublicBaseUrl -EnvMap @{
-    LOCAL_VALIDATION_REACT_ADMIN_ORIGIN = 'http://localhost:8095'
+    LOCAL_VALIDATION_ADMIN_ORIGIN = 'http://localhost:8095'
 } -ResolvedPublicHost '' -ReactAdminPort 8095
 Assert-True ($withEnv -eq 'http://localhost:8095') "Env override failed: $withEnv"
 
 # PublicHost must NOT force Mailpit links onto Tailscale (network exposure only).
 $withPublicHost = Resolve-LocalValidationAuthPublicBaseUrl -EnvMap @{
-    LOCAL_VALIDATION_REACT_ADMIN_ORIGIN = 'http://127.0.0.1:8095'
+    LOCAL_VALIDATION_ADMIN_ORIGIN = 'http://127.0.0.1:8095'
 } -ResolvedPublicHost '100.120.79.81' -ReactAdminPort 8095
 Assert-True ($withPublicHost -eq 'http://127.0.0.1:8095') `
     "PublicHost must NOT override local auth email base, got $withPublicHost"
@@ -47,7 +47,7 @@ finally {
     }
 }
 
-$cors = Add-LocalValidationReactCorsOrigins -CorsOrigins @('http://localhost:8090') -EnvMap @{} -ResolvedPublicHost '100.120.79.81'
+$cors = Add-LocalValidationReactCorsOrigins -CorsOrigins @('http://localhost:8095') -EnvMap @{} -ResolvedPublicHost '100.120.79.81'
 Assert-True ($cors -contains 'http://127.0.0.1:5177') 'CORS missing React POS 127.0.0.1:5177'
 Assert-True ($cors -contains 'http://localhost:5177') 'CORS missing React POS localhost:5177'
 Assert-True ($cors -contains 'http://127.0.0.1:8095') 'CORS missing React Admin 127.0.0.1:8095'
@@ -72,7 +72,7 @@ Assert-True ($frontends -match 'EXITS_REACT_ADMIN_WEB_PATH|-AdminWebPath') 'Star
 Assert-True ($frontends -match 'same-origin') 'Start-ReactFrontends must document same-origin API routing'
 
 $example = Get-Content -LiteralPath (Join-Path $repoRoot 'deploy\docker\.env.local-validation.example') -Raw
-Assert-True ($example -match 'LOCAL_VALIDATION_REACT_ADMIN_ORIGIN') 'env example must document React Admin origin'
+Assert-True ($example -match 'LOCAL_VALIDATION_ADMIN_ORIGIN') 'env example must document the canonical Admin origin'
 Assert-True ($example -match '8095') 'env example must mention port 8095'
 
 if ($failures.Count -gt 0) {

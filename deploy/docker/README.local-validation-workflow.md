@@ -25,8 +25,8 @@ Use FULL mode to validate application images and Docker service wiring:
 ```
 
 FULL startup stops only this repository's host app processes, verifies that no unknown
-process owns ports 8090-8095, starts infrastructure, then starts the app containers
-(including Blazor Admin on 8090 and React Admin on 8095 in parallel).
+process owns ports 8091-8095, starts infrastructure, then starts the app containers
+(React Platform Admin on 8095).
 It does not replace FAST mode as the normal coding workflow.
 
 Build controls:
@@ -65,29 +65,27 @@ Tailscale / LAN (bind `0.0.0.0`, print public URLs, CORS + AllowedHosts for the 
 
 Printed when `-PublicHost` is set:
 
-- Admin: `http://100.120.79.81:8090` (canonical sign-in)
+- Admin: `http://127.0.0.1:8095/admin` (canonical React sign-in)
 - Platform API: `http://100.120.79.81:8091`
 - POS API: `http://100.120.79.81:8092`
-- Org Web: `http://100.120.79.81:8093`
-- Personal Web: `http://100.120.79.81:8094`
-- React Admin: `http://100.120.79.81:8095` (parallel; Blazor Admin remains canonical on 8090)
+- Personal, Organization, and POS: `http://127.0.0.1:5177` (React)
+- Platform Admin is the React `admin-web` service on port 8095.
 
-Kestrel always binds `http://0.0.0.0:8090|8091|8092|8093|8094` (localhost still works). Database connection strings stay `127.0.0.1:15533` / `127.0.0.1:15534`. These local ports are internal; production public entry is HTTPS :443.
+Host APIs bind `http://0.0.0.0:8091|8092`. The React client uses port `5177`. Platform Admin is published on `8095`. Database connection strings stay `127.0.0.1:15533` / `127.0.0.1:15534`. These local ports are internal; production public entry is HTTPS :443.
 
 If you omit `-PublicHost`, Start still tries (in order): `LOCAL_VALIDATION_PUBLIC_HOST` in `.env.local-validation`, the last saved PublicHost, then an active Tailscale `100.x` address. Plain `.\tools\Start-LocalValidation.ps1` should keep Tailscale AllowedHosts working once that value is known.
 
 ### Windows Firewall (apps only)
 
-Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094 / 8095**. Mailpit UI **8025** is optional for Tailscale
+Allow inbound TCP **8091 / 8092 / 8095 / 5177**. Mailpit UI **8025** is optional for Tailscale
 devices. Do **not** open **15533 / 15534** (PostgreSQL stays local-only). Prefer the **Private**
 profile. Do not use Profile Any.
 
 ```powershell
-New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Private
 New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Private
 New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Private
-New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Private
-New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation React app 5177" -Direction Inbound -Protocol TCP -LocalPort 5177 -Action Allow -Profile Private
 New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Private
 New-NetFirewallRule -DisplayName "ExItS Local Validation Mailpit 8025" -Direction Inbound -Protocol TCP -LocalPort 8025 -Action Allow -Profile Private
 ```
@@ -99,16 +97,14 @@ The FAST host launcher:
 1. Checks Docker Desktop
 2. Stops FULL mode's app containers only
 3. Starts Platform + POS PostgreSQL and Mailpit; preserves volumes
-4. Stops stale repo-scoped `ExItS.Platform.Api` / `ExItS.PinoyBusinessPOS.Api` / `ExItS.Platform.Admin` / `ExItS.PinoyBusinessPOS.Web` / `ExItS.Personal.Web` processes
-5. Starts, in order, with `dotnet watch` bound to **0.0.0.0**:
+4. Stops stale repo-scoped `ExItS.Platform.Api` / `ExItS.PinoyBusinessPOS.Api` processes
+5. Starts, in order:
    - Platform API → http://localhost:8091 (or `http://<PublicHost>:8091`)
    - POS API → http://localhost:8092 (or `http://<PublicHost>:8092`)
-   - Platform Admin → http://localhost:8090
-   - Organization Web → http://localhost:8093
-   - Personal Web → http://localhost:8094
-   - React Platform Admin (Docker production image) → http://localhost:8095
+   - Platform Admin (Docker React `admin-web`) → http://127.0.0.1:8095
+   - Personal, Organization, and POS React client → http://127.0.0.1:5177
 6. Waits for ports, runs health checks, prints URLs
-7. Configures CORS for Admin, Organization Web, Personal Web, and React Admin localhost/public origins
+7. Configures CORS for Admin and the React client localhost/public origins
 
 Stop local apps (DBs keep running):
 
@@ -151,9 +147,8 @@ Docker
 Local (dotnet watch)
 ├── Platform API         :8091
 ├── POS API              :8092
-├── Platform Admin       :8090
-├── Organization Web     :8093
-└── Personal Web         :8094
+├── Platform Admin       :8095  (React admin-web)
+└── React Personal, Organization, and POS :5177
 ```
 
 ## Data Protection (Admin)
@@ -168,12 +163,13 @@ If an old antiforgery cookie still fails: use Incognito or clear localhost site 
 
 ## Open
 
-**http://localhost:8090/** → `/admin/login` → use the Local Validation identity dropdown (or manual credentials). Sign-in is normal Platform `/auth/login` on the Admin server; password from `LOCAL_VALIDATION_SHARED_PASSWORD` (never commit; never shown in the browser).
+**http://127.0.0.1:8095/admin/login** → use the Local Validation identity selector (or manual credentials). Sign-in is Platform `/api/v1/platform/auth/login`. Password comes from `LOCAL_VALIDATION_SHARED_PASSWORD` (never commit; never shown in the browser).
 
 ## Related
 
 - [README.local-validation.md](README.local-validation.md) — compose overview
 - `tools/Start-LocalValidation.ps1` / `tools/Stop-LocalValidation.ps1` (FAST host mode)
 - `tools/Start-DockerLocalValidation.ps1` / `tools/Stop-DockerLocalValidation.ps1` (FULL Docker mode)
+- [README.cloudflare-local-preview.md](README.cloudflare-local-preview.md) — optional Cloudflare Tunnel preview; not the daily workflow and not Production
 - [P14-WP02A report (historical; superseded by Local Validation)](../../docs/reports/P14-WP02A-live-preview-test-users-and-quick-login.md)
 - [P16-WP11 Local Validation report](../../docs/reports/P16-WP11-local-validation-replaces-live-preview.md)

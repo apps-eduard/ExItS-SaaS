@@ -120,7 +120,7 @@ export function MerchantCheckoutPage() {
         organizationId,
         {
           pageSize: 1,
-          platformBusinessCustomerId: merchantContextQuery.data!.businessCustomerId,
+          platformBusinessCustomerId: merchantContextQuery.data!.businessCustomerId ?? undefined,
         },
         signal,
       ),
@@ -142,12 +142,13 @@ export function MerchantCheckoutPage() {
       tokenReady &&
       online &&
       Boolean(merchantContextQuery.data?.businessCustomerId),
-    queryFn: ({ signal }) =>
-      getLinkedCustomerStatement(
-        organizationId,
-        merchantContextQuery.data!.businessCustomerId,
-        { signal },
-      ),
+    queryFn: ({ signal }) => {
+      const businessCustomerId = merchantContextQuery.data?.businessCustomerId;
+      if (!businessCustomerId) {
+        return Promise.reject(new Error("Missing business customer."));
+      }
+      return getLinkedCustomerStatement(organizationId, businessCustomerId, { signal });
+    },
     meta: { suppressGlobalError: true, operation: "load checkout utang projection" },
   });
 

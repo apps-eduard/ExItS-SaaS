@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { Notice } from "@/components/exits/Notice";
 
 export function LoadingSkeleton({

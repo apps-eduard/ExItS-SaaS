@@ -22,6 +22,7 @@ const workspaceState = vi.hoisted(() => ({
   currentShift: null as null | {
     shiftId: string;
     shiftNumber: string;
+    registerId: string;
     registerCode: string;
     registerName: string;
   },

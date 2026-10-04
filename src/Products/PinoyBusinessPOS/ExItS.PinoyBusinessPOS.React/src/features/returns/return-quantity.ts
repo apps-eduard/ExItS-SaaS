@@ -2,7 +2,6 @@ import {
   formatQuantityValue,
   isByWeightSellingMode,
   maxQuantityDecimals,
-  requiresWholeQuantity,
 } from "@/lib/quantity-rules";
 
 export {

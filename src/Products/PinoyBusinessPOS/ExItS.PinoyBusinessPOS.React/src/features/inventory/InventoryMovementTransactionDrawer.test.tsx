@@ -105,7 +105,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -207,7 +207,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -321,7 +321,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -381,7 +381,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -498,7 +498,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -655,7 +655,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -730,7 +730,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -780,7 +780,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -819,7 +819,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -969,7 +969,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -1147,7 +1147,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -1332,7 +1332,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -1474,7 +1474,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -1613,7 +1613,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }
@@ -1750,7 +1750,7 @@ describe("InventoryMovementTransactionDrawer", () => {
                     organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                   }}
-                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  resolveActor={() => ({ actorId: "11111111-1111-1111-1111-111111111111", displayName: "Mica Uy", actorStatus: "Active" })}
                   actorsLoading={false}
                 />
               }

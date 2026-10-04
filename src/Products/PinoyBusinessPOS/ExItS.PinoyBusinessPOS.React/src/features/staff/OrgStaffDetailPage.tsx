@@ -222,8 +222,8 @@ function MemberBusinessProfileEditDrawer({
 export function OrgStaffDetailPage() {
   const { t } = useI18n();
   const { membershipId } = useParams<{ membershipId: string }>();
-  const { sessionGrant } = useWorkspace();
-  const organizationId = sessionGrant?.organizationId ?? null;
+  const { sessionGrant, boundWorkspace } = useWorkspace();
+  const organizationId = boundWorkspace?.organizationId ?? null;
   const canEdit = hasOrganizationManagementAuthority(sessionGrant);
   const [editOpen, setEditOpen] = useState(false);
 

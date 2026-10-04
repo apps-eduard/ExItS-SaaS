@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { MessageKey } from "@/i18n/messages";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExitsDataRecordCard } from "@/components/exits/ExitsDataRecordCard";
@@ -41,7 +42,7 @@ export type ReceiveStockReceiptLine = {
   lotNumber: string;
 };
 
-type Translate = (key: string) => string;
+type Translate = (key: MessageKey) => string;
 
 type ReceiveStockReceiptItemsViewProps = {
   layout: ResponsiveDataLayout;

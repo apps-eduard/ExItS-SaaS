@@ -2,13 +2,14 @@ import { PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import {
   nextNavigationModeCycle,
   type NavigationModePreference,
 } from "@/lib/preferences/ui-preferences";
 import { cn } from "@/lib/cn";
 
-function cycleLabelKey(mode: NavigationModePreference): string {
+function cycleLabelKey(mode: NavigationModePreference): MessageKey {
   const next = nextNavigationModeCycle(mode);
   if (next === "compact") {
     return "navigationMode.cycleToCompact";

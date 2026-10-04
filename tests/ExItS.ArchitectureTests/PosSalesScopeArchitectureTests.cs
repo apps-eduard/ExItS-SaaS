@@ -153,9 +153,10 @@ public sealed class PosSalesScopeArchitectureTests
         Assert.Contains("OfflineOperationTypes.SaleCheckout", localStore, StringComparison.Ordinal);
         Assert.Contains("PosSaleOptions.CashPaymentMethod", localStore, StringComparison.Ordinal);
 
-        var mauiProgram = File.ReadAllText(Path.Combine(
-            PosProject("ExItS.PinoyBusinessPOS.Maui"), "MauiProgram.cs"));
-        Assert.Contains("SaleCheckoutOfflineDispatcher", mauiProgram, StringComparison.Ordinal);
+        var dispatcher = File.ReadAllText(Path.Combine(
+            PosProject("ExItS.PinoyBusinessPOS.ApiClient"), "SaleCheckoutOfflineDispatcher.cs"));
+        Assert.Contains("class SaleCheckoutOfflineDispatcher", dispatcher, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(PosProject("ExItS.PinoyBusinessPOS.Maui")));
     }
 
     [Fact]
@@ -171,15 +172,16 @@ public sealed class PosSalesScopeArchitectureTests
         }
 
         var checkout = File.ReadAllText(Path.Combine(
-            PosProject("ExItS.PinoyBusinessPOS.Maui"),
-            "Components",
-            "Pages",
-            "Sales",
-            "SaleCheckout.razor"));
-        Assert.Contains("PosSaleOptions.UtangPaymentMethod", checkout, StringComparison.Ordinal);
+            FindRepositoryRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.React",
+            "src",
+            "offline",
+            "cash-sale-offline.ts"));
+        Assert.Contains("GCash and Utang stay online-only", checkout, StringComparison.Ordinal);
         Assert.DoesNotContain("IOfflineOperationQueue", checkout, StringComparison.Ordinal);
-        Assert.Contains("Utang/GCash/card stay online-only", checkout, StringComparison.Ordinal);
-        Assert.Contains("CommitOfflineCashSaleAsync", checkout, StringComparison.Ordinal);
     }
 
     private static IEnumerable<string> SalesSourceFiles()

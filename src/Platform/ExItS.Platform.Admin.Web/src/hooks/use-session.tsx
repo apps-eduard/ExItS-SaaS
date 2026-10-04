@@ -28,6 +28,7 @@ type SessionContextValue = {
   signIn: (usernameOrEmail: string, password: string) => Promise<AuthSession>;
   signOut: () => Promise<void>;
   markExpired: () => void;
+  forgetSession: () => void;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -92,6 +93,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return next;
   }, []);
 
+  const forgetSession = useCallback(() => {
+    setSession(null);
+    setStatus("unauthenticated");
+    clearClientState();
+    resetAuthenticationLostLatch();
+  }, [clearClientState]);
+
   const signOut = useCallback(async () => {
     try {
       await logoutRequest(env.platformApiBaseUrl);
@@ -111,8 +119,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [clearClientState, report]);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ status, session, signIn, signOut, markExpired }),
-    [status, session, signIn, signOut, markExpired],
+    () => ({ status, session, signIn, signOut, markExpired, forgetSession }),
+    [status, session, signIn, signOut, markExpired, forgetSession],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

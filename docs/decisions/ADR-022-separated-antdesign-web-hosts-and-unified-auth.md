@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Accepted** |
+| Status | **UI technology superseded** by [ADR-024](ADR-024-react-only-client-standard-and-legacy-ui-retirement.md). Account-scope separation remains. The Blazor hosts remain only for the gaps listed in ADR-024. |
 | Date | 2026-08-13 |
 | Related | ADR-010, ADR-015, ADR-016, ADR-017, P25-WP02, P25-WP03 |
 

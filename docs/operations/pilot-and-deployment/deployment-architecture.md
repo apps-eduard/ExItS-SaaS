@@ -29,7 +29,7 @@ Secrets      --> environment-owned secret storage (not repository)
 
 - `deploy/docker/Dockerfile.platform-api`
 - `deploy/docker/Dockerfile.pos-api`
-- `deploy/docker/Dockerfile.platform-admin`
+- `deploy/docker/Dockerfile.platform-admin-web`
 - `deploy/docker/docker-compose.pilot.yml` (**NON-PRODUCTION**)
 - `deploy/docker/nginx/pilot.conf`
 

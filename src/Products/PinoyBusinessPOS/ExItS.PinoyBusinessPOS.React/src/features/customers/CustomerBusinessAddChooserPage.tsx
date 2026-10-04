@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Building2, ChevronRight, Keyboard, QrCode } from "lucide-react";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 
 /**

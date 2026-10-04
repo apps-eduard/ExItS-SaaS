@@ -12,7 +12,7 @@ ExItS is an independent multi-product portfolio. Shared commercial and identity 
 | **PinoyBusinessPOS** | Retail POS operations (catalog, sales, inventory, credit/utang, offline, mobile/web) |
 | **PinoyLoanManager** | Independent lending product (separate subscription) |
 | **PinoyPawnManager** | Independent pawn/custody product — **PPM-01 scaffold only** (no operational pawn domain yet) |
-| **Personal Web** | Personal account experience (utang, business upgrade, linked-customer views) |
+| **React client** | Personal, Organization, and POS experiences (utang, business upgrade, organization admin, sell floor) |
 
 Platform and product databases are separate authorities. There are no cross-database foreign keys or joins. Authorization and entitlements are explicit; product operational data never becomes Platform data.
 
@@ -36,7 +36,7 @@ Detailed status: [docs/portfolio-progress.md](docs/portfolio-progress.md)
 - **Boundaries:** Platform owns commercial/identity contracts; each product owns its operational domain and database.
 - **Data:** Separate Platform and POS PostgreSQL authorities; tenant isolation enforced in application services.
 - **Layering:** Domain → Application → Infrastructure → API/UI (no Infrastructure references from UI).
-- **Clients:** Platform Admin (Ant Design Blazor), Organization Web, Personal Web, POS API, Android-first .NET MAUI.
+- **Clients:** React Platform Admin, React POS / Organization / Personal client. Blazor hosts remain only where [ADR-024](docs/decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md) records a React gap. .NET MAUI is retired.
 
 Details: [Approved architecture](docs/engineering/approved-architecture-summary.md) · [Architecture](docs/engineering/architecture.md) · [Repository boundaries](docs/engineering/repository-boundaries.md)
 
@@ -48,8 +48,8 @@ Verified from repository configuration:
 |---|---|
 | Runtime | .NET SDK **10.0.302** (`global.json`) |
 | Backend | ASP.NET Core, Entity Framework Core, Npgsql / PostgreSQL |
-| Web UI | Blazor; Platform Admin uses **Ant Design** Blazor |
-| Mobile | .NET MAUI (Android-first) |
+| Web UI | React + TypeScript. Remaining Blazor hosts are temporary; see ADR-024. |
+| Mobile | React PWA. Capacitor is the native-packaging direction. .NET MAUI is retired. |
 | Containers | Docker / Docker Compose |
 | Tests | xUnit, Testcontainers (PostgreSQL) |
 
@@ -61,9 +61,9 @@ Solution entry point: [`ExItS.slnx`](ExItS.slnx)
 ExItS-SaaS/
 ├── ExItS.slnx
 ├── src/
-│   ├── Platform/          # Platform domain, API, Admin, Personal Web
-│   ├── Products/          # PinoyBusinessPOS (API, Web, MAUI, …)
-│   └── Shared/            # DesignSystem, BackupRestore, Deployment helpers
+│   ├── Platform/          # Platform domain, API, React Admin
+│   ├── Products/          # PinoyBusinessPOS (API, React client, …)
+│   └── Shared/            # BackupRestore, Deployment helpers
 ├── tests/
 ├── tools/                 # Local Validation launchers
 ├── deploy/docker/         # Compose, Dockerfiles, Local Validation docs

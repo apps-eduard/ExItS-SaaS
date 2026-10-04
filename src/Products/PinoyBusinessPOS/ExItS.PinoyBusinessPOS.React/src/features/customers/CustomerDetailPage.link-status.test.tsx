@@ -121,6 +121,7 @@ const baseCustomer = {
   linkedPersonalPublicUserId: "EX-1234-5678",
   linkedBuyerOrganizationId: null,
   linkedBuyerPublicOrganizationId: null,
+  onlineOrderingAccess: "Default" as const,
 };
 
 function renderDetail(path = `/customers/${customerId}`) {
@@ -292,7 +293,7 @@ describe("CustomerDetailPage Platform link status", () => {
     ["Declined", /Declined/i],
     ["Expired", /Expired/i],
     ["Revoked", /Revoked/i],
-  ] as const)("maps Platform %s without showing Linked", async (status) => {
+  ] as const)("maps Platform %s without showing Linked", async (status, label) => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status,
@@ -306,6 +307,7 @@ describe("CustomerDetailPage Platform link status", () => {
     });
     expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-personal-profile")).not.toBeInTheDocument();
+    expect(status).toMatch(label);
   });
 
   it("shows unavailable on Platform fetch error and does not invent Linked", async () => {

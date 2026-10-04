@@ -70,8 +70,7 @@ public sealed class PosReturnsScopeArchitectureTests
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Returns"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Application"), "Returns"),
             Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "Returns"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Returns"),
-            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Maui"), "Components", "Pages", "Returns")
+            Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Api"), "Returns")
         };
 
         foreach (var root in roots)

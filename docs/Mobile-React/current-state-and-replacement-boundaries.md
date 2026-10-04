@@ -17,8 +17,8 @@ It does not authorize implementation.
 | **Organization Owner Mobile** | Practical organization governance inside the Mobile Client (`/manage-business`, `/org/*`, `/branch-settings`, workspace selection). |
 | **POS Operations** | PinoyBusinessPOS operational experience inside the Mobile Client (`PosShell`: sales, catalog, inventory, shifts, registers, customers, purchasing, reports). |
 | **POS Mobile** | Informal historical phrase. Prefer **POS Operations** when meaning checkout/ops, or **Mobile Client** when meaning the host. |
-| **Organization Web** | Browser Organization Administration host (`ExItS.PinoyBusinessPOS.Web`, Local Validation `:8093`). Management/reporting. **Not** a POS checkout client. |
-| **Personal Web** | Browser Personal product host (`ExItS.Personal.Web`, Local Validation `:8094`). Separate from Mobile Client. |
+| **Organization experience** | React client (`ExItS.PinoyBusinessPOS.React`, Local Validation `:5177`). Organization Web Blazor is removed. Management/reporting. **Not** a POS checkout client. |
+| **Personal experience** | React client (`ExItS.PinoyBusinessPOS.React`, Local Validation `:5177`). The Blazor Personal Web host is removed. |
 | **Platform Admin** | Platform operator console (`ExItS.Platform.Admin`). Web only. Must not appear on Mobile Client. |
 | **Web/PWA** | Proposed future browser/installable web delivery of the replacement Mobile Client. Not current production. |
 | **Capacitor Android** | Proposed future native Android wrap of the React client. Not current production. |
@@ -98,17 +98,15 @@ POS operational data lives in `ExItS_PinoyBusinessPOS` schema `pos`. Organizatio
 
 ## 4. Current web clients (not the Mobile Client)
 
-### 4.1 Organization Web (`ExItS.PinoyBusinessPOS.Web`)
+### 4.1 Organization experience (React)
 
-- Blazor Web App with **Ant Design Blazor**
-- Local Validation port `:8093`
-- Management/reporting: overview, staff, branches, catalog, inventory reports, sales history, suppliers, settings
-- Explicit page copy: not a POS checkout client (`Boundary_NotPos`)
-- Owner/Manager use Organization Web; Cashier is denied this host and uses MAUI only
+- `ExItS.PinoyBusinessPOS.Web` is removed
+- Canonical UI is `ExItS.PinoyBusinessPOS.React` on Local Validation port `:5177`
+- Management/reporting includes profile, branches, staff, subscription, tax compliance, audit, and sales documents
+- It is not a POS checkout client
+- Owner and OrganizationAdministrator use the Organization experience; Cashier is denied those administration screens
 
 This is **not** the deferred historical “POS Web client” from client-experience-boundaries §15 (checkout on web). Do not collapse those two phrases.
-
-The heading “Organization Web (PWA)” in [global-search-filter-pattern.md](../engineering/global-search-filter-pattern.md) is a **search-pattern note** for the current Blazor host. It is not a Capacitor/PWA product and is not this planning track.
 
 ### 4.2 Personal Web (`ExItS.Personal.Web`)
 
@@ -135,7 +133,7 @@ MVP client-experience-boundaries still list Personal Account as Mobile-primary. 
 | POS Application | `ExItS.PinoyBusinessPOS.Application` | Use cases, auth orchestration, offline abstractions |
 | POS Infrastructure | `ExItS.PinoyBusinessPOS.Infrastructure` | EF Core + Npgsql, schema `pos` |
 | POS API | `ExItS.PinoyBusinessPOS.Api` | HTTP API (`:8092` Local Validation) |
-| POS ApiClient | `ExItS.PinoyBusinessPOS.ApiClient` | Typed HTTP client used by MAUI and Organization Web |
+| POS ApiClient | `ExItS.PinoyBusinessPOS.ApiClient` | Retained C# client. Architecture tests still read it. No runtime host references it after Organization Web removal |
 | Platform | `ExItS.Platform.*` | Identity, orgs, memberships, catalog, plans, subscriptions, entitlements (`:8091`) |
 
 Rules that remain in force:

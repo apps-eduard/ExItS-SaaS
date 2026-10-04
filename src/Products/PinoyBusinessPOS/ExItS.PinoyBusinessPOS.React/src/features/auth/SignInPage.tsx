@@ -17,9 +17,20 @@ import {
   rememberStoreAcquisitionIntent,
   resolveAuthContinuePath,
 } from "@/features/store/store-acquisition";
+import { buildPersonalExternalAuthReturnPath } from "@/lib/personal-connect-url";
+import {
+  clearPersonalConnectIntent,
+  rememberPersonalConnectIntent,
+} from "@/features/personal/social/personal-connect-intent";
+import { isPublicUserId, normalizePublicUserId } from "@/lib/exits-qr/envelope";
 import { normalizePublicOrganizationId } from "@/features/store/business-qr-url";
 import { useI18n } from "@/i18n/I18nProvider";
-import { registerPersonalAccount } from "@/api/platform/platform-auth-client";
+import {
+  buildExternalAuthChallengeUrl,
+  probeExternalAuthProvider,
+  registerPersonalAccount,
+  type ExternalAuthProviderAvailability,
+} from "@/api/platform/platform-auth-client";
 import { evaluateOfflinePinLoginOffer } from "@/offline/offline-pin-login-offer";
 import { mapColdStartDenialToMessageKey } from "@/offline/offline-operating-grant";
 import { prefetchPlatformAntiforgeryToken } from "@/api/platform/platform-http";
@@ -37,6 +48,34 @@ type AuthTab = "sign-in" | "sign-up";
 function readInitialAuthTab(search: string): AuthTab {
   const params = new URLSearchParams(search);
   return params.get("tab") === "sign-up" ? "sign-up" : "sign-in";
+}
+
+function GoogleMark() {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      className="size-5 shrink-0"
+      aria-hidden
+      data-testid="auth-google-mark"
+    >
+      <path
+        fill="#FFC107"
+        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.2-4.2 5.6l6.3 5.3C39.2 36.7 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"
+      />
+    </svg>
+  );
 }
 
 function AuthInlineFeedback({
@@ -75,6 +114,11 @@ export function SignInPage() {
     if (publicId) {
       rememberStoreAcquisitionIntent(publicId);
     }
+    const connectMatch = continuePath?.match(/^\/connect\/(EX-\d{4}-\d{4})$/i);
+    const connectId = normalizePublicUserId(connectMatch?.[1] ?? "");
+    if (isPublicUserId(connectId)) {
+      rememberPersonalConnectIntent(connectId);
+    }
   }, [searchParams]);
   const [usernameOrEmail, setUsernameOrEmail] = useState(() => {
     const hint = (location.state as { staffLoginHint?: string } | null)?.staffLoginHint?.trim();
@@ -102,6 +146,8 @@ export function SignInPage() {
   const [pinNoEnrollment, setPinNoEnrollment] = useState(false);
   const [pinGrantExpired, setPinGrantExpired] = useState(false);
   const [identitiesRefreshToken, setIdentitiesRefreshToken] = useState(0);
+  const [googleAvailability, setGoogleAvailability] =
+    useState<ExternalAuthProviderAvailability>("disabled");
   const expired = Boolean((location.state as { expired?: boolean } | null)?.expired);
   const notice = (location.state as { notice?: string } | null)?.notice;
   const staffLoginHint = looksLikeOrgScopedStaffLogin(usernameOrEmail);
@@ -126,6 +172,22 @@ export function SignInPage() {
   useEffect(() => {
     void prefetchPlatformAntiforgeryToken();
   }, []);
+
+  useEffect(() => {
+    if (isOffline) {
+      setGoogleAvailability("offline");
+      return;
+    }
+    let cancelled = false;
+    void probeExternalAuthProvider("google").then((availability) => {
+      if (!cancelled) {
+        setGoogleAvailability(availability);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOffline]);
 
   useEffect(() => {
     if (notice === "activated") {
@@ -177,6 +239,9 @@ export function SignInPage() {
           ...presentation,
         });
         return;
+      }
+      if (continueTarget?.startsWith("/connect/")) {
+        clearPersonalConnectIntent();
       }
       navigate(continueTarget ?? "/", { replace: true });
     } catch (caught) {
@@ -300,6 +365,30 @@ export function SignInPage() {
         />
       ) : error ? (
         <AuthInlineFeedback message={error} testId="auth-error" />
+      ) : null}
+
+      {googleAvailability === "available" && !isOffline ? (
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            className="auth-submit-button inline-flex w-full items-center justify-center gap-2 border border-border bg-surface hover:bg-[var(--exits-surface-muted)]"
+            data-testid="auth-google-button"
+            disabled={submitting}
+            onClick={() => {
+              window.location.assign(
+                buildExternalAuthChallengeUrl(
+                  "google",
+                  buildPersonalExternalAuthReturnPath(continueTarget),
+                ),
+              );
+            }}
+          >
+            <GoogleMark />
+            {t("auth.continueWithGoogle")}
+          </Button>
+          <AuthOrDivider />
+        </>
       ) : null}
 
       {activeTab === "sign-in" ? (

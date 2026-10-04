@@ -30,16 +30,9 @@ Localization/
 └── PosResources.fil-PH.resx
 ```
 
-### Platform Admin resources (P4-WP04)
+### Platform Admin resources
 
-```text
-src/Platform/ExItS.Platform.Admin/Localization/
-├── AdminResources.resx          # English (default)
-├── AdminResources.fil-PH.resx   # Filipino/Tagalog
-└── AdminResources.cs
-```
-
-ASP.NET Core request localization + cookie/localStorage language preference. Shell, navigation, and shared components use `IStringLocalizer<AdminResources>`. Business page copy may remain English in P4-WP04. Glossary: [admin-terminology-guide.md](admin-terminology-guide.md).
+React Platform Admin owns current Admin copy. The Blazor `AdminResources` tree under `src/Platform/ExItS.Platform.Admin` is removed. Glossary: [admin-terminology-guide.md](admin-terminology-guide.md).
 
 ### PinoyBusinessPOS resources (P5-WP01–P6-WP04)
 

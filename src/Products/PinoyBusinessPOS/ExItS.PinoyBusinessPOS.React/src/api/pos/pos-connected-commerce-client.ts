@@ -234,9 +234,9 @@ export async function updateBranchFulfillmentSettingsViaPos(
   workspace: PosWorkspaceScope,
   branchId: string,
   request: {
-    customerOrderingEnabled?: boolean;
-    pickupEnabled?: boolean;
-    deliveryEnabled?: boolean;
+    customerOrderingEnabled?: boolean | null;
+    pickupEnabled?: boolean | null;
+    deliveryEnabled?: boolean | null;
   },
   signal?: AbortSignal,
 ): Promise<unknown> {

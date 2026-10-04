@@ -281,24 +281,23 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
         ? autoPreviewLines
         : manualAllocationResult?.ok
           ? manualAllocationResult.lines
-          : openReceivables
-              .map((receivable) => {
-                const applied =
-                  parseMoneyAmountInput(manualAmounts[receivable.creditEntryId] ?? "") ?? 0;
-                if (!(applied > 0)) {
-                  return null;
-                }
-                return {
-                  creditEntryId: receivable.creditEntryId,
-                  amount: applied,
-                  outstandingBefore: receivable.outstandingBalance,
-                  outstandingAfter: Math.round((receivable.outstandingBalance - applied) * 100) / 100,
-                  sourceType: receivable.sourceType,
-                  sourceReference: receivable.sourceReference,
-                  dueDate: receivable.dueDate,
-                } satisfies AllocationPreviewLine;
-              })
-              .filter((line): line is AllocationPreviewLine => line != null);
+          : openReceivables.flatMap((receivable) => {
+            const applied =
+              parseMoneyAmountInput(manualAmounts[receivable.creditEntryId] ?? "") ?? 0;
+            if (!(applied > 0)) {
+              return [];
+            }
+            const line: AllocationPreviewLine = {
+              creditEntryId: receivable.creditEntryId,
+              amount: applied,
+              outstandingBefore: receivable.outstandingBalance,
+              outstandingAfter: Math.round((receivable.outstandingBalance - applied) * 100) / 100,
+              sourceType: receivable.sourceType,
+              sourceReference: receivable.sourceReference,
+              dueDate: receivable.dueDate,
+            };
+            return [line];
+          });
 
   const allocationErrorKey = useMemo((): MessageKey | null => {
     if (!isBusiness || amount == null || amount <= 0 || exceedsOutstanding) {

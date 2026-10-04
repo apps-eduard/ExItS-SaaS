@@ -6,7 +6,7 @@
 .DESCRIPTION
   Stops repo-scoped host apps, preserves Local Validation database volumes, starts
   infrastructure, and starts application services under the apps profile
-  (including Blazor Admin on 8090 and React Admin on 8095 in parallel).
+  (React Platform Admin on 8095; React Personal, Organization, and POS on 5177).
   Migrations remain application hosted services when the APIs start.
 #>
 [CmdletBinding()]
@@ -131,10 +131,8 @@ foreach ($requiredKey in @(
 $adminPort = if ($envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultAdminPort }
 $platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPlatformApiPort }
 $posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPosApiPort }
-$orgWebPort = if ($envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultOrgWebPort }
-$personalWebPort = if ($envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPersonalWebPort }
 $reactPosPort = if ($envMap['LOCAL_VALIDATION_REACT_POS_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_REACT_POS_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultReactPosPort }
-$adminWebReactPort = if ($envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultAdminWebReactPort }
+$adminWebReactPort = $adminPort
 $mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 
 New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
@@ -143,20 +141,17 @@ $browserHost = if ($resolvedPublicHost) { $resolvedPublicHost } else { 'localhos
 $adminOrigin = "http://${browserHost}:$adminPort"
 $platformApiPublicUrl = "http://${browserHost}:$platformApiPort"
 $posApiPublicUrl = "http://${browserHost}:$posApiPort"
-$orgWebOrigin = "http://${browserHost}:$orgWebPort"
-$personalWebOrigin = "http://${browserHost}:$personalWebPort"
+$appOrigin = "http://127.0.0.1:$reactPosPort"
 $reactPosLoopbackOrigin = "http://127.0.0.1:$reactPosPort"
 $adminWebReactOrigin = "http://${browserHost}:$adminWebReactPort"
 $allowedHosts = Get-LocalValidationAllowedHostsList -PublicHostValue $resolvedPublicHost -EnvMap $envMap
 
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ALLOWED_HOSTS' -Value $allowedHosts
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ADMIN_ORIGIN' -Value $adminOrigin
-Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ORG_WEB_ORIGIN' -Value $orgWebOrigin
-Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN' -Value $personalWebOrigin
+Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_APP_ORIGIN' -Value $appOrigin
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_REACT_POS_ORIGIN' -Value $reactPosLoopbackOrigin
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_REACT_POS_ORIGIN_LOCALHOST' -Value "http://localhost:$reactPosPort"
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_REACT_POS_ORIGIN_EMULATOR' -Value "http://10.0.2.2:$reactPosPort"
-Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $adminWebReactOrigin
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $platformApiPublicUrl
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL' -Value 'http://platform-api:8080'
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_POS_API_INTERNAL_URL' -Value 'http://pos-api:8080'
@@ -175,10 +170,7 @@ $dockerAppPortLabels = @{
     $adminPort         = 'Platform Admin'
     $platformApiPort   = 'Platform API'
     $posApiPort        = 'POS API'
-    $orgWebPort        = 'Organization Web'
-    $personalWebPort   = 'Personal Web'
     $reactPosPort      = 'React POS'
-    $adminWebReactPort = 'React Platform Admin'
 }
 Write-LocalValidationRuntimeProvenanceTable -PortLabels $dockerAppPortLabels -ExpectedRepoRoot $repoRoot
 
@@ -216,16 +208,12 @@ if ($upExit -ne 0) { throw "Docker application startup failed ($upExit)." }
 Wait-TcpPort -Label 'Platform API' -Port $platformApiPort -TimeoutSeconds $PortWaitSeconds
 Wait-TcpPort -Label 'POS API' -Port $posApiPort -TimeoutSeconds $PortWaitSeconds
 Wait-TcpPort -Label 'Platform Admin' -Port $adminPort -TimeoutSeconds $PortWaitSeconds
-Wait-TcpPort -Label 'Organization Web' -Port $orgWebPort -TimeoutSeconds $PortWaitSeconds
-Wait-TcpPort -Label 'Personal Web' -Port $personalWebPort -TimeoutSeconds $PortWaitSeconds
 Wait-TcpPort -Label 'React POS' -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
 Wait-TcpPort -Label 'React Platform Admin' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 
 Wait-HttpEndpoint -Label 'Platform API /health' -Url "http://127.0.0.1:$platformApiPort/health" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'POS API /health' -Url "http://127.0.0.1:$posApiPort/health" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'Admin /admin/login' -Url "http://127.0.0.1:$adminPort/admin/login" -TimeoutSeconds $PortWaitSeconds
-Wait-HttpEndpoint -Label 'Organization Web /health' -Url "http://127.0.0.1:$orgWebPort/health" -TimeoutSeconds $PortWaitSeconds
-Wait-HttpEndpoint -Label 'Personal Web /health' -Url "http://127.0.0.1:$personalWebPort/health" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'React POS /' -Url "http://127.0.0.1:$reactPosPort/" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'React POS /sign-in' -Url "http://127.0.0.1:$reactPosPort/sign-in" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'React Admin /health' -Url "http://127.0.0.1:$adminWebReactPort/health" -TimeoutSeconds $PortWaitSeconds
@@ -246,8 +234,6 @@ $state = @{
         Admin = $adminPort
         PlatformApi = $platformApiPort
         PosApi = $posApiPort
-        OrgWeb = $orgWebPort
-        PersonalWeb = $personalWebPort
         ReactPos = $reactPosPort
         AdminWebReact = $adminWebReactPort
     }
@@ -259,9 +245,8 @@ Write-Host '======== Local Validation Docker ready ========' -ForegroundColor Gr
 Write-Host "  Admin:        $adminOrigin"
 Write-Host "  Platform API: $platformApiPublicUrl"
 Write-Host "  POS API:      $posApiPublicUrl"
-Write-Host "  Org Web:      $orgWebOrigin"
-Write-Host "  Personal Web: $personalWebOrigin"
-Write-Host "  React POS:    $reactPosLoopbackOrigin  (also http://10.0.2.2:$reactPosPort / adb reverse)"
+Write-Host "  Personal / Organization / POS: $appOrigin  (React)"
+Write-Host "  React client: $reactPosLoopbackOrigin  (also http://10.0.2.2:$reactPosPort / adb reverse)"
 Write-Host "  React Admin:  $adminWebReactOrigin"
 Write-LocalValidationReactAdminBanner -Port $adminWebReactPort -PublicHost $resolvedPublicHost -ApiDescription 'same-origin /api (proxy http://platform-api:8080)' -GitSha (Get-LocalValidationGitSha -RepoRoot $repoRoot)
 Write-LocalValidationMailpitBanner -UiPort $mailpitUiPort -PublicHost $resolvedPublicHost -EmailLinkBaseUrl $adminWebReactOrigin
