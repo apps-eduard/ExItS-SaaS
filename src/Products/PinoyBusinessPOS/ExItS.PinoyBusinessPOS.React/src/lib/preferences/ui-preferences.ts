@@ -24,6 +24,8 @@ export const navigationModePreferenceSchema = z.enum([
   "hidden",
   "reveal",
 ]);
+/** Page section bars: underline text, or the current tab chips. */
+export const tabStylePreferenceSchema = z.enum(["underline", "tabs"]);
 
 export const uiPreferencesSchema = z.object({
   theme: themePreferenceSchema,
@@ -38,6 +40,8 @@ export const uiPreferencesSchema = z.object({
   motion: motionPreferenceSchema.default("system"),
   /** Missing in older storage → labeled desktop sidebar. */
   navigationMode: navigationModePreferenceSchema.default("standard"),
+  /** Missing in older storage → current section chips. */
+  tabStyle: tabStylePreferenceSchema.default("tabs"),
 });
 
 export type ThemePreference = z.infer<typeof themePreferenceSchema>;
@@ -47,6 +51,7 @@ export type PrimaryColorPreference = z.infer<typeof primaryColorPreferenceSchema
 export type ControlShapePreference = z.infer<typeof controlShapePreferenceSchema>;
 export type MotionPreference = z.infer<typeof motionPreferenceSchema>;
 export type NavigationModePreference = z.infer<typeof navigationModePreferenceSchema>;
+export type TabStylePreference = z.infer<typeof tabStylePreferenceSchema>;
 export type UiPreferences = z.infer<typeof uiPreferencesSchema>;
 
 /** Topbar cycle: full → icons → hidden → full. Reveal joins by restoring to full. */
@@ -95,6 +100,7 @@ export const defaultUiPreferences: UiPreferences = {
   controlShape: "standard",
   motion: "system",
   navigationMode: "standard",
+  tabStyle: "tabs",
 };
 
 export function parseUiPreferences(raw: string | null): UiPreferences {
@@ -155,6 +161,10 @@ export function applyNavigationMode(navigationMode: NavigationModePreference): v
   document.documentElement.dataset.navigationMode = navigationMode;
 }
 
+export function applyTabStyle(tabStyle: TabStylePreference): void {
+  document.documentElement.dataset.tabStyle = tabStyle;
+}
+
 export function applyUiPreferences(preferences: UiPreferences): void {
   applyTheme(preferences.theme);
   applyLocale(preferences.locale);
@@ -163,4 +173,5 @@ export function applyUiPreferences(preferences: UiPreferences): void {
   applyControlShape(preferences.controlShape);
   applyMotion(preferences.motion);
   applyNavigationMode(preferences.navigationMode);
+  applyTabStyle(preferences.tabStyle);
 }
