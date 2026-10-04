@@ -16,7 +16,8 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Button } from "@/components/ui/button";
-import { isSimulatedOrganizationBilling } from "@/features/organization/subscription/organization-billing-mode";
+import { startOrganizationSubscriptionCheckout } from "@/api/platform/subscription-payment-client";
+import { redirectToHostedCheckout } from "@/features/subscription-checkout/hosted-checkout-redirect";
 import {
   CAPACITY_LABEL_KEYS,
   PLAN_FEATURE_LABEL_KEYS,
@@ -100,7 +101,21 @@ export function OrgPlanChangePanel({
   });
 
   const blocked = Boolean(previewQuery.data?.hasBlockingUsageConflicts);
-  const simulated = isSimulatedOrganizationBilling();
+
+  const hostedCheckoutMutation = useMutation({
+    mutationFn: () =>
+      startOrganizationSubscriptionCheckout({
+        organizationId,
+        planId: selectedPlan!.id!,
+        billingCycle,
+      }),
+    onSuccess: (started) => {
+      redirectToHostedCheckout(started.checkoutUrl);
+    },
+    onError: (error) => {
+      setErrorDetail(error instanceof Error ? error.message : t("subscriptionCheckout.hostedFailed"));
+    },
+  });
 
   const mutation = useMutation({
     mutationFn: async (simulation: PlanChangePaymentSimulation | "downgrade") => {
@@ -141,22 +156,6 @@ export function OrgPlanChangePanel({
     setSelectedPlanId(null);
     await queryClient.invalidateQueries({ queryKey: ["org-subscription"] });
     await onCompleted();
-  }
-
-  async function runUpgrade(outcome: PlanChangePaymentSimulation) {
-    setErrorDetail(null);
-    const result = await mutation.mutateAsync(outcome);
-    if (!result.ok) {
-      setErrorDetail(result.body?.detail ?? t("orgSubscription.paymentFailedDetail"));
-      setStep("payment");
-      return;
-    }
-    if (outcome === "fail" || outcome === "declined") {
-      setErrorDetail(t("orgSubscription.paymentFailedDetail"));
-      setStep("payment");
-      return;
-    }
-    await completeChange("upgrade");
   }
 
   async function runDowngrade() {
@@ -424,15 +423,19 @@ export function OrgPlanChangePanel({
       ) : null}
 
       {step === "payment" && selectedPlan ? (
-        <section className="flex flex-col gap-3" data-testid="org-subscription-simulated-payment">
-          <Notice
-            tone="info"
-            title={t("orgSubscription.simulatedPaymentTitle")}
-            testId="org-subscription-simulated-banner"
-          >
-            {t("orgSubscription.simulatedPaymentDetail")}
-          </Notice>
+        <section className="flex flex-col gap-3" data-testid="org-subscription-payment-review">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("orgSubscription.secureProviderHint")}
+          </p>
           <dl className="grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
+            <div>
+              <dt className="text-muted">{t("orgSubscription.reviewNewPlan")}</dt>
+              <dd className="m-0 font-medium">{selectedPlan.displayName}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">{t("orgSubscription.reviewBillingCycle")}</dt>
+              <dd className="m-0">{billingCycle}</dd>
+            </div>
             <div>
               <dt className="text-muted">{t("orgSubscription.simulatedAmountDue")}</dt>
               <dd className="m-0">
@@ -444,16 +447,8 @@ export function OrgPlanChangePanel({
               </dd>
             </div>
             <div>
-              <dt className="text-muted">{t("orgSubscription.simulatedMethod")}</dt>
-              <dd className="m-0">{t("orgSubscription.simulatedMethodValue")}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">{t("orgSubscription.billingModeLabel")}</dt>
-              <dd className="m-0" data-testid="org-subscription-billing-mode">
-                {simulated
-                  ? t("orgSubscription.billingModeSimulated")
-                  : t("orgSubscription.notAvailable")}
-              </dd>
+              <dt className="text-muted">{t("orgSubscription.currency")}</dt>
+              <dd className="m-0">PHP</dd>
             </div>
           </dl>
           {errorDetail ? (
@@ -465,33 +460,25 @@ export function OrgPlanChangePanel({
               {errorDetail}
             </Notice>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               intent="neutral"
               appearance="outline"
               onClick={() => setStep("review")}
-              disabled={mutation.isPending}
+              disabled={hostedCheckoutMutation.isPending}
             >
               {t("orgSubscription.backToPlans")}
             </Button>
             <Button
               intent="primary"
-              disabled={mutation.isPending}
-              onClick={() => void runUpgrade("succeed")}
-              data-testid="org-subscription-simulate-success"
+              className="w-full sm:w-auto"
+              disabled={hostedCheckoutMutation.isPending || selectedPlan.id === currentPlan?.id}
+              onClick={() => hostedCheckoutMutation.mutate()}
+              data-testid="org-subscription-continue-secure"
             >
-              {mutation.isPending
-                ? t("orgSubscription.submitting")
-                : t("orgSubscription.simulateSuccess")}
-            </Button>
-            <Button
-              intent="danger"
-              appearance="outline"
-              disabled={mutation.isPending}
-              onClick={() => void runUpgrade("fail")}
-              data-testid="org-subscription-simulate-failure"
-            >
-              {t("orgSubscription.simulateFailure")}
+              {hostedCheckoutMutation.isPending
+                ? t("subscriptionCheckout.redirecting")
+                : t("orgSubscription.continueSecure")}
             </Button>
           </div>
         </section>

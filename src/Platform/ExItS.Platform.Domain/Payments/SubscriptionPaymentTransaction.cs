@@ -19,6 +19,8 @@ public sealed class SubscriptionPaymentTransaction
     public const int FailureCodeMaxLength = 64;
     public const int FailureReasonMaxLength = 512;
     public const int PlanKeyMaxLength = 64;
+    public const int CheckoutUrlMaxLength = 512;
+    public const int ProviderEventIdMaxLength = 128;
 
     private readonly List<SubscriptionPaymentActivity> _activities = [];
 
@@ -35,7 +37,9 @@ public sealed class SubscriptionPaymentTransaction
     public decimal FinalAmount { get; }
     public string CurrencyCode { get; }
     public SubscriptionPaymentChannel? Channel { get; private set; }
-    public SubscriptionPaymentProvider Provider { get; }
+    public SubscriptionPaymentProvider Provider { get; private set; }
+    public string? CheckoutUrl { get; private set; }
+    public string? ProviderEventId { get; private set; }
     public SubscriptionPaymentEnvironment Environment { get; }
     public SubscriptionPaymentStatus Status { get; private set; }
     public string? ProviderReference { get; private set; }
@@ -69,6 +73,8 @@ public sealed class SubscriptionPaymentTransaction
         string currencyCode,
         SubscriptionPaymentChannel? channel,
         SubscriptionPaymentProvider provider,
+        string? checkoutUrl,
+        string? providerEventId,
         SubscriptionPaymentEnvironment environment,
         SubscriptionPaymentStatus status,
         string? providerReference,
@@ -101,6 +107,8 @@ public sealed class SubscriptionPaymentTransaction
         CurrencyCode = currencyCode;
         Channel = channel;
         Provider = provider;
+        CheckoutUrl = checkoutUrl;
+        ProviderEventId = providerEventId;
         Environment = environment;
         Status = status;
         ProviderReference = providerReference;
@@ -166,6 +174,8 @@ public sealed class SubscriptionPaymentTransaction
             quote.CurrencyCode,
             channel: null,
             SubscriptionPaymentProvider.Simulator,
+            checkoutUrl: null,
+            providerEventId: null,
             SubscriptionPaymentEnvironment.Test,
             SubscriptionPaymentStatus.Pending,
             providerReference: null,
@@ -387,6 +397,131 @@ public sealed class SubscriptionPaymentTransaction
             utcNow);
     }
 
+    /// <summary>
+    /// Records a PayMongo Hosted Checkout session. Repeating the same session is a no-op.
+    /// </summary>
+    public void AttachHostedCheckout(string sessionId, string checkoutUrl, DateTimeOffset utcNow)
+    {
+        DomainTime.EnsureUtc(utcNow);
+        if (Status == SubscriptionPaymentStatus.Paid)
+        {
+            return;
+        }
+
+        EnsureMutable();
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            throw new DomainException(DomainErrorCodes.PaymentReferenceRequired, "Checkout session id is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(checkoutUrl))
+        {
+            throw new DomainException(DomainErrorCodes.PaymentReferenceRequired, "Checkout URL is required.");
+        }
+
+        var trimmedSession = sessionId.Trim();
+        var trimmedUrl = checkoutUrl.Trim();
+        if (trimmedSession.Length > ProviderReferenceMaxLength)
+        {
+            throw new DomainException(DomainErrorCodes.PaymentReferenceRequired, "Checkout session id is too long.");
+        }
+
+        if (trimmedUrl.Length > CheckoutUrlMaxLength)
+        {
+            throw new DomainException(DomainErrorCodes.PaymentReferenceRequired, "Checkout URL is too long.");
+        }
+
+        if (string.Equals(ProviderReference, trimmedSession, StringComparison.Ordinal)
+            && string.Equals(CheckoutUrl, trimmedUrl, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ProviderReference)
+            && !string.Equals(ProviderReference, trimmedSession, StringComparison.Ordinal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPaymentStatusTransition,
+                "A checkout session is already attached to this payment.");
+        }
+
+        Provider = SubscriptionPaymentProvider.PayMongo;
+        ProviderReference = trimmedSession;
+        CheckoutUrl = trimmedUrl;
+        if (Status == SubscriptionPaymentStatus.Pending)
+        {
+            Status = SubscriptionPaymentStatus.Processing;
+            ProcessingAtUtc = utcNow;
+            AddActivity("ProcessingStarted", "Hosted checkout started", utcNow);
+        }
+
+        AddActivity("HostedCheckoutStarted", "PayMongo checkout session created", utcNow);
+    }
+
+    public void CancelOpenCheckout(DateTimeOffset utcNow, string? reason = null)
+    {
+        DomainTime.EnsureUtc(utcNow);
+        if (Status == SubscriptionPaymentStatus.Cancelled)
+        {
+            return;
+        }
+
+        if (Status == SubscriptionPaymentStatus.Paid)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPaymentStatusTransition,
+                "Paid payments cannot be cancelled.");
+        }
+
+        if (Status is not (SubscriptionPaymentStatus.Pending or SubscriptionPaymentStatus.Processing))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPaymentStatusTransition,
+                $"Cannot cancel from status {Status}.");
+        }
+
+        Status = SubscriptionPaymentStatus.Cancelled;
+        CancelledAtUtc = utcNow;
+        FailureReason = Truncate(reason, FailureReasonMaxLength);
+        AddActivity("PaymentCancelled", FailureReason ?? "Payment cancelled", utcNow);
+    }
+
+    public bool HasCompletedProviderEvent(string eventId)
+    {
+        if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(ProviderEventId))
+        {
+            return false;
+        }
+
+        if (!string.Equals(ProviderEventId, eventId.Trim(), StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (Status != SubscriptionPaymentStatus.Paid)
+        {
+            return false;
+        }
+
+        return OrganizationId is null || SubscriptionActivated;
+    }
+
+    public void RememberProviderEvent(string eventId)
+    {
+        if (string.IsNullOrWhiteSpace(eventId))
+        {
+            throw new DomainException(DomainErrorCodes.PaymentReferenceRequired, "Provider event id is required.");
+        }
+
+        var trimmed = eventId.Trim();
+        if (trimmed.Length > ProviderEventIdMaxLength)
+        {
+            throw new DomainException(DomainErrorCodes.PaymentReferenceRequired, "Provider event id is too long.");
+        }
+
+        ProviderEventId = trimmed;
+    }
+
     public static SubscriptionPaymentTransaction Rehydrate(
         SubscriptionPaymentTransactionId id,
         string referenceNumber,
@@ -402,6 +537,8 @@ public sealed class SubscriptionPaymentTransaction
         string currencyCode,
         SubscriptionPaymentChannel? channel,
         SubscriptionPaymentProvider provider,
+        string? checkoutUrl,
+        string? providerEventId,
         SubscriptionPaymentEnvironment environment,
         SubscriptionPaymentStatus status,
         string? providerReference,
@@ -434,6 +571,8 @@ public sealed class SubscriptionPaymentTransaction
             currencyCode,
             channel,
             provider,
+            checkoutUrl,
+            providerEventId,
             environment,
             status,
             providerReference,

@@ -7438,7 +7438,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.reviewEffective": "Effective",
 
-  "orgSubscription.reviewEffectiveImmediate": "Immediately after simulated payment",
+  "orgSubscription.reviewEffectiveImmediate": "Pagkatapos makumpirma ang bayad",
 
   "orgSubscription.reviewEffectiveRenewal": "At next renewal ({date})",
 
@@ -7446,7 +7446,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.reviewLimitRow": "{label}: {current} â†’ {target}",
 
-  "orgSubscription.continueToPayment": "Continue to simulated payment",
+  "orgSubscription.continueToPayment": "Padayon sa bayad",
 
   "orgSubscription.scheduleDowngrade": "Schedule downgrade",
 
@@ -7472,7 +7472,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.downgradeSuccess": "Downgrade scheduled successfully.",
 
-  "orgSubscription.paymentFailedTitle": "Simulated payment failed",
+  "orgSubscription.paymentFailedTitle": "Wala nagsugod ang bayad",
 
   "orgSubscription.paymentFailedDetail": "Your plan and entitlements were not changed. You can try again or choose another plan.",
 
@@ -7480,11 +7480,11 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.billingModeLabel": "Billing mode",
 
-  "orgSubscription.billingModeSimulated": "Simulated",
+  "orgSubscription.billingModeSimulated": "Secure checkout",
 
-  "orgSubscription.invoicesTitle": "Simulated invoices & payments",
+  "orgSubscription.invoicesTitle": "Kasaysayan sang billing",
 
-  "orgSubscription.invoiceSimulated": "Simulated",
+  "orgSubscription.invoiceSimulated": "Subscription",
 
   "orgSubscription.historyTitle": "Recent plan-change payments",
 
@@ -7724,15 +7724,15 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.previewLostFeatures": "Mga feature nga madula",
 
-  "orgSubscription.billingManagedTitle": "Billing mode: Simulated",
+  "orgSubscription.billingManagedTitle": "Secure nga subscription checkout",
 
   "orgSubscription.billingManagedDetail":
-    "Subscription payments in this environment use ExItS Local Validation simulation. Plan changes update the real subscription and entitlements; only the payment provider is simulated.",
+    "Pili-a ang plan, usisa ang kantidad, dayon padayon sa secure nga payment provider. Wala sing matuod nga bayad sa test mode. Indi subscription payment ang baligya sa tindahan.",
 
   "orgSubscription.invoicesEmptyTitle": "Wala sang invoice nga mapakita",
 
   "orgSubscription.invoicesEmptyDetail":
-    "Successful simulated plan-change payments appear here after they are linked. Store sales and supplier payables are not subscription invoices.",
+    "Diri makita ang nakumpirma nga subscription payment. Indi invoice sang subscription ang baligya sa tindahan kag utang sa supplier.",
 
   "admin.nav.preferences": "Preferences",
 
@@ -8281,7 +8281,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.baseAmount": "Base",
   "personal.startBusiness.discount": "Discount ({percent}%)",
   "personal.startBusiness.totalDueNow": "Total due now",
-  "personal.startBusiness.paymentMethodsHint": "Payment method: GCash / Maya / Card (simulated in Local Validation).",
+  "personal.startBusiness.paymentMethodsHint": "Usisa anay ang total, dayon padayon sa secure nga payment provider.",
 
   "personal.explore.billingToggleAria": "Billing period",
 
@@ -8517,9 +8517,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.explore.loading": "Nagakarga sang plans?",
 
-  "personal.explore.localValidationNote": "Local Validation mode: Ang Subscribe naggamit sang simulated payment provider (indi production card charge).",
+  "personal.explore.localValidationNote": "Test mode: Ang Subscribe magapadayon sa secure nga payment provider. Wala sing matuod nga bayad.",
   "subscriptionCheckout.title": "Subscription checkout",
-  "subscriptionCheckout.lede": "Review your plan total, then complete a simulated payment.",
+  "subscriptionCheckout.lede": "Usisa ang total sang plan, dayon padayon sa secure nga bayad.",
   "subscriptionCheckout.loading": "Loading payment?",
   "subscriptionCheckout.retry": "Retry",
   "subscriptionCheckout.errorTitle": "Could not load payment",
@@ -8528,7 +8528,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.alreadyPaid": "This payment is already marked paid.",
   "subscriptionCheckout.viewReceipt": "View receipt",
   "subscriptionCheckout.testBannerTitle": "TEST PAYMENT",
-  "subscriptionCheckout.testBannerBody": "No real charge will be made. This is a simulated checkout environment.",
+  "subscriptionCheckout.testBannerBody": "Wala sing matuod nga bayad. Test mode sang payment provider ini nga checkout.",
   "subscriptionCheckout.summaryTitle": "Order summary",
   "subscriptionCheckout.plan": "Plan",
   "subscriptionCheckout.billing": "Billing",
@@ -8537,6 +8537,27 @@ export const hilPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.discount": "Discount",
   "subscriptionCheckout.total": "Total due",
   "subscriptionCheckout.methodTitle": "Payment method",
+  "subscriptionCheckout.continueSecure": "Padayon sa secure nga bayad",
+  "subscriptionCheckout.secureProviderHint": "Magapadayon ka sa amon secure nga payment provider agod matapos ang bayad.",
+  "subscriptionCheckout.redirecting": "Ginaabli ang secure nga bayad...",
+  "subscriptionCheckout.hostedFailed": "Indi masugdan ang bayad. Tilawi liwat.",
+  "billingPayment.verifyingTitle": "Nabatun ang bayad",
+  "billingPayment.verifyingBody": "Gina-verify ang imo bayad...",
+  "billingPayment.paidTitle": "Aktibo na ang subscription",
+  "billingPayment.paidBody": "Aktibo na ang imo subscription.",
+  "billingPayment.pendingTitle": "Pending ang bayad",
+  "billingPayment.pendingBody": "Wala pa makumpirmar sang payment provider ini nga bayad.",
+  "billingPayment.failedTitle": "Napakyas ang bayad",
+  "billingPayment.failedBody": "Wala sang pagbag-o sa subscription. Mahimo ka magtilaw liwat.",
+  "billingPayment.cancelledTitle": "Ginkansela ang bayad",
+  "billingPayment.cancelledBody": "Wala sang pagbag-o sa subscription. Mahimo ka magbalik sa mga plan kag magtilaw liwat.",
+  "billingPayment.delayedTitle": "Gina-kumpirmar pa",
+  "billingPayment.delayedBody": "Gina-kumpirmar pa ang imo bayad. Mahimo ka maghalin kag tan-awon liwat ang Billing pagkatapos.",
+  "billingPayment.tryAgain": "Tilawi liwat",
+  "billingPayment.backToBilling": "Balik sa billing",
+  "orgSubscription.continueSecure": "Padayon sa secure nga bayad",
+  "orgSubscription.currency": "Kwarta",
+  "orgSubscription.secureProviderHint": "Magapadayon ka sa amon secure nga payment provider agod matapos ang bayad.",
   "subscriptionCheckout.methodHint": "Choose GCash, Maya, or Card (simulator only).",
   "subscriptionCheckout.method.gcash": "GCash",
   "subscriptionCheckout.method.maya": "Maya",
@@ -8611,7 +8632,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.explore.retry": "Tilawi liwat",
 
-  "personal.explore.selectHint": "Sugodi ang trial kung available. Ang bayad nga subscribe naggamit sang Local Validation payment sa non-production lang.",
+  "personal.explore.selectHint": "Sugodi ang trial kung available. Ang bayad nga plan magapadayon sa secure checkout. Wala sing matuod nga bayad sa test mode.",
 
   "personal.explore.startTrial": "Sugodi ang trial",
 

@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,14 +11,19 @@ const paymentId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
 const getPersonalSubscriptionPayment = vi.fn();
 const retryPersonalSubscriptionPayment = vi.fn();
-const selectPersonalSubscriptionPaymentChannel = vi.fn();
+const startPersonalSubscriptionHostedCheckout = vi.fn();
+const redirectToHostedCheckout = vi.fn();
 
 vi.mock("@/api/platform/subscription-payment-client", () => ({
   getPersonalSubscriptionPayment: (...args: unknown[]) => getPersonalSubscriptionPayment(...args),
   retryPersonalSubscriptionPayment: (...args: unknown[]) =>
     retryPersonalSubscriptionPayment(...args),
-  selectPersonalSubscriptionPaymentChannel: (...args: unknown[]) =>
-    selectPersonalSubscriptionPaymentChannel(...args),
+  startPersonalSubscriptionHostedCheckout: (...args: unknown[]) =>
+    startPersonalSubscriptionHostedCheckout(...args),
+}));
+
+vi.mock("@/features/subscription-checkout/hosted-checkout-redirect", () => ({
+  redirectToHostedCheckout: (...args: unknown[]) => redirectToHostedCheckout(...args),
 }));
 
 function pendingPayment(
@@ -98,7 +104,8 @@ describe("SubscriptionCheckoutPage pre-org state UX", () => {
   beforeEach(() => {
     getPersonalSubscriptionPayment.mockReset();
     retryPersonalSubscriptionPayment.mockReset();
-    selectPersonalSubscriptionPaymentChannel.mockReset();
+    startPersonalSubscriptionHostedCheckout.mockReset();
+    redirectToHostedCheckout.mockReset();
   });
 
   it("keeps loading without navigating before payment resolves", async () => {
@@ -115,17 +122,39 @@ describe("SubscriptionCheckoutPage pre-org state UX", () => {
     expect(router.state.location.pathname).toBe(`/subscription-checkout/${paymentId}`);
 
     await waitFor(() => expect(screen.getByTestId("subscription-checkout-page")).toBeInTheDocument());
-    expect(screen.getByTestId("checkout-method-gcash")).toBeInTheDocument();
-    expect(screen.getByTestId("checkout-method-maya")).toBeInTheDocument();
-    expect(screen.getByTestId("checkout-method-card")).toBeInTheDocument();
+    expect(screen.getByTestId("subscription-continue-secure")).toBeInTheDocument();
     expect(screen.getByTestId("subscription-payment-details")).toBeInTheDocument();
   });
 
-  it("shows method picker for Pending with no channel", async () => {
+  it("starts hosted checkout from the review and redirects once", async () => {
     getPersonalSubscriptionPayment.mockResolvedValue(pendingPayment("Pending"));
+    startPersonalSubscriptionHostedCheckout.mockResolvedValue({
+      paymentId,
+      checkoutUrl: "https://checkout.paymongo.test/cs_test",
+      status: "Processing",
+      amount: 1499,
+      currencyCode: "PHP",
+      planKey: "pro",
+      billingCycle: "Monthly",
+      organizationId: null,
+    });
     renderCheckout();
-    await waitFor(() => expect(screen.getByTestId("subscription-method-picker")).toBeInTheDocument());
-    expect(screen.getByTestId("checkout-method-gcash")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("subscription-checkout-review")).toBeInTheDocument());
+    await userEvent.click(screen.getByTestId("subscription-continue-secure"));
+    await waitFor(() =>
+      expect(redirectToHostedCheckout).toHaveBeenCalledWith("https://checkout.paymongo.test/cs_test"),
+    );
+    expect(startPersonalSubscriptionHostedCheckout).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a checkout failure without redirecting", async () => {
+    getPersonalSubscriptionPayment.mockResolvedValue(pendingPayment("Pending"));
+    startPersonalSubscriptionHostedCheckout.mockRejectedValue(new Error("provider down"));
+    renderCheckout();
+    await userEvent.click(await screen.findByTestId("subscription-continue-secure"));
+    expect(await screen.findByText("provider down")).toBeInTheDocument();
+    expect(redirectToHostedCheckout).not.toHaveBeenCalled();
+    expect(screen.getByTestId("subscription-continue-secure")).toBeEnabled();
   });
 
   it("stays on checkout for Processing", async () => {

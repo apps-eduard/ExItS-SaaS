@@ -4,9 +4,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getPersonalSubscriptionPayment,
   retryPersonalSubscriptionPayment,
-  selectPersonalSubscriptionPaymentChannel,
-  type SubscriptionPaymentChannel,
+  startPersonalSubscriptionHostedCheckout,
 } from "@/api/platform/subscription-payment-client";
+import { redirectToHostedCheckout } from "@/features/subscription-checkout/hosted-checkout-redirect";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -103,19 +103,13 @@ export function SubscriptionCheckoutPage() {
     },
   });
 
-  const selectChannelMutation = useMutation({
-    mutationFn: (channel: SubscriptionPaymentChannel) =>
-      selectPersonalSubscriptionPaymentChannel(paymentId, channel),
-    onSuccess: async (updated, channel) => {
-      setForceMethodPicker(false);
-      await paymentQuery.refetch();
-      const slug = channelSlug(updated.channel ?? channel);
-      if (slug) {
-        navigate(paymentChannelPath(paymentId, slug));
-      }
+  const hostedCheckoutMutation = useMutation({
+    mutationFn: () => startPersonalSubscriptionHostedCheckout(paymentId),
+    onSuccess: (started) => {
+      redirectToHostedCheckout(started.checkoutUrl);
     },
     onError: (error) => {
-      setActionError(error instanceof Error ? error.message : t("subscriptionCheckout.errorDetail"));
+      setActionError(error instanceof Error ? error.message : t("subscriptionCheckout.hostedFailed"));
     },
   });
 
@@ -278,41 +272,21 @@ export function SubscriptionCheckoutPage() {
       </section>
 
       {pending && !hasChannel ? (
-        <section className="flex flex-col gap-2" data-testid="subscription-method-picker">
-          <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
-            {t("subscriptionCheckout.methodTitle")}
-          </h2>
+        <section className="flex flex-col gap-2" data-testid="subscription-checkout-review">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("subscriptionCheckout.methodHint")}
+            {t("subscriptionCheckout.secureProviderHint")}
           </p>
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              data-testid="checkout-method-gcash"
-              disabled={selectChannelMutation.isPending}
-              onClick={() => selectChannelMutation.mutate("GCash")}
-            >
-              {t("subscriptionCheckout.method.gcash")}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              data-testid="checkout-method-maya"
-              disabled={selectChannelMutation.isPending}
-              onClick={() => selectChannelMutation.mutate("Maya")}
-            >
-              {t("subscriptionCheckout.method.maya")}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              data-testid="checkout-method-card"
-              disabled={selectChannelMutation.isPending}
-              onClick={() => selectChannelMutation.mutate("Card")}
-            >
-              {t("subscriptionCheckout.method.card")}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            data-testid="subscription-continue-secure"
+            disabled={hostedCheckoutMutation.isPending}
+            onClick={() => hostedCheckoutMutation.mutate()}
+          >
+            {hostedCheckoutMutation.isPending
+              ? t("subscriptionCheckout.redirecting")
+              : t("subscriptionCheckout.continueSecure")}
+          </Button>
         </section>
       ) : null}
 

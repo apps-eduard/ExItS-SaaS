@@ -10,7 +10,8 @@ public enum SubscriptionPaymentChannel
 
 public enum SubscriptionPaymentProvider
 {
-    Simulator = 0
+    Simulator = 0,
+    PayMongo = 1
 }
 
 public enum SubscriptionPaymentEnvironment

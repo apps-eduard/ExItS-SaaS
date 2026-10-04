@@ -15,6 +15,13 @@ public static class PaymentProviderServiceCollectionExtensions
         IHostEnvironment environment)
     {
         services.Configure<PaymentProviderOptions>(configuration.GetSection(PaymentProviderOptions.SectionName));
+        services.Configure<PayMongoOptions>(configuration.GetSection(PayMongoOptions.SectionName));
+        services.AddHttpClient(PayMongoCheckoutGateway.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://api.paymongo.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<ISubscriptionCheckoutGateway, PayMongoCheckoutGateway>();
 
         var paymentsSection = configuration.GetSection(PaymentProviderOptions.SectionName);
         var provider = paymentsSection.GetValue<string>("Provider");
