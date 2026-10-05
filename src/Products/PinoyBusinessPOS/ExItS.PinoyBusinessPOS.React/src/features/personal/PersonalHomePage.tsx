@@ -39,6 +39,7 @@ import { InfoPopover } from "@/components/exits/InfoPopover";
 import { cn } from "@/lib/cn";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
+import { PersonalBusinessSummary } from "@/features/personal/businesses/PersonalBusinessSummary";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
@@ -258,6 +259,7 @@ export function PersonalHomePage() {
       </header>
 
       <PersonalGuideHomeCard />
+      <PersonalBusinessSummary />
 
       <div className="personal-home-layout" data-testid="personal-home-layout">
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
@@ -575,7 +577,7 @@ export function PersonalHomePage() {
               label: t("personal.home.actionStartBusiness"),
               icon: Building2,
               testId: "personal-qa-start-business",
-              to: "/personal/explore-pos",
+              to: "/personal/businesses",
               primary: true,
             },
             {

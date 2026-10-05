@@ -5,14 +5,63 @@ import { ACCOUNT_CONTEXT_SWITCH_PATH } from "@/features/account/account-context-
 import { sessionAccountClass } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
 import { useSession } from "@/session/SessionProvider";
-import { resolveDestinationRouting } from "@/workspace/workspace-destinations";
+import {
+  buildOrganizationDestinations,
+  selectBusinessEntry,
+} from "@/workspace/workspace-destinations";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export { ACCOUNT_CONTEXT_SWITCH_PATH };
 
+export const PERSONAL_BUSINESSES_PATH = "/personal/businesses";
+
+async function enterOrganizationBusiness(input: {
+  organizationId: string;
+  workspaces: ReturnType<typeof useWorkspace>["workspaces"];
+  session: ReturnType<typeof useSession>["session"];
+  refreshSession: ReturnType<typeof useSession>["refreshSession"];
+  clearBoundWorkspace: () => void;
+  refreshWorkspaces: () => Promise<void>;
+  ensureOrganizationGrantHint: ReturnType<typeof useWorkspace>["ensureOrganizationGrantHint"];
+  bindDestination: ReturnType<typeof useWorkspace>["bindDestination"];
+  navigate: ReturnType<typeof useNavigate>;
+}): Promise<void> {
+  input.clearBoundWorkspace();
+  const ensured = await ensureOrganizationSessionProfile({
+    session: input.session,
+    refreshSession: input.refreshSession,
+  });
+  if (!ensured.ok) {
+    input.navigate("/personal", { replace: true });
+    return;
+  }
+
+  await input.refreshWorkspaces();
+  const organization =
+    input.workspaces.find((workspace) => workspace.organizationId === input.organizationId) ??
+    input.workspaces[0];
+  if (!organization) {
+    input.navigate("/workspace", { replace: true });
+    return;
+  }
+
+  const grant = await input.ensureOrganizationGrantHint(organization.organizationId);
+  const entry = selectBusinessEntry(
+    buildOrganizationDestinations({ workspace: organization, grant }),
+  );
+  if (entry) {
+    const ok = await input.bindDestination(entry);
+    if (ok) {
+      input.navigate(entry.route, { replace: true });
+      return;
+    }
+  }
+
+  input.navigate("/workspace", { replace: true });
+}
+
 /**
- * Personal → Organization/Business entry reuses workspace bind + smart destination routing.
- * Multiple accessible orgs always land on the unified workspace chooser.
+ * Personal → business entry. One business opens directly. Several businesses open the portfolio.
  */
 export function useSwitchToBusiness() {
   const navigate = useNavigate();
@@ -43,35 +92,28 @@ export function useSwitchToBusiness() {
     try {
       clearBoundWorkspace();
 
-      const ensured = await ensureOrganizationSessionProfile({ session, refreshSession });
-      if (!ensured.ok) {
-        navigate("/personal", { replace: true });
-        return;
-      }
-
-      await refreshWorkspaces();
-
       if (workspaces.length > 1) {
-        navigate("/workspace", { replace: true });
+        navigate(PERSONAL_BUSINESSES_PATH, { replace: true });
         return;
       }
 
       const onlyOrg = workspaces[0];
-      const grant = await ensureOrganizationGrantHint(onlyOrg.organizationId);
-      const routing = resolveDestinationRouting({
-        workspaces,
-        grantByOrganizationId: new Map([[onlyOrg.organizationId, grant]]),
-      });
-
-      if (routing.outcome === "AutoDestination") {
-        const ok = await bindDestination(routing.destination);
-        if (ok) {
-          navigate(routing.destination.route, { replace: true });
-          return;
-        }
+      if (!onlyOrg) {
+        navigate("/personal", { replace: true });
+        return;
       }
 
-      navigate("/workspace", { replace: true });
+      await enterOrganizationBusiness({
+        organizationId: onlyOrg.organizationId,
+        workspaces,
+        session,
+        refreshSession,
+        clearBoundWorkspace,
+        refreshWorkspaces,
+        ensureOrganizationGrantHint,
+        bindDestination,
+        navigate,
+      });
     } finally {
       setSwitching(false);
     }
@@ -89,4 +131,58 @@ export function useSwitchToBusiness() {
   ]);
 
   return { canSwitch, switching, switchToBusiness, online };
+}
+
+/** Open one affiliated business from Personal. Clears the previous bound organization first. */
+export function useEnterBusiness() {
+  const navigate = useNavigate();
+  const online = useBrowserOnline();
+  const { session, refreshSession } = useSession();
+  const {
+    workspaces,
+    clearBoundWorkspace,
+    ensureOrganizationGrantHint,
+    bindDestination,
+    refreshWorkspaces,
+  } = useWorkspace();
+  const [entering, setEntering] = useState(false);
+
+  const enterBusiness = useCallback(
+    async (organizationId: string) => {
+      if (!online || entering) {
+        return;
+      }
+      setEntering(true);
+      navigate(ACCOUNT_CONTEXT_SWITCH_PATH, { replace: true });
+      try {
+        await enterOrganizationBusiness({
+          organizationId,
+          workspaces,
+          session,
+          refreshSession,
+          clearBoundWorkspace,
+          refreshWorkspaces,
+          ensureOrganizationGrantHint,
+          bindDestination,
+          navigate,
+        });
+      } finally {
+        setEntering(false);
+      }
+    },
+    [
+      bindDestination,
+      clearBoundWorkspace,
+      entering,
+      ensureOrganizationGrantHint,
+      navigate,
+      online,
+      refreshSession,
+      refreshWorkspaces,
+      session,
+      workspaces,
+    ],
+  );
+
+  return { enterBusiness, entering, online };
 }

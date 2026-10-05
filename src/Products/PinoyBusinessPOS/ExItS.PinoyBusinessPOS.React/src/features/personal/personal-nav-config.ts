@@ -210,11 +210,11 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
         },
         {
           id: "startBusiness",
-          to: "/personal/explore-pos",
+          to: "/personal/businesses",
           labelKey: "personal.more.startBusiness",
           icon: Building2,
           testId: "personal-nav-start-business",
-          matchPrefixes: ["/personal/explore-pos", "/personal/start-business", "/personal/subscriptions"],
+          matchPrefixes: ["/personal/businesses", "/personal/explore-pos", "/personal/start-business"],
         },
         {
           id: "preferences",

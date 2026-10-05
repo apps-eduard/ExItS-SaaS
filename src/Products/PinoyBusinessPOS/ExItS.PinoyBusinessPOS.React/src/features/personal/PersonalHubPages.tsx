@@ -645,7 +645,7 @@ export function PersonalMorePage() {
               label: t("personal.more.startBusiness"),
               icon: Building2,
               testId: "more-open-start-business",
-              to: "/personal/explore-pos",
+              to: "/personal/businesses",
               primary: true,
             },
           ]}

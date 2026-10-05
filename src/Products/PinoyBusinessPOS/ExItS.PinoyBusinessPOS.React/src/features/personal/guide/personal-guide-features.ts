@@ -250,7 +250,7 @@ export const PERSONAL_GUIDE_FEATURES: readonly PersonalGuideFeature[] = [
       "personal.guide.feature.start-business.bullet2",
       "personal.guide.feature.start-business.bullet3",
     ],
-    route: "/personal/explore-pos",
+    route: "/personal/businesses",
     availabilityNoteKey: "personal.guide.accessDeterminedOnOpen",
   },
   {

@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  affiliationCanOpen,
-  affiliationNeedsPlan,
   listPersonalProductAffiliations,
   type PersonalProductAffiliationDto,
 } from "@/api/platform/product-affiliations-client";
-import { POS_PRODUCT_CODE } from "@/api/platform/browser-session";
+import { resolveProductPortfolioCapability } from "@/features/personal/businesses/product-portfolio-capability";
 import { setOrganizationContext } from "@/api/platform/platform-auth-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -78,7 +76,7 @@ function ProductAffiliationCard({
   const navigate = useNavigate();
   const hasOrganization = Boolean(row.organizationId);
   const trialEnd = formatTrialEnd(row.trialEndUtc);
-  const isPos = row.productCode === POS_PRODUCT_CODE;
+  const capability = resolveProductPortfolioCapability(row);
 
   return (
     <section
@@ -109,28 +107,28 @@ function ProductAffiliationCard({
         <p>{t("personal.subscriptions.managedByOrganization")}</p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        {hasOrganization && affiliationCanOpen(row.subscriptionStatus) && row.organizationId ? (
+        {capability.canOpenProduct && row.organizationId ? (
           <Button type="button" onClick={() => onOpen(row.organizationId!)}>
             {t("personal.subscriptions.openProduct")}
           </Button>
         ) : null}
-        {row.canManageBilling && hasOrganization && affiliationCanOpen(row.subscriptionStatus) && row.organizationId ? (
+        {capability.canManageSubscription && row.organizationId ? (
           <Button type="button" variant="ghost" onClick={() => onManage(row.organizationId!)}>
             {t("personal.subscriptions.manage")}
           </Button>
         ) : null}
-        {row.canManageBilling && row.subscriptionStatus === "Trialing" && isPos ? (
-          <Button type="button" variant="ghost" onClick={() => navigate("/personal/explore-pos")}>
+        {capability.canManageSubscription && row.subscriptionStatus === "Trialing" && capability.choosePlanRoute ? (
+          <Button type="button" variant="ghost" onClick={() => navigate(capability.choosePlanRoute!)}>
             {t("personal.subscriptions.upgrade")}
           </Button>
         ) : null}
-        {row.canManageBilling && affiliationNeedsPlan(row.subscriptionStatus, hasOrganization) && isPos ? (
-          <Button type="button" onClick={() => navigate("/personal/explore-pos")}>
+        {capability.canChoosePlan && capability.choosePlanRoute ? (
+          <Button type="button" onClick={() => navigate(capability.choosePlanRoute!)}>
             {row.subscriptionStatus ? t("personal.subscriptions.reactivate") : t("personal.subscriptions.choosePlan")}
           </Button>
         ) : null}
-        {!hasOrganization && isPos ? (
-          <Button type="button" onClick={() => navigate("/personal/explore-pos")}>
+        {capability.canStartBusiness && capability.startRoute ? (
+          <Button type="button" onClick={() => navigate(capability.startRoute!)}>
             {t("personal.subscriptions.getStarted")}
           </Button>
         ) : null}

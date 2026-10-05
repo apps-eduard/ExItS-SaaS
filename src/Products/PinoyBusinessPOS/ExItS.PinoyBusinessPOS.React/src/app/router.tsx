@@ -18,6 +18,7 @@ import { PersonalOwnershipTransfersPage } from "@/features/personal/ownership/Pe
 import { PersonalStaffInvitationsPage } from "@/features/personal/staff/PersonalStaffInvitationsPage";
 import { PersonalWorkplacesPage } from "@/features/personal/workplaces/PersonalWorkplacesPage";
 import { PersonalProfilePage } from "@/features/personal/PersonalProfilePage";
+import { PersonalBusinessesPage } from "@/features/personal/businesses/PersonalBusinessesPage";
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
 import { PersonalProductSubscriptionsPage } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
@@ -476,6 +477,7 @@ export const appRoutes = [
                 element: <PersonalStaffInvitationsPage />,
               },
               { path: "profile", element: <PersonalProfilePage /> },
+              { path: "businesses", element: <PersonalBusinessesPage /> },
               { path: "explore-pos", element: <PersonalExplorePosPage /> },
               { path: "subscriptions", element: <PersonalProductSubscriptionsPage /> },
               {
