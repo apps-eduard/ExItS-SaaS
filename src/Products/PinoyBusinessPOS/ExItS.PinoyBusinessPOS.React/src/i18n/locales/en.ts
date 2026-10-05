@@ -1263,6 +1263,7 @@ export const en = {
   "auth.pinLogin": "PIN",
   "auth.continueWithFacebook": "Continue with Facebook",
   "auth.continueWithGoogle": "Continue with Google",
+  "auth.googleSignInFailed": "Google sign-in did not finish. Try again.",
   "auth.continueWithPin": "Use Offline PIN",
   "auth.socialHelperOnline": "Tap the keypad button beside Google to sign in with your PIN.",
   "auth.socialHelperOffline": "Online sign-in providers are unavailable while offline.",

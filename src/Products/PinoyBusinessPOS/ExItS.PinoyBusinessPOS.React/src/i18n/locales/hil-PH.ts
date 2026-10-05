@@ -118,6 +118,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "auth.continueWithGoogle": "Continue with Google",
 
+  "auth.googleSignInFailed": "Wala natapos ang Google sign-in. Tilawi liwat.",
+
   "auth.continueWithPin": "Use Offline PIN",
 
   "auth.facebook": "Facebook",

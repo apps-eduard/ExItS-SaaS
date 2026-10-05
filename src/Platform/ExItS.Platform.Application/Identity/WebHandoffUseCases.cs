@@ -197,14 +197,7 @@ public sealed class ListWebWorkspaces
                 .ConfigureAwait(false);
             foreach (var membership in memberships)
             {
-                // Organization Web is management-only (Owner / Administrator). OrganizationMember
-                // (Cashier and other POS-local staff) must not appear as an Organization workspace.
-                if (membership.Role is not OrganizationRole.OrganizationOwner
-                    and not OrganizationRole.OrganizationAdministrator)
-                {
-                    continue;
-                }
-
+                // Any active membership can open POS, including Staff (OrganizationMember).
                 var organization = await _organizations
                     .GetByIdAsync(membership.OrganizationId, cancellationToken)
                     .ConfigureAwait(false);

@@ -114,6 +114,21 @@ if (externalAuthOptions.Google.Enabled
         // Google returns on a top-level GET. Lax is included on that navigation.
         // SameSite=None is discarded when the preview proxy removes Secure.
         options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        // The installed service worker can replay this callback after the correlation
+        // cookie was already consumed. Resume from the external-login cookie instead of
+        // returning the generic server error page.
+        options.Events.OnTicketReceived = context =>
+        {
+            ExternalAuthEndpoints.RememberGoogleReplay(context.Principal, context.Properties);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRemoteFailure = async context =>
+        {
+            await ExternalAuthEndpoints
+                .ResumeExternalCallbackAsync(context.HttpContext, "google", context.Properties)
+                .ConfigureAwait(false);
+            context.HandleResponse();
+        };
 
         options.SaveTokens = false;
         options.Scope.Add("email");

@@ -118,6 +118,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "auth.continueWithGoogle": "Agsubok babaen ti Google",
 
+  "auth.googleSignInFailed": "Saan nalpas ti Google sign-in. Padasen manen.",
+
   "auth.continueWithPin": "Usaren ti Offline PIN",
 
   "auth.facebook": "Facebook",

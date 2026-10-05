@@ -118,6 +118,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "auth.continueWithGoogle": "Continue with Google",
 
+  "auth.googleSignInFailed": "Hindi natapos ang pag-sign in sa Google. Subukan muli.",
+
   "auth.continueWithPin": "Use Offline PIN",
 
   "auth.facebook": "Facebook",

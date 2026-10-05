@@ -5,17 +5,22 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
+using System.Net;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Identity;
 
 internal static class ExternalAuthEndpoints
 {
+    private static readonly MemoryCache ReplayCache = new(new MemoryCacheOptions());
+    private static readonly TimeSpan ReplayLifetime = TimeSpan.FromMinutes(2);
     public static IEndpointRouteBuilder MapExternalAuthEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/v1/platform/auth/external/{provider}/challenge", async (
@@ -173,6 +178,127 @@ internal static class ExternalAuthEndpoints
         return app;
     }
 
+    /// <summary>
+    /// The phone service worker replays the Google callback after the first request
+    /// already stored the external login. Finish that replay as a browser redirect.
+    /// </summary>
+    internal static void RememberGoogleReplay(ClaimsPrincipal? principal, AuthenticationProperties? properties)
+    {
+        if (principal is null || properties is null)
+        {
+            return;
+        }
+
+        if (!properties.Items.TryGetValue(".xsrf", out var correlationId)
+            || string.IsNullOrWhiteSpace(correlationId))
+        {
+            return;
+        }
+
+        var identity = MapPrincipal("google", principal);
+        if (identity is null)
+        {
+            return;
+        }
+
+        properties.Items.TryGetValue(PlatformExternalAuthDefaults.ReturnUrlItemKey, out var returnUrl);
+        ReplayCache.Set(
+            correlationId,
+            new GoogleReplay(identity, returnUrl),
+            ReplayLifetime);
+    }
+
+    internal static async Task ResumeExternalCallbackAsync(
+        HttpContext http,
+        string provider,
+        AuthenticationProperties? failedProperties)
+    {
+        var resumed = await TryResumeExternalLoginAsync(http, provider, failedProperties)
+            .ConfigureAwait(false);
+        if (!resumed)
+        {
+            await RedirectBrowserAsync(http, "/sign-in?external=failed").ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<bool> TryResumeExternalLoginAsync(
+        HttpContext http,
+        string provider,
+        AuthenticationProperties? failedProperties)
+    {
+        var auth = await http.AuthenticateAsync(PlatformExternalAuthDefaults.CorrelationScheme)
+            .ConfigureAwait(false);
+        ExternalLoginIdentity? identity = null;
+        string? returnUrl = null;
+        if (auth.Succeeded && auth.Principal is not null)
+        {
+            identity = MapPrincipal(provider, auth.Principal);
+            if (auth.Properties?.Items.TryGetValue(
+                    PlatformExternalAuthDefaults.ReturnUrlItemKey,
+                    out var stored) == true)
+            {
+                returnUrl = stored;
+            }
+        }
+
+        if (identity is null
+            && failedProperties?.Items.TryGetValue(".xsrf", out var correlationId) == true
+            && ReplayCache.TryGetValue(correlationId, out GoogleReplay? replay)
+            && replay is not null)
+        {
+            identity = replay.Identity;
+            returnUrl = replay.ReturnUrl;
+        }
+
+        if (identity is null)
+        {
+            return false;
+        }
+
+        var useCase = http.RequestServices.GetRequiredService<CompleteExternalLogin>();
+        var sessionOptions = http.RequestServices.GetRequiredService<IOptions<PlatformSessionOptions>>();
+        var env = http.RequestServices.GetRequiredService<IHostEnvironment>();
+        var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
+        var result = await useCase.ExecuteAsync(
+            identity,
+            http.Connection.RemoteIpAddress?.ToString(),
+            http.Request.Headers.UserAgent.ToString(),
+            http.RequestAborted).ConfigureAwait(false);
+        if (!result.IsSuccess || result.Value is null)
+        {
+            return false;
+        }
+
+        AuthEndpoints.AppendSessionCookie(
+            http,
+            result.Value.SessionToken,
+            result.Value.ExpiresAtUtc,
+            sessionOptions.Value,
+            env,
+            configuration);
+
+        returnUrl = SanitizeReturnUrl(returnUrl, env);
+        var separator = returnUrl.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        var redirect = $"{returnUrl}{separator}sessionToken={Uri.EscapeDataString(result.Value.SessionToken)}";
+        await RedirectBrowserAsync(http, redirect).ConfigureAwait(false);
+        return true;
+    }
+
+    private static async Task RedirectBrowserAsync(HttpContext http, string location)
+    {
+        var safe = location.StartsWith('/') && !location.StartsWith("//", StringComparison.Ordinal)
+            ? location
+            : "/sign-in";
+        http.Response.StatusCode = StatusCodes.Status302Found;
+        http.Response.Headers.Location = safe;
+        http.Response.Headers.CacheControl = "no-store";
+        http.Response.ContentType = "text/html; charset=utf-8";
+        var encoded = WebUtility.HtmlEncode(safe);
+        await http.Response.WriteAsync(
+                $"<!doctype html><meta http-equiv=\"refresh\" content=\"0;url={encoded}\"><p>Completing sign-in…</p>")
+            .ConfigureAwait(false);
+    }
+
     private static bool TryResolveScheme(
         string provider,
         PlatformExternalAuthOptions options,
@@ -265,6 +391,8 @@ internal static class ExternalAuthEndpoints
         ExternalAuthReturnUrl.Sanitize(
             returnUrl,
             allowDevLocalhostAbsolute: env.IsDevelopment() || env.IsEnvironment("Testing"));
+
+    private sealed record GoogleReplay(ExternalLoginIdentity Identity, string? ReturnUrl);
 
     private sealed record TestingExternalLoginRequest(
         string? Provider,

@@ -4,6 +4,7 @@ import { adoptSessionToken, getMyCredentials } from "@/api/auth/auth-client";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { usePreferences } from "@/hooks/use-preferences";
+import { continueAfterAdminAuthentication } from "@/lib/auth/continue-after-admin-auth";
 import { readExternalCallbackQuery, replaceBrowserLocation } from "@/lib/auth/cutover-routing";
 import { env } from "@/lib/env";
 
@@ -52,7 +53,14 @@ export function ExternalLoginCallbackPage() {
           replaceBrowserLocation(target);
           return;
         }
-        replaceBrowserLocation(query.returnPath ?? "/admin");
+        const outcome = await continueAfterAdminAuthentication({
+          session,
+          returnQuery: query.returnPath,
+          navigate: (path) => replaceBrowserLocation(path),
+        });
+        if (outcome === "stay") {
+          replaceBrowserLocation(query.returnPath ?? "/admin");
+        }
       } catch {
         setError(t("external.failed"));
       }
