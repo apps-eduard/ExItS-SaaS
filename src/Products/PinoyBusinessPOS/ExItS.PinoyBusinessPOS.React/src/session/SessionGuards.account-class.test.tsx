@@ -82,8 +82,35 @@ describe("SessionGuards AccountClass", () => {
       email: "paul@ORG907757",
       organizationContextLocked: true,
     });
-    expect(screen.getByTestId("account-class-denied")).toBeInTheDocument();
+    const denied = screen.getByTestId("account-class-denied");
+    expect(denied).toBeInTheDocument();
+    expect(denied.className).toContain("justify-center");
     expect(screen.queryByTestId("personal-ok")).not.toBeInTheDocument();
+  });
+
+  it("sends an Organization session from /personal to the organization entry", () => {
+    sessionState.status = "authenticated";
+    sessionState.session = {
+      accountClass: "Organization",
+      organizationContextLocked: true,
+    };
+    render(
+      <MemoryRouter initialEntries={["/personal"]}>
+        <Routes>
+          <Route path="/" element={<div data-testid="org-entry" />} />
+          <Route
+            path="/personal"
+            element={
+              <RequirePersonalSession>
+                <div data-testid="personal-ok">personal-ok</div>
+              </RequirePersonalSession>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("org-entry")).toBeInTheDocument();
+    expect(screen.queryByTestId("account-class-denied")).not.toBeInTheDocument();
   });
 
   it("denies Platform session on Organization surface", () => {

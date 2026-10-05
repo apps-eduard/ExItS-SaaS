@@ -5,7 +5,7 @@ import {
   type PersonalProductAffiliationDto,
 } from "@/api/platform/product-affiliations-client";
 import { resolveProductPortfolioCapability } from "@/features/personal/businesses/product-portfolio-capability";
-import { setOrganizationContext } from "@/api/platform/platform-auth-client";
+import { useEnterBusiness } from "@/workspace/use-switch-to-business";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -24,16 +24,11 @@ function formatTrialEnd(value: string | null | undefined): string | null {
 
 export function PersonalProductSubscriptionsPage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
+  const { enterBusiness } = useEnterBusiness();
   const query = useQuery({
     queryKey: PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalProductAffiliations(signal),
   });
-
-  async function openOrganization(organizationId: string, route: string) {
-    await setOrganizationContext(organizationId);
-    navigate(route);
-  }
 
   return (
     <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-subscriptions-page">
@@ -55,8 +50,8 @@ export function PersonalProductSubscriptionsPage() {
         <ProductAffiliationCard
           key={row.productCode}
           row={row}
-          onOpen={(organizationId) => void openOrganization(organizationId, "/")}
-          onManage={(organizationId) => void openOrganization(organizationId, "/org/subscription")}
+          onOpen={(organizationId) => void enterBusiness(organizationId)}
+          onManage={(organizationId) => void enterBusiness(organizationId, "/org/subscription")}
         />
       ))}
     </div>

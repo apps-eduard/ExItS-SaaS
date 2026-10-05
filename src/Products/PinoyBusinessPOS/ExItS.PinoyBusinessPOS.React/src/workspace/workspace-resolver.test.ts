@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAccessibleWorkspaces,
   isActiveBranchStatus,
+  postLoginRoute,
   resolveWorkspaceRoutingPlan,
 } from "@/workspace/workspace-resolver";
 import type { PlatformBranch } from "@/api/platform/platform-auth-client";
@@ -121,6 +122,26 @@ describe("workspace resolver AMEND-03", () => {
         accountClass: "Platform",
       }).outcome,
     ).toBe("NoAccessibleBranch");
+  });
+
+  it("keeps a Personal login off the organization workspace", () => {
+    expect(postLoginRoute({ outcome: "ShowChooser", accountClass: "Personal" })).toBe("/personal");
+    expect(postLoginRoute({ outcome: "PersonalHome", accountClass: "Personal" })).toBe("/personal");
+    expect(
+      postLoginRoute({ outcome: "ShowChooser", accountClass: "Personal", accessDenied: true }),
+    ).toBe("/personal");
+  });
+
+  it("keeps an Organization login off Personal home", () => {
+    expect(postLoginRoute({ outcome: "ShowChooser", accountClass: "Organization" })).toBe(
+      "/workspace",
+    );
+    expect(postLoginRoute({ outcome: "PersonalHome", accountClass: "Organization" })).toBe(
+      "/workspace",
+    );
+    expect(postLoginRoute({ outcome: "NoAccessibleBranch", accountClass: "Organization" })).toBe(
+      "/no-location",
+    );
   });
 
   it("treats branch status Active case-insensitively", () => {

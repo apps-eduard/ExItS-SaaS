@@ -316,6 +316,7 @@ export function PersonalHomePage() {
                     tone={UTANG_READ_ONLY_CHIP.tone}
                     appearance={UTANG_READ_ONLY_CHIP.appearance}
                     shape={UTANG_READ_ONLY_CHIP.shape}
+                    className="max-md:hidden"
                     data-testid="personal-stat-lent-shared-readonly"
                   >
                     {t("personal.utang.readOnly")}
@@ -373,6 +374,7 @@ export function PersonalHomePage() {
                     tone={UTANG_READ_ONLY_CHIP.tone}
                     appearance={UTANG_READ_ONLY_CHIP.appearance}
                     shape={UTANG_READ_ONLY_CHIP.shape}
+                    className="max-md:hidden"
                     data-testid="personal-stat-borrowed-shared-readonly"
                   >
                     {t("personal.utang.readOnly")}

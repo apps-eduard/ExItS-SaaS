@@ -77,7 +77,8 @@ public sealed class PersonalWorkplacesUseCasesTests
             orgs,
             grants,
             assignments,
-            branches);
+            branches,
+            new FixedClock(T0));
 
         var mine = await useCase.ExecuteAsync(personal.Id);
         Assert.True(mine.IsSuccess, mine.ErrorMessage);
@@ -136,7 +137,8 @@ public sealed class PersonalWorkplacesUseCasesTests
             orgs,
             new InMemoryProductLocalRoleGrantRepository(),
             new InMemoryOrganizationMembershipBranchAssignmentRepository(),
-            new InMemoryOrganizationBranchRepository());
+            new InMemoryOrganizationBranchRepository(),
+            new FixedClock(T0));
 
         var result = await useCase.ExecuteAsync(personal.Id);
         Assert.True(result.IsSuccess, result.ErrorMessage);

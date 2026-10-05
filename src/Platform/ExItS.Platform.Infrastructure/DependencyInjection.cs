@@ -112,6 +112,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationBranchAccessService, OrganizationBranchAccessService>();
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
         services.AddScoped<IOrganizationOwnershipTransferRepository, OrganizationOwnershipTransferRepository>();
+        services.AddScoped<IStaffPasswordResetRequestRepository, StaffPasswordResetRequestRepository>();
         services.AddScoped<IBusinessCustomerRepository, BusinessCustomerRepository>();
         services.AddScoped<ICreditCustomerRepository, CreditCustomerRepository>();
         services.AddScoped<ICustomerLinkRequestRepository, CustomerLinkRequestRepository>();

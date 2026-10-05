@@ -136,6 +136,9 @@ public static class ApplicationErrorCodes
     public const string CredentialNotFound = "application.credential.not_found";
     public const string CredentialAlreadyExists = "application.credential.already_exists";
     public const string PasswordInvalid = "application.credential.password_invalid";
+    public const string StaffPasswordResetNotFound = "application.staff_password_reset.not_found";
+    public const string StaffPasswordResetNotApproved = "application.staff_password_reset.not_approved";
+    public const string StaffPasswordResetConflict = "application.staff_password_reset.conflict";
     public const string CredentialLockedOut = "application.credential.locked_out";
     public const string BootstrapDisabled = "application.auth.bootstrap_disabled";
     public const string BootstrapAlreadyCompleted = "application.auth.bootstrap_already_completed";

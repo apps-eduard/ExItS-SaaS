@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { setOrganizationContext } from "@/api/platform/platform-auth-client";
 import { listPersonalProductAffiliations } from "@/api/platform/product-affiliations-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -23,11 +22,6 @@ export function PersonalBusinessesPage() {
     queryKey: PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalProductAffiliations(signal),
   });
-
-  async function manageSubscription(organizationId: string, route: string) {
-    await setOrganizationContext(organizationId);
-    navigate(route);
-  }
 
   return (
     <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-businesses-page">
@@ -97,7 +91,7 @@ export function PersonalBusinessesPage() {
                     type="button"
                     variant="ghost"
                     data-testid={`portfolio-manage-${row.productCode}`}
-                    onClick={() => void manageSubscription(row.organizationId!, capability.manageRoute!)}
+                    onClick={() => void enterBusiness(row.organizationId!, capability.manageRoute!)}
                   >
                     {t("personal.subscriptions.manage")}
                   </Button>

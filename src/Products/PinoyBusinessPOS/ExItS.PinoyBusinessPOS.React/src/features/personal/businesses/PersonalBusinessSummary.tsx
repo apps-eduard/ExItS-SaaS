@@ -69,7 +69,7 @@ export function PersonalBusinessSummary() {
         {t("personal.home.yourBusinesses")}
       </h2>
       <ul className="m-0 grid list-none gap-2 p-0">
-        {businesses.map((row) => {
+        {businesses.map((row, index) => {
           const capability = resolveProductPortfolioCapability(row);
           const meta = businessMetaLine(row);
           return (
@@ -86,26 +86,30 @@ export function PersonalBusinessSummary() {
                   {t("personal.subscriptions.managedByOrganization")}
                 </p>
               ) : null}
-              {capability.canOpenProduct && row.organizationId ? (
-                <Button
-                  type="button"
-                  className="w-fit"
-                  disabled={entering}
-                  data-testid={`personal-business-open-${row.productCode}`}
-                  onClick={() => void enterBusiness(row.organizationId!)}
-                >
-                  {t("personal.subscriptions.openProduct")}
-                </Button>
-              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                {capability.canOpenProduct && row.organizationId ? (
+                  <Button
+                    type="button"
+                    className="w-fit"
+                    disabled={entering}
+                    data-testid={`personal-business-open-${row.productCode}`}
+                    onClick={() => void enterBusiness(row.organizationId!)}
+                  >
+                    {t("personal.subscriptions.openProduct")}
+                  </Button>
+                ) : null}
+                {index === 0 ? (
+                  <Button asChild variant="ghost" className="w-fit">
+                    <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
+                      {t("personal.businesses.startAnother")}
+                    </Link>
+                  </Button>
+                ) : null}
+              </div>
             </li>
           );
         })}
       </ul>
-      <Button asChild variant="ghost" className="w-fit">
-        <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
-          {t("personal.businesses.startAnother")}
-        </Link>
-      </Button>
     </section>
   );
 }

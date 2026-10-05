@@ -93,6 +93,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationInvitationRecord> OrganizationInvitations => Set<OrganizationInvitationRecord>();
     internal DbSet<OrganizationOwnershipTransferRecord> OrganizationOwnershipTransfers =>
         Set<OrganizationOwnershipTransferRecord>();
+    internal DbSet<StaffPasswordResetRequestRecord> StaffPasswordResetRequests =>
+        Set<StaffPasswordResetRequestRecord>();
     internal DbSet<BusinessCustomerRecord> BusinessCustomers => Set<BusinessCustomerRecord>();
     internal DbSet<CreditCustomerRecord> CreditCustomers => Set<CreditCustomerRecord>();
     internal DbSet<CustomerLinkRequestRecord> CustomerLinkRequests => Set<CustomerLinkRequestRecord>();
@@ -1643,6 +1645,57 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.ToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StaffPasswordResetRequestRecord>(entity =>
+        {
+            entity.ToTable("staff_password_reset_requests");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.StaffUserId).HasColumnName("staff_user_id");
+            entity.Property(e => e.MembershipId).HasColumnName("membership_id");
+            entity.Property(e => e.RequestedByUserId).HasColumnName("requested_by_user_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.DecidedAtUtc).HasColumnName("decided_at_utc");
+            entity.Property(e => e.DecidedByUserId).HasColumnName("decided_by_user_id");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            entity.HasIndex(e => e.StaffUserId)
+                .IsUnique()
+                .HasFilter("status IN ('Pending', 'Approved')")
+                .HasDatabaseName("ux_staff_password_reset_requests_open_staff");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_staff_password_reset_requests_org_status");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.StaffUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<OrganizationMembershipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.MembershipId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DecidedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

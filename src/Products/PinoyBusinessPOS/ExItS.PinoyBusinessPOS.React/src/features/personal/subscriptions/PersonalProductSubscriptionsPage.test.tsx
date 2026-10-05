@@ -9,7 +9,7 @@ import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 
 const listPersonalProductAffiliations = vi.fn();
-const setOrganizationContext = vi.fn();
+const enterBusiness = vi.fn();
 
 vi.mock("@/api/platform/product-affiliations-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/platform/product-affiliations-client")>();
@@ -19,8 +19,8 @@ vi.mock("@/api/platform/product-affiliations-client", async (importOriginal) => 
   };
 });
 
-vi.mock("@/api/platform/platform-auth-client", () => ({
-  setOrganizationContext: (...args: unknown[]) => setOrganizationContext(...args),
+vi.mock("@/workspace/use-switch-to-business", () => ({
+  useEnterBusiness: () => ({ enterBusiness, entering: false }),
 }));
 
 const orgId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -67,8 +67,7 @@ function renderPage() {
 describe("PersonalProductSubscriptionsPage", () => {
   beforeEach(() => {
     listPersonalProductAffiliations.mockReset();
-    setOrganizationContext.mockReset();
-    setOrganizationContext.mockResolvedValue({ ok: true });
+    enterBusiness.mockReset();
   });
 
   it("shows the existing organization and billing actions for an owner", async () => {
@@ -81,8 +80,7 @@ describe("PersonalProductSubscriptionsPage", () => {
     expect(screen.getByText("You already have a PinoyBusinessPOS organization.")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Manage Subscription" }));
-    expect(setOrganizationContext).toHaveBeenCalledWith(orgId);
-    expect(await screen.findByTestId("manage-subscription")).toBeInTheDocument();
+    expect(enterBusiness).toHaveBeenCalledWith(orgId, "/org/subscription");
   });
 
   it("hides billing actions from staff", async () => {

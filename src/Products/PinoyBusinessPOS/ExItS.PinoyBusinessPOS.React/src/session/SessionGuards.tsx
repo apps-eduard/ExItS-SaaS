@@ -37,7 +37,6 @@ import {
 import { canAccessClassicReport } from "@/features/reports/report-access";
 import { OnlineRequiredBoot } from "@/components/exits/OnlineRequiredBoot";
 import { AppBootLoader } from "@/components/exits/loading/AppBootLoader";
-import { PageHeader } from "@/components/exits/PageHeader";
 import { useOptionalConnectivity } from "@/connectivity/ConnectivityProvider";
 import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
 import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeniedPage";
@@ -203,7 +202,6 @@ export function RequireAccountClass({
 }) {
   const { status, session } = useSession();
   const location = useLocation();
-  const { t } = useI18n();
 
   if (status === "loading") {
     return <SessionLoading />;
@@ -220,18 +218,42 @@ export function RequireAccountClass({
     return children;
   }
 
+  return <AccountClassDenied />;
+}
+
+function AccountClassDenied() {
+  const { t } = useI18n();
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="account-class-denied">
-      <PageHeader
-        title={t("accountClass.deniedTitle")}
-        description={t("accountClass.deniedLede")}
-      />
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("accountClass.deniedDetail")}</p>
+    <div
+      className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 px-6 text-center"
+      data-testid="account-class-denied"
+    >
+      <h1 className="m-0 max-w-md text-[length:var(--exits-text-xl)] font-semibold">
+        {t("accountClass.deniedTitle")}
+      </h1>
+      <p className="m-0 max-w-md text-[length:var(--exits-text-sm)] text-muted">
+        {t("accountClass.deniedLede")}
+      </p>
+      <p className="m-0 max-w-md text-[length:var(--exits-text-sm)] text-muted">
+        {t("accountClass.deniedDetail")}
+      </p>
     </div>
   );
 }
 
 export function RequirePersonalSession({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const { status, session } = useSession();
+  const onPersonalRoute =
+    location.pathname === "/personal" || location.pathname.startsWith("/personal/");
+  // Staff login can be left on /personal by an earlier Personal plan. Root entry opens the org.
+  if (
+    onPersonalRoute &&
+    isAuthenticatedOrColdStartOffline(status) &&
+    sessionAccountClass(session) === "Organization"
+  ) {
+    return <Navigate to="/" replace />;
+  }
   return <RequireAccountClass allow={["Personal"]}>{children}</RequireAccountClass>;
 }
 
@@ -246,7 +268,6 @@ export function RequireOrganizationSession({ children }: { children: ReactNode }
 export function AllowInvitationAccept({ children }: { children: ReactNode }) {
   const { status, session } = useSession();
   const location = useLocation();
-  const { t } = useI18n();
 
   if (status === "loading") {
     return <SessionLoading />;
@@ -259,17 +280,7 @@ export function AllowInvitationAccept({ children }: { children: ReactNode }) {
   if (status === "authenticated") {
     const accountClass = sessionAccountClass(session);
     if (accountClass === "Organization" || accountClass === "Platform") {
-      return (
-        <div className="flex min-w-0 flex-col gap-4" data-testid="account-class-denied">
-          <PageHeader
-            title={t("accountClass.deniedTitle")}
-            description={t("accountClass.deniedLede")}
-          />
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("accountClass.deniedDetail")}
-          </p>
-        </div>
-      );
+      return <AccountClassDenied />;
     }
   }
 

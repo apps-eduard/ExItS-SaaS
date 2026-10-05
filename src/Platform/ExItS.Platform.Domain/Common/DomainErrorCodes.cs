@@ -8,6 +8,11 @@ public static class DomainErrorCodes
     public const string InvalidOrganizationMembershipId = "platform.membership.id.invalid";
     public const string InvalidOrganizationInvitationId = "platform.invitation.id.invalid";
     public const string InvalidOrganizationOwnershipTransferId = "platform.ownership_transfer.id.invalid";
+    public const string InvalidStaffPasswordResetRequestId = "platform.staff_password_reset.id.invalid";
+    public const string InvalidStaffPasswordResetStatusTransition =
+        "platform.staff_password_reset.status.invalid_transition";
+    public const string StaffPasswordResetExpired = "platform.staff_password_reset.expired";
+    public const string StaffPasswordResetSelfDenied = "platform.staff_password_reset.self_denied";
     public const string InvalidProductAccessAssignmentId = "platform.product_access.id.invalid";
     public const string ActorReferenceRequired = "platform.actor.required";
     public const string InvalidInvitationStatusTransition = "platform.invitation.status.invalid_transition";

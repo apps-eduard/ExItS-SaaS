@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as workplacesClient from "@/api/platform/personal-workplaces-client";
 import * as inviteClient from "@/api/platform/staff-invitation-client";
-import { copyTextToClipboard } from "@/diagnostics/copy-text-to-clipboard";
 import { PersonalWorkplacesPage } from "@/features/personal/workplaces/PersonalWorkplacesPage";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -28,11 +27,7 @@ vi.mock("@/api/platform/staff-invitation-client", async (importOriginal) => {
   };
 });
 
-vi.mock("@/diagnostics/copy-text-to-clipboard", () => ({
-  copyTextToClipboard: vi.fn(async () => true),
-}));
-
-const signOut = vi.fn(async () => undefined);
+const signIn = vi.fn(async () => ({ ok: true as const }));
 
 vi.mock("@/connectivity/browser-online", () => ({
   useBrowserOnline: () => true,
@@ -46,7 +41,7 @@ vi.mock("@/session/SessionProvider", () => ({
       accountClass: "Personal",
     },
     status: "authenticated",
-    signOut,
+    signIn,
   }),
 }));
 
@@ -65,6 +60,8 @@ function renderPage(initial = "/personal/workplaces") {
           <MemoryRouter initialEntries={[initial]}>
             <Routes>
               <Route path="/personal/workplaces" element={<PersonalWorkplacesPage />} />
+              <Route path="/switching-context" element={<div data-testid="switching-context" />} />
+              <Route path="/" element={<div data-testid="post-login-home" />} />
               <Route path="/sign-in" element={<div data-testid="sign-in-page" />} />
             </Routes>
           </MemoryRouter>
@@ -76,7 +73,8 @@ function renderPage(initial = "/personal/workplaces") {
 
 describe("PersonalWorkplacesPage", () => {
   beforeEach(() => {
-    signOut.mockClear();
+    signIn.mockReset();
+    signIn.mockResolvedValue({ ok: true });
     vi.mocked(workplacesClient.listPersonalWorkplaces).mockResolvedValue({
       ok: true,
       workplaces: [
@@ -138,17 +136,19 @@ describe("PersonalWorkplacesPage", () => {
     );
   });
 
-  it("copies work login and opens secure staff sign-in", async () => {
+  it("signs in with the workplace password on this page", async () => {
     const user = userEvent.setup();
     renderPage();
 
     await screen.findByTestId(`personal-workplace-${membershipId}`);
-    await user.click(screen.getByTestId(`personal-workplace-copy-${membershipId}`));
-    expect(copyTextToClipboard).toHaveBeenCalledWith("kizy@ORG012345");
-
-    await user.click(screen.getByTestId(`personal-workplace-open-${membershipId}`));
-    expect(signOut).toHaveBeenCalled();
-    expect(await screen.findByTestId("sign-in-page")).toBeInTheDocument();
+    await user.type(
+      screen.getByTestId(`personal-workplace-password-${membershipId}`),
+      "workplace-secret",
+    );
+    await user.click(screen.getByTestId(`personal-workplace-sign-in-${membershipId}`));
+    expect(signIn).toHaveBeenCalledWith("kizy@ORG012345", "workplace-secret");
+    expect(await screen.findByTestId("post-login-home")).toBeInTheDocument();
+    expect(screen.queryByTestId(`personal-workplace-copy-${membershipId}`)).not.toBeInTheDocument();
   });
 
   it("does not label suspended membership as Active staff", async () => {

@@ -148,8 +148,10 @@ describe("Personal home businesses", () => {
     expect(await screen.findByTestId("personal-utang-summary")).toBeInTheDocument();
     expect(await screen.findByText("ABC Grocery")).toBeInTheDocument();
     expect(screen.getByText("Owner · Active")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-business-open-pinoy-business-pos")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-home-start-another")).toHaveAttribute("href", "/personal/businesses");
+    const open = screen.getByTestId("personal-business-open-pinoy-business-pos");
+    const startAnother = screen.getByTestId("personal-home-start-another");
+    expect(startAnother).toHaveAttribute("href", "/personal/businesses");
+    expect(startAnother.parentElement).toBe(open.parentElement);
   });
 
   it("shows each different product once", async () => {

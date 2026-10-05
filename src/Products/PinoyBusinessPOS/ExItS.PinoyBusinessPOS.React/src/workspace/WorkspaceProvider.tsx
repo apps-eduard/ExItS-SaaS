@@ -979,6 +979,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [bindDestination, workspaces],
   );
 
+  const sessionIdentity = `${session?.userId ?? ""}:${sessionAccountClass(session) ?? ""}`;
+
   useEffect(() => {
     if (sessionStatus === "cold_start_offline") {
       return;
@@ -999,8 +1001,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Workplace sign-in replaces the Personal session without leaving "authenticated".
+    // Reload so the previous Personal plan cannot send the staff session to /personal.
+    autoDestinationAttempted.current = false;
     void refreshWorkspaces();
-  }, [refreshWorkspaces, sessionStatus]);
+  }, [refreshWorkspaces, sessionIdentity, sessionStatus]);
 
   useEffect(() => {
     let cancelled = false;

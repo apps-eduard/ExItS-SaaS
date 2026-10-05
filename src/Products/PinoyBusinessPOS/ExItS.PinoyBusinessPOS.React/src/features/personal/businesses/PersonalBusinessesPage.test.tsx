@@ -9,7 +9,6 @@ import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 
 const listPersonalProductAffiliations = vi.fn();
-const setOrganizationContext = vi.fn();
 const enterBusiness = vi.fn();
 
 vi.mock("@/api/platform/product-affiliations-client", async (importOriginal) => {
@@ -19,10 +18,6 @@ vi.mock("@/api/platform/product-affiliations-client", async (importOriginal) => 
     listPersonalProductAffiliations: (...args: unknown[]) => listPersonalProductAffiliations(...args),
   };
 });
-
-vi.mock("@/api/platform/platform-auth-client", () => ({
-  setOrganizationContext: (...args: unknown[]) => setOrganizationContext(...args),
-}));
 
 vi.mock("@/workspace/use-switch-to-business", () => ({
   useEnterBusiness: () => ({ enterBusiness, entering: false }),
@@ -81,9 +76,7 @@ function renderPage() {
 describe("PersonalBusinessesPage", () => {
   beforeEach(() => {
     listPersonalProductAffiliations.mockReset();
-    setOrganizationContext.mockReset();
     enterBusiness.mockReset();
-    setOrganizationContext.mockResolvedValue({ ok: true });
   });
 
   it("shows every catalog product and starts only the ready product", async () => {
@@ -123,8 +116,7 @@ describe("PersonalBusinessesPage", () => {
     await userEvent.click(screen.getByTestId("portfolio-open-pinoy-business-pos"));
     expect(enterBusiness).toHaveBeenCalledWith(posOrg);
     await userEvent.click(screen.getByTestId("portfolio-manage-pinoy-business-pos"));
-    expect(setOrganizationContext).toHaveBeenCalledWith(posOrg);
-    expect(await screen.findByTestId("manage-subscription")).toBeInTheDocument();
+    expect(enterBusiness).toHaveBeenLastCalledWith(posOrg, "/org/subscription");
   });
 
   it("offers Choose Plan for an existing organization without a subscription", async () => {

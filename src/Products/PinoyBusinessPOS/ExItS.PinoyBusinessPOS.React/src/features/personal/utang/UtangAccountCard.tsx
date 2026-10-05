@@ -55,7 +55,7 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
             tone={UTANG_READ_ONLY_CHIP.tone}
             appearance={UTANG_READ_ONLY_CHIP.appearance}
             shape={UTANG_READ_ONLY_CHIP.shape}
-            className="col-start-1 row-start-1 self-start"
+            className="col-start-1 row-start-1 self-start max-md:hidden"
             data-testid={`utang-account-readonly-${row.relationshipId}`}
           >
             {t("personal.utang.readOnly")}

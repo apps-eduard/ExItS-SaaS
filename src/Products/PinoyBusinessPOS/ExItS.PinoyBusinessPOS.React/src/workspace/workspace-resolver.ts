@@ -123,3 +123,42 @@ export function workspaceRouteForOutcome(outcome: WorkspaceRoutingPlan["outcome"
       return "/";
   }
 }
+
+/**
+ * Post-login landing. Personal must not open /workspace, and Organization must not open /personal.
+ * Those shells reject the other account class with "Account type not allowed".
+ */
+export function postLoginRoute(input: {
+  outcome: WorkspaceRoutingPlan["outcome"];
+  accountClass?: AccountClassName | null;
+  accessDenied?: boolean;
+}): string {
+  if (input.accountClass === "Personal") {
+    if (input.accessDenied) {
+      return "/personal";
+    }
+    if (input.outcome === "NoAccessibleBranch") {
+      return "/no-location";
+    }
+    if (input.outcome === "AutoSelect" || input.outcome === "AutoDestination") {
+      return "/";
+    }
+    return "/personal";
+  }
+
+  if (input.accountClass === "Organization") {
+    if (input.outcome === "NoAccessibleBranch") {
+      return "/no-location";
+    }
+    if (input.outcome === "AutoSelect" || input.outcome === "AutoDestination") {
+      return "/";
+    }
+    return "/workspace";
+  }
+
+  if (input.accountClass === "Platform" || input.accessDenied) {
+    return "/no-location";
+  }
+
+  return workspaceRouteForOutcome(input.outcome);
+}

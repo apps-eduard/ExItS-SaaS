@@ -25,6 +25,8 @@ async function enterOrganizationBusiness(input: {
   ensureOrganizationGrantHint: ReturnType<typeof useWorkspace>["ensureOrganizationGrantHint"];
   bindDestination: ReturnType<typeof useWorkspace>["bindDestination"];
   navigate: ReturnType<typeof useNavigate>;
+  /** After the organization session is bound. Defaults to that business home. */
+  route?: string;
 }): Promise<void> {
   input.clearBoundWorkspace();
   const ensured = await ensureOrganizationSessionProfile({
@@ -52,7 +54,7 @@ async function enterOrganizationBusiness(input: {
   if (entry) {
     const ok = await input.bindDestination(entry);
     if (ok) {
-      input.navigate(entry.route, { replace: true });
+      input.navigate(input.route ?? entry.route, { replace: true });
       return;
     }
   }
@@ -148,7 +150,7 @@ export function useEnterBusiness() {
   const [entering, setEntering] = useState(false);
 
   const enterBusiness = useCallback(
-    async (organizationId: string) => {
+    async (organizationId: string, route?: string) => {
       if (!online || entering) {
         return;
       }
@@ -165,6 +167,7 @@ export function useEnterBusiness() {
           ensureOrganizationGrantHint,
           bindDestination,
           navigate,
+          route,
         });
       } finally {
         setEntering(false);

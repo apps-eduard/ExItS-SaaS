@@ -91,6 +91,42 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        personal.MapPost("/workplaces/{membershipId:guid}/password-reset-requests", async (
+            HttpContext http,
+            Guid membershipId,
+            RequestStaffPasswordReset requestReset,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await requestReset
+                .ExecuteAsync(PlatformUserId.From(userId), membershipId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/workplaces/{membershipId:guid}/password-reset-requests/{requestId:guid}/complete", async (
+            HttpContext http,
+            Guid membershipId,
+            Guid requestId,
+            CompleteStaffPasswordResetBody? body,
+            CompleteStaffPasswordReset completeReset,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await completeReset
+                .ExecuteAsync(PlatformUserId.From(userId), membershipId, requestId, body?.NewPassword, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         personal.MapGet("/linked-merchants/{organizationId:guid}/ordering-capability", async (
             HttpContext http,
             Guid organizationId,
@@ -1765,4 +1801,6 @@ internal static class PersonalEndpoints
     }
 
     internal sealed record ClaimPersonalAdRewardRequest(string ClaimKey);
+
+    internal sealed record CompleteStaffPasswordResetBody(string? NewPassword);
 }
