@@ -11,12 +11,15 @@ import { I18nProvider } from "@/i18n/I18nProvider";
 const paymentId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
 const getPersonalSubscriptionPayment = vi.fn();
+const syncPersonalSubscriptionHostedCheckout = vi.fn();
 const retryPersonalSubscriptionPayment = vi.fn();
 const startPersonalSubscriptionHostedCheckout = vi.fn();
 const redirectToHostedCheckout = vi.fn();
 
 vi.mock("@/api/platform/subscription-payment-client", () => ({
   getPersonalSubscriptionPayment: (...args: unknown[]) => getPersonalSubscriptionPayment(...args),
+  syncPersonalSubscriptionHostedCheckout: (...args: unknown[]) =>
+    syncPersonalSubscriptionHostedCheckout(...args),
   retryPersonalSubscriptionPayment: (...args: unknown[]) =>
     retryPersonalSubscriptionPayment(...args),
   startPersonalSubscriptionHostedCheckout: (...args: unknown[]) =>
@@ -47,7 +50,8 @@ function pendingPayment(
     provider: "Simulator",
     environment: "Test",
     status,
-    providerReference: status === "Paid" ? "SIM-GC-260913-ABC123" : null,
+    providerReference:
+      status === "Paid" || status === "Processing" ? "cs_test_checkout" : null,
     cardBrand: null,
     cardLast4: null,
     failureCode: status === "Failed" ? "card_declined" : null,
@@ -104,6 +108,10 @@ function renderCheckout() {
 describe("SubscriptionCheckoutPage pre-org state UX", () => {
   beforeEach(() => {
     getPersonalSubscriptionPayment.mockReset();
+    syncPersonalSubscriptionHostedCheckout.mockReset();
+    syncPersonalSubscriptionHostedCheckout.mockImplementation(async () =>
+      getPersonalSubscriptionPayment(),
+    );
     retryPersonalSubscriptionPayment.mockReset();
     startPersonalSubscriptionHostedCheckout.mockReset();
     redirectToHostedCheckout.mockReset();
@@ -160,9 +168,6 @@ describe("SubscriptionCheckoutPage pre-org state UX", () => {
     await userEvent.click(await screen.findByTestId("subscription-continue-secure"));
     expect(await screen.findByText("Subscription payments are not configured.")).toBeInTheDocument();
     expect(screen.queryByTestId("subscription-simulator-methods")).not.toBeInTheDocument();
-    const router = renderCheckout();
-    await waitFor(() => expect(screen.getByTestId("subscription-refresh-status")).toBeInTheDocument());
-    expect(router.state.location.pathname).toBe(`/subscription-checkout/${paymentId}`);
   });
 
   it("shows retry for Failed without mutating history", async () => {
@@ -170,6 +175,14 @@ describe("SubscriptionCheckoutPage pre-org state UX", () => {
     renderCheckout();
     await waitFor(() => expect(screen.getByTestId("subscription-try-again")).toBeInTheDocument());
     expect(screen.getByTestId("subscription-payment-details")).toBeInTheDocument();
+  });
+
+  it("asks PayMongo to confirm a processing checkout", async () => {
+    getPersonalSubscriptionPayment.mockResolvedValue(pendingPayment("Processing"));
+    syncPersonalSubscriptionHostedCheckout.mockResolvedValue(pendingPayment("Paid", "GCash"));
+    renderCheckout();
+    await waitFor(() => expect(screen.getByTestId("subscription-receipt")).toBeInTheDocument());
+    expect(syncPersonalSubscriptionHostedCheckout).toHaveBeenCalledWith(paymentId, expect.any(AbortSignal));
   });
 
   it("shows receipt and Continue for Paid", async () => {

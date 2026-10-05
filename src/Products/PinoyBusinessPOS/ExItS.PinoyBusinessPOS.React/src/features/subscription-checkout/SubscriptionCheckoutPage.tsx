@@ -5,6 +5,7 @@ import {
   getPersonalSubscriptionPayment,
   retryPersonalSubscriptionPayment,
   startPersonalSubscriptionHostedCheckout,
+  syncPersonalSubscriptionHostedCheckout,
 } from "@/api/platform/subscription-payment-client";
 import { redirectToHostedCheckout } from "@/features/subscription-checkout/hosted-checkout-redirect";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,18 @@ import {
 } from "@/features/subscription-checkout/pending-subscription-checkout";
 import { useI18n } from "@/i18n/I18nProvider";
 
+async function loadCheckoutPayment(paymentId: string, signal: AbortSignal) {
+  const loaded = await getPersonalSubscriptionPayment(paymentId, signal);
+  if (!isProcessingStatus(loaded.status) || !loaded.providerReference) {
+    return loaded;
+  }
+  try {
+    return await syncPersonalSubscriptionHostedCheckout(paymentId, signal);
+  } catch {
+    return loaded;
+  }
+}
+
 function formatWhen(iso: string): string {
   try {
     return new Date(iso).toLocaleString();
@@ -47,7 +60,7 @@ export function SubscriptionCheckoutPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const paymentQuery = useQuery({
     queryKey: ["subscription-payment", "personal", paymentId],
-    queryFn: ({ signal }) => getPersonalSubscriptionPayment(paymentId, signal),
+    queryFn: ({ signal }) => loadCheckoutPayment(paymentId, signal),
     enabled: Boolean(paymentId),
     refetchInterval: (query) => {
       const status = query.state.data?.status;

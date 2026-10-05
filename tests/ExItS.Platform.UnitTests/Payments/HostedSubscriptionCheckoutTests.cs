@@ -237,6 +237,7 @@ public sealed class HostedSubscriptionCheckoutTests
         var sync = new SyncHostedSubscriptionCheckout(
             repo,
             gateway,
+            new ApplyTrustedHostedCheckoutPayment(repo, activator, new MemoryUnitOfWork(), new FixedClock(Now)),
             new MemoryUnitOfWork(),
             new FixedClock(Now));
 
@@ -249,7 +250,7 @@ public sealed class HostedSubscriptionCheckoutTests
     }
 
     [Fact]
-    public async Task Browser_return_sync_does_not_activate_when_provider_reports_paid()
+    public async Task Browser_return_sync_records_paid_when_provider_reports_paid()
     {
         var gateway = new FakeGateway
         {
@@ -259,15 +260,52 @@ public sealed class HostedSubscriptionCheckoutTests
         var payment = Pending(null);
         payment.AttachHostedCheckout("cs_test_1", "https://checkout.paymongo.test/cs_test_1", Now);
         await repo.AddAsync(payment);
-        var sync = new SyncHostedSubscriptionCheckout(repo, gateway, new MemoryUnitOfWork(), new FixedClock(Now));
+        var activator = new CountingActivator();
+        var sync = new SyncHostedSubscriptionCheckout(
+            repo,
+            gateway,
+            new ApplyTrustedHostedCheckoutPayment(repo, activator, new MemoryUnitOfWork(), new FixedClock(Now)),
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
 
         var result = await sync.ExecuteAsync(payment.Id.Value, UserId, expectedOrganizationId: null);
+        var repeat = await sync.ExecuteAsync(payment.Id.Value, UserId, expectedOrganizationId: null);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(SubscriptionPaymentStatus.Processing.ToString(), result.Value!.Status);
+        Assert.True(repeat.IsSuccess);
+        Assert.Equal(SubscriptionPaymentStatus.Paid.ToString(), result.Value!.Status);
+        Assert.Equal(SubscriptionPaymentStatus.Paid.ToString(), repeat.Value!.Status);
         Assert.False(result.Value.SubscriptionActivated);
-        Assert.Equal(SubscriptionPaymentStatus.Processing, payment.Status);
+        Assert.Equal(SubscriptionPaymentStatus.Paid, payment.Status);
+        Assert.Equal(0, activator.Calls);
         Assert.Equal(1, gateway.GetCount);
+    }
+
+    [Fact]
+    public async Task Browser_return_sync_activates_an_organization_when_provider_reports_paid()
+    {
+        var gateway = new FakeGateway
+        {
+            SessionState = new HostedCheckoutProviderState("cs_test_1", true, false, false, 1499m, "PHP", "pay_1"),
+        };
+        var repo = new MemoryPayments();
+        var payment = Pending(OrgId);
+        payment.AttachHostedCheckout("cs_test_1", "https://checkout.paymongo.test/cs_test_1", Now);
+        await repo.AddAsync(payment);
+        var activator = new CountingActivator();
+        var sync = new SyncHostedSubscriptionCheckout(
+            repo,
+            gateway,
+            new ApplyTrustedHostedCheckoutPayment(repo, activator, new MemoryUnitOfWork(), new FixedClock(Now)),
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var result = await sync.ExecuteAsync(payment.Id.Value, UserId, OrgId.Value);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SubscriptionPaymentStatus.Paid.ToString(), result.Value!.Status);
+        Assert.True(result.Value.SubscriptionActivated);
+        Assert.Equal(1, activator.Calls);
     }
 
     [Fact]

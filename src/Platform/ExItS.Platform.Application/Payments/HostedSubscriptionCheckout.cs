@@ -588,6 +588,7 @@ public sealed class ApplyTrustedHostedCheckoutPayment(
 public sealed class SyncHostedSubscriptionCheckout(
     ISubscriptionPaymentTransactionRepository payments,
     ISubscriptionCheckoutGateway gateway,
+    ApplyTrustedHostedCheckoutPayment applyPaid,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -642,8 +643,23 @@ public sealed class SyncHostedSubscriptionCheckout(
 
         if (state.IsPaid)
         {
-            return ApplicationResult<SubscriptionPaymentTransactionDto>.Success(
-                SubscriptionPaymentMapping.ToDto(payment));
+            if (state.PaidAmount is not decimal paidAmount || string.IsNullOrWhiteSpace(state.CurrencyCode))
+            {
+                return ApplicationResult<SubscriptionPaymentTransactionDto>.Success(
+                    SubscriptionPaymentMapping.ToDto(payment));
+            }
+
+            var providerEventId = string.IsNullOrWhiteSpace(state.ProviderPaymentId)
+                ? $"browser-return:{payment.ProviderReference}"
+                : $"browser-return:{state.ProviderPaymentId}";
+            return await applyPaid
+                .ExecuteAsync(
+                    payment.ProviderReference,
+                    paidAmount,
+                    state.CurrencyCode,
+                    providerEventId,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
         var utcNow = clock.UtcNow;
