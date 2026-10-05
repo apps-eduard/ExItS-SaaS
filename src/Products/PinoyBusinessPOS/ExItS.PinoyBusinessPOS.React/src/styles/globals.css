@@ -26889,6 +26889,116 @@ html[data-motion="reduced"] .exits-tooltip {
   background: #fff;
 }
 
+.org-audit-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .org-audit-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .org-audit-filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.org-audit-filters .exits-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.org-audit-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.org-audit-table {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .org-audit-list {
+    display: none;
+  }
+
+  .org-audit-table {
+    display: block;
+  }
+}
+
+.org-audit-table .exits-table__cell,
+.org-audit-table .exits-table__head {
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.org-audit-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 70%, transparent);
+}
+
+.org-audit-entry:first-child {
+  padding-top: 0;
+}
+
+.org-audit-entry:last-child {
+  border-bottom: none;
+  padding-bottom: 0.15rem;
+}
+
+.org-audit-entry__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.org-audit-entry__when {
+  color: var(--exits-muted);
+  font-size: var(--exits-text-sm);
+}
+
+.org-audit-entry__action {
+  margin: 0;
+  font-size: var(--exits-text-md);
+  font-weight: var(--exits-font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.org-audit-entry__meta,
+.org-audit-entry__summary {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.org-audit-entry__meta {
+  color: var(--exits-muted);
+  font-size: var(--exits-text-sm);
+}
+
+.org-audit-log .exits-table-pagination {
+  margin-inline: -0.875rem;
+  margin-bottom: -0.875rem;
+  padding-inline: 0.875rem;
+}
+
 .org-profile-identity__row {
   display: flex;
   align-items: center;
