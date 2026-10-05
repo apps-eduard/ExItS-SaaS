@@ -95,7 +95,8 @@ type WorkspaceContextValue = {
   /**
    * Server PosDeviceAuthorization.EnforcementEnabled.
    * null = not loaded yet (UX treats enforcement as on / fail-closed).
-   * false = temporary PWA Local Validation pause — money UX skips device gate.
+   * false = website — device registration is disabled.
+   * true = Capacitor Android/iOS — a registered device is required.
    */
   deviceEnforcementEnabled: boolean | null;
   /** Re-run durable identity + Platform authorize for the bound org/branch. */

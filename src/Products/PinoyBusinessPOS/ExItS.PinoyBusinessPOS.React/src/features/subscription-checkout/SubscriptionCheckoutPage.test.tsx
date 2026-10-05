@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import { SubscriptionCheckoutPage } from "@/features/subscription-checkout/SubscriptionCheckoutPage";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -147,18 +148,18 @@ describe("SubscriptionCheckoutPage pre-org state UX", () => {
     expect(startPersonalSubscriptionHostedCheckout).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a checkout failure without redirecting", async () => {
+  it("does not offer the local test payment page when the provider is not configured", async () => {
     getPersonalSubscriptionPayment.mockResolvedValue(pendingPayment("Pending"));
-    startPersonalSubscriptionHostedCheckout.mockRejectedValue(new Error("provider down"));
+    startPersonalSubscriptionHostedCheckout.mockRejectedValue(
+      new PlatformApiError(503, {
+        detail: "Subscription payments are not configured.",
+        errorCode: "application.payment.not_configured",
+      }),
+    );
     renderCheckout();
     await userEvent.click(await screen.findByTestId("subscription-continue-secure"));
-    expect(await screen.findByText("provider down")).toBeInTheDocument();
-    expect(redirectToHostedCheckout).not.toHaveBeenCalled();
-    expect(screen.getByTestId("subscription-continue-secure")).toBeEnabled();
-  });
-
-  it("stays on checkout for Processing", async () => {
-    getPersonalSubscriptionPayment.mockResolvedValue(pendingPayment("Processing", "GCash"));
+    expect(await screen.findByText("Subscription payments are not configured.")).toBeInTheDocument();
+    expect(screen.queryByTestId("subscription-simulator-methods")).not.toBeInTheDocument();
     const router = renderCheckout();
     await waitFor(() => expect(screen.getByTestId("subscription-refresh-status")).toBeInTheDocument());
     expect(router.state.location.pathname).toBe(`/subscription-checkout/${paymentId}`);

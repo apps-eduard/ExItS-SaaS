@@ -3420,7 +3420,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "devices.currentDevice.revokedTitle": "This browser was revoked",
 
-  "devices.currentDevice.unregisteredDetailOptional": "Registration is optional on the web version. Selling does not require it while device checks are paused.",
+  "devices.currentDevice.unregisteredDetailOptional": "Indi magparehistro sini nga browser ang website. Puydi gihapon magbaligya diri.",
 
   "devices.currentDevice.unregisteredTitle": "This browser is not registered",
 
@@ -3430,11 +3430,11 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "devices.deviceNameLabel": "Ngalan sa device",
 
-  "devices.empty": "No registered devices yet. Registration is optional on the web version.",
+  "devices.empty": "Wala pa sang nakarehistro nga device. Indi magparehistro sang device ang website.",
 
-  "devices.emptyOptionalDetail": "You can sell without registering. Use Register this browser only for testing or future installed-app control.",
+  "devices.emptyOptionalDetail": "Ang mga phone kag tablet magparehistro halin sa Android kag iOS app.",
 
-  "devices.enforcementPausedHint": "Web version: device registration is optional. Selling does not require a registered browser. Capacity and registration remain for testing and for the future installed app.",
+  "devices.enforcementPausedHint": "Naka-off ang rehistrasyon sang device sa website. Mabukas lang ini sa Android kag iOS app.",
 
   "devices.identityUnavailable": "Indi makatipig ini nga browser sang durable installation id. I-enable ang storage kag tilawi liwat.",
 
@@ -8757,7 +8757,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.explore.startTrial": "Sugodi ang trial",
 
-  "personal.explore.subscribe": "Mag-subscribe (Local Validation)",
+  "personal.explore.subscribe": "Magsuksukribir",
 
   "personal.explore.title": "Tilawi ang POS plans",
 
@@ -9035,7 +9035,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.home.activeMine": "Akon aktibo",
 
-  "personal.home.activeShared": "Gin-share sa akon",
+  "personal.home.activeShared": "Gin-ambit nga info",
 
   "personal.home.attentionDueSoon": "{count} payments due soon",
 
@@ -11257,7 +11257,13 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.willIncreaseStock": "Confirming will increase inventory now.",
 
-  "pwa.refresh": "I-refresh",
+  "pwa.refresh": "I-refresh subong",
+  "pwa.updateTitle": "I-refresh agod makuha ang lab-as nga bersyon",
+  "pwa.updateBody":
+    "Handa na ang bag-o nga bersyon sang ExItS sa ini nga device. I-refresh subong agod ma-load ini. Magapabilin ka nga naka-sign in, kag madali lang ini.",
+  "pwa.updateSaleBody":
+    "May bukas pa nga baligya sa ini nga screen. Tapusa anay ini, dayon i-refresh. Kon i-refresh mo subong, mabalda ang amo nga baligya.",
+  "pwa.continueSale": "Ipadayon ini nga baligya",
 
   "pwa.updateAvailable": "May update",
 

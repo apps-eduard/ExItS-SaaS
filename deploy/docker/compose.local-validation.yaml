@@ -165,6 +165,7 @@ services:
       LocalValidation__Enabled: "true"
       LocalValidation__PlatformApiBaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
       PlatformAuth__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      PosDeviceAuthorization__EnforcementEnabled: "false"
     ports:
       - "${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080"
     networks:

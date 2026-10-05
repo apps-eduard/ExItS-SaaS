@@ -302,7 +302,7 @@ export function PersonalHomePage() {
                     shape={UTANG_OWNERSHIP_SHARED.shape}
                     data-testid="personal-stat-lent-shared-label"
                   >
-                    {t("personal.utang.ownershipSharedWithMe")}
+                    {t("personal.home.activeShared")}
                   </StatusChip>
                 }
                 icon={HandCoins}
@@ -359,7 +359,7 @@ export function PersonalHomePage() {
                     shape={UTANG_OWNERSHIP_SHARED.shape}
                     data-testid="personal-stat-borrowed-shared-label"
                   >
-                    {t("personal.utang.ownershipSharedWithMe")}
+                    {t("personal.home.activeShared")}
                   </StatusChip>
                 }
                 icon={Wallet}

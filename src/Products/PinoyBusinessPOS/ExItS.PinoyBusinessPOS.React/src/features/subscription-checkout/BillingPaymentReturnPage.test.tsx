@@ -96,6 +96,11 @@ describe("BillingPaymentReturnPage", () => {
     expect(await screen.findByTestId("billing-payment-paid")).toHaveTextContent(
       "Your subscription is active.",
     );
+    const continueLink = screen.getByTestId("billing-payment-continue");
+    expect(continueLink).toHaveTextContent("Continue");
+    expect(continueLink).toHaveAttribute("href", expect.stringContaining("/personal/start-business"));
+    expect(continueLink.getAttribute("href")).toContain(`paymentId=${paymentId}`);
+    expect(screen.queryByTestId("billing-payment-try-again")).not.toBeInTheDocument();
   });
 
   it("shows a failed payment separately from cancellation", async () => {

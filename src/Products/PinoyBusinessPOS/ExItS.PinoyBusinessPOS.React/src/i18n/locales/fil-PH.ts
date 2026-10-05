@@ -3376,7 +3376,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "devices.currentDevice.revokedTitle": "This browser was revoked",
 
-  "devices.currentDevice.unregisteredDetailOptional": "Registration is optional on the web version. Selling does not require it while device checks are paused.",
+  "devices.currentDevice.unregisteredDetailOptional": "Hindi nagrerehistro ng browser na ito ang website. Puwede pa ring magbenta dito.",
 
   "devices.currentDevice.unregisteredTitle": "This browser is not registered",
 
@@ -3386,11 +3386,11 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "devices.deviceNameLabel": "Pangalan ng device",
 
-  "devices.empty": "No registered devices yet. Registration is optional on the web version.",
+  "devices.empty": "Wala pang rehistradong device. Hindi nagrerehistro ng device ang website.",
 
-  "devices.emptyOptionalDetail": "You can sell without registering. Use Register this browser only for testing or future installed-app control.",
+  "devices.emptyOptionalDetail": "Ang mga phone at tablet ay magrerehistro mula sa Android at iOS app.",
 
-  "devices.enforcementPausedHint": "Web version: device registration is optional. Selling does not require a registered browser. Capacity and registration remain for testing and for the future installed app.",
+  "devices.enforcementPausedHint": "Naka-off ang rehistrasyon ng device sa website. Bubukas lang ito sa Android at iOS app.",
 
   "devices.identityUnavailable": "Hindi makapag-store ang browser na ito ng durable installation id. I-enable ang storage at subukan ulit.",
 
@@ -8724,7 +8724,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "personal.explore.startTrial": "Start trial",
 
-  "personal.explore.subscribe": "Subscribe (Local Validation)",
+  "personal.explore.subscribe": "Mag-subscribe",
 
   "personal.explore.title": "Explore POS plans",
 
@@ -9002,7 +9002,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "personal.home.activeMine": "Aking aktibo",
 
-  "personal.home.activeShared": "Na-share sa akin",
+  "personal.home.activeShared": "Ibinahaging info",
 
   "personal.home.attentionDueSoon": "{count} bayad ang malapit nang due",
 
@@ -11318,7 +11318,13 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.willIncreaseStock": "Ang pag-confirm ay magdadagdag ng inventory ngayon.",
 
-  "pwa.refresh": "I-refresh",
+  "pwa.refresh": "I-refresh ngayon",
+  "pwa.updateTitle": "I-refresh para sa pinakabagong bersyon",
+  "pwa.updateBody":
+    "May bagong bersyon ng ExItS sa device na ito. I-refresh ngayon para ma-load ito. Mananatili kang naka-sign in, at sandali lang ito.",
+  "pwa.updateSaleBody":
+    "May bukas pang benta sa screen na ito. Tapusin muna iyon, saka mag-refresh. Kapag nag-refresh ngayon, maaantala ang bentang iyon.",
+  "pwa.continueSale": "Ituloy ang bentang ito",
 
   "pwa.updateAvailable": "May update",
 

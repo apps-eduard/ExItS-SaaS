@@ -23748,6 +23748,12 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
+@media (max-width: 639px) {
+  .personal-home-page .dashboard-metric-card__tag {
+    display: none;
+  }
+}
+
 @media (min-width: 640px) {
   .personal-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));

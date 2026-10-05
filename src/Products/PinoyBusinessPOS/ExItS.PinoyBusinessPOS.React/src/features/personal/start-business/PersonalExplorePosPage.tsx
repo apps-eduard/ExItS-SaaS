@@ -8,7 +8,6 @@ import {
 } from "@/api/platform/commercial-plans-client";
 import { createPersonalSubscriptionPayment } from "@/api/platform/subscription-payment-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
-import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -66,7 +65,7 @@ function ctaLabel(
     case "downgrade":
       return t("personal.explore.cta.change").replace("{plan}", displayName);
     default:
-      return t("personal.explore.cta.choose").replace("{plan}", displayName);
+      return t("personal.explore.subscribe");
   }
 }
 
@@ -117,7 +116,6 @@ function billingToggleSecondary(
 export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPageProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const localValidation = isFrontendLocalValidationMode();
   const [billing, setBilling] = useState<PlanBillingCycle>("Monthly");
   const [compareOpen, setCompareOpen] = useState(false);
   const compareRef = useRef<HTMLDivElement>(null);
@@ -443,6 +441,7 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                               {trialAvailable ? (
                                 <Button
                                   type="button"
+                                  variant="ghost"
                                   data-testid={`explore-start-trial-${planKey}`}
                                   onClick={() =>
                                     navigate(
@@ -453,30 +452,22 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                                   {t("personal.explore.startTrial")}
                                 </Button>
                               ) : null}
-                              {localValidation ? (
-                                <Button
-                                  type="button"
-                                  variant={trialAvailable ? "ghost" : "default"}
-                                  data-testid={`explore-subscribe-${planKey}`}
-                                  disabled={startCheckoutMutation.isPending}
-                                  onClick={() => {
-                                    setCheckoutPlanKey(planKey);
-                                    startCheckoutMutation.mutate({
-                                      planKey,
-                                      billingCycle: billing,
-                                    });
-                                  }}
-                                >
-                                  {startCheckoutMutation.isPending && checkoutPlanKey === planKey
-                                    ? t("subscriptionCheckout.processing")
-                                    : ctaLabel(ctaKind, plan.displayName, t)}
-                                </Button>
-                              ) : null}
-                              {!trialAvailable && !localValidation ? (
-                                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                                  {t("personal.explore.paymentUnavailable")}
-                                </p>
-                              ) : null}
+                              <Button
+                                type="button"
+                                data-testid={`explore-subscribe-${planKey}`}
+                                disabled={startCheckoutMutation.isPending}
+                                onClick={() => {
+                                  setCheckoutPlanKey(planKey);
+                                  startCheckoutMutation.mutate({
+                                    planKey,
+                                    billingCycle: billing,
+                                  });
+                                }}
+                              >
+                                {startCheckoutMutation.isPending && checkoutPlanKey === planKey
+                                  ? t("subscriptionCheckout.processing")
+                                  : ctaLabel(ctaKind, plan.displayName, t)}
+                              </Button>
                             </>
                           )}
                         </div>
@@ -556,14 +547,6 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
               ) : null}
             </div>
 
-            {!localValidation ? (
-              <p
-                className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-                data-testid="explore-payment-note"
-              >
-                {t("personal.explore.paymentNote")}
-              </p>
-            ) : null}
           </>
         )}
       </div>

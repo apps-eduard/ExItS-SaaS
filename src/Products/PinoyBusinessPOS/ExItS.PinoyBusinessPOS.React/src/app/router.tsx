@@ -23,7 +23,6 @@ import { PersonalStartBusinessPage } from "@/features/personal/start-business/Pe
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
 import { SubscriptionCheckoutPage } from "@/features/subscription-checkout/SubscriptionCheckoutPage";
-import { SubscriptionPaymentSimulatorPage } from "@/features/subscription-checkout/SubscriptionPaymentSimulatorPage";
 import { PaymentResultPage } from "@/features/subscription-checkout/PaymentResultPage";
 import { BillingPaymentReturnPage } from "@/features/subscription-checkout/BillingPaymentReturnPage";
 import { PreOrgCheckoutShell } from "@/features/subscription-checkout/PreOrgCheckoutShell";
@@ -387,7 +386,6 @@ export const appRoutes = [
         children: [
           { path: ":paymentId", element: <SubscriptionCheckoutPage /> },
           { path: ":paymentId/result", element: <PaymentResultPage /> },
-          { path: ":paymentId/:channel", element: <SubscriptionPaymentSimulatorPage /> },
         ],
       },
       {

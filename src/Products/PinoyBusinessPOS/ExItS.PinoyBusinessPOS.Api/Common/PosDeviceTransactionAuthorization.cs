@@ -37,13 +37,21 @@ internal sealed class PosDeviceTransactionAuthorizer(
 
     public async Task<IResult?> EnsureAuthorizedAsync(HttpRequest request, Guid organizationId, CancellationToken ct)
     {
-        // Pure React PWA: Local Validation sets EnforcementEnabled=false so browsers need not register.
-        // Re-enable with PosDeviceAuthorization__EnforcementEnabled=true for Capacitor/native.
+        // Web/PWA keeps EnforcementEnabled=false: device registration is off.
+        // Capacitor Android/iOS sets EnforcementEnabled=true and always requires a device.
         if (!deviceAuthorizationOptions.Value.EnforcementEnabled)
         {
             return null;
         }
 
+        return await EnsureRegisteredInstallationAsync(request, organizationId, ct).ConfigureAwait(false);
+    }
+
+    private async Task<IResult?> EnsureRegisteredInstallationAsync(
+        HttpRequest request,
+        Guid organizationId,
+        CancellationToken ct)
+    {
         var deviceId = request.Headers[DeviceHeaderName].FirstOrDefault()?.Trim();
         if (string.IsNullOrWhiteSpace(deviceId))
         {

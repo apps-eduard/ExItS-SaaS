@@ -1147,7 +1147,13 @@ export const en = {
   "shell.needsAttention.branchInfo": "Required branch info incomplete",
   "shell.needsAttention.branchInfoReason": "Complete required branch details",
   "pwa.updateAvailable": "Update available",
-  "pwa.refresh": "Refresh",
+  "pwa.updateTitle": "Refresh to get the latest version",
+  "pwa.updateBody":
+    "A new version of ExItS is ready on this device. Refresh now to load it. You stay signed in, and this only takes a moment.",
+  "pwa.updateSaleBody":
+    "A sale is still open on this screen. Finish that sale first, then refresh. Refreshing now would interrupt it.",
+  "pwa.continueSale": "Continue this sale",
+  "pwa.refresh": "Refresh now",
   "notFound.title": "Page not found",
   "notFound.detail": "That route is not part of this foundation.",
   "notFound.home": "Back to home",
@@ -1821,7 +1827,7 @@ export const en = {
   "personal.home.people": "People",
   "personal.home.active": "Active",
   "personal.home.activeMine": "My active",
-  "personal.home.activeShared": "Shared with me",
+  "personal.home.activeShared": "Shared info",
   "personal.home.quickActions": "Quick actions",
   "personal.home.actionStartBusiness": "Start a Business",
   "personal.home.actionLent": "Money I lent",
@@ -2888,7 +2894,7 @@ export const en = {
   "personal.explore.compare.yes": "Included",
   "personal.explore.compare.no": "Not included",
   "personal.explore.startTrial": "Start trial",
-  "personal.explore.subscribe": "Subscribe (Local Validation)",
+  "personal.explore.subscribe": "Subscribe",
   "personal.explore.paymentUnavailable":
     "Paid subscribe is not available without a configured payment provider.",
   "personal.explore.paymentNote":
@@ -3904,7 +3910,7 @@ export const en = {
   "devices.listLede":
     "Optional list of phones, tablets, or browsers marked for this organization. Separate from cash registers used for shifts.",
   "devices.enforcementPausedHint":
-    "Web version: device registration is optional. Selling, cash registers, and shifts do not require a registered browser. Use Manage devices only when you want device history or testing.",
+    "Device registration is turned off on the website. It turns on only in the Android and iOS app.",
   "devices.deniedDetail": "Only organization owners and administrators can manage authorized devices.",
   "devices.backOrg": "Back to organization",
   "devices.backDevices": "Back to authorized devices",
@@ -3927,9 +3933,9 @@ export const en = {
   "devices.registerError": "Could not register this browser.",
   "devices.creatingCode": "Creating code?",
   "devices.loadError": "Could not load authorized devices.",
-  "devices.empty": "No registered devices yet. Registration is optional on the web version.",
+  "devices.empty": "No registered devices yet. The website does not register devices.",
   "devices.emptyOptionalDetail":
-    "You can sell without registering. Use Register this browser only for testing or future installed-app control.",
+    "Phones and tablets register from the Android and iOS app.",
   "devices.identityUnavailable":
     "This browser cannot store a durable installation id. Enable storage and try again.",
   "devices.defaultBrowserName": "Browser POS",
@@ -3977,7 +3983,7 @@ export const en = {
   "devices.currentDevice.registerAgain": "Register this browser",
   "devices.currentDevice.unregisteredTitle": "This browser is not registered",
   "devices.currentDevice.unregisteredDetailOptional":
-    "Registration is optional on the web version. Selling does not require it while device checks are paused.",
+    "This website does not register this browser. Selling stays available here.",
   "devices.lastUsed": "Last used",
   "devices.registeredOn": "Registered",
   "devices.revokedOn": "Revoked",

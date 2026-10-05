@@ -24,3 +24,27 @@ export function applyPwaUpdateIfAllowed(
   apply();
   return true;
 }
+
+/** Apply now, or as soon as the cart guard allows it. No prompt. */
+export function applyPwaUpdateWhenAllowed(
+  apply: () => void,
+  guard: PwaUpdateApplyGuard = canApplyPwaUpdate,
+  waitMs = 1000,
+  schedule: (callback: () => void, delayMs: number) => number = (callback, delayMs) =>
+    window.setTimeout(callback, delayMs),
+): () => void {
+  let stopped = false;
+  const tick = () => {
+    if (stopped) {
+      return;
+    }
+    if (applyPwaUpdateIfAllowed(apply, guard)) {
+      return;
+    }
+    schedule(tick, waitMs);
+  };
+  tick();
+  return () => {
+    stopped = true;
+  };
+}

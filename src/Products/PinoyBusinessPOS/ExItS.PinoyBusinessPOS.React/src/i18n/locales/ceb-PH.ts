@@ -3420,7 +3420,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "devices.currentDevice.revokedTitle": "This browser was revoked",
 
-  "devices.currentDevice.unregisteredDetailOptional": "Registration is optional on the web version. Selling does not require it while device checks are paused.",
+  "devices.currentDevice.unregisteredDetailOptional": "Dili magparehistro niini nga browser ang website. Puydi gihapon magbaligya dinhi.",
 
   "devices.currentDevice.unregisteredTitle": "This browser is not registered",
 
@@ -3430,11 +3430,11 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "devices.deviceNameLabel": "Ngalan sa device",
 
-  "devices.empty": "No registered devices yet. Registration is optional on the web version.",
+  "devices.empty": "Wala pay naka-register nga device. Dili magparehistro og device ang website.",
 
-  "devices.emptyOptionalDetail": "You can sell without registering. Use Register this browser only for testing or future installed-app control.",
+  "devices.emptyOptionalDetail": "Ang mga phone ug tablet magparehistro gikan sa Android ug iOS app.",
 
-  "devices.enforcementPausedHint": "Web version: device registration is optional. Selling does not require a registered browser. Capacity and registration remain for testing and for the future installed app.",
+  "devices.enforcementPausedHint": "Naka-off ang rehistrasyon sa device sa website. Moabli ra kini sa Android ug iOS app.",
 
   "devices.identityUnavailable": "Dili makatipig kini nga browser og durable installation id. I-enable ang storage ug sulayi pag-usab.",
 
@@ -8757,7 +8757,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "personal.explore.startTrial": "Sugdi ang trial",
 
-  "personal.explore.subscribe": "Mag-subscribe (Local Validation)",
+  "personal.explore.subscribe": "Magsuskribir",
 
   "personal.explore.title": "Susiha ang POS plans",
 
@@ -9035,7 +9035,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "personal.home.activeMine": "Akong aktibo",
 
-  "personal.home.activeShared": "Gi-share nako",
+  "personal.home.activeShared": "Gi-share nga info",
 
   "personal.home.attentionDueSoon": "{count} payments due soon",
 
@@ -11257,7 +11257,13 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.willIncreaseStock": "Confirming will increase inventory now.",
 
-  "pwa.refresh": "I-refresh",
+  "pwa.refresh": "I-refresh karon",
+  "pwa.updateTitle": "I-refresh aron makuha ang lab-as nga bersyon",
+  "pwa.updateBody":
+    "Andam na ang bag-ong bersyon sa ExItS niini nga device. I-refresh karon aron ma-load kini. Magpabilin ka nga naka-sign in, ug dali ra kini.",
+  "pwa.updateSaleBody":
+    "Adunay bukas pa nga baligya niini nga screen. Human-a una kini, unya i-refresh. Kung i-refresh nimo karon, mabalda ang maong baligya.",
+  "pwa.continueSale": "Ipadayon kini nga baligya",
 
   "pwa.updateAvailable": "Adunay update",
 

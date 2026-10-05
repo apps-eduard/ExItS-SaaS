@@ -1,25 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { applyPwaUpdateIfAllowed, canApplyPwaUpdate } from "@/pwa/apply-pwa-update";
 import { PwaUpdateNotice } from "@/pwa/PwaUpdateNotice";
 
 export const POS_PWA_NEED_REFRESH_EVENT = "exits-pos:pwa-need-refresh";
 
+const UPDATE_CHECK_MS = 60_000;
+
 export function PwaUpdateHost() {
-  const [visible, setVisible] = useState(false);
   const [listening, setListening] = useState(false);
-  const [applyUpdate, setApplyUpdate] = useState<(() => void) | null>(null);
-  const applyingRef = useRef(false);
+  const [updateReady, setUpdateReady] = useState(false);
+  const updateRef = useRef<((reloadPage?: boolean) => Promise<void>) | null>(null);
+  const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
-    const showNotice = () => {
-      if (!cancelled) {
-        setVisible(true);
-      }
-    };
-
-    window.addEventListener(POS_PWA_NEED_REFRESH_EVENT, showNotice);
     setListening(true);
 
     // Never register a service worker during Vite development — a leftover
@@ -27,9 +20,11 @@ export function PwaUpdateHost() {
     if (import.meta.env.DEV) {
       return () => {
         cancelled = true;
-        window.removeEventListener(POS_PWA_NEED_REFRESH_EVENT, showNotice);
       };
     }
+
+    const showUpdate = () => setUpdateReady(true);
+    window.addEventListener(POS_PWA_NEED_REFRESH_EVENT, showUpdate);
 
     void import("virtual:pwa-register")
       .then(({ registerSW }) => {
@@ -37,15 +32,23 @@ export function PwaUpdateHost() {
           return;
         }
         try {
-          const updateServiceWorker = registerSW({
+          updateRef.current = registerSW({
             immediate: true,
-            onNeedRefresh: showNotice,
+            onNeedRefresh() {
+              setUpdateReady(true);
+            },
+            onRegisteredSW(_swUrl, registration) {
+              if (!registration) {
+                return;
+              }
+              const check = () => {
+                void registration.update().catch(() => undefined);
+              };
+              pollRef.current = window.setInterval(check, UPDATE_CHECK_MS);
+            },
             onRegisterError() {
               // Keep the product shell; registration failure is not fatal.
             },
-          });
-          setApplyUpdate(() => () => {
-            void updateServiceWorker(true);
           });
         } catch {
           // App remains usable without an installable worker.
@@ -57,7 +60,10 @@ export function PwaUpdateHost() {
 
     return () => {
       cancelled = true;
-      window.removeEventListener(POS_PWA_NEED_REFRESH_EVENT, showNotice);
+      window.removeEventListener(POS_PWA_NEED_REFRESH_EVENT, showUpdate);
+      if (pollRef.current !== null) {
+        window.clearInterval(pollRef.current);
+      }
     };
   }, []);
 
@@ -65,22 +71,10 @@ export function PwaUpdateHost() {
     <>
       <span hidden data-testid="pwa-update-host" data-ready={listening ? "true" : "false"} />
       <PwaUpdateNotice
-        visible={visible}
+        visible={updateReady}
         onRefresh={() => {
-          if (applyingRef.current) {
-            return;
-          }
-          applyingRef.current = true;
-          if (!applyUpdate) {
-            applyingRef.current = false;
-            return;
-          }
-          const applied = applyPwaUpdateIfAllowed(applyUpdate, canApplyPwaUpdate);
-          if (!applied) {
-            applyingRef.current = false;
-          }
+          void updateRef.current?.(true);
         }}
-        guard={canApplyPwaUpdate}
       />
     </>
   );

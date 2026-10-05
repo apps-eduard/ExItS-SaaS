@@ -29,7 +29,8 @@ export function DeviceRegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromSell = searchParams.get("from") === "sell";
-  const { boundWorkspace, workspaces, refreshPosDevice, sessionGrant } = useWorkspace();
+  const { boundWorkspace, workspaces, refreshPosDevice, sessionGrant, deviceEnforcementEnabled } =
+    useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
   const boundBranchId = boundWorkspace?.branchId ?? "";
   const branchLocked = Boolean(boundBranchId);
@@ -109,6 +110,23 @@ export function DeviceRegisterPage() {
       setError(describePosApiError(err, t, "devices.registerError"));
     },
   });
+
+  if (deviceEnforcementEnabled === false) {
+    return (
+      <div
+        data-testid="device-register-page"
+        className="device-register-page exits-page flex min-w-0 flex-col gap-3"
+      >
+        <PageHeader
+          title={t("devices.registerTitle")}
+          description={t("devices.enforcementPausedHint")}
+          backTo={pageBackNav.orgDevices.to}
+          backLabel={t(pageBackNav.orgDevices.labelKey)}
+          backTestId="page-header-back-org"
+        />
+      </div>
+    );
+  }
 
   return (
     <div

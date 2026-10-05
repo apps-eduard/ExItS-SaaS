@@ -119,24 +119,50 @@ describe("PWA update notice", () => {
       UI_PREFERENCES_STORAGE_KEY,
       JSON.stringify({ theme: "light", locale: "fil-PH" }),
     );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("requires an explicit Refresh and never auto-applies", async () => {
+    const user = userEvent.setup();
+    const onRefresh = vi.fn();
+    render(
+      <AppProviders>
+        <PwaUpdateNotice visible onRefresh={onRefresh} />
+      </AppProviders>,
+    );
+    expect(onRefresh).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Refresh to get the latest version");
+    expect(dialog).toHaveTextContent("A new version of ExItS is ready on this device.");
+    await user.click(screen.getByRole("button", { name: "Refresh now" }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows Filipino copy", () => {
+    window.localStorage.setItem(
+      UI_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({ theme: "light", locale: "fil-PH" }),
+    );
     render(
       <AppProviders>
         <PwaUpdateNotice visible onRefresh={vi.fn()} />
       </AppProviders>,
     );
-    expect(screen.getByRole("status")).toHaveTextContent("May update");
-    expect(screen.getByRole("button", { name: "I-refresh" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveTextContent("I-refresh para sa pinakabagong bersyon");
+    expect(screen.getByRole("button", { name: "I-refresh ngayon" })).toBeInTheDocument();
   });
 
-  it("respects a future unsaved-work guard", async () => {
-    const user = userEvent.setup();
+  it("offers only refresh and cannot be postponed", () => {
     const onRefresh = vi.fn();
     render(
       <AppProviders>
         <PwaUpdateNotice visible onRefresh={onRefresh} guard={() => false} />
       </AppProviders>,
     );
-    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Refresh to get the latest version");
+    expect(screen.getByRole("button", { name: "Refresh now" })).toBeEnabled();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(onRefresh).not.toHaveBeenCalled();
   });
 });

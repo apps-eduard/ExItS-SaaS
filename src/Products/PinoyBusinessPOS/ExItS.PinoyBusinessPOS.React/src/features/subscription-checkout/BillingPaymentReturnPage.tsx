@@ -17,6 +17,7 @@ import {
   isCancelledStatus,
   isFailedStatus,
   isPaidStatus,
+  startBusinessAfterPaidPath,
 } from "@/features/subscription-checkout/checkout-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -60,9 +61,11 @@ export function BillingPaymentReturnPage({
 
   if (!paymentId) {
     return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-3" data-testid="billing-payment-missing">
-        <PageHeader title={t("billingPayment.failedTitle")} />
-        <ErrorState title={t("billingPayment.failedTitle")} detail={t("subscriptionCheckout.errorDetail")} />
+      <div className="flex w-full flex-col px-4 py-6 md:min-h-dvh md:items-center md:justify-center" data-testid="billing-payment-missing">
+        <div className="flex w-full max-w-xl flex-col gap-3">
+          <PageHeader title={t("billingPayment.failedTitle")} />
+          <ErrorState title={t("billingPayment.failedTitle")} detail={t("subscriptionCheckout.errorDetail")} />
+        </div>
       </div>
     );
   }
@@ -80,7 +83,8 @@ export function BillingPaymentReturnPage({
   const verifying = outcome === "success" && !paid && !failed && !cancelled && !delayed;
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-1" data-testid="billing-payment-return">
+    <div className="flex w-full flex-col px-4 py-6 md:min-h-dvh md:items-center md:justify-center" data-testid="billing-payment-return">
+      <div className="flex w-full max-w-xl flex-col gap-4">
       <PageHeader
         title={
           paid
@@ -132,16 +136,29 @@ export function BillingPaymentReturnPage({
       ) : null}
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button type="button" className="w-full sm:w-auto" asChild data-testid="billing-payment-try-again">
-          <Link to={payment ? `/subscription-checkout/${payment.id}` : "/personal/explore-pos"}>
-            {t("billingPayment.tryAgain")}
-          </Link>
-        </Button>
-        <Button type="button" variant="secondary" className="w-full sm:w-auto" asChild data-testid="billing-payment-back">
-          <Link to={organizationId ? "/org/subscription" : "/personal/explore-pos"}>
-            {t("billingPayment.backToBilling")}
-          </Link>
-        </Button>
+        {paid && payment ? (
+          <Button type="button" className="w-full sm:w-auto" asChild data-testid="billing-payment-continue">
+            <Link to={organizationId ? "/org/subscription" : startBusinessAfterPaidPath(payment)}>
+              {t("subscriptionCheckout.continueOnboarding")}
+            </Link>
+          </Button>
+        ) : (
+          <>
+            {failed || cancelled ? (
+              <Button type="button" className="w-full sm:w-auto" asChild data-testid="billing-payment-try-again">
+                <Link to={payment ? `/subscription-checkout/${payment.id}` : "/personal/explore-pos"}>
+                  {t("billingPayment.tryAgain")}
+                </Link>
+              </Button>
+            ) : null}
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" asChild data-testid="billing-payment-back">
+              <Link to={organizationId ? "/org/subscription" : "/personal/explore-pos"}>
+                {t("billingPayment.backToBilling")}
+              </Link>
+            </Button>
+          </>
+        )}
+      </div>
       </div>
     </div>
   );
