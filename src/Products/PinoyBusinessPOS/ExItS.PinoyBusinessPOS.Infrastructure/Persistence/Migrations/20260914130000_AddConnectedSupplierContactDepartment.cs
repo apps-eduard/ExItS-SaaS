@@ -26,10 +26,7 @@ public partial class AddConnectedSupplierContactDepartment : Migration
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.Sql(
-            """
-            ALTER TABLE pos.connected_supplier_relationships
-            DROP COLUMN IF EXISTS contact_department;
-            """);
+        // 20260914120000 owns contact_department. Dropping it here makes that
+        // migration's Down fail once this repair migration has already been reverted.
     }
 }
