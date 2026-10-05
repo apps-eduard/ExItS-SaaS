@@ -59,6 +59,7 @@ export const startBusinessResultSchema = z.object({
   paymentTransactionId: guidSchema.nullable().optional().default(null),
   paymentReferenceNumber: z.string().nullable().optional().default(null),
   requiresCheckout: z.boolean().optional().default(false),
+  reusedExistingOrganization: z.boolean().optional().default(false),
 });
 
 export type StartBusinessResultDto = z.infer<typeof startBusinessResultSchema>;
@@ -152,6 +153,9 @@ function normalizeStartBusinessResult(raw: unknown): unknown {
     paymentTransactionId: pick(r, "paymentTransactionId", "PaymentTransactionId") ?? null,
     paymentReferenceNumber: pick(r, "paymentReferenceNumber", "PaymentReferenceNumber") ?? null,
     requiresCheckout: Boolean(pick(r, "requiresCheckout", "RequiresCheckout") ?? false),
+    reusedExistingOrganization: Boolean(
+      pick(r, "reusedExistingOrganization", "ReusedExistingOrganization") ?? false,
+    ),
   };
 }
 

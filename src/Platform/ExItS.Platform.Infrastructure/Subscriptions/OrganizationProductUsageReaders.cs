@@ -18,10 +18,10 @@ public sealed class MembershipStaffUsageReader
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default)
     {
-        var (_, staffTotal) = await _memberships
-            .ListByOrganizationAsync(organizationId, MembershipStatus.Active, skip: 0, take: 1, cancellationToken)
+        // Owners are not staff seats. PlanMaxActiveStaff is enforced with the same count.
+        return await _memberships
+            .CountActiveNonOwnerStaffAsync(organizationId, cancellationToken)
             .ConfigureAwait(false);
-        return staffTotal;
     }
 }
 

@@ -158,7 +158,8 @@ public sealed class StartHostedSubscriptionCheckout(
     IPlanRepository plans,
     ISubscriptionCheckoutGateway gateway,
     IPlatformUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    OrganizationProductCheckoutGuard? checkoutAffiliation = null)
 {
     public async Task<ApplicationResult<HostedSubscriptionCheckoutDto>> ExecuteForPaymentAsync(
         Guid paymentId,
@@ -279,15 +280,31 @@ public sealed class StartHostedSubscriptionCheckout(
         string returnBaseUrl,
         CancellationToken cancellationToken)
     {
+        var checkoutOrganizationId = organizationId;
+        if (checkoutAffiliation is not null)
+        {
+            var decision = await checkoutAffiliation
+                .ResolveAsync(userId, plan.ProductCode, organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (decision.IsBlocked)
+            {
+                return ApplicationResult<HostedSubscriptionCheckoutDto>.Failure(
+                    decision.ErrorCode!,
+                    decision.ErrorMessage!);
+            }
+
+            checkoutOrganizationId = decision.OrganizationId ?? organizationId;
+        }
+
         var open = await payments
-            .FindLatestOpenAsync(userId, organizationId, plan.PlanKey, billingCycle, cancellationToken)
+            .FindLatestOpenAsync(userId, checkoutOrganizationId, plan.PlanKey, billingCycle, cancellationToken)
             .ConfigureAwait(false);
         if (open is not null)
         {
             return await ExecuteExistingAsync(
                 open.Id.Value,
                 userId,
-                organizationId?.Value,
+                checkoutOrganizationId?.Value,
                 returnBaseUrl,
                 cancellationToken).ConfigureAwait(false);
         }
@@ -305,7 +322,7 @@ public sealed class StartHostedSubscriptionCheckout(
                 billingCycle,
                 quote,
                 utcNow,
-                organizationId);
+                checkoutOrganizationId);
         }
         catch (DomainException ex)
         {
@@ -317,7 +334,7 @@ public sealed class StartHostedSubscriptionCheckout(
         return await ExecuteExistingAsync(
             created.Id.Value,
             userId,
-            organizationId?.Value,
+            checkoutOrganizationId?.Value,
             returnBaseUrl,
             cancellationToken).ConfigureAwait(false);
     }
@@ -571,7 +588,6 @@ public sealed class ApplyTrustedHostedCheckoutPayment(
 public sealed class SyncHostedSubscriptionCheckout(
     ISubscriptionPaymentTransactionRepository payments,
     ISubscriptionCheckoutGateway gateway,
-    ApplyTrustedHostedCheckoutPayment applyPaid,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -624,14 +640,10 @@ public sealed class SyncHostedSubscriptionCheckout(
                 SubscriptionPaymentMapping.ToDto(payment));
         }
 
-        if (state.IsPaid && state.PaidAmount is decimal amount && !string.IsNullOrWhiteSpace(state.CurrencyCode))
+        if (state.IsPaid)
         {
-            return await applyPaid.ExecuteAsync(
-                payment.ProviderReference,
-                amount,
-                state.CurrencyCode,
-                $"retrieve:{payment.ProviderReference}",
-                cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<SubscriptionPaymentTransactionDto>.Success(
+                SubscriptionPaymentMapping.ToDto(payment));
         }
 
         var utcNow = clock.UtcNow;

@@ -107,7 +107,8 @@ public sealed class CreatePendingSubscriptionPayment(
     IPlanRepository plans,
     EnsureMvpPosPlans ensureMvpPosPlans,
     IPlatformUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    OrganizationProductCheckoutGuard checkoutAffiliation)
 {
     public async Task<ApplicationResult<SubscriptionPaymentTransactionDto>> ExecuteAsync(
         PlatformUserId userId,
@@ -144,8 +145,20 @@ public sealed class CreatePendingSubscriptionPayment(
                     organizationId?.Value ?? Guid.Empty,
                     async ct =>
                     {
+                        var decision = await checkoutAffiliation
+                            .ResolveAsync(userId, plan.ProductCode, organizationId, ct)
+                            .ConfigureAwait(false);
+                        if (decision.IsBlocked)
+                        {
+                            outcome = ApplicationResult<SubscriptionPaymentTransactionDto>.Failure(
+                                decision.ErrorCode!,
+                                decision.ErrorMessage!);
+                            return;
+                        }
+
+                        var checkoutOrganizationId = decision.OrganizationId ?? organizationId;
                         var open = await payments
-                            .FindLatestOpenAsync(userId, organizationId, plan.PlanKey, billingCycle, ct)
+                            .FindLatestOpenAsync(userId, checkoutOrganizationId, plan.PlanKey, billingCycle, ct)
                             .ConfigureAwait(false);
                         if (open is not null)
                         {
@@ -164,7 +177,7 @@ public sealed class CreatePendingSubscriptionPayment(
                             billingCycle,
                             quote,
                             utcNow,
-                            organizationId);
+                            checkoutOrganizationId);
                         await payments.AddAsync(payment, ct).ConfigureAwait(false);
                         await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                         outcome = ApplicationResult<SubscriptionPaymentTransactionDto>.Success(

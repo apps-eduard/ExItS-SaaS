@@ -105,6 +105,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_product_access_assignments_active")
                         .HasFilter("status = 'Active'");
 
+                    b.HasIndex("UserId", "ProductCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_product_access_assignments_user_product_active")
+                        .HasFilter("status = 'Active'");
+
                     b.ToTable("product_access_assignments", "platform");
                 });
 

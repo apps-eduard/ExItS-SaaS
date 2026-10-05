@@ -1,12 +1,15 @@
 import { Check, Users } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   listCommercialPlans,
   type CommercialPlanDto,
 } from "@/api/platform/commercial-plans-client";
 import { createPersonalSubscriptionPayment } from "@/api/platform/subscription-payment-client";
+import { POS_PRODUCT_CODE } from "@/api/platform/browser-session";
+import { listPersonalProductAffiliations } from "@/api/platform/product-affiliations-client";
+import { PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -124,6 +127,13 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
     queryKey: ["commercial", "plans", "pinoy-business-pos"],
     queryFn: ({ signal }) => listCommercialPlans(undefined, signal),
   });
+  const affiliationsQuery = useQuery({
+    queryKey: PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY,
+    queryFn: ({ signal }) => listPersonalProductAffiliations(signal),
+  });
+  const existingPos = (affiliationsQuery.data ?? []).find(
+    (row) => row.productCode === POS_PRODUCT_CODE && row.organizationId,
+  );
 
   const plans = plansQuery.data ?? [];
   const currentPlan = useMemo(() => {
@@ -221,6 +231,12 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
           backLabel={t(personalPageBackNav.more.labelKey)}
           backTestId="page-header-back-explore-pos"
         />
+
+        {existingPos ? (
+          <Notice tone="info" title={t("personal.subscriptions.alreadyHave").replace("{product}", existingPos.productDisplayName)} testId="explore-existing-organization">
+            <Link to="/personal/subscriptions">{t("personal.subscriptions.title")}</Link>
+          </Notice>
+        ) : null}
 
         {checkoutError ? (
           <Notice tone="danger" title={t("personal.explore.checkoutFailedTitle")} testId="explore-checkout-error">
@@ -443,11 +459,15 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                                   type="button"
                                   variant="ghost"
                                   data-testid={`explore-start-trial-${planKey}`}
-                                  onClick={() =>
+                                  onClick={() => {
+                                    if (existingPos) {
+                                      navigate("/personal/subscriptions");
+                                      return;
+                                    }
                                     navigate(
                                       `/personal/start-business?planKey=${encodeURIComponent(planKey)}&trial=1&payNow=0&billing=${billing}`,
-                                    )
-                                  }
+                                    );
+                                  }}
                                 >
                                   {t("personal.explore.startTrial")}
                                 </Button>
@@ -457,6 +477,10 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                                 data-testid={`explore-subscribe-${planKey}`}
                                 disabled={startCheckoutMutation.isPending}
                                 onClick={() => {
+                                  if (existingPos && (existingPos.subscriptionStatus === "Active" || existingPos.subscriptionStatus === "Trialing")) {
+                                    navigate("/personal/subscriptions");
+                                    return;
+                                  }
                                   setCheckoutPlanKey(planKey);
                                   startCheckoutMutation.mutate({
                                     planKey,

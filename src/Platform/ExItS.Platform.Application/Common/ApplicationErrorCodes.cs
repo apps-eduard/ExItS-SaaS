@@ -36,6 +36,8 @@ public static class ApplicationErrorCodes
     public const string SlugConflict = "application.organization.slug_conflict";
     public const string MembershipConflict = "application.membership.conflict";
     public const string ProductAccessConflict = "application.product_access.conflict";
+    public const string ProductAffiliationConflict = "application.product_affiliation.conflict";
+    public const string StaffSeatLimitReached = "application.subscription.staff_seat_limit";
     public const string ProductAccessNotFound = "application.product_access.not_found";
     public const string CrossOrganizationMismatch = "application.access.cross_organization";
     public const string SubscriptionIneligible = "application.subscription.ineligible";

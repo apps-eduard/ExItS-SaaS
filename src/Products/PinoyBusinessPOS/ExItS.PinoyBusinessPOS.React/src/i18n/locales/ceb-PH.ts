@@ -8758,6 +8758,21 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.explore.startTrial": "Sugdi ang trial",
 
   "personal.explore.subscribe": "Magsuskribir",
+  "personal.subscriptions.title": "Mga suskripsiyon",
+  "personal.subscriptions.lede": "Usa ray ka organisasyon matag produkto. Ang dugang tindahan kay branch sa maong organisasyon.",
+  "personal.subscriptions.noOrganization": "Walay organisasyon",
+  "personal.subscriptions.getStarted": "Sugdi",
+  "personal.subscriptions.openProduct": "Ablihi",
+  "personal.subscriptions.manage": "Dumalaa ang suskripsiyon",
+  "personal.subscriptions.choosePlan": "Pilia ang plano",
+  "personal.subscriptions.reactivate": "I-aktiba pag-usab",
+  "personal.subscriptions.upgrade": "I-usbaw",
+  "personal.subscriptions.managedByOrganization": "Ang suskripsiyon gidumala sa organisasyon",
+  "personal.subscriptions.noActiveSubscription": "Walay aktibong suskripsiyon",
+  "personal.subscriptions.alreadyHave": "Naa na kay organisasyon sa {product}.",
+  "personal.subscriptions.trialEnds": "Mohuman ang trial sa {date}",
+  "personal.subscriptions.loadError": "Dili ma-load ang mga suskripsiyon.",
+  "personal.subscriptions.role": "Katungdanan",
 
   "personal.explore.title": "Susiha ang POS plans",
 

@@ -8758,6 +8758,21 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.explore.startTrial": "Start trial",
 
   "personal.explore.subscribe": "Ag-subscribe",
+  "personal.subscriptions.title": "Dagiti suskripsion",
+  "personal.subscriptions.lede": "Maysa laeng nga organisasion ti tunggal produkto. Dagiti nayon a tiendaan ket branch ti dayta nga organisasion.",
+  "personal.subscriptions.noOrganization": "Awan ti organisasion",
+  "personal.subscriptions.getStarted": "Rugian",
+  "personal.subscriptions.openProduct": "Luktan",
+  "personal.subscriptions.manage": "Taripatoen ti suskripsion",
+  "personal.subscriptions.choosePlan": "Pilien ti plano",
+  "personal.subscriptions.reactivate": "I-aktibo manen",
+  "personal.subscriptions.upgrade": "I-ngato",
+  "personal.subscriptions.managedByOrganization": "Ti suskripsion ket tartaripatoen ti organisasion",
+  "personal.subscriptions.noActiveSubscription": "Awan ti aktibo a suskripsion",
+  "personal.subscriptions.alreadyHave": "Adda kan ti organisasion para iti {product}.",
+  "personal.subscriptions.trialEnds": "Agpatingga ti trial iti {date}",
+  "personal.subscriptions.loadError": "Saan a maikarga dagiti suskripsion.",
+  "personal.subscriptions.role": "Papel",
 
   "personal.explore.title": "Explore POS plans",
 

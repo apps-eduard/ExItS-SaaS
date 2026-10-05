@@ -1674,6 +1674,11 @@ public sealed class PlatformDbContext : DbContext
                 .HasFilter("status = 'Active'")
                 .HasDatabaseName("ux_product_access_assignments_active");
 
+            entity.HasIndex(e => new { e.UserId, e.ProductCode })
+                .IsUnique()
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ux_product_access_assignments_user_product_active");
+
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.OrganizationId)

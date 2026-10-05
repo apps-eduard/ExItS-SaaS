@@ -472,6 +472,8 @@ public sealed class AcceptOrganizationInvitation
     private readonly IClock _clock;
     private readonly IAuditWriter _audit;
     private readonly PlatformPasswordOptions _passwordOptions;
+    private readonly UserProductAffiliationGuard _affiliations;
+    private readonly OrganizationStaffSeatPolicy _staffSeats;
 
     public AcceptOrganizationInvitation(
         IOrganizationInvitationRepository invitations,
@@ -489,7 +491,9 @@ public sealed class AcceptOrganizationInvitation
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IAuditWriter audit,
-        IOptions<PlatformPasswordOptions> passwordOptions)
+        IOptions<PlatformPasswordOptions> passwordOptions,
+        UserProductAffiliationGuard affiliations,
+        OrganizationStaffSeatPolicy staffSeats)
     {
         _invitations = invitations;
         _organizations = organizations;
@@ -507,6 +511,8 @@ public sealed class AcceptOrganizationInvitation
         _clock = clock;
         _audit = audit;
         _passwordOptions = passwordOptions.Value;
+        _affiliations = affiliations;
+        _staffSeats = staffSeats;
     }
 
     public Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> ExecuteAsync(
@@ -783,6 +789,59 @@ public sealed class AcceptOrganizationInvitation
                 ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
                     ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
                     "Sign in with your Personal account to accept this invitation."),
+                Outbound: null);
+        }
+
+        var invitationProduct = ProductCode.Create(ProductCode.PinoyBusinessPos);
+        await _unitOfWork.AcquireTransactionAdvisoryLockAsync(
+            ProductAffiliationLocks.ForEmail(contactEmail),
+            ProductAffiliationLocks.ForProduct(invitationProduct.Value),
+            cancellationToken).ConfigureAwait(false);
+
+        var seats = await _staffSeats
+            .EvaluateAsync(organization.Id, invitationProduct, cancellationToken)
+            .ConfigureAwait(false);
+        if (seats.IsFull)
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.StaffSeatLimitReached,
+                    OrganizationStaffSeatPolicy.LimitReachedMessage),
+                Outbound: null);
+        }
+
+        var relatedUserIds = new List<PlatformUserId>();
+        if (linkedPersonalUserId is not null)
+        {
+            relatedUserIds.Add(linkedPersonalUserId);
+        }
+
+        if (authenticatedPersonalUserId is not null
+            && (linkedPersonalUserId is null || authenticatedPersonalUserId != linkedPersonalUserId))
+        {
+            relatedUserIds.Add(authenticatedPersonalUserId);
+        }
+
+        if (existingLoginPrincipal is not null)
+        {
+            relatedUserIds.Add(existingLoginPrincipal.Id);
+        }
+
+        var contactMatches = await _users
+            .ListByNormalizedContactEmailAsync(contactEmail, cancellationToken)
+            .ConfigureAwait(false);
+        relatedUserIds.AddRange(contactMatches.Select(match => match.Id));
+
+        if (await _affiliations.ConflictsWithOtherOrganizationAsync(
+                relatedUserIds,
+                invitationProduct,
+                organization.Id.Value,
+                cancellationToken).ConfigureAwait(false))
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.ProductAffiliationConflict,
+                    UserProductAffiliationGuard.AlreadyAssociatedMessage),
                 Outbound: null);
         }
 

@@ -59,6 +59,22 @@ internal static class PersonalEndpoints
             return Results.Ok(result);
         });
 
+        personal.MapGet("/product-affiliations", async (
+            HttpContext http,
+            ListPersonalProductAffiliations listAffiliations,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await listAffiliations
+                .ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         personal.MapGet("/workplaces", async (
             HttpContext http,
             ListPersonalWorkplaces listWorkplaces,

@@ -8758,6 +8758,21 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.explore.startTrial": "Sugodi ang trial",
 
   "personal.explore.subscribe": "Magsuksukribir",
+  "personal.subscriptions.title": "Mga suskripsyon",
+  "personal.subscriptions.lede": "Isa lang ka organisasyon kada produkto. Ang dugang nga tindahan branch sang sina nga organisasyon.",
+  "personal.subscriptions.noOrganization": "Wala sing organisasyon",
+  "personal.subscriptions.getStarted": "Suguran",
+  "personal.subscriptions.openProduct": "Buksan",
+  "personal.subscriptions.manage": "Dumalahan ang suskripsyon",
+  "personal.subscriptions.choosePlan": "Pili-a ang plano",
+  "personal.subscriptions.reactivate": "I-aktibo liwat",
+  "personal.subscriptions.upgrade": "I-pataas",
+  "personal.subscriptions.managedByOrganization": "Ang suskripsyon ginadumala sang organisasyon",
+  "personal.subscriptions.noActiveSubscription": "Wala sing aktibo nga suskripsyon",
+  "personal.subscriptions.alreadyHave": "May organisasyon ka na para sa {product}.",
+  "personal.subscriptions.trialEnds": "Matapos ang trial sa {date}",
+  "personal.subscriptions.loadError": "Indi ma-load ang mga suskripsyon.",
+  "personal.subscriptions.role": "Katungdanan",
 
   "personal.explore.title": "Tilawi ang POS plans",
 

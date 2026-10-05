@@ -16,6 +16,12 @@ public interface IProductAccessAssignmentRepository
         ProductCode productCode,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Active assignment for this user and product in any organization.</summary>
+    Task<ProductAccessAssignment?> FindActiveByUserAndProductAsync(
+        PlatformUserId userId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<ProductAccessAssignment> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         ProductAccessStatus? status,

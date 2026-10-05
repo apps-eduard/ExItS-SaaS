@@ -19,6 +19,7 @@ import { PersonalStaffInvitationsPage } from "@/features/personal/staff/Personal
 import { PersonalWorkplacesPage } from "@/features/personal/workplaces/PersonalWorkplacesPage";
 import { PersonalProfilePage } from "@/features/personal/PersonalProfilePage";
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
+import { PersonalProductSubscriptionsPage } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
@@ -476,6 +477,7 @@ export const appRoutes = [
               },
               { path: "profile", element: <PersonalProfilePage /> },
               { path: "explore-pos", element: <PersonalExplorePosPage /> },
+              { path: "subscriptions", element: <PersonalProductSubscriptionsPage /> },
               {
                 path: "start-business",
                 element: <PersonalStartBusinessPage />,

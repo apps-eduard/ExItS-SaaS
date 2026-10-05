@@ -996,6 +996,8 @@ public sealed class OrganizationScopedStaffIdentityTests
                 uow,
                 clock);
 
+            var affiliations = new UserProductAffiliationGuard(assignments, memberships, subscriptions);
+            var staffSeats = new OrganizationStaffSeatPolicy(memberships, snapshots);
             var acceptInvitation = new AcceptOrganizationInvitation(
                 invitations,
                 orgs,
@@ -1012,7 +1014,9 @@ public sealed class OrganizationScopedStaffIdentityTests
                 uow,
                 clock,
                 audit,
-                Options.Create(new PlatformPasswordOptions()));
+                Options.Create(new PlatformPasswordOptions()),
+                affiliations,
+                staffSeats);
 
             return new StaffInviteHarness
             {

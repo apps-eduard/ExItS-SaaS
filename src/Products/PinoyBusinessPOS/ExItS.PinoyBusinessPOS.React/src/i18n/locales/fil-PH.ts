@@ -8725,6 +8725,21 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.explore.startTrial": "Start trial",
 
   "personal.explore.subscribe": "Mag-subscribe",
+  "personal.subscriptions.title": "Mga subscription",
+  "personal.subscriptions.lede": "Isang organisasyon lang ang bawat produkto. Dagdag na tindahan ay branch ng organisasyong iyon.",
+  "personal.subscriptions.noOrganization": "Walang organisasyon",
+  "personal.subscriptions.getStarted": "Magsimula",
+  "personal.subscriptions.openProduct": "Buksan",
+  "personal.subscriptions.manage": "Pamahalaan ang subscription",
+  "personal.subscriptions.choosePlan": "Pumili ng plan",
+  "personal.subscriptions.reactivate": "I-reactivate",
+  "personal.subscriptions.upgrade": "I-upgrade",
+  "personal.subscriptions.managedByOrganization": "Ang subscription ay pinamamahalaan ng organisasyon",
+  "personal.subscriptions.noActiveSubscription": "Walang aktibong subscription",
+  "personal.subscriptions.alreadyHave": "May {product} na organisasyon ka na.",
+  "personal.subscriptions.trialEnds": "Matatapos ang trial sa {date}",
+  "personal.subscriptions.loadError": "Hindi ma-load ang mga subscription.",
+  "personal.subscriptions.role": "Tungkulin",
 
   "personal.explore.title": "Explore POS plans",
 
