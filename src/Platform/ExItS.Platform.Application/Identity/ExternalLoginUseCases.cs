@@ -340,13 +340,73 @@ public sealed class CompleteExternalLogin
 
     private static string ResolveDisplayName(string? displayName, string email)
     {
-        if (!string.IsNullOrWhiteSpace(displayName) && displayName.Trim().Length >= 2)
+        return SanitizeToDisplayName(displayName)
+            ?? SanitizeToDisplayName(MailboxLocalPart(email))
+            ?? "Platform User";
+    }
+
+    private static string MailboxLocalPart(string email)
+    {
+        var at = email.IndexOf('@');
+        return at > 0 ? email[..at] : email;
+    }
+
+    /// <summary>
+    /// Google may send the mailbox, a comma, or punctuation the account name rule rejects.
+    /// Keep letters, numbers, spaces, apostrophes, periods, and hyphens.
+    /// </summary>
+    private static string? SanitizeToDisplayName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
         {
-            return displayName.Trim();
+            return null;
         }
 
-        var local = email.Split('@')[0];
-        return local.Length >= 2 ? local : "Platform User";
+        var text = value.Trim();
+        var at = text.IndexOf('@');
+        if (at > 0)
+        {
+            text = text[..at];
+        }
+
+        text = text
+            .Replace('\u2019', '\'')
+            .Replace('\u2018', '\'')
+            .Replace('\u2013', '-')
+            .Replace('\u2014', '-');
+
+        var builder = new StringBuilder(text.Length);
+        var previousSpace = false;
+        foreach (var ch in text)
+        {
+            if (char.IsLetterOrDigit(ch) || ch is '\'' or '.' or '-')
+            {
+                builder.Append(ch);
+                previousSpace = false;
+                continue;
+            }
+
+            if (builder.Length > 0 && !previousSpace)
+            {
+                builder.Append(' ');
+                previousSpace = true;
+            }
+        }
+
+        var collapsed = builder.ToString().Trim();
+        var start = 0;
+        while (start < collapsed.Length && !char.IsLetterOrDigit(collapsed[start]))
+        {
+            start++;
+        }
+
+        collapsed = collapsed[start..].Trim(' ', '\'', '-');
+        if (collapsed.Length > 100)
+        {
+            collapsed = collapsed[..100].TrimEnd(' ', '\'', '-', '.');
+        }
+
+        return collapsed.Length >= 2 ? collapsed : null;
     }
 
     private async Task WriteFailedAsync(

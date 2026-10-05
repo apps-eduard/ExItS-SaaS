@@ -56,6 +56,25 @@ public sealed class PlatformExternalLoginTests
     }
 
     [Fact]
+    public async Task CompleteExternalLogin_accepts_a_mailbox_or_comma_as_the_google_name()
+    {
+        var sut = CreateSut(out var users, out _, out _);
+        var mailbox = await sut.ExecuteAsync(
+            new ExternalLoginIdentity("google", "sub-mail", "person.name@gmail.com", true, "person.name@gmail.com"),
+            null,
+            null);
+        Assert.True(mailbox.IsSuccess);
+        Assert.Equal("person.name", (await users.GetByNormalizedEmailAsync("person.name@gmail.com"))!.DisplayName);
+
+        var comma = await sut.ExecuteAsync(
+            new ExternalLoginIdentity("google", "sub-comma", "jr.owner@gmail.com", true, "Uytoco, Jr."),
+            null,
+            null);
+        Assert.True(comma.IsSuccess);
+        Assert.Equal("Uytoco Jr.", (await users.GetByNormalizedEmailAsync("jr.owner@gmail.com"))!.DisplayName);
+    }
+
+    [Fact]
     public async Task CompleteExternalLogin_requires_verified_email()
     {
         var sut = CreateSut(out _, out _, out _);

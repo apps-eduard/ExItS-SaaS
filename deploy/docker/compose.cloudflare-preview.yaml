@@ -34,6 +34,9 @@ services:
       PlatformAuthentication__External__Google__ClientSecret: ${LOCAL_VALIDATION_GOOGLE_CLIENT_SECRET:-}
       PlatformAuthentication__External__PublicBrowserOrigin: https://my.exitsapps.com
       PlatformAuthentication__External__TrustedProxyHost: react-pos
+      PayMongo__PublicAppBaseUrl: https://my.exitsapps.com
+      PayMongo__SecretKey: ${LOCAL_VALIDATION_PAYMONGO_SECRET_KEY:-}
+      PayMongo__WebhookSecret: ${LOCAL_VALIDATION_PAYMONGO_WEBHOOK_SECRET:-}
 
   pos-api:
     environment:

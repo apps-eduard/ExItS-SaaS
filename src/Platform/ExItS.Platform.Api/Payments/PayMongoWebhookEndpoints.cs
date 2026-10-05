@@ -16,6 +16,8 @@ internal static class PayMongoWebhookEndpoints
 
     private static void Map(IEndpointRouteBuilder app, string path)
     {
+        app.MapGet(path, () => Results.Ok(new { status = "ready" }))
+            .AllowAnonymous();
         app.MapPost(path, HandleAsync)
             .AllowAnonymous()
             .DisableAntiforgery();
@@ -30,7 +32,9 @@ internal static class PayMongoWebhookEndpoints
         var secret = options.Value.WebhookSecret;
         if (string.IsNullOrWhiteSpace(secret))
         {
-            return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+            // PayMongo checks the URL before it shows the signing secret. Accept the probe.
+            // Do not activate a subscription until the signing secret is configured.
+            return Results.Ok(new { ignored = true });
         }
 
         string raw;

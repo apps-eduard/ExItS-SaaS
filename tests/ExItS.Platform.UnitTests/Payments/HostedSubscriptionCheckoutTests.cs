@@ -67,6 +67,26 @@ public sealed class HostedSubscriptionCheckoutTests
     }
 
     [Fact]
+    public async Task Unconfigured_provider_does_not_open_a_local_test_payment_page()
+    {
+        var gateway = new FakeGateway { Configured = false };
+        var repo = new MemoryPayments();
+        var payment = Pending(organizationId: null);
+        await repo.AddAsync(payment);
+        var start = new StartHostedSubscriptionCheckout(repo, new MemoryPlans(), gateway, new MemoryUnitOfWork(), new FixedClock(Now));
+
+        var result = await start.ExecuteForPaymentAsync(
+            payment.Id.Value,
+            UserId,
+            expectedOrganizationId: null,
+            "https://my.exitsapps.com");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PaymentNotConfigured, result.ErrorCode);
+        Assert.Equal(0, gateway.CreateCount);
+    }
+
+    [Fact]
     public async Task Organization_mismatch_does_not_start_checkout()
     {
         var gateway = new FakeGateway();
@@ -490,7 +510,9 @@ public sealed class HostedSubscriptionCheckoutTests
         public HostedCheckoutCreateRequest? LastRequest { get; private set; }
         public HostedCheckoutProviderState SessionState { get; set; } =
             new("cs_test_1", false, false, false, null, null, null);
-        public bool IsConfigured => true;
+        public bool Configured { get; set; } = true;
+
+        public bool IsConfigured => Configured;
 
         public async Task<HostedCheckoutSessionResult> CreateSessionAsync(
             HostedCheckoutCreateRequest request,

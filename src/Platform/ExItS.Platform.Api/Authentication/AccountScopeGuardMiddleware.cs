@@ -135,6 +135,12 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // PayMongo calls this with no ExItS session. A signed-in Personal browser must not block it.
+        if (IsPayMongoWebhookPath(path))
+        {
+            return true;
+        }
+
         // Anonymous staff invite accept (token + password) creates a new org-scoped staff identity.
         if (path.Equals("/api/v1/platform/invitations/accept", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/v1/platform/auth/organization-invitations/accept", StringComparison.OrdinalIgnoreCase))
@@ -159,6 +165,13 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
         return false;
     }
+
+    /// <summary>
+    /// PayMongo subscription webhook. Signed by PayMongo, not by an ExItS account class.
+    /// </summary>
+    internal static bool IsPayMongoWebhookPath(string path) =>
+        path.Equals("/api/v1/platform/webhooks/paymongo", StringComparison.OrdinalIgnoreCase)
+        || path.Equals("/api/webhooks/paymongo", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// GET /api/v1/public/stores/{publicOrganizationId}[+ /branches] — Business QR / supplier connect discovery.
