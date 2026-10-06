@@ -4,7 +4,10 @@ import {
   listPersonalProductAffiliations,
   type PersonalProductAffiliationDto,
 } from "@/api/platform/product-affiliations-client";
-import { resolveProductPortfolioCapability } from "@/features/personal/businesses/product-portfolio-capability";
+import {
+  ownsProductOrganization,
+  resolveProductPortfolioCapability,
+} from "@/features/personal/businesses/product-portfolio-capability";
 import { useEnterBusiness } from "@/workspace/use-switch-to-business";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -70,6 +73,7 @@ function ProductAffiliationCard({
   const { t } = useI18n();
   const navigate = useNavigate();
   const hasOrganization = Boolean(row.organizationId);
+  const ownsOrganization = ownsProductOrganization(row);
   const trialEnd = formatTrialEnd(row.trialEndUtc);
   const capability = resolveProductPortfolioCapability(row);
 
@@ -79,11 +83,11 @@ function ProductAffiliationCard({
       data-testid={`product-affiliation-${row.productCode}`}
     >
       <h2 className="catalog-form-section__title">{row.productDisplayName}</h2>
-      {hasOrganization ? (
+      {ownsOrganization ? (
         <p>{t("personal.subscriptions.alreadyHave").replace("{product}", row.productDisplayName)}</p>
-      ) : (
+      ) : !hasOrganization ? (
         <p>{t("personal.subscriptions.noOrganization")}</p>
-      )}
+      ) : null}
       {row.organizationDisplayName ? <p>{row.organizationDisplayName}</p> : null}
       {row.roleDisplay ? (
         <p>

@@ -95,8 +95,10 @@ describe("PersonalProductSubscriptionsPage", () => {
 
     expect(await screen.findByText(/Cashier/)).toBeInTheDocument();
     expect(screen.getByText("Subscription managed by organization")).toBeInTheDocument();
+    expect(screen.queryByText("You already have a PinoyBusinessPOS organization.")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Manage Subscription" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Get Started" })).toBeInTheDocument();
   });
 
   it("offers Get Started when the product has no organization", async () => {

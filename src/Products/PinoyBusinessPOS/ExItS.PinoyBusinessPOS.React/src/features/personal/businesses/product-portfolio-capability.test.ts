@@ -81,15 +81,18 @@ describe("product portfolio capability", () => {
     expect(capability.choosePlanRoute).toBe("/personal/explore-pos");
   });
 
-  it("lets non-billing staff open without managing the subscription", () => {
+  it("lets non-billing staff open and still start their own organization", () => {
     const capability = resolveProductPortfolioCapability(
       row({
         organizationId: orgId,
+        membershipRole: "OrganizationMember",
         roleDisplay: "Cashier",
         subscriptionStatus: "Active",
         canManageBilling: false,
       }),
     );
+    expect(capability.canStartBusiness).toBe(true);
+    expect(capability.startRoute).toBe("/personal/explore-pos");
     expect(capability.canOpenProduct).toBe(true);
     expect(capability.canManageSubscription).toBe(false);
     expect(capability.canChoosePlan).toBe(false);

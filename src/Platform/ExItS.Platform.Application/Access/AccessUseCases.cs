@@ -371,6 +371,14 @@ public sealed class GrantProductAccess
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken)
     {
+        // Ownership and staff membership are separate identities. A Personal owner's
+        // grant is not blocked by a staff workplace. A staff grant is blocked only by
+        // another organization-scoped staff identity with the same contact email.
+        if (!user.IsOrganizationScopedStaff)
+        {
+            return false;
+        }
+
         var emails = new List<string>();
         if (!string.IsNullOrWhiteSpace(user.NormalizedEmail))
         {
@@ -388,6 +396,7 @@ public sealed class GrantProductAccess
             var login = await _users.GetByNormalizedEmailAsync(email, cancellationToken).ConfigureAwait(false);
             if (login is not null
                 && login.Id != user.Id
+                && login.IsOrganizationScopedStaff
                 && await ActiveAccessIsAnotherOrganizationAsync(login.Id, productCode, organizationId, cancellationToken)
                     .ConfigureAwait(false))
             {
@@ -399,7 +408,7 @@ public sealed class GrantProductAccess
                 .ConfigureAwait(false);
             foreach (var match in contacts)
             {
-                if (match.Id == user.Id)
+                if (match.Id == user.Id || !match.IsOrganizationScopedStaff)
                 {
                     continue;
                 }

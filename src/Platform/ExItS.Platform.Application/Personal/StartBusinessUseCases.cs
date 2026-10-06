@@ -342,46 +342,9 @@ public sealed class StartBusinessForPersonalUser
                 UserProductAffiliationGuard.AlreadyHaveOrganizationMessage);
         }
 
-        var linkedStaff = await _users
-            .ListStaffLinkedToPersonalUserAsync(userId, cancellationToken)
-            .ConfigureAwait(false);
-        foreach (var staffUser in linkedStaff)
-        {
-            var staffAffiliation = await _affiliations
-                .FindAsync(staffUser.Id, ProductCode.Create(productCode), cancellationToken)
-                .ConfigureAwait(false);
-            if (staffAffiliation is not null)
-            {
-                return ApplicationResult<StartBusinessResultDto>.Failure(
-                    ApplicationErrorCodes.ProductAffiliationConflict,
-                    UserProductAffiliationGuard.AlreadyHaveOrganizationMessage);
-            }
-        }
-
-        var personalUser = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
-        if (personalUser is not null && !string.IsNullOrWhiteSpace(personalUser.NormalizedEmail))
-        {
-            var sameEmailStaff = await _users
-                .ListByNormalizedContactEmailAsync(personalUser.NormalizedEmail, cancellationToken)
-                .ConfigureAwait(false);
-            foreach (var staffUser in sameEmailStaff)
-            {
-                if (staffUser.Id == userId)
-                {
-                    continue;
-                }
-
-                var staffAffiliation = await _affiliations
-                    .FindAsync(staffUser.Id, ProductCode.Create(productCode), cancellationToken)
-                    .ConfigureAwait(false);
-                if (staffAffiliation is not null)
-                {
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        ApplicationErrorCodes.ProductAffiliationConflict,
-                        UserProductAffiliationGuard.AlreadyHaveOrganizationMessage);
-                }
-            }
-        }
+        // A staff workplace on a separate identity does not block this Personal user
+        // from owning their own organization. A second owned organization is still
+        // rejected by the affiliation check above.
 
         PlatformOrganization? existingOrganization = null;
         try

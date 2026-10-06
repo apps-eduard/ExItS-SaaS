@@ -503,18 +503,29 @@ public sealed class OneActiveProductAffiliationAcceptanceTests(PostgreSqlFixture
     }
 
     [Fact]
-    public async Task Same_email_cannot_cross_pos_owner_and_staff_roles()
+    public async Task Staff_can_subscribe_and_own_a_separate_organization()
     {
         await EnsureMvpCatalogAsync();
-        var org = await StartOwnerAsync("cross");
+        var workplace = await StartOwnerAsync("work");
         var contactEmail = $"{Guid.NewGuid():N}"[..12] + "@example.com";
-        var staffToken = await InviteStaffAsync(org.Token, org.OrganizationId, contactEmail);
+        var staffToken = await InviteStaffAsync(workplace.Token, workplace.OrganizationId, contactEmail);
         var accepted = await _client.PostAsJsonAsync(
             "/api/v1/platform/invitations/accept",
             new { token = staffToken, password = "Correct-Horse-9!" });
         Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
 
         var (personalToken, personalUserId, _, _) = await SeedPersonalUserAsync("same", contactEmail);
+        using var createPayment = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/subscription-payments",
+            personalToken,
+            new { planKey = MvpPosPlanCodes.Starter, billingCycle = "Monthly" });
+        var paymentResponse = await _client.SendAsync(createPayment);
+        var paymentBody = await paymentResponse.Content.ReadAsStringAsync();
+        Assert.True(paymentResponse.StatusCode == HttpStatusCode.Created, paymentBody);
+        using var paymentJson = JsonDocument.Parse(paymentBody);
+        Assert.Equal(JsonValueKind.Null, paymentJson.RootElement.GetProperty("organizationId").ValueKind);
+
         var businessTypeId = await ResolvePrimaryBusinessTypeIdAsync(personalToken);
         using var start = Authed(
             HttpMethod.Post,
@@ -523,40 +534,48 @@ public sealed class OneActiveProductAffiliationAcceptanceTests(PostgreSqlFixture
             StartBody(businessTypeId, "samepos"));
         var startResponse = await _client.SendAsync(start);
         var startBody = await startResponse.Content.ReadAsStringAsync();
-        Assert.Equal(HttpStatusCode.Conflict, startResponse.StatusCode);
+        Assert.True(startResponse.StatusCode == HttpStatusCode.Created, startBody);
         using var startJson = JsonDocument.Parse(startBody);
-        Assert.Equal(
-            ApplicationErrorCodes.ProductAffiliationConflict,
-            startJson.RootElement.GetProperty("errorCode").GetString());
-        Assert.DoesNotContain(org.DisplayName, startBody, StringComparison.Ordinal);
-        Assert.DoesNotContain(org.OrganizationId.ToString(), startBody, StringComparison.OrdinalIgnoreCase);
+        var ownedOrganizationId = startJson.RootElement.GetProperty("organizationId").GetGuid();
+        Assert.NotEqual(workplace.OrganizationId, ownedOrganizationId);
 
-        var personalActive = await CountAsync(
-            """
-            SELECT COUNT(*)
-            FROM platform.product_access_assignments
-            WHERE user_id = @user AND product_code = 'pinoy-business-pos' AND status = 'Active';
-            """,
-            ("user", personalUserId));
-        Assert.Equal(0, personalActive);
+        var staffUserId = await StaffUserIdByContactEmailAsync(contactEmail);
+        Assert.Equal(1, await CountActiveProductAccessAsync(personalUserId));
+        Assert.Equal(1, await CountActiveProductAccessAsync(staffUserId));
+        Assert.Equal(0, await CountMembershipAsync(personalUserId, workplace.OrganizationId));
+        Assert.Equal(0, await CountMembershipAsync(staffUserId, ownedOrganizationId));
+        Assert.Equal(1, await CountRoleAsync(personalUserId, ownedOrganizationId, "OrganizationOwner"));
+        Assert.Equal(1, await CountRoleAsync(staffUserId, workplace.OrganizationId, "OrganizationMember"));
 
-        var owner = await StartOwnerAsync("own2");
-        var ownerInvite = await InviteStaffAsync(owner.Token, owner.OrganizationId, org.Email);
-        var personalSession = await EnsurePersonalSessionAsync(org.Email, org.Password);
-        using var acceptOwner = Authed(
+        var employer = await StartOwnerAsync("employer");
+        var firstStaffInvite = await InviteStaffAsync(employer.Token, employer.OrganizationId, workplace.Email);
+        var ownerSession = await EnsurePersonalSessionAsync(workplace.Email, workplace.Password);
+        using var acceptStaff = Authed(
             HttpMethod.Post,
             "/api/v1/platform/invitations/accept-as-personal",
-            personalSession,
-            new { token = ownerInvite, password = "Correct-Horse-9!" });
-        var acceptResponse = await _client.SendAsync(acceptOwner);
-        var acceptBody = await acceptResponse.Content.ReadAsStringAsync();
-        Assert.Equal(HttpStatusCode.Conflict, acceptResponse.StatusCode);
-        using var acceptJson = JsonDocument.Parse(acceptBody);
+            ownerSession,
+            new { token = firstStaffInvite, password = "Correct-Horse-9!" });
+        var acceptStaffResponse = await _client.SendAsync(acceptStaff);
+        var acceptStaffBody = await acceptStaffResponse.Content.ReadAsStringAsync();
+        Assert.True(acceptStaffResponse.StatusCode == HttpStatusCode.OK, acceptStaffBody);
+
+        var secondEmployer = await StartOwnerAsync("second");
+        var secondInvite = await InviteStaffAsync(secondEmployer.Token, secondEmployer.OrganizationId, workplace.Email);
+        var ownerSessionAgain = await EnsurePersonalSessionAsync(workplace.Email, workplace.Password);
+        using var rejectSecond = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            ownerSessionAgain,
+            new { token = secondInvite, password = "Correct-Horse-9!" });
+        var rejectResponse = await _client.SendAsync(rejectSecond);
+        var rejectBody = await rejectResponse.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.Conflict, rejectResponse.StatusCode);
+        using var rejectJson = JsonDocument.Parse(rejectBody);
         Assert.Equal(
             ApplicationErrorCodes.ProductAffiliationConflict,
-            acceptJson.RootElement.GetProperty("errorCode").GetString());
-        Assert.DoesNotContain(owner.DisplayName, acceptBody, StringComparison.Ordinal);
-        Assert.DoesNotContain(org.DisplayName, acceptBody, StringComparison.Ordinal);
+            rejectJson.RootElement.GetProperty("errorCode").GetString());
+        Assert.DoesNotContain(secondEmployer.DisplayName, rejectBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(employer.DisplayName, rejectBody, StringComparison.Ordinal);
     }
 
     private async Task<(Guid OrganizationId, string Token, string Email, string Password, string DisplayName)> StartOwnerAsync(
@@ -757,6 +776,36 @@ public sealed class OneActiveProductAffiliationAcceptanceTests(PostgreSqlFixture
         await provider.GetRequiredService<EnsureMvpPosPlans>().ExecuteAsync();
         await provider.GetRequiredService<EnsurePhilippinePosStarterCatalog>().ExecuteAsync();
     }
+
+    private Task<int> CountActiveProductAccessAsync(Guid userId) =>
+        CountAsync(
+            """
+            SELECT COUNT(*)
+            FROM platform.product_access_assignments
+            WHERE user_id = @user AND product_code = 'pinoy-business-pos' AND status = 'Active';
+            """,
+            ("user", userId));
+
+    private Task<int> CountMembershipAsync(Guid userId, Guid organizationId) =>
+        CountAsync(
+            """
+            SELECT COUNT(*)
+            FROM platform.organization_memberships
+            WHERE user_id = @user AND organization_id = @org AND status = 'Active';
+            """,
+            ("user", userId),
+            ("org", organizationId));
+
+    private Task<int> CountRoleAsync(Guid userId, Guid organizationId, string role) =>
+        CountAsync(
+            """
+            SELECT COUNT(*)
+            FROM platform.organization_memberships
+            WHERE user_id = @user AND organization_id = @org AND role = @role AND status = 'Active';
+            """,
+            ("user", userId),
+            ("org", organizationId),
+            ("role", role));
 
     private async Task<int> CountAsync(string sql, params (string Name, object Value)[] parameters)
     {

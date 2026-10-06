@@ -9,6 +9,7 @@ import {
 import { createPersonalSubscriptionPayment } from "@/api/platform/subscription-payment-client";
 import { POS_PRODUCT_CODE } from "@/api/platform/browser-session";
 import { listPersonalProductAffiliations } from "@/api/platform/product-affiliations-client";
+import { ownsProductOrganization } from "@/features/personal/businesses/product-portfolio-capability";
 import { PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,7 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
     queryFn: ({ signal }) => listPersonalProductAffiliations(signal),
   });
   const existingPos = (affiliationsQuery.data ?? []).find(
-    (row) => row.productCode === POS_PRODUCT_CODE && row.organizationId,
+    (row) => row.productCode === POS_PRODUCT_CODE && ownsProductOrganization(row),
   );
 
   const plans = plansQuery.data ?? [];

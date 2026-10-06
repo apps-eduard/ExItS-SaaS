@@ -97,6 +97,30 @@ public sealed class UserProductAffiliationGuard
         return false;
     }
 
+    /// <summary>
+    /// A non-owner staff affiliation blocks joining a different organization as staff.
+    /// Owning a different organization does not.
+    /// </summary>
+    public async Task<bool> HasStaffAffiliationWithOtherOrganizationAsync(
+        IEnumerable<PlatformUserId> userIds,
+        ProductCode productCode,
+        Guid targetOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var userId in userIds.Distinct())
+        {
+            var affiliation = await FindAsync(userId, productCode, cancellationToken).ConfigureAwait(false);
+            if (affiliation is not null
+                && !affiliation.IsOwner
+                && affiliation.OrganizationId != targetOrganizationId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static UserProductAffiliation ToAffiliation(OrganizationMembership membership)
     {
         var isOwner = membership.Role == OrganizationRole.OrganizationOwner;

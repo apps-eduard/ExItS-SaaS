@@ -832,7 +832,7 @@ public sealed class AcceptOrganizationInvitation
             .ConfigureAwait(false);
         relatedUserIds.AddRange(contactMatches.Select(match => match.Id));
 
-        if (await _affiliations.ConflictsWithOtherOrganizationAsync(
+        if (await _affiliations.HasStaffAffiliationWithOtherOrganizationAsync(
                 relatedUserIds,
                 invitationProduct,
                 organization.Id.Value,

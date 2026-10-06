@@ -27,16 +27,34 @@ export function isProductCommerciallyReady(productCode: string): boolean {
   return productCode === POS_PRODUCT_CODE;
 }
 
+function isOrganizationOwnerRole(role: string | null | undefined): boolean {
+  return (role ?? "").localeCompare("OrganizationOwner", undefined, { sensitivity: "accent" }) === 0;
+}
+
+/** Staff membership is not ownership. Only an owner row blocks starting another organization. */
+export function ownsProductOrganization(row: PersonalProductAffiliationDto): boolean {
+  if (!row.organizationId) {
+    return false;
+  }
+
+  if (row.membershipRole) {
+    return isOrganizationOwnerRole(row.membershipRole);
+  }
+
+  return Boolean(row.canManageBilling);
+}
+
 export function resolveProductPortfolioCapability(
   row: PersonalProductAffiliationDto,
 ): ProductPortfolioCapability {
   const ready = isProductCommerciallyReady(row.productCode);
   const hasOrganization = Boolean(row.organizationId);
+  const ownsOrganization = ownsProductOrganization(row);
   const canOpen = ready && hasOrganization && affiliationCanOpen(row.subscriptionStatus);
-  const needsPlan = affiliationNeedsPlan(row.subscriptionStatus, hasOrganization);
+  const needsPlan = affiliationNeedsPlan(row.subscriptionStatus, ownsOrganization);
 
   return {
-    canStartBusiness: ready && !hasOrganization,
+    canStartBusiness: ready && !ownsOrganization,
     canOpenProduct: canOpen,
     canManageSubscription: ready && Boolean(row.canManageBilling) && canOpen,
     canChoosePlan: ready && Boolean(row.canManageBilling) && needsPlan,

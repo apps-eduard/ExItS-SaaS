@@ -150,6 +150,7 @@ describe("PersonalBusinessesPage", () => {
 
     expect(await screen.findByText("Subscription managed by organization")).toBeInTheDocument();
     expect(screen.getByTestId("portfolio-open-pinoy-business-pos")).toBeInTheDocument();
+    expect(screen.getByTestId("portfolio-start-pinoy-business-pos")).toBeInTheDocument();
     expect(screen.queryByTestId("portfolio-manage-pinoy-business-pos")).not.toBeInTheDocument();
   });
 

@@ -256,6 +256,68 @@ public sealed class OneOrganizationPerProductTests
         Assert.Equal(OrganizationProductCheckoutGuard.ManagedByOrganizationMessage, decision.ErrorMessage);
     }
 
+    [Fact]
+    public async Task Owner_affiliation_does_not_block_a_staff_role_elsewhere()
+    {
+        var ownerId = PlatformUserId.New();
+        var ownedOrg = PlatformOrganizationId.New();
+        var staffOrg = PlatformOrganizationId.New();
+        var guard = GuardWithAccess(ownerId, ownedOrg, ProductCode.PinoyBusinessPos, OrganizationRole.OrganizationOwner);
+
+        Assert.False(await guard.HasStaffAffiliationWithOtherOrganizationAsync(
+            [ownerId],
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            staffOrg.Value));
+        Assert.True(await guard.ConflictsWithOtherOrganizationAsync(
+            [ownerId],
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            staffOrg.Value));
+    }
+
+    [Fact]
+    public async Task Staff_affiliation_blocks_a_second_external_staff_organization()
+    {
+        var staffId = PlatformUserId.New();
+        var orgA = PlatformOrganizationId.New();
+        var orgC = PlatformOrganizationId.New();
+        var guard = GuardWithAccess(staffId, orgA, ProductCode.PinoyBusinessPos, OrganizationRole.OrganizationMember);
+
+        Assert.True(await guard.HasStaffAffiliationWithOtherOrganizationAsync(
+            [staffId],
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            orgC.Value));
+        Assert.False(await guard.HasStaffAffiliationWithOtherOrganizationAsync(
+            [staffId],
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            orgA.Value));
+    }
+
+    [Fact]
+    public async Task Personal_user_can_subscribe_while_a_separate_staff_identity_belongs_to_another_organization()
+    {
+        var personalId = PlatformUserId.New();
+        var staffId = PlatformUserId.New();
+        var staffOrg = PlatformOrganizationId.New();
+        var ownedOrg = PlatformOrganizationId.New();
+        var guard = GuardWithAccess(staffId, staffOrg, ProductCode.PinoyBusinessPos, OrganizationRole.OrganizationMember);
+        var checkout = new OrganizationProductCheckoutGuard(new InMemorySubscriptionRepository(), guard);
+        var product = ProductCode.Create(ProductCode.PinoyBusinessPos);
+
+        var subscribe = await checkout.ResolveAsync(personalId, product, null);
+        Assert.False(subscribe.IsBlocked);
+        Assert.Null(subscribe.OrganizationId);
+
+        var personalCannotUseStaffOrg = await checkout.ResolveAsync(personalId, product, staffOrg);
+        Assert.True(personalCannotUseStaffOrg.IsBlocked);
+
+        var staffCannotUseOwnedOrg = await checkout.ResolveAsync(staffId, product, ownedOrg);
+        Assert.True(staffCannotUseOwnedOrg.IsBlocked);
+
+        var staffCheckout = await checkout.ResolveAsync(staffId, product, staffOrg);
+        Assert.True(staffCheckout.IsBlocked);
+        Assert.Equal(OrganizationProductCheckoutGuard.ManagedByOrganizationMessage, staffCheckout.ErrorMessage);
+    }
+
     private static UserProductAffiliationGuard GuardWithAccess(
         PlatformUserId userId,
         PlatformOrganizationId organizationId,
