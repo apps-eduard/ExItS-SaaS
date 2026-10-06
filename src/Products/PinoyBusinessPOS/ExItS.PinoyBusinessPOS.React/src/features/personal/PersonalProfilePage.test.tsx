@@ -167,16 +167,22 @@ describe("PersonalProfilePage", () => {
     expect(screen.queryByText("Region")).not.toBeInTheDocument();
     expect(screen.getByText("123 Example Street")).toBeInTheDocument();
     expect(screen.getByText("Saudi Arabia")).toBeInTheDocument();
+    const home = screen.getByTestId("personal-address-33333333-3333-3333-3333-333333333333");
+    expect(home).toHaveTextContent("Country");
+    expect(home).toHaveTextContent("Philippines");
+    expect(home).toHaveTextContent("Postal code");
+    expect(home).toHaveTextContent("5600");
     expect(screen.getByTestId("personal-address-primary-badge")).toHaveTextContent("Primary");
   });
 
-  it("puts upload on the same row as nationality", async () => {
+  it("keeps contact inside Personal information", async () => {
     const user = userEvent.setup();
     renderProfile("/personal/profile");
     await user.click(await screen.findByTestId("personal-profile-tab-personal"));
+    expect(screen.getByRole("heading", { name: "Personal information" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Contact" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("personal-profile-mobile")).toBeInTheDocument();
     expect(screen.getByTestId("personal-profile-photo-upload-input")).toHaveAttribute("type", "file");
-    expect(screen.getByTestId("personal-profile-photo-upload-trigger")).toHaveTextContent("Upload");
-    expect(screen.getByText("Upload · Optional · Private")).toBeInTheDocument();
     expect(screen.getByText("Nationality · Optional · Private")).toBeInTheDocument();
   });
 

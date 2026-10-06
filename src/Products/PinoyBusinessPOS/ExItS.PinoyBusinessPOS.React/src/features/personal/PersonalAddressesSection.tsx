@@ -12,7 +12,7 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/exits/Notice";
 import { useI18n } from "@/i18n/I18nProvider";
-import { AddressDisplay, AddressForm, emptySharedAddress, type SharedAddressValue } from "@/platform/geography";
+import { AddressForm, emptySharedAddress, type SharedAddressValue } from "@/platform/geography";
 
 type EditorState = {
   id: string | null;
@@ -103,16 +103,15 @@ export function PersonalAddressesSection({ profile, readOnly = false }: { profil
             {address.isPrimary ? <span data-testid="personal-address-primary-badge">[{t("personal.profile.primaryBadge")}] </span> : null}
             {t(address.addressType === "Office" ? "personal.profile.typeOffice" : address.addressType === "Other" ? "personal.profile.typeOther" : "personal.profile.typeHome")}
           </p>
-          <AddressDisplay
-            addressLine1={address.addressLine1}
-            addressLine2={address.addressLine2}
-            barangay={address.barangay}
-            barangayLabel={t("personal.profile.barangay")}
-            city={address.cityMunicipality}
-            administrativeArea={address.provinceState}
-            postalCode={address.postalCode}
-            country={address.country}
-          />
+          <div className="personal-address-saved">
+            <AddressValue label={t("personal.profile.country")} value={address.country} />
+            <AddressValue label={t("personal.profile.province")} value={address.provinceState} />
+            <AddressValue label={t("personal.profile.city")} value={address.cityMunicipality} />
+            <AddressValue label={t("personal.profile.barangay")} value={address.barangay} />
+            <AddressValue label={t("personal.profile.address1")} value={address.addressLine1} />
+            <AddressValue label={t("personal.profile.address2")} value={address.addressLine2} />
+            <AddressValue label={t("personal.profile.postal")} value={address.postalCode} />
+          </div>
           {readOnly ? null : (
             <div className="mt-2 flex flex-wrap gap-2">
               <Button type="button" onClick={() => setEditor({ id: address.id, draft: draftFromAddress(address) })}>
@@ -153,6 +152,15 @@ export function PersonalAddressesSection({ profile, readOnly = false }: { profil
           {t("personal.profile.addAddress")}
         </Button>
       )}
+    </div>
+  );
+}
+
+function AddressValue({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+      <span className="font-semibold">{label}</span>
+      <span>{value?.trim() || "—"}</span>
     </div>
   );
 }

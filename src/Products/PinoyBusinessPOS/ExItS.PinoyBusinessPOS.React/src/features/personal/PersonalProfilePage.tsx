@@ -260,22 +260,18 @@ export function PersonalProfilePage() {
         panels={{
           overview: (
             <div className="personal-profile-layout" data-testid="personal-profile-overview">
-              <ProfileSection title={t("personal.profile.sectionPersonal")} tone="personal">
+              <ProfileSection title={t("personal.profile.sectionPersonal")} tone="personal" wide>
                 <ReadOnlyField label={t("personal.profile.firstName")} value={draft.firstName} />
                 <ReadOnlyField label={t("personal.profile.middleName")} value={draft.middleName} />
                 <ReadOnlyField label={t("personal.profile.lastName")} value={draft.lastName} />
                 <ReadOnlyField label={t("personal.profile.displayName")} value={draft.displayName} />
                 <ReadOnlyField label={t("personal.profile.birthDate")} value={draft.dateOfBirth} />
                 <ReadOnlyField label={t("personal.profile.gender")} value={genderLabel(draft.gender, t)} />
-                <div className="personal-profile-pair">
-                  <ReadOnlyField label={t("personal.profile.nationality")} value={draft.nationality} />
-                  <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    <span className="font-semibold">{t("personal.profile.photo")}</span>
-                    <ProfilePhotoPreview url={photoUrl} name={draft.displayName} compact />
-                  </div>
+                <ReadOnlyField label={t("personal.profile.nationality")} value={draft.nationality} />
+                <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-semibold">{t("personal.profile.photo")}</span>
+                  <ProfilePhotoPreview url={photoUrl} name={draft.displayName} compact />
                 </div>
-              </ProfileSection>
-              <ProfileSection title={t("personal.profile.sectionContact")}>
                 <ReadOnlyField label={t("personal.profile.mobile")} value={draft.phone} />
                 <ReadOnlyField label={t("personal.profile.altMobile")} value={draft.alternativeMobile} />
                 <ReadOnlyField label={t("personal.profile.email")} value={profile.email} />
@@ -294,44 +290,38 @@ export function PersonalProfilePage() {
           ),
           personal: (
             <div className="flex flex-col gap-4">
-              <div className="personal-profile-layout">
-                <ProfileSection title={t("personal.profile.sectionPersonal")} tone="personal">
-                  <Input label={`${t("personal.profile.firstName")} · ${t("personal.profile.required")}`} value={draft.firstName} onChange={(event) => set("firstName", event.target.value)} data-testid="personal-profile-first-name" />
-                  <Input label={`${t("personal.profile.middleName")} · ${t("personal.profile.optional")}`} value={draft.middleName} onChange={(event) => set("middleName", event.target.value)} />
-                  <Input label={`${t("personal.profile.lastName")} · ${t("personal.profile.required")}`} value={draft.lastName} onChange={(event) => set("lastName", event.target.value)} data-testid="personal-profile-last-name" />
-                  <Input label={`${t("personal.profile.displayName")} · ${t("personal.profile.required")}`} value={draft.displayName} onChange={(event) => set("displayName", event.target.value)} data-testid="personal-profile-name-value" />
-                  <Input label={`${t("personal.profile.birthDate")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`} type="date" value={draft.dateOfBirth} onChange={(event) => set("dateOfBirth", event.target.value)} />
-                  <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    <span className="font-semibold">{t("personal.profile.gender")} · {t("personal.profile.optional")} · {t("personal.profile.private")}</span>
-                    <ExitsSelect
-                      value={draft.gender}
-                      options={genderOptions(draft.gender, t)}
-                      placeholder={t("personal.profile.selectPlaceholder")}
-                      onChange={(gender) => set("gender", gender)}
-                      testId="personal-profile-gender"
-                    />
-                  </label>
-                  <div className="personal-profile-pair">
-                    <Input label={`${t("personal.profile.nationality")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`} value={draft.nationality} onChange={(event) => set("nationality", event.target.value)} />
-                    <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                      <span className="font-semibold">{`${t("personal.profile.photoUpload")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`}</span>
-                      <ExitsUpload
-                        variant="button"
-                        uploadLabel={uploadMutation.isPending ? t("personal.profile.photoUploading") : t("personal.profile.photoUpload")}
-                        accept="image/jpeg,image/png,image/webp"
-                        disabled={uploadMutation.isPending}
-                        testId="personal-profile-photo-upload"
-                        onSelectFiles={(files) => onPhotoSelected(files[0])}
-                      />
-                    </div>
-                  </div>
-                </ProfileSection>
-                <ProfileSection title={t("personal.profile.sectionContact")}>
-                  <Input label={`${t("personal.profile.mobile")} · ${t("personal.profile.required")}`} value={draft.phone} onChange={(event) => set("phone", event.target.value)} data-testid="personal-profile-mobile" />
-                  <Input label={`${t("personal.profile.altMobile")} · ${t("personal.profile.optional")}`} value={draft.alternativeMobile} onChange={(event) => set("alternativeMobile", event.target.value)} />
-                  <Input label={`${t("personal.profile.email")} · ${t("personal.profile.required")}`} value={profile.email} readOnly />
-                </ProfileSection>
-              </div>
+              <ProfileSection title={t("personal.profile.sectionPersonal")} tone="personal" wide>
+                <Input label={`${t("personal.profile.firstName")} · ${t("personal.profile.required")}`} value={draft.firstName} onChange={(event) => set("firstName", event.target.value)} data-testid="personal-profile-first-name" />
+                <Input label={`${t("personal.profile.middleName")} · ${t("personal.profile.optional")}`} value={draft.middleName} onChange={(event) => set("middleName", event.target.value)} />
+                <Input label={`${t("personal.profile.lastName")} · ${t("personal.profile.required")}`} value={draft.lastName} onChange={(event) => set("lastName", event.target.value)} data-testid="personal-profile-last-name" />
+                <Input label={`${t("personal.profile.displayName")} · ${t("personal.profile.required")}`} value={draft.displayName} onChange={(event) => set("displayName", event.target.value)} data-testid="personal-profile-name-value" />
+                <Input label={`${t("personal.profile.birthDate")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`} type="date" value={draft.dateOfBirth} onChange={(event) => set("dateOfBirth", event.target.value)} />
+                <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-semibold">{t("personal.profile.gender")} · {t("personal.profile.optional")} · {t("personal.profile.private")}</span>
+                  <ExitsSelect
+                    value={draft.gender}
+                    options={genderOptions(draft.gender, t)}
+                    placeholder={t("personal.profile.selectPlaceholder")}
+                    onChange={(gender) => set("gender", gender)}
+                    testId="personal-profile-gender"
+                  />
+                </label>
+                <Input label={`${t("personal.profile.nationality")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`} value={draft.nationality} onChange={(event) => set("nationality", event.target.value)} />
+                <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-semibold">{`${t("personal.profile.photoUpload")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`}</span>
+                  <ExitsUpload
+                    variant="button"
+                    uploadLabel={uploadMutation.isPending ? t("personal.profile.photoUploading") : t("personal.profile.photoUpload")}
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={uploadMutation.isPending}
+                    testId="personal-profile-photo-upload"
+                    onSelectFiles={(files) => onPhotoSelected(files[0])}
+                  />
+                </div>
+                <Input label={`${t("personal.profile.mobile")} · ${t("personal.profile.required")}`} value={draft.phone} onChange={(event) => set("phone", event.target.value)} data-testid="personal-profile-mobile" />
+                <Input label={`${t("personal.profile.altMobile")} · ${t("personal.profile.optional")}`} value={draft.alternativeMobile} onChange={(event) => set("alternativeMobile", event.target.value)} />
+                <Input label={`${t("personal.profile.email")} · ${t("personal.profile.required")}`} value={profile.email} readOnly />
+              </ProfileSection>
               <SaveButton pending={saveMutation.isPending} onClick={save} label={saveMutation.isPending ? t("personal.profile.saving") : t("personal.profile.save")} />
             </div>
           ),

@@ -21660,6 +21660,13 @@ a.exits-chip--primary:hover {
   min-width: 0;
 }
 
+.personal-address-saved {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+
 .personal-profile-select {
   width: 100%;
   min-width: 0;
@@ -21693,12 +21700,12 @@ a.exits-chip--primary:hover {
     grid-column: 1 / -1;
   }
 
-  .personal-profile-section--personal .personal-profile-fields,
   .personal-profile-section--wide .personal-profile-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 1rem;
   }
 
+  .personal-profile-section--personal .personal-profile-fields,
   .personal-profile-section--details .personal-profile-fields,
   .personal-profile-section--workplace .personal-profile-fields,
   .personal-profile-section--address .personal-profile-fields,
@@ -21710,6 +21717,10 @@ a.exits-chip--primary:hover {
 
   .personal-profile-field--wide {
     grid-column: 1 / -1;
+  }
+
+  .personal-address-saved {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .personal-profile-actions {
