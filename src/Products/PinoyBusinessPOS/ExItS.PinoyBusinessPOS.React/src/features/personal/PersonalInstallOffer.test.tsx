@@ -27,6 +27,7 @@ describe("Personal install offer", () => {
     capturePrompt(prompt.event);
     renderOffer("/personal");
     expect(screen.getByTestId("personal-install-offer")).toHaveTextContent("Add ExItS to your phone");
+    expect(screen.getByTestId("personal-install-close")).toHaveAccessibleName("Close");
     expect(prompt.prompted).toBe(false);
     await user.click(screen.getByTestId("personal-install-accept"));
     expect(prompt.prompted).toBe(true);
@@ -60,7 +61,7 @@ describe("Personal install offer", () => {
     window.matchMedia = original;
   });
 
-  it("shows Safari steps on iPhone and keeps More available after Maybe later", async () => {
+  it("shows Safari steps on iPhone and keeps More available after Close", async () => {
     const user = userEvent.setup();
     const original = window.navigator.userAgent;
     Object.defineProperty(window.navigator, "userAgent", {
@@ -71,7 +72,7 @@ describe("Personal install offer", () => {
     renderOffer("/personal");
     expect(screen.getByText("Tap the Share button")).toBeInTheDocument();
     expect(screen.queryByTestId("personal-install-accept")).not.toBeInTheDocument();
-    await user.click(screen.getByTestId("personal-install-later"));
+    await user.click(screen.getByTestId("personal-install-close"));
     expect(screen.queryByTestId("personal-install-offer")).not.toBeInTheDocument();
     renderMore();
     expect(screen.getByTestId("personal-more-install-open")).toHaveTextContent("Install ExItS");

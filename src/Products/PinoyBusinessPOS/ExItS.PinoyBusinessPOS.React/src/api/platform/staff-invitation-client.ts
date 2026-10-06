@@ -32,6 +32,7 @@ export type StaffInviteTargetWire = {
   publicUserId: string;
   displayName: string;
   userIdentityId: string;
+  canInviteAsStaff?: boolean;
 };
 
 export type AcceptInvitationResultWire = {

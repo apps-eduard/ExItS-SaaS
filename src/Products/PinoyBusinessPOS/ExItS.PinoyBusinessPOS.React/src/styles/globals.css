@@ -21601,6 +21601,11 @@ a.exits-chip--primary:hover {
   }
 }
 
+.personal-business-cards.catalog-form-section-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
 .supplier-form-page {
   width: 100%;
   max-width: 68.75rem; /* 1100px */

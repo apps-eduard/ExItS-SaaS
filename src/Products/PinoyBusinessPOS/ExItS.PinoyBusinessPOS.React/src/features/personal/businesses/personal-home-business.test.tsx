@@ -37,7 +37,7 @@ function affiliation(overrides: Record<string, unknown>) {
   };
 }
 
-function createFetch(affiliations: unknown[] | "error") {
+function createFetch(affiliations: unknown[] | "error", workplaces: unknown[] = []) {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes("/api/v1/platform/antiforgery/token")) {
@@ -64,6 +64,9 @@ function createFetch(affiliations: unknown[] | "error") {
         return jsonResponse(500, { title: "unavailable" });
       }
       return jsonResponse(200, affiliations);
+    }
+    if (url.includes("/api/v1/personal/workplaces")) {
+      return jsonResponse(200, workplaces);
     }
     if (url.includes("/api/v1/personal/dashboard")) {
       return jsonResponse(200, {
@@ -152,6 +155,66 @@ describe("Personal home businesses", () => {
     const startAnother = screen.getByTestId("personal-home-start-another");
     expect(startAnother).toHaveAttribute("href", "/personal/businesses");
     expect(startAnother.parentElement).toBe(open.parentElement);
+  });
+
+  it("opens an owned business directly and asks the staff workplace to log in", async () => {
+    const user = userEvent.setup();
+    const membershipId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    vi.stubGlobal(
+      "fetch",
+      createFetch(
+        [
+          affiliation({
+            organizationId: posOrg,
+            organizationDisplayName: "My Grocery",
+            membershipRole: "OrganizationOwner",
+            roleDisplay: "POS Owner",
+            planDisplayName: "Pro",
+            subscriptionStatus: "Active",
+            canManageBilling: true,
+          }),
+        ],
+        [
+          {
+            organizationId: loanOrg,
+            organizationDisplayName: "North Shop",
+            publicOrganizationId: "ORG012345",
+            staffUserId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            staffLogin: "ana@ORG012345",
+            membershipId,
+            membershipRole: "OrganizationMember",
+            membershipRoleDisplay: "Staff",
+            membershipStatus: "Active",
+            productRole: "Cashier",
+            productRoleDisplay: "Cashier",
+            branches: [],
+          },
+        ],
+      ),
+    );
+    renderHome();
+
+    const open = await screen.findByTestId("personal-business-open-pinoy-business-pos");
+    expect(open).toHaveTextContent("Open");
+    const ownedCard = screen.getByTestId("personal-business-pinoy-business-pos");
+    const staffCard = screen.getByTestId(`personal-staff-business-${membershipId}`);
+    expect(ownedCard).toHaveClass("catalog-form-section");
+    expect(ownedCard).toHaveTextContent("Your businesses");
+    expect(ownedCard).toHaveTextContent("POS Owner");
+    expect(staffCard).toHaveClass("catalog-form-section");
+    expect(staffCard).toHaveTextContent("Your workplace");
+    expect(staffCard).toHaveTextContent("Cashier");
+    expect(staffCard).not.toHaveTextContent("Your businesses");
+    expect(staffCard).not.toHaveTextContent("POS Owner");
+    expect(ownedCard.parentElement).toBe(staffCard.parentElement);
+    expect(ownedCard.parentElement).toHaveClass("personal-business-cards");
+    expect(screen.getByText("My Grocery")).toBeInTheDocument();
+    expect(screen.getByText("North Shop")).toBeInTheDocument();
+    expect(screen.queryByTestId(`personal-business-open-pinoy-loan-manager`)).not.toBeInTheDocument();
+    await user.click(screen.getByTestId(`personal-staff-login-${membershipId}`));
+    expect(screen.getByTestId("workplace-sign-in-dialog")).toHaveTextContent("North Shop");
+    expect(screen.getByTestId("workplace-sign-in-username")).toHaveValue("ana@ORG012345");
+    expect(screen.getByTestId("workplace-sign-in-forgot")).toBeInTheDocument();
   });
 
   it("shows each different product once", async () => {

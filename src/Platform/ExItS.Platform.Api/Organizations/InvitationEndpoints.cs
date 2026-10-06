@@ -177,7 +177,9 @@ internal static class InvitationEndpoints
                     StatusCodes.Status403Forbidden);
             }
 
-            var result = await useCase.ExecuteAsync(body.Input ?? string.Empty, ct).ConfigureAwait(false);
+            var result = await useCase
+                .ExecuteAsync(PlatformOrganizationId.From(organizationId), body.Input ?? string.Empty, ct)
+                .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -80,14 +81,21 @@ function PersonalInstallCard({
   const [outcome, setOutcome] = useState<"accepted" | "dismissed" | null>(null);
   const [hidden, setHidden] = useState(false);
 
+  function dismissCard() {
+    dismissPersonalInstallPrompt();
+    onFinished?.();
+    setHidden(true);
+  }
+
   if (hidden) {
     return null;
   }
 
   if (mode === "ios-safari") {
     return (
-      <Card className="flex flex-col gap-2 p-3" data-testid={testId}>
-        <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{t("personal.install.iosTitle")}</p>
+      <Card className="relative flex flex-col gap-2 p-3" data-testid={testId}>
+        <InstallCloseButton label={t("personal.install.close")} onClick={dismissCard} />
+        <p className="m-0 pe-8 text-[length:var(--exits-text-sm)] font-semibold">{t("personal.install.iosTitle")}</p>
         <ol className="m-0 list-decimal ps-5 text-[length:var(--exits-text-xs)] text-muted">
           <li>{t("personal.install.iosStep1")}</li>
           <li>{t("personal.install.iosStep2")}</li>
@@ -97,11 +105,7 @@ function PersonalInstallCard({
           <Button
             type="button"
             data-testid="personal-install-got-it"
-            onClick={() => {
-              dismissPersonalInstallPrompt();
-              onFinished?.();
-              setHidden(true);
-            }}
+            onClick={dismissCard}
           >
             {t("personal.install.gotIt")}
           </Button>
@@ -109,11 +113,7 @@ function PersonalInstallCard({
             type="button"
             variant="ghost"
             data-testid="personal-install-later"
-            onClick={() => {
-              dismissPersonalInstallPrompt();
-              onFinished?.();
-              setHidden(true);
-            }}
+            onClick={dismissCard}
           >
             {t("personal.install.later")}
           </Button>
@@ -131,8 +131,9 @@ function PersonalInstallCard({
   }
 
   return (
-    <Card className="flex flex-col gap-2 p-3" data-testid={testId}>
-      <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{t("personal.install.title")}</p>
+    <Card className="relative flex flex-col gap-2 p-3" data-testid={testId}>
+      <InstallCloseButton label={t("personal.install.close")} disabled={busy} onClick={dismissCard} />
+      <p className="m-0 pe-8 text-[length:var(--exits-text-sm)] font-semibold">{t("personal.install.title")}</p>
       <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("personal.install.detail")}</p>
       {outcome === "accepted" ? (
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="personal-install-accepted">
@@ -169,16 +170,37 @@ function PersonalInstallCard({
           variant="ghost"
           data-testid="personal-install-later"
           disabled={busy}
-          onClick={() => {
-            dismissPersonalInstallPrompt();
-            onFinished?.();
-            setHidden(true);
-          }}
+          onClick={dismissCard}
         >
           {t("personal.install.later")}
         </Button>
       </div>
     </Card>
+  );
+}
+
+function InstallCloseButton({
+  label,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="absolute end-1 top-1"
+      data-testid="personal-install-close"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <X className="size-4" aria-hidden />
+    </Button>
   );
 }
 

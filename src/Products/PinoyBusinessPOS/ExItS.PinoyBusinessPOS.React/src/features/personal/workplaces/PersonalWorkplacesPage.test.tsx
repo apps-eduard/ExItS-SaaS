@@ -141,11 +141,10 @@ describe("PersonalWorkplacesPage", () => {
     renderPage();
 
     await screen.findByTestId(`personal-workplace-${membershipId}`);
-    await user.type(
-      screen.getByTestId(`personal-workplace-password-${membershipId}`),
-      "workplace-secret",
-    );
     await user.click(screen.getByTestId(`personal-workplace-sign-in-${membershipId}`));
+    expect(screen.getByTestId("workplace-sign-in-username")).toHaveValue("kizy@ORG012345");
+    await user.type(screen.getByTestId("workplace-sign-in-password"), "workplace-secret");
+    await user.click(screen.getByTestId("workplace-sign-in-submit"));
     expect(signIn).toHaveBeenCalledWith("kizy@ORG012345", "workplace-secret");
     expect(await screen.findByTestId("post-login-home")).toBeInTheDocument();
     expect(screen.queryByTestId(`personal-workplace-copy-${membershipId}`)).not.toBeInTheDocument();

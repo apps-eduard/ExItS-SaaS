@@ -270,6 +270,18 @@ public sealed class CreateOrganizationInvitation
                     "An active organization staff identity already exists for this contact email.");
             }
 
+            if (await ExistingStaffInvitationGuard.IsAlreadyStaffOfAnotherOrganizationAsync(
+                    _users,
+                    organizationId,
+                    normalizedContactEmail,
+                    personalUserId: null,
+                    cancellationToken).ConfigureAwait(false))
+            {
+                return ApplicationResult<OrganizationInvitationDto>.Failure(
+                    ApplicationErrorCodes.ProductAffiliationConflict,
+                    ExistingStaffInvitationGuard.AlreadyStaffElsewhereMessage);
+            }
+
             var (invitation, acceptToken) = OrganizationInvitation.Create(
                 organizationId,
                 normalizedContactEmail,

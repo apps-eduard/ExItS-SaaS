@@ -8775,7 +8775,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.subscriptions.role": "Papel",
   "personal.businesses.title": "Your businesses",
   "personal.businesses.lede": "Use ExItS products for your business.",
-  "personal.businesses.start": "Start a Business",
+  "personal.businesses.start": "Start your own business",
   "personal.businesses.startAnother": "Start another product",
   "personal.businesses.open": "Open Business",
   "personal.businesses.noBusinessYet": "No business yet",
