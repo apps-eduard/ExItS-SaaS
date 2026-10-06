@@ -810,7 +810,7 @@ export const en = {
   "staffBusinessProfile.no": "No",
   "staffBusinessProfile.manageAccess": "Manage POS access",
   "staffBusinessProfile.viewProfile": "Staff profile",
-  "staffBusinessProfile.tabProfile": "Staff profile",
+  "staffBusinessProfile.tabProfile": "Staff details",
   "staffBusinessProfile.tabEdit": "Staff information",
   "staffBusinessProfile.tabPersonal": "Personal profile",
   "staffBusinessProfile.staffId": "Staff ID",

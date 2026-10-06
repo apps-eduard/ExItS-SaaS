@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { IdCard, Pencil, UserRound } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -478,9 +479,9 @@ export function OrgStaffDetailPage() {
           if (value === "edit") setEditOpen(true);
         }}
         items={[
-          { key: "profile", label: t("staffBusinessProfile.tabProfile"), testId: "org-staff-tab-profile" },
-          ...(canEdit ? [{ key: "edit", label: t("staffBusinessProfile.tabEdit"), testId: "org-staff-tab-edit" }] : []),
-          { key: "personal", label: t("staffBusinessProfile.tabPersonal"), testId: "org-staff-tab-personal" },
+          { key: "profile", label: t("staffBusinessProfile.tabProfile"), icon: IdCard, testId: "org-staff-tab-profile" },
+          ...(canEdit ? [{ key: "edit", label: t("staffBusinessProfile.tabEdit"), icon: Pencil, testId: "org-staff-tab-edit" }] : []),
+          { key: "personal", label: t("staffBusinessProfile.tabPersonal"), icon: UserRound, testId: "org-staff-tab-personal" },
         ]}
         panels={{
           profile: <StaffRecordView profile={profile} source="staff" />,

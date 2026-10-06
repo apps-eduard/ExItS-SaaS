@@ -144,6 +144,10 @@ describe("OrgStaffDetailPage", () => {
     renderPage();
 
     await screen.findByTestId("org-staff-detail-page");
+    expect(screen.getByTestId("org-staff-tab-profile")).toHaveTextContent("Staff details");
+    expect(screen.getByTestId("org-staff-tab-profile").querySelector("svg")).toBeTruthy();
+    expect(screen.getByTestId("org-staff-tab-edit").querySelector("svg")).toBeTruthy();
+    expect(screen.getByTestId("org-staff-tab-personal").querySelector("svg")).toBeTruthy();
     const header = screen.getByTestId("page-header-subtitle");
     expect(header).toHaveTextContent(/^Staff/);
     const role = header.querySelector(".text-primary");
