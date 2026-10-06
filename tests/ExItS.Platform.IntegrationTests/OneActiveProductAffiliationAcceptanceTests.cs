@@ -355,6 +355,12 @@ public sealed class OneActiveProductAffiliationAcceptanceTests(PostgreSqlFixture
                 ("a", orgA),
                 ("b", orgB),
                 ("loan", orgLoan));
+
+            var restoreOptions = new DbContextOptionsBuilder<PlatformDbContext>()
+                .UseNpgsql(fixture.ConnectionString)
+                .Options;
+            await using var restore = new PlatformDbContext(restoreOptions);
+            await restore.Database.MigrateAsync();
         }
     }
 
@@ -560,13 +566,11 @@ public sealed class OneActiveProductAffiliationAcceptanceTests(PostgreSqlFixture
         Assert.True(acceptStaffResponse.StatusCode == HttpStatusCode.OK, acceptStaffBody);
 
         var secondEmployer = await StartOwnerAsync("second");
-        var secondInvite = await InviteStaffAsync(secondEmployer.Token, secondEmployer.OrganizationId, workplace.Email);
-        var ownerSessionAgain = await EnsurePersonalSessionAsync(workplace.Email, workplace.Password);
         using var rejectSecond = Authed(
             HttpMethod.Post,
-            "/api/v1/platform/invitations/accept-as-personal",
-            ownerSessionAgain,
-            new { token = secondInvite, password = "Correct-Horse-9!" });
+            $"/api/v1/organizations/{secondEmployer.OrganizationId}/staff-invitations",
+            secondEmployer.Token,
+            new { email = workplace.Email, role = "OrganizationMember", productRole = "Cashier" });
         var rejectResponse = await _client.SendAsync(rejectSecond);
         var rejectBody = await rejectResponse.Content.ReadAsStringAsync();
         Assert.Equal(HttpStatusCode.Conflict, rejectResponse.StatusCode);
@@ -687,6 +691,7 @@ public sealed class OneActiveProductAffiliationAcceptanceTests(PostgreSqlFixture
                 new { usernameOrEmail = registeredEmail, password });
             login.EnsureSuccessStatusCode();
             var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
+            await PlatformIntegrationTestUsers.SaveStaffReadyPersonalProfileAsync(_client, token);
             return (token, userId, registeredEmail, password);
         }
 

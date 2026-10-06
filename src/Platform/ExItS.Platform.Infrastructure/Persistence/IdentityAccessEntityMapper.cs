@@ -99,7 +99,26 @@ internal static class IdentityAccessEntityMapper
             record.JobTitle,
             record.WorkPhone,
             record.WorkEmail,
-            record.IsBusinessContact);
+            record.IsBusinessContact,
+            record.StaffId,
+            record.Country,
+            record.AddressLine1,
+            record.AddressLine2,
+            record.Barangay,
+            record.CityMunicipality,
+            record.ProvinceState,
+            record.PostalCode,
+            record.ProfileDetailsCaptured,
+            record.ProfileFirstName,
+            record.ProfileMiddleName,
+            record.ProfileLastName,
+            record.ProfileDateOfBirth,
+            record.ProfileGender,
+            record.ProfileNationality,
+            record.ProfilePhotoUrl,
+            record.ProfileMobile,
+            record.ProfileEmail,
+            record.ProfileDisplayName);
 
     public static OrganizationMembershipRecord ToMembershipRecord(OrganizationMembership membership) =>
         new()
@@ -115,6 +134,25 @@ internal static class IdentityAccessEntityMapper
             WorkPhone = membership.WorkPhone,
             WorkEmail = membership.WorkEmail,
             IsBusinessContact = membership.IsBusinessContact,
+            StaffId = membership.StaffId,
+            Country = membership.Country,
+            AddressLine1 = membership.AddressLine1,
+            AddressLine2 = membership.AddressLine2,
+            Barangay = membership.Barangay,
+            CityMunicipality = membership.CityMunicipality,
+            ProvinceState = membership.ProvinceState,
+            PostalCode = membership.PostalCode,
+            ProfileDetailsCaptured = membership.ProfileDetailsCaptured,
+            ProfileFirstName = membership.ProfileFirstName,
+            ProfileMiddleName = membership.ProfileMiddleName,
+            ProfileLastName = membership.ProfileLastName,
+            ProfileDateOfBirth = membership.ProfileDateOfBirth,
+            ProfileGender = membership.ProfileGender,
+            ProfileNationality = membership.ProfileNationality,
+            ProfilePhotoUrl = membership.ProfilePhotoUrl,
+            ProfileMobile = membership.ProfileMobile,
+            ProfileEmail = membership.ProfileEmail,
+            ProfileDisplayName = membership.ProfileDisplayName,
             CreatedAtUtc = membership.CreatedAtUtc,
             UpdatedAtUtc = membership.UpdatedAtUtc,
             SuspendedAtUtc = membership.SuspendedAtUtc,
@@ -133,6 +171,25 @@ internal static class IdentityAccessEntityMapper
         record.WorkPhone = membership.WorkPhone;
         record.WorkEmail = membership.WorkEmail;
         record.IsBusinessContact = membership.IsBusinessContact;
+        record.StaffId = membership.StaffId;
+        record.Country = membership.Country;
+        record.AddressLine1 = membership.AddressLine1;
+        record.AddressLine2 = membership.AddressLine2;
+        record.Barangay = membership.Barangay;
+        record.CityMunicipality = membership.CityMunicipality;
+        record.ProvinceState = membership.ProvinceState;
+        record.PostalCode = membership.PostalCode;
+        record.ProfileDetailsCaptured = membership.ProfileDetailsCaptured;
+        record.ProfileFirstName = membership.ProfileFirstName;
+        record.ProfileMiddleName = membership.ProfileMiddleName;
+        record.ProfileLastName = membership.ProfileLastName;
+        record.ProfileDateOfBirth = membership.ProfileDateOfBirth;
+        record.ProfileGender = membership.ProfileGender;
+        record.ProfileNationality = membership.ProfileNationality;
+        record.ProfilePhotoUrl = membership.ProfilePhotoUrl;
+        record.ProfileMobile = membership.ProfileMobile;
+        record.ProfileEmail = membership.ProfileEmail;
+        record.ProfileDisplayName = membership.ProfileDisplayName;
         record.UpdatedAtUtc = membership.UpdatedAtUtc;
         record.SuspendedAtUtc = membership.SuspendedAtUtc;
         record.RemovedAtUtc = membership.RemovedAtUtc;

@@ -208,6 +208,13 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
         if (path.StartsWith("/api/v1/platform", StringComparison.OrdinalIgnoreCase))
         {
+            // Shared geography reference is not tenant data. Personal, organization, and platform
+            // sessions may read it. Address records stay behind their own authorization.
+            if (IsSharedGeographyReferencePath(path))
+            {
+                return accountClass is AccountClass.Personal or AccountClass.Organization or AccountClass.Platform;
+            }
+
             // Ownership transfer accept/decline/list is Personal-recipient capable (and Organization).
             if (IsOwnershipTransferRecipientPath(path))
             {
@@ -244,6 +251,9 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
         return false;
     }
+
+    internal static bool IsSharedGeographyReferencePath(string path) =>
+        path.StartsWith("/api/v1/platform/reference/geography", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Personal-recipient staff invite paths (list / decline / accept-by-id).

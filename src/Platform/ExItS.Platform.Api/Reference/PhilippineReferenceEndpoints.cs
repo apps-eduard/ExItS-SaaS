@@ -48,5 +48,30 @@ public static class PhilippineReferenceEndpoints
 
             return PlatformApiResults.FromResult(useCase.Execute(regionCode), Results.Ok);
         });
+
+        root.MapGet("/provinces", (
+            ListPhilippineProvinces useCase,
+            HttpContext http) =>
+        {
+            if (http.User.Identity?.IsAuthenticated != true)
+            {
+                return Results.Unauthorized();
+            }
+
+            return PlatformApiResults.FromResult(useCase.Execute(), Results.Ok);
+        });
+
+        root.MapGet("/provinces/{provinceCode}/localities", (
+            string provinceCode,
+            ListPhilippineLocalitiesByProvince useCase,
+            HttpContext http) =>
+        {
+            if (http.User.Identity?.IsAuthenticated != true)
+            {
+                return Results.Unauthorized();
+            }
+
+            return PlatformApiResults.FromResult(useCase.Execute(provinceCode), Results.Ok);
+        });
     }
 }

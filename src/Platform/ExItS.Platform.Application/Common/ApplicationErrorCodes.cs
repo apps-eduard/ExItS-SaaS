@@ -178,6 +178,10 @@ public static class ApplicationErrorCodes
     public const string LocalValidationNotInitialized = "application.local_validation.not_initialized";
     public const string LocalValidationIdentityUnknown = "application.local_validation.identity_unknown";
 
+    public const string PersonalProfilePhotoInvalid = "application.personal.profile_photo.invalid";
+    public const string PersonalProfileIncomplete = "application.personal.profile.incomplete";
+    public const string PersonalProfileNotVisible = "application.personal.profile.not_visible";
+    public const string PersonalAddressNotFound = "application.personal.address.not_found";
     public const string PersonalContactNotFound = "application.personal.contact.not_found";
     public const string PersonalContactEmailConflict = "application.personal.contact.email.conflict";
     public const string PersonalContactIdentityConflict = "application.personal.contact.identity.conflict";

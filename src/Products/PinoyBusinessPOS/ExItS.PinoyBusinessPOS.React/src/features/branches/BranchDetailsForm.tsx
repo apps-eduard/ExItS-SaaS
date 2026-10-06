@@ -1,4 +1,5 @@
 import type { MessageKey } from "@/i18n/messages";
+import { CountrySelect } from "@/platform/geography";
 import { branchAdminCopy } from "@/features/branches/branch-admin-copy";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
@@ -145,12 +146,11 @@ export function BranchDetailsForm({
           </label>
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.countryCode")}
-            <input
-              className="exits-input font-normal"
+            <CountrySelect
               value={BRANCH_DEFAULT_COUNTRY_CODE}
-              readOnly
-              aria-readonly="true"
-              data-testid="branch-country"
+              disabled
+              testId="branch-country"
+              onChange={() => undefined}
             />
           </label>
         </div>

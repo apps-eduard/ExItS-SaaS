@@ -82,6 +82,12 @@ public interface IOrganizationMembershipRepository
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> StaffIdInUseAsync(
+        PlatformOrganizationId organizationId,
+        string staffId,
+        OrganizationMembershipId exceptMembershipId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(OrganizationMembership membership, CancellationToken cancellationToken = default);

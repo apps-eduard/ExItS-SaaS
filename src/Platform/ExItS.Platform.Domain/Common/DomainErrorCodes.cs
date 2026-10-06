@@ -207,6 +207,8 @@ public static class DomainErrorCodes
     public const string PlatformSettingsConcurrencyConflict = "platform.settings.concurrency_conflict";
 
     public const string InvalidPersonalContactId = "platform.personal.contact.id.invalid";
+    public const string InvalidPersonalAddressId = "platform.personal.address.id.invalid";
+    public const string PersonalAddressIncomplete = "platform.personal.address.incomplete";
     public const string InvalidPersonalContactDisplayName = "platform.personal.contact.display_name.invalid";
     public const string PersonalContactEmailConflict = "platform.personal.contact.email.conflict";
     public const string InvalidPersonalDebtRelationshipId = "platform.personal.debt_relationship.id.invalid";

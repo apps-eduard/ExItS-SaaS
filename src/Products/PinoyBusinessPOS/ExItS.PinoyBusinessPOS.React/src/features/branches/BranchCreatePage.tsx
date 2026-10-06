@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Notice } from "@/components/exits/Notice";
 import { suggestBranchCode } from "@/features/branches/branch-code";
+import { CountrySelect } from "@/platform/geography";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
@@ -370,12 +371,11 @@ export function BranchCreatePage() {
             </label>
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.countryCode")}
-              <input
-                className="exits-input"
+              <CountrySelect
                 value={BRANCH_DEFAULT_COUNTRY_CODE}
-                readOnly
-                aria-readonly="true"
-                data-testid="branch-create-country"
+                disabled
+                testId="branch-create-country"
+                onChange={() => undefined}
               />
             </label>
           </div>

@@ -14,7 +14,9 @@ export type PageHeaderProps = {
   /** Optional icon shown before the page title. */
   titleIcon?: LucideIcon;
   /** Muted line under the title (e.g. branch name or record name). */
-  subtitle?: string;
+  subtitle?: ReactNode;
+  /** Extra classes for the subtitle line. Replaces the default single-line trim. */
+  subtitleClassName?: string;
   /**
    * Help text. Shown in the info popover beside the title, not as a line under it.
    * Ignored for `variant="compact"`.
@@ -61,6 +63,7 @@ export function PageHeader({
   title,
   titleIcon: TitleIcon,
   subtitle,
+  subtitleClassName,
   description,
   infoToggleLabel,
   titleTestId,
@@ -216,7 +219,10 @@ export function PageHeader({
           {!compact && subtitle ? (
             <p
               data-testid="page-header-subtitle"
-              className="page-header__subtitle m-0 truncate text-[length:var(--exits-text-sm)] font-medium text-muted"
+              className={cn(
+                "page-header__subtitle m-0 text-[length:var(--exits-text-sm)] font-medium text-muted",
+                subtitleClassName ?? "truncate",
+              )}
             >
               {subtitle}
             </p>

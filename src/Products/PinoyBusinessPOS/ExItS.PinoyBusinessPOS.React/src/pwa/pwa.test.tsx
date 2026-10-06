@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppProviders } from "@/app/providers";
 import {
@@ -109,8 +109,8 @@ describe("PWA update notice", () => {
       </AppProviders>,
     );
     expect(onRefresh).not.toHaveBeenCalled();
-    expect(screen.getByRole("status")).toHaveTextContent("Update available");
-    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Refresh to get the latest version");
+    await user.click(screen.getByRole("button", { name: "Refresh now" }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
@@ -135,6 +135,10 @@ describe("PWA update notice", () => {
     expect(dialog).toHaveTextContent("Refresh to get the latest version");
     expect(dialog).toHaveTextContent("A new version of ExItS is ready on this device.");
     await user.click(screen.getByRole("button", { name: "Refresh now" }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100"));
+    expect(screen.getByRole("button", { name: "Loading 100%" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Loading 100%" }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 

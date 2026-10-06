@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -486,6 +487,7 @@ public sealed class AcceptOrganizationInvitation
     private readonly PlatformPasswordOptions _passwordOptions;
     private readonly UserProductAffiliationGuard _affiliations;
     private readonly OrganizationStaffSeatPolicy _staffSeats;
+    private readonly PersonalProfileAcceptanceGate? _profileGate;
 
     public AcceptOrganizationInvitation(
         IOrganizationInvitationRepository invitations,
@@ -505,7 +507,8 @@ public sealed class AcceptOrganizationInvitation
         IAuditWriter audit,
         IOptions<PlatformPasswordOptions> passwordOptions,
         UserProductAffiliationGuard affiliations,
-        OrganizationStaffSeatPolicy staffSeats)
+        OrganizationStaffSeatPolicy staffSeats,
+        PersonalProfileAcceptanceGate? profileGate = null)
     {
         _invitations = invitations;
         _organizations = organizations;
@@ -525,6 +528,7 @@ public sealed class AcceptOrganizationInvitation
         _passwordOptions = passwordOptions.Value;
         _affiliations = affiliations;
         _staffSeats = staffSeats;
+        _profileGate = profileGate;
     }
 
     public Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> ExecuteAsync(
@@ -784,6 +788,26 @@ public sealed class AcceptOrganizationInvitation
             }
 
             linkedPersonalUserId = personalProof.PersonalUserId;
+            if (_profileGate is not null)
+            {
+                var personalUser = await _users
+                    .GetByIdAsync(authenticatedPersonalUserId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (personalUser is not null)
+                {
+                    var missing = await _profileGate
+                        .MissingStaffFieldsAsync(personalUser, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (missing is not null)
+                    {
+                        return new LockedAcceptOutcome(
+                            ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                                ApplicationErrorCodes.PersonalProfileIncomplete,
+                                missing),
+                            Outbound: null);
+                    }
+                }
+            }
         }
         else if (invitation.IsExItsNativePersonalInvite)
         {

@@ -220,6 +220,17 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
         return records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList();
     }
 
+    public Task<bool> StaffIdInUseAsync(
+        PlatformOrganizationId organizationId,
+        string staffId,
+        OrganizationMembershipId exceptMembershipId,
+        CancellationToken cancellationToken = default) =>
+        _db.OrganizationMemberships.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                 && m.StaffId == staffId
+                 && m.Id != exceptMembershipId.Value,
+            cancellationToken);
+
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {
         _db.OrganizationMemberships.Add(IdentityAccessEntityMapper.ToMembershipRecord(membership));

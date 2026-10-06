@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
@@ -33,6 +34,28 @@ public sealed class OrganizationMembership
     /// Owner defaults to true on create; other roles default to false.
     /// </summary>
     public bool IsBusinessContact { get; private set; }
+    public string? StaffId { get; private set; }
+    public string? Country { get; private set; }
+    public string? AddressLine1 { get; private set; }
+    public string? AddressLine2 { get; private set; }
+    public string? Barangay { get; private set; }
+    public string? CityMunicipality { get; private set; }
+    public string? ProvinceState { get; private set; }
+    public string? PostalCode { get; private set; }
+    /// <summary>
+    /// Copied staff identity. Once saved, later personal-profile edits do not change these values.
+    /// </summary>
+    public bool ProfileDetailsCaptured { get; private set; }
+    public string? ProfileFirstName { get; private set; }
+    public string? ProfileMiddleName { get; private set; }
+    public string? ProfileLastName { get; private set; }
+    public DateOnly? ProfileDateOfBirth { get; private set; }
+    public string? ProfileGender { get; private set; }
+    public string? ProfileNationality { get; private set; }
+    public string? ProfilePhotoUrl { get; private set; }
+    public string? ProfileMobile { get; private set; }
+    public string? ProfileEmail { get; private set; }
+    public string? ProfileDisplayName { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset? SuspendedAtUtc { get; private set; }
@@ -57,7 +80,26 @@ public sealed class OrganizationMembership
         DateTimeOffset? suspendedAtUtc,
         DateTimeOffset? removedAtUtc,
         string? reason,
-        string? actorReference)
+        string? actorReference,
+        string? staffId = null,
+        string? country = null,
+        string? addressLine1 = null,
+        string? addressLine2 = null,
+        string? barangay = null,
+        string? cityMunicipality = null,
+        string? provinceState = null,
+        string? postalCode = null,
+        bool profileDetailsCaptured = false,
+        string? profileFirstName = null,
+        string? profileMiddleName = null,
+        string? profileLastName = null,
+        DateOnly? profileDateOfBirth = null,
+        string? profileGender = null,
+        string? profileNationality = null,
+        string? profilePhotoUrl = null,
+        string? profileMobile = null,
+        string? profileEmail = null,
+        string? profileDisplayName = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -76,6 +118,25 @@ public sealed class OrganizationMembership
         RemovedAtUtc = removedAtUtc;
         Reason = reason;
         ActorReference = actorReference;
+        StaffId = staffId;
+        Country = country;
+        AddressLine1 = addressLine1;
+        AddressLine2 = addressLine2;
+        Barangay = barangay;
+        CityMunicipality = cityMunicipality;
+        ProvinceState = provinceState;
+        PostalCode = postalCode;
+        ProfileDetailsCaptured = profileDetailsCaptured;
+        ProfileFirstName = profileFirstName;
+        ProfileMiddleName = profileMiddleName;
+        ProfileLastName = profileLastName;
+        ProfileDateOfBirth = profileDateOfBirth;
+        ProfileGender = profileGender;
+        ProfileNationality = profileNationality;
+        ProfilePhotoUrl = profilePhotoUrl;
+        ProfileMobile = profileMobile;
+        ProfileEmail = profileEmail;
+        ProfileDisplayName = profileDisplayName;
     }
 
     public static OrganizationMembership Create(
@@ -136,7 +197,26 @@ public sealed class OrganizationMembership
         string? jobTitle = null,
         string? workPhone = null,
         string? workEmail = null,
-        bool isBusinessContact = false) =>
+        bool isBusinessContact = false,
+        string? staffId = null,
+        string? country = null,
+        string? addressLine1 = null,
+        string? addressLine2 = null,
+        string? barangay = null,
+        string? cityMunicipality = null,
+        string? provinceState = null,
+        string? postalCode = null,
+        bool profileDetailsCaptured = false,
+        string? profileFirstName = null,
+        string? profileMiddleName = null,
+        string? profileLastName = null,
+        DateOnly? profileDateOfBirth = null,
+        string? profileGender = null,
+        string? profileNationality = null,
+        string? profilePhotoUrl = null,
+        string? profileMobile = null,
+        string? profileEmail = null,
+        string? profileDisplayName = null) =>
         new(
             id,
             organizationId,
@@ -154,7 +234,26 @@ public sealed class OrganizationMembership
             suspendedAtUtc,
             removedAtUtc,
             reason,
-            actorReference);
+            actorReference,
+            staffId,
+            country,
+            addressLine1,
+            addressLine2,
+            barangay,
+            cityMunicipality,
+            provinceState,
+            postalCode,
+            profileDetailsCaptured,
+            profileFirstName,
+            profileMiddleName,
+            profileLastName,
+            profileDateOfBirth,
+            profileGender,
+            profileNationality,
+            profilePhotoUrl,
+            profileMobile,
+            profileEmail,
+            profileDisplayName);
 
     public void ChangeRole(OrganizationRole role, DateTimeOffset utcNow, string? actorReference = null)
     {
@@ -230,6 +329,64 @@ public sealed class OrganizationMembership
         WorkEmail = NormalizeWorkEmail(workEmail);
         IsBusinessContact = isBusinessContact;
         ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void SetStaffWorkplace(
+        string? staffId,
+        string? country,
+        string? addressLine1,
+        string? addressLine2,
+        string? barangay,
+        string? cityMunicipality,
+        string? provinceState,
+        string? postalCode,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureActiveForProfileEdit();
+        StaffId = NormalizeOptionalText(staffId, 32);
+        Country = NormalizeOptionalText(country, 100);
+        AddressLine1 = NormalizeOptionalText(addressLine1, 200);
+        AddressLine2 = NormalizeOptionalText(addressLine2, 200);
+        Barangay = NormalizeOptionalText(barangay, 100);
+        CityMunicipality = NormalizeOptionalText(cityMunicipality, 100);
+        ProvinceState = NormalizeOptionalText(provinceState, 100);
+        PostalCode = NormalizeOptionalText(postalCode, 16);
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Stores the staff copy of personal details. Later edits to the personal profile do not flow back here.
+    /// </summary>
+    public void SetStaffIdentity(
+        string? firstName,
+        string? middleName,
+        string? lastName,
+        string? dateOfBirth,
+        string? gender,
+        string? nationality,
+        string? profilePhotoUrl,
+        string? mobileNumber,
+        string? email,
+        string? displayName,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureActiveForProfileEdit();
+        ProfileFirstName = NormalizeOptionalText(firstName, 100);
+        ProfileMiddleName = NormalizeOptionalText(middleName, 100);
+        ProfileLastName = NormalizeOptionalText(lastName, 100);
+        ProfileDateOfBirth = NormalizeDate(dateOfBirth);
+        ProfileGender = NormalizeOptionalText(gender, 32);
+        ProfileNationality = NormalizeOptionalText(nationality, 100);
+        ProfilePhotoUrl = NormalizePhotoUrl(profilePhotoUrl);
+        ProfileMobile = NormalizePhone(mobileNumber);
+        ProfileEmail = string.IsNullOrWhiteSpace(email) ? null : PlatformUser.NormalizeEmail(email);
+        ProfileDisplayName = string.IsNullOrWhiteSpace(displayName)
+            ? null
+            : PlatformUser.NormalizeDisplayName(displayName);
+        ProfileDetailsCaptured = true;
         UpdatedAtUtc = utcNow;
     }
 
@@ -329,6 +486,43 @@ public sealed class OrganizationMembership
             throw new DomainException(
                 DomainErrorCodes.InvalidMembershipBusinessProfile,
                 $"Text field must be at most {maxLength} characters without markup.");
+        }
+
+        return trimmed;
+    }
+
+    private static DateOnly? NormalizeDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (!DateOnly.TryParse(value.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidMembershipBusinessProfile,
+                "Date of birth must use YYYY-MM-DD.");
+        }
+
+        return parsed;
+    }
+
+    private static string? NormalizePhotoUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Length > 2048
+            || trimmed.Contains('<', StringComparison.Ordinal)
+            || trimmed.Contains('>', StringComparison.Ordinal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidMembershipBusinessProfile,
+                "Profile photo reference is invalid.");
         }
 
         return trimmed;

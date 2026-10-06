@@ -25,7 +25,9 @@ export type ExitsSelectProps<T extends string = string> = {
   searchable?: boolean;
   searchPlaceholder?: string;
   emptyLabel?: string;
+  placeholder?: string;
   testId?: string;
+  dataset?: Record<string, string>;
   "aria-label"?: string;
   "aria-labelledby"?: string;
 };
@@ -51,14 +53,16 @@ export function ExitsSelect<T extends string>({
   searchable = false,
   searchPlaceholder = "Search…",
   emptyLabel = "No matches",
+  placeholder = "",
   testId,
+  dataset,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
 }: ExitsSelectProps<T>) {
   const menu = useDismissibleOpen(false);
   const [query, setQuery] = useState("");
   const selected = options.find((option) => option.value === value);
-  const label = selected?.label ?? value;
+  const label = selected?.label ?? (value || placeholder);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
@@ -104,6 +108,9 @@ export function ExitsSelect<T extends string>({
           onClick={onClick}
           onKeyDown={onKeyDown}
           data-testid={testId}
+          {...Object.fromEntries(
+            Object.entries(dataset ?? {}).map(([key, entry]) => [`data-${key}`, entry]),
+          )}
         >
           <span className="min-w-0 flex-1 truncate text-start">{label}</span>
           <ChevronDown className="size-4 shrink-0 opacity-70" aria-hidden />

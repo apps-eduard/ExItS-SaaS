@@ -170,6 +170,19 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         return Task.FromResult<IReadOnlyList<OrganizationMembership>>(items);
     }
 
+    public Task<bool> StaffIdInUseAsync(
+        PlatformOrganizationId organizationId,
+        string staffId,
+        OrganizationMembershipId exceptMembershipId,
+        CancellationToken cancellationToken = default)
+    {
+        var used = _byId.Values.Any(m =>
+            m.OrganizationId == organizationId
+            && m.Id != exceptMembershipId
+            && string.Equals(m.StaffId, staffId, StringComparison.Ordinal));
+        return Task.FromResult(used);
+    }
+
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {
         _byId[membership.Id.Value] = membership;

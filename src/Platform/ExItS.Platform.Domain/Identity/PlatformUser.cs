@@ -385,6 +385,30 @@ public sealed class PlatformUser
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>Personal self-service identity. Does not change the login email or staff employment fields.</summary>
+    public void UpdatePersonalIdentity(
+        string? firstName,
+        string? lastName,
+        string displayName,
+        string? phone,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureNotDeactivated();
+        if (IsOrganizationScopedStaff)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidAccountStatusTransition,
+                "Organization staff identities do not use the Personal profile.");
+        }
+
+        FirstName = NormalizeOptionalName(BlankToNull(firstName), nameof(firstName));
+        LastName = NormalizeOptionalName(BlankToNull(lastName), nameof(lastName));
+        DisplayName = NormalizeDisplayName(displayName);
+        Phone = NormalizeOptionalPhone(BlankToNull(phone));
+        UpdatedAtUtc = utcNow;
+    }
+
     public void UpdateProfile(string displayName, string email, DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);
@@ -596,6 +620,9 @@ public sealed class PlatformUser
 
         return trimmed;
     }
+
+    private static string? BlankToNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value;
 
     internal static string? NormalizeOptionalName(string? value, string fieldName)
     {

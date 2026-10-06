@@ -59,6 +59,9 @@ export function PersonalStaffInvitationsPage() {
     setActionError(null);
     const result = await acceptMutation.mutateAsync(invitation);
     if (!result.ok) {
+      if (result.body?.errorCode === "application.personal.profile.incomplete") {
+        navigate("/personal/profile?complete=staff&return=/personal/staff-invitations");
+      }
       setActionError(result.body?.detail ?? t("staffInvite.personalAcceptFailed"));
       return;
     }

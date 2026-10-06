@@ -48,7 +48,8 @@ internal sealed class PlatformBrowserAntiforgeryMiddleware(
         }
 
         var path = context.Request.Path.Value ?? string.Empty;
-        if (ExemptPaths.Contains(path))
+        if (ExemptPaths.Contains(path)
+            || path.StartsWith("/hubs/personal-profile", StringComparison.OrdinalIgnoreCase))
         {
             await next(context).ConfigureAwait(false);
             return;

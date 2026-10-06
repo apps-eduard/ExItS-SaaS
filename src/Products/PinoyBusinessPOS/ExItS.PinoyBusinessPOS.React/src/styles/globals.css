@@ -21606,6 +21606,142 @@ a.exits-chip--primary:hover {
   align-items: stretch;
 }
 
+.personal-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.personal-profile-header .page-header {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.personal-profile-header__photo {
+  display: flex;
+  width: 4.5rem;
+  height: 4.5rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+  font-size: var(--exits-text-lg);
+  font-weight: 700;
+}
+
+.personal-profile-header__photo--compact {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: var(--exits-text-sm);
+}
+
+.personal-profile-header__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.personal-profile-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.personal-profile-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.personal-profile-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.personal-address-form,
+.geography-address-form,
+.geography-address-form__place,
+.geography-address-form__lines,
+.geography-address-form__postal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .personal-profile-page {
+    max-width: 68rem;
+    margin-inline: auto;
+  }
+
+  .personal-profile-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(16rem, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .personal-profile-section--wide {
+    grid-column: 1 / -1;
+  }
+
+  .personal-profile-section--personal .personal-profile-fields,
+  .personal-profile-section--wide .personal-profile-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+  }
+
+  .personal-profile-section--details .personal-profile-fields,
+  .personal-profile-section--workplace .personal-profile-fields,
+  .personal-profile-section--address .personal-profile-fields,
+  .geography-address-form__place,
+  .geography-address-form__lines,
+  .geography-address-form__postal {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .personal-profile-field--wide {
+    grid-column: 1 / -1;
+  }
+
+  .personal-profile-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 1024px) {
+  .personal-profile-layout {
+    gap: 1.25rem;
+  }
+
+  .personal-profile-section--address .personal-profile-fields,
+  .personal-profile-section--privacy .personal-profile-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .personal-address-add {
+    align-self: flex-start;
+    width: auto;
+  }
+
+  .personal-address-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .personal-address-form__postal--international {
+    grid-column: 3;
+  }
+}
+
 .supplier-form-page {
   width: 100%;
   max-width: 68.75rem; /* 1100px */

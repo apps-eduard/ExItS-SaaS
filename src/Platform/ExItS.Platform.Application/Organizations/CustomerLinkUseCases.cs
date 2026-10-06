@@ -1078,6 +1078,7 @@ public sealed class AcceptCustomerLinkRequest
     private readonly IClock _clock;
     private readonly IOrganizationInAppNotificationRepository? _orgNotifications;
     private readonly IPersonalInAppNotificationRepository? _personalNotifications;
+    private readonly PersonalProfileAcceptanceGate? _profileGate;
 
     public AcceptCustomerLinkRequest(
         ICustomerLinkRequestRepository requests,
@@ -1088,7 +1089,8 @@ public sealed class AcceptCustomerLinkRequest
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationInAppNotificationRepository? orgNotifications = null,
-        IPersonalInAppNotificationRepository? personalNotifications = null)
+        IPersonalInAppNotificationRepository? personalNotifications = null,
+        PersonalProfileAcceptanceGate? profileGate = null)
     {
         _requests = requests;
         _customers = customers;
@@ -1099,6 +1101,7 @@ public sealed class AcceptCustomerLinkRequest
         _clock = clock;
         _orgNotifications = orgNotifications;
         _personalNotifications = personalNotifications;
+        _profileGate = profileGate;
     }
 
     public async Task<ApplicationResult<AcceptCustomerLinkResultDto>> ExecuteAsync(
@@ -1239,6 +1242,19 @@ public sealed class AcceptCustomerLinkRequest
             }
 
             CustomerStaffSeparationGuard.EnsureNotTreatedAsStaff(customer);
+
+            if (_profileGate is not null)
+            {
+                var missing = await _profileGate
+                    .MissingCustomerFieldsAsync(user, cancellationToken)
+                    .ConfigureAwait(false);
+                if (missing is not null)
+                {
+                    return ApplicationResult<AcceptCustomerLinkResultDto>.Failure(
+                        ApplicationErrorCodes.PersonalProfileIncomplete,
+                        missing);
+                }
+            }
 
             var membershipBefore = await _memberships
                 .FindCurrentByUserAndOrganizationAsync(acceptingUserId, request.OrganizationId, cancellationToken)

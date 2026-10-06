@@ -10,6 +10,10 @@ public interface IPhilippineLocalityDirectory
 
     IReadOnlyList<PhilippineLocality> ListByRegionCode(string regionCode);
 
+    IReadOnlyList<PhilippineProvince> ListProvinces();
+
+    IReadOnlyList<PhilippineLocality> ListByProvinceCode(string provinceCode);
+
     PhilippineLocality? GetByPsgcCode(string psgcCode);
 
     bool Contains(string psgcCode);

@@ -72,9 +72,7 @@ export function PwaUpdateHost() {
       <span hidden data-testid="pwa-update-host" data-ready={listening ? "true" : "false"} />
       <PwaUpdateNotice
         visible={updateReady}
-        onRefresh={() => {
-          void updateRef.current?.(true);
-        }}
+        onRefresh={() => updateRef.current?.(true)}
       />
     </>
   );

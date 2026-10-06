@@ -13,6 +13,8 @@ import {
 } from "@/workspace/use-switch-to-business";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { resolveAuthenticatedRoleLabelKey } from "@/lib/authenticated-role-label";
+import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
+import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import { deriveUserInitials, resolveUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/cn";
 
@@ -56,6 +58,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
   const initials = deriveUserInitials(session);
+  const avatarSrc = profilePhotoSrc(usePersonalAvatarPhoto());
   const roleLabelKey = resolveAuthenticatedRoleLabelKey(session, sessionGrant);
   const roleLabel = roleLabelKey ? t(roleLabelKey) : null;
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
@@ -111,10 +114,21 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           onKeyDown={onKeyDown}
         >
           <span
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground"
+            className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground"
             aria-hidden="true"
           >
-            {initials ? initials : <User className="size-4" aria-hidden="true" />}
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="size-8 object-cover"
+                data-testid="account-menu-avatar-photo"
+              />
+            ) : initials ? (
+              initials
+            ) : (
+              <User className="size-4" aria-hidden="true" />
+            )}
           </span>
           {!compact ? (
             <>

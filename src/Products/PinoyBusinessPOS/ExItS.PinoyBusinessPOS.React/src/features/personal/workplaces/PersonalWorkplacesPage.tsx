@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BriefcaseBusiness, Building2, Loader2, Users } from "lucide-react";
 import {
@@ -77,6 +77,7 @@ export function PersonalWorkplacesPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
   const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { session } = useSession();
   const personalEmail = session?.email?.trim() || null;
@@ -146,6 +147,9 @@ export function PersonalWorkplacesPage() {
     setActionError(null);
     const result = await acceptMutation.mutateAsync(invitation);
     if (!result.ok) {
+      if (result.body?.errorCode === "application.personal.profile.incomplete") {
+        navigate("/personal/profile?complete=staff&return=/personal/workplaces");
+      }
       setActionError(result.body?.detail ?? t("staffInvite.personalAcceptFailed"));
       return;
     }
