@@ -2252,9 +2252,9 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "customers.linkElig.failed": "We could not verify this ExItS account. Try again.",
 
-  "customers.linkElig.ownerSelf": "You're already the owner of this business.",
+  "customers.linkElig.ownerSelf": "Organization owner",
 
-  "customers.linkElig.organizationStaff": "This person already works for this business and can't also be linked as a customer.",
+  "customers.linkElig.organizationStaff": "Also works for this business",
 
   "customers.linkElig.alreadyLinked": "This person is already in your customers.",
 

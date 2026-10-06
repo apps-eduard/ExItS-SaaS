@@ -52,6 +52,14 @@ function composeCustomerAddress(parts: {
   return composed.length > 0 ? composed.join(", ") : null;
 }
 
+function allowsLinkStatus(status: string): boolean {
+  return (
+    status === "Eligible" ||
+    status === "OwnerOfOrganization" ||
+    status === "OrganizationStaff"
+  );
+}
+
 export function CustomerCreatePage() {
   return <CustomerFormPage mode="create" />;
 }
@@ -294,8 +302,12 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     }
   }
 
-  const linkEligible =
-    linkEligibility?.status === "Eligible" && !eligibilityLoading && !eligibilityFailed;
+  const allowsCustomerLink =
+    linkEligibility?.status === "Eligible" ||
+    linkEligibility?.status === "OwnerOfOrganization" ||
+    linkEligibility?.status === "OrganizationStaff";
+
+  const linkEligible = Boolean(allowsCustomerLink) && !eligibilityLoading && !eligibilityFailed;
 
   const showCustomerInfo =
     mode === "edit" ||
@@ -343,10 +355,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
 
   function eligibilityMessage(status: string): string {
     switch (status) {
-      case "OwnerOfOrganization":
-        return t("customers.linkElig.ownerSelf");
-      case "OrganizationStaff":
-        return t("customers.linkElig.organizationStaff");
       case "AlreadyLinked":
         return t("customers.linkElig.alreadyLinked");
       case "PendingInvitation":
@@ -357,6 +365,26 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       default:
         return t("customers.linkElig.unavailable");
     }
+  }
+
+  function relationshipNotice(): string | null {
+    if (!linkEligibility) {
+      return null;
+    }
+    const context = linkEligibility.relationshipContext;
+    if (context === "Owner" || linkEligibility.status === "OwnerOfOrganization") {
+      return t("customers.linkElig.organizationOwner");
+    }
+    if (
+      context ||
+      linkEligibility.status === "OrganizationStaff"
+    ) {
+      if (context && context !== "Staff") {
+        return `${t("customers.linkElig.alsoWorksHere")} · ${context}`;
+      }
+      return t("customers.linkElig.alsoWorksHere");
+    }
+    return null;
   }
 
   return (
@@ -502,6 +530,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                     userIdentityId: user.userIdentityId,
                     existingBusinessCustomerId: null,
                     existingPendingRequestId: null,
+                    relationshipContext: null,
                   });
                   return;
                 }
@@ -513,8 +542,13 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 setLinkEligibility(eligibility);
                 setCheckingExisting(false);
                 setEligibilityLoading(false);
-                if (eligibility.status === "Eligible") {
-                  applyFoundIdentity(user);
+                if (allowsLinkStatus(eligibility.status)) {
+                  applyFoundIdentity({
+                    ...user,
+                    publicUserId: eligibility.publicUserId || user.publicUserId,
+                    userIdentityId: eligibility.userIdentityId || user.userIdentityId,
+                    displayName: eligibility.displayName?.trim() || user.displayName,
+                  });
                 } else {
                   setFoundIdentity(user);
                   setSelectedIdentity(null);
@@ -562,8 +596,18 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
 
       {mode === "create" &&
       createKind === "exits" &&
+      relationshipNotice() &&
+      !eligibilityLoading &&
+      !existingContact ? (
+        <Notice tone="info" testId="customer-link-relationship">
+          {relationshipNotice()}
+        </Notice>
+      ) : null}
+
+      {mode === "create" &&
+      createKind === "exits" &&
       linkEligibility &&
-      linkEligibility.status !== "Eligible" &&
+      !allowsLinkStatus(linkEligibility.status) &&
       !eligibilityLoading ? (
         <Notice
           tone="warning"
