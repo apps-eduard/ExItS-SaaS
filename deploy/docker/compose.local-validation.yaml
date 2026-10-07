@@ -5,7 +5,9 @@
 # Independent from exits-packaging (compose.yaml) and exits-pilot.
 # Production topology template remains compose.production.yaml (TLS/proxy).
 #
-# Recommended daily workflow (Docker DBs only; apps run on host):
+# Fast local development (dotnet watch + Vite, no image rebuild, same DB volumes):
+#   tools/Start-LocalDev.ps1
+# Recommended validation host workflow (Docker DBs only; apps on the validation ports):
 #   See README.local-validation.md and tools/Start-LocalValidation.ps1
 #   docker compose -f compose.local-validation.yaml --env-file .env.local-validation up -d
 #

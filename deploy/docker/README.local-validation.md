@@ -6,7 +6,60 @@ Production-equivalent **local deployment** for validation. Same application code
 
 .NET MAUI and its isolated Local Validation stack are retired. See [ADR-024](../../docs/decisions/ADR-024-react-only-client-standard-and-legacy-ui-retirement.md).
 
-## FAST host mode (preferred daily command)
+## Fast local development (no image rebuild)
+
+Use this for normal `.cs`, `.ts`, `.tsx`, and CSS edits. PostgreSQL stays in the existing Local Validation containers. The APIs and React apps run on the host.
+
+```powershell
+.\tools\Start-LocalDev.ps1
+```
+
+Stop the apps without stopping PostgreSQL:
+
+```powershell
+.\tools\Stop-LocalDev.ps1
+```
+
+| Surface | URL | Notes |
+| --- | --- | --- |
+| Platform API | http://127.0.0.1:5288 | `dotnet watch`, Development |
+| POS API | http://127.0.0.1:5290 | `dotnet watch`, Development |
+| Personal, Organization, and POS | http://127.0.0.1:5178 | Vite HMR |
+| Platform Admin | http://127.0.0.1:5195 | Vite HMR |
+| PinoyLoanManager | http://127.0.0.1:5176 | only with `-IncludeLoanManager` |
+| Platform PostgreSQL | 127.0.0.1:15533 | volume `exits_local_validation_platform_db_data` |
+| POS PostgreSQL | 127.0.0.1:15534 | volume `exits_local_validation_pos_db_data` |
+| Mailpit | http://127.0.0.1:8025 | SMTP 1025 |
+
+Host processes connect with `Host=127.0.0.1` and the published database ports. Dockerized APIs keep using `Host=platform-db` / `Host=pos-db` and container port 5432. There is no second database and no second volume.
+
+Google sign-in on Personal uses this redirect URI, which must be listed on the same OAuth client as `LOCAL_VALIDATION_GOOGLE_CLIENT_ID`:
+
+`http://127.0.0.1:5178/platform-api/api/v1/platform/auth/external/google/callback`
+
+Public preview and fast local dev can run at the same time. They use the same PostgreSQL volumes, so users and business data match. A sign-in on one site does not carry the browser session to the other site. Neither mode runs EF migrations on startup.
+
+The preview site keeps serving the last built images. Refresh those images without stopping local dev:
+
+```powershell
+.\tools\Start-DockerLocalValidation.ps1 -Build
+```
+
+Service Pro is not a canonical client in this repository. Retired MAUI and Blazor hosts are not started.
+
+Google and Facebook callbacks stay on the origins configured for that provider. Fast dev does not change production cookie, CSRF, or CORS policy. The launcher adds only the loopback origins above.
+
+### When to rebuild images
+
+Rebuild application images only when a Dockerfile changes, NuGet or npm dependencies change, the runtime base image changes, or you are intentionally validating the production-like containers:
+
+```powershell
+.\tools\Start-DockerLocalValidation.ps1 -Build
+```
+
+That rebuilds the preview images and restarts the preview containers. Fast local dev and the database volumes keep running. Normal source edits show up in local dev without that rebuild.
+
+## FAST host mode (same ports as Docker validation)
 
 From repository root:
 

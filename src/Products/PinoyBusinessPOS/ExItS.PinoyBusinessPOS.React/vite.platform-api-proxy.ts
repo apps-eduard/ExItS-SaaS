@@ -32,7 +32,15 @@ export function resolvePlatformApiProxyTarget(
   return url.origin;
 }
 
+const EXTERNAL_AUTH_PATH_PREFIX = `${PLATFORM_API_PROXY_PREFIX}/api/v1/platform/auth/external/`;
+
 export function rewritePlatformApiProxyPath(pathname: string): string {
+  // The API PathBase is /platform-api. Google's redirect_uri is built from that
+  // prefix plus the browser origin, so these requests must keep the prefix.
+  if (pathname.startsWith(EXTERNAL_AUTH_PATH_PREFIX)) {
+    return pathname;
+  }
+
   if (pathname === PLATFORM_API_PROXY_PREFIX) {
     return "/";
   }
