@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { activatePwaUpdate } from "@/pwa/activate-pwa-update";
 import { PwaUpdateNotice } from "@/pwa/PwaUpdateNotice";
 
 export const POS_PWA_NEED_REFRESH_EVENT = "exits-pos:pwa-need-refresh";
@@ -72,7 +73,14 @@ export function PwaUpdateHost() {
       <span hidden data-testid="pwa-update-host" data-ready={listening ? "true" : "false"} />
       <PwaUpdateNotice
         visible={updateReady}
-        onRefresh={() => updateRef.current?.(true)}
+        onRefresh={async () => {
+          const apply = updateRef.current;
+          const activated = activatePwaUpdate();
+          if (apply) {
+            await Promise.resolve(apply(true)).catch(() => undefined);
+          }
+          await activated;
+        }}
       />
     </>
   );
