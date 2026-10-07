@@ -185,7 +185,8 @@ public sealed class CustomerStatementService : ICustomerStatementService
                 isOverdue,
                 isReversed,
                 running,
-                sourceSaleId));
+                sourceSaleId,
+                entry.RecordedBy));
         }
 
         var closing = opening + periodEntries.Sum(e => e.SignedEffect);

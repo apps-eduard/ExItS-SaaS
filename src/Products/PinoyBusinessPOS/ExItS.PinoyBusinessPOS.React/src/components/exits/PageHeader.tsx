@@ -13,6 +13,8 @@ export type PageHeaderProps = {
   title: string;
   /** Optional icon shown before the page title. */
   titleIcon?: LucideIcon;
+  /** Optional content shown immediately before the page title, such as an avatar. */
+  titleLeading?: ReactNode;
   /** Muted line under the title (e.g. branch name or record name). */
   subtitle?: ReactNode;
   /** Extra classes for the subtitle line. Replaces the default single-line trim. */
@@ -62,6 +64,7 @@ export type PageHeaderProps = {
 export function PageHeader({
   title,
   titleIcon: TitleIcon,
+  titleLeading,
   subtitle,
   subtitleClassName,
   description,
@@ -178,6 +181,7 @@ export function PageHeader({
                   <TitleIcon className={cn(compact ? "size-4" : "size-5")} />
                 </span>
               ) : null}
+              {titleLeading}
               <h1
                 className={cn(
                   "page-header__title exits-type-page-title m-0 min-w-0 truncate",

@@ -775,6 +775,33 @@ internal static class PersonalEndpoints
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
+        relationshipProfiles.MapGet("/{personalUserId:guid}/customer-photo", async (
+            Guid organizationId,
+            Guid personalUserId,
+            PlatformOrganizationAuthz authz,
+            GetRelationshipScopedPersonalProfile getProfile,
+            IPersonalProfilePhotoStore photos,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var visible = await getProfile
+                .ForCustomerAsync(PlatformOrganizationId.From(organizationId), PlatformUserId.From(personalUserId), ct)
+                .ConfigureAwait(false);
+            if (!visible.IsSuccess)
+            {
+                return Results.NotFound();
+            }
+
+            var photo = await photos.ReadAsync(personalUserId, ct).ConfigureAwait(false);
+            return photo is null
+                ? Results.NotFound()
+                : Results.File(photo.Content, photo.ContentType);
+        });
 
         personal.MapGet("/settings", async (
             HttpContext http,

@@ -82,7 +82,8 @@ internal static class CustomerOrderEntityMapper
             record.CollectedAtUtc,
             record.CollectedBy,
             record.UpdatedAtUtc,
-            record.PlatformBusinessCustomerId);
+            record.PlatformBusinessCustomerId,
+            record.PaymentReference);
     }
 
     public static CustomerOrderRecord ToRecord(CustomerOrder order)
@@ -96,6 +97,7 @@ internal static class CustomerOrderEntityMapper
             FulfillmentStatus = order.FulfillmentStatus.ToString(),
             PaymentStatus = order.PaymentStatus.ToString(),
             PaymentMethod = CustomerOrderPaymentMethods.ToCode(order.PaymentMethod),
+            PaymentReference = order.PaymentReference,
             FulfillmentType = order.FulfillmentType.ToString(),
             FulfillmentBranchId = order.FulfillmentBranchId,
             BranchNameSnapshot = order.BranchNameSnapshot,

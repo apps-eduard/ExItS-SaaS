@@ -21639,6 +21639,12 @@ a.exits-chip--primary:hover {
   font-size: var(--exits-text-sm);
 }
 
+.personal-profile-header__photo--before-name {
+  width: calc(4.5rem * 0.85);
+  height: calc(4.5rem * 0.85);
+  font-size: calc(var(--exits-text-lg) * 0.85);
+}
+
 .personal-profile-header__photo img {
   width: 100%;
   height: 100%;

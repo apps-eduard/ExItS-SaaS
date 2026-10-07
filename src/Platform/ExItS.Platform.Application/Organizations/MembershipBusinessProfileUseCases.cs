@@ -537,10 +537,12 @@ public sealed class MembershipBusinessProfileUseCases
             profile?.Nationality,
             profile?.ProfilePhotoUrl is null
                 ? null
-                : StaffProfilePhoto.LinkedPersonalPublicPath(
-                    membership.OrganizationId.Value,
-                    membership.Id.Value,
-                    profile.UpdatedAtUtc.ToUnixTimeMilliseconds()),
+                : IsRemoteProfilePhoto(profile.ProfilePhotoUrl)
+                    ? profile.ProfilePhotoUrl
+                    : StaffProfilePhoto.LinkedPersonalPublicPath(
+                        membership.OrganizationId.Value,
+                        membership.Id.Value,
+                        profile.UpdatedAtUtc.ToUnixTimeMilliseconds()),
             personalUser.Phone,
             personalUser.NormalizedEmail,
             primary?.Country,
@@ -551,6 +553,9 @@ public sealed class MembershipBusinessProfileUseCases
             primary?.ProvinceState,
             primary?.PostalCode);
     }
+
+    private static bool IsRemoteProfilePhoto(string url) =>
+        url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
     private static OrganizationStaffIdSettingsDto ToSettingsDto(OrganizationStaffIdSettings settings) =>
         new(settings.OrganizationId.Value, settings.Prefix, settings.NextNumber, settings.PadDigits);

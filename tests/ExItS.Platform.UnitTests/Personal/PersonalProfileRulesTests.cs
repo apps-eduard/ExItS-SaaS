@@ -96,9 +96,16 @@ public sealed class PersonalProfileRulesTests
         Assert.Equal("Poblacion", staff.Barangay);
         Assert.Equal("Kalibo", customer.CityMunicipality);
         Assert.Equal("09170000000", customer.MobileNumber);
+        Assert.Equal("Ana Reyes", customer.DisplayName);
+        Assert.Equal("12 Rizal", customer.AddressLine1);
+        Assert.Equal("Poblacion", customer.Barangay);
+        Assert.Equal("5600", customer.PostalCode);
+        Assert.Null(customer.AddressLine2);
+        Assert.Null(customer.ProfilePhotoUrl);
+        Assert.Equal(
+            "https://lh3.googleusercontent.com/a/photo",
+            PersonalProfileProjection.ForCustomerRelationship(user, home, "https://lh3.googleusercontent.com/a/photo").ProfilePhotoUrl);
         var customerShape = customer.GetType().GetProperties().Select(property => property.Name).ToArray();
-        Assert.DoesNotContain("AddressLine1", customerShape);
-        Assert.DoesNotContain("Barangay", customerShape);
         Assert.DoesNotContain("EmployeeCode", staff.GetType().GetProperties().Select(property => property.Name));
         Assert.DoesNotContain("CreditLimit", customerShape);
     }

@@ -384,7 +384,10 @@ internal static class ExternalAuthEndpoints
         var displayName = principal.FindFirstValue(ClaimTypes.Name)
                           ?? principal.FindFirstValue("name");
 
-        return new ExternalLoginIdentity(normalized, subject, email, emailVerified, displayName);
+        var picture = principal.FindFirstValue("picture")
+                      ?? principal.FindFirstValue("urn:google:picture");
+
+        return new ExternalLoginIdentity(normalized, subject, email, emailVerified, displayName, picture);
     }
 
     private static string SanitizeReturnUrl(string? returnUrl, IHostEnvironment env) =>

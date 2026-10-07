@@ -2497,7 +2497,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.detailLede": "Business Utti balance, charges, ken payments.",
 
-  "customers.displayName": "Display name",
+  "customers.displayName": "Customer name",
 
   "customers.displayNameRequired": "Gimasapul ti display name.",
 

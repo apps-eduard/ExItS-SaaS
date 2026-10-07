@@ -64,13 +64,13 @@ export function CustomerCreatePage() {
   return <CustomerFormPage mode="create" />;
 }
 
-/** Legacy edit route → detail page with store-details drawer open. */
+/** Legacy edit route → customer detail. Store details are no longer edited here. */
 export function CustomerEditPage() {
   const { customerId } = useParams<{ customerId: string }>();
   if (!customerId) {
     return <Navigate to="/customers" replace />;
   }
-  return <Navigate to={`/customers/${customerId}?edit=1`} replace />;
+  return <Navigate to={`/customers/${customerId}`} replace />;
 }
 
 function CustomerFormPage({ mode }: { mode: Mode }) {
@@ -645,7 +645,124 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         </section>
       ) : null}
 
-      {showCustomerInfo ? (
+      {showCustomerInfo && createKind === "exits" && foundIdentity ? (
+      <div className="flex flex-col gap-4" data-testid="customer-info-section">
+        <Notice tone="success" testId="customer-exits-invite-hint">{t("customers.personalLink.confirmHint").replace(
+              "{name}",
+              displayName.trim() || foundIdentity.displayName,
+            )}</Notice>
+        <section className="catalog-form-section personal-profile-section personal-profile-section--details personal-profile-section--wide exits-animate-panel">
+          <h2 className="catalog-form-section__title">{t("customers.detailsTab")}</h2>
+          <div className="personal-profile-fields">
+            <Input
+              label={t("customers.displayName")}
+              id="customer-display-name"
+              name="customerDisplayName"
+              data-testid="customer-display-name"
+              autoComplete="name"
+              value={displayName}
+              disabled={saving}
+              onChange={(event) => setDisplayName(event.target.value)}
+            />
+            <Input
+              label={t("customers.exItsIdLabel")}
+              id="customer-exits-id"
+              name="customerExitsId"
+              data-testid="customer-exits-id"
+              value={foundIdentity.publicUserId}
+              readOnly
+              className="bg-[var(--exits-surface-muted)]"
+            />
+            <Input
+              label={t("customers.email")}
+              id="customer-email"
+              name="customerEmail"
+              data-testid="customer-email"
+              value={foundIdentity.maskedEmail?.trim() || t("customers.exItsIdNone")}
+              readOnly
+              className="bg-[var(--exits-surface-muted)]"
+            />
+            <Input
+              label={t("customers.mobile")}
+              id="customer-mobile"
+              name="customerMobile"
+              data-testid="customer-mobile"
+              inputMode="tel"
+              autoComplete="tel"
+              value={mobileNumber}
+              disabled={saving}
+              onChange={(event) => setMobileNumber(event.target.value)}
+            />
+            <label className="flex min-w-0 flex-col gap-1.5" htmlFor="customer-notes">
+              <span className="text-[length:var(--exits-text-sm)] font-semibold">
+                {t("customers.otherInfo")}
+              </span>
+              <textarea
+                id="customer-notes"
+                name="customerNotes"
+                data-testid="customer-notes"
+                className="customer-form-notes min-h-[4.25rem] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+                rows={2}
+                value={notes}
+                disabled={saving}
+                onChange={(event) => setNotes(event.target.value)}
+              />
+            </label>
+          </div>
+        </section>
+        <section className="catalog-form-section personal-profile-section personal-profile-section--address personal-profile-section--wide">
+          <h2 className="catalog-form-section__title">{t("staffBusinessProfile.sectionAddress")}</h2>
+          <div className="personal-profile-fields">
+            <Input
+              label={t("personal.profile.province")}
+              id="customer-province"
+              name="customerProvince"
+              data-testid="customer-province"
+              autoComplete="address-level1"
+              value={province}
+              disabled={saving}
+              onChange={(event) => setProvince(event.target.value)}
+            />
+            <Input
+              label={t("personal.profile.city")}
+              id="customer-city"
+              name="customerCity"
+              data-testid="customer-city"
+              autoComplete="address-level2"
+              value={cityMunicipality}
+              disabled={saving}
+              onChange={(event) => setCityMunicipality(event.target.value)}
+            />
+            <label className="flex min-w-0 flex-col gap-1.5" htmlFor="customer-address">
+              <span className="text-[length:var(--exits-text-sm)] font-semibold">
+                {t("personal.profile.address1")}
+              </span>
+              <textarea
+                id="customer-address"
+                name="customerAddress"
+                data-testid="customer-address"
+                className="customer-form-notes min-h-[4.25rem] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+                rows={2}
+                autoComplete="street-address"
+                value={addressLine1}
+                disabled={saving}
+                onChange={(event) => setAddressLine1(event.target.value)}
+              />
+            </label>
+            <Input
+              label={t("personal.profile.postal")}
+              id="customer-postal"
+              name="customerPostal"
+              data-testid="customer-postal"
+              autoComplete="postal-code"
+              value={postalCode}
+              disabled={saving}
+              onChange={(event) => setPostalCode(event.target.value)}
+            />
+          </div>
+        </section>
+      </div>
+      ) : showCustomerInfo ? (
       <section
         className="catalog-form-section exits-animate-panel"
         data-testid="customer-info-section"
@@ -656,12 +773,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           </span>
           {t("customers.sectionInfo")}
         </h2>
-        {createKind === "exits" && foundIdentity ? (
-          <Notice tone="success" testId="customer-exits-invite-hint">{t("customers.personalLink.confirmHint").replace(
-                "{name}",
-                displayName.trim() || foundIdentity.displayName,
-              )}</Notice>
-        ) : null}
         <div className="catalog-form-section__grid">
           <Input
             label={t("customers.displayName")}
@@ -673,28 +784,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             disabled={saving}
             onChange={(event) => setDisplayName(event.target.value)}
           />
-          {createKind === "exits" && foundIdentity ? (
-            <>
-              <Input
-                label={t("customers.exItsIdLabel")}
-                id="customer-exits-id"
-                name="customerExitsId"
-                data-testid="customer-exits-id"
-                value={foundIdentity.publicUserId}
-                readOnly
-                className="bg-[var(--exits-surface-muted)]"
-              />
-              <Input
-                label={t("customers.email")}
-                id="customer-email"
-                name="customerEmail"
-                data-testid="customer-email"
-                value={foundIdentity.maskedEmail?.trim() || t("customers.exItsIdNone")}
-                readOnly
-                className="bg-[var(--exits-surface-muted)]"
-              />
-            </>
-          ) : null}
           <Input
             label={t("customers.mobile")}
             id="customer-mobile"

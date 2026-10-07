@@ -50,4 +50,5 @@ public sealed record ExternalLoginIdentity(
     string ProviderSubject,
     string Email,
     bool EmailVerified,
-    string? DisplayName);
+    string? DisplayName,
+    string? PictureUrl = null);

@@ -174,7 +174,14 @@ public sealed record CustomerVisiblePersonalProfileDto(
     string? Email,
     string? CityMunicipality,
     string? ProvinceState,
-    string? Country);
+    string? Country,
+    string? DisplayName,
+    string? AddressLine1,
+    string? AddressLine2,
+    string? Barangay,
+    string? PostalCode,
+    string? ProfilePhotoUrl,
+    string? Gender);
 
 public static class PersonalProfileProjection
 {
@@ -214,7 +221,11 @@ public static class PersonalProfileProjection
             address?.ProvinceState,
             address?.Country);
 
-    public static CustomerVisiblePersonalProfileDto ForCustomerRelationship(PlatformUser user, PersonalAddress? address) =>
+    public static CustomerVisiblePersonalProfileDto ForCustomerRelationship(
+        PlatformUser user,
+        PersonalAddress? address,
+        string? profilePhotoUrl = null,
+        string? gender = null) =>
         new(
             user.Id.Value,
             user.FirstName,
@@ -223,7 +234,35 @@ public static class PersonalProfileProjection
             user.NormalizedEmail,
             address?.CityMunicipality,
             address?.ProvinceState,
-            address?.Country);
+            address?.Country,
+            user.DisplayName,
+            address?.AddressLine1,
+            address?.AddressLine2,
+            address?.Barangay,
+            address?.PostalCode,
+            profilePhotoUrl,
+            gender);
+
+    public static string? CustomerVisiblePhotoUrl(Guid organizationId, Guid userId, PersonalUserProfile? profile)
+    {
+        var url = profile?.ProfilePhotoUrl?.Trim();
+        if (string.IsNullOrEmpty(url))
+        {
+            return null;
+        }
+
+        if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return url;
+        }
+
+        if (url.Contains("/personal/profile/photo", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"/api/v1/platform/organizations/{organizationId:D}/personal-profiles/{userId:D}/customer-photo?v={profile!.UpdatedAtUtc.ToUnixTimeMilliseconds()}";
+        }
+
+        return null;
+    }
 }
 
 public sealed class PersonalProfileAcceptanceGate
@@ -321,17 +360,20 @@ public sealed class GetRelationshipScopedPersonalProfile
 {
     private readonly IPlatformUserRepository _users;
     private readonly IPersonalAddressRepository _addresses;
+    private readonly IPersonalUserProfileRepository _profiles;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly ILinkedCustomerAppUserRepository _customerLinks;
 
     public GetRelationshipScopedPersonalProfile(
         IPlatformUserRepository users,
         IPersonalAddressRepository addresses,
+        IPersonalUserProfileRepository profiles,
         IOrganizationMembershipRepository memberships,
         ILinkedCustomerAppUserRepository customerLinks)
     {
         _users = users;
         _addresses = addresses;
+        _profiles = profiles;
         _memberships = memberships;
         _customerLinks = customerLinks;
     }
@@ -400,7 +442,16 @@ public sealed class GetRelationshipScopedPersonalProfile
         }
 
         var addresses = await _addresses.ListByUserAsync(personalUserId, cancellationToken).ConfigureAwait(false);
+        var profile = await _profiles.GetByUserAsync(personalUserId, cancellationToken).ConfigureAwait(false);
+        var photoUrl = PersonalProfileProjection.CustomerVisiblePhotoUrl(
+            organizationId.Value,
+            personalUserId.Value,
+            profile);
         return ApplicationResult<CustomerVisiblePersonalProfileDto>.Success(
-            PersonalProfileProjection.ForCustomerRelationship(person, PersonalProfileMapper.CustomerAddress(addresses)));
+            PersonalProfileProjection.ForCustomerRelationship(
+                person,
+                PersonalProfileMapper.CustomerAddress(addresses),
+                photoUrl,
+                profile?.Gender));
     }
 }

@@ -2497,7 +2497,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "customers.detailLede": "Business Utang balance, charges, ug payments.",
 
-  "customers.displayName": "Display name",
+  "customers.displayName": "Customer name",
 
   "customers.displayNameRequired": "Gikinahanglan ang display name.",
 

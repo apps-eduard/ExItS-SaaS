@@ -2501,7 +2501,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "customers.detailLede": "Business Utang balance, charges, at payments.",
 
-  "customers.displayName": "Display name",
+  "customers.displayName": "Customer name",
 
   "customers.displayNameRequired": "Kailangan ang display name.",
 

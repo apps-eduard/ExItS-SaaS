@@ -381,6 +381,16 @@ public sealed class PlaceCustomerOrder
                 ? CustomerOrderId.From(id)
                 : null;
             var paymentMethod = CustomerOrderPaymentMethods.Parse(request.PaymentMethod);
+            string? paymentReference;
+            try
+            {
+                paymentReference = CustomerOrder.NormalizePaymentReference(paymentMethod, request.PaymentReference);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+
             var businessDate = CustomerOrderNumbers.BusinessDateOf(now);
 
             CustomerOrder created;
@@ -442,7 +452,8 @@ public sealed class PlaceCustomerOrder
                                     request.IdempotencyKey,
                                     orderId,
                                     paymentMethod,
-                                    platformBusinessCustomerId),
+                                    platformBusinessCustomerId,
+                                    paymentReference),
                                 cancellationToken: ct)
                             .ConfigureAwait(false);
                         return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
@@ -482,7 +493,8 @@ public sealed class PlaceCustomerOrder
                             request.IdempotencyKey,
                             orderId,
                             paymentMethod,
-                            platformBusinessCustomerId),
+                            platformBusinessCustomerId,
+                            paymentReference),
                         cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }

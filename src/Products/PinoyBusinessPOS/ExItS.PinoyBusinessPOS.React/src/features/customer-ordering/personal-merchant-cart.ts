@@ -60,6 +60,46 @@ export function ensureMerchantCart(
   };
 }
 
+export function setCartLineQuantity(
+  state: PersonalMerchantCartState,
+  product: CustomerStorefrontProductDto,
+  quantity: number,
+): PersonalMerchantCartState {
+  if (!(quantity > 0) || !Number.isFinite(quantity)) {
+    return {
+      ...state,
+      lines: state.lines.filter((line) => line.productId !== product.productId),
+    };
+  }
+  if (!product.isAvailable || product.unitPrice <= 0) {
+    return state;
+  }
+  if (
+    product.tracksInventory &&
+    product.availableQuantity != null &&
+    quantity > product.availableQuantity + 1e-9
+  ) {
+    return state;
+  }
+
+  const next = {
+    productId: product.productId,
+    name: product.name,
+    sku: product.sku ?? null,
+    unitOfMeasure: product.unitOfMeasure,
+    unitPrice: product.unitPrice,
+    quantity,
+  };
+  const existing = state.lines.find((line) => line.productId === product.productId);
+  if (existing) {
+    return {
+      ...state,
+      lines: state.lines.map((line) => (line.productId === product.productId ? next : line)),
+    };
+  }
+  return { ...state, lines: [...state.lines, next] };
+}
+
 export function incrementCartLine(
   state: PersonalMerchantCartState,
   product: CustomerStorefrontProductDto,

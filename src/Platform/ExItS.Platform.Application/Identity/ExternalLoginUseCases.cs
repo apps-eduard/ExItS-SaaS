@@ -5,10 +5,12 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Personal;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Application.Identity;
@@ -35,6 +37,7 @@ public sealed class CompleteExternalLogin
     private readonly IClock _clock;
     private readonly PlatformSessionOptions _sessionOptions;
     private readonly IPlatformMfaReadinessService _mfa;
+    private readonly IPersonalUserProfileRepository? _personalProfiles;
 
     public CompleteExternalLogin(
         IPlatformUserRepository users,
@@ -50,7 +53,8 @@ public sealed class CompleteExternalLogin
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOptions<PlatformSessionOptions> sessionOptions,
-        IPlatformMfaReadinessService mfa)
+        IPlatformMfaReadinessService mfa,
+        IPersonalUserProfileRepository? personalProfiles = null)
     {
         _users = users;
         _credentials = credentials;
@@ -66,6 +70,7 @@ public sealed class CompleteExternalLogin
         _clock = clock;
         _sessionOptions = sessionOptions.Value;
         _mfa = mfa;
+        _personalProfiles = personalProfiles;
     }
 
     public async Task<ApplicationResult<PlatformLoginResultDto>> ExecuteAsync(
@@ -226,6 +231,8 @@ public sealed class CompleteExternalLogin
             HashUserAgent(userAgent));
 
         await _sessions.AddAsync(session, cancellationToken).ConfigureAwait(false);
+        await ApplyProviderPictureAsync(user.Id, identity.PictureUrl, utcNow, cancellationToken)
+            .ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         Guid? orgId = null;
@@ -407,6 +414,56 @@ public sealed class CompleteExternalLogin
         }
 
         return collapsed.Length >= 2 ? collapsed : null;
+    }
+
+    private async Task ApplyProviderPictureAsync(
+        PlatformUserId userId,
+        string? pictureUrl,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (_personalProfiles is null || !IsProviderPictureUrl(pictureUrl))
+        {
+            return;
+        }
+
+        var picture = pictureUrl!.Trim();
+        var personal = await _personalProfiles.GetByUserAsync(userId, cancellationToken).ConfigureAwait(false);
+        var current = personal?.ProfilePhotoUrl;
+        if (!string.IsNullOrWhiteSpace(current) && !IsProviderPictureUrl(current))
+        {
+            return;
+        }
+
+        if (string.Equals(current, picture, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var created = personal is null;
+        personal ??= PersonalUserProfile.Create(userId, utcNow);
+        personal.SetProfilePhotoUrl(picture, utcNow);
+        if (created)
+        {
+            await _personalProfiles.AddAsync(personal, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await _personalProfiles.UpdateAsync(personal, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static bool IsProviderPictureUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= PersonalUserProfile.MaxPhotoLength
+            && Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            && uri.Scheme == Uri.UriSchemeHttps;
     }
 
     private async Task WriteFailedAsync(

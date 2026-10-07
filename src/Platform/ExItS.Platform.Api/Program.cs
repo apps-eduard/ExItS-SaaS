@@ -118,6 +118,20 @@ if (externalAuthOptions.Google.Enabled
         // The installed service worker can replay this callback after the correlation
         // cookie was already consumed. Resume from the external-login cookie instead of
         // returning the generic server error page.
+        options.Events.OnCreatingTicket = context =>
+        {
+            if (context.User.ValueKind == System.Text.Json.JsonValueKind.Object
+                && context.User.TryGetProperty("picture", out var picture))
+            {
+                var value = picture.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    context.Identity?.AddClaim(new System.Security.Claims.Claim("picture", value));
+                }
+            }
+
+            return Task.CompletedTask;
+        };
         options.Events.OnTicketReceived = context =>
         {
             ExternalAuthEndpoints.RememberGoogleReplay(context.Principal, context.Properties);

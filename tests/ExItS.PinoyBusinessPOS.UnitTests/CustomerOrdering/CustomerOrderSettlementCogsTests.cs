@@ -288,7 +288,8 @@ public sealed class CustomerOrderSettlementCogsTests
             Actor,
             Utc,
             paymentMethod: paymentMethod,
-            platformBusinessCustomerId: PlatformBusinessCustomerId);
+            platformBusinessCustomerId: PlatformBusinessCustomerId,
+            paymentReference: paymentMethod == CustomerOrderPaymentMethod.ManualGCash ? "GCASH-1001" : null);
         order.Accept(Actor, Utc);
         order.MarkReady(Utc, Actor);
         order.MarkCollected(Utc, Actor);
@@ -330,7 +331,8 @@ public sealed class CustomerOrderSettlementCogsTests
                 50m,
                 false),
             paymentMethod: paymentMethod,
-            platformBusinessCustomerId: PlatformBusinessCustomerId);
+            platformBusinessCustomerId: PlatformBusinessCustomerId,
+            paymentReference: paymentMethod == CustomerOrderPaymentMethod.ManualGCash ? "GCASH-1001" : null);
         order.Accept(Actor, Utc);
         order.MarkReady(Utc, Actor);
         order.MarkOutForDelivery(Utc, Actor);
@@ -355,7 +357,8 @@ public sealed class CustomerOrderSettlementCogsTests
             Actor,
             Utc,
             paymentMethod: paymentMethod,
-            platformBusinessCustomerId: PlatformBusinessCustomerId);
+            platformBusinessCustomerId: PlatformBusinessCustomerId,
+            paymentReference: paymentMethod == CustomerOrderPaymentMethod.ManualGCash ? "GCASH-1001" : null);
 
     private sealed class CountingCostResolverInventoryStub : CostResolverInventoryStub
     {

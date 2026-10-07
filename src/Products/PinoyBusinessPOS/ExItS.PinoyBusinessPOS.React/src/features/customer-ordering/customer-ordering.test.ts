@@ -12,6 +12,7 @@ import {
   FulfillmentPickup,
   getCartQuantity,
   incrementCartLine,
+  setCartLineQuantity,
   resolveFulfillmentSelection,
 } from "@/features/customer-ordering/personal-merchant-cart";
 import {
@@ -81,6 +82,19 @@ describe("personal merchant cart", () => {
     expect(cartMerchandiseSubtotal(state)).toBe(100);
     state = decrementCartLine(state, product.productId);
     expect(getCartQuantity(state, product.productId)).toBe(1);
+  });
+
+  it("stores the entered kilograms for a kilo product", () => {
+    let state = ensureMerchantCart(
+      EMPTY_PERSONAL_MERCHANT_CART,
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "A",
+    );
+    state = setCartLineQuantity(state, product, 1.25);
+    expect(getCartQuantity(state, product.productId)).toBe(1.25);
+    expect(cartMerchandiseSubtotal(state)).toBe(62.5);
+    state = setCartLineQuantity(state, product, 0);
+    expect(state.lines).toHaveLength(0);
   });
 
   it("resolves pickup vs delivery without inventing readiness", () => {

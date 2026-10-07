@@ -1,6 +1,8 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Personal;
 using ExItS.Platform.UnitTests.Support;
 using Microsoft.Extensions.Options;
 
@@ -85,10 +87,37 @@ public sealed class PlatformExternalLoginTests
         Assert.Equal(ApplicationErrorCodes.ExternalAuthEmailUnverified, result.ErrorCode);
     }
 
+    [Fact]
+    public async Task CompleteExternalLogin_stores_the_provider_picture_until_the_user_uploads_one()
+    {
+        var profiles = new MemoryPersonalProfiles();
+        var sut = CreateSut(out _, out _, out _, profiles);
+        var picture = "https://lh3.googleusercontent.com/a/photo";
+        var created = await sut.ExecuteAsync(
+            new ExternalLoginIdentity("google", "sub-photo", "photo@example.com", true, "Photo User", picture),
+            null,
+            null);
+
+        Assert.True(created.IsSuccess);
+        Assert.Equal(picture, profiles.Profile!.ProfilePhotoUrl);
+
+        var uploaded = PersonalUserProfile.Create(PlatformUserId.From(created.Value!.UserId), T0);
+        uploaded.SetProfilePhotoUrl("/api/v1/personal/profile/photo?v=1", T0);
+        profiles.Profile = uploaded;
+        var again = await sut.ExecuteAsync(
+            new ExternalLoginIdentity("google", "sub-photo", "photo@example.com", true, "Photo User", "https://lh3.googleusercontent.com/a/other"),
+            null,
+            null);
+
+        Assert.True(again.IsSuccess);
+        Assert.Equal("/api/v1/personal/profile/photo?v=1", profiles.Profile.ProfilePhotoUrl);
+    }
+
     private static CompleteExternalLogin CreateSut(
         out InMemoryPlatformUserRepository users,
         out InMemoryPlatformUserCredentialRepository credentials,
-        out InMemoryPlatformExternalLoginRepository externals)
+        out InMemoryPlatformExternalLoginRepository externals,
+        IPersonalUserProfileRepository? personalProfiles = null)
     {
         users = new InMemoryPlatformUserRepository();
         credentials = new InMemoryPlatformUserCredentialRepository();
@@ -119,7 +148,30 @@ public sealed class PlatformExternalLoginTests
             Options.Create(new PlatformSessionOptions()),
             new PlatformMfaReadinessService(
                 new NullPlatformMfaFactorStore(),
-                Options.Create(new PlatformMfaOptions())));
+                Options.Create(new PlatformMfaOptions())),
+            personalProfiles);
+    }
+
+    private sealed class MemoryPersonalProfiles : IPersonalUserProfileRepository
+    {
+        public PersonalUserProfile? Profile { get; set; }
+
+        public Task<PersonalUserProfile?> GetByUserAsync(
+            PlatformUserId userIdentityId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Profile is not null && Profile.UserIdentityId == userIdentityId ? Profile : null);
+
+        public Task AddAsync(PersonalUserProfile profile, CancellationToken cancellationToken = default)
+        {
+            Profile = profile;
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(PersonalUserProfile profile, CancellationToken cancellationToken = default)
+        {
+            Profile = profile;
+            return Task.CompletedTask;
+        }
     }
 }
 

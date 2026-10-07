@@ -20,6 +20,7 @@ export type CustomerStatementLineView = {
   status: string;
   remarks?: string | null;
   sourceSaleId?: string | null;
+  recordedBy?: string | null;
 };
 
 export type CustomerStatementTotalsView = {
@@ -38,11 +39,20 @@ export function defaultStatementPeriod() {
   return { periodStart: toIsoDate(start), periodEnd: toIsoDate(end) };
 }
 
-export function statementLineDescription(line: {
-  remarks?: string | null;
-  status: string;
-}): string {
-  return line.remarks?.trim() || line.status || "—";
+export function statementLineDescription(
+  line: {
+    remarks?: string | null;
+    status: string;
+    entryType?: string;
+  },
+  repaymentFallback = "Payment received",
+): string {
+  const remarks = line.remarks?.trim() ?? "";
+  const isRepayment = line.entryType?.trim().toLowerCase() === "repayment";
+  if (isRepayment && (remarks.length === 0 || remarks.toLowerCase() === "active")) {
+    return repaymentFallback;
+  }
+  return remarks || line.status || "—";
 }
 
 export function formatStatementWhen(iso: string): string {
