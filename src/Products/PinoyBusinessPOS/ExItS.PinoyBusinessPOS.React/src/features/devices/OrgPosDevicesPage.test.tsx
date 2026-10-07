@@ -25,6 +25,7 @@ const issuePosDeviceRevokeStepUp = vi.fn();
 const refreshPosDevice = vi.fn(async () => undefined);
 
 let registrationStatus = "authorized";
+let deviceEnforcementEnabled = false;
 
 vi.mock("@/api/platform/pos-devices-client", () => ({
   listPosDevices: (...args: unknown[]) => listPosDevices(...args),
@@ -85,7 +86,7 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
       durableIdentityAvailable: true,
     },
     refreshPosDevice,
-    deviceEnforcementEnabled: false,
+    deviceEnforcementEnabled,
   }),
 }));
 
@@ -133,6 +134,7 @@ async function openRevokeSheet(deviceId = CURRENT_DEVICE_ID) {
 beforeEach(() => {
   vi.clearAllMocks();
   registrationStatus = "authorized";
+  deviceEnforcementEnabled = false;
   listPosDevices.mockResolvedValue({ ok: true, value: [deviceDto()] });
   getPosDeviceCapacity.mockResolvedValue({ ok: true, value: { used: 1, allowed: 5 } });
   getPlatformCredentialStatus.mockResolvedValue({
@@ -191,17 +193,15 @@ describe("OrgPosDevicesPage this-device awareness", () => {
     expect(screen.queryByTestId("devices-register-optional")).toBeNull();
   });
 
-  it("keeps unregistered registration optional without auto-opening the form", async () => {
+  it("keeps device registration off on the website", async () => {
     registrationStatus = "unregistered";
     listPosDevices.mockResolvedValue({ ok: true, value: [] });
     renderPage();
 
     expect(await screen.findByTestId("devices-enforcement-paused-hint")).toBeVisible();
     expect(screen.queryByTestId("devices-register-form")).not.toBeInTheDocument();
-    expect(screen.getByTestId("devices-register-optional")).toHaveTextContent(/register this browser/i);
-
-    await userEvent.setup().click(screen.getByTestId("devices-register-optional"));
-    expect(screen.getByTestId("devices-register-form")).toBeVisible();
+    expect(screen.queryByTestId("devices-register-optional")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("devices-open-register")).not.toBeInTheDocument();
   });
 
   it("hides revoked devices from the normal active list", async () => {
@@ -229,6 +229,7 @@ describe("OrgPosDevicesPage this-device awareness", () => {
   });
 
   it("keeps register hidden behind an explicit action when this browser is revoked", async () => {
+    deviceEnforcementEnabled = true;
     registrationStatus = "revoked";
     listPosDevices.mockResolvedValue({
       ok: true,
@@ -365,13 +366,13 @@ describe("OrgPosDevicesPage revoke governance", () => {
 
 describe("OrgPosDevicesPage registration metadata", () => {
   it("sends browser platform, model, and app version when registering", async () => {
+    deviceEnforcementEnabled = true;
     registrationStatus = "unregistered";
     listPosDevices.mockResolvedValue({ ok: true, value: [] });
     registerPosDevice.mockResolvedValue({ ok: true, value: deviceDto() });
     renderPage();
 
     const user = userEvent.setup();
-    await user.click(await screen.findByTestId("devices-register-optional"));
     await user.selectOptions(await screen.findByTestId("devices-branch-select"), BRANCH_ID);
     await user.click(screen.getByTestId("devices-register-browser"));
 
@@ -386,12 +387,12 @@ describe("OrgPosDevicesPage registration metadata", () => {
   });
 
   it("blocks registration when capacity is full", async () => {
+    deviceEnforcementEnabled = true;
     registrationStatus = "unregistered";
     listPosDevices.mockResolvedValue({ ok: true, value: [] });
     getPosDeviceCapacity.mockResolvedValue({ ok: true, value: { used: 5, allowed: 5 } });
     renderPage();
 
-    await userEvent.setup().click(await screen.findByTestId("devices-register-optional"));
     expect(await screen.findByTestId("devices-register-blocked")).toBeVisible();
     expect(screen.getByTestId("devices-register-browser")).toBeDisabled();
     expect(

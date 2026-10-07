@@ -1035,7 +1035,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                         tone={UTANG_READ_ONLY_CHIP.tone}
                         appearance={UTANG_READ_ONLY_CHIP.appearance}
                         shape={UTANG_READ_ONLY_CHIP.shape}
-                        className="col-start-1 row-start-1 self-start"
+                        className="col-start-1 row-start-1 self-start max-md:hidden"
                         data-testid={`utang-rel-readonly-${row.id}`}
                       >
                         {t("personal.utang.readOnly")}

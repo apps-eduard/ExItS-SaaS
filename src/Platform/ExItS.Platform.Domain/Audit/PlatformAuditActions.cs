@@ -84,6 +84,10 @@ public static class PlatformAuditActions
     public const string PlatformAuthPasswordChanged = "platform.auth.password_changed";
     public const string PlatformAuthPasswordResetRequested = "platform.auth.password_reset_requested";
     public const string PlatformAuthPasswordResetCompleted = "platform.auth.password_reset_completed";
+    public const string StaffPasswordResetRequested = "platform.staff_password_reset.requested";
+    public const string StaffPasswordResetApproved = "platform.staff_password_reset.approved";
+    public const string StaffPasswordResetDenied = "platform.staff_password_reset.denied";
+    public const string StaffPasswordResetCompleted = "platform.staff_password_reset.completed";
     public const string PlatformAuthEmailVerificationRequested = "platform.auth.email_verification_requested";
     public const string PlatformAuthEmailVerificationCompleted = "platform.auth.email_verification_completed";
     public const string PersonalAccountRegistrationStarted = "platform.personal.registration_started";

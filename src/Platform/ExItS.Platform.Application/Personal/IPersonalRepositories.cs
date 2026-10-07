@@ -13,6 +13,41 @@ public interface IPersonalAccountSettingsRepository
     Task UpdateAsync(PersonalAccountSettings settings, CancellationToken cancellationToken = default);
 }
 
+public interface IPersonalUserProfileRepository
+{
+    Task<PersonalUserProfile?> GetByUserAsync(PlatformUserId userIdentityId, CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalUserProfile profile, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalUserProfile profile, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalAddressRepository
+{
+    Task<IReadOnlyList<PersonalAddress>> ListByUserAsync(PlatformUserId userIdentityId, CancellationToken cancellationToken = default);
+
+    Task<PersonalAddress?> GetByIdForUserAsync(
+        PersonalAddressId id,
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalAddress address, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalAddress address, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Inserts or updates the address, then leaves exactly one primary when requested.
+    /// The unique primary index is satisfied by clearing every primary before setting the chosen row.
+    /// </summary>
+    Task SaveEnsuringSinglePrimaryAsync(
+        PersonalAddress address,
+        bool makePrimary,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteAsync(PersonalAddressId id, PlatformUserId userIdentityId, DateTimeOffset utcNow, CancellationToken cancellationToken = default);
+}
+
 public interface IPersonalSharedUtangPreferenceRepository
 {
     Task<PersonalSharedUtangPreference?> GetByOwnerAndCounterpartyAsync(

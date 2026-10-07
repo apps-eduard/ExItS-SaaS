@@ -882,8 +882,14 @@ function Assert-LocalValidationPortsOwnedByExpectedWorktree {
 function Stop-LocalValidationCrossWorktreeHostApps {
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
-        [switch]$KeepSupervisor
+        [switch]$KeepSupervisor,
+        [int[]]$ExcludeProcessIds = @()
     )
+
+    $excluded = [System.Collections.Generic.HashSet[int]]::new()
+    foreach ($processId in @($ExcludeProcessIds)) {
+        if ($processId) { [void]$excluded.Add([int]$processId) }
+    }
 
     $stateFile = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation\launcher-state.json'
     if (Test-Path -LiteralPath $stateFile) {
@@ -892,6 +898,7 @@ function Stop-LocalValidationCrossWorktreeHostApps {
             if ([string]$state.Mode -ne 'DockerApps') {
                 foreach ($windowPid in @($state.WindowPids)) {
                     if (-not $windowPid) { continue }
+                    if ($excluded.Contains([int]$windowPid)) { continue }
                     $proc = Get-Process -Id $windowPid -ErrorAction SilentlyContinue
                     if (-not $proc) { continue }
                     if ($KeepSupervisor) {
@@ -915,6 +922,7 @@ function Stop-LocalValidationCrossWorktreeHostApps {
 
     $processes = @(Get-LocalValidationCrossWorktreeHostProcesses -RepoRoot $RepoRoot)
     foreach ($process in $processes) {
+        if ($excluded.Contains([int]$process.ProcessId)) { continue }
         if ($KeepSupervisor -and (Test-LocalValidationIsSupervisorProcess -Process $process)) {
             continue
         }

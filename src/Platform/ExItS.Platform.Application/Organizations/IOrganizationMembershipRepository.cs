@@ -68,11 +68,24 @@ public interface IOrganizationMembershipRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Active memberships except Organization Owner. Pending invitations are not memberships.
+    /// </summary>
+    Task<int> CountActiveNonOwnerStaffAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Active Owner and Administrator memberships — recipients for organization business inbox events
     /// (customer-link responses remain inviter-specific; supplier connection uses this set).
     /// </summary>
     Task<IReadOnlyList<OrganizationMembership>> ListActiveBusinessInboxRecipientsAsync(
         PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> StaffIdInUseAsync(
+        PlatformOrganizationId organizationId,
+        string staffId,
+        OrganizationMembershipId exceptMembershipId,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default);

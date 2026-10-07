@@ -70,6 +70,16 @@ public sealed class PlaceCustomerOrderCapabilityTests
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.Equal(expected, result.Value!.PaymentMethod);
         Assert.Equal(nameof(CustomerOrderPaymentStatus.Unpaid), result.Value.PaymentStatus);
+        Assert.Equal(expected == "ManualGCash" ? "GCASH-1001" : null, result.Value.PaymentReference);
+    }
+
+    [Fact]
+    public async Task Place_manual_gcash_requires_a_reference()
+    {
+        var useCase = CreateUseCase(canOrder: true, canDelivery: true);
+        var result = await useCase.ExecuteAsync(Seller, PickupRequest(paymentMethod: "ManualGCash", paymentReference: " "), Actor);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentReference, result.ErrorCode);
     }
 
     [Fact]
@@ -152,7 +162,8 @@ public sealed class PlaceCustomerOrderCapabilityTests
 
     private static PlaceCustomerOrderRequest PickupRequest(
         string? idempotencyKey = null,
-        string? paymentMethod = null) =>
+        string? paymentMethod = null,
+        string? paymentReference = null) =>
         new(
             "Pickup",
             Branch,
@@ -166,7 +177,10 @@ public sealed class PlaceCustomerOrderCapabilityTests
             null,
             null,
             idempotencyKey,
-            paymentMethod);
+            paymentMethod,
+            paymentMethod is "GCash" or "ManualGCash"
+                ? paymentReference ?? "GCASH-1001"
+                : paymentReference);
 
     private static PlaceCustomerOrderRequest DeliveryRequest() =>
         new(

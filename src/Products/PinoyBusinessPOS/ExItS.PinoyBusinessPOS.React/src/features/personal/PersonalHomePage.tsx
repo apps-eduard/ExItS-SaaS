@@ -39,6 +39,7 @@ import { InfoPopover } from "@/components/exits/InfoPopover";
 import { cn } from "@/lib/cn";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
+import { PersonalBusinessSummary } from "@/features/personal/businesses/PersonalBusinessSummary";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
@@ -258,6 +259,7 @@ export function PersonalHomePage() {
       </header>
 
       <PersonalGuideHomeCard />
+      <PersonalBusinessSummary />
 
       <div className="personal-home-layout" data-testid="personal-home-layout">
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
@@ -302,7 +304,7 @@ export function PersonalHomePage() {
                     shape={UTANG_OWNERSHIP_SHARED.shape}
                     data-testid="personal-stat-lent-shared-label"
                   >
-                    {t("personal.utang.ownershipSharedWithMe")}
+                    {t("personal.home.activeShared")}
                   </StatusChip>
                 }
                 icon={HandCoins}
@@ -314,6 +316,7 @@ export function PersonalHomePage() {
                     tone={UTANG_READ_ONLY_CHIP.tone}
                     appearance={UTANG_READ_ONLY_CHIP.appearance}
                     shape={UTANG_READ_ONLY_CHIP.shape}
+                    className="max-md:hidden"
                     data-testid="personal-stat-lent-shared-readonly"
                   >
                     {t("personal.utang.readOnly")}
@@ -359,7 +362,7 @@ export function PersonalHomePage() {
                     shape={UTANG_OWNERSHIP_SHARED.shape}
                     data-testid="personal-stat-borrowed-shared-label"
                   >
-                    {t("personal.utang.ownershipSharedWithMe")}
+                    {t("personal.home.activeShared")}
                   </StatusChip>
                 }
                 icon={Wallet}
@@ -371,6 +374,7 @@ export function PersonalHomePage() {
                     tone={UTANG_READ_ONLY_CHIP.tone}
                     appearance={UTANG_READ_ONLY_CHIP.appearance}
                     shape={UTANG_READ_ONLY_CHIP.shape}
+                    className="max-md:hidden"
                     data-testid="personal-stat-borrowed-shared-readonly"
                   >
                     {t("personal.utang.readOnly")}
@@ -575,7 +579,7 @@ export function PersonalHomePage() {
               label: t("personal.home.actionStartBusiness"),
               icon: Building2,
               testId: "personal-qa-start-business",
-              to: "/personal/explore-pos",
+              to: "/personal/businesses",
               primary: true,
             },
             {

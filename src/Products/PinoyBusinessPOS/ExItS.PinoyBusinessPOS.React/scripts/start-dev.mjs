@@ -8,7 +8,9 @@ import {
 } from "./emulator-port-forward.mjs";
 
 const clientRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const forwardResult = ensureEmulatorPortForward({ port: POS_DEV_PORT });
+const requestedPort = Number.parseInt(process.env.POS_DEV_PORT ?? "", 10);
+const devPort = Number.isInteger(requestedPort) && requestedPort > 0 ? requestedPort : POS_DEV_PORT;
+const forwardResult = ensureEmulatorPortForward({ port: devPort });
 
 for (const line of formatPosDevStartupLines(forwardResult)) {
   console.log(line);
@@ -39,7 +41,7 @@ if (childEnv.VITE_ALLOW_INSECURE_OFFLINE_PIN === "true") {
 const viteBin = path.join(clientRoot, "node_modules", "vite", "bin", "vite.js");
 const vite = spawn(
   process.execPath,
-  [viteBin, "--host", host, "--port", String(POS_DEV_PORT), "--strictPort"],
+  [viteBin, "--host", host, "--port", String(devPort), "--strictPort"],
   {
     cwd: clientRoot,
     stdio: "inherit",

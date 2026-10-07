@@ -9,7 +9,7 @@ import {
 test.describe("EXITS-CONNECTION-GUARD-HARDENING-01 customer link eligibility", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("owner EX-ID eligibility hides Save and invite", async ({ page }) => {
+  test("owner EX-ID can also be added as a customer", async ({ page }) => {
     await mockBoundOwnerSession(page);
 
     await page.route("**/platform-api/**/resolve-public-id", async (route) => {
@@ -35,11 +35,12 @@ test.describe("EXITS-CONNECTION-GUARD-HARDENING-01 customer link eligibility", (
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          status: "OwnerOfOrganization",
-          message: "You're already the owner of this business.",
+          status: "Eligible",
+          message: "Eligible to invite.",
           publicUserId: "EX-9000-0001",
           displayName: "Owner Person",
           userIdentityId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          relationshipContext: "Owner",
         }),
       });
     });
@@ -66,9 +67,10 @@ test.describe("EXITS-CONNECTION-GUARD-HARDENING-01 customer link eligibility", (
     await page.getByTestId("qr-manual-id").fill("EX-9000-0001");
     await page.getByTestId("qr-manual-submit").click();
 
-    await expect(page.getByTestId("customer-link-eligibility-OwnerOfOrganization")).toBeVisible({
+    await expect(page.getByTestId("customer-link-relationship")).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByTestId("customer-save")).toHaveCount(0);
+    await expect(page.getByTestId("customer-link-relationship")).toContainText("Organization owner");
+    await expect(page.getByTestId("customer-save")).toBeVisible();
   });
 });

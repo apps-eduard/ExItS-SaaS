@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Package, Smartphone, Truck, Users, Wallet } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
+import { GCASH_REFERENCE_MAX_LENGTH } from "@/api/pos/pos-sales-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
@@ -12,7 +13,9 @@ import {
   placeCustomerOrder,
   quoteCustomerDelivery,
   sellerWorkspace,
+  type CustomerStorefrontProductDto,
 } from "@/api/pos/pos-customer-orders-client";
+import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { getLinkedCustomerStatement } from "@/api/pos/pos-linked-customers-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -21,6 +24,8 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMerchantCartProvider";
+import { ShopOrderCart } from "@/features/customer-ordering/ShopOrderCart";
+import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
 import { OrderingUnavailablePanel } from "@/features/customer-ordering/OrderingUnavailablePanel";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import {
@@ -50,6 +55,35 @@ function money(n: number): string {
   return `₱${n.toFixed(2)}`;
 }
 
+function localDateIso(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toWeightDialogProduct(
+  product: CustomerStorefrontProductDto,
+  organizationId: string,
+): PosCatalogProductDto {
+  return {
+    productId: product.productId,
+    organizationId,
+    name: product.name,
+    sku: product.sku ?? null,
+    unitOfMeasure: product.unitOfMeasure,
+    sellingMode: "ByWeight",
+    sellingPrice: product.unitPrice,
+    effectiveSellingPrice: product.unitPrice,
+    status: "Active",
+    createdAtUtc: "1970-01-01T00:00:00.000Z",
+    updatedAtUtc: "1970-01-01T00:00:00.000Z",
+    isTracked: product.tracksInventory,
+    onHandQuantity: product.availableQuantity ?? undefined,
+    stockStatus: product.availabilityStatus,
+  };
+}
+
 function newClientOrderId(): string | null {
   const generated = createSecureMutationId();
   return generated.ok ? generated.id : null;
@@ -67,12 +101,14 @@ export function MerchantCheckoutPage() {
   const online = useBrowserOnline();
   const { session } = useSession();
   const { organizationId = "" } = useParams();
-  const { cart, merchandiseSubtotal, clearAll } = usePersonalMerchantCart();
+  const { cart, merchandiseSubtotal, clearAll, clearLines, setQuantity } = usePersonalMerchantCart();
+  const [weightProduct, setWeightProduct] = useState<CustomerStorefrontProductDto | null>(null);
 
   const [fulfillmentType, setFulfillmentType] = useState(FulfillmentPickup);
   const [branchId, setBranchId] = useState<string | null>(null);
   const [deliveryServiceAreaId, setDeliveryServiceAreaId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>(PAYMENT_METHOD_CODES[0]);
+  const [gcashReference, setGcashReference] = useState("");
   const [recipientName, setRecipientName] = useState(session?.displayName ?? "");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
@@ -81,6 +117,11 @@ export function MerchantCheckoutPage() {
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [pickupDate, setPickupDate] = useState(localDateIso);
+  const [pickupTime, setPickupTime] = useState("");
+  const [pickupTimeOpen, setPickupTimeOpen] = useState(false);
+  const pickupDateRef = useRef<HTMLInputElement>(null);
+  const pickupTimeRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stockConflict, setStockConflict] = useState(false);
@@ -274,7 +315,7 @@ export function MerchantCheckoutPage() {
   }
 
   async function placeOrder() {
-    if (!workspace || !selection?.branchId || !selection.canPlace || cart.lines.length === 0) {
+    if (!workspace || !selection?.branchId || cart.lines.length === 0) {
       return;
     }
     if (!session?.userId) {
@@ -289,6 +330,12 @@ export function MerchantCheckoutPage() {
     }
 
     const isDelivery = selection.fulfillmentType === FulfillmentDelivery;
+    const gcashReferenceTrimmed = gcashReference.trim();
+    if (paymentMethod === "ManualGCash" && gcashReferenceTrimmed.length === 0) {
+      setError(t("checkout.gcashReferenceRequired"));
+      return;
+    }
+
     if (isDelivery) {
       if (!recipientName.trim() || !addressLine1.trim() || !coordsValid) {
         setError(t("orders.deliveryFieldsRequired"));
@@ -345,6 +392,7 @@ export function MerchantCheckoutPage() {
           : null,
         clientOrderId,
         paymentMethod,
+        paymentReference: paymentMethod === "ManualGCash" ? gcashReferenceTrimmed : null,
       });
       clearAll();
       navigate(`/personal/orders/${order.orderId}`);
@@ -506,22 +554,25 @@ export function MerchantCheckoutPage() {
         </div>
       ) : null}
 
-      <div className="pc-checkout-stack">
-        <section className="pc-checkout-section" data-testid="checkout-lines">
-          <h2 className="pc-checkout-section__title">{t("orders.viewDetails")}</h2>
-          {cart.lines.map((line) => (
-            <div key={line.productId} className="pc-checkout-line">
-              <span className="pc-checkout-line__name">
-                {line.name}
-                <span className="pc-checkout-line__qty"> × {line.quantity}</span>
-              </span>
-              <span className="pc-checkout-line__amount">
-                {money(Math.round(line.unitPrice * line.quantity * 100) / 100)}
-              </span>
-            </div>
-          ))}
-        </section>
-
+      <div className="pc-checkout-layout">
+        <aside className="sell-cart-shell pc-checkout-cart" data-testid="checkout-lines" aria-label={t("sell.cartLabel")}>
+          <ShopOrderCart
+            lines={cart.lines}
+            productsById={
+              new Map(
+                (storefrontQuery.data?.products ?? []).map((product) => [product.productId, product]),
+              )
+            }
+            workspace={workspace}
+            sellerOrganizationId={organizationId}
+            subtotal={merchandiseSubtotal}
+            showPayButton={false}
+            onChangeQuantity={setQuantity}
+            onEditWeight={setWeightProduct}
+            onClear={clearLines}
+          />
+        </aside>
+        <div className="pc-checkout-side">
         <section className="pc-checkout-section">
           <h2 className="pc-checkout-section__title">{t("orders.fulfillmentType")}</h2>
           {selection.showFulfillmentToggle ? (
@@ -550,6 +601,71 @@ export function MerchantCheckoutPage() {
                 : t("orders.pickup")}
             </p>
           )}
+
+          {selection.fulfillmentType === FulfillmentPickup ? (
+            <div className="flex flex-col gap-3" data-testid="pickup-schedule">
+              {selectedBranch?.storeStatusMessage?.trim() ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="checkout-store-availability">
+                  {selectedBranch.storeStatusMessage.trim()}
+                </p>
+              ) : null}
+              <div className="flex flex-wrap items-end gap-3">
+                <Button
+                  type="button"
+                  intent="primary"
+                  appearance="ghost"
+                  className="w-fit shrink-0"
+                  aria-expanded={pickupTimeOpen}
+                  data-testid="checkout-set-pickup-time"
+                  onClick={() => {
+                    setPickupTimeOpen((open) => {
+                      const next = !open;
+                      if (next) {
+                        window.setTimeout(
+                          () => pickupTimeRef.current?.showPicker?.() ?? pickupTimeRef.current?.focus(),
+                          0,
+                        );
+                      }
+                      return next;
+                    });
+                  }}
+                >
+                  {t("orders.setPickupTime")}
+                </Button>
+                {pickupTimeOpen ? (
+                  <>
+                    <label className="pc-field min-w-[9rem] flex-1">
+                      <span className="pc-field__label">{t("orders.pickupTime")}</span>
+                      <input
+                        ref={pickupTimeRef}
+                        className="pc-field__control"
+                        type="time"
+                        value={pickupTime}
+                        data-testid="checkout-pickup-time"
+                        onChange={(event) => setPickupTime(event.target.value)}
+                      />
+                    </label>
+                    <label className="pc-field min-w-[9rem] flex-1">
+                      <span className="pc-field__label">{t("orders.pickupDate")}</span>
+                      <input
+                        ref={pickupDateRef}
+                        className="pc-field__control"
+                        type="date"
+                        min={localDateIso()}
+                        value={pickupDate}
+                        data-testid="checkout-pickup-date"
+                        onChange={(event) => {
+                          const today = localDateIso();
+                          const next = event.target.value;
+                          setPickupDate(!next || next < today ? today : next);
+                        }}
+                      />
+                    </label>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           {selection.showBranchSelector ? (
             <label className="pc-field">
@@ -710,7 +826,33 @@ export function MerchantCheckoutPage() {
               </SegmentedOption>
             ))}
           </div>
-          {utangAvailable && utangProjection ? (
+          {paymentMethod === "ManualGCash" ? (
+            <label className="pc-field mt-3" htmlFor="checkout-gcash-reference">
+              <span className="pc-field__label inline-flex flex-wrap items-baseline gap-1">
+                {t("checkout.paymentReference")}
+                <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+                  {t("checkout.fieldRequired")}
+                </span>
+              </span>
+              <input
+                id="checkout-gcash-reference"
+                className="pc-field__control"
+                data-testid="checkout-gcash-reference"
+                type="text"
+                required
+                aria-required
+                maxLength={GCASH_REFERENCE_MAX_LENGTH}
+                autoComplete="off"
+                value={gcashReference}
+                disabled={busy}
+                onChange={(event) => setGcashReference(event.target.value)}
+              />
+              <span className="text-[length:var(--exits-text-xs)] text-muted">
+                {t("checkout.paymentReferenceHint")}
+              </span>
+            </label>
+          ) : null}
+          {paymentMethod === "Utang" && utangAvailable && utangProjection ? (
             <dl
               className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm"
               data-testid="checkout-utang-projection"
@@ -733,7 +875,7 @@ export function MerchantCheckoutPage() {
         </section>
 
         <section className="pc-checkout-section" data-testid="checkout-totals">
-          <h2 className="pc-checkout-section__title">{t("orders.total")}</h2>
+          <h2 className="pc-checkout-section__title">{t("orders.orderSummary")}</h2>
           <div className="pc-checkout-totals">
             <div className="pc-checkout-totals__row">
               <span>{t("orders.subtotal")}</span>
@@ -757,14 +899,53 @@ export function MerchantCheckoutPage() {
             </div>
           </div>
         </section>
+        {!selection.canPlace && selection.fulfillmentType === FulfillmentDelivery ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="checkout-place-unavailable">
+            {selectedBranch?.onlineOrdersPaused
+              ? t("orders.placePaused")
+              : t("orders.placeDeliveryUnavailable")}
+          </p>
+        ) : null}
+        {!selection.canPlace &&
+        selection.fulfillmentType === FulfillmentPickup &&
+        selectedBranch?.onlineOrdersPaused ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="checkout-place-unavailable">
+            {t("orders.placePaused")}
+          </p>
+        ) : null}
+        <CheckoutPlaceButton
+          label={t("orders.placeOrder")}
+          busyLabel={t("orders.placing")}
+          busy={busy || merchantContextQuery.isLoading}
+          disabled={
+            merchantContextQuery.isLoading
+            || (paymentMethod === "Utang" && utangInsufficient)
+            || (paymentMethod === "ManualGCash" && gcashReference.trim().length === 0)
+          }
+          onClick={() => void placeOrder()}
+        />
+        </div>
       </div>
-
-      <CheckoutPlaceButton
-        label={t("orders.placeOrder")}
-        busyLabel={t("orders.placing")}
-        busy={busy || merchantContextQuery.isLoading}
-        disabled={!selection.canPlace || merchantContextQuery.isLoading}
-        onClick={() => void placeOrder()}
+      <SellWeightEntryDialog
+        open={weightProduct != null}
+        product={weightProduct ? toWeightDialogProduct(weightProduct, organizationId) : null}
+        initialKilograms={weightProduct ? (cart.lines.find((line) => line.productId === weightProduct.productId)?.quantity ?? null) : null}
+        maxKilograms={weightProduct?.tracksInventory ? (weightProduct.availableQuantity ?? null) : null}
+        onConfirm={(kilograms) => {
+          if (weightProduct) {
+            setQuantity(weightProduct, kilograms);
+          }
+          setWeightProduct(null);
+        }}
+        onRemove={
+          weightProduct
+            ? () => {
+                setQuantity(weightProduct, 0);
+                setWeightProduct(null);
+              }
+            : undefined
+        }
+        onCancel={() => setWeightProduct(null)}
       />
     </div>
   );

@@ -36,6 +36,8 @@ public static class ApplicationErrorCodes
     public const string SlugConflict = "application.organization.slug_conflict";
     public const string MembershipConflict = "application.membership.conflict";
     public const string ProductAccessConflict = "application.product_access.conflict";
+    public const string ProductAffiliationConflict = "application.product_affiliation.conflict";
+    public const string StaffSeatLimitReached = "application.subscription.staff_seat_limit";
     public const string ProductAccessNotFound = "application.product_access.not_found";
     public const string CrossOrganizationMismatch = "application.access.cross_organization";
     public const string SubscriptionIneligible = "application.subscription.ineligible";
@@ -134,6 +136,9 @@ public static class ApplicationErrorCodes
     public const string CredentialNotFound = "application.credential.not_found";
     public const string CredentialAlreadyExists = "application.credential.already_exists";
     public const string PasswordInvalid = "application.credential.password_invalid";
+    public const string StaffPasswordResetNotFound = "application.staff_password_reset.not_found";
+    public const string StaffPasswordResetNotApproved = "application.staff_password_reset.not_approved";
+    public const string StaffPasswordResetConflict = "application.staff_password_reset.conflict";
     public const string CredentialLockedOut = "application.credential.locked_out";
     public const string BootstrapDisabled = "application.auth.bootstrap_disabled";
     public const string BootstrapAlreadyCompleted = "application.auth.bootstrap_already_completed";
@@ -173,6 +178,10 @@ public static class ApplicationErrorCodes
     public const string LocalValidationNotInitialized = "application.local_validation.not_initialized";
     public const string LocalValidationIdentityUnknown = "application.local_validation.identity_unknown";
 
+    public const string PersonalProfilePhotoInvalid = "application.personal.profile_photo.invalid";
+    public const string PersonalProfileIncomplete = "application.personal.profile.incomplete";
+    public const string PersonalProfileNotVisible = "application.personal.profile.not_visible";
+    public const string PersonalAddressNotFound = "application.personal.address.not_found";
     public const string PersonalContactNotFound = "application.personal.contact.not_found";
     public const string PersonalContactEmailConflict = "application.personal.contact.email.conflict";
     public const string PersonalContactIdentityConflict = "application.personal.contact.identity.conflict";

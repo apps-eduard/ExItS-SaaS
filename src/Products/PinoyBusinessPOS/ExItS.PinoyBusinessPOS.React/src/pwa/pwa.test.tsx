@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppProviders } from "@/app/providers";
 import {
@@ -109,8 +109,36 @@ describe("PWA update notice", () => {
       </AppProviders>,
     );
     expect(onRefresh).not.toHaveBeenCalled();
-    expect(screen.getByRole("status")).toHaveTextContent("Update available");
-    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Refresh to get the latest version");
+    await user.click(screen.getByRole("button", { name: "Refresh now" }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows Filipino copy", () => {
+    window.localStorage.setItem(
+      UI_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({ theme: "light", locale: "fil-PH" }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("requires an explicit Refresh and never auto-applies", async () => {
+    const user = userEvent.setup();
+    const onRefresh = vi.fn();
+    render(
+      <AppProviders>
+        <PwaUpdateNotice visible onRefresh={onRefresh} />
+      </AppProviders>,
+    );
+    expect(onRefresh).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Refresh to get the latest version");
+    expect(dialog).toHaveTextContent("A new version of ExItS is ready on this device.");
+    await user.click(screen.getByRole("button", { name: "Refresh now" }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100"));
+    expect(screen.getByRole("button", { name: "Loading 100%" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Loading 100%" }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
@@ -124,19 +152,21 @@ describe("PWA update notice", () => {
         <PwaUpdateNotice visible onRefresh={vi.fn()} />
       </AppProviders>,
     );
-    expect(screen.getByRole("status")).toHaveTextContent("May update");
-    expect(screen.getByRole("button", { name: "I-refresh" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveTextContent("I-refresh para sa pinakabagong bersyon");
+    expect(screen.getByRole("button", { name: "I-refresh ngayon" })).toBeInTheDocument();
   });
 
-  it("respects a future unsaved-work guard", async () => {
-    const user = userEvent.setup();
+  it("offers only refresh and cannot be postponed", () => {
     const onRefresh = vi.fn();
     render(
       <AppProviders>
         <PwaUpdateNotice visible onRefresh={onRefresh} guard={() => false} />
       </AppProviders>,
     );
-    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Refresh to get the latest version");
+    expect(screen.getByRole("button", { name: "Refresh now" })).toBeEnabled();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(onRefresh).not.toHaveBeenCalled();
   });
 });

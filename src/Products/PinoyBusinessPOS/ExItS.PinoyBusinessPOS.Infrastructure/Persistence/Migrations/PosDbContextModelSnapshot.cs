@@ -261,6 +261,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue("Cash")
                         .HasColumnName("payment_method");
 
+                    b.Property<string>("PaymentReference")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("payment_reference");
+
                     b.Property<string>("PaymentStatus")
                         .IsRequired()
                         .HasMaxLength(32)

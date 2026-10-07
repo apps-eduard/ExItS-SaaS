@@ -21,14 +21,43 @@ public sealed class StaffInviteUseCasesTests
         var users = new InMemoryPlatformUserRepository();
         var resolve = new ResolveStaffInviteTarget(users);
 
-        var unknown = await resolve.ExecuteAsync("EX-0000-0001");
+        var invitingOrg = PlatformOrganizationId.New();
+        var unknown = await resolve.ExecuteAsync(invitingOrg, "EX-0000-0001");
         Assert.False(unknown.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.UserNotFound, unknown.ErrorCode);
 
         var businessQr = await resolve.ExecuteAsync(
+            invitingOrg,
             ExItsQrEnvelope.Build(ExItsQrPurpose.Organization, "ORG123456"));
         Assert.False(businessQr.IsSuccess);
         Assert.Contains("Business QR", businessQr.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Resolve_returns_the_person_and_blocks_when_they_are_already_staff_elsewhere()
+    {
+        var users = new InMemoryPlatformUserRepository();
+        var personal = PlatformUser.Create("maria", "Maria Santos", "maria@example.com", T0);
+        personal.AssignPublicUserId("EX-1234-5678", T0);
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "maria_org001",
+            "maria@ORG000001",
+            "workplace@example.com",
+            PlatformOrganizationId.New(),
+            "Maria Staff",
+            T0,
+            linkedPersonalUserId: personal.Id);
+        await users.AddAsync(personal);
+        await users.AddAsync(staff);
+
+        var resolve = new ResolveStaffInviteTarget(users);
+        var result = await resolve.ExecuteAsync(PlatformOrganizationId.New(), "EX-1234-5678");
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Maria Santos", result.Value!.DisplayName);
+        Assert.Equal("EX-1234-5678", result.Value.PublicUserId);
+        Assert.False(result.Value.CanInviteAsStaff);
+        Assert.DoesNotContain(staff.HomeOrganizationId!.Value.ToString(), result.ErrorMessage ?? "", StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -83,6 +112,51 @@ public sealed class StaffInviteUseCasesTests
         var self = await create.ExecuteAsync(org.Id, "EX-1111-1111", owner.Id, productRole: "Cashier");
         Assert.False(self.IsSuccess);
         Assert.Contains("already the owner", self.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Create_native_invite_rejects_a_personal_user_who_is_already_staff_elsewhere()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var users = new InMemoryPlatformUserRepository();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        var invitations = new InMemoryOrganizationInvitationRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
+            .ExecuteAsync("Second Store", "second")).Value!;
+        var personal = PlatformUser.Create("maria", "Maria Santos", "maria@example.com", T0);
+        personal.AssignPublicUserId("EX-1234-5678", T0);
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "maria_org001",
+            "maria@ORG000001",
+            "workplace@example.com",
+            PlatformOrganizationId.New(),
+            "Maria Staff",
+            T0,
+            linkedPersonalUserId: personal.Id);
+        await users.AddAsync(personal);
+        await users.AddAsync(staff);
+
+        var create = new CreateOrganizationInvitationForPersonal(
+            orgs,
+            invitations,
+            memberships,
+            users,
+            new FakePublicOrganizationIdGenerator(),
+            new ResolveStaffInviteTarget(users),
+            uow,
+            clock);
+
+        var result = await create.ExecuteAsync(org.Id, "EX-1234-5678", invitedByUserId: null, productRole: "Cashier");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ProductAffiliationConflict, result.ErrorCode);
+        Assert.Equal(ExistingStaffInvitationGuard.AlreadyStaffElsewhereMessage, result.ErrorMessage);
+        Assert.DoesNotContain(staff.HomeOrganizationId!.Value.ToString(), result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        var pending = await invitations.FindPendingByOrganizationAndTargetUserAsync(org.Id, personal.Id);
+        Assert.Null(pending);
     }
 
     [Fact]

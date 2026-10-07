@@ -190,6 +190,12 @@ export function MyOrderDetailPage() {
               {order.paymentMethod}
             </span>
           </div>
+          {order.paymentReference ? (
+            <div className="pc-fact-tile" data-testid="order-payment-reference">
+              <span className="pc-fact-tile__label">{t("checkout.paymentReference")}</span>
+              <span className="pc-fact-tile__value">{order.paymentReference}</span>
+            </div>
+          ) : null}
           <div className="pc-fact-tile">
             <span className="pc-fact-tile__label">{t("orders.paymentStatus")}</span>
             <span className="pc-fact-tile__value inline-flex items-center gap-1">

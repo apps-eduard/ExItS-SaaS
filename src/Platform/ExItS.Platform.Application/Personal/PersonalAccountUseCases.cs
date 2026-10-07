@@ -38,7 +38,46 @@ public sealed record PersonalProfileDto(
     string Status,
     string? PublicUserId = null,
     string? QrPayload = null,
-    string? Phone = null);
+    string? Phone = null,
+    string? FirstName = null,
+    string? MiddleName = null,
+    string? LastName = null,
+    string? DateOfBirth = null,
+    string? Gender = null,
+    string? Nationality = null,
+    string? ProfilePhotoUrl = null,
+    string? AlternativeMobile = null,
+    string? Country = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? Barangay = null,
+    string? CityMunicipality = null,
+    string? ProvinceState = null,
+    string? PostalCode = null,
+    bool IsPrimary = false,
+    string ShowProfilePhoto = "Private",
+    string ShowDisplayName = "Connections",
+    string ShowCity = "Private",
+    string ShowMobile = "Private",
+    string ShowEmail = "Private",
+    int CompletionPercent = 0,
+    IReadOnlyList<string>? MissingForBase = null,
+    IReadOnlyList<string>? MissingForStaff = null,
+    IReadOnlyList<string>? MissingForCustomer = null,
+    IReadOnlyList<PersonalAddressDto>? Addresses = null);
+
+public sealed record PersonalAddressDto(
+    Guid Id,
+    string AddressType,
+    string? Country,
+    string? AddressLine1,
+    string? AddressLine2,
+    string? Barangay,
+    string? CityMunicipality,
+    string? ProvinceState,
+    string? PostalCode,
+    bool IsPrimary,
+    string? CountryCode = null);
 
 public sealed record PersonalAccountSettingsDto(
     Guid UserIdentityId,
@@ -56,7 +95,31 @@ public sealed record UpdatePersonalAccountSettingsRequest(
     bool ReminderNotificationsEnabled,
     int? ExpectedVersion);
 
-public sealed record UpdatePersonalProfileRequest(string DisplayName);
+public sealed record UpdatePersonalProfileRequest(
+    string DisplayName,
+    string? FirstName = null,
+    string? MiddleName = null,
+    string? LastName = null,
+    string? Phone = null,
+    string? AlternativeMobile = null,
+    DateOnly? DateOfBirth = null,
+    string? Gender = null,
+    string? Nationality = null,
+    string? ProfilePhotoUrl = null,
+    string? Country = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? Barangay = null,
+    string? CityMunicipality = null,
+    string? Province = null,
+    string? ProvinceState = null,
+    string? PostalCode = null,
+    string? ShowProfilePhoto = null,
+    string? ShowDisplayName = null,
+    string? ShowCity = null,
+    string? ShowMobile = null,
+    string? ShowEmail = null,
+    bool ClearDateOfBirth = false);
 
 public sealed class GetPersonalDashboard
 {
@@ -195,15 +258,21 @@ public sealed class GetPersonalProfile
 {
     private readonly IPlatformUserRepository _users;
     private readonly IAccountProfileRepository _profiles;
+    private readonly IPersonalUserProfileRepository _personalProfiles;
+    private readonly IPersonalAddressRepository _addresses;
     private readonly GetOrAssignPublicIdentity _publicIdentity;
 
     public GetPersonalProfile(
         IPlatformUserRepository users,
         IAccountProfileRepository profiles,
+        IPersonalUserProfileRepository personalProfiles,
+        IPersonalAddressRepository addresses,
         GetOrAssignPublicIdentity publicIdentity)
     {
         _users = users;
         _profiles = profiles;
+        _personalProfiles = personalProfiles;
+        _addresses = addresses;
         _publicIdentity = publicIdentity;
     }
 
@@ -237,17 +306,10 @@ public sealed class GetPersonalProfile
             qrPayload = identity.Value.QrPayload;
         }
 
-        return ApplicationResult<PersonalProfileDto>.Success(new PersonalProfileDto(
-            user.Id.Value,
-            profile.Id.Value,
-            user.Username,
-            user.DisplayName,
-            user.NormalizedEmail,
-            profile.AccountClass.ToString(),
-            profile.Status,
-            publicUserId,
-            qrPayload,
-            user.Phone));
+        var personal = await _personalProfiles.GetByUserAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        var addresses = await _addresses.ListByUserAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<PersonalProfileDto>.Success(
+            PersonalProfileMapper.ToDto(user, profile, personal, addresses, publicUserId, qrPayload));
     }
 }
 
@@ -255,6 +317,8 @@ public sealed class UpdatePersonalProfile
 {
     private readonly IPlatformUserRepository _users;
     private readonly IAccountProfileRepository _profiles;
+    private readonly IPersonalUserProfileRepository _personalProfiles;
+    private readonly IPersonalAddressRepository _addresses;
     private readonly GetPersonalProfile _getProfile;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -263,6 +327,8 @@ public sealed class UpdatePersonalProfile
     public UpdatePersonalProfile(
         IPlatformUserRepository users,
         IAccountProfileRepository profiles,
+        IPersonalUserProfileRepository personalProfiles,
+        IPersonalAddressRepository addresses,
         GetPersonalProfile getProfile,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -270,6 +336,8 @@ public sealed class UpdatePersonalProfile
     {
         _users = users;
         _profiles = profiles;
+        _personalProfiles = personalProfiles;
+        _addresses = addresses;
         _getProfile = getProfile;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -300,8 +368,32 @@ public sealed class UpdatePersonalProfile
 
         try
         {
-            // Keep email immutable on this self-service path; only DisplayName changes.
-            user.UpdateProfile(request.DisplayName, user.NormalizedEmail, _clock.UtcNow);
+            // Email stays the login key. Personal details live on the person, not a staff or customer record.
+            user.UpdatePersonalIdentity(
+                request.FirstName ?? user.FirstName,
+                request.LastName ?? user.LastName,
+                request.DisplayName,
+                request.Phone ?? user.Phone,
+                _clock.UtcNow);
+            var personal = await _personalProfiles
+                .GetByUserAsync(userIdentityId, cancellationToken)
+                .ConfigureAwait(false);
+            var created = personal is null;
+            personal ??= PersonalUserProfile.Create(userIdentityId, _clock.UtcNow);
+            personal.Update(PersonalProfileMapper.ToDraft(request, personal), _clock.UtcNow);
+            if (created)
+            {
+                await _personalProfiles.AddAsync(personal, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await _personalProfiles.UpdateAsync(personal, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (PersonalProfileMapper.IncludesAddress(request))
+            {
+                await UpsertPrimaryAddressAsync(userIdentityId, request, cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (DomainException ex)
         {
@@ -323,6 +415,33 @@ public sealed class UpdatePersonalProfile
 
         return await _getProfile.ExecuteAsync(userIdentityId, accountProfileId, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private async Task UpsertPrimaryAddressAsync(
+        PlatformUserId userIdentityId,
+        UpdatePersonalProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        var existing = await _addresses.ListByUserAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        var primary = PersonalProfileMapper.Primary(existing);
+        var draft = new PersonalAddressDraft(
+            primary?.AddressType ?? PersonalAddressType.Home,
+            request.Country ?? primary?.Country,
+            request.AddressLine1 ?? primary?.AddressLine1,
+            request.AddressLine2 ?? primary?.AddressLine2,
+            request.Barangay ?? primary?.Barangay,
+            request.CityMunicipality ?? primary?.CityMunicipality,
+            request.ProvinceState ?? request.Province ?? primary?.ProvinceState,
+            request.PostalCode ?? primary?.PostalCode);
+        if (primary is null)
+        {
+            var created = PersonalAddress.Create(userIdentityId, draft, isPrimary: true, _clock.UtcNow);
+            await _addresses.AddAsync(created, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        primary.Update(draft, _clock.UtcNow);
+        await _addresses.UpdateAsync(primary, cancellationToken).ConfigureAwait(false);
     }
 }
 

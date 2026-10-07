@@ -27,12 +27,16 @@ services:
   platform-api:
     environment:
       AllowedHosts: ${LOCAL_VALIDATION_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;react-pos;app.exitsapps.com;my.exitsapps.com;admin.exitsapps.com;pos.exitsapps.com}
+      PlatformEmail__AdminPublicBaseUrl: https://admin.exitsapps.com
       PlatformEmail__PinoyBusinessPosPublicBaseUrl: https://my.exitsapps.com
       PlatformAuthentication__External__Google__Enabled: "true"
       PlatformAuthentication__External__Google__ClientId: ${LOCAL_VALIDATION_GOOGLE_CLIENT_ID:-}
       PlatformAuthentication__External__Google__ClientSecret: ${LOCAL_VALIDATION_GOOGLE_CLIENT_SECRET:-}
       PlatformAuthentication__External__PublicBrowserOrigin: https://my.exitsapps.com
       PlatformAuthentication__External__TrustedProxyHost: react-pos
+      PayMongo__PublicAppBaseUrl: https://my.exitsapps.com
+      PayMongo__SecretKey: ${LOCAL_VALIDATION_PAYMONGO_SECRET_KEY:-}
+      PayMongo__WebhookSecret: ${LOCAL_VALIDATION_PAYMONGO_WEBHOOK_SECRET:-}
 
   pos-api:
     environment:

@@ -30,6 +30,18 @@ $rootNorm = $RepoRoot.Replace('/', '\').TrimEnd('\')
 $marker = 'ExItS.PinoyBusinessPOS.Api'
 $stopped = @()
 
+# This script runs from the POS API Debug build. `dotnet watch --project ...Api.csproj`
+# matches the lock filter. The watch process is not always an ancestor: the build can run
+# on a shared MSBuild node. Stopping that watch aborts startup with exit code -1.
+# Never stop the current process, its parents, or any dotnet watch for this project.
+$ancestors = [System.Collections.Generic.HashSet[int]]::new()
+$cursor = $PID
+while ($cursor -gt 0 -and $ancestors.Add($cursor)) {
+    $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $cursor" -ErrorAction SilentlyContinue
+    if (-not $parent) { break }
+    $cursor = [int]$parent.ParentProcessId
+}
+
 function Test-PosApiLockCandidate([string]$Haystack) {
     if ([string]::IsNullOrWhiteSpace($Haystack)) { return $false }
     $norm = $Haystack.Replace('/', '\')
@@ -38,6 +50,7 @@ function Test-PosApiLockCandidate([string]$Haystack) {
 }
 
 foreach ($process in Get-CimInstance Win32_Process -Filter "Name = '$marker.exe'" -ErrorAction SilentlyContinue) {
+    if ($ancestors.Contains([int]$process.ProcessId)) { continue }
     $haystack = "{0}|{1}" -f [string]$process.CommandLine, [string]$process.ExecutablePath
     if (-not (Test-PosApiLockCandidate $haystack)) { continue }
     Write-Host "[unlock-pos-api] Stopping apphost PID $($process.ProcessId) (DLL lock prevention)"
@@ -46,10 +59,13 @@ foreach ($process in Get-CimInstance Win32_Process -Filter "Name = '$marker.exe'
 }
 
 foreach ($process in Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue) {
+    if ($ancestors.Contains([int]$process.ProcessId)) { continue }
     $commandLine = [string]$process.CommandLine
     if (-not (Test-PosApiLockCandidate $commandLine)) { continue }
-    # Only stop run/watch hosts for this project — not arbitrary dotnet test/build.
-    if ($commandLine -notmatch '(?i)(\brun\b|\bwatch\b)') { continue }
+    # Only stop `dotnet run` hosts for this project. Never stop `dotnet watch`:
+    # this build is often invoked by that watch process.
+    if ($commandLine -match '(?i)\bwatch\b') { continue }
+    if ($commandLine -notmatch '(?i)\brun\b') { continue }
     Write-Host "[unlock-pos-api] Stopping dotnet host PID $($process.ProcessId) (DLL lock prevention)"
     Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
     $stopped += [int]$process.ProcessId

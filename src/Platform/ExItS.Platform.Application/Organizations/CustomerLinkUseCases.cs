@@ -692,9 +692,24 @@ public sealed class CreateCustomerLinkRequest
             || user.HomeOrganizationId is not null
             || !string.IsNullOrWhiteSpace(user.StaffNumber))
         {
-            return ApplicationResult<(string, PlatformUserId?, string?)>.Failure(
-                DomainErrorCodes.CustomerLinkPersonalIdentityRequired,
-                "Customer link targets must be Personal identities, not organization or platform staff.");
+            if (_eligibility is null)
+            {
+                return ApplicationResult<(string, PlatformUserId?, string?)>.Failure(
+                    DomainErrorCodes.CustomerLinkPersonalIdentityRequired,
+                    "Customer link targets must be Personal identities, not organization or platform staff.");
+            }
+
+            var canonical = await _eligibility
+                .ResolveCanonicalPersonalAsync(user, cancellationToken)
+                .ConfigureAwait(false);
+            if (!canonical.IsSuccess)
+            {
+                return ApplicationResult<(string, PlatformUserId?, string?)>.Failure(
+                    canonical.ErrorCode!,
+                    canonical.ErrorMessage!);
+            }
+
+            user = canonical.Value!;
         }
 
         return ApplicationResult<(string, PlatformUserId?, string?)>.Success(
@@ -1078,6 +1093,7 @@ public sealed class AcceptCustomerLinkRequest
     private readonly IClock _clock;
     private readonly IOrganizationInAppNotificationRepository? _orgNotifications;
     private readonly IPersonalInAppNotificationRepository? _personalNotifications;
+    private readonly PersonalProfileAcceptanceGate? _profileGate;
 
     public AcceptCustomerLinkRequest(
         ICustomerLinkRequestRepository requests,
@@ -1088,7 +1104,8 @@ public sealed class AcceptCustomerLinkRequest
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationInAppNotificationRepository? orgNotifications = null,
-        IPersonalInAppNotificationRepository? personalNotifications = null)
+        IPersonalInAppNotificationRepository? personalNotifications = null,
+        PersonalProfileAcceptanceGate? profileGate = null)
     {
         _requests = requests;
         _customers = customers;
@@ -1099,6 +1116,7 @@ public sealed class AcceptCustomerLinkRequest
         _clock = clock;
         _orgNotifications = orgNotifications;
         _personalNotifications = personalNotifications;
+        _profileGate = profileGate;
     }
 
     public async Task<ApplicationResult<AcceptCustomerLinkResultDto>> ExecuteAsync(
@@ -1239,6 +1257,19 @@ public sealed class AcceptCustomerLinkRequest
             }
 
             CustomerStaffSeparationGuard.EnsureNotTreatedAsStaff(customer);
+
+            if (_profileGate is not null)
+            {
+                var missing = await _profileGate
+                    .MissingCustomerFieldsAsync(user, cancellationToken)
+                    .ConfigureAwait(false);
+                if (missing is not null)
+                {
+                    return ApplicationResult<AcceptCustomerLinkResultDto>.Failure(
+                        ApplicationErrorCodes.PersonalProfileIncomplete,
+                        missing);
+                }
+            }
 
             var membershipBefore = await _memberships
                 .FindCurrentByUserAndOrganizationAsync(acceptingUserId, request.OrganizationId, cancellationToken)

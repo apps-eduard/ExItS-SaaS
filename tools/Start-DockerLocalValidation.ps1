@@ -4,9 +4,11 @@
   Starts the full Local Validation application stack in Docker.
 
 .DESCRIPTION
-  Stops repo-scoped host apps, preserves Local Validation database volumes, starts
-  infrastructure, and starts application services under the apps profile
+  Stops host apps that occupy the Docker preview ports, preserves fast local dev,
+  preserves Local Validation database volumes, starts infrastructure, and starts
+  application services under the apps profile
   (React Platform Admin on 8095; React Personal, Organization, and POS on 5177).
+  Fast local dev can stay running. Both use the same database volumes.
   Migrations remain application hosted services when the APIs start.
 #>
 [CmdletBinding()]
@@ -99,6 +101,55 @@ function Set-ComposeEnvironment {
     Set-Item -LiteralPath "Env:$Name" -Value $Value
 }
 
+function Get-FastLocalDevProcessIds {
+    $protected = [System.Collections.Generic.HashSet[int]]::new()
+    $statePath = Join-Path $env:LOCALAPPDATA 'ExItS\LocalDev\launcher-state.json'
+    $roots = New-Object System.Collections.Generic.List[int]
+    if (Test-Path -LiteralPath $statePath) {
+        try {
+            $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+            foreach ($windowPid in @($state.WindowPids)) {
+                if ($windowPid) { $roots.Add([int]$windowPid) }
+            }
+        }
+        catch { }
+    }
+
+    foreach ($port in @(5288, 5290, 5178, 5195, 5176)) {
+        $owners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+        foreach ($owner in $owners) {
+            if ($owner.OwningProcess) { $roots.Add([int]$owner.OwningProcess) }
+        }
+    }
+
+    $processes = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue)
+    foreach ($root in $roots) {
+        $cursor = [int]$root
+        for ($depth = 0; $depth -lt 6 -and $cursor -gt 0; $depth++) {
+            if (-not $protected.Add($cursor)) { break }
+            $process = $processes | Where-Object { [int]$_.ProcessId -eq $cursor } | Select-Object -First 1
+            if (-not $process) { break }
+            $haystack = "{0} {1}" -f $process.Name, $process.CommandLine
+            if ($haystack -notmatch 'LocalDev|ExItS\.(Platform|PinoyBusinessPOS|PinoyLoanManager)|dotnet(\.exe)?|node(\.exe)?') { break }
+            $cursor = [int]$process.ParentProcessId
+        }
+    }
+
+    $changed = $true
+    while ($changed) {
+        $changed = $false
+        foreach ($process in $processes) {
+            $processId = [int]$process.ProcessId
+            $parentId = [int]$process.ParentProcessId
+            if ($protected.Contains($parentId) -and $protected.Add($processId)) {
+                $changed = $true
+            }
+        }
+    }
+
+    return @($protected)
+}
+
 $repoRoot = Get-LocalValidationRepoRoot
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
 $envFile = Join-Path $dockerDir $LocalValidationStack.EnvFileName
@@ -174,8 +225,12 @@ $dockerAppPortLabels = @{
 }
 Write-LocalValidationRuntimeProvenanceTable -PortLabels $dockerAppPortLabels -ExpectedRepoRoot $repoRoot
 
-Write-Step 'Stopping repo-scoped host applications before Docker app mode...'
-$null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot
+Write-Step 'Stopping host apps on preview ports. Fast local dev stays running...'
+$keepLocalDev = Get-FastLocalDevProcessIds
+if ($keepLocalDev.Count -gt 0) {
+    Write-Note ("Keeping {0} fast local dev processes." -f $keepLocalDev.Count)
+}
+$null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot -ExcludeProcessIds $keepLocalDev
 Write-Step 'Stopping any existing Docker app services before the port safety check...'
 $null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile
 $conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $dockerAppPortLabels -ExpectedRepoRoot $repoRoot)

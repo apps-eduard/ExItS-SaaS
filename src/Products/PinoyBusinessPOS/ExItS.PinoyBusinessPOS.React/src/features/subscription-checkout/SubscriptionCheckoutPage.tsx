@@ -5,6 +5,7 @@ import {
   getPersonalSubscriptionPayment,
   retryPersonalSubscriptionPayment,
   startPersonalSubscriptionHostedCheckout,
+  syncPersonalSubscriptionHostedCheckout,
 } from "@/api/platform/subscription-payment-client";
 import { redirectToHostedCheckout } from "@/features/subscription-checkout/hosted-checkout-redirect";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,6 @@ import {
   isPendingStatus,
   isProcessingStatus,
   isTestEnvironment,
-  paymentChannelPath,
   startBusinessAfterPaidPath,
   summaryCardTitleKey,
 } from "@/features/subscription-checkout/checkout-helpers";
@@ -33,6 +33,18 @@ import {
 } from "@/features/subscription-checkout/pending-subscription-checkout";
 import { useI18n } from "@/i18n/I18nProvider";
 
+async function loadCheckoutPayment(paymentId: string, signal: AbortSignal) {
+  const loaded = await getPersonalSubscriptionPayment(paymentId, signal);
+  if (!isProcessingStatus(loaded.status) || !loaded.providerReference) {
+    return loaded;
+  }
+  try {
+    return await syncPersonalSubscriptionHostedCheckout(paymentId, signal);
+  } catch {
+    return loaded;
+  }
+}
+
 function formatWhen(iso: string): string {
   try {
     return new Date(iso).toLocaleString();
@@ -41,29 +53,14 @@ function formatWhen(iso: string): string {
   }
 }
 
-function channelSlug(channel: string | null | undefined): "gcash" | "maya" | "card" | null {
-  switch ((channel ?? "").toLowerCase()) {
-    case "gcash":
-      return "gcash";
-    case "maya":
-      return "maya";
-    case "card":
-      return "card";
-    default:
-      return null;
-  }
-}
-
 export function SubscriptionCheckoutPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { paymentId = "" } = useParams();
   const [actionError, setActionError] = useState<string | null>(null);
-  const [forceMethodPicker, setForceMethodPicker] = useState(false);
-
   const paymentQuery = useQuery({
     queryKey: ["subscription-payment", "personal", paymentId],
-    queryFn: ({ signal }) => getPersonalSubscriptionPayment(paymentId, signal),
+    queryFn: ({ signal }) => loadCheckoutPayment(paymentId, signal),
     enabled: Boolean(paymentId),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
@@ -159,13 +156,10 @@ export function SubscriptionCheckoutPage() {
   const cancelled = isCancelledStatus(payment.status);
   const expired = isExpiredStatus(payment.status);
   const paid = alreadyPaid;
-  const hasChannel = Boolean(payment.channel) && !forceMethodPicker;
   const showDiscount = payment.discountPercent > 0 || payment.discountAmount > 0;
   const timeline = buildTimelineEntries(payment);
   const title = t(checkoutTitleKey(payment));
   const summaryTitle = t(summaryCardTitleKey(payment));
-  const channelContinueSlug = channelSlug(payment.channel);
-
   return (
     <div className="flex w-full flex-col gap-4" data-testid="subscription-checkout-page">
       <PageHeader title={title} description={t("subscriptionCheckout.lede")} />
@@ -218,7 +212,7 @@ export function SubscriptionCheckoutPage() {
       ) : null}
 
       {actionError ? (
-        <Notice tone="danger" title={t("subscriptionCheckout.errorTitle")}>
+        <Notice tone="danger" title={t("subscriptionCheckout.hostedFailed")}>
           {actionError}
         </Notice>
       ) : null}
@@ -271,7 +265,7 @@ export function SubscriptionCheckoutPage() {
         </dl>
       </section>
 
-      {pending && !hasChannel ? (
+      {pending ? (
         <section className="flex flex-col gap-2" data-testid="subscription-checkout-review">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("subscriptionCheckout.secureProviderHint")}
@@ -286,32 +280,6 @@ export function SubscriptionCheckoutPage() {
             {hostedCheckoutMutation.isPending
               ? t("subscriptionCheckout.redirecting")
               : t("subscriptionCheckout.continueSecure")}
-          </Button>
-        </section>
-      ) : null}
-
-      {pending && hasChannel && channelContinueSlug ? (
-        <section className="flex flex-col gap-2" data-testid="subscription-channel-continue">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">
-            {payment.channel} · {formatPaymentMoney(payment.finalAmount, payment.currencyCode)}
-          </p>
-          <Button
-            type="button"
-            data-testid="subscription-continue-channel"
-            onClick={() => navigate(paymentChannelPath(paymentId, channelContinueSlug))}
-          >
-            {t("subscriptionCheckout.continueWithChannel").replace("{channel}", payment.channel ?? "")}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            data-testid="subscription-change-method"
-            onClick={() => {
-              setForceMethodPicker(true);
-              setActionError(null);
-            }}
-          >
-            {t("subscriptionCheckout.chooseAnotherMethod")}
           </Button>
         </section>
       ) : null}

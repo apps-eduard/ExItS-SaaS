@@ -35,6 +35,7 @@ export type PersonalNavItemId =
   | "guide"
   | "profile"
   | "startBusiness"
+  | "subscriptions"
   | "preferences";
 
 export type PersonalNavGroupId = "primary" | "commerce" | "social" | "business";
@@ -200,12 +201,20 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           matchPrefixes: ["/personal/profile"],
         },
         {
+          id: "subscriptions",
+          to: "/personal/subscriptions",
+          labelKey: "personal.subscriptions.title",
+          icon: Wallet,
+          testId: "personal-nav-subscriptions",
+          matchPrefixes: ["/personal/subscriptions"],
+        },
+        {
           id: "startBusiness",
-          to: "/personal/explore-pos",
+          to: "/personal/businesses",
           labelKey: "personal.more.startBusiness",
           icon: Building2,
           testId: "personal-nav-start-business",
-          matchPrefixes: ["/personal/explore-pos", "/personal/start-business"],
+          matchPrefixes: ["/personal/businesses", "/personal/explore-pos", "/personal/start-business"],
         },
         {
           id: "preferences",

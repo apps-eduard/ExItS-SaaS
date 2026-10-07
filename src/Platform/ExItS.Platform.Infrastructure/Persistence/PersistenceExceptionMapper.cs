@@ -28,6 +28,13 @@ public static class PersistenceExceptionMapper
         // Check payment-, subscription-, and organization-specific constraints first: their detail
         // text can also contain "product_code" / generic substrings that would otherwise be caught
         // by the broader catalog checks below.
+        if (detail.Contains("ux_product_access_assignments_user_product_active", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.ProductAffiliationConflict;
+            message = "This account is already associated with another organization for this product.";
+            return true;
+        }
+
         if (detail.Contains("ux_subscription_payment_one_open_personal", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("ux_subscription_payment_one_open_organization", StringComparison.OrdinalIgnoreCase))
         {

@@ -18,7 +18,10 @@ public static class ExternalAuthCallbackUri
             return false;
         }
 
-        if (!string.Equals(origin.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+        var https = string.Equals(origin.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
+        var loopbackHttp = string.Equals(origin.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+            && IsLoopbackHost(origin.Host);
+        if ((!https && !loopbackHttp)
             || !string.IsNullOrEmpty(origin.UserInfo)
             || !string.IsNullOrEmpty(origin.Query)
             || !string.IsNullOrEmpty(origin.Fragment)
@@ -30,6 +33,11 @@ public static class ExternalAuthCallbackUri
         redirectUri = $"{origin.GetLeftPart(UriPartial.Authority)}{ReactPathBase}{GoogleCallbackPath}";
         return true;
     }
+
+    private static bool IsLoopbackHost(string host) =>
+        string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(host, "::1", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Browser path for the post-Google completion request.

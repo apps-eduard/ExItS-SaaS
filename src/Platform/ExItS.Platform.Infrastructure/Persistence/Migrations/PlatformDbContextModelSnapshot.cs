@@ -100,6 +100,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProductCode");
 
+                    b.HasIndex("UserId", "ProductCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_product_access_assignments_user_product_active")
+                        .HasFilter("status = 'Active'");
+
                     b.HasIndex("UserId", "OrganizationId", "ProductCode")
                         .IsUnique()
                         .HasDatabaseName("ux_product_access_assignments_active")
@@ -3997,11 +4002,36 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("actor_reference");
 
+                    b.Property<string>("AddressLine1")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("address_line_1");
+
+                    b.Property<string>("AddressLine2")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("address_line_2");
+
+                    b.Property<string>("Barangay")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("barangay");
+
                     b.Property<string>("BranchAccessScope")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("branch_access_scope");
+
+                    b.Property<string>("CityMunicipality")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("city_municipality");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("country");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -4025,6 +4055,69 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("postal_code");
+
+                    b.Property<DateOnly?>("ProfileDateOfBirth")
+                        .HasColumnType("date")
+                        .HasColumnName("profile_date_of_birth");
+
+                    b.Property<bool>("ProfileDetailsCaptured")
+                        .HasColumnType("boolean")
+                        .HasColumnName("profile_details_captured");
+
+                    b.Property<string>("ProfileDisplayName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("profile_display_name");
+
+                    b.Property<string>("ProfileEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("profile_email");
+
+                    b.Property<string>("ProfileFirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("profile_first_name");
+
+                    b.Property<string>("ProfileGender")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("profile_gender");
+
+                    b.Property<string>("ProfileLastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("profile_last_name");
+
+                    b.Property<string>("ProfileMiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("profile_middle_name");
+
+                    b.Property<string>("ProfileMobile")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("profile_mobile");
+
+                    b.Property<string>("ProfileNationality")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("profile_nationality");
+
+                    b.Property<string>("ProfilePhotoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("profile_photo_url");
+
+                    b.Property<string>("ProvinceState")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("province_state");
+
                     b.Property<string>("Reason")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
@@ -4039,6 +4132,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("role");
+
+                    b.Property<string>("StaffId")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("staff_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -4076,7 +4174,13 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("IX_organization_memberships_organization_id");
+
+                    b.HasIndex("OrganizationId", "StaffId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_organization_memberships_staff_id")
+                        .HasFilter("staff_id IS NOT NULL");
 
                     b.HasIndex("UserId", "OrganizationId")
                         .IsUnique()
@@ -4158,6 +4262,35 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_organization_ownership_transfers_to_user_status");
 
                     b.ToTable("organization_ownership_transfers", "platform");
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationStaffIdSettingsRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("NextNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("next_number");
+
+                    b.Property<int>("PadDigits")
+                        .HasColumnType("integer")
+                        .HasColumnName("pad_digits");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("prefix");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("OrganizationId");
+
+                    b.ToTable("organization_staff_id_settings", "platform");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.PersonalOrganizationConnectionBlockRecord", b =>
@@ -4577,6 +4710,78 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasFilter("status = 'Active'");
 
                     b.ToTable("product_local_role_grants", "platform");
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.StaffPasswordResetRequestRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset?>("DecidedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at_utc");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<Guid>("StaffUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("staff_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedByUserId");
+
+                    b.HasIndex("MembershipId");
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("StaffUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_staff_password_reset_requests_open_staff")
+                        .HasFilter("status IN ('Pending', 'Approved')");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_staff_password_reset_requests_org_status");
+
+                    b.ToTable("staff_password_reset_requests", "platform");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Payments.ProviderPaymentRecord", b =>
@@ -5076,6 +5281,87 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasKey("UserIdentityId");
 
                     b.ToTable("personal_account_settings", "platform");
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalAddressRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AddressLine1")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("address_line_1");
+
+                    b.Property<string>("AddressLine2")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("address_line_2");
+
+                    b.Property<string>("AddressType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("address_type");
+
+                    b.Property<string>("Barangay")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("barangay");
+
+                    b.Property<string>("CityMunicipality")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("city_municipality");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("country");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_primary");
+
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("postal_code");
+
+                    b.Property<string>("ProvinceState")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("province_state");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_identity_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserIdentityId")
+                        .HasDatabaseName("ix_personal_addresses_user_identity_id");
+
+                    b.HasIndex("UserIdentityId", "IsPrimary")
+                        .IsUnique()
+                        .HasDatabaseName("ux_personal_addresses_one_primary")
+                        .HasFilter("is_primary = TRUE");
+
+                    b.ToTable("personal_addresses", "platform");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalConnectionRequestRecord", b =>
@@ -5912,6 +6198,84 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasFilter("reminder_at_utc IS NOT NULL AND reminder_notified_at_utc IS NULL");
 
                     b.ToTable("personal_todos", "platform");
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalUserProfileRecord", b =>
+                {
+                    b.Property<Guid>("UserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_identity_id");
+
+                    b.Property<string>("AlternativeMobile")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("alternative_mobile");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date")
+                        .HasColumnName("date_of_birth");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("gender");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("Nationality")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nationality");
+
+                    b.Property<string>("ProfilePhotoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("profile_photo_url");
+
+                    b.Property<string>("ShowCity")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("show_city");
+
+                    b.Property<string>("ShowDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("show_display_name");
+
+                    b.Property<string>("ShowEmail")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("show_email");
+
+                    b.Property<string>("ShowMobile")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("show_mobile");
+
+                    b.Property<string>("ShowProfilePhoto")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("show_profile_photo");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("UserIdentityId");
+
+                    b.ToTable("personal_user_profiles", "platform");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalUtangEntryRecord", b =>
@@ -7503,6 +7867,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationStaffIdSettingsRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.PersonalOrganizationConnectionBlockRecord", b =>
                 {
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
@@ -7581,6 +7954,38 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.StaffPasswordResetRequestRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationMembershipRecord", null)
+                        .WithMany()
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StaffUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Payments.ProviderPaymentRecord", b =>
                 {
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Subscriptions.SubscriptionRecord", null)
@@ -7614,6 +8019,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalAccountSettingsRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("UserIdentityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalAddressRecord", b =>
                 {
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
                         .WithMany()
@@ -7790,6 +8204,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
                         .WithMany()
                         .HasForeignKey("OwnerUserIdentityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalUserProfileRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("UserIdentityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

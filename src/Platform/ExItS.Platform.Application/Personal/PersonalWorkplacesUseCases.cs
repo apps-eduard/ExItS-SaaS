@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 
@@ -28,7 +29,9 @@ public sealed record PersonalWorkplaceDto(
     string MembershipStatus,
     string? ProductRole,
     string? ProductRoleDisplay,
-    IReadOnlyList<PersonalWorkplaceBranchDto> Branches);
+    IReadOnlyList<PersonalWorkplaceBranchDto> Branches,
+    string? PasswordResetStatus = null,
+    Guid? PasswordResetRequestId = null);
 
 /// <summary>
 /// Lists organization workplaces for the authenticated Personal user via LinkedPersonalUserId.
@@ -42,6 +45,8 @@ public sealed class ListPersonalWorkplaces
     private readonly IProductLocalRoleGrantRepository _roleGrants;
     private readonly IOrganizationMembershipBranchAssignmentRepository _assignments;
     private readonly IOrganizationBranchRepository _branches;
+    private readonly IStaffPasswordResetRequestRepository? _passwordResets;
+    private readonly IClock _clock;
 
     public ListPersonalWorkplaces(
         IPlatformUserRepository users,
@@ -49,7 +54,9 @@ public sealed class ListPersonalWorkplaces
         IPlatformOrganizationRepository organizations,
         IProductLocalRoleGrantRepository roleGrants,
         IOrganizationMembershipBranchAssignmentRepository assignments,
-        IOrganizationBranchRepository branches)
+        IOrganizationBranchRepository branches,
+        IClock clock,
+        IStaffPasswordResetRequestRepository? passwordResets = null)
     {
         _users = users;
         _memberships = memberships;
@@ -57,6 +64,8 @@ public sealed class ListPersonalWorkplaces
         _roleGrants = roleGrants;
         _assignments = assignments;
         _branches = branches;
+        _clock = clock;
+        _passwordResets = passwordResets;
     }
 
     public async Task<ApplicationResult<IReadOnlyList<PersonalWorkplaceDto>>> ExecuteAsync(
@@ -68,6 +77,15 @@ public sealed class ListPersonalWorkplaces
             .ConfigureAwait(false);
 
         var items = new List<PersonalWorkplaceDto>();
+        var openResets = _passwordResets is null
+            ? []
+            : await _passwordResets
+                .ListOpenByStaffUsersAsync(staffUsers.Select(user => user.Id).ToArray(), cancellationToken)
+                .ConfigureAwait(false);
+        var resetByStaff = openResets
+            .GroupBy(request => request.StaffUserId.Value)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(request => request.CreatedAtUtc).First());
+        var utcNow = _clock.UtcNow;
         foreach (var staffUser in staffUsers)
         {
             if (staffUser.Status != AccountStatus.Active
@@ -115,6 +133,8 @@ public sealed class ListPersonalWorkplaces
                 : ProductRoleDisplay.ToDisplayLabel(productRole);
 
             var branches = await ResolveBranchesAsync(membership, cancellationToken).ConfigureAwait(false);
+            resetByStaff.TryGetValue(staffUser.Id.Value, out var reset);
+            var resetVisible = reset is not null && !reset.IsPastExpiry(utcNow);
 
             items.Add(
                 new PersonalWorkplaceDto(
@@ -129,7 +149,9 @@ public sealed class ListPersonalWorkplaces
                     membership.Status.ToString(),
                     productRole,
                     productRoleDisplay,
-                    branches));
+                    branches,
+                    resetVisible ? reset!.Status.ToString() : null,
+                    resetVisible ? reset!.Id.Value : null));
         }
 
         items.Sort((a, b) =>

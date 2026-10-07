@@ -313,6 +313,24 @@ public sealed class GrantProductAccess
                     "The entitlement snapshot subscription status does not permit commercial access.");
             }
 
+            var otherOrganization = await _assignments
+                .FindActiveByUserAndProductAsync(userId, code, cancellationToken)
+                .ConfigureAwait(false);
+            if (otherOrganization is not null && otherOrganization.OrganizationId != organizationId)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.ProductAffiliationConflict,
+                    UserProductAffiliationGuard.AlreadyAssociatedMessage);
+            }
+
+            if (await SameEmailHasAnotherOrganizationAsync(user, code, organizationId, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.ProductAffiliationConflict,
+                    UserProductAffiliationGuard.AlreadyAssociatedMessage);
+            }
+
             var existing = await _assignments
                 .FindActiveByUserOrganizationProductAsync(userId, organizationId, code, cancellationToken)
                 .ConfigureAwait(false);
@@ -345,6 +363,77 @@ public sealed class GrantProductAccess
         {
             return ApplicationResult<ProductAccessAssignment>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private async Task<bool> SameEmailHasAnotherOrganizationAsync(
+        PlatformUser user,
+        ProductCode productCode,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        // Ownership and staff membership are separate identities. A Personal owner's
+        // grant is not blocked by a staff workplace. A staff grant is blocked only by
+        // another organization-scoped staff identity with the same contact email.
+        if (!user.IsOrganizationScopedStaff)
+        {
+            return false;
+        }
+
+        var emails = new List<string>();
+        if (!string.IsNullOrWhiteSpace(user.NormalizedEmail))
+        {
+            emails.Add(user.NormalizedEmail);
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.NormalizedContactEmail)
+            && !emails.Contains(user.NormalizedContactEmail, StringComparer.Ordinal))
+        {
+            emails.Add(user.NormalizedContactEmail);
+        }
+
+        foreach (var email in emails)
+        {
+            var login = await _users.GetByNormalizedEmailAsync(email, cancellationToken).ConfigureAwait(false);
+            if (login is not null
+                && login.Id != user.Id
+                && login.IsOrganizationScopedStaff
+                && await ActiveAccessIsAnotherOrganizationAsync(login.Id, productCode, organizationId, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                return true;
+            }
+
+            var contacts = await _users
+                .ListByNormalizedContactEmailAsync(email, cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var match in contacts)
+            {
+                if (match.Id == user.Id || !match.IsOrganizationScopedStaff)
+                {
+                    continue;
+                }
+
+                if (await ActiveAccessIsAnotherOrganizationAsync(match.Id, productCode, organizationId, cancellationToken)
+                        .ConfigureAwait(false))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<bool> ActiveAccessIsAnotherOrganizationAsync(
+        PlatformUserId userId,
+        ProductCode productCode,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var access = await _assignments
+            .FindActiveByUserAndProductAsync(userId, productCode, cancellationToken)
+            .ConfigureAwait(false);
+        return access is not null && access.OrganizationId != organizationId;
     }
 }
 

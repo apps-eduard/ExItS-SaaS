@@ -353,6 +353,9 @@ export function SignInPage() {
       {expired ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("signIn.expired")}</p>
       ) : null}
+      {searchParams.get("external") === "failed" && !error ? (
+        <AuthInlineFeedback message={t("auth.googleSignInFailed")} testId="auth-error" />
+      ) : null}
       {info ? <AuthInlineFeedback message={info} testId="auth-info" tone="success" /> : null}
       {signInFailure ? (
         <ErrorState

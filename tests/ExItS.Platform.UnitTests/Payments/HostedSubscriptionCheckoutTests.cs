@@ -67,6 +67,26 @@ public sealed class HostedSubscriptionCheckoutTests
     }
 
     [Fact]
+    public async Task Unconfigured_provider_does_not_open_a_local_test_payment_page()
+    {
+        var gateway = new FakeGateway { Configured = false };
+        var repo = new MemoryPayments();
+        var payment = Pending(organizationId: null);
+        await repo.AddAsync(payment);
+        var start = new StartHostedSubscriptionCheckout(repo, new MemoryPlans(), gateway, new MemoryUnitOfWork(), new FixedClock(Now));
+
+        var result = await start.ExecuteForPaymentAsync(
+            payment.Id.Value,
+            UserId,
+            expectedOrganizationId: null,
+            "https://my.exitsapps.com");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PaymentNotConfigured, result.ErrorCode);
+        Assert.Equal(0, gateway.CreateCount);
+    }
+
+    [Fact]
     public async Task Organization_mismatch_does_not_start_checkout()
     {
         var gateway = new FakeGateway();
@@ -227,6 +247,65 @@ public sealed class HostedSubscriptionCheckoutTests
         Assert.Equal(0, gateway.GetCount);
         Assert.Equal(0, activator.Calls);
         Assert.Equal(SubscriptionPaymentStatus.Processing, payment.Status);
+    }
+
+    [Fact]
+    public async Task Browser_return_sync_records_paid_when_provider_reports_paid()
+    {
+        var gateway = new FakeGateway
+        {
+            SessionState = new HostedCheckoutProviderState("cs_test_1", true, false, false, 1499m, "PHP", "pay_1"),
+        };
+        var repo = new MemoryPayments();
+        var payment = Pending(null);
+        payment.AttachHostedCheckout("cs_test_1", "https://checkout.paymongo.test/cs_test_1", Now);
+        await repo.AddAsync(payment);
+        var activator = new CountingActivator();
+        var sync = new SyncHostedSubscriptionCheckout(
+            repo,
+            gateway,
+            new ApplyTrustedHostedCheckoutPayment(repo, activator, new MemoryUnitOfWork(), new FixedClock(Now)),
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var result = await sync.ExecuteAsync(payment.Id.Value, UserId, expectedOrganizationId: null);
+        var repeat = await sync.ExecuteAsync(payment.Id.Value, UserId, expectedOrganizationId: null);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(repeat.IsSuccess);
+        Assert.Equal(SubscriptionPaymentStatus.Paid.ToString(), result.Value!.Status);
+        Assert.Equal(SubscriptionPaymentStatus.Paid.ToString(), repeat.Value!.Status);
+        Assert.False(result.Value.SubscriptionActivated);
+        Assert.Equal(SubscriptionPaymentStatus.Paid, payment.Status);
+        Assert.Equal(0, activator.Calls);
+        Assert.Equal(1, gateway.GetCount);
+    }
+
+    [Fact]
+    public async Task Browser_return_sync_activates_an_organization_when_provider_reports_paid()
+    {
+        var gateway = new FakeGateway
+        {
+            SessionState = new HostedCheckoutProviderState("cs_test_1", true, false, false, 1499m, "PHP", "pay_1"),
+        };
+        var repo = new MemoryPayments();
+        var payment = Pending(OrgId);
+        payment.AttachHostedCheckout("cs_test_1", "https://checkout.paymongo.test/cs_test_1", Now);
+        await repo.AddAsync(payment);
+        var activator = new CountingActivator();
+        var sync = new SyncHostedSubscriptionCheckout(
+            repo,
+            gateway,
+            new ApplyTrustedHostedCheckoutPayment(repo, activator, new MemoryUnitOfWork(), new FixedClock(Now)),
+            new MemoryUnitOfWork(),
+            new FixedClock(Now));
+
+        var result = await sync.ExecuteAsync(payment.Id.Value, UserId, OrgId.Value);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SubscriptionPaymentStatus.Paid.ToString(), result.Value!.Status);
+        Assert.True(result.Value.SubscriptionActivated);
+        Assert.Equal(1, activator.Calls);
     }
 
     [Fact]
@@ -490,7 +569,9 @@ public sealed class HostedSubscriptionCheckoutTests
         public HostedCheckoutCreateRequest? LastRequest { get; private set; }
         public HostedCheckoutProviderState SessionState { get; set; } =
             new("cs_test_1", false, false, false, null, null, null);
-        public bool IsConfigured => true;
+        public bool Configured { get; set; } = true;
+
+        public bool IsConfigured => Configured;
 
         public async Task<HostedCheckoutSessionResult> CreateSessionAsync(
             HostedCheckoutCreateRequest request,

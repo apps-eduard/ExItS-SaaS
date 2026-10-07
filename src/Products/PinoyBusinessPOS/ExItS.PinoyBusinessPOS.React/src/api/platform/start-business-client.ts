@@ -21,6 +21,22 @@ export const onboardingBusinessTypeSchema = z.object({
 
 export type OnboardingBusinessTypeDto = z.infer<typeof onboardingBusinessTypeSchema>;
 
+export const personalAddressSchema = z.object({
+  id: guidSchema,
+  addressType: z.string(),
+  country: z.string().nullable().optional().default(null),
+  addressLine1: z.string().nullable().optional().default(null),
+  addressLine2: z.string().nullable().optional().default(null),
+  barangay: z.string().nullable().optional().default(null),
+  cityMunicipality: z.string().nullable().optional().default(null),
+  provinceState: z.string().nullable().optional().default(null),
+  postalCode: z.string().nullable().optional().default(null),
+  isPrimary: z.boolean().optional().default(false),
+  countryCode: z.string().nullable().optional().default(null),
+});
+
+export type PersonalAddressDto = z.infer<typeof personalAddressSchema>;
+
 export const personalProfileSchema = z.object({
   userIdentityId: guidSchema,
   accountProfileId: guidSchema,
@@ -32,6 +48,33 @@ export const personalProfileSchema = z.object({
   publicUserId: z.string().nullable().optional().default(null),
   qrPayload: z.string().nullable().optional().default(null),
   phone: z.string().nullable().optional().default(null),
+  firstName: z.string().nullable().optional().default(null),
+  middleName: z.string().nullable().optional().default(null),
+  lastName: z.string().nullable().optional().default(null),
+  dateOfBirth: z.string().nullable().optional().default(null),
+  gender: z.string().nullable().optional().default(null),
+  nationality: z.string().nullable().optional().default(null),
+  profilePhotoUrl: z.string().nullable().optional().default(null),
+  alternativeMobile: z.string().nullable().optional().default(null),
+  country: z.string().nullable().optional().default(null),
+  addressLine1: z.string().nullable().optional().default(null),
+  addressLine2: z.string().nullable().optional().default(null),
+  barangay: z.string().nullable().optional().default(null),
+  cityMunicipality: z.string().nullable().optional().default(null),
+  province: z.string().nullable().optional().default(null),
+  provinceState: z.string().nullable().optional().default(null),
+  postalCode: z.string().nullable().optional().default(null),
+  isPrimary: z.boolean().optional().default(false),
+  addresses: z.array(personalAddressSchema).optional().default([]),
+  showProfilePhoto: z.string().optional().default("Private"),
+  showDisplayName: z.string().optional().default("Connections"),
+  showCity: z.string().optional().default("Private"),
+  showMobile: z.string().optional().default("Private"),
+  showEmail: z.string().optional().default("Private"),
+  completionPercent: z.number().int().optional().default(0),
+  missingForBase: z.array(z.string()).optional().default([]),
+  missingForStaff: z.array(z.string()).optional().default([]),
+  missingForCustomer: z.array(z.string()).optional().default([]),
 });
 
 export type PersonalProfileDto = z.infer<typeof personalProfileSchema>;
@@ -59,6 +102,7 @@ export const startBusinessResultSchema = z.object({
   paymentTransactionId: guidSchema.nullable().optional().default(null),
   paymentReferenceNumber: z.string().nullable().optional().default(null),
   requiresCheckout: z.boolean().optional().default(false),
+  reusedExistingOrganization: z.boolean().optional().default(false),
 });
 
 export type StartBusinessResultDto = z.infer<typeof startBusinessResultSchema>;
@@ -101,6 +145,23 @@ function normalizeBusinessType(raw: unknown): unknown {
   };
 }
 
+function normalizeAddress(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  return {
+    id: pick(r, "id", "Id"),
+    addressType: pick(r, "addressType", "AddressType"),
+    country: pick(r, "country", "Country") ?? null,
+    addressLine1: pick(r, "addressLine1", "AddressLine1") ?? null,
+    addressLine2: pick(r, "addressLine2", "AddressLine2") ?? null,
+    barangay: pick(r, "barangay", "Barangay") ?? null,
+    cityMunicipality: pick(r, "cityMunicipality", "CityMunicipality") ?? null,
+    provinceState: pick(r, "provinceState", "ProvinceState") ?? pick(r, "province", "Province") ?? null,
+    postalCode: pick(r, "postalCode", "PostalCode") ?? null,
+    isPrimary: Boolean(pick(r, "isPrimary", "IsPrimary") ?? false),
+  };
+}
+
 function normalizeProfile(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
   const r = raw as Record<string, unknown>;
@@ -115,6 +176,35 @@ function normalizeProfile(raw: unknown): unknown {
     publicUserId: pick(r, "publicUserId", "PublicUserId") ?? null,
     qrPayload: pick(r, "qrPayload", "QrPayload") ?? null,
     phone: pick(r, "phone", "Phone") ?? null,
+    firstName: pick(r, "firstName", "FirstName") ?? null,
+    middleName: pick(r, "middleName", "MiddleName") ?? null,
+    lastName: pick(r, "lastName", "LastName") ?? null,
+    dateOfBirth: pick(r, "dateOfBirth", "DateOfBirth") ?? null,
+    gender: pick(r, "gender", "Gender") ?? null,
+    nationality: pick(r, "nationality", "Nationality") ?? null,
+    profilePhotoUrl: pick(r, "profilePhotoUrl", "ProfilePhotoUrl") ?? null,
+    alternativeMobile: pick(r, "alternativeMobile", "AlternativeMobile") ?? null,
+    country: pick(r, "country", "Country") ?? null,
+    addressLine1: pick(r, "addressLine1", "AddressLine1") ?? null,
+    addressLine2: pick(r, "addressLine2", "AddressLine2") ?? null,
+    barangay: pick(r, "barangay", "Barangay") ?? null,
+    cityMunicipality: pick(r, "cityMunicipality", "CityMunicipality") ?? null,
+    province: pick(r, "province", "Province") ?? pick(r, "provinceState", "ProvinceState") ?? null,
+    provinceState: pick(r, "provinceState", "ProvinceState") ?? pick(r, "province", "Province") ?? null,
+    postalCode: pick(r, "postalCode", "PostalCode") ?? null,
+    isPrimary: Boolean(pick(r, "isPrimary", "IsPrimary") ?? pick(r, "isPrimaryAddress", "IsPrimaryAddress") ?? false),
+    addresses: Array.isArray(pick(r, "addresses", "Addresses"))
+      ? (pick(r, "addresses", "Addresses") as unknown[]).map((item) => normalizeAddress(item))
+      : [],
+    showProfilePhoto: pick(r, "showProfilePhoto", "ShowProfilePhoto") ?? "Private",
+    showDisplayName: pick(r, "showDisplayName", "ShowDisplayName") ?? "Connections",
+    showCity: pick(r, "showCity", "ShowCity") ?? "Private",
+    showMobile: pick(r, "showMobile", "ShowMobile") ?? "Private",
+    showEmail: pick(r, "showEmail", "ShowEmail") ?? "Private",
+    completionPercent: Number(pick(r, "completionPercent", "CompletionPercent") ?? 0),
+    missingForBase: pick(r, "missingForBase", "MissingForBase") ?? [],
+    missingForStaff: pick(r, "missingForStaff", "MissingForStaff") ?? [],
+    missingForCustomer: pick(r, "missingForCustomer", "MissingForCustomer") ?? [],
   };
 }
 
@@ -152,6 +242,9 @@ function normalizeStartBusinessResult(raw: unknown): unknown {
     paymentTransactionId: pick(r, "paymentTransactionId", "PaymentTransactionId") ?? null,
     paymentReferenceNumber: pick(r, "paymentReferenceNumber", "PaymentReferenceNumber") ?? null,
     requiresCheckout: Boolean(pick(r, "requiresCheckout", "RequiresCheckout") ?? false),
+    reusedExistingOrganization: Boolean(
+      pick(r, "reusedExistingOrganization", "ReusedExistingOrganization") ?? false,
+    ),
   };
 }
 
@@ -177,14 +270,109 @@ export async function getPersonalProfile(signal?: AbortSignal): Promise<Personal
   return personalProfileSchema.parse(normalizeProfile(raw));
 }
 
+export type UpdatePersonalProfileRequest = {
+  displayName: string;
+  firstName?: string | null;
+  middleName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  alternativeMobile?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  nationality?: string | null;
+  profilePhotoUrl?: string | null;
+  country?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  barangay?: string | null;
+  cityMunicipality?: string | null;
+  province?: string | null;
+  region?: string | null;
+  postalCode?: string | null;
+  cityPsgcCode?: string | null;
+  showProfilePhoto?: string;
+  showDisplayName?: string;
+  showCity?: string;
+  showMobile?: string;
+  showEmail?: string;
+  clearDateOfBirth?: boolean;
+};
+
+export type SavePersonalAddressRequest = {
+  addressType: string;
+  country?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  barangay?: string | null;
+  cityMunicipality?: string | null;
+  provinceState?: string | null;
+  postalCode?: string | null;
+  isPrimary: boolean;
+};
+
+export async function savePersonalAddress(
+  request: SavePersonalAddressRequest,
+  addressId?: string,
+  signal?: AbortSignal,
+): Promise<PersonalProfileDto> {
+  const raw = await platformRequest<unknown>({
+    method: addressId ? "PUT" : "POST",
+    path: addressId
+      ? `/api/v1/personal/profile/addresses/${addressId}`
+      : "/api/v1/personal/profile/addresses",
+    body: request,
+    signal,
+  });
+  return personalProfileSchema.parse(normalizeProfile(raw));
+}
+
+export async function deletePersonalAddress(
+  addressId: string,
+  signal?: AbortSignal,
+): Promise<PersonalProfileDto> {
+  const raw = await platformRequest<unknown>({
+    method: "DELETE",
+    path: `/api/v1/personal/profile/addresses/${addressId}`,
+    signal,
+  });
+  return personalProfileSchema.parse(normalizeProfile(raw));
+}
+
+export async function setPersonalAddressPrimary(
+  addressId: string,
+  signal?: AbortSignal,
+): Promise<PersonalProfileDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `/api/v1/personal/profile/addresses/${addressId}/primary`,
+    signal,
+  });
+  return personalProfileSchema.parse(normalizeProfile(raw));
+}
+
+export async function uploadPersonalProfilePhoto(
+  file: File,
+  signal?: AbortSignal,
+): Promise<PersonalProfileDto> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: "/api/v1/personal/profile/photo",
+    formData,
+    signal,
+  });
+  return personalProfileSchema.parse(normalizeProfile(raw));
+}
+
 export async function updatePersonalProfile(
-  displayName: string,
+  request: UpdatePersonalProfileRequest,
   signal?: AbortSignal,
 ): Promise<PersonalProfileDto> {
   const raw = await platformRequest<unknown>({
     method: "PUT",
     path: "/api/v1/personal/profile",
-    body: { displayName },
+    body: request,
     signal,
   });
   return personalProfileSchema.parse(normalizeProfile(raw));

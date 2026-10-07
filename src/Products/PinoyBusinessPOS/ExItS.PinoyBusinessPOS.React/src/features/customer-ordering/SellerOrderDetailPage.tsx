@@ -300,6 +300,11 @@ export function SellerOrderDetailPage() {
         <div>
           {t("orders.paymentMethod")}: <strong>{order.paymentMethod}</strong>
         </div>
+        {order.paymentReference ? (
+          <div data-testid="order-payment-reference">
+            {t("checkout.paymentReference")}: <strong>{order.paymentReference}</strong>
+          </div>
+        ) : null}
         <div>
           {t("orders.paymentStatus")}: <strong>{order.paymentStatus}</strong>
         </div>

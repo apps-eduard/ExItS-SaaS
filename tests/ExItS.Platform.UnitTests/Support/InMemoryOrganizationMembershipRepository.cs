@@ -145,6 +145,17 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         return Task.FromResult(count);
     }
 
+    public Task<int> CountActiveNonOwnerStaffAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var count = _byId.Values.Count(m =>
+            m.OrganizationId == organizationId
+            && m.Status == MembershipStatus.Active
+            && m.Role != OrganizationRole.OrganizationOwner);
+        return Task.FromResult(count);
+    }
+
     public Task<IReadOnlyList<OrganizationMembership>> ListActiveBusinessInboxRecipientsAsync(
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default)
@@ -157,6 +168,19 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
             .OrderByDescending(m => m.UpdatedAtUtc)
             .ToList();
         return Task.FromResult<IReadOnlyList<OrganizationMembership>>(items);
+    }
+
+    public Task<bool> StaffIdInUseAsync(
+        PlatformOrganizationId organizationId,
+        string staffId,
+        OrganizationMembershipId exceptMembershipId,
+        CancellationToken cancellationToken = default)
+    {
+        var used = _byId.Values.Any(m =>
+            m.OrganizationId == organizationId
+            && m.Id != exceptMembershipId
+            && string.Equals(m.StaffId, staffId, StringComparison.Ordinal));
+        return Task.FromResult(used);
     }
 
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)

@@ -55,6 +55,7 @@ export const customerOrderSchema = z.object({
   fulfillmentStatus: z.string(),
   paymentStatus: z.string(),
   paymentMethod: z.string(),
+  paymentReference: z.string().nullable().optional(),
   fulfillmentType: z.string(),
   fulfillmentBranchId: guidSchema,
   branchNameSnapshot: z.string(),
@@ -223,6 +224,7 @@ export type PlaceCustomerOrderRequest = {
   clientOrderId?: string | null;
   idempotencyKey?: string | null;
   paymentMethod?: string | null;
+  paymentReference?: string | null;
 };
 
 export type QuoteCustomerOrderDeliveryRequest = {

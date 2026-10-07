@@ -95,7 +95,8 @@ type WorkspaceContextValue = {
   /**
    * Server PosDeviceAuthorization.EnforcementEnabled.
    * null = not loaded yet (UX treats enforcement as on / fail-closed).
-   * false = temporary PWA Local Validation pause — money UX skips device gate.
+   * false = website — device registration is disabled.
+   * true = Capacitor Android/iOS — a registered device is required.
    */
   deviceEnforcementEnabled: boolean | null;
   /** Re-run durable identity + Platform authorize for the bound org/branch. */
@@ -978,6 +979,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [bindDestination, workspaces],
   );
 
+  const sessionIdentity = `${session?.userId ?? ""}:${sessionAccountClass(session) ?? ""}`;
+
   useEffect(() => {
     if (sessionStatus === "cold_start_offline") {
       return;
@@ -998,8 +1001,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Workplace sign-in replaces the Personal session without leaving "authenticated".
+    // Reload so the previous Personal plan cannot send the staff session to /personal.
+    autoDestinationAttempted.current = false;
     void refreshWorkspaces();
-  }, [refreshWorkspaces, sessionStatus]);
+  }, [refreshWorkspaces, sessionIdentity, sessionStatus]);
 
   useEffect(() => {
     let cancelled = false;

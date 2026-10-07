@@ -81,7 +81,8 @@ public sealed record CustomerOrderDto(
     Guid? CollectedBy,
     DateTimeOffset? CompletedAtUtc,
     Guid? CompletedBy,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    string? PaymentReference = null);
 
 public sealed record CustomerOrderListItemDto(
     Guid OrderId,
@@ -133,7 +134,8 @@ public sealed record PlaceCustomerOrderRequest(
     PlaceCustomerOrderDeliveryRequest? Delivery = null,
     Guid? ClientOrderId = null,
     string? IdempotencyKey = null,
-    string? PaymentMethod = null);
+    string? PaymentMethod = null,
+    string? PaymentReference = null);
 
 public sealed record QuoteCustomerOrderDeliveryRequest(
     Guid FulfillmentBranchId,
@@ -238,7 +240,8 @@ public static class CustomerOrderMaps
             order.CollectedBy,
             order.CompletedAtUtc,
             order.CompletedBy,
-            order.UpdatedAtUtc);
+            order.UpdatedAtUtc,
+            order.PaymentReference);
 
     public static CustomerOrderListItemDto MapListItem(CustomerOrder order) =>
         new(

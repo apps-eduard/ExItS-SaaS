@@ -120,6 +120,8 @@ function createPersonalWithOrgsFetchMock(orgCount: 1 | 2) {
           productAccessAllowed: true,
           mappedPosRoleCode: "Owner",
           productLocalRoleCode: "Owner",
+          membershipRole: "OrganizationOwner",
+          organizationManagementAuthority: true,
         });
     }
 
@@ -133,11 +135,12 @@ function createPersonalWithOrgsFetchMock(orgCount: 1 | 2) {
 
 function renderAt(path: string) {
   const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: [path] });
-  return render(
+  render(
     <AppProviders>
       <RouterProvider router={memoryRouter} />
     </AppProviders>,
   );
+  return memoryRouter;
 }
 
 describe("Personal More switch to business", () => {
@@ -195,10 +198,10 @@ describe("Personal More switch to business", () => {
     expect(screen.getByTestId("more-switch-to-business")).toHaveTextContent("Switch to business");
   });
 
-  it("routes multiple organizations through the workspace chooser", async () => {
+  it("opens the business portfolio when the user has more than one business", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", createPersonalWithOrgsFetchMock(2));
-    renderAt("/personal/more");
+    const router = renderAt("/personal/more");
 
     await waitFor(() => {
       expect(screen.getByTestId("more-switch-to-business")).toBeInTheDocument();
@@ -207,14 +210,15 @@ describe("Personal More switch to business", () => {
     await user.click(screen.getByTestId("more-switch-to-business"));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Choose workspace" })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe("/personal/businesses");
     });
+    expect(await screen.findByRole("heading", { name: "Your businesses" })).toBeInTheDocument();
   });
 
-  it("routes a single organization with multiple destinations through the workspace chooser", async () => {
+  it("opens the only business directly", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", createPersonalWithOrgsFetchMock(1));
-    renderAt("/personal/more");
+    const router = renderAt("/personal/more");
 
     await waitFor(() => {
       expect(screen.getByTestId("more-switch-to-business")).toBeInTheDocument();
@@ -223,7 +227,7 @@ describe("Personal More switch to business", () => {
     await user.click(screen.getByTestId("more-switch-to-business"));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Choose workspace" })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe("/org");
     });
   });
 });

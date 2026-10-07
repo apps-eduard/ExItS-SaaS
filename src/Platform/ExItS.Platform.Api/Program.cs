@@ -26,6 +26,7 @@ using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Commercial;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Geography;
 using ExItS.Platform.Application.Governance;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
@@ -114,6 +115,35 @@ if (externalAuthOptions.Google.Enabled
         // Google returns on a top-level GET. Lax is included on that navigation.
         // SameSite=None is discarded when the preview proxy removes Secure.
         options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        // The installed service worker can replay this callback after the correlation
+        // cookie was already consumed. Resume from the external-login cookie instead of
+        // returning the generic server error page.
+        options.Events.OnCreatingTicket = context =>
+        {
+            if (context.User.ValueKind == System.Text.Json.JsonValueKind.Object
+                && context.User.TryGetProperty("picture", out var picture))
+            {
+                var value = picture.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    context.Identity?.AddClaim(new System.Security.Claims.Claim("picture", value));
+                }
+            }
+
+            return Task.CompletedTask;
+        };
+        options.Events.OnTicketReceived = context =>
+        {
+            ExternalAuthEndpoints.RememberGoogleReplay(context.Principal, context.Properties);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRemoteFailure = async context =>
+        {
+            await ExternalAuthEndpoints
+                .ResumeExternalCallbackAsync(context.HttpContext, "google", context.Properties)
+                .ConfigureAwait(false);
+            context.HandleResponse();
+        };
 
         options.SaveTokens = false;
         options.Scope.Add("email");
@@ -262,6 +292,13 @@ builder.Services.AddScoped<DeactivateBranchDeliveryServiceArea>();
 builder.Services.AddScoped<SearchPhilippineLocalities>();
 builder.Services.AddScoped<ListPhilippineRegions>();
 builder.Services.AddScoped<ListPhilippineLocalitiesByRegion>();
+builder.Services.AddScoped<ListPhilippineProvinces>();
+builder.Services.AddScoped<ListPhilippineLocalitiesByProvince>();
+builder.Services.AddScoped<ListCountries>();
+builder.Services.AddScoped<GetCountryAddressConfig>();
+builder.Services.AddScoped<ListAdministrativeAreas>();
+builder.Services.AddScoped<ListGeographyCities>();
+builder.Services.AddScoped<ListGeographyBarangays>();
 builder.Services.AddScoped<EnsureMainBranchExists>();
 builder.Services.AddScoped<ListDevices>();
 builder.Services.AddScoped<ListAllDevices>();
@@ -331,6 +368,13 @@ builder.Services.AddScoped<InitializePhase16PersonalUtangSeed>();
 builder.Services.AddScoped<GetPersonalDashboard>();
 builder.Services.AddScoped<GetPersonalProfile>();
 builder.Services.AddScoped<UpdatePersonalProfile>();
+builder.Services.AddScoped<UploadPersonalProfilePhoto>();
+builder.Services.AddSingleton<IPersonalProfilePhotoNotifier, SignalRPersonalProfilePhotoNotifier>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<ManagePersonalAddresses>();
+builder.Services.AddScoped<PersonalProfileAcceptanceGate>();
+builder.Services.AddScoped<GetPersonalConnectionProfile>();
+builder.Services.AddScoped<GetRelationshipScopedPersonalProfile>();
 builder.Services.AddScoped<GetPersonalAccountSettings>();
 builder.Services.AddScoped<UpdatePersonalAccountSettings>();
 builder.Services.AddScoped<GetPersonalSharedUtangPreference>();
@@ -444,6 +488,15 @@ builder.Services.AddScoped<ResolveStaffInviteTarget>();
 builder.Services.AddScoped<DeclineOrganizationInvitationForPersonal>();
 builder.Services.AddScoped<ListPendingOrganizationInvitationsForPersonalUser>();
 builder.Services.AddScoped<ListPersonalWorkplaces>();
+builder.Services.AddScoped<IStaffPasswordResetCoordinator, StaffPasswordResetCoordinator>();
+builder.Services.AddScoped<RequestStaffPasswordReset>();
+builder.Services.AddScoped<CompleteStaffPasswordReset>();
+builder.Services.AddScoped<ListOrganizationStaffPasswordResets>();
+builder.Services.AddScoped<DecideStaffPasswordReset>();
+builder.Services.AddScoped<ListPersonalProductAffiliations>();
+builder.Services.AddScoped<UserProductAffiliationGuard>();
+builder.Services.AddScoped<OrganizationStaffSeatPolicy>();
+builder.Services.AddScoped<OrganizationProductCheckoutGuard>();
 builder.Services.AddScoped<ResendOrganizationInvitation>();
 builder.Services.AddScoped<RevokeOrganizationInvitation>();
 builder.Services.AddScoped<AcceptOrganizationInvitation>();
@@ -684,6 +737,7 @@ app.MapOrganizationEndpoints();
 app.MapBranchAndDeviceEndpoints();
 app.MapOrganizationAreaEndpoints();
 app.MapPhilippineReferenceEndpoints();
+app.MapGeographyEndpoints();
 app.MapGovernanceStepUpEndpoints();
 app.MapOrganizationAuditEndpoints();
 app.MapIdentityEndpoints();
@@ -694,7 +748,9 @@ app.MapCredentialEndpoints();
 app.MapAuthEndpoints();
 app.MapExternalAuthEndpoints();
 app.MapPersonalEndpoints();
+app.MapHub<PersonalProfileHub>("/hubs/personal-profile").RequireAuthorization();
 app.MapMembershipEndpoints();
+app.MapStaffPasswordResetEndpoints();
 app.MapInvitationEndpoints();
 app.MapOwnershipTransferEndpoints();
 app.MapSalesDocumentCapabilityEndpoints();

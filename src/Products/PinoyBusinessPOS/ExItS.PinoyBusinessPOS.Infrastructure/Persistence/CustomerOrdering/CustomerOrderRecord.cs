@@ -9,6 +9,7 @@ internal sealed class CustomerOrderRecord
     public string FulfillmentStatus { get; set; } = string.Empty;
     public string PaymentStatus { get; set; } = string.Empty;
     public string PaymentMethod { get; set; } = nameof(CustomerOrderPaymentMethod.Cash);
+    public string? PaymentReference { get; set; }
     public string FulfillmentType { get; set; } = string.Empty;
     public Guid FulfillmentBranchId { get; set; }
     public string BranchNameSnapshot { get; set; } = string.Empty;

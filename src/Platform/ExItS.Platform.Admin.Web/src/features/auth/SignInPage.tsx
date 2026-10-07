@@ -15,6 +15,7 @@ import { DevelopmentTestUserTools } from "@/features/auth/DevelopmentTestUserToo
 import { externalSignInHref } from "@/features/auth/ExternalLoginCallbackPage";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useSession } from "@/hooks/use-session";
+import { continueAfterAdminAuthentication } from "@/lib/auth/continue-after-admin-auth";
 import { resolvePostLoginPath } from "@/lib/auth/safe-return-path";
 import { normalizeDiagnosticError, buildDiagnosticEnvironmentFromPreferences } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
@@ -104,8 +105,15 @@ export function SignInPage() {
     setFormError(null);
     setDiagnostic(null);
     try {
-      await signIn(values.email, values.password);
-      navigate(resolvePostLoginPath(params.get("return")), { replace: true });
+      const session = await signIn(values.email, values.password);
+      const outcome = await continueAfterAdminAuthentication({
+        session,
+        returnQuery: params.get("return"),
+        navigate: (path) => navigate(path, { replace: true }),
+      });
+      if (outcome === "stay") {
+        navigate(resolvePostLoginPath(params.get("return")), { replace: true });
+      }
     } catch (error) {
       const kind = classifySignInFailure(error);
       if (isHandledSignInAlert(kind)) {

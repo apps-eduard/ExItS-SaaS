@@ -86,6 +86,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<GovernanceStepUpGrantRecord> GovernanceStepUpGrants => Set<GovernanceStepUpGrantRecord>();
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
+    internal DbSet<OrganizationStaffIdSettingsRecord> OrganizationStaffIdSettings =>
+        Set<OrganizationStaffIdSettingsRecord>();
     internal DbSet<OrganizationMembershipBranchAssignmentRecord> OrganizationMembershipBranchAssignments =>
         Set<OrganizationMembershipBranchAssignmentRecord>();
     internal DbSet<OrganizationMembershipAreaAssignmentRecord> OrganizationMembershipAreaAssignments =>
@@ -93,6 +95,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationInvitationRecord> OrganizationInvitations => Set<OrganizationInvitationRecord>();
     internal DbSet<OrganizationOwnershipTransferRecord> OrganizationOwnershipTransfers =>
         Set<OrganizationOwnershipTransferRecord>();
+    internal DbSet<StaffPasswordResetRequestRecord> StaffPasswordResetRequests =>
+        Set<StaffPasswordResetRequestRecord>();
     internal DbSet<BusinessCustomerRecord> BusinessCustomers => Set<BusinessCustomerRecord>();
     internal DbSet<CreditCustomerRecord> CreditCustomers => Set<CreditCustomerRecord>();
     internal DbSet<CustomerLinkRequestRecord> CustomerLinkRequests => Set<CustomerLinkRequestRecord>();
@@ -122,6 +126,9 @@ public sealed class PlatformDbContext : DbContext
         Set<ComplianceRegistrationRecordEntity>();
     internal DbSet<OrganizationSalesDocumentAcknowledgmentRecord> OrganizationSalesDocumentAcknowledgments =>
         Set<OrganizationSalesDocumentAcknowledgmentRecord>();
+    internal DbSet<PersonalUserProfileRecord> PersonalUserProfiles => Set<PersonalUserProfileRecord>();
+
+    internal DbSet<PersonalAddressRecord> PersonalAddresses => Set<PersonalAddressRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
     internal DbSet<PersonalSharedUtangPreferenceRecord> PersonalSharedUtangPreferences =>
         Set<PersonalSharedUtangPreferenceRecord>();
@@ -1451,6 +1458,31 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.WorkPhone).HasColumnName("work_phone").HasMaxLength(40);
             entity.Property(e => e.WorkEmail).HasColumnName("work_email").HasMaxLength(320);
             entity.Property(e => e.IsBusinessContact).HasColumnName("is_business_contact").IsRequired();
+            entity.Property(e => e.StaffId).HasColumnName("staff_id").HasMaxLength(32);
+            entity.Property(e => e.Country).HasColumnName("country").HasMaxLength(100);
+            entity.Property(e => e.AddressLine1).HasColumnName("address_line_1").HasMaxLength(200);
+            entity.Property(e => e.AddressLine2).HasColumnName("address_line_2").HasMaxLength(200);
+            entity.Property(e => e.Barangay).HasColumnName("barangay").HasMaxLength(100);
+            entity.Property(e => e.CityMunicipality).HasColumnName("city_municipality").HasMaxLength(100);
+            entity.Property(e => e.ProvinceState).HasColumnName("province_state").HasMaxLength(100);
+            entity.Property(e => e.PostalCode).HasColumnName("postal_code").HasMaxLength(16);
+            entity.Property(e => e.ProfileDetailsCaptured).HasColumnName("profile_details_captured").IsRequired();
+            entity.Property(e => e.ProfileFirstName).HasColumnName("profile_first_name").HasMaxLength(100);
+            entity.Property(e => e.ProfileMiddleName).HasColumnName("profile_middle_name").HasMaxLength(100);
+            entity.Property(e => e.ProfileLastName).HasColumnName("profile_last_name").HasMaxLength(100);
+            entity.Property(e => e.ProfileDateOfBirth).HasColumnName("profile_date_of_birth");
+            entity.Property(e => e.ProfileGender).HasColumnName("profile_gender").HasMaxLength(32);
+            entity.Property(e => e.ProfileNationality).HasColumnName("profile_nationality").HasMaxLength(100);
+            entity.Property(e => e.ProfilePhotoUrl).HasColumnName("profile_photo_url").HasMaxLength(2048);
+            entity.Property(e => e.ProfileMobile).HasColumnName("profile_mobile").HasMaxLength(40);
+            entity.Property(e => e.ProfileEmail).HasColumnName("profile_email").HasMaxLength(320);
+            entity.Property(e => e.ProfileDisplayName).HasColumnName("profile_display_name").HasMaxLength(100);
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("IX_organization_memberships_organization_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.StaffId })
+                .IsUnique()
+                .HasFilter("staff_id IS NOT NULL")
+                .HasDatabaseName("ux_organization_memberships_staff_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");
@@ -1477,6 +1509,21 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrganizationStaffIdSettingsRecord>(entity =>
+        {
+            entity.ToTable("organization_staff_id_settings");
+            entity.HasKey(e => e.OrganizationId);
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Prefix).HasColumnName("prefix").HasMaxLength(12).IsRequired();
+            entity.Property(e => e.NextNumber).HasColumnName("next_number");
+            entity.Property(e => e.PadDigits).HasColumnName("pad_digits");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OrganizationMembershipBranchAssignmentRecord>(entity =>
@@ -1646,6 +1693,57 @@ public sealed class PlatformDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<StaffPasswordResetRequestRecord>(entity =>
+        {
+            entity.ToTable("staff_password_reset_requests");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.StaffUserId).HasColumnName("staff_user_id");
+            entity.Property(e => e.MembershipId).HasColumnName("membership_id");
+            entity.Property(e => e.RequestedByUserId).HasColumnName("requested_by_user_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.DecidedAtUtc).HasColumnName("decided_at_utc");
+            entity.Property(e => e.DecidedByUserId).HasColumnName("decided_by_user_id");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            entity.HasIndex(e => e.StaffUserId)
+                .IsUnique()
+                .HasFilter("status IN ('Pending', 'Approved')")
+                .HasDatabaseName("ux_staff_password_reset_requests_open_staff");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_staff_password_reset_requests_org_status");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.StaffUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<OrganizationMembershipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.MembershipId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DecidedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<ProductAccessAssignmentRecord>(entity =>
         {
             entity.ToTable("product_access_assignments");
@@ -1673,6 +1771,11 @@ public sealed class PlatformDbContext : DbContext
                 .IsUnique()
                 .HasFilter("status = 'Active'")
                 .HasDatabaseName("ux_product_access_assignments_active");
+
+            entity.HasIndex(e => new { e.UserId, e.ProductCode })
+                .IsUnique()
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ux_product_access_assignments_user_product_active");
 
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()
@@ -1870,6 +1973,58 @@ public sealed class PlatformDbContext : DbContext
             entity.HasIndex(e => e.ActionCode).HasDatabaseName("ix_audit_records_action_code");
             entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_audit_records_organization_id");
             entity.HasIndex(e => e.Outcome).HasDatabaseName("ix_audit_records_outcome");
+        });
+
+        modelBuilder.Entity<PersonalUserProfileRecord>(entity =>
+        {
+            entity.ToTable("personal_user_profiles");
+            entity.HasKey(e => e.UserIdentityId);
+            entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
+            entity.Property(e => e.MiddleName).HasColumnName("middle_name").HasMaxLength(100);
+            entity.Property(e => e.DateOfBirth).HasColumnName("date_of_birth");
+            entity.Property(e => e.Gender).HasColumnName("gender").HasMaxLength(32);
+            entity.Property(e => e.Nationality).HasColumnName("nationality").HasMaxLength(100);
+            entity.Property(e => e.ProfilePhotoUrl).HasColumnName("profile_photo_url").HasMaxLength(2048);
+            entity.Property(e => e.AlternativeMobile).HasColumnName("alternative_mobile").HasMaxLength(32);
+            entity.Property(e => e.ShowProfilePhoto).HasColumnName("show_profile_photo").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.ShowDisplayName).HasColumnName("show_display_name").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.ShowCity).HasColumnName("show_city").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.ShowMobile).HasColumnName("show_mobile").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.ShowEmail).HasColumnName("show_email").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalAddressRecord>(entity =>
+        {
+            entity.ToTable("personal_addresses");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
+            entity.Property(e => e.AddressType).HasColumnName("address_type").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Country).HasColumnName("country").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.AddressLine1).HasColumnName("address_line_1").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.AddressLine2).HasColumnName("address_line_2").HasMaxLength(200);
+            entity.Property(e => e.Barangay).HasColumnName("barangay").HasMaxLength(100);
+            entity.Property(e => e.CityMunicipality).HasColumnName("city_municipality").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.ProvinceState).HasColumnName("province_state").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.PostalCode).HasColumnName("postal_code").HasMaxLength(16);
+            entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => e.UserIdentityId).HasDatabaseName("ix_personal_addresses_user_identity_id");
+            entity.HasIndex(e => new { e.UserIdentityId, e.IsPrimary })
+                .IsUnique()
+                .HasFilter("is_primary = TRUE")
+                .HasDatabaseName("ux_personal_addresses_one_primary");
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PersonalAccountSettingsRecord>(entity =>

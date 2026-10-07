@@ -365,6 +365,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-shell")).toBeInTheDocument();
     expect(screen.getByTestId("explore-plan-business")).toBeInTheDocument();
     expect(screen.getByTestId("explore-start-trial-business")).toBeInTheDocument();
+    expect(screen.getByTestId("explore-subscribe-business")).toHaveTextContent("Subscribe");
   });
 
   it("renders Start Business form with read-only auto-filled slug", async () => {

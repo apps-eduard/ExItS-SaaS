@@ -9,6 +9,276 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.Platform.Infrastructure.Persistence.Repositories;
 
+internal sealed class PersonalUserProfileRepository(PlatformDbContext db) : IPersonalUserProfileRepository
+{
+    public async Task<PersonalUserProfile?> GetByUserAsync(
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalUserProfiles.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.UserIdentityId == userIdentityId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalUserProfile profile, CancellationToken cancellationToken = default)
+    {
+        db.PersonalUserProfiles.Add(ToRecord(profile));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalUserProfile profile, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalUserProfiles
+            .FirstOrDefaultAsync(x => x.UserIdentityId == profile.UserIdentityId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        Copy(profile, record);
+    }
+
+    private static PersonalUserProfile ToDomain(PersonalUserProfileRecord record) =>
+        PersonalUserProfile.Rehydrate(
+            PlatformUserId.From(record.UserIdentityId),
+            record.MiddleName,
+            record.DateOfBirth,
+            record.Gender,
+            record.Nationality,
+            record.ProfilePhotoUrl,
+            record.AlternativeMobile,
+            PersonalUserProfile.ParseVisibility(record.ShowProfilePhoto, PersonalFieldVisibility.Private),
+            PersonalUserProfile.ParseVisibility(record.ShowDisplayName, PersonalFieldVisibility.Connections),
+            PersonalUserProfile.ParseVisibility(record.ShowCity, PersonalFieldVisibility.Private),
+            PersonalUserProfile.ParseVisibility(record.ShowMobile, PersonalFieldVisibility.Private),
+            PersonalUserProfile.ParseVisibility(record.ShowEmail, PersonalFieldVisibility.Private),
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    private static PersonalUserProfileRecord ToRecord(PersonalUserProfile profile)
+    {
+        var record = new PersonalUserProfileRecord
+        {
+            UserIdentityId = profile.UserIdentityId.Value,
+            CreatedAtUtc = profile.CreatedAtUtc,
+        };
+        Copy(profile, record);
+        return record;
+    }
+
+    private static void Copy(PersonalUserProfile profile, PersonalUserProfileRecord record)
+    {
+        record.MiddleName = profile.MiddleName;
+        record.DateOfBirth = profile.DateOfBirth;
+        record.Gender = profile.Gender;
+        record.Nationality = profile.Nationality;
+        record.ProfilePhotoUrl = profile.ProfilePhotoUrl;
+        record.AlternativeMobile = profile.AlternativeMobile;
+        record.ShowProfilePhoto = profile.ShowProfilePhoto.ToString();
+        record.ShowDisplayName = profile.ShowDisplayName.ToString();
+        record.ShowCity = profile.ShowCity.ToString();
+        record.ShowMobile = profile.ShowMobile.ToString();
+        record.ShowEmail = profile.ShowEmail.ToString();
+        record.UpdatedAtUtc = profile.UpdatedAtUtc;
+    }
+}
+
+internal sealed class PersonalAddressRepository(PlatformDbContext db) : IPersonalAddressRepository
+{
+    public async Task<IReadOnlyList<PersonalAddress>> ListByUserAsync(
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.PersonalAddresses.AsNoTracking()
+            .Where(x => x.UserIdentityId == userIdentityId.Value)
+            .OrderByDescending(x => x.IsPrimary)
+            .ThenBy(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToArray();
+    }
+
+    public async Task<PersonalAddress?> GetByIdForUserAsync(
+        PersonalAddressId id,
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalAddresses.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.Id == id.Value && x.UserIdentityId == userIdentityId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalAddress address, CancellationToken cancellationToken = default)
+    {
+        db.PersonalAddresses.Add(ToRecord(address));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalAddress address, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalAddresses
+            .FirstOrDefaultAsync(
+                x => x.Id == address.Id.Value && x.UserIdentityId == address.UserIdentityId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        Copy(address, record);
+    }
+
+    public async Task SaveEnsuringSinglePrimaryAsync(
+        PersonalAddress address,
+        bool makePrimary,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await db.PersonalAddresses
+            .Where(x => x.UserIdentityId == address.UserIdentityId.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var existing = rows.FirstOrDefault(x => x.Id == address.Id.Value);
+        var wasPrimary = existing?.IsPrimary == true;
+        PersonalAddressRecord record;
+        if (existing is null)
+        {
+            record = ToRecord(address);
+            record.IsPrimary = false;
+            db.PersonalAddresses.Add(record);
+        }
+        else
+        {
+            record = existing;
+            Copy(address, record);
+            record.IsPrimary = false;
+        }
+
+        var onlyAddress = rows.Count == 0 || (rows.Count == 1 && record.Id == rows[0].Id);
+        if (makePrimary || onlyAddress)
+        {
+            foreach (var row in rows)
+            {
+                row.IsPrimary = false;
+            }
+
+            record.IsPrimary = false;
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            record.IsPrimary = true;
+            record.UpdatedAtUtc = utcNow;
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            if (wasPrimary)
+            {
+                var next = rows
+                    .Where(x => x.Id != address.Id.Value)
+                    .OrderBy(x => x.CreatedAtUtc)
+                    .FirstOrDefault();
+                if (next is not null)
+                {
+                    next.IsPrimary = true;
+                    next.UpdatedAtUtc = utcNow;
+                    await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<bool> DeleteAsync(
+        PersonalAddressId id,
+        PlatformUserId userIdentityId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await db.PersonalAddresses
+            .Where(x => x.UserIdentityId == userIdentityId.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var target = rows.FirstOrDefault(x => x.Id == id.Value);
+        if (target is null)
+        {
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
+        var wasPrimary = target.IsPrimary;
+        target.IsPrimary = false;
+        db.PersonalAddresses.Remove(target);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        if (wasPrimary)
+        {
+            var next = rows
+                .Where(x => x.Id != id.Value)
+                .OrderBy(x => x.CreatedAtUtc)
+                .FirstOrDefault();
+            if (next is not null)
+            {
+                next.IsPrimary = true;
+                next.UpdatedAtUtc = utcNow;
+                await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    private static PersonalAddress ToDomain(PersonalAddressRecord record) =>
+        PersonalAddress.Rehydrate(
+            PersonalAddressId.From(record.Id),
+            PlatformUserId.From(record.UserIdentityId),
+            PersonalAddress.ParseType(record.AddressType),
+            record.Country,
+            record.AddressLine1,
+            record.AddressLine2,
+            record.Barangay,
+            record.CityMunicipality,
+            record.ProvinceState,
+            record.PostalCode,
+            record.IsPrimary,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    private static PersonalAddressRecord ToRecord(PersonalAddress address)
+    {
+        var record = new PersonalAddressRecord
+        {
+            Id = address.Id.Value,
+            UserIdentityId = address.UserIdentityId.Value,
+            CreatedAtUtc = address.CreatedAtUtc,
+        };
+        Copy(address, record);
+        return record;
+    }
+
+    private static void Copy(PersonalAddress address, PersonalAddressRecord record)
+    {
+        record.AddressType = address.AddressType.ToString();
+        record.Country = address.Country;
+        record.AddressLine1 = address.AddressLine1;
+        record.AddressLine2 = address.AddressLine2;
+        record.Barangay = address.Barangay;
+        record.CityMunicipality = address.CityMunicipality;
+        record.ProvinceState = address.ProvinceState;
+        record.PostalCode = address.PostalCode;
+        record.IsPrimary = address.IsPrimary;
+        record.UpdatedAtUtc = address.UpdatedAtUtc;
+    }
+}
+
 internal sealed class PersonalAccountSettingsRepository(PlatformDbContext db) : IPersonalAccountSettingsRepository
 {
     public async Task<PersonalAccountSettings?> GetByUserAsync(

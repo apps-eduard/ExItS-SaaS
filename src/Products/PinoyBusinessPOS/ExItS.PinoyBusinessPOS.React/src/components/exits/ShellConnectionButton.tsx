@@ -14,6 +14,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { describeSyncSummary, useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { isFullySynced } from "@/offline/types";
+import { reloadAppFromServer } from "@/pwa/reload-app-from-server";
 
 export type ShellConnectionButtonProps = {
   testId?: string;
@@ -200,9 +201,10 @@ export function ShellConnectionButton({
                   className="shell-connection-panel__action w-full justify-start gap-2"
                   data-testid={`${testId}-refresh`}
                   onClick={() => {
+                    menu.close();
                     void queryClient.invalidateQueries();
                     void refreshCounts();
-                    menu.close();
+                    void reloadAppFromServer();
                   }}
                 >
                   <RefreshCw className="size-4 shrink-0" aria-hidden />

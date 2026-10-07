@@ -22,11 +22,7 @@ test.describe("PWA update lifecycle", () => {
     await expect(page.getByTestId("pwa-update-host")).toHaveAttribute("data-ready", "true");
     await expect(page.getByRole("status")).toHaveCount(0);
 
-    await page.evaluate(() => {
-      window.dispatchEvent(new Event("exits-pos:pwa-need-refresh"));
-    });
-    await expect(page.getByRole("status")).toContainText("Update available");
-    await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Refresh" })).toHaveCount(0);
     await assertNoHorizontalOverflow(page);
 
     const persisted = await page.evaluate(() =>

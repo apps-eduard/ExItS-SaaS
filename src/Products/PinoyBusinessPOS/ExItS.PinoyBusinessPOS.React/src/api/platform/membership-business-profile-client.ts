@@ -21,10 +21,70 @@ const membershipBusinessProfileSchema = z.object({
   workPhone: z.string().nullable().optional().default(null),
   workEmail: z.string().nullable().optional().default(null),
   isBusinessContact: z.boolean(),
+  staffId: z.string().nullable().optional().default(null),
+  country: z.string().nullable().optional().default(null),
+  addressLine1: z.string().nullable().optional().default(null),
+  addressLine2: z.string().nullable().optional().default(null),
+  barangay: z.string().nullable().optional().default(null),
+  cityMunicipality: z.string().nullable().optional().default(null),
+  provinceState: z.string().nullable().optional().default(null),
+  postalCode: z.string().nullable().optional().default(null),
+  profileDetailsCaptured: z.boolean().optional().default(false),
+  firstName: z.string().nullable().optional().default(null),
+  middleName: z.string().nullable().optional().default(null),
+  lastName: z.string().nullable().optional().default(null),
+  dateOfBirth: z.string().nullable().optional().default(null),
+  gender: z.string().nullable().optional().default(null),
+  nationality: z.string().nullable().optional().default(null),
+  profilePhotoUrl: z.string().nullable().optional().default(null),
+  mobileNumber: z.string().nullable().optional().default(null),
+  email: z.string().nullable().optional().default(null),
+  staffDisplayName: z.string().nullable().optional().default(null),
+  personal: z.object({
+    firstName: z.string().nullable().optional().default(null),
+    middleName: z.string().nullable().optional().default(null),
+    lastName: z.string().nullable().optional().default(null),
+    dateOfBirth: z.string().nullable().optional().default(null),
+    gender: z.string().nullable().optional().default(null),
+    nationality: z.string().nullable().optional().default(null),
+    profilePhotoUrl: z.string().nullable().optional().default(null),
+    mobileNumber: z.string().nullable().optional().default(null),
+    email: z.string().nullable().optional().default(null),
+    country: z.string().nullable().optional().default(null),
+    addressLine1: z.string().nullable().optional().default(null),
+    addressLine2: z.string().nullable().optional().default(null),
+    barangay: z.string().nullable().optional().default(null),
+    cityMunicipality: z.string().nullable().optional().default(null),
+    provinceState: z.string().nullable().optional().default(null),
+    postalCode: z.string().nullable().optional().default(null),
+  }).nullable().optional().default(null),
   updatedAtUtc: z.string(),
 });
 
 export type MembershipBusinessProfile = z.infer<typeof membershipBusinessProfileSchema>;
+
+function normalizePersonal(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw ?? null;
+  const r = raw as Record<string, unknown>;
+  return {
+    firstName: pick(r, "firstName", "FirstName") ?? null,
+    middleName: pick(r, "middleName", "MiddleName") ?? null,
+    lastName: pick(r, "lastName", "LastName") ?? null,
+    dateOfBirth: pick(r, "dateOfBirth", "DateOfBirth") ?? null,
+    gender: pick(r, "gender", "Gender") ?? null,
+    nationality: pick(r, "nationality", "Nationality") ?? null,
+    profilePhotoUrl: pick(r, "profilePhotoUrl", "ProfilePhotoUrl") ?? null,
+    mobileNumber: pick(r, "mobileNumber", "MobileNumber") ?? null,
+    email: pick(r, "email", "Email") ?? null,
+    country: pick(r, "country", "Country") ?? null,
+    addressLine1: pick(r, "addressLine1", "AddressLine1") ?? null,
+    addressLine2: pick(r, "addressLine2", "AddressLine2") ?? null,
+    barangay: pick(r, "barangay", "Barangay") ?? null,
+    cityMunicipality: pick(r, "cityMunicipality", "CityMunicipality") ?? null,
+    provinceState: pick(r, "provinceState", "ProvinceState") ?? null,
+    postalCode: pick(r, "postalCode", "PostalCode") ?? null,
+  };
+}
 
 function normalizeProfile(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
@@ -41,6 +101,26 @@ function normalizeProfile(raw: unknown): unknown {
     workPhone: pick(r, "workPhone", "WorkPhone") ?? null,
     workEmail: pick(r, "workEmail", "WorkEmail") ?? null,
     isBusinessContact: pick(r, "isBusinessContact", "IsBusinessContact") ?? false,
+    staffId: pick(r, "staffId", "StaffId") ?? null,
+    country: pick(r, "country", "Country") ?? null,
+    addressLine1: pick(r, "addressLine1", "AddressLine1") ?? null,
+    addressLine2: pick(r, "addressLine2", "AddressLine2") ?? null,
+    barangay: pick(r, "barangay", "Barangay") ?? null,
+    cityMunicipality: pick(r, "cityMunicipality", "CityMunicipality") ?? null,
+    provinceState: pick(r, "provinceState", "ProvinceState") ?? null,
+    postalCode: pick(r, "postalCode", "PostalCode") ?? null,
+    profileDetailsCaptured: pick(r, "profileDetailsCaptured", "ProfileDetailsCaptured") ?? false,
+    firstName: pick(r, "firstName", "FirstName") ?? null,
+    middleName: pick(r, "middleName", "MiddleName") ?? null,
+    lastName: pick(r, "lastName", "LastName") ?? null,
+    dateOfBirth: pick(r, "dateOfBirth", "DateOfBirth") ?? null,
+    gender: pick(r, "gender", "Gender") ?? null,
+    nationality: pick(r, "nationality", "Nationality") ?? null,
+    profilePhotoUrl: pick(r, "profilePhotoUrl", "ProfilePhotoUrl") ?? null,
+    mobileNumber: pick(r, "mobileNumber", "MobileNumber") ?? null,
+    email: pick(r, "email", "Email") ?? null,
+    staffDisplayName: pick(r, "staffDisplayName", "StaffDisplayName") ?? null,
+    personal: normalizePersonal(pick(r, "personal", "Personal")),
     updatedAtUtc: pick(r, "updatedAtUtc", "UpdatedAtUtc"),
   };
 }
@@ -63,6 +143,24 @@ export type UpdateMembershipBusinessProfileRequest = {
   workPhone?: string | null;
   workEmail?: string | null;
   isBusinessContact: boolean;
+  staffId?: string | null;
+  country?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  barangay?: string | null;
+  cityMunicipality?: string | null;
+  provinceState?: string | null;
+  postalCode?: string | null;
+  firstName?: string | null;
+  middleName?: string | null;
+  lastName?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  nationality?: string | null;
+  profilePhotoUrl?: string | null;
+  mobileNumber?: string | null;
+  email?: string | null;
+  staffDisplayName?: string | null;
 };
 
 export async function updateMembershipBusinessProfile(

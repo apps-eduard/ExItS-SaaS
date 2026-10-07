@@ -1,5 +1,40 @@
 namespace ExItS.Platform.Infrastructure.Persistence.Personal;
 
+internal sealed class PersonalUserProfileRecord
+{
+    public Guid UserIdentityId { get; set; }
+    public string? MiddleName { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public string? Gender { get; set; }
+    public string? Nationality { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
+    public string? AlternativeMobile { get; set; }
+    public string ShowProfilePhoto { get; set; } = "Private";
+    public string ShowDisplayName { get; set; } = "Connections";
+    public string ShowCity { get; set; } = "Private";
+    public string ShowMobile { get; set; } = "Private";
+    public string ShowEmail { get; set; } = "Private";
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+}
+
+internal sealed class PersonalAddressRecord
+{
+    public Guid Id { get; set; }
+    public Guid UserIdentityId { get; set; }
+    public string AddressType { get; set; } = "Home";
+    public string Country { get; set; } = string.Empty;
+    public string AddressLine1 { get; set; } = string.Empty;
+    public string? AddressLine2 { get; set; }
+    public string? Barangay { get; set; }
+    public string CityMunicipality { get; set; } = string.Empty;
+    public string ProvinceState { get; set; } = string.Empty;
+    public string? PostalCode { get; set; }
+    public bool IsPrimary { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+}
+
 internal sealed class PersonalAccountSettingsRecord
 {
     public Guid UserIdentityId { get; set; }

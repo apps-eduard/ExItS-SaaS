@@ -304,10 +304,32 @@ public sealed class CustomerOrderDomainTests
             [Line()],
             Actor,
             Utc,
-            paymentMethod: method);
+            paymentMethod: method,
+            paymentReference: method == CustomerOrderPaymentMethod.ManualGCash ? "  GCASH-1001  " : null);
 
         Assert.Equal(method, order.PaymentMethod);
         Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
+        Assert.Equal(
+            method == CustomerOrderPaymentMethod.ManualGCash ? "GCASH-1001" : null,
+            order.PaymentReference);
+    }
+
+    [Fact]
+    public void Manual_gcash_requires_a_reference()
+    {
+        var ex = Assert.Throws<DomainException>(() => CustomerOrder.CreateSubmitted(
+            Seller,
+            "ORD-260816-021",
+            CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
+            CustomerOrderFulfillmentType.Pickup,
+            BranchId,
+            "Main Branch",
+            [Line()],
+            Actor,
+            Utc,
+            paymentMethod: CustomerOrderPaymentMethod.ManualGCash));
+
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentReference, ex.ErrorCode);
     }
 
     private static CustomerOrder CreatePickup(CustomerOrderParty party) =>

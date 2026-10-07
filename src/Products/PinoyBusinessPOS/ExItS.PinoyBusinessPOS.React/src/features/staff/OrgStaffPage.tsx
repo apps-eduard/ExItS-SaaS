@@ -46,6 +46,7 @@ import { DropdownMenu, MenuItem, useDismissibleOpen } from "@/components/ui/drop
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { OrgStaffPasswordResets } from "@/features/staff/OrgStaffPasswordResets";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -446,6 +447,8 @@ export function OrgStaffPage() {
           },
         ]}
       />
+
+      <OrgStaffPasswordResets organizationId={organizationId} />
 
       {actionError ? (
         <Notice tone="danger">{actionError}</Notice>

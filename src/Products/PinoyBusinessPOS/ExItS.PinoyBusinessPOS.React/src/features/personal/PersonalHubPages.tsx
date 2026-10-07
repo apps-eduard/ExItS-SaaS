@@ -208,6 +208,7 @@ export function PersonalUtangHubPage() {
                       tone={UTANG_READ_ONLY_CHIP.tone}
                       appearance={UTANG_READ_ONLY_CHIP.appearance}
                       shape={UTANG_READ_ONLY_CHIP.shape}
+                      className="max-md:hidden"
                       data-testid="utang-hub-owed-to-me-shared-readonly"
                     >
                       {t("personal.utang.readOnly")}
@@ -265,6 +266,7 @@ export function PersonalUtangHubPage() {
                       tone={UTANG_READ_ONLY_CHIP.tone}
                       appearance={UTANG_READ_ONLY_CHIP.appearance}
                       shape={UTANG_READ_ONLY_CHIP.shape}
+                      className="max-md:hidden"
                       data-testid="utang-hub-i-owe-shared-readonly"
                     >
                       {t("personal.utang.readOnly")}
@@ -645,7 +647,7 @@ export function PersonalMorePage() {
               label: t("personal.more.startBusiness"),
               icon: Building2,
               testId: "more-open-start-business",
-              to: "/personal/explore-pos",
+              to: "/personal/businesses",
               primary: true,
             },
           ]}

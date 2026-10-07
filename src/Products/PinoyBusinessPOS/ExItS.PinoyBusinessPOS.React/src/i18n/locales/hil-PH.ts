@@ -118,6 +118,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "auth.continueWithGoogle": "Continue with Google",
 
+  "auth.googleSignInFailed": "Wala natapos ang Google sign-in. Tilawi liwat.",
+
   "auth.continueWithPin": "Use Offline PIN",
 
   "auth.facebook": "Facebook",
@@ -2250,9 +2252,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "customers.linkElig.failed": "We could not verify this ExItS account. Try again.",
 
-  "customers.linkElig.ownerSelf": "You're already the owner of this business.",
+  "customers.linkElig.ownerSelf": "Organization owner",
 
-  "customers.linkElig.organizationStaff": "This person already works for this business and can't also be linked as a customer.",
+  "customers.linkElig.organizationStaff": "Also works for this business",
 
   "customers.linkElig.alreadyLinked": "This person is already in your customers.",
 
@@ -2495,7 +2497,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "customers.detailLede": "Business Utang balance, charges, kag payments.",
 
-  "customers.displayName": "Display name",
+  "customers.displayName": "Customer name",
 
   "customers.displayNameRequired": "Kinahanglan ang display name.",
 
@@ -3418,7 +3420,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "devices.currentDevice.revokedTitle": "This browser was revoked",
 
-  "devices.currentDevice.unregisteredDetailOptional": "Registration is optional on the web version. Selling does not require it while device checks are paused.",
+  "devices.currentDevice.unregisteredDetailOptional": "Indi magparehistro sini nga browser ang website. Puydi gihapon magbaligya diri.",
 
   "devices.currentDevice.unregisteredTitle": "This browser is not registered",
 
@@ -3428,11 +3430,11 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "devices.deviceNameLabel": "Ngalan sa device",
 
-  "devices.empty": "No registered devices yet. Registration is optional on the web version.",
+  "devices.empty": "Wala pa sang nakarehistro nga device. Indi magparehistro sang device ang website.",
 
-  "devices.emptyOptionalDetail": "You can sell without registering. Use Register this browser only for testing or future installed-app control.",
+  "devices.emptyOptionalDetail": "Ang mga phone kag tablet magparehistro halin sa Android kag iOS app.",
 
-  "devices.enforcementPausedHint": "Web version: device registration is optional. Selling does not require a registered browser. Capacity and registration remain for testing and for the future installed app.",
+  "devices.enforcementPausedHint": "Naka-off ang rehistrasyon sang device sa website. Mabukas lang ini sa Android kag iOS app.",
 
   "devices.identityUnavailable": "Indi makatipig ini nga browser sang durable installation id. I-enable ang storage kag tilawi liwat.",
 
@@ -7585,11 +7587,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "staffBusinessProfile.unsavedCancel": "Keep editing",
   "staffBusinessProfile.workPhone": "Work phone",
   "staffBusinessProfile.workEmail": "Work email",
-  "staffBusinessProfile.availableAsContact": "Available as organization contact",
+  "staffBusinessProfile.availableAsContact": "Use organization contact",
   "staffBusinessProfile.yes": "Yes",
   "staffBusinessProfile.no": "No",
   "staffBusinessProfile.manageAccess": "Manage POS access",
-  "staffBusinessProfile.viewProfile": "Business profile",
+  "staffBusinessProfile.viewProfile": "Staff profile",
   "staffBusinessProfile.missing": "Staff member not found",
   "staffBusinessProfile.missingDetail": "Choose a staff member from the list.",
   "staffBusinessProfile.loadFailed": "Could not load business profile",
@@ -8755,7 +8757,36 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.explore.startTrial": "Sugodi ang trial",
 
-  "personal.explore.subscribe": "Mag-subscribe (Local Validation)",
+  "personal.explore.subscribe": "Magsuksukribir",
+  "personal.subscriptions.title": "Mga suskripsyon",
+  "personal.subscriptions.lede": "Isa lang ka organisasyon kada produkto. Ang dugang nga tindahan branch sang sina nga organisasyon.",
+  "personal.subscriptions.noOrganization": "Wala sing organisasyon",
+  "personal.subscriptions.getStarted": "Suguran",
+  "personal.subscriptions.openProduct": "Buksan",
+  "personal.subscriptions.manage": "Dumalahan ang suskripsyon",
+  "personal.subscriptions.choosePlan": "Pili-a ang plano",
+  "personal.subscriptions.reactivate": "I-aktibo liwat",
+  "personal.subscriptions.upgrade": "I-pataas",
+  "personal.subscriptions.managedByOrganization": "Ang suskripsyon ginadumala sang organisasyon",
+  "personal.subscriptions.noActiveSubscription": "Wala sing aktibo nga suskripsyon",
+  "personal.subscriptions.alreadyHave": "May organisasyon ka na para sa {product}.",
+  "personal.subscriptions.trialEnds": "Matapos ang trial sa {date}",
+  "personal.subscriptions.loadError": "Indi ma-load ang mga suskripsyon.",
+  "personal.subscriptions.role": "Katungdanan",
+  "personal.businesses.title": "Your businesses",
+  "personal.businesses.lede": "Use ExItS products for your business.",
+  "personal.businesses.start": "Start your own business",
+  "personal.businesses.startAnother": "Start another product",
+  "personal.businesses.open": "Open Business",
+  "personal.businesses.noBusinessYet": "No business yet",
+  "personal.businesses.comingSoon": "Coming soon",
+  "personal.businesses.alreadyUsing": "Already using",
+  "personal.businesses.unavailable": "Business information is temporarily unavailable.",
+  "personal.businesses.switch": "Switch",
+  "personal.home.yourBusinesses": "Your businesses",
+  "personal.home.startBusinessCard": "Start a business",
+  "personal.home.startBusinessLede": "Use ExItS products for your business.",
+  "account.switchBusiness": "Switch Business",
 
   "personal.explore.title": "Tilawi ang POS plans",
 
@@ -9033,7 +9064,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.home.activeMine": "Akon aktibo",
 
-  "personal.home.activeShared": "Gin-share sa akon",
+  "personal.home.activeShared": "Gin-ambit nga info",
 
   "personal.home.attentionDueSoon": "{count} payments due soon",
 
@@ -9304,6 +9335,21 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.workplaces.acceptedLede": "Staff ka na sa {org}.",
 
   "personal.workplaces.viewMine": "Tan-awa ang akon mga workplace",
+  "personal.workplaces.passwordLabel": "Workplace password",
+  "personal.workplaces.signIn": "Sign in",
+  "personal.workplaces.forgotPassword": "Forgot password",
+  "personal.workplaces.resetRequested": "Waiting for the organization to approve a password reset.",
+  "personal.workplaces.resetApproved": "Approved. Choose a new workplace password.",
+  "personal.workplaces.newPassword": "New password",
+  "personal.workplaces.confirmPassword": "Confirm password",
+  "personal.workplaces.savePassword": "Save password",
+  "personal.workplaces.passwordMismatch": "Passwords do not match.",
+  "personal.workplaces.resetSaved": "Password saved. Sign in with the new password.",
+  "personal.workplaces.resetRequestSent": "Password reset requested. An organization owner or admin must approve it.",
+  "staffManage.passwordResetsTitle": "Password reset requests",
+  "staffManage.passwordResetsEmpty": "No password resets are waiting for approval.",
+  "staffManage.passwordResetApprove": "Approve",
+  "staffManage.passwordResetDeny": "Deny",
 
   "personal.ownershipTransfers.moreTileCount": "Pagbalhin sang ownership ({count})",
 
@@ -10226,7 +10272,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.utang.sharedBy": "Shared by {name}",
   "personal.utang.ownerManagesRecord": "{name} manages this record. You can view updates.",
   "personal.utang.ownershipMine": "My record",
-  "personal.utang.ownershipSharedWithMe": "Shared with me",
+  "personal.utang.ownershipSharedWithMe": "Shared info",
   "personal.utang.managedByMe": "Managed by me",
   "personal.utang.managedByOther": "Managed by {name}",
   "personal.utang.readOnly": "Read only",
@@ -11255,7 +11301,13 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.willIncreaseStock": "Confirming will increase inventory now.",
 
-  "pwa.refresh": "I-refresh",
+  "pwa.refresh": "I-refresh subong",
+  "pwa.updateTitle": "I-refresh agod makuha ang lab-as nga bersyon",
+  "pwa.updateBody":
+    "Handa na ang bag-o nga bersyon sang ExItS sa ini nga device. I-refresh subong agod ma-load ini. Magapabilin ka nga naka-sign in, kag madali lang ini.",
+  "pwa.updateSaleBody":
+    "May bukas pa nga baligya sa ini nga screen. Tapusa anay ini, dayon i-refresh. Kon i-refresh mo subong, mabalda ang amo nga baligya.",
+  "pwa.continueSale": "Ipadayon ini nga baligya",
 
   "pwa.updateAvailable": "May update",
 

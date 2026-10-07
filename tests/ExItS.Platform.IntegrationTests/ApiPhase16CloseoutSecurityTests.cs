@@ -93,6 +93,7 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
             new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
+        await PlatformIntegrationTestUsers.SaveStaffReadyPersonalProfileAsync(_client, token);
         return (userId, email, password, email, token);
     }
 

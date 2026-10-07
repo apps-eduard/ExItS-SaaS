@@ -5,6 +5,7 @@ import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton"
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
 import { ShellSidebarModeButton } from "@/components/exits/ShellSidebarModeButton";
+import { PersonalAvatarProvider } from "@/features/personal/PersonalAvatarProvider";
 import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
 import { PersonalInstallHomeOffer } from "@/features/personal/PersonalInstallOffer";
 import { useNotificationsOverlay } from "@/features/personal/NotificationsOverlay";
@@ -47,7 +48,7 @@ export function PersonalShell() {
   }
 
   return (
-    <>
+    <PersonalAvatarProvider>
       <div
         className={cn(
           "personal-shell admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
@@ -147,6 +148,6 @@ export function PersonalShell() {
 
       {/* Outside overflow-hidden shell so fixed bottom chrome is never clipped. */}
       <PersonalBottomNav />
-    </>
+    </PersonalAvatarProvider>
   );
 }

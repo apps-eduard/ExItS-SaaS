@@ -10,10 +10,55 @@ using ExItS.Platform.Domain.Personal;
 
 namespace ExItS.Platform.Application.Organizations;
 
+internal static class ExistingStaffInvitationGuard
+{
+    public const string AlreadyStaffElsewhereMessage =
+        "This person is already staff of another organization and cannot be invited as staff.";
+
+    public static async Task<bool> IsAlreadyStaffOfAnotherOrganizationAsync(
+        IPlatformUserRepository users,
+        PlatformOrganizationId invitingOrganizationId,
+        string normalizedEmail,
+        PlatformUserId? personalUserId,
+        CancellationToken cancellationToken)
+    {
+        var login = await users.GetByNormalizedEmailAsync(normalizedEmail, cancellationToken).ConfigureAwait(false);
+        if (IsActiveStaffElsewhere(login, invitingOrganizationId))
+        {
+            return true;
+        }
+
+        var contacts = await users
+            .ListByNormalizedContactEmailAsync(normalizedEmail, cancellationToken)
+            .ConfigureAwait(false);
+        if (contacts.Any(match => IsActiveStaffElsewhere(match, invitingOrganizationId)))
+        {
+            return true;
+        }
+
+        if (personalUserId is null)
+        {
+            return false;
+        }
+
+        var linked = await users
+            .ListStaffLinkedToPersonalUserAsync(personalUserId, cancellationToken)
+            .ConfigureAwait(false);
+        return linked.Any(staff => IsActiveStaffElsewhere(staff, invitingOrganizationId));
+    }
+
+    private static bool IsActiveStaffElsewhere(PlatformUser? user, PlatformOrganizationId invitingOrganizationId) =>
+        user is not null
+        && user.Status == AccountStatus.Active
+        && user.IsOrganizationScopedStaff
+        && user.HomeOrganizationId != invitingOrganizationId;
+}
+
 public sealed record StaffInviteTargetDto(
     string PublicUserId,
     string DisplayName,
-    Guid UserIdentityId);
+    Guid UserIdentityId,
+    bool CanInviteAsStaff = true);
 
 /// <summary>Resolve Personal EX-ID / Personal QR for Organization staff invitation (not ownership transfer).</summary>
 public sealed class ResolveStaffInviteTarget
@@ -23,6 +68,7 @@ public sealed class ResolveStaffInviteTarget
     public ResolveStaffInviteTarget(IPlatformUserRepository users) => _users = users;
 
     public async Task<ApplicationResult<StaffInviteTargetDto>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
         string input,
         CancellationToken cancellationToken = default)
     {
@@ -86,8 +132,21 @@ public sealed class ResolveStaffInviteTarget
                 "Invite a Personal ExItS account, not an organization staff login.");
         }
 
+        var alreadyStaffElsewhere = await ExistingStaffInvitationGuard
+            .IsAlreadyStaffOfAnotherOrganizationAsync(
+                _users,
+                organizationId,
+                user.NormalizedContactEmail ?? user.NormalizedEmail,
+                user.Id,
+                cancellationToken)
+            .ConfigureAwait(false);
+
         return ApplicationResult<StaffInviteTargetDto>.Success(
-            new StaffInviteTargetDto(user.PublicUserId!, user.DisplayName, user.Id.Value));
+            new StaffInviteTargetDto(
+                user.PublicUserId!,
+                user.DisplayName,
+                user.Id.Value,
+                CanInviteAsStaff: !alreadyStaffElsewhere));
     }
 
     private static bool LooksLikeQrEnvelope(string value) =>
@@ -154,7 +213,8 @@ public sealed class CreateOrganizationInvitationForPersonal
                 "Invitations can only be created for an active Platform Organization.");
         }
 
-        var resolved = await _resolveTarget.ExecuteAsync(publicUserIdOrQrPayload, cancellationToken)
+        var resolved = await _resolveTarget
+            .ExecuteAsync(organizationId, publicUserIdOrQrPayload, cancellationToken)
             .ConfigureAwait(false);
         if (!resolved.IsSuccess)
         {
@@ -232,6 +292,18 @@ public sealed class CreateOrganizationInvitationForPersonal
         }
 
         var contactEmail = target.NormalizedContactEmail ?? target.NormalizedEmail;
+        if (await ExistingStaffInvitationGuard.IsAlreadyStaffOfAnotherOrganizationAsync(
+                _users,
+                organizationId,
+                contactEmail,
+                target.Id,
+                cancellationToken).ConfigureAwait(false))
+        {
+            return ApplicationResult<OrganizationInvitationDto>.Failure(
+                ApplicationErrorCodes.ProductAffiliationConflict,
+                ExistingStaffInvitationGuard.AlreadyStaffElsewhereMessage);
+        }
+
         try
         {
             var (invitation, acceptToken) = OrganizationInvitation.Create(

@@ -2130,6 +2130,9 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(CustomerOrderPaymentMethods.CodeMaxLength)
                 .IsRequired()
                 .HasDefaultValue(nameof(CustomerOrderPaymentMethod.Cash));
+            entity.Property(e => e.PaymentReference)
+                .HasColumnName("payment_reference")
+                .HasMaxLength(CustomerOrder.PaymentReferenceMaxLength);
             entity.Property(e => e.FulfillmentType).HasColumnName("fulfillment_type").HasMaxLength(32).IsRequired();
             entity.Property(e => e.FulfillmentBranchId).HasColumnName("fulfillment_branch_id").IsRequired();
             entity.Property(e => e.BranchNameSnapshot)

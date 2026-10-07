@@ -14,6 +14,7 @@ public sealed class CustomerOrder
     public const int BranchNameSnapshotMaxLength = 128;
     public const int RejectNotesMaxLength = 512;
     public const int IdempotencyKeyMaxLength = 128;
+    public const int PaymentReferenceMaxLength = 64;
     public const decimal MaxTotal = 999_999_999.99m;
 
     private readonly List<CustomerOrderLine> _lines;
@@ -25,6 +26,7 @@ public sealed class CustomerOrder
     public CustomerOrderFulfillmentStatus FulfillmentStatus { get; private set; }
     public CustomerOrderPaymentStatus PaymentStatus { get; private set; }
     public CustomerOrderPaymentMethod PaymentMethod { get; }
+    public string? PaymentReference { get; }
     public CustomerOrderFulfillmentType FulfillmentType { get; }
     public Guid FulfillmentBranchId { get; }
     public string BranchNameSnapshot { get; }
@@ -106,7 +108,8 @@ public sealed class CustomerOrder
         Guid? deliveredBy,
         DateTimeOffset? collectedAtUtc,
         Guid? collectedBy,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        string? paymentReference = null)
     {
         Id = id;
         SellerOrganizationId = sellerOrganizationId;
@@ -149,6 +152,44 @@ public sealed class CustomerOrder
         CollectedAtUtc = collectedAtUtc;
         CollectedBy = collectedBy;
         UpdatedAtUtc = updatedAtUtc;
+        PaymentReference = paymentReference;
+    }
+
+    /// <summary>
+    /// Manual GCash orders require a customer-entered reference. Other methods must not carry one.
+    /// </summary>
+    public static string? NormalizePaymentReference(
+        CustomerOrderPaymentMethod paymentMethod,
+        string? paymentReference)
+    {
+        if (paymentMethod == CustomerOrderPaymentMethod.ManualGCash)
+        {
+            if (string.IsNullOrWhiteSpace(paymentReference))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidCustomerOrderPaymentReference,
+                    "Enter the GCash reference number.");
+            }
+
+            var trimmed = paymentReference.Trim();
+            if (trimmed.Length > PaymentReferenceMaxLength)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidCustomerOrderPaymentReference,
+                    $"GCash reference must be at most {PaymentReferenceMaxLength} characters.");
+            }
+
+            return trimmed;
+        }
+
+        if (!string.IsNullOrWhiteSpace(paymentReference))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentReference,
+                "A payment reference can only be recorded for manual GCash.");
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -168,7 +209,8 @@ public sealed class CustomerOrder
         string? idempotencyKey = null,
         CustomerOrderId? id = null,
         CustomerOrderPaymentMethod paymentMethod = CustomerOrderPaymentMethod.Cash,
-        Guid? platformBusinessCustomerId = null)
+        Guid? platformBusinessCustomerId = null,
+        string? paymentReference = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(submittedBy);
@@ -203,6 +245,8 @@ public sealed class CustomerOrder
                 DomainErrorCodes.InvalidCustomerOrderPaymentMethod,
                 "Payment method must be Cash, GCash, or Utang.");
         }
+
+        paymentReference = NormalizePaymentReference(paymentMethod, paymentReference);
 
         var orderId = id ?? CustomerOrderId.New();
         var orderLines = new List<CustomerOrderLine>(lines.Count);
@@ -287,7 +331,8 @@ public sealed class CustomerOrder
             deliveredBy: null,
             collectedAtUtc: null,
             collectedBy: null,
-            utcNow);
+            utcNow,
+            paymentReference);
     }
 
     public static CustomerOrder Rehydrate(
@@ -331,7 +376,8 @@ public sealed class CustomerOrder
         DateTimeOffset? collectedAtUtc,
         Guid? collectedBy,
         DateTimeOffset updatedAtUtc,
-        Guid? platformBusinessCustomerId = null) =>
+        Guid? platformBusinessCustomerId = null,
+        string? paymentReference = null) =>
         new(
             id,
             sellerOrganizationId,
@@ -373,7 +419,8 @@ public sealed class CustomerOrder
             deliveredBy,
             collectedAtUtc,
             collectedBy,
-            updatedAtUtc);
+            updatedAtUtc,
+            paymentReference);
 
     public void Accept(Guid actorId, DateTimeOffset utcNow)
     {

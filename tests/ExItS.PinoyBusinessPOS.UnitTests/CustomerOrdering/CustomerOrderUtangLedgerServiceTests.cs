@@ -234,7 +234,8 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             Actor,
             Utc,
             paymentMethod: paymentMethod,
-            platformBusinessCustomerId: PlatformBusinessCustomerId);
+            platformBusinessCustomerId: PlatformBusinessCustomerId,
+            paymentReference: paymentMethod == CustomerOrderPaymentMethod.ManualGCash ? "GCASH-1001" : null);
 
         if (status == CustomerOrderStatus.Accepted)
         {

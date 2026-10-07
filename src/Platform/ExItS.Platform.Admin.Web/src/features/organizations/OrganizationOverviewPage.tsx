@@ -7,6 +7,7 @@ import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { OrganizationBrandingEditor } from "@/features/organizations/OrganizationBrandingEditor";
 import { OrganizationLifecycleOperator } from "@/features/organizations/OrganizationLifecycleOperator";
 import { OrganizationProfileEditor } from "@/features/organizations/OrganizationProfileEditor";
+import { OrganizationStaffIdSettings } from "@/features/organizations/OrganizationStaffIdSettings";
 import {
   useOrganizationCommercialSummaryQuery,
   useOrganizationDetailQuery,
@@ -131,6 +132,7 @@ export function OrganizationOverviewPage() {
         key={`profile-${organization.updatedAtUtc ?? organization.id}`}
         organization={organization}
       />
+      <OrganizationStaffIdSettings organizationId={organization.id} />
       <OrganizationBrandingEditor
         key={`branding-${organization.updatedAtUtc ?? organization.id}`}
         organization={organization}

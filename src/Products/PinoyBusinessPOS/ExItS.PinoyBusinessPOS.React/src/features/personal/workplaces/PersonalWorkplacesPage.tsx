@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BriefcaseBusiness, Building2, Copy, Loader2, Users } from "lucide-react";
+import { BriefcaseBusiness, Building2, Loader2, Users } from "lucide-react";
 import {
   acceptStaffInvitationById,
   declineStaffInvitationById,
@@ -9,6 +9,7 @@ import {
   type OrganizationInvitationWire,
 } from "@/api/platform/staff-invitation-client";
 import {
+  completeWorkplacePasswordReset,
   listPersonalWorkplaces,
   type PersonalWorkplaceWire,
 } from "@/api/platform/personal-workplaces-client";
@@ -19,12 +20,12 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { copyTextToClipboard } from "@/diagnostics/copy-text-to-clipboard";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PERSONAL_STAFF_INVITATIONS_QUERY_KEY } from "@/features/personal/staff/PersonalStaffInvitationsPage";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
+import { WorkplaceSignInDialog } from "@/features/personal/workplaces/WorkplaceSignInDialog";
 import { useSession } from "@/session/SessionProvider";
 
 export const PERSONAL_WORKPLACES_QUERY_KEY = ["personal", "workplaces"] as const;
@@ -75,15 +76,23 @@ function branchLabel(workplace: PersonalWorkplaceWire, t: (key: MessageKey) => s
 export function PersonalWorkplacesPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
+  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { session, signOut } = useSession();
+  const { session } = useSession();
   const personalEmail = session?.email?.trim() || null;
 
   const [password, setPassword] = useState("");
   const [acceptForId, setAcceptForId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const routedSignInError =
+    (location.state as { workplaceSignInError?: string } | null)?.workplaceSignInError ?? null;
+  const visibleActionError = actionError ?? routedSignInError;
+  const [notice, setNotice] = useState<string | null>(null);
+  const [signInWorkplace, setSignInWorkplace] = useState<PersonalWorkplaceWire | null>(null);
+  const [newPassword, setNewPassword] = useState<Record<string, string>>({});
+  const [confirmPassword, setConfirmPassword] = useState<Record<string, string>>({});
+  const [resettingId, setResettingId] = useState<string | null>(null);
   const [accepted, setAccepted] = useState<{
     organizationDisplayName: string;
     staffLogin: string;
@@ -138,6 +147,9 @@ export function PersonalWorkplacesPage() {
     setActionError(null);
     const result = await acceptMutation.mutateAsync(invitation);
     if (!result.ok) {
+      if (result.body?.errorCode === "application.personal.profile.incomplete") {
+        navigate("/personal/profile?complete=staff&return=/personal/workplaces");
+      }
       setActionError(result.body?.detail ?? t("staffInvite.personalAcceptFailed"));
       return;
     }
@@ -170,22 +182,29 @@ export function PersonalWorkplacesPage() {
     await queryClient.invalidateQueries({ queryKey: PERSONAL_STAFF_INVITATIONS_QUERY_KEY });
   }
 
-  async function copyLogin(staffLogin: string, membershipId: string) {
-    const ok = await copyTextToClipboard(staffLogin);
-    if (!ok) {
-      setActionError(t("personal.workplaces.copyFailed"));
+  async function saveResetPassword(workplace: PersonalWorkplaceWire) {
+    const requestId = workplace.passwordResetRequestId;
+    const next = newPassword[workplace.membershipId] ?? "";
+    const confirm = confirmPassword[workplace.membershipId] ?? "";
+    if (!requestId || !online) {
       return;
     }
-    setCopiedId(membershipId);
-    window.setTimeout(() => setCopiedId((current) => (current === membershipId ? null : current)), 1600);
-  }
-
-  async function openWorkplace(staffLogin: string) {
-    await signOut();
-    navigate("/sign-in", {
-      replace: true,
-      state: { staffLoginHint: staffLogin },
-    });
+    if (next !== confirm) {
+      setActionError(t("personal.workplaces.passwordMismatch"));
+      return;
+    }
+    setActionError(null);
+    setResettingId(workplace.membershipId);
+    const result = await completeWorkplacePasswordReset(workplace.membershipId, requestId, next);
+    setResettingId(null);
+    if (!result.ok) {
+      setActionError(result.body?.detail ?? t("personal.workplaces.resetApproved"));
+      return;
+    }
+    setNewPassword((current) => ({ ...current, [workplace.membershipId]: "" }));
+    setConfirmPassword((current) => ({ ...current, [workplace.membershipId]: "" }));
+    setNotice(t("personal.workplaces.resetSaved"));
+    await queryClient.invalidateQueries({ queryKey: PERSONAL_WORKPLACES_QUERY_KEY });
   }
 
   if (accepted) {
@@ -230,27 +249,53 @@ export function PersonalWorkplacesPage() {
             </p>
           ) : null}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            type="button"
-            className="w-full"
-            data-testid="personal-workplaces-accepted-open"
-            onClick={() => void openWorkplace(accepted.staffLogin)}
-          >
-            {t("personal.workplaces.openNamed").replace("{org}", accepted.organizationDisplayName)}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            data-testid="personal-workplaces-accepted-view"
-            onClick={() => setAccepted(null)}
-          >
-            {t("personal.workplaces.viewMine")}
-          </Button>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              className="w-full"
+              disabled={!online}
+              data-testid="personal-workplaces-accepted-open"
+              onClick={() =>
+                setSignInWorkplace({
+                  organizationId: accepted.organizationId,
+                  organizationDisplayName: accepted.organizationDisplayName,
+                  publicOrganizationId: acceptedWorkplace?.publicOrganizationId ?? null,
+                  staffUserId: acceptedWorkplace?.staffUserId ?? "",
+                  staffLogin: accepted.staffLogin,
+                  membershipId: acceptedWorkplace?.membershipId ?? accepted.organizationId,
+                  membershipRole: acceptedWorkplace?.membershipRole ?? "OrganizationMember",
+                  membershipRoleDisplay: role,
+                  membershipStatus: "Active",
+                  productRole: acceptedWorkplace?.productRole ?? null,
+                  productRoleDisplay: accepted.productRoleDisplay,
+                  branches: acceptedWorkplace?.branches ?? [],
+                  passwordResetStatus: acceptedWorkplace?.passwordResetStatus ?? null,
+                  passwordResetRequestId: acceptedWorkplace?.passwordResetRequestId ?? null,
+                })
+              }
+            >
+              {t("personal.workplaces.login")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              data-testid="personal-workplaces-accepted-view"
+              onClick={() => setAccepted(null)}
+            >
+              {t("personal.workplaces.viewMine")}
+            </Button>
+          </div>
         </div>
-      </div>
-    );
+      <WorkplaceSignInDialog
+        workplace={signInWorkplace}
+        open={signInWorkplace !== null}
+        returnPath="/personal/workplaces"
+        onClose={() => setSignInWorkplace(null)}
+      />
+    </div>
+  );
   }
 
   return (
@@ -275,9 +320,14 @@ export function PersonalWorkplacesPage() {
         </p>
       ) : null}
 
-      {actionError ? (
+      {visibleActionError ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
-          {actionError}
+          {visibleActionError}
+        </p>
+      ) : null}
+      {notice ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)]" role="status">
+          {notice}
         </p>
       ) : null}
 
@@ -463,32 +513,108 @@ export function PersonalWorkplacesPage() {
               ) : null}
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                className="flex-1"
-                disabled={!isActiveMembershipStatus(workplace.membershipStatus)}
-                data-testid={`personal-workplace-open-${workplace.membershipId}`}
-                onClick={() => void openWorkplace(workplace.staffLogin)}
-              >
-                {t("personal.workplaces.open")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                data-testid={`personal-workplace-copy-${workplace.membershipId}`}
-                onClick={() => void copyLogin(workplace.staffLogin, workplace.membershipId)}
-              >
-                <Copy className="size-4" aria-hidden />
-                <span className="sr-only">{t("personal.workplaces.copyLogin")}</span>
-                {copiedId === workplace.membershipId
-                  ? t("personal.workplaces.copied")
-                  : t("personal.workplaces.copyLogin")}
-              </Button>
-            </div>
+            {isActiveMembershipStatus(workplace.membershipStatus) ? (
+              <WorkplaceAccess
+                workplace={workplace}
+                online={online}
+                resetting={resettingId === workplace.membershipId}
+                newPassword={newPassword[workplace.membershipId] ?? ""}
+                confirmPassword={confirmPassword[workplace.membershipId] ?? ""}
+                onNewPassword={(value) =>
+                  setNewPassword((current) => ({ ...current, [workplace.membershipId]: value }))
+                }
+                onConfirmPassword={(value) =>
+                  setConfirmPassword((current) => ({ ...current, [workplace.membershipId]: value }))
+                }
+                onLogin={() => setSignInWorkplace(workplace)}
+                onSavePassword={() => void saveResetPassword(workplace)}
+              />
+            ) : null}
           </article>
         ))}
       </section>
+      <WorkplaceSignInDialog
+        workplace={signInWorkplace}
+        open={signInWorkplace !== null}
+        returnPath="/personal/workplaces"
+        onClose={() => setSignInWorkplace(null)}
+      />
+    </div>
+  );
+}
+
+function WorkplaceAccess({
+  workplace,
+  online,
+  resetting,
+  newPassword,
+  confirmPassword,
+  onNewPassword,
+  onConfirmPassword,
+  onLogin,
+  onSavePassword,
+}: {
+  workplace: PersonalWorkplaceWire;
+  online: boolean;
+  resetting: boolean;
+  newPassword: string;
+  confirmPassword: string;
+  onNewPassword: (value: string) => void;
+  onConfirmPassword: (value: string) => void;
+  onLogin: () => void;
+  onSavePassword: () => void;
+}) {
+  const { t } = useI18n();
+  const resetStatus = workplace.passwordResetStatus;
+  const approved = resetStatus === "Approved";
+  const pending = resetStatus === "Pending";
+
+  return (
+    <div className="flex flex-col gap-2">
+      {pending ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("personal.workplaces.resetRequested")}
+        </p>
+      ) : null}
+      {approved ? (
+        <>
+          <p className="m-0 text-[length:var(--exits-text-sm)]">{t("personal.workplaces.resetApproved")}</p>
+          <Input
+            label={t("personal.workplaces.newPassword")}
+            type="password"
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(event) => onNewPassword(event.target.value)}
+            data-testid={`personal-workplace-new-password-${workplace.membershipId}`}
+          />
+          <Input
+            label={t("personal.workplaces.confirmPassword")}
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => onConfirmPassword(event.target.value)}
+            data-testid={`personal-workplace-confirm-password-${workplace.membershipId}`}
+          />
+          <Button
+            type="button"
+            disabled={resetting || !online || !newPassword.trim()}
+            data-testid={`personal-workplace-save-password-${workplace.membershipId}`}
+            onClick={onSavePassword}
+          >
+            {t("personal.workplaces.savePassword")}
+          </Button>
+        </>
+      ) : (
+        <Button
+          type="button"
+          className="w-fit"
+          disabled={!online}
+          data-testid={`personal-workplace-sign-in-${workplace.membershipId}`}
+          onClick={onLogin}
+        >
+          {t("personal.workplaces.login")}
+        </Button>
+      )}
     </div>
   );
 }

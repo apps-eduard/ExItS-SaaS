@@ -182,6 +182,17 @@ export function PersonalStartBusinessPage() {
       });
     },
     onSuccess: async (result) => {
+      if (result.reusedExistingOrganization) {
+        clearBoundWorkspace();
+        const reusedSession = await refreshSession();
+        if (reusedSession !== "authenticated") {
+          setFormError(t("personal.startBusiness.sessionSwitchFailed"));
+          return;
+        }
+        navigate("/personal/subscriptions", { replace: true });
+        return;
+      }
+
       const orgId = result.organizationId;
       const selectedType = typesQuery.data?.find((item) => item.id === primaryBusinessTypeId);
       // Set before session refresh so auto-destination cannot send the new org to Sell.

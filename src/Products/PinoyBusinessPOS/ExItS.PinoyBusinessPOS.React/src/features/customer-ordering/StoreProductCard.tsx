@@ -1,29 +1,16 @@
 import type { CustomerStorefrontProductDto } from "@/api/pos/pos-customer-orders-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
-import { Button } from "@/components/ui/button";
-import { StatusChip } from "@/components/exits/StatusChip";
-import { StorefrontProductThumbnail } from "@/features/customer-ordering/StorefrontProductThumbnail";
-import { cn } from "@/lib/cn";
+import { formatQuantityDisplay, resolveSellCardStock } from "@/cart/sell-cart-helpers";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { sellAvailableCaption } from "@/features/catalog/catalog-stock-caption";
+import { isKiloStorefrontProduct } from "@/features/customer-ordering/storefront-availability";
+import { useStorefrontProductImageUrl } from "@/features/customer-ordering/use-storefront-product-image";
 import type { MessageKey } from "@/i18n/messages";
+import { cn } from "@/lib/cn";
 
-function money(n: number): string {
-  return `₱${n.toFixed(2)}`;
-}
-
-function availabilityLabel(
-  t: (key: MessageKey) => string,
-  product: CustomerStorefrontProductDto,
-): string {
-  switch (product.availabilityStatus) {
-    case "OutOfStock":
-      return t("orders.availabilityOut");
-    case "LowStock":
-      return t("orders.availabilityLow");
-    case "InStock":
-      return t("orders.availabilityIn");
-    default:
-      return t("orders.availabilityUntracked");
-  }
+function productInitial(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
 }
 
 type StoreProductCardProps = {
@@ -32,8 +19,7 @@ type StoreProductCardProps = {
   sellerOrganizationId: string;
   quantity: number;
   canAdd: boolean;
-  onIncrement: () => void;
-  onDecrement: () => void;
+  onAdd: () => void;
   t: (key: MessageKey) => string;
 };
 
@@ -43,81 +29,88 @@ export function StoreProductCard({
   sellerOrganizationId,
   quantity,
   canAdd,
-  onIncrement,
-  onDecrement,
+  onAdd,
   t,
 }: StoreProductCardProps) {
-  const outOfStock = !product.isAvailable || product.availabilityStatus === "OutOfStock";
+  const imageUrl = useStorefrontProductImageUrl(
+    workspace,
+    sellerOrganizationId,
+    product.productId,
+    product.hasImage,
+    product.imageVersion,
+  );
+  const kilo = isKiloStorefrontProduct(product);
+  const unavailable = !canAdd && quantity <= 0;
+  const remaining =
+    product.tracksInventory && product.availableQuantity != null
+      ? Math.max(0, product.availableQuantity - quantity)
+      : product.availableQuantity;
+  const stock = resolveSellCardStock({
+    isTracked: product.tracksInventory,
+    onHandQuantity: remaining,
+    unitOfMeasure: product.unitOfMeasure,
+    stockStatus: product.availabilityStatus,
+  });
 
   return (
-    <article
-      className={cn("pc-product-card", outOfStock && "pc-product-card--unavailable")}
-      data-testid="storefront-product"
+    <button
+      type="button"
+      data-testid="cart-increment"
+      data-storefront-product=""
+      className={cn(
+        "sell-product-card",
+        quantity > 0 && "sell-product-card--added",
+        unavailable && "sell-product-card--unavailable",
+      )}
+      disabled={unavailable}
+      aria-disabled={unavailable}
+      onClick={() => {
+        if (!unavailable) {
+          onAdd();
+        }
+      }}
     >
-      <div className="pc-product-card__media">
-        <StorefrontProductThumbnail
-          workspace={workspace}
-          sellerOrganizationId={sellerOrganizationId}
-          product={product}
-        />
-      </div>
-
-      <div className="pc-product-card__body">
-        <h3 className="pc-product-card__name">{product.name}</h3>
-        <div className="pc-product-card__price-row">
-          <span className="pc-product-card__price">{money(product.unitPrice)}</span>
-          <span className="pc-product-card__unit">/ {product.unitOfMeasure}</span>
-        </div>
-        {product.tracksInventory && product.availableQuantity != null ? (
-          <p className="pc-product-card__stock m-0">
-            {product.availableQuantity} {t("orders.items")}
-          </p>
-        ) : null}
-        <StatusChip tone={product.isAvailable ? "success" : "danger"}>
-          {availabilityLabel(t, product)}
-        </StatusChip>
-      </div>
-
-      <div className="pc-product-card__footer">
-        {quantity > 0 ? (
-          <div className="pc-qty-stepper" data-testid="cart-qty-controls">
-            <button
-              type="button"
-              className="pc-qty-stepper__btn"
-              disabled={quantity <= 0}
-              data-testid="cart-decrement"
-              aria-label={t("orders.cartEmptyTitle")}
-              onClick={onDecrement}
-            >
-              −
-            </button>
-            <span className="pc-qty-stepper__value" data-testid="cart-qty">
-              {quantity}
-            </span>
-            <button
-              type="button"
-              className="pc-qty-stepper__btn"
-              disabled={!canAdd}
-              data-testid="cart-increment"
-              aria-label={t("orders.reviewOrder")}
-              onClick={onIncrement}
-            >
-              +
-            </button>
-          </div>
+      <div className="sell-product-card__media">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            className="sell-product-card__image"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
-          <Button
-            type="button"
-            className="pc-qty-stepper__add w-full"
-            disabled={!canAdd}
-            data-testid="cart-increment"
-            aria-label={t("sell.addToCart")}
-            onClick={onIncrement}
-          >
-            +
-          </Button>
+          <span className="sell-product-card__initial" aria-hidden>
+            {productInitial(product.name)}
+          </span>
         )}
       </div>
-    </article>
+      <div className="sell-product-card__body">
+        <span className="sell-product-card__name">{product.name}</span>
+        <div className="sell-product-card__price-row">
+          <MoneyDisplay amount={product.unitPrice} className="sell-product-card__price" />
+          {kilo ? (
+            <span className="sell-product-card__hint">{t("sell.tileByWeight")}</span>
+          ) : (
+            <span className="sell-product-card__hint sell-product-card__hint--muted">
+              {product.unitOfMeasure}
+            </span>
+          )}
+        </div>
+        <span
+          className={cn(
+            "sell-product-card__stock",
+            stock.tone !== "ok" && stock.tone !== "untracked" && `sell-product-card__stock--${stock.tone}`,
+          )}
+        >
+          {sellAvailableCaption(t, stock)}
+        </span>
+        {quantity > 0 ? (
+          <span className="sr-only" data-testid="cart-qty">
+            {formatQuantityDisplay(quantity)}
+          </span>
+        ) : null}
+      </div>
+    </button>
   );
 }

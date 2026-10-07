@@ -18,6 +18,7 @@ import {
   ensureMerchantCart,
   getCartQuantity,
   incrementCartLine,
+  setCartLineQuantity,
   type PersonalMerchantCartState,
 } from "@/features/customer-ordering/personal-merchant-cart";
 import {
@@ -33,6 +34,7 @@ type PersonalMerchantCartContextValue = {
   merchandiseSubtotal: number;
   ensureMerchant: (sellerOrganizationId: string, displayName: string | null) => void;
   increment: (product: CustomerStorefrontProductDto) => void;
+  setQuantity: (product: CustomerStorefrontProductDto, quantity: number) => void;
   decrement: (productId: string) => void;
   clearLines: () => void;
   clearAll: () => void;
@@ -74,6 +76,10 @@ export function PersonalMerchantCartProvider({ children }: { children: ReactNode
     setCart((prev) => incrementCartLine(prev, product));
   }, []);
 
+  const setQuantity = useCallback((product: CustomerStorefrontProductDto, quantity: number) => {
+    setCart((prev) => setCartLineQuantity(prev, product, quantity));
+  }, []);
+
   const decrement = useCallback((productId: string) => {
     setCart((prev) => decrementCartLine(prev, productId));
   }, []);
@@ -98,12 +104,13 @@ export function PersonalMerchantCartProvider({ children }: { children: ReactNode
       merchandiseSubtotal: cartMerchandiseSubtotal(cart),
       ensureMerchant,
       increment,
+      setQuantity,
       decrement,
       clearLines,
       clearAll,
       quantityOf,
     }),
-    [cart, ensureMerchant, increment, decrement, clearLines, clearAll, quantityOf],
+    [cart, ensureMerchant, increment, setQuantity, decrement, clearLines, clearAll, quantityOf],
   );
 
   return (

@@ -154,7 +154,7 @@ function PeopleListRow({
               tone={UTANG_READ_ONLY_CHIP.tone}
               appearance={UTANG_READ_ONLY_CHIP.appearance}
               shape={UTANG_READ_ONLY_CHIP.shape}
-              className="col-start-1 row-start-1 self-start"
+              className="col-start-1 row-start-1 self-start max-md:hidden"
               data-testid={`people-row-readonly-${row.contact.id}`}
             >
               {t("personal.utang.readOnly")}

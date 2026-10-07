@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -270,6 +271,18 @@ public sealed class CreateOrganizationInvitation
                     "An active organization staff identity already exists for this contact email.");
             }
 
+            if (await ExistingStaffInvitationGuard.IsAlreadyStaffOfAnotherOrganizationAsync(
+                    _users,
+                    organizationId,
+                    normalizedContactEmail,
+                    personalUserId: null,
+                    cancellationToken).ConfigureAwait(false))
+            {
+                return ApplicationResult<OrganizationInvitationDto>.Failure(
+                    ApplicationErrorCodes.ProductAffiliationConflict,
+                    ExistingStaffInvitationGuard.AlreadyStaffElsewhereMessage);
+            }
+
             var (invitation, acceptToken) = OrganizationInvitation.Create(
                 organizationId,
                 normalizedContactEmail,
@@ -472,6 +485,9 @@ public sealed class AcceptOrganizationInvitation
     private readonly IClock _clock;
     private readonly IAuditWriter _audit;
     private readonly PlatformPasswordOptions _passwordOptions;
+    private readonly UserProductAffiliationGuard _affiliations;
+    private readonly OrganizationStaffSeatPolicy _staffSeats;
+    private readonly PersonalProfileAcceptanceGate? _profileGate;
 
     public AcceptOrganizationInvitation(
         IOrganizationInvitationRepository invitations,
@@ -489,7 +505,10 @@ public sealed class AcceptOrganizationInvitation
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IAuditWriter audit,
-        IOptions<PlatformPasswordOptions> passwordOptions)
+        IOptions<PlatformPasswordOptions> passwordOptions,
+        UserProductAffiliationGuard affiliations,
+        OrganizationStaffSeatPolicy staffSeats,
+        PersonalProfileAcceptanceGate? profileGate = null)
     {
         _invitations = invitations;
         _organizations = organizations;
@@ -507,6 +526,9 @@ public sealed class AcceptOrganizationInvitation
         _clock = clock;
         _audit = audit;
         _passwordOptions = passwordOptions.Value;
+        _affiliations = affiliations;
+        _staffSeats = staffSeats;
+        _profileGate = profileGate;
     }
 
     public Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> ExecuteAsync(
@@ -766,6 +788,26 @@ public sealed class AcceptOrganizationInvitation
             }
 
             linkedPersonalUserId = personalProof.PersonalUserId;
+            if (_profileGate is not null)
+            {
+                var personalUser = await _users
+                    .GetByIdAsync(authenticatedPersonalUserId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (personalUser is not null)
+                {
+                    var missing = await _profileGate
+                        .MissingStaffFieldsAsync(personalUser, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (missing is not null)
+                    {
+                        return new LockedAcceptOutcome(
+                            ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                                ApplicationErrorCodes.PersonalProfileIncomplete,
+                                missing),
+                            Outbound: null);
+                    }
+                }
+            }
         }
         else if (invitation.IsExItsNativePersonalInvite)
         {
@@ -783,6 +825,59 @@ public sealed class AcceptOrganizationInvitation
                 ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
                     ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
                     "Sign in with your Personal account to accept this invitation."),
+                Outbound: null);
+        }
+
+        var invitationProduct = ProductCode.Create(ProductCode.PinoyBusinessPos);
+        await _unitOfWork.AcquireTransactionAdvisoryLockAsync(
+            ProductAffiliationLocks.ForEmail(contactEmail),
+            ProductAffiliationLocks.ForProduct(invitationProduct.Value),
+            cancellationToken).ConfigureAwait(false);
+
+        var seats = await _staffSeats
+            .EvaluateAsync(organization.Id, invitationProduct, cancellationToken)
+            .ConfigureAwait(false);
+        if (seats.IsFull)
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.StaffSeatLimitReached,
+                    OrganizationStaffSeatPolicy.LimitReachedMessage),
+                Outbound: null);
+        }
+
+        var relatedUserIds = new List<PlatformUserId>();
+        if (linkedPersonalUserId is not null)
+        {
+            relatedUserIds.Add(linkedPersonalUserId);
+        }
+
+        if (authenticatedPersonalUserId is not null
+            && (linkedPersonalUserId is null || authenticatedPersonalUserId != linkedPersonalUserId))
+        {
+            relatedUserIds.Add(authenticatedPersonalUserId);
+        }
+
+        if (existingLoginPrincipal is not null)
+        {
+            relatedUserIds.Add(existingLoginPrincipal.Id);
+        }
+
+        var contactMatches = await _users
+            .ListByNormalizedContactEmailAsync(contactEmail, cancellationToken)
+            .ConfigureAwait(false);
+        relatedUserIds.AddRange(contactMatches.Select(match => match.Id));
+
+        if (await _affiliations.HasStaffAffiliationWithOtherOrganizationAsync(
+                relatedUserIds,
+                invitationProduct,
+                organization.Id.Value,
+                cancellationToken).ConfigureAwait(false))
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.ProductAffiliationConflict,
+                    UserProductAffiliationGuard.AlreadyAssociatedMessage),
                 Outbound: null);
         }
 

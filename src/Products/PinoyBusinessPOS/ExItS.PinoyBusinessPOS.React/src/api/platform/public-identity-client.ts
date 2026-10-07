@@ -70,6 +70,7 @@ export const customerLinkEligibilitySchema = z.object({
   userIdentityId: guidSchema.nullable().optional().default(null),
   existingBusinessCustomerId: guidSchema.nullable().optional().default(null),
   existingPendingRequestId: guidSchema.nullable().optional().default(null),
+  relationshipContext: z.string().nullable().optional().default(null),
 });
 
 export type CustomerLinkEligibilityDto = z.infer<typeof customerLinkEligibilitySchema>;
@@ -151,6 +152,7 @@ export async function evaluateCustomerLinkEligibility(
       pick(r, "existingBusinessCustomerId", "ExistingBusinessCustomerId") ?? null,
     existingPendingRequestId:
       pick(r, "existingPendingRequestId", "ExistingPendingRequestId") ?? null,
+    relationshipContext: pick(r, "relationshipContext", "RelationshipContext") ?? null,
   });
 }
 
