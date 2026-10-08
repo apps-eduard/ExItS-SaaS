@@ -7,7 +7,9 @@
   .\tools\Stop-LocalDev.ps1
 #>
 [CmdletBinding()]
-param()
+param(
+    [string[]]$OnlyServices = @()
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -38,9 +40,10 @@ function Get-ListeningOwner([int]$Port) {
 $repoRoot = Get-LocalValidationRepoRoot
 $repoNorm = $repoRoot.Replace('/', '\').TrimEnd('\')
 $statePath = Join-Path (Join-Path $env:LOCALAPPDATA $LocalDevStack.StateDirectory) $LocalDevStack.StateFileName
+$partial = @($OnlyServices).Count -gt 0
 Write-Step "Repository: $repoRoot"
 
-if (Test-Path -LiteralPath $statePath) {
+if (-not $partial -and (Test-Path -LiteralPath $statePath)) {
     $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
     foreach ($windowPid in @($state.WindowPids)) {
         if (-not $windowPid) { continue }
@@ -51,13 +54,24 @@ if (Test-Path -LiteralPath $statePath) {
     }
 }
 
-$ports = @(
-    [int]$LocalDevStack.PlatformApiPort,
-    [int]$LocalDevStack.PosApiPort,
-    [int]$LocalDevStack.ReactPosPort,
-    [int]$LocalDevStack.AdminPort,
-    [int]$LocalDevStack.LoanPort
-)
+if ($partial) {
+    $ports = @()
+    foreach ($serviceKey in @($OnlyServices)) {
+        $key = ([string]$serviceKey).Trim().ToLowerInvariant()
+        if ($key -eq 'mailpit' -or $key -eq 'platform-db' -or $key -eq 'pos-db') {
+            continue
+        }
+        $ports += Get-LocalDevServicePort -ServiceKey $key
+    }
+} else {
+    $ports = @(
+        [int]$LocalDevStack.PlatformApiPort,
+        [int]$LocalDevStack.PosApiPort,
+        [int]$LocalDevStack.ReactPosPort,
+        [int]$LocalDevStack.AdminPort,
+        [int]$LocalDevStack.LoanPort
+    )
+}
 $blocked = @()
 foreach ($port in $ports) {
     $owner = Get-ListeningOwner -Port $port
@@ -71,9 +85,25 @@ foreach ($port in $ports) {
     }
     Write-Step ("Stopping {0} PID {1} on port {2}" -f $owner.ProcessName, $owner.ProcessId, $port)
     Stop-Process -Id $owner.ProcessId -Force -ErrorAction SilentlyContinue
+    foreach ($processName in @('powershell.exe', 'pwsh.exe', 'dotnet.exe', 'node.exe')) {
+    foreach ($process in @(Get-CimInstance Win32_Process -Filter "Name = '$processName'" -ErrorAction SilentlyContinue)) {
+        $cmd = [string]$process.CommandLine
+        if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
+        $normalized = $cmd.Replace('/', '\')
+        if ($normalized.IndexOf($repoNorm, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+        if ($cmd.IndexOf("127.0.0.1:$port", [StringComparison]::OrdinalIgnoreCase) -lt 0 -and
+            $cmd.IndexOf("localhost:$port", [StringComparison]::OrdinalIgnoreCase) -lt 0 -and
+            $cmd.IndexOf("POS_DEV_PORT = '$port'", [StringComparison]::OrdinalIgnoreCase) -lt 0 -and
+            $cmd.IndexOf("ADMIN_DEV_PORT = '$port'", [StringComparison]::OrdinalIgnoreCase) -lt 0) {
+            continue
+        }
+        Write-Step ("Stopping launcher PID {0} for port {1}" -f $process.ProcessId, $port)
+        Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+    }
 }
 
-if (Test-Path -LiteralPath $statePath) {
+if (-not $partial -and (Test-Path -LiteralPath $statePath)) {
     Remove-Item -LiteralPath $statePath -Force
 }
 
@@ -83,3 +113,4 @@ if ($blocked.Count -gt 0) {
 
 Write-Ok 'Fast dev apps stopped. Shared PostgreSQL containers and volumes were left running.'
 Write-Host 'Start production-like validation with .\tools\Start-DockerLocalValidation.ps1 when image validation is required.'
+exit 0

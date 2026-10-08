@@ -4,6 +4,7 @@ import {
   DEV_PORT_TARGETS,
   collectDevPortHealth,
   probeTcpPort,
+  resolveDevPortTargets,
 } from "./vite.dev-port-health";
 
 describe("vite.dev-port-health", () => {
@@ -29,6 +30,17 @@ describe("vite.dev-port-health", () => {
       expect(target.name.trim().length).toBeGreaterThan(0);
       expect(JSON.stringify(target)).not.toMatch(/127\.0\.0\.1|localhost|http/i);
     }
+  });
+
+  it("uses fast-dev ports when the login server is 5178", () => {
+    const local = resolveDevPortTargets(5178).map((target) => target.port);
+    expect(local).toEqual(expect.arrayContaining([5288, 5290, 5178, 5195]));
+    expect(local).not.toContain(8091);
+    expect(local).not.toContain(5177);
+    expect(local).not.toContain(8095);
+    expect(resolveDevPortTargets(5177).map((target) => target.port)).toEqual(
+      expect.arrayContaining([8091, 8092, 5177, 8095]),
+    );
   });
 
   it("probes an open loopback port as up and a closed port as down", async () => {
