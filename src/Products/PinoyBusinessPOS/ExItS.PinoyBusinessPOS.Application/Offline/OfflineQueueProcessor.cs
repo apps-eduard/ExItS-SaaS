@@ -570,6 +570,8 @@ public static class OfflineOperationTypes
     public const string CustomerOrderAccept = "customer_order.accept";
     public const string CustomerOrderReject = "customer_order.reject";
     public const string CustomerOrderComplete = "customer_order.complete";
+    public const string CustomerOrderConfirmPayment = "customer_order.confirm_payment";
+    public const string CustomerOrderDeclinePayment = "customer_order.decline_payment";
 
     /// <summary>
     /// Offline org-created catalog product. Metadata is queued; pending photo stays in private app files.

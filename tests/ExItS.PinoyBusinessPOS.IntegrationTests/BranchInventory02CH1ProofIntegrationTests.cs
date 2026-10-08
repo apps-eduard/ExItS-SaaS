@@ -986,6 +986,29 @@ public sealed class BranchInventory02CH1ProofIntegrationTests(PosPostgreSqlFixtu
             Main);
         (await client.SendAsync(ready)).EnsureSuccessStatusCode();
 
+        using (var get = Scoped(
+            HttpMethod.Get,
+            $"{CustomerOrdersSeller}/{org:D}/customer-orders/{orderId:D}",
+            org,
+            OwnerActor,
+            Main))
+        using (var current = await client.SendAsync(get))
+        {
+            current.EnsureSuccessStatusCode();
+            var order = (await current.Content.ReadFromJsonAsync<CustomerOrderDto>(JsonOptions))!;
+            if (order.PaymentMethod is "Cash" or "ManualGCash" && order.PaymentStatus != "Paid")
+            {
+                using var confirm = Scoped(
+                    HttpMethod.Post,
+                    $"{CustomerOrdersSeller}/{org:D}/customer-orders/{orderId:D}/confirm-payment",
+                    org,
+                    OwnerActor,
+                    Main);
+                confirm.Content = JsonContent.Create(new { amountReceived = order.Total }, options: JsonOptions);
+                (await client.SendAsync(confirm)).EnsureSuccessStatusCode();
+            }
+        }
+
         using var collected = Scoped(
             HttpMethod.Post,
             $"{CustomerOrdersSeller}/{org:D}/customer-orders/{orderId:D}/mark-collected",

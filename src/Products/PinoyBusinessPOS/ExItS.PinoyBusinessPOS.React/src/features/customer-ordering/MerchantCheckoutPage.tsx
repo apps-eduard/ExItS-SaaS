@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Package, Smartphone, Truck, Users, Wallet } from "lucide-react";
@@ -23,6 +24,13 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import {
+  checkoutPlaceBlocker,
+  checkoutPlaceDisabled,
+  fulfillmentBlockerMessage,
+  type CheckoutPlaceState,
+} from "@/features/customer-ordering/checkout-place-readiness";
+import { openNativePicker } from "@/features/customer-ordering/open-native-picker";
 import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import { ShopOrderCart } from "@/features/customer-ordering/ShopOrderCart";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
@@ -50,6 +58,7 @@ import { useSession } from "@/session/SessionProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { branchLocalClock, clampPickupTime, pickupTimeBounds } from "@/features/customer-ordering/pickup-time-bounds";
 
 function money(n: number): string {
   return `₱${n.toFixed(2)}`;
@@ -120,16 +129,49 @@ export function MerchantCheckoutPage() {
   const [pickupDate, setPickupDate] = useState(localDateIso);
   const [pickupTime, setPickupTime] = useState("");
   const [pickupTimeOpen, setPickupTimeOpen] = useState(false);
+  const [pickupTimeError, setPickupTimeError] = useState<string | null>(null);
   const pickupDateRef = useRef<HTMLInputElement>(null);
   const pickupTimeRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stockConflict, setStockConflict] = useState(false);
   const [tokenReady, setTokenReady] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const placingRef = useRef(false);
 
   useEffect(() => {
-    void ensurePersonalBuyerPosToken().then((r) => setTokenReady(r.ok));
+    let cancelled = false;
+    void (async () => {
+      const result = await ensurePersonalBuyerPosToken();
+      if (cancelled) {
+        return;
+      }
+      if (result.ok) {
+        setTokenReady(true);
+        setTokenError(null);
+      } else {
+        setTokenReady(false);
+        setTokenError(result.detail);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  function retryBuyerToken() {
+    setTokenError(null);
+    setTokenReady(false);
+    void ensurePersonalBuyerPosToken().then((result) => {
+      if (result.ok) {
+        setTokenReady(true);
+        setTokenError(null);
+      } else {
+        setTokenReady(false);
+        setTokenError(result.detail);
+      }
+    });
+  }
 
   const workspace = useMemo(
     () => (organizationId ? sellerWorkspace(organizationId, branchId) : null),
@@ -240,6 +282,17 @@ export function MerchantCheckoutPage() {
     return storefrontQuery.data.branches.find((b) => b.branchId === branchId) ?? null;
   }, [storefrontQuery.data, branchId]);
 
+  function currentPickupBounds(date = pickupDate) {
+    return pickupTimeBounds({
+      date,
+      now: new Date(),
+      timeZoneId: selectedBranch?.timeZoneId,
+      operatingHours: selectedBranch?.operatingHours,
+    });
+  }
+
+  const storeToday = branchLocalClock(new Date(), selectedBranch?.timeZoneId).date;
+
   const deliveryAreas = selectedBranch?.deliveryServiceAreas ?? [];
   const deliveryAreaIdsKey = deliveryAreas.map((area) => area.id).join(",");
 
@@ -314,56 +367,86 @@ export function MerchantCheckoutPage() {
     await storefrontQuery.refetch();
   }
 
+  const isDelivery = selection?.fulfillmentType === FulfillmentDelivery;
+  const deliveryIncomplete =
+    isDelivery === true
+    && (!recipientName.trim() || !addressLine1.trim() || !coordsValid || !deliveryServiceAreaId);
+  const deliveryQuoteUnavailable =
+    isDelivery === true && (quoteQuery.isLoading || quoteQuery.isError || !quoteQuery.data?.available);
+  const placeState: CheckoutPlaceState = {
+    busy,
+    merchantContextLoading: merchantContextQuery.isLoading,
+    cartEmpty: cart.lines.length === 0 || cart.sellerOrganizationId !== organizationId,
+    workspaceMissing: !workspace,
+    selectionMissing: !selection,
+    branchId: selection?.branchId ?? null,
+    canPlace: selection?.canPlace === true,
+    fulfillmentType: selection?.fulfillmentType ?? fulfillmentType,
+    onlineOrdersPaused: selectedBranch?.onlineOrdersPaused === true,
+    fulfillmentAvailability: storefrontQuery.data?.fulfillmentAvailability ?? null,
+    paymentMethod,
+    gcashReference,
+    utangInsufficient,
+    deliveryIncomplete,
+    deliveryQuoteUnavailable,
+    buyerIdentityMissing: !session?.userId,
+    linkedCustomerMissing: !platformBusinessCustomerId,
+  };
+  const placeDisabled = checkoutPlaceDisabled(placeState);
+
   async function placeOrder() {
-    if (!workspace || !selection?.branchId || cart.lines.length === 0) {
+    if (placingRef.current) {
       return;
     }
-    if (!session?.userId) {
-      setError(t("orders.missingBuyerIdentity"));
-      return;
-    }
-
-    const platformBusinessCustomerId = merchantContextQuery.data?.businessCustomerId;
-    if (!platformBusinessCustomerId) {
-      setError(t("orders.missingLinkedCustomer"));
-      return;
-    }
-
-    const isDelivery = selection.fulfillmentType === FulfillmentDelivery;
-    const gcashReferenceTrimmed = gcashReference.trim();
-    if (paymentMethod === "ManualGCash" && gcashReferenceTrimmed.length === 0) {
-      setError(t("checkout.gcashReferenceRequired"));
-      return;
-    }
-
-    if (isDelivery) {
-      if (!recipientName.trim() || !addressLine1.trim() || !coordsValid) {
-        setError(t("orders.deliveryFieldsRequired"));
-        return;
-      }
-      if (!deliveryServiceAreaId) {
-        setError(
-          deliveryAreas.length === 0
+    const blocker = checkoutPlaceBlocker({ ...placeState, busy: false, merchantContextLoading: false });
+    if (blocker) {
+      setError(
+        blocker === "orders.deliveryFieldsRequired" && isDelivery && !deliveryServiceAreaId
+          ? deliveryAreas.length === 0
             ? t("orders.deliveryAreaEmpty")
-            : t("orders.deliveryAreaRequired"),
-        );
-        return;
-      }
-      if (!quoteQuery.data?.available) {
-        setError(quoteQuery.data?.unavailableReason ?? t("orders.deliveryUnavailable"));
-        return;
-      }
+            : t("orders.deliveryAreaRequired")
+          : blocker === "orders.deliveryUnavailable" && quoteQuery.data?.unavailableReason
+            ? quoteQuery.data.unavailableReason
+            : t(blocker),
+      );
+      return;
+    }
+    if (!workspace || !selection?.branchId) {
+      setError(t("orders.checkoutMissingBranch"));
+      return;
     }
 
+    const linkedCustomerId = merchantContextQuery.data?.businessCustomerId;
+    if (!session?.userId || !linkedCustomerId) {
+      setError(t(session?.userId ? "orders.missingLinkedCustomer" : "orders.missingBuyerIdentity"));
+      return;
+    }
+
+    const gcashReferenceTrimmed = gcashReference.trim();
     setBusy(true);
+    placingRef.current = true;
     setError(null);
     setStockConflict(false);
     const clientOrderId = newClientOrderId();
     if (!clientOrderId) {
       setError(t("checkout.errorSecureId"));
       setBusy(false);
+      placingRef.current = false;
       return;
     }
+    const pickupBounds = currentPickupBounds();
+    const requestedTime =
+      selection.fulfillmentType === FulfillmentPickup ? clampPickupTime(pickupTime, pickupBounds) : "";
+    if (selection.fulfillmentType === FulfillmentPickup && pickupTime.trim().length > 0 && !requestedTime) {
+      setPickupTime("");
+      setPickupTimeError(t("orders.pickupDayClosed"));
+      setBusy(false);
+      placingRef.current = false;
+      return;
+    }
+    const requestedPickup = requestedTime
+      ? { requestedPickupDate: pickupDate, requestedPickupTime: requestedTime }
+      : { requestedPickupDate: null, requestedPickupTime: null };
     try {
       const order = await placeCustomerOrder(workspace, organizationId, {
         fulfillmentType: selection.fulfillmentType,
@@ -371,7 +454,7 @@ export function MerchantCheckoutPage() {
         customerPartyType: "Personal",
         customerDisplayName: session.displayName ?? session.email ?? "Customer",
         customerPlatformUserId: session.userId,
-        platformBusinessCustomerId,
+        platformBusinessCustomerId: linkedCustomerId,
         lines: cart.lines.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,
@@ -393,6 +476,8 @@ export function MerchantCheckoutPage() {
         clientOrderId,
         paymentMethod,
         paymentReference: paymentMethod === "ManualGCash" ? gcashReferenceTrimmed : null,
+        requestedPickupDate: requestedPickup.requestedPickupDate,
+        requestedPickupTime: requestedPickup.requestedPickupTime,
       });
       clearAll();
       navigate(`/personal/orders/${order.orderId}`);
@@ -406,6 +491,7 @@ export function MerchantCheckoutPage() {
         setError(err instanceof Error ? err.message : t("orders.error"));
       }
     } finally {
+      placingRef.current = false;
       setBusy(false);
     }
   }
@@ -413,7 +499,34 @@ export function MerchantCheckoutPage() {
   const pageShell =
     "personal-page personal-commerce-page merchant-checkout-page exits-page flex min-w-0 flex-col gap-4";
 
-  if (!tokenReady || (online && storefrontQuery.isLoading)) {
+  if (!tokenReady && !tokenError) {
+    return <LoadingState label={t("loading.label")} />;
+  }
+
+  if (tokenError) {
+    return (
+      <div className={pageShell} data-testid="merchant-checkout-token-error">
+        <PageHeader
+          title={t("orders.checkoutTitle")}
+          backTo={
+            organizationId
+              ? `/personal/linked-merchants/${organizationId}/shop`
+              : personalPageBackNav.merchants.to
+          }
+          backLabel={
+            organizationId ? t("orders.backToShop") : t(personalPageBackNav.merchants.labelKey)
+          }
+          backTestId="page-header-back-checkout"
+        />
+        <ErrorState title={t("orders.error")} detail={tokenError} />
+        <Button type="button" className="w-fit" data-testid="checkout-token-retry" onClick={retryBuyerToken}>
+          {t("orders.retry")}
+        </Button>
+      </div>
+    );
+  }
+
+  if (online && (storefrontQuery.isLoading || merchantContextQuery.isLoading)) {
     return <LoadingState label={t("loading.label")} />;
   }
 
@@ -618,20 +731,29 @@ export function MerchantCheckoutPage() {
                   aria-expanded={pickupTimeOpen}
                   data-testid="checkout-set-pickup-time"
                   onClick={() => {
-                    setPickupTimeOpen((open) => {
-                      const next = !open;
-                      if (next) {
-                        window.setTimeout(
-                          () => pickupTimeRef.current?.showPicker?.() ?? pickupTimeRef.current?.focus(),
-                          0,
-                        );
+                    if (pickupTimeOpen) {
+                      const bounds = currentPickupBounds();
+                      if (bounds.closed) {
+                        setPickupTime("");
+                        setPickupTimeError(t("orders.pickupDayClosed"));
+                        return;
                       }
-                      return next;
-                    });
+                      setPickupTime((current) => clampPickupTime(current, bounds));
+                      setPickupTimeError(null);
+                      setPickupTimeOpen(false);
+                      return;
+                    }
+                    flushSync(() => setPickupTimeOpen(true));
+                    openNativePicker(pickupTimeRef.current);
                   }}
                 >
-                  {t("orders.setPickupTime")}
+                  {pickupTimeOpen ? t("orders.savePickupTime") : t("orders.setPickupTime")}
                 </Button>
+                {!pickupTimeOpen && pickupTime ? (
+                  <span className="text-[length:var(--exits-text-sm)]" data-testid="pickup-time-summary">
+                    {pickupDate} {pickupTime}
+                  </span>
+                ) : null}
                 {pickupTimeOpen ? (
                   <>
                     <label className="pc-field min-w-[9rem] flex-1">
@@ -640,9 +762,15 @@ export function MerchantCheckoutPage() {
                         ref={pickupTimeRef}
                         className="pc-field__control"
                         type="time"
+                        min={currentPickupBounds().min ?? undefined}
+                        max={currentPickupBounds().max ?? undefined}
                         value={pickupTime}
                         data-testid="checkout-pickup-time"
-                        onChange={(event) => setPickupTime(event.target.value)}
+                        onChange={(event) => {
+                          const bounds = currentPickupBounds();
+                          setPickupTime(clampPickupTime(event.target.value, bounds));
+                          setPickupTimeError(bounds.closed ? t("orders.pickupDayClosed") : null);
+                        }}
                       />
                     </label>
                     <label className="pc-field min-w-[9rem] flex-1">
@@ -651,19 +779,34 @@ export function MerchantCheckoutPage() {
                         ref={pickupDateRef}
                         className="pc-field__control"
                         type="date"
-                        min={localDateIso()}
+                        min={storeToday}
                         value={pickupDate}
                         data-testid="checkout-pickup-date"
                         onChange={(event) => {
-                          const today = localDateIso();
-                          const next = event.target.value;
-                          setPickupDate(!next || next < today ? today : next);
+                          const next = !event.target.value || event.target.value < storeToday ? storeToday : event.target.value;
+                          const bounds = pickupTimeBounds({
+                            date: next,
+                            now: new Date(),
+                            timeZoneId: selectedBranch?.timeZoneId,
+                            operatingHours: selectedBranch?.operatingHours,
+                          });
+                          setPickupDate(next);
+                          setPickupTime((current) => clampPickupTime(current, bounds));
+                          setPickupTimeError(bounds.closed ? t("orders.pickupDayClosed") : null);
                         }}
                       />
                     </label>
                   </>
                 ) : null}
               </div>
+              {pickupTimeError ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="pickup-time-error">
+                  {pickupTimeError}
+                </p>
+              ) : null}
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="pickup-request-hint">
+                {t("orders.pickupRequestHint")}
+              </p>
             </div>
           ) : null}
 
@@ -899,30 +1042,24 @@ export function MerchantCheckoutPage() {
             </div>
           </div>
         </section>
-        {!selection.canPlace && selection.fulfillmentType === FulfillmentDelivery ? (
+        {!selection.canPlace || !selection.branchId ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="checkout-place-unavailable">
-            {selectedBranch?.onlineOrdersPaused
-              ? t("orders.placePaused")
-              : t("orders.placeDeliveryUnavailable")}
-          </p>
-        ) : null}
-        {!selection.canPlace &&
-        selection.fulfillmentType === FulfillmentPickup &&
-        selectedBranch?.onlineOrdersPaused ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="checkout-place-unavailable">
-            {t("orders.placePaused")}
+            {t(
+              fulfillmentBlockerMessage(
+                selectedBranch?.onlineOrdersPaused
+                  ? "paused"
+                  : storefrontQuery.data?.fulfillmentAvailability,
+                selection.fulfillmentType,
+              ),
+            )}
           </p>
         ) : null}
         <CheckoutPlaceButton
           label={t("orders.placeOrder")}
           busyLabel={t("orders.placing")}
           busy={busy || merchantContextQuery.isLoading}
-          disabled={
-            merchantContextQuery.isLoading
-            || (paymentMethod === "Utang" && utangInsufficient)
-            || (paymentMethod === "ManualGCash" && gcashReference.trim().length === 0)
-          }
-          onClick={() => void placeOrder()}
+          disabled={placeDisabled}
+          onClick={() => placeOrder()}
         />
         </div>
       </div>

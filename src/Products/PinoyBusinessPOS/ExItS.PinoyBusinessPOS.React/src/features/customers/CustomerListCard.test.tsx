@@ -193,6 +193,7 @@ describe("customer list status helpers", () => {
     expect(resolveAbnormalAccountStatus("Active")).toBeNull();
     expect(resolveAbnormalAccountStatus("Suspended")).toBe("Suspended");
     expect(resolveAbnormalAccountStatus("Disabled")).toBe("Disabled");
+    expect(resolveAbnormalAccountStatus("Inactive")).toBe("Inactive");
     expect(relationshipStatusTone("Declined")).toBe("danger");
     expect(relationshipStatusTone("Inactive")).toBe("neutral");
   });

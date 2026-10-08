@@ -3,6 +3,7 @@ using System;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PosDbContext))]
-    partial class PosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008034040_AddCustomerOrderRequestedPickup")]
+    partial class AddCustomerOrderRequestedPickup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,11 +40,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("AcceptedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("accepted_by");
-
-                    b.Property<decimal?>("AmountReceived")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("amount_received");
 
                     b.Property<string>("BranchNameSnapshot")
                         .IsRequired()
@@ -258,14 +256,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("out_for_delivery_by");
 
-                    b.Property<DateTimeOffset?>("PaymentConfirmedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("payment_confirmed_at_utc");
-
-                    b.Property<Guid?>("PaymentConfirmedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("payment_confirmed_by");
-
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -421,8 +411,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_customer_orders_party_type", "customer_party_type IN ('Personal', 'Organization')");
 
                             t.HasCheckConstraint("ck_customer_orders_party_xor", "(customer_party_type = 'Personal' AND customer_platform_user_id IS NOT NULL AND customer_buyer_organization_id IS NULL) OR (customer_party_type = 'Organization' AND customer_buyer_organization_id IS NOT NULL AND customer_platform_user_id IS NULL)");
-
-                            t.HasCheckConstraint("ck_customer_orders_payment_confirmation", "(payment_status <> 'Paid' AND amount_received IS NULL AND payment_confirmed_at_utc IS NULL AND payment_confirmed_by IS NULL) OR (payment_status = 'Paid' AND amount_received IS NOT NULL AND amount_received >= total AND payment_confirmed_at_utc IS NOT NULL AND payment_confirmed_by IS NOT NULL AND (payment_method <> 'ManualGCash' OR amount_received = total))");
 
                             t.HasCheckConstraint("ck_customer_orders_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Utang')");
 

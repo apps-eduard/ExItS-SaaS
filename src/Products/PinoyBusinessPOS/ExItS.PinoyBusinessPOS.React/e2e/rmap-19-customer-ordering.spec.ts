@@ -48,7 +48,7 @@ function storefrontBody(paused = false) {
         productId: PRODUCT_ID,
         name: "Rice 1kg",
         sku: "RICE",
-        unitOfMeasure: "kg",
+        unitOfMeasure: "pc",
         categoryId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         unitPrice: 55,
         isAvailable: true,
@@ -74,8 +74,16 @@ function storefrontBody(paused = false) {
         deliveryOperational: true,
         onlineOrdersPaused: paused,
         storeStatusMessage: paused ? "Paused" : null,
+        deliveryServiceAreas: [
+          {
+            id: "99999999-9999-4999-8999-999999999999",
+            cityMunicipalityName: "Manila",
+            regionOrProvinceName: "NCR",
+          },
+        ],
       },
     ],
+    fulfillmentAvailability: paused ? "paused" : "ready",
   };
 }
 
@@ -471,6 +479,24 @@ async function mockPersonalBuyerSession(page: import("@playwright/test").Page) {
 
     if (url.includes("/api/v1/personal/linked-merchants")) {
       return route.fallback();
+    }
+
+    if (url.includes("/api/v1/personal/dashboard") && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          userIdentityId: USER_ID,
+          accountProfileId: "66666666-6666-4666-8666-666666666666",
+          accountClass: "Personal",
+          utangAvailable: true,
+          contactCount: 0,
+          activeRelationshipCount: 0,
+          totalLentBalance: 0,
+          totalBorrowedBalance: 0,
+          pendingConfirmationCount: 0,
+        }),
+      });
     }
 
     return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });

@@ -32,7 +32,16 @@ public sealed record CustomerStorefrontBranchDto(
     bool DeliveryOperational,
     bool OnlineOrdersPaused,
     string? StoreStatusMessage,
-    IReadOnlyList<CustomerStorefrontDeliveryServiceAreaDto>? DeliveryServiceAreas = null);
+    IReadOnlyList<CustomerStorefrontDeliveryServiceAreaDto>? DeliveryServiceAreas = null,
+    string? TimeZoneId = null,
+    IReadOnlyList<CustomerStorefrontHoursDayDto>? OperatingHours = null);
+
+public sealed record CustomerStorefrontHoursDayDto(
+    string DayOfWeek,
+    bool IsClosed,
+    bool IsOpen24Hours,
+    string? OpenTime,
+    string? CloseTime);
 
 public sealed record CustomerStorefrontDto(
     Guid OrganizationId,
@@ -44,4 +53,5 @@ public sealed record CustomerStorefrontDto(
     int ProductTotalCount,
     int Page,
     int PageSize,
-    IReadOnlyList<CustomerStorefrontBranchDto> Branches);
+    IReadOnlyList<CustomerStorefrontBranchDto> Branches,
+    string FulfillmentAvailability = CustomerStorefrontFulfillment.Ready);

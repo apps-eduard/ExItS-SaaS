@@ -166,6 +166,41 @@ describe("seller order actions", () => {
           status: "Accepted",
           fulfillmentType: "Pickup",
           fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "Cash",
+          paymentStatus: "Unpaid",
+        }),
+      ),
+    ).not.toContain("MarkCollected");
+    expect(
+      availableSellerActions(
+        order({
+          status: "Accepted",
+          fulfillmentType: "Pickup",
+          fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "ManualGCash",
+          paymentStatus: "Pending",
+        }),
+      ),
+    ).not.toContain("MarkCollected");
+    expect(
+      availableSellerActions(
+        order({
+          status: "Accepted",
+          fulfillmentType: "Pickup",
+          fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "Cash",
+          paymentStatus: "Paid",
+        }),
+      ),
+    ).toContain("MarkCollected");
+    expect(
+      availableSellerActions(
+        order({
+          status: "Accepted",
+          fulfillmentType: "Pickup",
+          fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "Utang",
+          paymentStatus: "Unpaid",
         }),
       ),
     ).toContain("MarkCollected");

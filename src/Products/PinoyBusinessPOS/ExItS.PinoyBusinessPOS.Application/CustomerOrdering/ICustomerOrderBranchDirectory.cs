@@ -28,7 +28,16 @@ public sealed record CustomerOrderBranchSnapshot(
     /// <summary>Setup complete for pickup (independent of store open-now / pause).</summary>
     bool PickupReady = false,
     /// <summary>Setup complete for delivery (independent of store open-now / pause).</summary>
-    bool DeliveryReady = false);
+    bool DeliveryReady = false,
+    string? TimeZoneId = null,
+    IReadOnlyList<CustomerOrderBranchHoursDaySnapshot>? OperatingHours = null);
+
+public sealed record CustomerOrderBranchHoursDaySnapshot(
+    string DayOfWeek,
+    bool IsClosed,
+    bool IsOpen24Hours,
+    string? OpenTime,
+    string? CloseTime);
 
 public sealed record CustomerOrderBranchDeliveryPolicySnapshot(
     decimal MinimumOrderAmount,

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as connectedClient from "@/api/pos/pos-connected-suppliers-client";
@@ -145,5 +145,63 @@ describe("Customers kind CountBadge", () => {
     // Label text must not embed the number (All 1).
     expect(within(all).getByText("All").textContent).toBe("All");
     expect(within(people).getByText("People").textContent).toBe("People");
+    expect(screen.getByTestId("customers-kind-deactivated")).toBeInTheDocument();
+  });
+
+  it("lists deactivated customers and reactivates one", async () => {
+    const customerId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    vi.mocked(customersClient.listCustomers).mockImplementation(async (_workspace, options) => ({
+      items:
+        options?.status === "Inactive"
+          ? [
+              {
+                customerId,
+                organizationId: orgId,
+                displayName: "Ana Inactive",
+                status: "Inactive",
+                createdAtUtc: "2026-08-01T00:00:00Z",
+                updatedAtUtc: "2026-08-01T00:00:00Z",
+                onlineOrderingAccess: "Default",
+              },
+            ]
+          : [],
+      totalCount: options?.status === "Inactive" ? 1 : 0,
+      page: 1,
+      pageSize: 50,
+    }));
+    vi.spyOn(customersClient, "reactivateCustomer").mockResolvedValue({
+      customerId,
+      organizationId: orgId,
+      displayName: "Ana Inactive",
+      status: "Active",
+      createdAtUtc: "2026-08-01T00:00:00Z",
+      updatedAtUtc: "2026-08-01T00:00:00Z",
+      onlineOrderingAccess: "Default",
+    });
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/customers"]}>
+          <Routes>
+            <Route path="/customers" element={<CustomersListPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    fireEvent.click(await screen.findByTestId("customers-kind-deactivated"));
+
+    expect(await screen.findByTestId(`customer-row-${customerId}`)).toHaveTextContent("Ana Inactive");
+    expect(screen.getByTestId(`customer-reactivate-${customerId}`)).toHaveTextContent("Reactivate");
+    expect(screen.queryByTestId("customers-people-section")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId(`customer-reactivate-${customerId}`));
+
+    await waitFor(() => {
+      expect(customersClient.reactivateCustomer).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: orgId }),
+        customerId,
+      );
+    });
   });
 });

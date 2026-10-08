@@ -59,18 +59,23 @@ public sealed class PlaceCustomerOrderCapabilityTests
     }
 
     [Theory]
-    [InlineData(null, "Cash")]
-    [InlineData("Cash", "Cash")]
-    [InlineData("GCash", "ManualGCash")]
-    [InlineData("ManualGCash", "ManualGCash")]
-    public async Task Place_persists_manual_payment_method_and_stays_unpaid(string? requested, string expected)
+    [InlineData(null, "Cash", "Unpaid")]
+    [InlineData("Cash", "Cash", "Unpaid")]
+    [InlineData("GCash", "ManualGCash", "Pending")]
+    [InlineData("ManualGCash", "ManualGCash", "Pending")]
+    public async Task Place_persists_manual_payment_method_and_initial_status(
+        string? requested,
+        string expected,
+        string expectedStatus)
     {
         var useCase = CreateUseCase(canOrder: true, canDelivery: true);
         var result = await useCase.ExecuteAsync(Seller, PickupRequest(paymentMethod: requested), Actor);
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.Equal(expected, result.Value!.PaymentMethod);
-        Assert.Equal(nameof(CustomerOrderPaymentStatus.Unpaid), result.Value.PaymentStatus);
+        Assert.Equal(expectedStatus, result.Value.PaymentStatus);
         Assert.Equal(expected == "ManualGCash" ? "GCASH-1001" : null, result.Value.PaymentReference);
+        Assert.Null(result.Value.AmountReceived);
+        Assert.Null(result.Value.ChangeAmount);
     }
 
     [Fact]

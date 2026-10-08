@@ -27,6 +27,16 @@ public sealed class CustomerOrder
     public CustomerOrderPaymentStatus PaymentStatus { get; private set; }
     public CustomerOrderPaymentMethod PaymentMethod { get; }
     public string? PaymentReference { get; }
+    public DateTimeOffset? PaymentConfirmedAtUtc { get; private set; }
+    public Guid? PaymentConfirmedBy { get; private set; }
+    public decimal? AmountReceived { get; private set; }
+    /// <summary>Derived from amount received minus the order total. Not a second sales amount.</summary>
+    public decimal? ChangeAmount =>
+        AmountReceived is null ? null : SaleMoney.RoundMoney(AmountReceived.Value - Total);
+    /// <summary>Branch-local wall time the buyer asked for. Null means pickup as soon as possible.</summary>
+    public string? RequestedPickupLocal { get; }
+    public string? RequestedPickupTimeZoneId { get; }
+    public DateTimeOffset? RequestedPickupAtUtc { get; }
     public CustomerOrderFulfillmentType FulfillmentType { get; }
     public Guid FulfillmentBranchId { get; }
     public string BranchNameSnapshot { get; }
@@ -109,7 +119,13 @@ public sealed class CustomerOrder
         DateTimeOffset? collectedAtUtc,
         Guid? collectedBy,
         DateTimeOffset updatedAtUtc,
-        string? paymentReference = null)
+        string? paymentReference = null,
+        string? requestedPickupLocal = null,
+        string? requestedPickupTimeZoneId = null,
+        DateTimeOffset? requestedPickupAtUtc = null,
+        DateTimeOffset? paymentConfirmedAtUtc = null,
+        Guid? paymentConfirmedBy = null,
+        decimal? amountReceived = null)
     {
         Id = id;
         SellerOrganizationId = sellerOrganizationId;
@@ -153,6 +169,12 @@ public sealed class CustomerOrder
         CollectedBy = collectedBy;
         UpdatedAtUtc = updatedAtUtc;
         PaymentReference = paymentReference;
+        RequestedPickupLocal = requestedPickupLocal;
+        RequestedPickupTimeZoneId = requestedPickupTimeZoneId;
+        RequestedPickupAtUtc = requestedPickupAtUtc;
+        PaymentConfirmedAtUtc = paymentConfirmedAtUtc;
+        PaymentConfirmedBy = paymentConfirmedBy;
+        AmountReceived = amountReceived;
     }
 
     /// <summary>
@@ -210,7 +232,10 @@ public sealed class CustomerOrder
         CustomerOrderId? id = null,
         CustomerOrderPaymentMethod paymentMethod = CustomerOrderPaymentMethod.Cash,
         Guid? platformBusinessCustomerId = null,
-        string? paymentReference = null)
+        string? paymentReference = null,
+        string? requestedPickupLocal = null,
+        string? requestedPickupTimeZoneId = null,
+        DateTimeOffset? requestedPickupAtUtc = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(submittedBy);
@@ -247,6 +272,12 @@ public sealed class CustomerOrder
         }
 
         paymentReference = NormalizePaymentReference(paymentMethod, paymentReference);
+        NormalizePickupRequest(
+            fulfillmentType,
+            utcNow,
+            ref requestedPickupLocal,
+            ref requestedPickupTimeZoneId,
+            ref requestedPickupAtUtc);
 
         var orderId = id ?? CustomerOrderId.New();
         var orderLines = new List<CustomerOrderLine>(lines.Count);
@@ -296,7 +327,7 @@ public sealed class CustomerOrder
             CustomerOrderNumbers.Normalize(orderNumber),
             CustomerOrderStatus.Submitted,
             CustomerOrderFulfillmentStatus.Pending,
-            CustomerOrderPaymentStatus.Unpaid,
+            InitialPaymentStatus(paymentMethod),
             paymentMethod,
             fulfillmentType,
             fulfillmentBranchId,
@@ -332,7 +363,10 @@ public sealed class CustomerOrder
             collectedAtUtc: null,
             collectedBy: null,
             utcNow,
-            paymentReference);
+            paymentReference,
+            requestedPickupLocal,
+            requestedPickupTimeZoneId,
+            requestedPickupAtUtc);
     }
 
     public static CustomerOrder Rehydrate(
@@ -377,7 +411,13 @@ public sealed class CustomerOrder
         Guid? collectedBy,
         DateTimeOffset updatedAtUtc,
         Guid? platformBusinessCustomerId = null,
-        string? paymentReference = null) =>
+        string? paymentReference = null,
+        string? requestedPickupLocal = null,
+        string? requestedPickupTimeZoneId = null,
+        DateTimeOffset? requestedPickupAtUtc = null,
+        DateTimeOffset? paymentConfirmedAtUtc = null,
+        Guid? paymentConfirmedBy = null,
+        decimal? amountReceived = null) =>
         new(
             id,
             sellerOrganizationId,
@@ -420,7 +460,13 @@ public sealed class CustomerOrder
             collectedAtUtc,
             collectedBy,
             updatedAtUtc,
-            paymentReference);
+            paymentReference,
+            requestedPickupLocal,
+            requestedPickupTimeZoneId,
+            requestedPickupAtUtc,
+            paymentConfirmedAtUtc,
+            paymentConfirmedBy,
+            amountReceived);
 
     public void Accept(Guid actorId, DateTimeOffset utcNow)
     {
@@ -610,6 +656,13 @@ public sealed class CustomerOrder
         EnsureFulfillment(
             CustomerOrderFulfillmentStatus.ReadyForPickup,
             "Only ready-for-pickup orders can be marked collected.");
+        if (PaymentMethod is CustomerOrderPaymentMethod.Cash or CustomerOrderPaymentMethod.ManualGCash
+            && PaymentStatus != CustomerOrderPaymentStatus.Paid)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Confirm the Cash or GCash payment before marking this order collected.");
+        }
 
         FulfillmentStatus = CustomerOrderFulfillmentStatus.Collected;
         CollectedAtUtc = utcNow;
@@ -639,6 +692,96 @@ public sealed class CustomerOrder
         Status = CustomerOrderStatus.Completed;
         CompletedAtUtc = utcNow;
         CompletedBy = actorId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Seller confirms that Cash or manual GCash was actually received.
+    /// Does not post a sale and does not change the order total.
+    /// A repeat with the same amount is a no-op.
+    /// </summary>
+    public void ConfirmPayment(decimal? amountReceived, Guid actorId, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsurePaymentCanChange();
+
+        if (PaymentMethod == CustomerOrderPaymentMethod.Utang)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Utang is not marked paid. It is settled as Business Utang when the order is completed.");
+        }
+
+        var received = PaymentMethod == CustomerOrderPaymentMethod.ManualGCash
+            ? NormalizeManualGCashReceived(amountReceived)
+            : NormalizeCashReceived(amountReceived);
+
+        if (PaymentStatus == CustomerOrderPaymentStatus.Paid)
+        {
+            if (AmountReceived == received)
+            {
+                return;
+            }
+
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "This payment was already confirmed for a different amount.");
+        }
+
+        if (PaymentMethod == CustomerOrderPaymentMethod.Cash
+            && PaymentStatus != CustomerOrderPaymentStatus.Unpaid)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Cash can be confirmed only while the order is unpaid.");
+        }
+
+        if (PaymentMethod == CustomerOrderPaymentMethod.ManualGCash
+            && PaymentStatus is not (CustomerOrderPaymentStatus.Pending or CustomerOrderPaymentStatus.Unpaid))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "GCash can be confirmed only while the seller is still awaiting payment.");
+        }
+
+        PaymentStatus = CustomerOrderPaymentStatus.Paid;
+        AmountReceived = received;
+        PaymentConfirmedAtUtc = utcNow;
+        PaymentConfirmedBy = actorId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Seller records that the buyer-submitted GCash reference was not received.
+    /// Does not cancel the order and does not invent a provider rejection.
+    /// </summary>
+    public void DeclinePayment(Guid actorId, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsurePaymentCanChange();
+
+        if (PaymentMethod != CustomerOrderPaymentMethod.ManualGCash)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Only a manual GCash payment can be marked as not received.");
+        }
+
+        if (PaymentStatus == CustomerOrderPaymentStatus.Unpaid)
+        {
+            return;
+        }
+
+        if (PaymentStatus == CustomerOrderPaymentStatus.Paid)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "A confirmed GCash payment cannot be marked as not received.");
+        }
+
+        PaymentStatus = CustomerOrderPaymentStatus.Unpaid;
         UpdatedAtUtc = utcNow;
     }
 
@@ -709,6 +852,71 @@ public sealed class CustomerOrder
         UpdatedAtUtc = utcNow;
     }
 
+    private static CustomerOrderPaymentStatus InitialPaymentStatus(CustomerOrderPaymentMethod paymentMethod) =>
+        paymentMethod == CustomerOrderPaymentMethod.ManualGCash
+            ? CustomerOrderPaymentStatus.Pending
+            : CustomerOrderPaymentStatus.Unpaid;
+
+    private void EnsurePaymentCanChange()
+    {
+        if (Status is CustomerOrderStatus.Draft or CustomerOrderStatus.Rejected or CustomerOrderStatus.Cancelled)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Payment cannot be confirmed for a draft, rejected, or cancelled order.");
+        }
+    }
+
+    private decimal NormalizeCashReceived(decimal? amountReceived)
+    {
+        if (amountReceived is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Enter the cash received.");
+        }
+
+        var received = NormalizeReceivedAmount(amountReceived.Value);
+        if (received < Total)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Cash received must cover the full order total. Partial cash payment is not supported.");
+        }
+
+        return received;
+    }
+
+    private decimal NormalizeManualGCashReceived(decimal? amountReceived)
+    {
+        if (amountReceived is null)
+        {
+            return Total;
+        }
+
+        var received = NormalizeReceivedAmount(amountReceived.Value);
+        if (received != Total)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Manual GCash confirmation records the full order total. Partial GCash payment is not supported.");
+        }
+
+        return received;
+    }
+
+    private static decimal NormalizeReceivedAmount(decimal amount)
+    {
+        if (amount < 0m || amount > MaxTotal || !SaleMoney.HasAtMostDecimals(amount, SaleMoney.MonetaryDecimals))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
+                "Amount received must be a non-negative peso amount with at most 2 decimal places.");
+        }
+
+        return SaleMoney.RoundMoney(amount);
+    }
+
     private static void ValidateFulfillment(
         CustomerOrderFulfillmentType fulfillmentType,
         CustomerOrderDeliverySnapshot? deliverySnapshot)
@@ -756,6 +964,54 @@ public sealed class CustomerOrder
         {
             throw new DomainException(DomainErrorCodes.InvalidCustomerOrderFulfillmentTransition, message);
         }
+    }
+
+    private static void NormalizePickupRequest(
+        CustomerOrderFulfillmentType fulfillmentType,
+        DateTimeOffset utcNow,
+        ref string? requestedPickupLocal,
+        ref string? requestedPickupTimeZoneId,
+        ref DateTimeOffset? requestedPickupAtUtc)
+    {
+        var hasLocal = !string.IsNullOrWhiteSpace(requestedPickupLocal);
+        var hasZone = !string.IsNullOrWhiteSpace(requestedPickupTimeZoneId);
+        var hasInstant = requestedPickupAtUtc is not null;
+        if (!hasLocal && !hasZone && !hasInstant)
+        {
+            requestedPickupLocal = null;
+            requestedPickupTimeZoneId = null;
+            requestedPickupAtUtc = null;
+            return;
+        }
+
+        if (fulfillmentType != CustomerOrderFulfillmentType.Pickup || !hasLocal || !hasZone || !hasInstant)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPickupRequest,
+                "Choose a pickup date and time, or leave both empty for pickup as soon as possible.");
+        }
+
+        var local = requestedPickupLocal!.Trim();
+        var zone = requestedPickupTimeZoneId!.Trim();
+        if (local.Length > 32 || zone.Length > 64)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPickupRequest,
+                "The requested pickup time is not valid for this store.");
+        }
+
+        var instant = requestedPickupAtUtc!.Value;
+        SaleMoney.EnsureUtc(instant);
+        if (instant < utcNow)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPickupRequest,
+                "Choose a pickup time that is still ahead for this store.");
+        }
+
+        requestedPickupLocal = local;
+        requestedPickupTimeZoneId = zone;
+        requestedPickupAtUtc = instant;
     }
 
     private static void EnsureActor(Guid actorId)

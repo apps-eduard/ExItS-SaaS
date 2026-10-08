@@ -92,6 +92,13 @@ export const customerOrderSchema = z.object({
   completedAtUtc: z.string().nullable().optional(),
   completedBy: guidSchema.nullable().optional(),
   updatedAtUtc: z.string(),
+  requestedPickupLocal: z.string().nullable().optional(),
+  requestedPickupTimeZoneId: z.string().nullable().optional(),
+  requestedPickupAtUtc: z.string().nullable().optional(),
+  amountReceived: z.number().nullable().optional(),
+  changeAmount: z.number().nullable().optional(),
+  paymentConfirmedAtUtc: z.string().nullable().optional(),
+  paymentConfirmedBy: guidSchema.nullable().optional(),
 });
 
 export const customerOrderListItemSchema = z.object({
@@ -144,6 +151,14 @@ export const storefrontDeliveryServiceAreaSchema = z.object({
   regionOrProvinceName: z.string().nullable().optional(),
 });
 
+export const storefrontHoursDaySchema = z.object({
+  dayOfWeek: z.string(),
+  isClosed: z.boolean(),
+  isOpen24Hours: z.boolean(),
+  openTime: z.string().nullable().optional(),
+  closeTime: z.string().nullable().optional(),
+});
+
 export const storefrontBranchSchema = z.object({
   branchId: guidSchema,
   name: z.string(),
@@ -156,6 +171,8 @@ export const storefrontBranchSchema = z.object({
   storeStatusMessage: z.string().nullable().optional(),
   /** Optional until POS storefront DTO ships delivery areas. */
   deliveryServiceAreas: z.array(storefrontDeliveryServiceAreaSchema).nullish().default([]),
+  timeZoneId: z.string().nullable().optional(),
+  operatingHours: z.array(storefrontHoursDaySchema).nullish().default([]),
 });
 
 export const customerStorefrontSchema = z.object({
@@ -169,6 +186,7 @@ export const customerStorefrontSchema = z.object({
   page: z.number(),
   pageSize: z.number(),
   branches: z.array(storefrontBranchSchema),
+  fulfillmentAvailability: z.string().optional().default("ready"),
 });
 
 export const quoteDeliverySchema = z.object({
@@ -225,6 +243,8 @@ export type PlaceCustomerOrderRequest = {
   idempotencyKey?: string | null;
   paymentMethod?: string | null;
   paymentReference?: string | null;
+  requestedPickupDate?: string | null;
+  requestedPickupTime?: string | null;
 };
 
 export type QuoteCustomerOrderDeliveryRequest = {
@@ -345,6 +365,46 @@ export async function rejectSellerCustomerOrder(
     workspace,
     path: `${sellerPath(workspace.organizationId)}/${orderId}/reject`,
     body: request,
+    headers,
+  });
+  return customerOrderSchema.parse(raw);
+}
+
+export async function confirmSellerCustomerOrderPayment(
+  workspace: PosWorkspaceScope,
+  orderId: string,
+  amountReceived: number | null,
+): Promise<CustomerOrderDto> {
+  const body = { amountReceived };
+  const headers = await buildPosMutationIdempotencyHeaders(
+    orderId,
+    JSON.stringify(body),
+    OFFLINE_OPERATION_TYPES.CustomerOrderConfirmPayment,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    path: `${sellerPath(workspace.organizationId)}/${orderId}/confirm-payment`,
+    body,
+    headers,
+  });
+  return customerOrderSchema.parse(raw);
+}
+
+export async function declineSellerCustomerOrderPayment(
+  workspace: PosWorkspaceScope,
+  orderId: string,
+): Promise<CustomerOrderDto> {
+  const headers = await buildPosMutationIdempotencyHeaders(
+    orderId,
+    "{}",
+    OFFLINE_OPERATION_TYPES.CustomerOrderDeclinePayment,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    path: `${sellerPath(workspace.organizationId)}/${orderId}/payment-not-received`,
+    body: {},
     headers,
   });
   return customerOrderSchema.parse(raw);

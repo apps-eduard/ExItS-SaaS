@@ -30,6 +30,7 @@ type ShopOrderCartProps = {
   onContinue?: () => void;
   /** Shop cart shows Continue to payment. Checkout reuses the cart without that button. */
   showPayButton?: boolean;
+  continueBlockedDetail?: string | null;
 };
 
 function lineProduct(
@@ -107,11 +108,12 @@ export function ShopOrderCart({
   onClear,
   onContinue,
   showPayButton = true,
+  continueBlockedDetail = null,
 }: ShopOrderCartProps) {
   const { t } = useI18n();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const lineCount = lines.length;
-  const canContinue = lineCount > 0;
+  const canContinue = lineCount > 0 && !continueBlockedDetail;
 
   return (
     <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -277,11 +279,16 @@ export function ShopOrderCart({
                 }
               }}
             >
-              {canContinue ? t("sell.continueToPayment") : t("sell.pay")}
+              {lineCount > 0 ? t("sell.continueToPayment") : t("sell.pay")}
             </Button>
             {canContinue ? null : (
-              <p className="sell-cart-footer__hint m-0 text-center text-[length:var(--exits-text-xs)] text-muted">
-                {t("sell.payAddItems")}
+              <p
+                className="sell-cart-footer__hint m-0 text-center text-[length:var(--exits-text-xs)] text-muted"
+                data-testid="shop-checkout-blocked"
+              >
+                {lineCount > 0 && continueBlockedDetail
+                  ? continueBlockedDetail
+                  : t("sell.payAddItems")}
               </p>
             )}
           </>

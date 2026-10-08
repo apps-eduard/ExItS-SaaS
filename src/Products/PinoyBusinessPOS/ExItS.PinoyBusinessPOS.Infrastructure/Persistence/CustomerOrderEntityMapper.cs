@@ -83,7 +83,13 @@ internal static class CustomerOrderEntityMapper
             record.CollectedBy,
             record.UpdatedAtUtc,
             record.PlatformBusinessCustomerId,
-            record.PaymentReference);
+            record.PaymentReference,
+            record.RequestedPickupLocal,
+            record.RequestedPickupTimeZoneId,
+            record.RequestedPickupAtUtc,
+            record.PaymentConfirmedAtUtc,
+            record.PaymentConfirmedBy,
+            record.AmountReceived);
     }
 
     public static CustomerOrderRecord ToRecord(CustomerOrder order)
@@ -98,6 +104,12 @@ internal static class CustomerOrderEntityMapper
             PaymentStatus = order.PaymentStatus.ToString(),
             PaymentMethod = CustomerOrderPaymentMethods.ToCode(order.PaymentMethod),
             PaymentReference = order.PaymentReference,
+            AmountReceived = order.AmountReceived,
+            PaymentConfirmedAtUtc = order.PaymentConfirmedAtUtc,
+            PaymentConfirmedBy = order.PaymentConfirmedBy,
+            RequestedPickupLocal = order.RequestedPickupLocal,
+            RequestedPickupTimeZoneId = order.RequestedPickupTimeZoneId,
+            RequestedPickupAtUtc = order.RequestedPickupAtUtc,
             FulfillmentType = order.FulfillmentType.ToString(),
             FulfillmentBranchId = order.FulfillmentBranchId,
             BranchNameSnapshot = order.BranchNameSnapshot,
@@ -162,6 +174,9 @@ internal static class CustomerOrderEntityMapper
         record.Status = order.Status.ToString();
         record.FulfillmentStatus = order.FulfillmentStatus.ToString();
         record.PaymentStatus = order.PaymentStatus.ToString();
+        record.AmountReceived = order.AmountReceived;
+        record.PaymentConfirmedAtUtc = order.PaymentConfirmedAtUtc;
+        record.PaymentConfirmedBy = order.PaymentConfirmedBy;
         record.StockReservationState = order.StockReservationState.ToString();
         record.RejectReason = order.RejectReason?.ToString();
         record.RejectNotes = order.RejectNotes;
