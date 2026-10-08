@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -42,6 +42,30 @@ async function loadCheckoutPayment(paymentId: string, signal: AbortSignal) {
     return await syncPersonalSubscriptionHostedCheckout(paymentId, signal);
   } catch {
     return loaded;
+  }
+}
+
+const hostedCheckoutResumeWindowMs = 60_000;
+
+function hostedCheckoutResumeKey(paymentId: string): string {
+  return `exits.hostedCheckout.resume.${paymentId}`;
+}
+
+function recentlyResumedHostedCheckout(paymentId: string): boolean {
+  try {
+    const raw = sessionStorage.getItem(hostedCheckoutResumeKey(paymentId));
+    const at = Number(raw);
+    return Number.isFinite(at) && Date.now() - at < hostedCheckoutResumeWindowMs;
+  } catch {
+    return false;
+  }
+}
+
+function markHostedCheckoutResumed(paymentId: string): void {
+  try {
+    sessionStorage.setItem(hostedCheckoutResumeKey(paymentId), String(Date.now()));
+  } catch {
+    // Private mode can block storage. The button still opens checkout.
   }
 }
 
@@ -103,12 +127,26 @@ export function SubscriptionCheckoutPage() {
   const hostedCheckoutMutation = useMutation({
     mutationFn: () => startPersonalSubscriptionHostedCheckout(paymentId),
     onSuccess: (started) => {
+      markHostedCheckoutResumed(paymentId);
       redirectToHostedCheckout(started.checkoutUrl);
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : t("subscriptionCheckout.hostedFailed"));
     },
   });
+
+  const resumeStarted = useRef(false);
+  useEffect(() => {
+    if (!payment || !isProcessingStatus(payment.status) || !payment.providerReference) {
+      return;
+    }
+    if (resumeStarted.current || recentlyResumedHostedCheckout(payment.id)) {
+      return;
+    }
+    resumeStarted.current = true;
+    markHostedCheckoutResumed(payment.id);
+    hostedCheckoutMutation.mutate();
+  }, [hostedCheckoutMutation, payment]);
 
   const alreadyPaid = useMemo(
     () => (payment ? isPaidStatus(payment.status) : false),
@@ -286,6 +324,20 @@ export function SubscriptionCheckoutPage() {
 
       {processing ? (
         <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            data-testid="subscription-continue-secure"
+            disabled={hostedCheckoutMutation.isPending}
+            onClick={() => {
+              markHostedCheckoutResumed(payment.id);
+              hostedCheckoutMutation.mutate();
+            }}
+          >
+            {hostedCheckoutMutation.isPending
+              ? t("subscriptionCheckout.redirecting")
+              : t("subscriptionCheckout.continueSecure")}
+          </Button>
           <Button
             type="button"
             variant="secondary"

@@ -115,6 +115,7 @@ describe("SubscriptionCheckoutPage pre-org state UX", () => {
     retryPersonalSubscriptionPayment.mockReset();
     startPersonalSubscriptionHostedCheckout.mockReset();
     redirectToHostedCheckout.mockReset();
+    sessionStorage.clear();
   });
 
   it("keeps loading without navigating before payment resolves", async () => {
@@ -175,6 +176,28 @@ describe("SubscriptionCheckoutPage pre-org state UX", () => {
     renderCheckout();
     await waitFor(() => expect(screen.getByTestId("subscription-try-again")).toBeInTheDocument());
     expect(screen.getByTestId("subscription-payment-details")).toBeInTheDocument();
+  });
+
+  it("reopens PayMongo when a checkout session is still processing", async () => {
+    const processing = pendingPayment("Processing");
+    getPersonalSubscriptionPayment.mockResolvedValue(processing);
+    syncPersonalSubscriptionHostedCheckout.mockResolvedValue(processing);
+    startPersonalSubscriptionHostedCheckout.mockResolvedValue({
+      paymentId,
+      checkoutUrl: "https://checkout.paymongo.test/cs_test",
+      status: "Processing",
+      amount: 1499,
+      currencyCode: "PHP",
+      planKey: "pro",
+      billingCycle: "Monthly",
+      organizationId: null,
+    });
+    renderCheckout();
+    await waitFor(() =>
+      expect(redirectToHostedCheckout).toHaveBeenCalledWith("https://checkout.paymongo.test/cs_test"),
+    );
+    expect(screen.getByTestId("subscription-continue-secure")).toBeInTheDocument();
+    expect(startPersonalSubscriptionHostedCheckout).toHaveBeenCalledTimes(1);
   });
 
   it("asks PayMongo to confirm a processing checkout", async () => {
