@@ -9101,6 +9101,12 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardTitle": "Susihon ang ExItS",
 
   "personal.home.iOwe": "Akong utang",
+  "personal.home.myOwedRecord": "My Owed Record",
+  "personal.home.myIOweRecord": "My I Owe Record",
+  "personal.home.sharedOwedRecord": "Shared Owed Record",
+  "personal.home.sharedIOweRecord": "Shared I Owe Record",
+  "personal.home.trackerOwedTitle": "OWED TO ME",
+  "personal.home.trackerOweTitle": "I OWE",
 
   "personal.home.loadErrorDetail": "Check your connection and try again.",
 

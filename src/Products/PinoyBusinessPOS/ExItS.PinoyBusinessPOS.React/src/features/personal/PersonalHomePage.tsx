@@ -5,7 +5,6 @@ import {
   Building2,
   ChevronRight,
   HandCoins,
-  Home,
   Info,
   ListPlus,
   ListTodo,
@@ -16,6 +15,7 @@ import {
   Users,
   Wallet,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 import {
@@ -35,24 +35,22 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { formatPeso } from "@/lib/format-money";
 import { InfoPopover } from "@/components/exits/InfoPopover";
 import { cn } from "@/lib/cn";
-import { StatusChip } from "@/components/exits/StatusChip";
-import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalBusinessSummary } from "@/features/personal/businesses/PersonalBusinessSummary";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
-import {
-  UTANG_OWNERSHIP_MINE,
-  UTANG_OWNERSHIP_SHARED,
-  UTANG_READ_ONLY_CHIP,
-} from "@/features/personal/utang/utang-ownership-ui";
 import {
   buildHomeAttentionItems,
   isActiveUtangAccount,
   mergeUtangAccounts,
 } from "@/features/personal/utang/utang-workspace";
+import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
+import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import { useI18n } from "@/i18n/I18nProvider";
+import { deriveUserInitials, resolveUserDisplayName } from "@/lib/user-display";
+import { useSession } from "@/session/SessionProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import { listCachedPersonalTodos } from "@/offline/personal-todo-cache";
@@ -63,8 +61,50 @@ const personalSoftPrimaryButtonClass =
 const personalSoftInfoButtonClass =
   "border border-border bg-[color-mix(in_srgb,var(--exits-severity-info)_12%,var(--exits-surface))] text-[var(--exits-severity-info)] hover:border-[var(--exits-severity-info)] hover:bg-[color-mix(in_srgb,var(--exits-severity-info)_16%,var(--exits-surface))]";
 
+function TrackerBalanceCard({
+  outside,
+  title,
+  amount,
+  icon: Icon,
+  tone,
+  testId,
+  labelTestId,
+  to,
+}: {
+  outside: string;
+  title: string;
+  amount: number;
+  icon: LucideIcon;
+  tone: "owed" | "owed-shared" | "owe" | "owe-shared";
+  testId: string;
+  labelTestId: string;
+  to: string;
+}) {
+  return (
+    <div className="tracker-balance">
+      <p className="tracker-balance__outside" data-testid={labelTestId}>
+        {outside}
+      </p>
+      <Link to={to} className="tracker-balance__card" data-testid={testId}>
+        <span className={`tracker-balance__icon tracker-balance__icon--${tone}`} aria-hidden>
+          <Icon />
+        </span>
+        <span className="tracker-balance__rule" aria-hidden />
+        <span className="tracker-balance__copy">
+          <span className="tracker-balance__title">{title}</span>
+          <span className="tracker-balance__amount tabular-nums">{formatPeso(amount).replace("₱", "₱ ")}</span>
+        </span>
+      </Link>
+    </div>
+  );
+}
+
 export function PersonalHomePage() {
   const { t } = useI18n();
+  const { session } = useSession();
+  const displayName = resolveUserDisplayName(session) || t("account.signedIn");
+  const initials = deriveUserInitials(session);
+  const avatarSrc = profilePhotoSrc(usePersonalAvatarPhoto());
   const [infoOpen, setInfoOpen] = useState(false);
   const infoRootRef = useRef<HTMLDivElement>(null);
   const infoButtonRef = useRef<HTMLElement | null>(null);
@@ -222,12 +262,16 @@ export function PersonalHomePage() {
         ref={infoRootRef}
         className={cn("relative flex items-center gap-2", infoOpen && "z-30")}
       >
-        <div className="flex min-w-0 items-center gap-1.5">
-          <span className="page-header__title-icon shrink-0" aria-hidden>
-            <Home className="size-5" />
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="personal-home-avatar" data-testid="personal-home-avatar" aria-hidden>
+            {avatarSrc ? (
+              <img src={avatarSrc} alt="" className="personal-home-avatar__photo" />
+            ) : (
+              initials
+            )}
           </span>
           <h1 className="page-header__title exits-type-page-title m-0 min-w-0 truncate">
-            {t("personal.title")}
+            {displayName}
           </h1>
           <span ref={infoButtonRef} className="inline-flex shrink-0">
             <Button
@@ -264,126 +308,66 @@ export function PersonalHomePage() {
       <div className="personal-home-layout" data-testid="personal-home-layout">
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
       <section
-        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        className="catalog-form-section exits-animate-panel personal-section personal-tracker-card gap-3"
         aria-label={t("personal.home.personalTracker")}
         data-testid="personal-utang-summary"
       >
         <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
           {t("personal.home.personalTracker")}
         </h2>
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="flex min-w-0 flex-col gap-2" data-testid="personal-utang-owed-to-me">
-            <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
-              <HandCoins className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
-              {t("personal.home.owedToMe")}
-            </h3>
-            <div className="personal-summary-grid personal-summary-grid--balances" role="list">
-              <DashboardMetricCard
-                label={
-                  <StatusChip
-                    tone={UTANG_OWNERSHIP_MINE.chipTone}
-                    appearance={UTANG_OWNERSHIP_MINE.appearance}
-                    shape={UTANG_OWNERSHIP_MINE.shape}
-                    data-testid="personal-stat-lent-mine-label"
-                  >
-                    {t("personal.utang.ownershipMine")}
-                  </StatusChip>
-                }
-                icon={HandCoins}
-                tone={UTANG_OWNERSHIP_MINE.metricTone}
-                testId="personal-stat-lent-mine"
-                to="/personal/utang/lent"
-              >
-                <MoneyDisplay amount={dashboard.totalLentBalance} />
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={
-                  <StatusChip
-                    tone={UTANG_OWNERSHIP_SHARED.chipTone}
-                    appearance={UTANG_OWNERSHIP_SHARED.appearance}
-                    shape={UTANG_OWNERSHIP_SHARED.shape}
-                    data-testid="personal-stat-lent-shared-label"
-                  >
-                    {t("personal.home.activeShared")}
-                  </StatusChip>
-                }
-                icon={HandCoins}
-                tone={UTANG_OWNERSHIP_SHARED.metricTone}
-                testId="personal-stat-lent-shared"
-                to="/personal/utang/lent"
-                tag={
-                  <StatusChip
-                    tone={UTANG_READ_ONLY_CHIP.tone}
-                    appearance={UTANG_READ_ONLY_CHIP.appearance}
-                    shape={UTANG_READ_ONLY_CHIP.shape}
-                    className="max-md:hidden"
-                    data-testid="personal-stat-lent-shared-readonly"
-                  >
-                    {t("personal.utang.readOnly")}
-                  </StatusChip>
-                }
-              >
-                <MoneyDisplay amount={dashboard.sharedWithMeLentBalance} />
-              </DashboardMetricCard>
-            </div>
+        <div className="tracker-balance-split">
+          <span className="tracker-balance-split__line" data-testid="personal-owed-divider" aria-hidden />
+          <div
+            className="tracker-balance-split__row"
+            data-testid="personal-utang-owed-to-me"
+            role="list"
+          >
+            <TrackerBalanceCard
+              outside={t("personal.home.myOwedRecord")}
+              title={t("personal.home.trackerOwedTitle")}
+              amount={dashboard.totalLentBalance}
+              icon={HandCoins}
+              tone="owed"
+              testId="personal-stat-lent-mine"
+              labelTestId="personal-stat-lent-mine-label"
+              to="/personal/utang/lent"
+            />
+            <TrackerBalanceCard
+              outside={t("personal.home.sharedOwedRecord")}
+              title={t("personal.home.trackerOwedTitle")}
+              amount={dashboard.sharedWithMeLentBalance}
+              icon={HandCoins}
+              tone="owed"
+              testId="personal-stat-lent-shared"
+              labelTestId="personal-stat-lent-shared-label"
+              to="/personal/utang/lent"
+            />
           </div>
           <div
-            className="flex min-w-0 flex-col gap-2 border-t border-border pt-3"
+            className="tracker-balance-split__row"
             data-testid="personal-utang-i-owe"
+            role="list"
           >
-            <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
-              <Wallet className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
-              {t("personal.home.iOwe")}
-            </h3>
-            <div className="personal-summary-grid personal-summary-grid--balances" role="list">
-              <DashboardMetricCard
-                label={
-                  <StatusChip
-                    tone={UTANG_OWNERSHIP_MINE.chipTone}
-                    appearance={UTANG_OWNERSHIP_MINE.appearance}
-                    shape={UTANG_OWNERSHIP_MINE.shape}
-                    data-testid="personal-stat-borrowed-mine-label"
-                  >
-                    {t("personal.utang.ownershipMine")}
-                  </StatusChip>
-                }
-                icon={Wallet}
-                tone={UTANG_OWNERSHIP_MINE.metricTone}
-                testId="personal-stat-borrowed-mine"
-                to="/personal/utang/owe"
-              >
-                <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={
-                  <StatusChip
-                    tone={UTANG_OWNERSHIP_SHARED.chipTone}
-                    appearance={UTANG_OWNERSHIP_SHARED.appearance}
-                    shape={UTANG_OWNERSHIP_SHARED.shape}
-                    data-testid="personal-stat-borrowed-shared-label"
-                  >
-                    {t("personal.home.activeShared")}
-                  </StatusChip>
-                }
-                icon={Wallet}
-                tone={UTANG_OWNERSHIP_SHARED.metricTone}
-                testId="personal-stat-borrowed-shared"
-                to="/personal/utang/owe"
-                tag={
-                  <StatusChip
-                    tone={UTANG_READ_ONLY_CHIP.tone}
-                    appearance={UTANG_READ_ONLY_CHIP.appearance}
-                    shape={UTANG_READ_ONLY_CHIP.shape}
-                    className="max-md:hidden"
-                    data-testid="personal-stat-borrowed-shared-readonly"
-                  >
-                    {t("personal.utang.readOnly")}
-                  </StatusChip>
-                }
-              >
-                <MoneyDisplay amount={dashboard.sharedWithMeBorrowedBalance} />
-              </DashboardMetricCard>
-            </div>
+            <TrackerBalanceCard
+              outside={t("personal.home.myIOweRecord")}
+              title={t("personal.home.trackerOweTitle")}
+              amount={dashboard.totalBorrowedBalance}
+              icon={Wallet}
+              tone="owe"
+              testId="personal-stat-borrowed-mine"
+              labelTestId="personal-stat-borrowed-mine-label"
+              to="/personal/utang/owe"
+            />
+            <TrackerBalanceCard
+              outside={t("personal.home.sharedIOweRecord")}
+              title={t("personal.home.trackerOweTitle")}
+              amount={dashboard.sharedWithMeBorrowedBalance}
+              icon={Wallet}
+              tone="owe"
+              testId="personal-stat-borrowed-shared"
+              labelTestId="personal-stat-borrowed-shared-label"
+              to="/personal/utang/owe"
+            />
           </div>
         </div>
         <div

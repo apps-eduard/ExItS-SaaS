@@ -9068,6 +9068,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardTitle": "Tuklasin ang ExItS",
 
   "personal.home.iOwe": "May utang ako",
+  "personal.home.myOwedRecord": "My Owed Record",
+  "personal.home.myIOweRecord": "My I Owe Record",
+  "personal.home.sharedOwedRecord": "Shared Owed Record",
+  "personal.home.sharedIOweRecord": "Shared I Owe Record",
+  "personal.home.trackerOwedTitle": "OWED TO ME",
+  "personal.home.trackerOweTitle": "I OWE",
 
   "personal.home.loadErrorDetail": "Suriin ang koneksyon at subukan muli.",
 

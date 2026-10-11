@@ -30,10 +30,30 @@ function staffPosRole(workplace: PersonalWorkplaceWire): string | null {
   return role || null;
 }
 
-function CardHeading({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+function CardHeading({
+  icon: Icon,
+  children,
+  round = false,
+}: {
+  icon: LucideIcon;
+  children: ReactNode;
+  round?: boolean;
+}) {
   return (
-    <h2 className="catalog-form-section__title inline-flex items-center gap-1.5">
-      <Icon className="size-[1.1rem] shrink-0" aria-hidden />
+    <h2
+      className={
+        round
+          ? "catalog-form-section__title personal-business-card__heading inline-flex items-center gap-2"
+          : "catalog-form-section__title inline-flex items-center gap-1.5"
+      }
+    >
+      {round ? (
+        <span className="personal-business-card__icon" aria-hidden>
+          <Icon className="size-4 shrink-0" />
+        </span>
+      ) : (
+        <Icon className="size-[1.1rem] shrink-0" aria-hidden />
+      )}
       {children}
     </h2>
   );
@@ -47,6 +67,7 @@ function BusinessHomeCard({
   meta,
   managedByOrganization,
   actions,
+  prominent = false,
 }: {
   testId: string;
   heading: ReactNode;
@@ -55,17 +76,43 @@ function BusinessHomeCard({
   meta: string | null;
   managedByOrganization: string | null;
   actions: ReactNode;
+  prominent?: boolean;
 }) {
   return (
-    <li className="catalog-form-section flex h-full min-w-0 flex-col gap-1" data-testid={testId}>
+    <li
+      className={
+        prominent
+          ? "catalog-form-section personal-business-card flex h-full min-w-0 flex-col gap-1"
+          : "catalog-form-section flex h-full min-w-0 flex-col gap-1"
+      }
+      data-testid={testId}
+    >
       {heading}
-      <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{title}</p>
-      {organizationName ? <p className="m-0">{organizationName}</p> : null}
+      <p
+        className={
+          prominent
+            ? "personal-business-card__title m-0 font-semibold"
+            : "m-0 text-[length:var(--exits-text-sm)] font-semibold"
+        }
+      >
+        {title}
+      </p>
+      {organizationName ? (
+        <p className={prominent ? "personal-business-card__org m-0" : "m-0"}>{organizationName}</p>
+      ) : null}
       {meta ? <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{meta}</p> : null}
       {managedByOrganization ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{managedByOrganization}</p>
       ) : null}
-      <div className="mt-auto flex flex-wrap items-center gap-2">{actions}</div>
+      <div
+        className={
+          prominent
+            ? "personal-business-card__actions mt-auto flex flex-wrap items-center gap-2"
+            : "mt-auto flex flex-wrap items-center gap-2"
+        }
+      >
+        {actions}
+      </div>
     </li>
   );
 }
@@ -143,13 +190,7 @@ export function PersonalBusinessSummary() {
           {signInError}
         </p>
       ) : null}
-      <ul
-        className={
-          owned.length + staffWorkplaces.length > 1
-            ? "catalog-form-section-row personal-business-cards m-0 list-none p-0"
-            : "catalog-form-section-row m-0 list-none p-0"
-        }
-      >
+      <ul className="catalog-form-section-row personal-business-cards m-0 list-none p-0">
         {owned.map((row, index) => {
           const capability = resolveProductPortfolioCapability(row);
           const meta = businessMetaLine(row);
@@ -158,8 +199,11 @@ export function PersonalBusinessSummary() {
               key={row.productCode}
               testId={`personal-business-${row.productCode}`}
               heading={
-                <CardHeading icon={Building2}>{t("personal.home.yourBusinesses")}</CardHeading>
+                <CardHeading icon={Building2} round>
+                  {t("personal.home.yourBusinesses")}
+                </CardHeading>
               }
+              prominent
               title={row.productDisplayName}
               organizationName={row.organizationDisplayName}
               meta={meta || null}

@@ -15576,6 +15576,16 @@ a.dashboard-metric-card:focus-visible {
   }
 }
 
+.exits-toast-region.exits-toast-region--center {
+  top: 50%;
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  width: min(22rem, calc(100vw - 1.5rem));
+  transform: translate(-50%, -50%);
+  z-index: 90;
+}
+
 .exits-toast {
   pointer-events: auto;
   display: flex;
@@ -21606,6 +21616,43 @@ a.exits-chip--primary:hover {
   align-items: stretch;
 }
 
+.personal-business-card {
+  align-items: center;
+  text-align: center;
+}
+
+.personal-business-card__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 999px;
+  background: var(--exits-primary-soft);
+  color: var(--exits-primary);
+}
+
+.personal-business-card__heading {
+  justify-content: center;
+  font-size: 1.125rem;
+}
+
+.personal-business-card__title {
+  font-size: 1.05rem;
+}
+
+.personal-business-card__org {
+  font-size: 1rem;
+}
+
+.personal-business-card__actions {
+  align-self: stretch;
+  justify-content: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--exits-border);
+}
+
 .personal-profile-header {
   display: flex;
   align-items: center;
@@ -23726,6 +23773,42 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
+.personal-home-page .personal-tracker-card {
+  border-color: color-mix(in srgb, var(--exits-border) 70%, transparent);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #0f172a 5%, transparent),
+    0 14px 32px color-mix(in srgb, #0f172a 12%, transparent);
+}
+
+[data-theme="dark"] .personal-home-page .personal-tracker-card {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #000 24%, transparent),
+    0 16px 36px color-mix(in srgb, #000 42%, transparent);
+}
+
+.personal-home-avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--exits-primary) 28%, transparent);
+}
+
+.personal-home-avatar__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .personal-home-layout {
   display: flex;
   flex-direction: column;
@@ -23874,6 +23957,135 @@ a.exits-chip--primary:hover {
 
 .personal-summary-grid--balances {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tracker-balance-split {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tracker-balance-split__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--exits-border-strong, var(--exits-border));
+}
+
+.tracker-balance-split__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: stretch;
+}
+
+.tracker-balance {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tracker-balance__outside {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.tracker-balance__card {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--exits-border);
+  border-radius: 0.85rem;
+  background: var(--exits-surface);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 10px 24px color-mix(in srgb, #0f172a 8%, transparent);
+}
+
+.tracker-balance__card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px color-mix(in srgb, #0f172a 12%, transparent);
+}
+
+.tracker-balance__card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--exits-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.tracker-balance__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.7rem;
+  color: #ffffff;
+}
+
+.tracker-balance__icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.tracker-balance__icon--owed {
+  background: #2ec4b6;
+  box-shadow: 0 8px 16px color-mix(in srgb, #2ec4b6 35%, transparent);
+}
+
+.tracker-balance__icon--owed-shared {
+  background: #38bdf8;
+  box-shadow: 0 8px 16px color-mix(in srgb, #38bdf8 35%, transparent);
+}
+
+.tracker-balance__icon--owe {
+  background: #f472b6;
+  box-shadow: 0 8px 16px color-mix(in srgb, #f472b6 35%, transparent);
+}
+
+.tracker-balance__icon--owe-shared {
+  background: #fb7185;
+  box-shadow: 0 8px 16px color-mix(in srgb, #fb7185 32%, transparent);
+}
+
+.tracker-balance__rule {
+  width: 1px;
+  align-self: stretch;
+  background: var(--exits-border);
+}
+
+.tracker-balance__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tracker-balance__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: var(--exits-text-muted);
+}
+
+.tracker-balance__copy .tracker-balance__amount {
+  font-size: 1.45rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--exits-text);
 }
 
 .utang-account-card {

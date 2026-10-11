@@ -1901,6 +1901,12 @@ export const en = {
   "personal.home.utangSummary": "Utang summary",
   "personal.home.owedToMe": "Owed to me",
   "personal.home.iOwe": "I owe",
+  "personal.home.myOwedRecord": "My Owed Record",
+  "personal.home.myIOweRecord": "My I Owe Record",
+  "personal.home.sharedOwedRecord": "Shared Owed Record",
+  "personal.home.sharedIOweRecord": "Shared I Owe Record",
+  "personal.home.trackerOwedTitle": "OWED TO ME",
+  "personal.home.trackerOweTitle": "I OWE",
   "personal.home.people": "People",
   "personal.home.active": "Active",
   "personal.home.activeMine": "My active",
@@ -8235,6 +8241,8 @@ export const en = {
   "branches.setup.workspaceBranchHint": "Switch workspace branch to match this setup page for operational actions.",
   "branches.progress.of": "{complete} of {total} complete",
   "branches.toggle.completeSetupFirst": "Complete setup first",
+  "branches.toggle.orderingNeedsMethod":
+    "Turn on Pickup or Delivery before Online orders.",
   "branches.toggle.deliveryNotInPlan": "Delivery not included in your plan",
   "branches.deliveryAreasTitle": "Delivery areas",
   "branches.deliveryAreasLede":
@@ -8363,6 +8371,8 @@ export const en = {
   "branches.confirm.disablePickupTitle": "Turn off Pickup?",
   "branches.confirm.disablePickupDetail":
     "Pickup will no longer be available for this branch until you turn it back on.",
+  "branches.confirm.disableLastMethodDetail":
+    "Online orders will be turned off because Pickup and Delivery will both be off.",
   "branches.confirm.disablePickupConfirm": "Turn off",
   "branches.confirm.enableDeliveryTitle": "Turn on Delivery?",
   "branches.confirm.enableDeliveryDetail":

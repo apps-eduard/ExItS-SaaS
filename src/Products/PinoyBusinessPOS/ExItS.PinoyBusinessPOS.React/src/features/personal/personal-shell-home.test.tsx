@@ -163,7 +163,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
       expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("0");
     });
     expect(screen.getByTestId("personal-home-layout")).toBeInTheDocument();
-    const homeTitle = screen.getByRole("heading", { name: "Personal home" });
+    const homeTitle = screen.getByRole("heading", { name: "Ana Reyes" });
     const homeInfo = screen.getByTestId("personal-home-info");
     expect(homeTitle.parentElement).toContainElement(homeInfo);
     expect(homeInfo).toHaveAttribute("data-intent", "info");
@@ -188,84 +188,17 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-shared")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveClass(
-      "dashboard-metric-card--emphasis",
+    expect(screen.getByTestId("personal-owed-divider")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveTextContent("My Owed Record");
+    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveTextContent("Shared Owed Record");
+    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveTextContent("My I Owe Record");
+    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveTextContent(
+      "Shared I Owe Record",
     );
-    expect(screen.getByTestId("personal-stat-lent-shared")).toHaveClass(
-      "dashboard-metric-card--shared",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveClass(
-      "dashboard-metric-card--emphasis",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-shared")).toHaveClass(
-      "dashboard-metric-card--shared",
-    );
-    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute("data-tone", "primary");
-    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute(
-      "data-appearance",
-      "emphasis",
-    );
-    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveAttribute(
-      "data-shape",
-      "square",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveAttribute(
-      "data-tone",
-      "primary",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveAttribute(
-      "data-appearance",
-      "emphasis",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveAttribute(
-      "data-shape",
-      "square",
-    );
-    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveAttribute("data-tone", "info");
-    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveAttribute(
-      "data-appearance",
-      "emphasis",
-    );
-    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveAttribute(
-      "data-shape",
-      "square",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveAttribute(
-      "data-tone",
-      "info",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveAttribute(
-      "data-appearance",
-      "emphasis",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveAttribute(
-      "data-shape",
-      "square",
-    );
-    expect(screen.getByTestId("personal-stat-lent-shared-readonly")).toHaveAttribute(
-      "data-tone",
-      "warning",
-    );
-    expect(screen.getByTestId("personal-stat-lent-shared-readonly")).toHaveAttribute(
-      "data-appearance",
-      "emphasis",
-    );
-    expect(screen.getByTestId("personal-stat-lent-shared-readonly")).toHaveAttribute(
-      "data-shape",
-      "square",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-shared-readonly")).toHaveAttribute(
-      "data-tone",
-      "warning",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-shared-readonly")).toHaveAttribute(
-      "data-appearance",
-      "emphasis",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-shared-readonly")).toHaveAttribute(
-      "data-shape",
-      "square",
-    );
+    expect(screen.getAllByText("OWED TO ME")).toHaveLength(2);
+    expect(screen.getAllByText("I OWE")).toHaveLength(2);
+    expect(screen.getByTestId("personal-stat-lent-mine").querySelector(".tracker-balance__rule")).toBeTruthy();
+    expect(screen.getByTestId("personal-stat-borrowed-mine").querySelector(".tracker-balance__rule")).toBeTruthy();
     expect(screen.getByTestId("personal-stat-active-shared")).toHaveTextContent("1");
     expect(await screen.findByTestId("personal-needs-attention")).toBeInTheDocument();
     expect(screen.getByTestId("personal-attention-pendingConfirmation")).toBeInTheDocument();
