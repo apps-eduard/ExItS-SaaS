@@ -19,6 +19,7 @@ describe("ui preferences", () => {
       locale: "en",
       density: "balance",
       primaryColor: "green",
+      backgroundColor: "theme",
       controlShape: "standard",
       motion: "system",
       navigationMode: "standard",
@@ -45,6 +46,7 @@ describe("ui preferences", () => {
       locale: "ceb-PH",
       density: "balance",
       primaryColor: "green",
+      backgroundColor: "theme",
       controlShape: "standard",
       motion: "system",
       navigationMode: "standard",
@@ -61,6 +63,7 @@ describe("ui preferences", () => {
       locale: "en",
       density: "balance",
       primaryColor: "green",
+      backgroundColor: "theme",
       controlShape: "standard",
       motion: "system",
       navigationMode: "standard",
@@ -163,6 +166,7 @@ describe("ui preferences", () => {
 
     applyUiPreferences(defaultUiPreferences);
     expect(document.documentElement.dataset.primary).toBe("green");
+    expect(document.documentElement.dataset.background).toBe("theme");
     expect(document.documentElement.dataset.controlShape).toBe("standard");
     expect(document.documentElement.dataset.motion).toBe("system");
     expect(document.documentElement.dataset.navigationMode).toBe("standard");

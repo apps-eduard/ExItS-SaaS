@@ -87,7 +87,8 @@ function ConnectionRequestCard({
               </p>
             )}
             <div className="flex flex-wrap items-center gap-1">
-              <StatusChip tone={variant === "received" ? "warning" : "info"}>
+              <StatusChip tone="neutral">{t("invitations.connectionRequests")}</StatusChip>
+            <StatusChip tone={variant === "received" ? "warning" : "info"}>
                 {variant === "received"
                   ? t("people.status.requestReceived")
                   : t("people.status.requestSent")}
@@ -134,9 +135,7 @@ function ConnectionRequestCard({
         <div className="customer-link-card__actions grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button
             type="button"
-            intent="danger"
-            appearance="solid"
-            emphasis="soft"
+            variant="outline"
             className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onDecline}
@@ -150,7 +149,6 @@ function ConnectionRequestCard({
             type="button"
             intent="primary"
             appearance="solid"
-            emphasis="soft"
             className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onAccept}

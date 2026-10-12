@@ -82,13 +82,17 @@ function ProductAffiliationCard({
       className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
       data-testid={`product-affiliation-${row.productCode}`}
     >
-      <h2 className="catalog-form-section__title">{row.productDisplayName}</h2>
-      {ownsOrganization ? (
-        <p>{t("personal.subscriptions.alreadyHave").replace("{product}", row.productDisplayName)}</p>
-      ) : !hasOrganization ? (
-        <p>{t("personal.subscriptions.noOrganization")}</p>
-      ) : null}
-      {row.organizationDisplayName ? <p>{row.organizationDisplayName}</p> : null}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="catalog-form-section__title m-0">{row.productDisplayName}</h2>
+        <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+          {ownsOrganization
+            ? t("personal.subscriptions.alreadyHave").replace("{product}", row.productDisplayName)
+            : hasOrganization
+              ? t("personal.subscriptions.managedByOrganization")
+              : t("personal.subscriptions.noOrganization")}
+        </span>
+      </div>
+      {row.organizationDisplayName ? <p className="m-0 font-medium">{row.organizationDisplayName}</p> : null}
       {row.roleDisplay ? (
         <p>
           {t("personal.subscriptions.role")}: {row.roleDisplay}
@@ -101,9 +105,6 @@ function ProductAffiliationCard({
       ) : null}
       {row.subscriptionStatus === "Trialing" && trialEnd ? (
         <p>{t("personal.subscriptions.trialEnds").replace("{date}", trialEnd)}</p>
-      ) : null}
-      {!row.canManageBilling && hasOrganization ? (
-        <p>{t("personal.subscriptions.managedByOrganization")}</p>
       ) : null}
       <div className="flex flex-wrap gap-2">
         {capability.canOpenProduct && row.organizationId ? (

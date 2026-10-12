@@ -324,6 +324,9 @@ export function PersonalStartBusinessPage() {
         backLabel={t(personalPageBackNav.explore.labelKey)}
         backTestId="page-header-back-start-business"
       />
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="start-business-staff-note">
+        {t("personal.startBusiness.staffNote")}
+      </p>
 
       <section
         aria-labelledby="start-business-type-heading"

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResponse } from "@/test/session-context";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -119,18 +119,15 @@ describe("Personal home businesses", () => {
     clearPlatformAntiforgeryToken();
   });
 
-  it("offers Start a Business on the portfolio when there are no affiliations", async () => {
-    const user = userEvent.setup();
+  it("hides the start-a-business card when there are no businesses or workplaces", async () => {
     vi.stubGlobal("fetch", createFetch([]));
-    const router = renderHome();
+    renderHome();
 
     expect(await screen.findByTestId("personal-utang-summary")).toBeInTheDocument();
-    const start = await screen.findByTestId("personal-home-start-business");
-    expect(start).toHaveAttribute("href", "/personal/businesses");
-    await user.click(start);
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe("/personal/businesses");
-    });
+    expect(screen.queryByTestId("personal-home-start-business")).not.toBeInTheDocument();
+    expect(screen.queryByText("Start a business")).not.toBeInTheDocument();
+    expect(screen.queryByText("Use ExItS products for your business.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Start your own business")).not.toBeInTheDocument();
   });
 
   it("shows the POS business and an Open action", async () => {
@@ -150,9 +147,15 @@ describe("Personal home businesses", () => {
 
     expect(await screen.findByTestId("personal-utang-summary")).toBeInTheDocument();
     expect(await screen.findByText("ABC Grocery")).toBeInTheDocument();
-    expect(screen.getByText("Owner · Active")).toBeInTheDocument();
+    expect(screen.getByText("Businesses you own and manage")).toBeInTheDocument();
+    expect(screen.getAllByText("Your businesses")).toHaveLength(1);
+    const business = screen.getByTestId("personal-business-pinoy-business-pos");
+    expect(business).toHaveTextContent("Owner · Active");
+    expect(business.querySelector(".personal-owned-businesses__status")).toHaveTextContent("Active");
     const open = screen.getByTestId("personal-business-open-pinoy-business-pos");
+    expect(open).toHaveTextContent("Open business");
     const startAnother = screen.getByTestId("personal-home-start-another");
+    expect(startAnother).toHaveTextContent("Explore products");
     expect(startAnother).toHaveAttribute("href", "/personal/businesses");
     expect(startAnother.parentElement).toBe(open.parentElement);
   });
@@ -195,19 +198,22 @@ describe("Personal home businesses", () => {
     renderHome();
 
     const open = await screen.findByTestId("personal-business-open-pinoy-business-pos");
-    expect(open).toHaveTextContent("Open");
+    expect(open).toHaveTextContent("Open business");
     const ownedCard = screen.getByTestId("personal-business-pinoy-business-pos");
+    const ownedSection = screen.getByTestId("personal-owned-businesses");
+    const staffSection = screen.getByTestId("personal-staff-workplaces");
     const staffCard = screen.getByTestId(`personal-staff-business-${membershipId}`);
-    expect(ownedCard).toHaveClass("catalog-form-section");
-    expect(ownedCard).toHaveTextContent("Your businesses");
-    expect(ownedCard).toHaveTextContent("POS Owner");
-    expect(staffCard).toHaveClass("catalog-form-section");
-    expect(staffCard).toHaveTextContent("Your workplace");
+    expect(ownedSection).toHaveTextContent("Your businesses");
+    expect(screen.getAllByText("Your businesses")).toHaveLength(1);
+    expect(ownedCard).toHaveTextContent("Owner · Pro plan · Active");
+    expect(ownedCard).not.toHaveTextContent("POS Owner");
+    expect(staffSection).toHaveClass("personal-owned-businesses");
+    expect(staffSection).toHaveTextContent("Your workplace");
     expect(staffCard).toHaveTextContent("Cashier");
     expect(staffCard).not.toHaveTextContent("Your businesses");
     expect(staffCard).not.toHaveTextContent("POS Owner");
-    expect(ownedCard.parentElement).toBe(staffCard.parentElement);
-    expect(ownedCard.parentElement).toHaveClass("personal-business-cards");
+    expect(ownedSection.parentElement).toBe(staffSection.parentElement);
+    expect(ownedSection.parentElement).toHaveClass("personal-business-cards");
     expect(screen.getByText("My Grocery")).toBeInTheDocument();
     expect(screen.getByText("North Shop")).toBeInTheDocument();
     expect(screen.queryByTestId(`personal-business-open-pinoy-loan-manager`)).not.toBeInTheDocument();
@@ -249,8 +255,11 @@ describe("Personal home businesses", () => {
     expect(await screen.findByText("ABC Grocery")).toBeInTheDocument();
     expect(screen.getByText("ABC Lending")).toBeInTheDocument();
     expect(screen.getAllByText("ABC Grocery")).toHaveLength(1);
-    expect(screen.getByTestId("personal-business-pinoy-business-pos")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-business-pinoy-loan-manager")).toBeInTheDocument();
+    expect(screen.getAllByText("Your businesses")).toHaveLength(1);
+    expect(screen.getByTestId("personal-business-pinoy-loan-manager")).toHaveTextContent("Owner · Trialing");
+    const ownedSection = screen.getByTestId("personal-owned-businesses");
+    expect(ownedSection).toContainElement(screen.getByTestId("personal-business-pinoy-business-pos"));
+    expect(ownedSection).toContainElement(screen.getByTestId("personal-business-pinoy-loan-manager"));
   });
 
   it("keeps Personal home usable when business lookup fails", async () => {

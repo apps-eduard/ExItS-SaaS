@@ -16304,6 +16304,7 @@ a.dashboard-metric-card:focus-visible {
   .personal-shell .app-top-bar--personal .app-top-bar__action,
   .personal-shell .app-top-bar--personal .app-top-bar__avatar,
   .personal-shell .app-top-bar--personal .shell-connection-trigger,
+  .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
   .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
   .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
   .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
@@ -16316,8 +16317,29 @@ a.dashboard-metric-card:focus-visible {
     border-radius: var(--exits-radius-md) !important;
   }
 
+  .personal-shell .app-top-bar--personal .app-top-bar__action,
+  .personal-shell .app-top-bar--personal .shell-connection-trigger,
+  .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
+  .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
+  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
+  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+    color: #657792;
+    background: transparent;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__action:hover,
+  .personal-shell .app-top-bar--personal .shell-connection-trigger:hover,
+  .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"]:hover,
+  .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"]:hover,
+  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover,
+  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"]:hover {
+    color: #4b5d78;
+    background: color-mix(in srgb, #ffffff 62%, transparent);
+  }
+
   .personal-shell .app-top-bar--personal .app-top-bar__action svg,
   .personal-shell .app-top-bar--personal .shell-connection-trigger svg,
+  .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"] svg,
   .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"] svg,
   .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] svg,
   .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] svg {
@@ -16335,7 +16357,16 @@ a.dashboard-metric-card:focus-visible {
   }
 
   .personal-shell .personal-sidebar .admin-sidebar__brand {
-    border-bottom-color: color-mix(in srgb, var(--exits-border) 72%, transparent);
+    position: relative;
+    z-index: 2;
+    height: 4.25rem;
+    min-height: 4.25rem;
+    max-height: 4.25rem;
+    border-bottom: 0;
+    background: var(--exits-surface);
+    box-shadow:
+      0 1px 1px color-mix(in srgb, #0f172a 4%, transparent),
+      0 3px 8px color-mix(in srgb, #0f172a 4%, transparent);
   }
 
   /* Personal keeps its brand label in the top bar (not hidden like org shell-desktop). */
@@ -21612,45 +21643,20 @@ a.exits-chip--primary:hover {
 }
 
 .personal-business-cards.catalog-form-section-row {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
 
-.personal-business-card {
-  align-items: center;
-  text-align: center;
+@media (min-width: 1100px) {
+  .personal-business-cards.catalog-form-section-row:has(> :nth-child(2)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.personal-business-card__icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: 999px;
-  background: var(--exits-primary-soft);
-  color: var(--exits-primary);
-}
-
-.personal-business-card__heading {
-  justify-content: center;
-  font-size: 1.125rem;
-}
-
-.personal-business-card__title {
-  font-size: 1.05rem;
-}
-
-.personal-business-card__org {
-  font-size: 1rem;
-}
-
-.personal-business-card__actions {
-  align-self: stretch;
-  justify-content: center;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--exits-border);
+.personal-business-cards.catalog-form-section-row > .personal-owned-businesses:only-child {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
 }
 
 .personal-profile-header {
@@ -23318,9 +23324,11 @@ a.exits-chip--primary:hover {
   height: 1.35rem;
 }
 
-.role-action-tile--hero .role-action-tile__icon svg {
+.role-action-tile--hero .role-action-tile__icon svg,
+.personal-shell .role-action-tile--hero .role-action-tile__icon .material-symbols-outlined {
   width: 1.35rem;
   height: 1.35rem;
+  font-size: 1.35rem;
 }
 
 /* ---- Reports hub launcher ---- */
@@ -23577,6 +23585,187 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
+/* Personal uses the app surface tokens. Theme color stays on actions, not the page wash. */
+.personal-shell,
+[data-background] .personal-shell {
+  background: var(--exits-bg);
+  background-image: none;
+  color: var(--exits-text);
+}
+
+
+.personal-shell .app-top-bar--personal {
+  z-index: 30;
+  border-bottom-color: transparent;
+  background: var(--exits-surface);
+  backdrop-filter: none;
+  box-shadow:
+    0 1px 1px color-mix(in srgb, #0f172a 4%, transparent),
+    0 3px 8px color-mix(in srgb, #0f172a 4%, transparent);
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action,
+.personal-shell .app-top-bar--personal .shell-connection-trigger,
+.personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
+.personal-shell .app-top-bar--personal [data-testid="personal-appearance-menu"],
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+  color: #657792;
+}
+
+/* Theme color and the light page wash that belongs to it. Scoped to Personal. */
+.personal-shell {
+  --personal-theme: #08a046;
+  --personal-theme-2: #0bbeeb;
+  --personal-accent: #ea00ff;
+  --personal-bg-1: #e2f3e7;
+  --personal-bg-2: #bde9ca;
+  --personal-night: #00100a;
+  --exits-primary: var(--personal-theme);
+  --exits-primary-hover: #06883a;
+  --exits-primary-foreground: #fff;
+  --exits-primary-contrast: #fff;
+  --exits-primary-soft: color-mix(in srgb, var(--personal-theme) 14%, #fff);
+  --exits-ring: var(--personal-theme);
+  --exits-focus: var(--personal-theme);
+}
+
+[data-primary="green"] .personal-shell {
+  --personal-theme: #08a046;
+  --personal-theme-2: #0bbeeb;
+  --personal-accent: #ea00ff;
+  --personal-bg-1: #e2f3e7;
+  --personal-bg-2: #bde9ca;
+  --personal-night: #00100a;
+  --exits-primary-hover: #06883a;
+}
+
+[data-primary="teal"] .personal-shell {
+  --personal-theme: #00a885;
+  --personal-theme-2: #c2cb6a;
+  --personal-accent: #b05ec3;
+  --personal-bg-1: #e6f2f0;
+  --personal-bg-2: #b8e9e1;
+  --personal-night: #011111;
+  --exits-primary-hover: #008f72;
+}
+
+[data-primary="cyan"] .personal-shell {
+  --personal-theme: #03aed2;
+  --personal-theme-2: #e46dce;
+  --personal-accent: #3472cf;
+  --personal-bg-1: #dceef4;
+  --personal-bg-2: #bce4f1;
+  --personal-night: #011214;
+  --exits-primary-hover: #0095b3;
+}
+
+[data-primary="blue"] .personal-shell {
+  --personal-theme: #0049e8;
+  --personal-theme-2: #4cbdff;
+  --personal-accent: #ab13c5;
+  --personal-bg-1: #eef3fc;
+  --personal-bg-2: #bfdbfb;
+  --personal-night: #01051b;
+  --exits-primary-hover: #003fc7;
+}
+
+[data-primary="indigo"] .personal-shell {
+  --personal-theme: #4d10f2;
+  --personal-theme-2: #758bfd;
+  --personal-accent: #ff8600;
+  --personal-bg-1: #e7e8f7;
+  --personal-bg-2: #c6caf8;
+  --personal-night: #04011b;
+  --exits-primary-hover: #590ad8;
+}
+
+[data-primary="violet"] .personal-shell {
+  --personal-theme: #471ca8;
+  --personal-theme-2: #d1105a;
+  --personal-accent: #f7aef8;
+  --personal-bg-1: #f5f0fa;
+  --personal-bg-2: #dec6f7;
+  --personal-night: #08021b;
+  --exits-primary-hover: #36108d;
+}
+
+[data-primary="fuchsia"] .personal-shell {
+  --personal-theme: #e50a8e;
+  --personal-theme-2: #b892ff;
+  --personal-accent: #00bcd4;
+  --personal-bg-1: #faedf7;
+  --personal-bg-2: #ffd2f5;
+  --personal-night: #14021b;
+  --exits-primary-hover: #c50277;
+}
+
+[data-primary="rose"] .personal-shell {
+  --personal-theme: #c80036;
+  --personal-theme-2: #e46dce;
+  --personal-accent: #3472cf;
+  --personal-bg-1: #ffedeb;
+  --personal-bg-2: #facbcb;
+  --personal-night: #14020f;
+  --exits-primary-hover: #a7002c;
+}
+
+[data-primary="orange"] .personal-shell {
+  --personal-theme: #fc7a1e;
+  --personal-theme-2: #ffc96b;
+  --personal-accent: #f55c7a;
+  --personal-bg-1: #faf1e6;
+  --personal-bg-2: #ebd6be;
+  --personal-night: #140902;
+  --exits-primary-hover: #e46911;
+}
+
+.personal-shell,
+[data-primary] .personal-shell {
+  --exits-primary: inherit;
+  --exits-primary-hover: inherit;
+  --exits-primary-foreground: inherit;
+  --exits-primary-contrast: inherit;
+  --exits-primary-soft: inherit;
+  --exits-ring: inherit;
+  --exits-focus: inherit;
+}
+
+[data-theme="dark"] .personal-shell,
+[data-theme="dark"][data-background] .personal-shell {
+  background: var(--exits-bg);
+  background-image: none;
+  color: var(--exits-text);
+}
+
+[data-theme="dark"] .personal-shell .app-top-bar--personal,
+[data-theme="dark"] .personal-shell .personal-sidebar .admin-sidebar__brand {
+  box-shadow:
+    0 1px 1px color-mix(in srgb, #000 14%, transparent),
+    0 3px 8px color-mix(in srgb, #000 20%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .app-top-bar--personal .app-top-bar__action,
+[data-theme="dark"] .personal-shell .app-top-bar--personal .shell-connection-trigger,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-appearance-menu"],
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+  color: #fff;
+}
+
+[data-theme="dark"] .personal-shell .app-top-bar--personal .app-top-bar__action:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal .shell-connection-trigger:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"]:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"]:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"]:hover {
+  color: #eef3fc;
+  background: color-mix(in srgb, #ffffff 10%, transparent);
+}
+
 /* Personal shell fills the viewport — override Admin shell content caps. */
 .personal-shell .admin-shell__body {
   max-width: none;
@@ -23596,7 +23785,7 @@ a.exits-chip--primary:hover {
   border: none;
   box-shadow: none;
   border-radius: 0;
-  padding-block-start: var(--exits-page-gutter-inline);
+  padding-block-start: 1.25rem;
 }
 
 .personal-shell .personal-shell__content .exits-page,
@@ -23613,16 +23802,25 @@ a.exits-chip--primary:hover {
   top: auto;
   z-index: 20;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 100%;
+  height: 4.25rem;
+  min-height: 4.25rem;
+  max-height: 4.25rem;
   margin-inline: 0;
   margin-right: 0;
-  padding-block: 0.35rem;
+  padding-block: 0;
   padding-inline: max(0.75rem, env(safe-area-inset-left))
     max(0.75rem, env(safe-area-inset-right));
-  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
-  background: color-mix(in srgb, var(--exits-surface) 96%, transparent);
-  backdrop-filter: blur(12px);
+  border-bottom: 0;
+  background: var(--exits-surface);
+  backdrop-filter: none;
+  box-shadow:
+    0 1px 1px color-mix(in srgb, #0f172a 4%, transparent),
+    0 3px 8px color-mix(in srgb, #0f172a 4%, transparent);
   animation: none;
 }
 
@@ -23635,8 +23833,9 @@ a.exits-chip--primary:hover {
 .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
   display: flex;
   width: 100%;
+  height: 100%;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: 0;
   align-items: center;
   gap: 0.35rem;
 }
@@ -23659,8 +23858,12 @@ a.exits-chip--primary:hover {
 .personal-shell .app-top-bar--personal .shell-connection-trigger,
 .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
 .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
-.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"],
+.personal-shell .app-top-bar--personal [data-testid="personal-mobile-nav-toggle"] {
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
   min-width: 2.5rem;
@@ -23692,13 +23895,65 @@ a.exits-chip--primary:hover {
   z-index: 50;
 }
 
+@media (max-width: 1023.98px) {
+  .personal-mobile-nav__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    margin: 0;
+    border: 0;
+    padding: 0;
+    background: color-mix(in srgb, #0f172a 42%, transparent);
+    cursor: pointer;
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail {
+    display: flex !important;
+    position: fixed;
+    z-index: 80;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: min(18rem, 88vw);
+    height: 100dvh;
+    max-height: none;
+    flex: none;
+    background: var(--exits-surface);
+    box-shadow:
+      0 1px 1px color-mix(in srgb, #0f172a 4%, transparent),
+      0 8px 24px color-mix(in srgb, #0f172a 16%, transparent);
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .personal-sidebar {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__link,
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__switch,
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__group-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__icon,
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__switch .material-symbols-outlined {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+  }
+}
+
 /*
  * Personal desktop — Gmail-style floating content:
  * large radius on all four corners, clear gap from top bar / sidebar / edges.
  */
 @media (min-width: 1024px) {
   .personal-shell .personal-sidebar.admin-sidebar {
-    border-radius: 1rem;
+    border-radius: 0;
     border: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
     border-block: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
     border-inline-start: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
@@ -23721,17 +23976,20 @@ a.exits-chip--primary:hover {
   .personal-shell .app-top-bar--personal {
     width: 100%;
     max-width: 100%;
-    height: var(--exits-shell-chrome-height);
-    min-height: var(--exits-shell-chrome-height);
-    max-height: var(--exits-shell-chrome-height);
+    height: 4.25rem;
+    min-height: 4.25rem;
+    max-height: 4.25rem;
     margin-inline: 0;
     margin-right: 0;
     padding-block: 0;
     padding-inline: 0.35rem;
     justify-content: center;
     border-bottom: none;
-    background: transparent;
+    background: var(--exits-surface);
     backdrop-filter: none;
+    box-shadow:
+      0 1px 1px color-mix(in srgb, #0f172a 4%, transparent),
+      0 3px 8px color-mix(in srgb, #0f172a 4%, transparent);
   }
 
   .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
@@ -23745,14 +24003,14 @@ a.exits-chip--primary:hover {
   }
 
   .personal-shell .admin-shell__content.personal-shell__content {
-    border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
-    background: var(--exits-surface);
-    box-shadow: var(--exits-shadow-sm);
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    padding-block-start: var(--exits-page-gutter-inline);
+    padding-block-start: 1.25rem;
   }
 }
 
@@ -23770,20 +24028,148 @@ a.exits-chip--primary:hover {
 }
 
 .personal-home-page {
-  width: 100%;
+  width: min(100%, 90rem);
+  margin-inline: auto;
+  gap: 1.5rem;
 }
 
-.personal-home-page .personal-tracker-card {
-  border-color: color-mix(in srgb, var(--exits-border) 70%, transparent);
-  box-shadow:
-    0 1px 2px color-mix(in srgb, #0f172a 5%, transparent),
-    0 14px 32px color-mix(in srgb, #0f172a 12%, transparent);
+.personal-page .personal-section.catalog-form-section:not(.utang-record-card) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  color: var(--exits-text);
 }
 
-[data-theme="dark"] .personal-home-page .personal-tracker-card {
-  box-shadow:
-    0 1px 2px color-mix(in srgb, #000 24%, transparent),
-    0 16px 36px color-mix(in srgb, #000 42%, transparent);
+.personal-home-page .personal-section.personal-quick-actions.catalog-form-section,
+.personal-home-page .personal-section.personal-tracker-card.catalog-form-section,
+.personal-home-page .personal-section.catalog-form-section[data-testid="personal-todo-summary"],
+.personal-home-page .personal-section.catalog-form-section[data-testid="personal-stores-to-pay"] {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: none;
+  padding: 1rem 1.05rem;
+}
+
+.personal-home-page .tracker-summary {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: none;
+  color: var(--exits-text);
+}
+
+.personal-home-page .catalog-form-section {
+  padding: 1rem 1.05rem;
+}
+
+.personal-page .catalog-form-section__title,
+.personal-home-page .catalog-form-section__title.text-muted {
+  color: var(--exits-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.personal-profile-page .personal-profile-section.catalog-form-section {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  padding: 1rem;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-home-page .tracker-summary,
+[data-theme="dark"] .personal-profile-page .personal-profile-section.catalog-form-section {
+  border-color: var(--exits-border);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary__amount,
+.personal-shell .tracker-summary__stat-amount {
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary__title,
+.personal-shell .tracker-summary__stat-label {
+  color: var(--exits-text-muted);
+}
+
+.personal-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.personal-topbar__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.personal-topbar__name {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 24px;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--exits-primary) 42%, #4cbdff),
+    var(--exits-primary)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.personal-topbar__tag {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 12px;
+  color: #667791;
+}
+
+[data-theme="dark"] .personal-topbar__tag {
+  color: #c5d0e0;
+}
+
+.personal-home-welcome__kicker {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.personal-home-welcome__name {
+  font-size: 1.65rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--exits-text);
+}
+
+@media (min-width: 1024px) {
+  .personal-home-welcome__kicker {
+    font-size: 0.8125rem;
+    color: var(--exits-text-muted);
+  }
+
+  .personal-home-welcome__name {
+    font-size: 1.75rem;
+  }
 }
 
 .personal-home-avatar {
@@ -23791,8 +24177,8 @@ a.exits-chip--primary:hover {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 3.125rem;
+  height: 3.125rem;
   overflow: hidden;
   border-radius: 999px;
   background: var(--exits-primary);
@@ -23819,8 +24205,8 @@ a.exits-chip--primary:hover {
 @media (min-width: 1024px) {
   .personal-home-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1.85fr) minmax(17rem, 0.91fr);
+    gap: 1.5rem;
     align-items: start;
   }
 
@@ -23847,6 +24233,180 @@ a.exits-chip--primary:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  padding: 0.35rem 0.65rem 0.75rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__nav-rule {
+  display: none;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-block {
+  margin-top: 1.15rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-icon-wrap {
+  display: none;
+}
+
+[data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__collapse-toggle,
+[data-navigation-mode="reveal"] .personal-shell .personal-sidebar .admin-sidebar__collapse-toggle {
+  display: none;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-toggle {
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.65rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link,
+.personal-shell .personal-sidebar .admin-sidebar__switch {
+  min-height: 2.75rem;
+  gap: 0.7rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.7rem;
+  border-inline-start-width: 0;
+  font-size: 0.9rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__icon,
+.personal-shell .personal-sidebar .admin-sidebar__switch svg,
+.personal-shell .personal-sidebar .admin-sidebar__switch .material-symbols-outlined,
+.personal-shell .personal-sidebar .admin-sidebar__group-chevron.material-symbols-outlined {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 1.2rem;
+}
+
+.personal-shell .material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.25rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  flex-shrink: 0;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.personal-shell .size-4.material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.personal-shell .size-5.material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.personal-shell .size-\[1\.1rem\].material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link--active {
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
+  color: var(--exits-primary);
+  font-weight: 600;
+  border-inline-start-color: transparent;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link:focus-visible,
+.personal-shell .personal-sidebar .admin-sidebar__switch:focus-visible,
+.personal-shell .personal-sidebar .admin-sidebar__group-toggle:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .personal-shell {
+    column-gap: 0;
+    padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .personal-shell > .admin-sidebar-rail {
+    margin: 0;
+  }
+
+  [data-navigation-mode="standard"] .personal-shell > .admin-sidebar-rail {
+    width: 17rem;
+    flex: 0 0 17rem;
+  }
+
+  .personal-shell .personal-sidebar.admin-sidebar {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: color-mix(in srgb, var(--exits-surface) 88%, var(--exits-bg));
+  }
+
+  [data-navigation-mode="compact"] .personal-shell > .admin-sidebar-rail {
+    width: 4.75rem;
+    flex: 0 0 4.75rem;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__nav {
+    padding: 0.5rem 0 0.75rem;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-icon-wrap {
+    display: inline-flex;
+    width: 1.35rem;
+    height: 1.35rem;
+    background: transparent;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-icon,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-icon.material-symbols-outlined {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 1.35rem;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-panel,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-panel--open {
+    display: block;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-panel-inner {
+    overflow: visible;
+    padding: 0;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__link,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__switch,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-toggle {
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    margin-inline: auto;
+    padding: 0;
+  }
 }
 
 /* People and Utang filters: horizontal scroll on small screens (do not wrap). */
@@ -23957,6 +24517,304 @@ a.exits-chip--primary:hover {
 
 .personal-summary-grid--balances {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.personal-shell .tracker-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .personal-shell .tracker-summary-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.personal-shell .tracker-summary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 1.15rem 1.15rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 80%, transparent);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.personal-shell .tracker-summary:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.personal-shell .tracker-summary:hover {
+  transform: translateY(-1px);
+}
+
+.personal-shell .tracker-summary__head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.personal-shell .tracker-summary__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--tracker-tone) 14%, var(--exits-surface));
+  color: var(--tracker-tone);
+}
+
+.personal-shell .tracker-summary__icon svg,
+.personal-shell .tracker-summary__icon .material-symbols-outlined {
+  width: 1.32rem;
+  height: 1.32rem;
+  font-size: 1.32rem;
+}
+
+.personal-shell .tracker-summary__icon--owed {
+  --tracker-tone: var(--exits-success);
+}
+
+.personal-shell .tracker-summary__icon--owe {
+  --tracker-tone: var(--exits-primary);
+}
+
+.personal-shell .tracker-summary__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.personal-shell .tracker-summary__title {
+  font-size: 1.012rem;
+  font-weight: 600;
+  color: var(--exits-text-muted);
+}
+
+.personal-shell .tracker-summary__amount {
+  font-size: 1.925rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary .tracker-balance__rule {
+  width: 100%;
+  height: 1px;
+  margin: 0.75rem 0 0.65rem;
+  background: var(--exits-border);
+}
+
+.personal-shell .tracker-summary__foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.personal-shell .tracker-summary__stat {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.personal-shell .tracker-summary__stat-label {
+  font-size: 0.858rem;
+  font-weight: 500;
+  color: var(--exits-text-muted);
+}
+
+.personal-shell .tracker-summary__stat-amount {
+  font-size: 1.155rem;
+  font-weight: 600;
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary__vrule {
+  width: 1px;
+  background: var(--exits-border);
+}
+
+.personal-home-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.personal-home-metric {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.personal-home-metric__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.personal-home-metric__icon svg,
+.personal-home-metric__icon .material-symbols-outlined {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 1.15rem;
+}
+
+.personal-home-metric__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.personal-home-metric__value {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  color: var(--exits-text);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.personal-home-metric strong {
+  color: var(--exits-text);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.personal-home-metric:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.personal-stores-empty {
+  padding: 0.85rem 0 0.25rem;
+}
+
+.personal-quick-actions .role-action-tile {
+  min-height: 2.75rem;
+  border-radius: var(--exits-radius-md);
+}
+
+.role-action-tile__end {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.personal-shell .personal-quick-actions__caret.material-symbols-outlined {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 1.15rem;
+  color: var(--exits-text-muted);
+}
+
+.personal-quick-actions .role-action-tile--hero {
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+}
+
+.personal-todo-cards {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 1024px) {
+  .personal-todo-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.personal-todo-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  text-decoration: none;
+}
+
+.personal-todo-card__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--exits-radius-md);
+}
+
+.personal-shell .personal-todo-card__icon .material-symbols-outlined {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 1.15rem;
+}
+
+.personal-todo-card--today .personal-todo-card__icon {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+}
+
+.personal-todo-card--overdue .personal-todo-card__icon {
+  color: var(--exits-danger);
+  background: color-mix(in srgb, var(--exits-danger) 12%, var(--exits-surface));
+}
+
+.personal-todo-card--upcoming .personal-todo-card__icon {
+  color: var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 12%, var(--exits-surface));
+}
+
+.personal-todo-card__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-todo-card__count {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .personal-home-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .tracker-balance-split {

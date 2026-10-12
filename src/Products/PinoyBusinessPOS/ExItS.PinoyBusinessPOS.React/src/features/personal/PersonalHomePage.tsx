@@ -1,22 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import {
-  Building2,
-  ChevronRight,
-  HandCoins,
-  Info,
-  ListPlus,
-  ListTodo,
-  RefreshCw,
-  Share2,
-  Store,
-  UserPlus,
-  Users,
-  Wallet,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
+import { symbol, type IconComponent } from "@/components/icons/MaterialSymbol";
+
+const ApartmentIcon = symbol("apartment");
+const ChevronRightIcon = symbol("chevron_right");
+const HandshakeIcon = symbol("handshake");
+const InfoIcon = symbol("info");
+const PlaylistAddIcon = symbol("playlist_add");
+const ChecklistIcon = symbol("checklist");
+const TodayIcon = symbol("today");
+const OverdueIcon = symbol("event_busy");
+const UpcomingIcon = symbol("event_upcoming");
+const RefreshIcon = symbol("refresh");
+const ShareIcon = symbol("share");
+const StoreIcon = symbol("store");
+const PersonAddIcon = symbol("person_add");
+const GroupIcon = symbol("group");
+const WalletIcon = symbol("account_balance_wallet");
+const BoltIcon = symbol("bolt");
+const MonitoringIcon = symbol("monitoring");
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 import {
   listBorrowedRelationships,
@@ -30,7 +33,7 @@ import {
 } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
-import { CountBadge, CountChip } from "@/components/exits/CountChip";
+import { CountBadge } from "@/components/exits/CountChip";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -46,10 +49,8 @@ import {
   isActiveUtangAccount,
   mergeUtangAccounts,
 } from "@/features/personal/utang/utang-workspace";
-import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
-import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import { useI18n } from "@/i18n/I18nProvider";
-import { deriveUserInitials, resolveUserDisplayName } from "@/lib/user-display";
+import { resolveUserDisplayName } from "@/lib/user-display";
 import { useSession } from "@/session/SessionProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
@@ -61,41 +62,77 @@ const personalSoftPrimaryButtonClass =
 const personalSoftInfoButtonClass =
   "border border-border bg-[color-mix(in_srgb,var(--exits-severity-info)_12%,var(--exits-surface))] text-[var(--exits-severity-info)] hover:border-[var(--exits-severity-info)] hover:bg-[color-mix(in_srgb,var(--exits-severity-info)_16%,var(--exits-surface))]";
 
-function TrackerBalanceCard({
-  outside,
+function pesoLabel(amount: number): string {
+  return formatPeso(amount).replace("₱", "₱ ");
+}
+
+function TrackerSummaryCard({
   title,
-  amount,
+  mineLabel,
+  sharedLabel,
+  mineAmount,
+  sharedAmount,
   icon: Icon,
   tone,
-  testId,
-  labelTestId,
   to,
+  rowTestId,
+  mineTestId,
+  sharedTestId,
+  mineLabelTestId,
+  sharedLabelTestId,
+  showDivider,
+  showTotal = true,
 }: {
-  outside: string;
   title: string;
-  amount: number;
-  icon: LucideIcon;
-  tone: "owed" | "owed-shared" | "owe" | "owe-shared";
-  testId: string;
-  labelTestId: string;
+  mineLabel: string;
+  sharedLabel: string;
+  mineAmount: number;
+  sharedAmount: number;
+  icon: IconComponent;
+  tone: "owed" | "owe";
   to: string;
+  rowTestId: string;
+  mineTestId: string;
+  sharedTestId: string;
+  mineLabelTestId: string;
+  sharedLabelTestId: string;
+  showDivider?: boolean;
+  showTotal?: boolean;
 }) {
   return (
-    <div className="tracker-balance">
-      <p className="tracker-balance__outside" data-testid={labelTestId}>
-        {outside}
-      </p>
-      <Link to={to} className="tracker-balance__card" data-testid={testId}>
-        <span className={`tracker-balance__icon tracker-balance__icon--${tone}`} aria-hidden>
+    <Link to={to} className={`tracker-summary tracker-summary--${tone}`} data-testid={rowTestId}>
+      <span className="tracker-summary__head">
+        <span className={`tracker-summary__icon tracker-summary__icon--${tone}`} aria-hidden>
           <Icon />
         </span>
-        <span className="tracker-balance__rule" aria-hidden />
-        <span className="tracker-balance__copy">
-          <span className="tracker-balance__title">{title}</span>
-          <span className="tracker-balance__amount tabular-nums">{formatPeso(amount).replace("₱", "₱ ")}</span>
+        <span className="tracker-summary__copy">
+          <span className="tracker-summary__title">{title}</span>
+          {showTotal ? (
+            <span className="tracker-summary__amount tabular-nums">{pesoLabel(mineAmount + sharedAmount)}</span>
+          ) : null}
         </span>
-      </Link>
-    </div>
+      </span>
+      <span className="tracker-balance__rule" aria-hidden />
+      <span className="tracker-summary__foot">
+        <span className="tracker-summary__stat" data-testid={mineTestId}>
+          <span className="tracker-summary__stat-label" data-testid={mineLabelTestId}>
+            {mineLabel}
+          </span>
+          <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(mineAmount)}</span>
+        </span>
+        <span
+          className="tracker-summary__vrule"
+          data-testid={showDivider ? "personal-owed-divider" : undefined}
+          aria-hidden
+        />
+        <span className="tracker-summary__stat" data-testid={sharedTestId}>
+          <span className="tracker-summary__stat-label" data-testid={sharedLabelTestId}>
+            {sharedLabel}
+          </span>
+          <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(sharedAmount)}</span>
+        </span>
+      </span>
+    </Link>
   );
 }
 
@@ -103,8 +140,6 @@ export function PersonalHomePage() {
   const { t } = useI18n();
   const { session } = useSession();
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
-  const initials = deriveUserInitials(session);
-  const avatarSrc = profilePhotoSrc(usePersonalAvatarPhoto());
   const [infoOpen, setInfoOpen] = useState(false);
   const infoRootRef = useRef<HTMLDivElement>(null);
   const infoButtonRef = useRef<HTMLElement | null>(null);
@@ -227,7 +262,7 @@ export function PersonalHomePage() {
             className="personal-error-retry w-full"
             onClick={() => void dashboardQuery.refetch()}
           >
-            <RefreshCw className="size-4 shrink-0" aria-hidden />
+            <RefreshIcon className="size-4 shrink-0" aria-hidden />
             {t("personal.home.retry")}
           </Button>
         </div>
@@ -262,18 +297,12 @@ export function PersonalHomePage() {
         ref={infoRootRef}
         className={cn("relative flex items-center gap-2", infoOpen && "z-30")}
       >
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="personal-home-avatar" data-testid="personal-home-avatar" aria-hidden>
-            {avatarSrc ? (
-              <img src={avatarSrc} alt="" className="personal-home-avatar__photo" />
-            ) : (
-              initials
-            )}
-          </span>
-          <h1 className="page-header__title exits-type-page-title m-0 min-w-0 truncate">
-            {displayName}
-          </h1>
-          <span ref={infoButtonRef} className="inline-flex shrink-0">
+        <div className="personal-home-welcome min-w-0">
+          <div className="min-w-0">
+            <p className="personal-home-welcome__kicker">{t("personal.home.welcome")}</p>
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="personal-home-welcome__name m-0 min-w-0 truncate">{displayName}</h1>
+              <span ref={infoButtonRef} className="inline-flex shrink-0">
             <Button
               type="button"
               intent="info"
@@ -286,9 +315,11 @@ export function PersonalHomePage() {
               data-testid="personal-home-info"
               onClick={() => setInfoOpen((open) => !open)}
             >
-              <Info className="size-5" aria-hidden="true" />
+              <InfoIcon className="size-5" aria-hidden="true" />
             </Button>
-          </span>
+              </span>
+            </div>
+          </div>
         </div>
         {infoOpen ? (
           <InfoPopover
@@ -303,112 +334,85 @@ export function PersonalHomePage() {
       </header>
 
       <PersonalGuideHomeCard />
-      <PersonalBusinessSummary />
 
       <div className="personal-home-layout" data-testid="personal-home-layout">
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
+      <PersonalBusinessSummary />
       <section
         className="catalog-form-section exits-animate-panel personal-section personal-tracker-card gap-3"
         aria-label={t("personal.home.personalTracker")}
         data-testid="personal-utang-summary"
       >
         <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
+          <MonitoringIcon
+            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+            aria-hidden
+          />
           {t("personal.home.personalTracker")}
         </h2>
-        <div className="tracker-balance-split">
-          <span className="tracker-balance-split__line" data-testid="personal-owed-divider" aria-hidden />
-          <div
-            className="tracker-balance-split__row"
-            data-testid="personal-utang-owed-to-me"
-            role="list"
-          >
-            <TrackerBalanceCard
-              outside={t("personal.home.myOwedRecord")}
-              title={t("personal.home.trackerOwedTitle")}
-              amount={dashboard.totalLentBalance}
-              icon={HandCoins}
-              tone="owed"
-              testId="personal-stat-lent-mine"
-              labelTestId="personal-stat-lent-mine-label"
-              to="/personal/utang/lent"
-            />
-            <TrackerBalanceCard
-              outside={t("personal.home.sharedOwedRecord")}
-              title={t("personal.home.trackerOwedTitle")}
-              amount={dashboard.sharedWithMeLentBalance}
-              icon={HandCoins}
-              tone="owed"
-              testId="personal-stat-lent-shared"
-              labelTestId="personal-stat-lent-shared-label"
-              to="/personal/utang/lent"
-            />
-          </div>
-          <div
-            className="tracker-balance-split__row"
-            data-testid="personal-utang-i-owe"
-            role="list"
-          >
-            <TrackerBalanceCard
-              outside={t("personal.home.myIOweRecord")}
-              title={t("personal.home.trackerOweTitle")}
-              amount={dashboard.totalBorrowedBalance}
-              icon={Wallet}
-              tone="owe"
-              testId="personal-stat-borrowed-mine"
-              labelTestId="personal-stat-borrowed-mine-label"
-              to="/personal/utang/owe"
-            />
-            <TrackerBalanceCard
-              outside={t("personal.home.sharedIOweRecord")}
-              title={t("personal.home.trackerOweTitle")}
-              amount={dashboard.sharedWithMeBorrowedBalance}
-              icon={Wallet}
-              tone="owe"
-              testId="personal-stat-borrowed-shared"
-              labelTestId="personal-stat-borrowed-shared-label"
-              to="/personal/utang/owe"
-            />
-          </div>
+        <div className="tracker-summary-row">
+          <TrackerSummaryCard
+            title={t("personal.home.trackerOwedTitle")}
+            mineLabel={t("personal.home.myOwedRecord")}
+            sharedLabel={t("personal.home.sharedOwedRecord")}
+            mineAmount={dashboard.totalLentBalance}
+            sharedAmount={dashboard.sharedWithMeLentBalance}
+            icon={HandshakeIcon}
+            tone="owed"
+            to="/personal/utang/lent"
+            rowTestId="personal-utang-owed-to-me"
+            mineTestId="personal-stat-lent-mine"
+            sharedTestId="personal-stat-lent-shared"
+            mineLabelTestId="personal-stat-lent-mine-label"
+            sharedLabelTestId="personal-stat-lent-shared-label"
+            showDivider
+            showTotal={false}
+          />
+          <TrackerSummaryCard
+            title={t("personal.home.trackerOweTitle")}
+            mineLabel={t("personal.home.myIOweRecord")}
+            sharedLabel={t("personal.home.sharedIOweRecord")}
+            mineAmount={dashboard.totalBorrowedBalance}
+            sharedAmount={dashboard.sharedWithMeBorrowedBalance}
+            icon={WalletIcon}
+            tone="owe"
+            to="/personal/utang/owe"
+            rowTestId="personal-utang-i-owe"
+            mineTestId="personal-stat-borrowed-mine"
+            sharedTestId="personal-stat-borrowed-shared"
+            mineLabelTestId="personal-stat-borrowed-mine-label"
+            sharedLabelTestId="personal-stat-borrowed-shared-label"
+            showTotal={false}
+          />
         </div>
-        <div
-          className="personal-home-meta personal-home-meta--scroll flex flex-wrap items-center gap-2 border-t border-border pt-3"
-          data-testid="personal-home-meta"
-        >
-          <Button asChild intent="success" appearance="solid" emphasis="soft" shape="auto">
-            <Link to="/personal/people" data-testid="personal-stat-people">
-              <Users className="size-4 shrink-0" aria-hidden="true" />
-              {t("personal.home.people")}
-              <CountBadge count={dashboard.contactCount} tone="primary" />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            intent="primary"
-            appearance="solid"
-            emphasis="soft"
-            shape="auto"
-            className={personalSoftPrimaryButtonClass}
-          >
-            <Link to="/personal/utang" data-testid="personal-stat-active">
-              <HandCoins className="size-4 shrink-0" aria-hidden="true" />
-              {t("personal.home.activeMine")}
-              <CountBadge count={dashboard.activeRelationshipCount} tone="primary" />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            intent="info"
-            appearance="solid"
-            emphasis="soft"
-            shape="auto"
-            className={personalSoftInfoButtonClass}
-          >
-            <Link to="/personal/utang" data-testid="personal-stat-active-shared">
-              <Share2 className="size-4 shrink-0" aria-hidden="true" />
-              {t("personal.home.activeShared")}
-              <CountBadge count={dashboard.sharedWithMeActiveCount ?? 0} tone="primary" />
-            </Link>
-          </Button>
+        <div className="personal-home-metrics" data-testid="personal-home-meta">
+          <Link to="/personal/people" className="personal-home-metric" data-testid="personal-stat-people">
+            <span className="personal-home-metric__icon" aria-hidden="true">
+              <GroupIcon />
+            </span>
+            <span className="personal-home-metric__copy">
+              <span>{t("personal.home.friends")}</span>
+            </span>
+            <strong className="personal-home-metric__value tabular-nums">{dashboard.contactCount}</strong>
+          </Link>
+          <Link to="/personal/utang" className="personal-home-metric" data-testid="personal-stat-active">
+            <span className="personal-home-metric__icon" aria-hidden="true">
+              <HandshakeIcon />
+            </span>
+            <span className="personal-home-metric__copy">
+              <span>{t("personal.home.activeMine")}</span>
+            </span>
+            <strong className="personal-home-metric__value tabular-nums">{dashboard.activeRelationshipCount}</strong>
+          </Link>
+          <Link to="/personal/utang" className="personal-home-metric" data-testid="personal-stat-active-shared">
+            <span className="personal-home-metric__icon" aria-hidden="true">
+              <ShareIcon />
+            </span>
+            <span className="personal-home-metric__copy">
+              <span>{t("personal.home.sharedLedgerStat")}</span>
+            </span>
+            <strong className="personal-home-metric__value tabular-nums">{dashboard.sharedWithMeActiveCount ?? 0}</strong>
+          </Link>
         </div>
       </section>
 
@@ -418,7 +422,7 @@ export function PersonalHomePage() {
         data-testid="personal-stores-to-pay"
       >
         <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <Store
+          <StoreIcon
             className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
             aria-hidden
           />
@@ -458,7 +462,7 @@ export function PersonalHomePage() {
               </ul>
             ) : (
               <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                className="personal-stores-empty m-0 text-[length:var(--exits-text-sm)] text-muted"
                 data-testid="personal-stores-to-pay-empty"
               >
                 {storesToPayQuery.data.storeCount === 0
@@ -479,7 +483,7 @@ export function PersonalHomePage() {
                 className={personalSoftInfoButtonClass}
               >
                 <Link to="/personal/linked-merchants" data-testid="personal-stat-stores">
-                  <Store className="size-4 shrink-0" aria-hidden="true" />
+                  <StoreIcon className="size-4 shrink-0" aria-hidden="true" />
                   {t("personal.home.stores")}
                   <CountBadge count={storesToPayQuery.data.storeCount} tone="primary" />
                 </Link>
@@ -493,7 +497,7 @@ export function PersonalHomePage() {
                 className={personalSoftPrimaryButtonClass}
               >
                 <Link to="/personal/linked-merchants" data-testid="personal-stat-stores-active">
-                  <Wallet className="size-4 shrink-0" aria-hidden="true" />
+                  <WalletIcon className="size-4 shrink-0" aria-hidden="true" />
                   {t("personal.home.active")}
                   <CountBadge count={storesToPayQuery.data.activeCount} tone="primary" />
                 </Link>
@@ -523,7 +527,7 @@ export function PersonalHomePage() {
                   <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
                     {attentionTitle(item)}
                   </span>
-                  <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+                  <ChevronRightIcon className="size-4 shrink-0 text-muted" aria-hidden />
                 </Link>
               </li>
             ))}
@@ -544,12 +548,12 @@ export function PersonalHomePage() {
           aria-label={t("personal.home.quickActions")}
         >
       <section
-        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        className="catalog-form-section exits-animate-panel personal-section personal-quick-actions gap-3"
         aria-label={t("personal.home.quickActions")}
         data-testid="personal-quick-actions"
       >
         <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <Zap
+          <BoltIcon
             className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
             aria-hidden
           />
@@ -561,7 +565,7 @@ export function PersonalHomePage() {
             {
               key: "start-business",
               label: t("personal.home.actionStartBusiness"),
-              icon: Building2,
+              icon: ApartmentIcon,
               testId: "personal-qa-start-business",
               to: "/personal/businesses",
               primary: true,
@@ -569,30 +573,34 @@ export function PersonalHomePage() {
             {
               key: "lent",
               label: t("personal.home.actionLent"),
-              icon: HandCoins,
+              icon: HandshakeIcon,
               testId: "personal-qa-lent",
               to: "/personal/utang/lent",
+              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
             },
             {
               key: "owe",
               label: t("personal.home.actionOwe"),
-              icon: Wallet,
+              icon: WalletIcon,
               testId: "personal-qa-owe",
               to: "/personal/utang/owe",
+              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
             },
             {
               key: "stores",
               label: t("personal.home.actionStores"),
-              icon: Store,
+              icon: StoreIcon,
               testId: "personal-qa-stores",
               to: "/personal/linked-merchants",
+              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
             },
             {
               key: "people",
               label: t("personal.home.actionPeople"),
-              icon: UserPlus,
+              icon: PersonAddIcon,
               testId: "personal-qa-people",
               to: "/personal/people",
+              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
             },
           ]}
         />
@@ -604,7 +612,7 @@ export function PersonalHomePage() {
         data-testid="personal-todo-summary"
       >
         <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <ListTodo className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0" aria-hidden />
+          <ChecklistIcon className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0" aria-hidden />
           {t("personal.home.todoSummary")}
         </h2>
         {todosQuery.isPending && cachedTodos.length === 0 ? (
@@ -622,47 +630,39 @@ export function PersonalHomePage() {
                 {t("personal.home.todoCachedSummary")}
               </p>
             ) : null}
-            <div
-              className="personal-todo-compact flex flex-wrap items-center gap-2"
-              data-testid="personal-todo-counts"
-              role="list"
-            >
+            <div className="personal-todo-cards" data-testid="personal-todo-counts" role="list">
               <Link
                 to={todoAgendaTabHref("today")}
-                className="no-underline"
+                className="personal-todo-card personal-todo-card--today"
                 data-testid="personal-todo-stat-today"
               >
-                <CountChip
-                  label={t("personal.todo.countToday")}
-                  count={counts.today}
-                  tone="primary"
-                  shape="soft"
-                />
+                <span className="personal-todo-card__icon" aria-hidden="true">
+                  <TodayIcon />
+                </span>
+                <span className="personal-todo-card__label">{t("personal.todo.countToday")}</span>
+                <strong className="personal-todo-card__count tabular-nums">{counts.today}</strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("overdue")}
-                className="no-underline"
+                className="personal-todo-card personal-todo-card--overdue"
                 data-testid="personal-todo-stat-overdue"
               >
-                <CountChip
-                  label={t("personal.todo.countOverdue")}
-                  count={counts.overdue}
-                  tone="danger"
-                  shape="soft"
-                />
+                <span className="personal-todo-card__icon" aria-hidden="true">
+                  <OverdueIcon />
+                </span>
+                <span className="personal-todo-card__label">{t("personal.todo.countOverdue")}</span>
+                <strong className="personal-todo-card__count tabular-nums">{counts.overdue}</strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("upcoming")}
-                className="no-underline"
+                className="personal-todo-card personal-todo-card--upcoming"
                 data-testid="personal-todo-stat-upcoming"
               >
-                <CountChip
-                  label={t("personal.todo.countUpcoming")}
-                  count={counts.upcoming}
-                  tone="info"
-                  shape="soft"
-                  className="border-[color-mix(in_srgb,var(--exits-severity-info)_28%,transparent)] bg-[color-mix(in_srgb,var(--exits-severity-info)_12%,transparent)] text-[var(--exits-severity-info)]"
-                />
+                <span className="personal-todo-card__icon" aria-hidden="true">
+                  <UpcomingIcon />
+                </span>
+                <span className="personal-todo-card__label">{t("personal.todo.countUpcoming")}</span>
+                <strong className="personal-todo-card__count tabular-nums">{counts.upcoming}</strong>
               </Link>
             </div>
             {counts.open === 0 && counts.completed === 0 ? (
@@ -680,7 +680,7 @@ export function PersonalHomePage() {
             {
               key: "add",
               label: t("personal.home.actionTodo"),
-              icon: <ListPlus />,
+              icon: <PlaylistAddIcon />,
               href: "/personal/todo?add=1",
               testId: "personal-todo-add",
               emphasis: "primary",

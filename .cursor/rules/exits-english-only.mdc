@@ -1,0 +1,16 @@
+---
+description: English-only UI until multiple languages are resumed
+alwaysApply: true
+---
+
+# English only (multiple languages suspended)
+
+User-facing copy is English until multiple languages are explicitly resumed.
+
+- Put new and changed UI strings in the English catalog only: `src/i18n/locales/en.ts` and the matching `en.js` that Vite loads.
+- Do not add or update `fil-PH`, `ceb-PH`, `hil-PH`, or `ilo-PH` catalogs.
+- Do not add a language switcher, locale picker, or new locale.
+- Keep existing `t("...")` keys. Write the English value in `en`.
+- Leave the other locale files in place. Do not delete the i18n system.
+
+Resume translations only when the user asks to turn multiple languages back on.
