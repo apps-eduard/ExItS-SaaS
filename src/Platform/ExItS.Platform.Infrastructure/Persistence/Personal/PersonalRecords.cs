@@ -200,6 +200,7 @@ internal sealed class PersonalReminderRecord
     public Guid Id { get; set; }
     public Guid DebtRelationshipId { get; set; }
     public Guid CreatedByUserIdentityId { get; set; }
+    public string? Audience { get; set; }
     public string ScheduleType { get; set; } = string.Empty;
     public string? Message { get; set; }
     public DateTimeOffset ScheduledForUtc { get; set; }

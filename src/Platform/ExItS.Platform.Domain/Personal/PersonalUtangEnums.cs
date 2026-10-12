@@ -116,6 +116,15 @@ public enum PersonalReminderScheduleType
     RecurringOverdue
 }
 
+/// <summary>
+/// Who receives a scheduled Utang reminder. Null means a reminder created before this choice existed.
+/// </summary>
+public enum PersonalReminderAudience
+{
+    Self,
+    Counterparty
+}
+
 public enum PersonalReminderStatus
 {
     Scheduled,

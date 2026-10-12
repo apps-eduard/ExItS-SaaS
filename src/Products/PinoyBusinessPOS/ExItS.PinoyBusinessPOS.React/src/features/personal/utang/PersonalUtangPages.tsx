@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, Plus, UserPlus, Users, Wallet } from "lucide-react";
 import {
@@ -425,13 +425,15 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
   const perspective = mode === "lent" ? "Lent" : "Borrowed";
-  const [contactId, setContactId] = useState("");
+  const [searchParams] = useSearchParams();
+  const requestedContactId = searchParams.get("contact") ?? "";
+  const [contactId, setContactId] = useState(requestedContactId);
+  const [recordFormOpen, setRecordFormOpen] = useState(Boolean(requestedContactId));
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [shareWithCounterparty, setShareWithCounterparty] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [recordFormOpen, setRecordFormOpen] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
   const pendingRelationshipIdRef = useRef<string | null>(null);
   const pendingInitialLoanEntryIdRef = useRef<string | null>(null);
@@ -452,6 +454,14 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       mode === "lent" ? listLentRelationships(signal) : listBorrowedRelationships(signal),
     enabled: online,
   });
+
+  useEffect(() => {
+    if (!requestedContactId) {
+      return;
+    }
+    setContactId(requestedContactId);
+    setRecordFormOpen(true);
+  }, [requestedContactId]);
 
   useEffect(() => {
     if (!offline) {
@@ -847,9 +857,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           <UtangFieldLabel required>
             {t("personal.utang.purpose")}
           </UtangFieldLabel>
-          <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
-            {t("personal.utang.purposeHelp")}
-          </span>
           <textarea
             data-testid="utang-rel-notes"
             className="min-h-20 w-full min-w-0 resize-y rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
@@ -1082,7 +1089,6 @@ export function PersonalRelationshipDetailPage() {
   >("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [settleOpen, setSettleOpen] = useState(false);
-  const [balanceOpen, setBalanceOpen] = useState(true);
   const [settleError, setSettleError] = useState<string | null>(null);
   const pendingSettlementEntryIdRef = useRef<string | null>(null);
 
@@ -1494,37 +1500,23 @@ export function PersonalRelationshipDetailPage() {
         backTestId="page-header-back-utang-detail"
       />
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
+      <div className="utang-detail-top">
       <div
-        className="flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
+        className="utang-balance-card flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
         data-testid="utang-balance-card"
       >
-        <h2 className="m-0">
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 border-0 bg-transparent p-0 text-left text-inherit"
-            aria-expanded={balanceOpen}
-            aria-controls="utang-balance-panel"
-            data-testid="utang-balance-toggle"
-            onClick={() => setBalanceOpen((open) => !open)}
-          >
-            {detail.perspective === "Borrowed" ? (
-              <Wallet className="size-5 shrink-0 text-primary" aria-hidden="true" />
-            ) : (
-              <HandCoins className="size-5 shrink-0 text-primary" aria-hidden="true" />
-            )}
-            <span className="min-w-0 flex-1 text-[length:var(--exits-text-base)] font-semibold">
-              {perspectiveLabel}
-            </span>
-            <ChevronDown
-              className={cn(
-                "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-                balanceOpen && "rotate-180",
-              )}
-              aria-hidden="true"
-            />
-          </button>
+        <h2 className="m-0 flex items-center gap-2 text-[length:var(--exits-text-base)] font-semibold">
+          {detail.perspective === "Borrowed" ? (
+            <Wallet className="size-5 shrink-0 text-primary" aria-hidden="true" />
+          ) : (
+            <HandCoins className="size-5 shrink-0 text-primary" aria-hidden="true" />
+          )}
+          <span className="min-w-0 flex-1">
+            {detail.perspective === "Borrowed"
+              ? t("personal.utang.youOweName").replace("{name}", ownerDisplayName)
+              : perspectiveLabel}
+          </span>
         </h2>
-        {balanceOpen ? (
         <div id="utang-balance-panel" className="flex min-w-0 flex-col gap-2">
         <MoneyDisplay amount={currentBalance} className="text-[length:var(--exits-text-xl)]" />
         <p
@@ -1617,8 +1609,24 @@ export function PersonalRelationshipDetailPage() {
           </div>
         ) : null}
         </div>
-        ) : null}
       </div>
+
+      {!relationshipClosed && online ? (
+        <RelationshipInviteReminderPanel
+          relationshipId={relationshipId}
+          counterpartyName={ownerDisplayName}
+          canRemindThem={
+            shared &&
+            detail.creditorUserIdentityId != null &&
+            detail.debtorUserIdentityId != null
+          }
+        />
+      ) : null}
+      {!relationshipClosed && !online ? (
+        <OfflineNotice
+          message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangReminder))}
+        />
+      ) : null}
 
       {awaitingSettlement ? (
         <p
@@ -1667,7 +1675,7 @@ export function PersonalRelationshipDetailPage() {
 
       {canMutateFinances && !relationshipClosed ? (
       <form
-        className="catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
+        className="utang-entry-card catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
@@ -1757,11 +1765,11 @@ export function PersonalRelationshipDetailPage() {
               ? t("personal.utang.adjustmentReason")
               : t("personal.utang.purpose")}
           </UtangFieldLabel>
-          <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
-            {entryType === "Adjustment"
-              ? t("personal.utang.adjustmentReasonHelp")
-              : t("personal.utang.purposeHelp")}
-          </span>
+          {entryType === "Adjustment" ? (
+            <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+              {t("personal.utang.adjustmentReasonHelp")}
+            </span>
+          ) : null}
           <textarea
             data-testid="utang-entry-notes"
             className="min-h-16 w-full min-w-0 resize-y rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
@@ -1821,23 +1829,10 @@ export function PersonalRelationshipDetailPage() {
         </Button>
       </form>
       ) : null}
-
-      {!relationshipClosed && online ? (
-        <RelationshipInviteReminderPanel
-          relationshipId={relationshipId}
-          inviteeContactId={
-            detail.perspective === "Borrowed" ? detail.creditorContactId : detail.debtorContactId
-          }
-        />
-      ) : null}
-      {!relationshipClosed && !online ? (
-        <OfflineNotice
-          message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangInvite))}
-        />
-      ) : null}
+      </div>
 
       <section
-        className="catalog-form-section exits-animate-panel personal-section min-w-0 gap-2 overflow-hidden"
+        className="utang-activity-card catalog-form-section exits-animate-panel personal-section min-w-0 gap-2 overflow-hidden"
         aria-label={t("personal.utang.activity")}
       >
         <h2 className="catalog-form-section__title">{t("personal.utang.activity")}</h2>

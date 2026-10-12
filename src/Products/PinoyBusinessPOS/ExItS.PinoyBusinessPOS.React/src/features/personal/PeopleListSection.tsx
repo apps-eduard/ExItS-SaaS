@@ -4,6 +4,15 @@ import { Link } from "react-router-dom";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { SearchField } from "@/components/exits/SearchField";
@@ -179,6 +188,97 @@ function PeopleListRow({
   );
 }
 
+function PeopleTable({
+  rows,
+  statusLabel,
+}: {
+  rows: PeopleRowModel[];
+  statusLabel: (status: PeopleConnectionStatus) => string;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <ExitsTableContainer className="people-list-table" data-testid="people-table">
+      <ExitsTable>
+        <ExitsTableHeader>
+          <ExitsTableRow>
+            <ExitsTableHead colSize="flex">{t("people.displayName")}</ExitsTableHead>
+            <ExitsTableHead>{t("people.column.contact")}</ExitsTableHead>
+            <ExitsTableHead>{t("people.column.email")}</ExitsTableHead>
+            <ExitsTableHead>{t("people.column.status")}</ExitsTableHead>
+            <ExitsTableHead className="people-table-actions">{t("people.column.actions")}</ExitsTableHead>
+          </ExitsTableRow>
+        </ExitsTableHeader>
+        <ExitsTableBody>
+          {rows.map((row) => {
+            const href = `/personal/people/${row.contact.id}`;
+            const phone = row.contact.phone?.trim() || "—";
+            const email = row.contact.email?.trim() || "—";
+            return (
+              <ExitsTableRow key={row.contact.id} data-testid={`people-table-row-${row.contact.id}`}>
+                <ExitsTableCell emphasis="semibold" truncate title={row.contact.displayName}>
+                  <Link
+                    to={href}
+                    className="inline-flex min-w-0 items-center gap-2 text-foreground no-underline"
+                  >
+                    <PersonAvatar name={row.contact.displayName} size="sm" />
+                    <span className="truncate">{row.contact.displayName}</span>
+                  </Link>
+                </ExitsTableCell>
+                <ExitsTableCell truncate title={phone === "—" ? undefined : phone}>
+                  {phone}
+                </ExitsTableCell>
+                <ExitsTableCell truncate title={email === "—" ? undefined : email}>
+                  {email}
+                </ExitsTableCell>
+                <ExitsTableCell>
+                  <StatusChip
+                    tone={statusTone(row.connectionStatus)}
+                    appearance="emphasis"
+                    shape="square"
+                  >
+                    {statusLabel(row.connectionStatus)}
+                  </StatusChip>
+                </ExitsTableCell>
+                <ExitsTableCell className="people-table-actions">
+                  <span className="inline-flex flex-wrap justify-end gap-2">
+                    {row.connectionStatus === "local" ? (
+                      <Button asChild variant="outline" className="w-auto">
+                        <Link
+                          to={`/personal/people/${row.contact.id}?edit=1`}
+                          data-testid={`people-edit-${row.contact.id}`}
+                        >
+                          {t("people.action.edit")}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    <Button asChild variant="outline" className="w-auto">
+                      <Link
+                        to={`/personal/utang/lent?contact=${row.contact.id}`}
+                        data-testid={`people-lent-${row.contact.id}`}
+                      >
+                        {t("personal.utang.filterOwedToMe")}
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-auto">
+                      <Link
+                        to={`/personal/utang/owe?contact=${row.contact.id}`}
+                        data-testid={`people-owe-${row.contact.id}`}
+                      >
+                        {t("personal.utang.filterIOwe")}
+                      </Link>
+                    </Button>
+                  </span>
+                </ExitsTableCell>
+              </ExitsTableRow>
+            );
+          })}
+        </ExitsTableBody>
+      </ExitsTable>
+    </ExitsTableContainer>
+  );
+}
+
 export function PeopleListSection({
   rows,
   summary,
@@ -303,15 +403,18 @@ export function PeopleListSection({
               align="center"
               icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.noResultsTitle")} detail={t("people.noResultsBody")} />
       ) : (
-        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="people-list">
-          {filteredRows.map((row) => (
-            <PeopleListRow
-              key={row.contact.id}
-              row={row}
-              statusLabel={statusLabel(row.connectionStatus)}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="exits-list people-list-cards m-0 grid list-none gap-2 p-0" data-testid="people-list">
+            {filteredRows.map((row) => (
+              <PeopleListRow
+                key={row.contact.id}
+                row={row}
+                statusLabel={statusLabel(row.connectionStatus)}
+              />
+            ))}
+          </ul>
+          <PeopleTable rows={filteredRows} statusLabel={statusLabel} />
+        </>
       )}
     </section>
   );

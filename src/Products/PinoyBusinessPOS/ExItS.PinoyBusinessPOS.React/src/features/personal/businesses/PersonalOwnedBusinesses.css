@@ -23,6 +23,85 @@
   );
 }
 
+[data-testid="personal-owned-businesses"] {
+  border-color: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-border));
+  border-top: 6px solid var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__head {
+  background: transparent;
+  background-image: none;
+  border-bottom: none;
+  padding-bottom: 0.35rem;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__list {
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__entry + .personal-owned-businesses__entry {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__rule {
+  display: none;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__row {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--exits-border);
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--exits-primary);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
+[data-testid="personal-staff-workplaces"] {
+  border-color: color-mix(in srgb, var(--exits-info) 18%, var(--exits-border));
+  border-top: 6px solid var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 6%, var(--exits-surface));
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__head {
+  background: transparent;
+  background-image: none;
+  border-bottom: none;
+  padding-bottom: 0.35rem;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__list {
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__entry + .personal-owned-businesses__entry {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__rule {
+  display: none;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__mark {
+  color: var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 10%, var(--exits-surface));
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__row {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--exits-border);
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--exits-info);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
 .personal-owned-businesses__title {
   margin: 0;
   font-size: 1.1rem;

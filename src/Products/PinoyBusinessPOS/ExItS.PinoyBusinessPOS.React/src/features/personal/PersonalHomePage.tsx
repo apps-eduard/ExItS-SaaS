@@ -20,6 +20,7 @@ const GroupIcon = symbol("group");
 const WalletIcon = symbol("account_balance_wallet");
 const BoltIcon = symbol("bolt");
 const MonitoringIcon = symbol("monitoring");
+const NotificationIcon = symbol("notifications");
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 import {
   listBorrowedRelationships,
@@ -34,7 +35,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { CountBadge } from "@/components/exits/CountChip";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -72,9 +72,10 @@ function TrackerSummaryCard({
   sharedLabel,
   mineAmount,
   sharedAmount,
+  mineTo,
+  sharedTo,
   icon: Icon,
   tone,
-  to,
   rowTestId,
   mineTestId,
   sharedTestId,
@@ -88,9 +89,10 @@ function TrackerSummaryCard({
   sharedLabel: string;
   mineAmount: number;
   sharedAmount: number;
+  mineTo: string;
+  sharedTo: string;
   icon: IconComponent;
   tone: "owed" | "owe";
-  to: string;
   rowTestId: string;
   mineTestId: string;
   sharedTestId: string;
@@ -100,7 +102,7 @@ function TrackerSummaryCard({
   showTotal?: boolean;
 }) {
   return (
-    <Link to={to} className={`tracker-summary tracker-summary--${tone}`} data-testid={rowTestId}>
+    <div className={`tracker-summary tracker-summary--${tone}`} data-testid={rowTestId}>
       <span className="tracker-summary__head">
         <span className={`tracker-summary__icon tracker-summary__icon--${tone}`} aria-hidden>
           <Icon />
@@ -114,25 +116,25 @@ function TrackerSummaryCard({
       </span>
       <span className="tracker-balance__rule" aria-hidden />
       <span className="tracker-summary__foot">
-        <span className="tracker-summary__stat" data-testid={mineTestId}>
+        <Link to={mineTo} className="tracker-summary__stat" data-testid={mineTestId}>
           <span className="tracker-summary__stat-label" data-testid={mineLabelTestId}>
             {mineLabel}
           </span>
           <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(mineAmount)}</span>
-        </span>
+        </Link>
         <span
           className="tracker-summary__vrule"
           data-testid={showDivider ? "personal-owed-divider" : undefined}
           aria-hidden
         />
-        <span className="tracker-summary__stat" data-testid={sharedTestId}>
+        <Link to={sharedTo} className="tracker-summary__stat" data-testid={sharedTestId}>
           <span className="tracker-summary__stat-label" data-testid={sharedLabelTestId}>
             {sharedLabel}
           </span>
           <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(sharedAmount)}</span>
-        </span>
+        </Link>
       </span>
-    </Link>
+    </div>
   );
 }
 
@@ -353,35 +355,37 @@ export function PersonalHomePage() {
         <div className="tracker-summary-row">
           <TrackerSummaryCard
             title={t("personal.home.trackerOwedTitle")}
-            mineLabel={t("personal.home.myOwedRecord")}
+            mineLabel={t("personal.home.myIOweRecord")}
             sharedLabel={t("personal.home.sharedOwedRecord")}
-            mineAmount={dashboard.totalLentBalance}
-            sharedAmount={dashboard.sharedWithMeLentBalance}
+            mineAmount={dashboard.totalBorrowedBalance}
+            sharedAmount={dashboard.totalLentBalance}
+            mineTo="/personal/utang/owe"
+            sharedTo="/personal/utang/lent"
             icon={HandshakeIcon}
             tone="owed"
-            to="/personal/utang/lent"
             rowTestId="personal-utang-owed-to-me"
-            mineTestId="personal-stat-lent-mine"
-            sharedTestId="personal-stat-lent-shared"
-            mineLabelTestId="personal-stat-lent-mine-label"
-            sharedLabelTestId="personal-stat-lent-shared-label"
+            mineTestId="personal-stat-borrowed-mine"
+            sharedTestId="personal-stat-lent-mine"
+            mineLabelTestId="personal-stat-borrowed-mine-label"
+            sharedLabelTestId="personal-stat-lent-mine-label"
             showDivider
             showTotal={false}
           />
           <TrackerSummaryCard
             title={t("personal.home.trackerOweTitle")}
             mineLabel={t("personal.home.myIOweRecord")}
-            sharedLabel={t("personal.home.sharedIOweRecord")}
-            mineAmount={dashboard.totalBorrowedBalance}
-            sharedAmount={dashboard.sharedWithMeBorrowedBalance}
+            sharedLabel={t("personal.home.sharedOwedRecord")}
+            mineAmount={dashboard.sharedWithMeBorrowedBalance}
+            sharedAmount={dashboard.sharedWithMeLentBalance}
+            mineTo="/personal/utang/owe"
+            sharedTo="/personal/utang/lent"
             icon={WalletIcon}
             tone="owe"
-            to="/personal/utang/owe"
             rowTestId="personal-utang-i-owe"
-            mineTestId="personal-stat-borrowed-mine"
-            sharedTestId="personal-stat-borrowed-shared"
-            mineLabelTestId="personal-stat-borrowed-mine-label"
-            sharedLabelTestId="personal-stat-borrowed-shared-label"
+            mineTestId="personal-stat-borrowed-shared"
+            sharedTestId="personal-stat-lent-shared"
+            mineLabelTestId="personal-stat-borrowed-shared-label"
+            sharedLabelTestId="personal-stat-lent-shared-label"
             showTotal={false}
           />
         </div>
@@ -507,13 +511,23 @@ export function PersonalHomePage() {
         ) : null}
       </section>
 
+        </div>
+
+        <aside
+          className="personal-home-layout__aside flex min-w-0 flex-col gap-3"
+          aria-label={t("personal.home.quickActions")}
+        >
       {attentionItems.length > 0 ? (
         <section
-          className="catalog-form-section exits-animate-panel personal-section gap-2"
+          className="catalog-form-section exits-animate-panel personal-section personal-needs-attention gap-2"
           aria-label={t("personal.home.needsAttention")}
           data-testid="personal-needs-attention"
         >
-          <h2 className="catalog-form-section__title text-muted">
+          <h2 className="catalog-form-section__title personal-todo-create-form__title">
+            <NotificationIcon
+              className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+              aria-hidden
+            />
             {t("personal.home.needsAttention")}
           </h2>
           <ul className="m-0 grid list-none gap-2 p-0">
@@ -541,12 +555,6 @@ export function PersonalHomePage() {
           </Link>
         </section>
       ) : null}
-        </div>
-
-        <aside
-          className="personal-home-layout__aside flex min-w-0 flex-col gap-3"
-          aria-label={t("personal.home.quickActions")}
-        >
       <section
         className="catalog-form-section exits-animate-panel personal-section personal-quick-actions gap-3"
         aria-label={t("personal.home.quickActions")}
@@ -632,6 +640,16 @@ export function PersonalHomePage() {
             ) : null}
             <div className="personal-todo-cards" data-testid="personal-todo-counts" role="list">
               <Link
+                to="/personal/todo?add=1"
+                className="personal-todo-card personal-todo-card--add"
+                data-testid="personal-todo-add"
+              >
+                <span className="personal-todo-card__icon" aria-hidden="true">
+                  <PlaylistAddIcon />
+                </span>
+                <span className="personal-todo-card__label">{t("personal.home.actionTodo")}</span>
+              </Link>
+              <Link
                 to={todoAgendaTabHref("today")}
                 className="personal-todo-card personal-todo-card--today"
                 data-testid="personal-todo-stat-today"
@@ -641,17 +659,6 @@ export function PersonalHomePage() {
                 </span>
                 <span className="personal-todo-card__label">{t("personal.todo.countToday")}</span>
                 <strong className="personal-todo-card__count tabular-nums">{counts.today}</strong>
-              </Link>
-              <Link
-                to={todoAgendaTabHref("overdue")}
-                className="personal-todo-card personal-todo-card--overdue"
-                data-testid="personal-todo-stat-overdue"
-              >
-                <span className="personal-todo-card__icon" aria-hidden="true">
-                  <OverdueIcon />
-                </span>
-                <span className="personal-todo-card__label">{t("personal.todo.countOverdue")}</span>
-                <strong className="personal-todo-card__count tabular-nums">{counts.overdue}</strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("upcoming")}
@@ -664,6 +671,17 @@ export function PersonalHomePage() {
                 <span className="personal-todo-card__label">{t("personal.todo.countUpcoming")}</span>
                 <strong className="personal-todo-card__count tabular-nums">{counts.upcoming}</strong>
               </Link>
+              <Link
+                to={todoAgendaTabHref("overdue")}
+                className="personal-todo-card personal-todo-card--overdue"
+                data-testid="personal-todo-stat-overdue"
+              >
+                <span className="personal-todo-card__icon" aria-hidden="true">
+                  <OverdueIcon />
+                </span>
+                <span className="personal-todo-card__label">{t("personal.todo.countOverdue")}</span>
+                <strong className="personal-todo-card__count tabular-nums">{counts.overdue}</strong>
+              </Link>
             </div>
             {counts.open === 0 && counts.completed === 0 ? (
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -672,21 +690,6 @@ export function PersonalHomePage() {
             ) : null}
           </>
         ) : null}
-        <ExitsChipBar
-          variant="actions"
-          ariaLabel={t("personal.home.actionTodo")}
-          testId="personal-todo-add-link"
-          items={[
-            {
-              key: "add",
-              label: t("personal.home.actionTodo"),
-              icon: <PlaylistAddIcon />,
-              href: "/personal/todo?add=1",
-              testId: "personal-todo-add",
-              emphasis: "primary",
-            },
-          ]}
-        />
       </section>
         </aside>
       </div>

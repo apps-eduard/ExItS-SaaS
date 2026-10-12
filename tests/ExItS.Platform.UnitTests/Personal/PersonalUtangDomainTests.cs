@@ -220,6 +220,56 @@ public sealed class PersonalUtangDomainTests
     }
 
     [Fact]
+    public void Reminder_audience_notifies_self_or_the_other_exits_user()
+    {
+        var me = PlatformUserId.New();
+        var them = PlatformUserId.New();
+
+        var remindMe = PersonalReminder.ResolveRecipients(
+            PersonalReminderAudience.Self,
+            me,
+            creditorUserIdentityId: me,
+            debtorUserIdentityId: them);
+        Assert.Equal([me], remindMe);
+
+        var privateRecord = PersonalReminder.ResolveRecipients(
+            PersonalReminderAudience.Self,
+            me,
+            creditorUserIdentityId: me,
+            debtorUserIdentityId: null);
+        Assert.Equal([me], privateRecord);
+
+        var remindThem = PersonalReminder.ResolveRecipients(
+            PersonalReminderAudience.Counterparty,
+            me,
+            creditorUserIdentityId: me,
+            debtorUserIdentityId: them);
+        Assert.Equal([them], remindThem);
+
+        var localContact = Assert.Throws<DomainException>(() =>
+            PersonalReminder.ResolveRecipients(
+                PersonalReminderAudience.Counterparty,
+                me,
+                creditorUserIdentityId: me,
+                debtorUserIdentityId: null));
+        Assert.Equal(DomainErrorCodes.InvalidPersonalReminder, localContact.ErrorCode);
+
+        var legacyShared = PersonalReminder.ResolveRecipients(
+            audience: null,
+            me,
+            creditorUserIdentityId: me,
+            debtorUserIdentityId: them);
+        Assert.Equal([them], legacyShared);
+
+        var legacyLocal = PersonalReminder.ResolveRecipients(
+            audience: null,
+            me,
+            creditorUserIdentityId: me,
+            debtorUserIdentityId: null);
+        Assert.Equal([me], legacyLocal);
+    }
+
+    [Fact]
     public void Invitation_resend_is_rate_limited()
     {
         var owner = PlatformUserId.New();
