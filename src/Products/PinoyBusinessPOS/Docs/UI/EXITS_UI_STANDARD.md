@@ -12,6 +12,8 @@ The corresponding Cursor Project Rules under `.cursor/rules` (`exits-ui-architec
 Related locked standards:
 
 - [exits-button-standard.md](./exits-button-standard.md)
+- [exits-input-standard.md](./exits-input-standard.md)
+- [exits-toggle-standard.md](./exits-toggle-standard.md)
 - [exits-message-standard.md](./exits-message-standard.md)
 - [exits-table-standard.md](./exits-table-standard.md)
 - [exits-responsive-data-view-standard.md](./exits-responsive-data-view-standard.md)

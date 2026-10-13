@@ -1,4 +1,4 @@
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
@@ -11,9 +11,11 @@ import { UiStandardsPreferencePreview } from "@/features/ui-standards/UiStandard
 import { useUiStandardsDisclosure } from "@/features/ui-standards/useUiStandardsDisclosure";
 import {
   filterLiveCards,
+  isUiStandardNavGroup,
   parseUiStandardCategoryParam,
-  UI_STANDARD_FILTER_OPTIONS,
+  UI_STANDARD_NAV,
   type UiStandardFilterCategory,
+  type UiStandardNavItem,
 } from "@/features/ui-standards/ui-standard-catalog";
 
 /**
@@ -29,6 +31,7 @@ export function UiStandardsPage() {
   const { isOpen, setOpen } = useUiStandardsDisclosure();
   const mainRef = useRef<HTMLDivElement>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [formOpen, setFormOpen] = useState(true);
 
   useEffect(() => {
     setCategory(parseUiStandardCategoryParam(searchParams.get("category")));
@@ -115,6 +118,23 @@ export function UiStandardsPage() {
     node.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }, []);
 
+  function renderNavItem(item: UiStandardNavItem, child: boolean) {
+    const selected = category === item.id;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={"ui-standards-sidenav__item" + (child ? " ui-standards-sidenav__item--child" : "")}
+        aria-pressed={selected}
+        data-selected={selected ? "true" : "false"}
+        data-testid={`ui-standards-filter-${item.id}`}
+        onClick={() => setCategoryFilter(item.id)}
+      >
+        {item.label}
+      </button>
+    );
+  }
+
   if (!isFrontendLocalValidationMode()) {
     return <Navigate to="/" replace />;
   }
@@ -127,21 +147,29 @@ export function UiStandardsPage() {
       <div className="ui-standards-layout">
         <nav className="ui-standards-sidenav" aria-label="UI standard categories" data-testid="ui-standards-sidenav">
           <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
-            {UI_STANDARD_FILTER_OPTIONS.map((opt) => {
-              const selected = category === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  className="ui-standards-sidenav__item"
-                  aria-pressed={selected}
-                  data-selected={selected ? "true" : "false"}
-                  data-testid={`ui-standards-filter-${opt.id}`}
-                  onClick={() => setCategoryFilter(opt.id)}
-                >
-                  {opt.label}
-                </button>
-              );
+            {UI_STANDARD_NAV.map((entry) => {
+              if (isUiStandardNavGroup(entry)) {
+                return (
+                  <div key={entry.id} className="ui-standards-sidenav__group">
+                    <button
+                      type="button"
+                      className="ui-standards-sidenav__item"
+                      aria-expanded={formOpen}
+                      data-testid={`ui-standards-filter-${entry.id}`}
+                      onClick={() => setFormOpen((open) => !open)}
+                    >
+                      {entry.label}
+                      <ChevronRight className="ui-standards-sidenav__chevron" aria-hidden />
+                    </button>
+                    {formOpen ? (
+                      <div className="ui-standards-sidenav__sublist" role="group" aria-label={entry.label}>
+                        {entry.children.map((child) => renderNavItem(child, true))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              }
+              return renderNavItem(entry, false);
             })}
           </div>
         </nav>

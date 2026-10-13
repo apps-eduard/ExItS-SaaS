@@ -95,6 +95,24 @@ export const en = {
   "uiStandards.buttonPilotLede":
     "The Button playground is the locked ExItS Button standard. Request buttons with the Cursor command ext btn. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
+  "uiStandards.inputPlaygroundTitle": "Input playground",
+  "uiStandards.inputPilotBadge": "INPUT STANDARD — APPROVED / LOCKED",
+  "uiStandards.inputPilotLede":
+    "The Input playground is the locked ExItS Input standard. Request inputs with the Cursor command ext input. See Docs/UI/exits-input-standard.md.",
+  "uiStandards.inputPilotTitle": "Input samples",
+  "uiStandards.inputTypesTitle": "Input types",
+  "uiStandards.breadcrumbTitle": "Breadcrumbs",
+  "uiStandards.radioPlaygroundTitle": "Radio playground",
+  "uiStandards.radioSamplesTitle": "Radio samples",
+  "uiStandards.checkboxPlaygroundTitle": "Checkbox playground",
+  "uiStandards.checkboxSamplesTitle": "Checkbox samples",
+  "uiStandards.togglePlaygroundTitle": "Toggle playground",
+  "uiStandards.togglePilotBadge": "TOGGLE STANDARD — APPROVED / LOCKED",
+  "uiStandards.togglePilotLede":
+    "The Toggle playground is the locked ExItS Toggle standard. Request toggles with the Cursor command ext toggle. See Docs/UI/exits-toggle-standard.md.",
+  "uiStandards.toggleSamplesTitle": "Toggle samples",
+  "uiStandards.dropdownPlaygroundTitle": "Dropdown playground",
+  "uiStandards.dropdownSamplesTitle": "Dropdown samples",
   "uiStandards.messagePilotBadge": "MESSAGE STANDARD — APPROVED / LOCKED",
   "uiStandards.messagePilotLede":
     "Diamond Full sample is the locked ExItS Message standard (includes Secondary · Contrast in the severity row). Product uses Notice + useExitsToast. See Docs/UI/exits-message-standard.md.",

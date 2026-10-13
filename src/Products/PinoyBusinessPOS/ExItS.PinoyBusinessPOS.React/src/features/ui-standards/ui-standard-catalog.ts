@@ -1,6 +1,12 @@
 export type UiStandardFilterCategory =
   | "all"
   | "buttons"
+  | "inputs"
+  | "radio"
+  | "checkbox"
+  | "toggle"
+  | "dropdown"
+  | "breadcrumbs"
   | "messages"
   | "feedback"
   | "overlays"
@@ -14,6 +20,12 @@ export type UiStandardFilterCategory =
 
 export type UiStandardLiveCardId =
   | "buttons"
+  | "inputs"
+  | "radio"
+  | "checkbox"
+  | "toggle"
+  | "dropdown"
+  | "breadcrumbs"
   | "messages"
   | "confirm"
   | "drawer"
@@ -29,12 +41,38 @@ export type UiStandardLiveCardId =
   | "states"
   | "dodont";
 
-export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
+export type UiStandardNavItem = {
   id: UiStandardFilterCategory;
   label: string;
-}> = [
+};
+
+export type UiStandardNavGroup = {
+  id: "form-components";
+  label: string;
+  children: readonly UiStandardNavItem[];
+};
+
+export type UiStandardNavEntry = UiStandardNavItem | UiStandardNavGroup;
+
+export function isUiStandardNavGroup(entry: UiStandardNavEntry): entry is UiStandardNavGroup {
+  return "children" in entry;
+}
+
+export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
   { id: "all", label: "Global preview" },
   { id: "buttons", label: "Buttons" },
+  {
+    id: "form-components",
+    label: "Form Components",
+    children: [
+      { id: "inputs", label: "Input" },
+      { id: "radio", label: "Radio" },
+      { id: "checkbox", label: "Checkbox" },
+      { id: "toggle", label: "Toggle" },
+      { id: "dropdown", label: "Dropdown" },
+    ],
+  },
+  { id: "breadcrumbs", label: "Breadcrumbs" },
   { id: "messages", label: "Messages" },
   { id: "feedback", label: "Feedback" },
   { id: "overlays", label: "Overlays" },
@@ -46,6 +84,10 @@ export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
   { id: "data", label: "Data" },
   { id: "states", label: "States" },
 ];
+
+export const UI_STANDARD_FILTER_OPTIONS: readonly UiStandardNavItem[] = UI_STANDARD_NAV.flatMap((entry) =>
+  isUiStandardNavGroup(entry) ? [...entry.children] : [entry],
+);
 
 export type UiStandardLiveCardDef = {
   id: UiStandardLiveCardId;
@@ -104,6 +146,60 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "copy",
       "actions",
     ],
+  },
+  {
+    id: "inputs",
+    title: "Input",
+    category: "inputs",
+    keywords: [
+      "input",
+      "inputs",
+      "field",
+      "text",
+      "playground",
+      "standard",
+      "filled",
+      "outlined",
+      "standout",
+      "rounded",
+      "clearable",
+      "required",
+      "type",
+      "password",
+      "email",
+      "textarea",
+      "label",
+    ],
+  },
+  {
+    id: "breadcrumbs",
+    title: "Breadcrumbs",
+    category: "breadcrumbs",
+    keywords: ["breadcrumb", "breadcrumbs", "basic", "separator", "home", "navigation"],
+  },
+  {
+    id: "radio",
+    title: "Radio",
+    category: "radio",
+    keywords: ["radio", "radios", "option", "form"],
+  },
+  {
+    id: "checkbox",
+    title: "Checkbox",
+    category: "checkbox",
+    keywords: ["checkbox", "checkboxes", "check", "form"],
+  },
+  {
+    id: "toggle",
+    title: "Toggle",
+    category: "toggle",
+    keywords: ["toggle", "switch", "form"],
+  },
+  {
+    id: "dropdown",
+    title: "Dropdown",
+    category: "dropdown",
+    keywords: ["dropdown", "select", "menu", "form", "qselect"],
   },
   {
     id: "messages",
@@ -402,6 +498,32 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
       "diamond",
       "gallery",
       "severity",
+    ],
+  },
+  {
+    id: "input-playground",
+    component: "Input playground",
+    standard: "Input",
+    category: "inputs",
+    status: "Locked",
+    summary:
+      "Locked global ExItS Input standard. Cursor command ext input from the Input playground.",
+    keywords: [
+      "input",
+      "field",
+      "filled",
+      "outlined",
+      "standout",
+      "rounded",
+      "clearable",
+      "required",
+      "password",
+      "email",
+      "textarea",
+      "date",
+      "time",
+      "mobile",
+      "playground",
     ],
   },
   {

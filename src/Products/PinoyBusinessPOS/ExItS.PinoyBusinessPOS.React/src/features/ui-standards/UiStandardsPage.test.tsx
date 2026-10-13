@@ -862,6 +862,324 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standard-catalog-row-quantity-stepper")).not.toBeInTheDocument();
   });
 
+  it("nests Input, Radio, and Checkbox under Form Components", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const group = screen.getByTestId("ui-standards-filter-form-components");
+    expect(group).toHaveTextContent("Form Components");
+    expect(group).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("ui-standards-filter-inputs")).toHaveTextContent("Input");
+    expect(screen.getByTestId("ui-standards-filter-radio")).toHaveTextContent("Radio");
+    expect(screen.getByTestId("ui-standards-filter-checkbox")).toHaveTextContent("Checkbox");
+    expect(screen.getByTestId("ui-standards-filter-toggle")).toHaveTextContent("Toggle");
+    expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveTextContent("Dropdown");
+    await user.click(screen.getByTestId("ui-standards-filter-radio"));
+    expect(screen.getByTestId("ui-standards-filter-radio")).toHaveAttribute("data-selected", "true");
+    const playground = screen.getByTestId("ui-standard-card-radio-playground");
+    const samples = screen.getByTestId("ui-standard-card-radio");
+    expect(playground.compareDocumentPosition(samples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(samples).getByTestId("ui-standard-radio-standard")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(samples).getByTestId("ui-standard-radio-standard")).not.toHaveClass("ui-standards-qradio--dark-ink");
+    expect(within(samples).getByTestId("ui-standard-radio-icon-standard")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(playground).getByTestId("ui-standard-radio-pg-field")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(samples).getByTestId("ui-standard-radio-primary")).toHaveAttribute("aria-checked", "true");
+    await user.click(within(samples).getByTestId("ui-standard-radio-primary"));
+    expect(within(samples).getByTestId("ui-standard-radio-primary")).toHaveAttribute("aria-checked", "false");
+    await user.click(within(samples).getByTestId("ui-standard-radio-icon-primary"));
+    expect(within(samples).getByTestId("ui-standard-radio-icon-primary")).toHaveAttribute("aria-checked", "false");
+    await user.click(within(samples).getByTestId("ui-standard-radio-dark-primary"));
+    expect(within(samples).getByTestId("ui-standard-radio-dark-primary")).toHaveAttribute("aria-checked", "false");
+    expect(within(samples).getByTestId("ui-standard-radio-dark-standard")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(samples).getByTestId("ui-standard-radio-dark-primary")).toHaveStyle({ "--qradio-color": "#1976d2" });
+    expect(within(samples).queryByTestId("ui-standard-radio-dark-line")).not.toBeInTheDocument();
+    expect(within(samples).getByTestId("ui-standard-radio-icons")).toBeInTheDocument();
+    expect(within(samples).getByTestId("ui-standard-radio-icon-primary")).toHaveClass("ui-standards-qradio--icons");
+    expect(within(samples).getByTestId("ui-standard-radio-danger")).toBeInTheDocument();
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext radio");
+    await user.selectOptions(within(playground).getByTestId("ui-standard-radio-pg-intent"), "primary");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext radio primary",
+    );
+    await user.selectOptions(within(playground).getByTestId("ui-standard-radio-pg-type"), "icons");
+    await user.selectOptions(within(playground).getByTestId("ui-standard-radio-pg-density"), "comfort");
+    expect(within(playground).getByTestId("ui-standard-radio-pg-field")).toHaveClass("ui-standards-qradio--icons");
+    expect(within(playground).getByTestId("ui-standard-radio-pg-preview")).toHaveAttribute("data-density", "comfort");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext radio primary icons comfort",
+    );
+    expect(screen.queryByTestId("ui-standard-card-inputs")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-checkbox"));
+    expect(screen.getByTestId("ui-standards-filter-checkbox")).toHaveAttribute("data-selected", "true");
+    const checkboxPlayground = screen.getByTestId("ui-standard-card-checkbox-playground");
+    const checkboxSamples = screen.getByTestId("ui-standard-card-checkbox");
+    expect(checkboxPlayground.compareDocumentPosition(checkboxSamples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).toHaveStyle({
+      "--qcheckbox-color": "#9e9e9e",
+    });
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).toHaveAttribute("aria-checked", "false");
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).not.toHaveClass(
+      "ui-standards-qcheckbox--dark-ink",
+    );
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-standard")).toHaveStyle({
+      "--qcheckbox-color": "#9e9e9e",
+    });
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary")).toHaveStyle({
+      "--qcheckbox-color": "#1976d2",
+    });
+    expect(within(checkboxSamples).queryByTestId("ui-standard-checkbox-icons")).not.toBeInTheDocument();
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf")).toHaveAttribute("aria-checked", "mixed");
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-ft")).toHaveAttribute("aria-checked", "false");
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf-indet")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-ft-indet")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-field")).toHaveStyle({
+      "--qcheckbox-color": "#9e9e9e",
+    });
+    expect(within(checkboxPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext checkbox",
+    );
+    expect(within(checkboxPlayground).queryByTestId("ui-standard-checkbox-pg-type")).not.toBeInTheDocument();
+    await user.selectOptions(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-intent"), "primary");
+    await user.selectOptions(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-density"), "comfort");
+    expect(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-preview")).toHaveAttribute(
+      "data-density",
+      "comfort",
+    );
+    expect(within(checkboxPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext checkbox primary comfort",
+    );
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf")).toHaveAttribute("aria-checked", "true");
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-reset"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf")).toHaveAttribute("aria-checked", "mixed");
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf-indet")).toHaveAttribute(
+      "aria-checked",
+      "mixed",
+    );
+    expect(screen.queryByTestId("ui-standard-card-radio")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-toggle"));
+    expect(screen.getByTestId("ui-standards-filter-toggle")).toHaveAttribute("data-selected", "true");
+    const togglePlayground = screen.getByTestId("ui-standard-card-toggle-playground");
+    const toggleSamples = screen.getByTestId("ui-standard-card-toggle");
+    expect(togglePlayground.compareDocumentPosition(toggleSamples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-standard")).toHaveStyle({ "--qtoggle-color": "#9e9e9e" });
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-standard")).toHaveClass("ui-standards-qtoggle--standard");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-standard"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-standard")).toHaveAttribute("data-state", "off");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary")).toHaveAttribute("data-state", "off");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary")).toHaveAttribute("data-state", "off");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary")).toHaveClass("ui-standards-qtoggle--icons");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-standard")).toHaveStyle({ "--qtoggle-color": "#9e9e9e" });
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-standard")).toHaveClass("ui-standards-pill-switch--standard");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary")).toHaveStyle({ "--qtoggle-color": "#1976d2" });
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-colors")).toHaveTextContent("Standard");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-icons")).toHaveTextContent("Standard with icons");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill")).toHaveTextContent("Solid");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-outline-primary")).toHaveClass(
+      "ui-standards-pill-switch--outline",
+    );
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-black")).toHaveAttribute("data-state", "on");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-icon-black")).toBeInTheDocument();
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success")).toHaveTextContent("ON");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success")).toHaveAttribute("data-state", "off");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success")).toHaveTextContent("OFF");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf")).toHaveAttribute("data-state", "indet");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf-indet")).toHaveAttribute("data-state", "on");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pilot-badge")).toHaveTextContent(
+      "TOGGLE STANDARD — APPROVED / LOCKED",
+    );
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext toggle");
+    await user.click(within(togglePlayground).getByTestId("ui-standards-copy-command-expand"));
+    expect(within(togglePlayground).getByText(/Use the locked ExItS Toggle Standard/)).toBeInTheDocument();
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-intent"), "primary");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-density"), "comfort");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-preview")).toHaveAttribute("data-density", "comfort");
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext toggle primary comfort",
+    );
+    expect(within(togglePlayground).queryByTestId("ui-standard-toggle-pg-dense")).not.toBeInTheDocument();
+    expect(within(togglePlayground).queryByRole("option", { name: "Ghost" })).not.toBeInTheDocument();
+    expect(within(togglePlayground).queryByRole("option", { name: "Rounded" })).not.toBeInTheDocument();
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-reset")).toHaveAttribute("aria-label", "Reset");
+    await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field"));
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field")).toHaveAttribute("data-state", "off");
+    await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field"));
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field")).toHaveAttribute("data-state", "on");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-variety"), "solid");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-appearance"), "raised");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-icon"), "check");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-preview")).toHaveAttribute("data-variety", "solid");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-preview")).toHaveAttribute("data-appearance", "raised");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field")).toHaveClass(
+      "ui-standards-pill-switch--appearance-raised",
+    );
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field-icon")).toBeInTheDocument();
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext toggle primary solid raised comfort check",
+    );
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf")).toHaveAttribute("data-state", "on");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-order-reset"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf")).toHaveAttribute("data-state", "indet");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf-indet")).toHaveAttribute("data-state", "on");
+    expect(screen.queryByTestId("ui-standard-card-checkbox")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-dropdown"));
+    expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveAttribute("data-selected", "true");
+    const dropdownPlayground = screen.getByTestId("ui-standard-card-dropdown-playground");
+    const dropdownSamples = screen.getByTestId("ui-standard-card-dropdown");
+    expect(dropdownPlayground.compareDocumentPosition(dropdownSamples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard")).toHaveStyle({ "--qdropdown-color": "#ffffff" });
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard")).toHaveClass("ui-standards-qdropdown--standard");
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-dark-standard")).toHaveStyle({ "--qdropdown-color": "#ffffff" });
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-filled-primary")).toHaveClass("ui-standards-qdropdown--filled");
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-outlined-primary")).toHaveClass("ui-standards-qdropdown--outlined");
+    await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field"));
+    await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-option-option-2"));
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field")).toHaveTextContent("Option 2");
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext dropdown");
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-intent"), "primary");
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-appearance"), "outlined");
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-density"), "comfort");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute("data-density", "comfort");
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dropdown primary outlined comfort",
+    );
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-shape"), "rounded");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveAttribute("data-shape", "rounded");
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dropdown primary outlined rounded comfort",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-dark"));
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute(
+      "data-preview-theme",
+      "dark",
+    );
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveClass(
+      "ui-standards-qdropdown--on-dark",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-light"));
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute(
+      "data-preview-theme",
+      "light",
+    );
+    expect(screen.queryByTestId("ui-standard-card-toggle")).not.toBeInTheDocument();
+  });
+
+  it("opens Input filter with a playground card and an input samples card", async () => {
+    const user = userEvent.setup();
+    renderPage("/ui-standards?category=inputs");
+    expect(screen.getByTestId("ui-standards-filter-inputs")).toHaveTextContent("Input");
+    expect(screen.getByTestId("ui-standards-filter-inputs")).toHaveAttribute("data-selected", "true");
+    expect(screen.queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
+    const samples = screen.getByTestId("ui-standard-cards");
+    const playgroundCard = within(samples).getByTestId("ui-standard-card-input-playground");
+    const inputsCard = within(samples).getByTestId("ui-standard-card-inputs");
+    expect(playgroundCard.compareDocumentPosition(inputsCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(playgroundCard).getByText("Input playground")).toBeInTheDocument();
+    expect(within(inputsCard).getByText("Input samples")).toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-pilot-badge")).toHaveTextContent(
+      "INPUT STANDARD — APPROVED / LOCKED",
+    );
+    expect(within(inputsCard).getByTestId("ui-standard-input-pilot-lede")).toHaveTextContent("ext input");
+    const typesCard = within(samples).getByTestId("ui-standard-card-input-types");
+    expect(inputsCard.compareDocumentPosition(typesCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(typesCard).getAllByText("Input types").length).toBeGreaterThan(0);
+    expect(within(typesCard).getByLabelText("Password")).toHaveAttribute("type", "password");
+    expect(within(typesCard).getByTestId("ui-standard-input-type-password-toggle")).toBeInTheDocument();
+    expect(within(typesCard).getByText("Sample: name@email.com")).toBeInTheDocument();
+    expect(within(typesCard).getByText("+63 9XX XXX XXXX")).toBeInTheDocument();
+    expect(within(typesCard).getByText("09XX XXX XXXX")).toBeInTheDocument();
+    expect(within(typesCard).getByLabelText("Textarea").tagName).toBe("TEXTAREA");
+    await user.type(within(typesCard).getByLabelText("Email"), "not-an-email");
+    expect(within(typesCard).getByText("Enter a valid email address.")).toBeInTheDocument();
+    await user.type(within(typesCard).getByLabelText("Mobile local"), "09171234567");
+    expect(within(typesCard).getByLabelText("Mobile local")).toHaveValue("0917 123 4567");
+    await user.type(within(typesCard).getByLabelText("Mobile international"), "9171234567");
+    expect(within(typesCard).getByLabelText("Mobile international")).toHaveValue("+63 917 123 4567");
+    expect(within(playgroundCard).queryByTestId("ui-standard-input-pg-type")).not.toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-standard")).toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-outlined")).toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-outlined-primary")).toHaveAttribute(
+      "data-appearance",
+      "outlined",
+    );
+    expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
+    const playground = screen.getByTestId("ui-standard-input-playground");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext input",
+    );
+    await user.click(within(playground).getByTestId("ui-standards-copy-command-expand"));
+    expect(within(playground).getByText(/Use the locked ExItS Input Standard/)).toBeInTheDocument();
+    await user.selectOptions(screen.getByTestId("ui-standard-input-pg-intent"), "primary");
+    await user.selectOptions(screen.getByTestId("ui-standard-input-pg-appearance"), "outlined");
+    await user.selectOptions(screen.getByTestId("ui-standard-input-pg-shape"), "rounded");
+    expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-appearance", "outlined");
+    expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-shape", "rounded");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext input primary outlined rounded",
+    );
+    const labelInput = screen.getByTestId("ui-standard-input-pg-label");
+    await user.clear(labelInput);
+    await user.type(labelInput, "SAVE");
+    expect(within(screen.getByTestId("ui-standard-input-pg-preview")).getByLabelText("SAVE")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-input-pg-reset"));
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext input",
+    );
+    expect(labelInput).toHaveValue("Standard");
+  });
+
+  it("opens Breadcrumbs filter with basic and custom separator only", () => {
+    renderPage("/ui-standards?category=breadcrumbs");
+    expect(screen.getByTestId("ui-standards-filter-breadcrumbs")).toHaveTextContent("Breadcrumbs");
+    expect(screen.getByTestId("ui-standards-filter-breadcrumbs")).toHaveAttribute("data-selected", "true");
+    const card = screen.getByTestId("ui-standard-card-breadcrumbs");
+    const basic = within(card).getByTestId("ui-standard-breadcrumb-basic");
+    const custom = within(card).getByTestId("ui-standard-breadcrumb-separator");
+    expect(within(basic).getByText("Basic")).toBeInTheDocument();
+    expect(within(custom).getByText("Custom separators")).toBeInTheDocument();
+    const basicText = within(basic).getByTestId("ui-standard-breadcrumb-basic-text");
+    expect(within(basicText).getByText("Home").closest("li")).toHaveClass("ui-standards-qbreadcrumbs__el--link");
+    expect(within(basicText).getByText("Components").closest("li")).toHaveClass("ui-standards-qbreadcrumbs__el--link");
+    expect(within(basicText).getByText("Breadcrumbs").closest("li")).not.toHaveClass("ui-standards-qbreadcrumbs__el--link");
+    expect(within(basicText).getByText("Breadcrumbs")).toHaveAttribute("aria-current", "page");
+    expect(within(basicText).getAllByText("/")).toHaveLength(2);
+    expect(within(basic).getByTestId("ui-standard-breadcrumb-basic-icons")).toBeInTheDocument();
+    expect(within(basic).getByLabelText("Navigation")).toBeInTheDocument();
+    const dashes = within(custom).getByTestId("ui-standard-breadcrumb-separator-dashes");
+    expect(within(dashes).getAllByText("---")).toHaveLength(2);
+    expect(within(custom).getByTestId("ui-standard-breadcrumb-separator-arrow")).toBeInTheDocument();
+    expect(within(custom).getByTestId("ui-standard-breadcrumb-separator-chevron")).toBeInTheDocument();
+    expect(screen.queryByText("Electronics")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gutters")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-inputs")).not.toBeInTheDocument();
+  });
+
   it("opens Buttons filter from category=buttons with full button gallery", () => {
     renderPage("/ui-standards?category=buttons");
     expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute("data-selected", "true");

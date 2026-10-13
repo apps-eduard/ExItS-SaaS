@@ -70,10 +70,21 @@ import type { PosSaleDto } from "@/api/pos/pos-sales-client";
 import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
 import { UiStandardsButtonGallery } from "@/features/ui-standards/UiStandardsButtonGallery";
+import { UiStandardsRadioGallery } from "@/features/ui-standards/UiStandardsRadioGallery";
+import { UiStandardsCheckboxGallery } from "@/features/ui-standards/UiStandardsCheckboxGallery";
+import { UiStandardsToggleGallery } from "@/features/ui-standards/UiStandardsToggleGallery";
+import { UiStandardsDropdownGallery } from "@/features/ui-standards/UiStandardsDropdownGallery";
+import { UiStandardsBreadcrumbGallery } from "@/features/ui-standards/UiStandardsBreadcrumbGallery";
+import { UiStandardsInputGallery, UiStandardsInputTypes } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   UiStandardsButtonPlayground,
+  UiStandardsInputPlayground,
+  UiStandardsRadioPlayground,
+  UiStandardsCheckboxPlayground,
+  UiStandardsTogglePlayground,
+  UiStandardsDropdownPlayground,
   UiStandardsSelectPlayground,
   UiStandardsStatusPlayground,
 } from "@/features/ui-standards/UiStandardsPlaygrounds";
@@ -365,6 +376,132 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               {t("uiStandards.buttonPilotBadge")}
             </p>
             <UiStandardsButtonGallery />
+          </Card>
+        ) : null}
+
+        {show("inputs") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-input-playground"
+          >
+            <CardTitle>{t("uiStandards.inputPlaygroundTitle")}</CardTitle>
+            <UiStandardsInputPlayground />
+          </Card>
+        ) : null}
+
+        {show("inputs") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-inputs"
+          >
+            <CardTitle>{t("uiStandards.inputPilotTitle")}</CardTitle>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground"
+              data-testid="ui-standard-input-pilot-badge"
+            >
+              {t("uiStandards.inputPilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-input-pilot-lede">
+              {t("uiStandards.inputPilotLede")}
+            </p>
+            <UiStandardsInputGallery />
+          </Card>
+        ) : null}
+
+        {show("inputs") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-input-types"
+          >
+            <CardTitle>{t("uiStandards.inputTypesTitle")}</CardTitle>
+            <UiStandardsInputTypes />
+          </Card>
+        ) : null}
+
+        {show("breadcrumbs") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-breadcrumbs"
+          >
+            <CardTitle>{t("uiStandards.breadcrumbTitle")}</CardTitle>
+            <UiStandardsBreadcrumbGallery />
+          </Card>
+        ) : null}
+
+        {show("radio") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-radio-playground"
+          >
+            <CardTitle>{t("uiStandards.radioPlaygroundTitle")}</CardTitle>
+            <UiStandardsRadioPlayground />
+          </Card>
+        ) : null}
+
+        {show("radio") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-radio">
+            <CardTitle>{t("uiStandards.radioSamplesTitle")}</CardTitle>
+            <UiStandardsRadioGallery />
+          </Card>
+        ) : null}
+
+        {show("checkbox") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-checkbox-playground"
+          >
+            <CardTitle>{t("uiStandards.checkboxPlaygroundTitle")}</CardTitle>
+            <UiStandardsCheckboxPlayground />
+          </Card>
+        ) : null}
+
+        {show("checkbox") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-checkbox">
+            <CardTitle>{t("uiStandards.checkboxSamplesTitle")}</CardTitle>
+            <UiStandardsCheckboxGallery />
+          </Card>
+        ) : null}
+
+        {show("toggle") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-toggle-playground"
+          >
+            <CardTitle>{t("uiStandards.togglePlaygroundTitle")}</CardTitle>
+            <UiStandardsTogglePlayground />
+          </Card>
+        ) : null}
+
+        {show("toggle") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-toggle">
+            <CardTitle>{t("uiStandards.toggleSamplesTitle")}</CardTitle>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground"
+              data-testid="ui-standard-toggle-pilot-badge"
+            >
+              {t("uiStandards.togglePilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-toggle-pilot-lede">
+              {t("uiStandards.togglePilotLede")}
+            </p>
+            <UiStandardsToggleGallery />
+          </Card>
+        ) : null}
+
+        {show("dropdown") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-dropdown-playground"
+          >
+            <CardTitle>{t("uiStandards.dropdownPlaygroundTitle")}</CardTitle>
+            <UiStandardsDropdownPlayground />
+          </Card>
+        ) : null}
+
+        {show("dropdown") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-dropdown">
+            <CardTitle>{t("uiStandards.dropdownSamplesTitle")}</CardTitle>
+            <UiStandardsDropdownGallery />
           </Card>
         ) : null}
 
