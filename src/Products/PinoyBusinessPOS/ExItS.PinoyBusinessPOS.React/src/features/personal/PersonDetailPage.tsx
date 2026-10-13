@@ -1,7 +1,7 @@
 import { ArrowLeft, Check, ChevronDown, Users } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { PlatformApiError } from "@/api/platform/platform-http";
 import {
@@ -26,6 +26,8 @@ import { StatusChip as ExitsStatusChip } from "@/components/exits/StatusChip";
 import { StatusChip } from "@/components/ui/badge";
 
 import { Button } from "@/components/ui/button";
+
+import { Input } from "@/components/ui/input";
 
 import { Card } from "@/components/ui/card";
 
@@ -59,6 +61,8 @@ import {
 
   useUnlinkContactMutation,
 
+  useUpdatePersonalContactMutation,
+
   useUpdatePersonalSharedUtangPreferenceMutation,
 
 } from "@/features/personal/people-queries";
@@ -76,6 +80,85 @@ import {
 } from "@/lib/money-input";
 
 const UTANG_NOTES_MAX_LENGTH = 512;
+
+function LocalContactEditForm({
+  contact,
+  onClose,
+}: {
+  contact: { id: string; displayName: string; phone?: string | null; email?: string | null };
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const updateContact = useUpdatePersonalContactMutation();
+  const [name, setName] = useState(contact.displayName);
+  const [phone, setPhone] = useState(contact.phone ?? "");
+  const [email, setEmail] = useState(contact.email ?? "");
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <form
+      className="catalog-form-section personal-section flex flex-col gap-3"
+      data-testid="person-local-edit"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!name.trim()) {
+          setError(t("people.localAdd.nameRequired"));
+          return;
+        }
+        setError(null);
+        updateContact.mutate(
+          {
+            contactId: contact.id,
+            body: {
+              displayName: name.trim(),
+              phone: phone.trim() || null,
+              email: email.trim() || null,
+            },
+          },
+          {
+            onSuccess: onClose,
+            onError: (err) =>
+              setError(err instanceof PlatformApiError ? err.message : t("people.loadError")),
+          },
+        );
+      }}
+    >
+      <h2 className="catalog-form-section__title m-0">{t("people.edit.title")}</h2>
+      <Input
+        label={t("people.displayName")}
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        data-testid="person-edit-name"
+      />
+      <Input
+        label={t("people.column.contact")}
+        value={phone}
+        onChange={(event) => setPhone(event.target.value)}
+        data-testid="person-edit-phone"
+      />
+      <Input
+        label={t("people.column.email")}
+        type="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        data-testid="person-edit-email"
+      />
+      {error ? (
+        <p role="alert" className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" className="w-auto" disabled={updateContact.isPending}>
+          {t("people.edit.save")}
+        </Button>
+        <Button type="button" variant="ghost" className="w-auto" onClick={onClose}>
+          {t("people.add.cancel")}
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 function formatMoney(amount: number, currencyCode: string): string {
 
@@ -112,6 +195,8 @@ function formatMoney(amount: number, currencyCode: string): string {
 export function PersonDetailPage() {
 
   const { contactId = "" } = useParams();
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { t } = useI18n();
 
@@ -418,7 +503,16 @@ export function PersonDetailPage() {
         </div>
       </div>
 
-
+      {connection.status === "local" && searchParams.get("edit") === "1" ? (
+        <LocalContactEditForm
+          contact={contact}
+          onClose={() => {
+            const next = new URLSearchParams(searchParams);
+            next.delete("edit");
+            setSearchParams(next, { replace: true });
+          }}
+        />
+      ) : null}
 
       {activeRelated.length > 0 ? (
         <Card data-testid="person-detail-utang-records">
@@ -463,7 +557,7 @@ export function PersonDetailPage() {
                           tone={UTANG_READ_ONLY_CHIP.tone}
                           appearance={UTANG_READ_ONLY_CHIP.appearance}
                           shape={UTANG_READ_ONLY_CHIP.shape}
-                          className="col-start-1 row-start-1 self-start"
+                          className="col-start-1 row-start-1 self-start max-md:hidden"
                           data-testid={`person-detail-utang-readonly-${rel.id}`}
                         >
                           {t("personal.utang.readOnly")}
@@ -545,9 +639,6 @@ export function PersonDetailPage() {
                 {" "}
                 *
               </span>
-            </span>
-            <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
-              {t("personal.utang.purposeHelp")}
             </span>
             <textarea
               data-testid="person-detail-utang-notes"

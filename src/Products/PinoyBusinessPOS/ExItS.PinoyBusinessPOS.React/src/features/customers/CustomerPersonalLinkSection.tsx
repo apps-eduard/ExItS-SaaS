@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Bell, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,19 +7,9 @@ import type { CustomerLinkUiStatus } from "@/features/customers/customer-link-st
 import type { CustomerLinkStatusDto } from "@/api/platform/customer-link-status-client";
 import { useI18n } from "@/i18n/I18nProvider";
 
-type LinkHistoryItem = {
-  id: string;
-  status: string;
-  createdAtUtc: string;
-};
-
 export type CustomerPersonalLinkSectionProps = {
   linkUiStatus: CustomerLinkUiStatus;
-  customerDisplayName: string;
   linkMeta: CustomerLinkStatusDto | undefined;
-  linkHistoryItems: LinkHistoryItem[];
-  /** Optional peer card (e.g. Delivery) shown beside Connection history. */
-  historyPeer?: ReactNode;
   showAfterCreateHint: boolean;
   afterCreateHintDismissed: boolean;
   onDismissAfterCreateHint: () => void;
@@ -35,10 +24,7 @@ export type CustomerPersonalLinkSectionProps = {
 
 export function CustomerPersonalLinkSection({
   linkUiStatus,
-  customerDisplayName,
   linkMeta,
-  linkHistoryItems,
-  historyPeer,
   showAfterCreateHint,
   afterCreateHintDismissed,
   onDismissAfterCreateHint,
@@ -145,17 +131,6 @@ export function CustomerPersonalLinkSection({
             </dl>
           ) : null}
 
-          <div className="mt-4 rounded-md border border-dashed border-[var(--exits-border)] px-3 py-3">
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("customers.linkPendingNextStepsTitle")}
-            </p>
-            <ol className="mb-0 mt-2 list-decimal space-y-1.5 pl-5 text-[length:var(--exits-text-sm)] text-muted">
-              <li>{t("customers.linkPendingStep1").replace("{name}", customerDisplayName)}</li>
-              <li>{t("customers.linkPendingStep2")}</li>
-              <li>{t("customers.linkPendingStep3")}</li>
-            </ol>
-          </div>
-
           {showPendingCard && online && allowEdit && linkMeta?.latestLinkRequestId ? (
             <div className="mt-4 flex flex-wrap gap-2">
               <Button
@@ -185,41 +160,6 @@ export function CustomerPersonalLinkSection({
             </div>
           ) : null}
         </Card>
-      ) : null}
-
-      {historyPeer || (linkHistoryItems.length > 0 && linkUiStatus !== "Linked") ? (
-        <div className="customer-link-peer-grid">
-          {historyPeer}
-
-          {/* Linked status + timestamp live on Personal profile; keep history for non-linked states. */}
-          {linkHistoryItems.length > 0 && linkUiStatus !== "Linked" ? (
-            <Card className="flex min-w-0 flex-col gap-3 p-4" data-testid="customer-link-history">
-              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("customers.linkHistoryTitle")}
-              </p>
-              <ul className="mb-0 list-none space-y-1.5 p-0">
-                {linkHistoryItems.map((item) => {
-                  const historyState = mapOrgLinkStatusToRelationship(item.status);
-                  return (
-                    <li
-                      key={item.id}
-                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[length:var(--exits-text-sm)]"
-                    >
-                      <span className="text-muted">
-                        {new Date(item.createdAtUtc).toLocaleString()}
-                      </span>
-                      <ConnectionStatusChip
-                        state={historyState}
-                        audience="organization"
-                        testId={`customer-link-history-status-${item.id}`}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            </Card>
-          ) : null}
-        </div>
       ) : null}
     </>
   );

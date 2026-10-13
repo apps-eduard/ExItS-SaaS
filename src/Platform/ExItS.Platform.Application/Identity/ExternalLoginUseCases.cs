@@ -5,10 +5,12 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Personal;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Application.Identity;
@@ -35,6 +37,7 @@ public sealed class CompleteExternalLogin
     private readonly IClock _clock;
     private readonly PlatformSessionOptions _sessionOptions;
     private readonly IPlatformMfaReadinessService _mfa;
+    private readonly IPersonalUserProfileRepository? _personalProfiles;
 
     public CompleteExternalLogin(
         IPlatformUserRepository users,
@@ -50,7 +53,8 @@ public sealed class CompleteExternalLogin
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOptions<PlatformSessionOptions> sessionOptions,
-        IPlatformMfaReadinessService mfa)
+        IPlatformMfaReadinessService mfa,
+        IPersonalUserProfileRepository? personalProfiles = null)
     {
         _users = users;
         _credentials = credentials;
@@ -66,6 +70,7 @@ public sealed class CompleteExternalLogin
         _clock = clock;
         _sessionOptions = sessionOptions.Value;
         _mfa = mfa;
+        _personalProfiles = personalProfiles;
     }
 
     public async Task<ApplicationResult<PlatformLoginResultDto>> ExecuteAsync(
@@ -226,6 +231,8 @@ public sealed class CompleteExternalLogin
             HashUserAgent(userAgent));
 
         await _sessions.AddAsync(session, cancellationToken).ConfigureAwait(false);
+        await ApplyProviderPictureAsync(user.Id, identity.PictureUrl, utcNow, cancellationToken)
+            .ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         Guid? orgId = null;
@@ -340,13 +347,123 @@ public sealed class CompleteExternalLogin
 
     private static string ResolveDisplayName(string? displayName, string email)
     {
-        if (!string.IsNullOrWhiteSpace(displayName) && displayName.Trim().Length >= 2)
+        return SanitizeToDisplayName(displayName)
+            ?? SanitizeToDisplayName(MailboxLocalPart(email))
+            ?? "Platform User";
+    }
+
+    private static string MailboxLocalPart(string email)
+    {
+        var at = email.IndexOf('@');
+        return at > 0 ? email[..at] : email;
+    }
+
+    /// <summary>
+    /// Google may send the mailbox, a comma, or punctuation the account name rule rejects.
+    /// Keep letters, numbers, spaces, apostrophes, periods, and hyphens.
+    /// </summary>
+    private static string? SanitizeToDisplayName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
         {
-            return displayName.Trim();
+            return null;
         }
 
-        var local = email.Split('@')[0];
-        return local.Length >= 2 ? local : "Platform User";
+        var text = value.Trim();
+        var at = text.IndexOf('@');
+        if (at > 0)
+        {
+            text = text[..at];
+        }
+
+        text = text
+            .Replace('\u2019', '\'')
+            .Replace('\u2018', '\'')
+            .Replace('\u2013', '-')
+            .Replace('\u2014', '-');
+
+        var builder = new StringBuilder(text.Length);
+        var previousSpace = false;
+        foreach (var ch in text)
+        {
+            if (char.IsLetterOrDigit(ch) || ch is '\'' or '.' or '-')
+            {
+                builder.Append(ch);
+                previousSpace = false;
+                continue;
+            }
+
+            if (builder.Length > 0 && !previousSpace)
+            {
+                builder.Append(' ');
+                previousSpace = true;
+            }
+        }
+
+        var collapsed = builder.ToString().Trim();
+        var start = 0;
+        while (start < collapsed.Length && !char.IsLetterOrDigit(collapsed[start]))
+        {
+            start++;
+        }
+
+        collapsed = collapsed[start..].Trim(' ', '\'', '-');
+        if (collapsed.Length > 100)
+        {
+            collapsed = collapsed[..100].TrimEnd(' ', '\'', '-', '.');
+        }
+
+        return collapsed.Length >= 2 ? collapsed : null;
+    }
+
+    private async Task ApplyProviderPictureAsync(
+        PlatformUserId userId,
+        string? pictureUrl,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (_personalProfiles is null || !IsProviderPictureUrl(pictureUrl))
+        {
+            return;
+        }
+
+        var picture = pictureUrl!.Trim();
+        var personal = await _personalProfiles.GetByUserAsync(userId, cancellationToken).ConfigureAwait(false);
+        var current = personal?.ProfilePhotoUrl;
+        if (!string.IsNullOrWhiteSpace(current) && !IsProviderPictureUrl(current))
+        {
+            return;
+        }
+
+        if (string.Equals(current, picture, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var created = personal is null;
+        personal ??= PersonalUserProfile.Create(userId, utcNow);
+        personal.SetProfilePhotoUrl(picture, utcNow);
+        if (created)
+        {
+            await _personalProfiles.AddAsync(personal, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await _personalProfiles.UpdateAsync(personal, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static bool IsProviderPictureUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= PersonalUserProfile.MaxPhotoLength
+            && Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            && uri.Scheme == Uri.UriSchemeHttps;
     }
 
     private async Task WriteFailedAsync(

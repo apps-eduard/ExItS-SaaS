@@ -5,7 +5,9 @@
 # Independent from exits-packaging (compose.yaml) and exits-pilot.
 # Production topology template remains compose.production.yaml (TLS/proxy).
 #
-# Recommended daily workflow (Docker DBs only; apps run on host):
+# Fast local development (dotnet watch + Vite, no image rebuild, same DB volumes):
+#   tools/Start-LocalDev.ps1
+# Recommended validation host workflow (Docker DBs only; apps on the validation ports):
 #   See README.local-validation.md and tools/Start-LocalValidation.ps1
 #   docker compose -f compose.local-validation.yaml --env-file .env.local-validation up -d
 #
@@ -119,11 +121,13 @@ services:
       PlatformEmail__PinoyBusinessPosPublicBaseUrl: ${LOCAL_VALIDATION_REACT_POS_ORIGIN:-http://localhost:5177}
       PlatformEmail__AllowHttpLoopbackPublicUrls: "true"
       DataProtection__KeysPath: /var/exits/dataprotection
+      ProfilePhotos__RootPath: /var/exits/profile-photos
       PlatformAuthentication__External__Google__Enabled: "true"
       PlatformAuthentication__External__Google__ClientId: ${LOCAL_VALIDATION_GOOGLE_CLIENT_ID:-}
       PlatformAuthentication__External__Google__ClientSecret: ${LOCAL_VALIDATION_GOOGLE_CLIENT_SECRET:-}
     volumes:
       - exits_local_validation_platform_api_dataprotection_keys:/var/exits/dataprotection
+      - exits_local_validation_platform_api_profile_photos:/var/exits/profile-photos
     ports:
       - "${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080"
     networks:
@@ -165,6 +169,7 @@ services:
       LocalValidation__Enabled: "true"
       LocalValidation__PlatformApiBaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
       PlatformAuth__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      PosDeviceAuthorization__EnforcementEnabled: "false"
     ports:
       - "${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080"
     networks:
@@ -240,6 +245,8 @@ volumes:
     name: exits_local_validation_pos_db_data
   exits_local_validation_platform_api_dataprotection_keys:
     name: exits_local_validation_platform_api_dataprotection_keys
+  exits_local_validation_platform_api_profile_photos:
+    name: exits_local_validation_platform_api_profile_photos
 
 networks:
   exits-local-validation:

@@ -21,6 +21,11 @@ public sealed class PhilippineLocalityDirectory : IPhilippineLocalityDirectory
     private readonly IReadOnlyList<PhilippineLocality> _all;
     private readonly IReadOnlyList<PhilippineRegion> _regions;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<PhilippineLocality>> _byRegion;
+    private readonly IReadOnlyList<PhilippineProvince> _provinces;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<PhilippineLocality>> _byProvince;
+
+    private const string MetroManilaCode = "1300000000";
+    private const string SpecialGeographicAreaCode = "1999900000";
 
     public PhilippineLocalityDirectoryMetadata Metadata { get; }
 
@@ -109,6 +114,43 @@ public sealed class PhilippineLocalityDirectory : IPhilippineLocalityDirectory
         }
 
         _byRegion = byRegion;
+
+        var byProvinceBuckets = new Dictionary<string, List<PhilippineLocality>>(StringComparer.Ordinal);
+        var provinceNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var locality in localities)
+        {
+            var key = ProvinceKey(locality);
+            if (!byProvinceBuckets.TryGetValue(key, out var provinceBucket))
+            {
+                provinceBucket = [];
+                byProvinceBuckets[key] = provinceBucket;
+            }
+
+            provinceBucket.Add(locality);
+            provinceNames.TryAdd(key, ProvinceLabel(locality));
+        }
+
+        var provinces = provinceNames
+            .Select(pair => new PhilippineProvince(pair.Key, pair.Value))
+            .ToList();
+        provinces.Sort(static (a, b) => string.Compare(a.ProvinceName, b.ProvinceName, StringComparison.OrdinalIgnoreCase));
+        _provinces = provinces;
+
+        var byProvince = new Dictionary<string, IReadOnlyList<PhilippineLocality>>(StringComparer.Ordinal);
+        foreach (var (code, bucket) in byProvinceBuckets)
+        {
+            bucket.Sort(static (a, b) =>
+            {
+                var nameCmp = string.Compare(
+                    PhilippineLocality.FriendlyName(a.Name),
+                    PhilippineLocality.FriendlyName(b.Name),
+                    StringComparison.OrdinalIgnoreCase);
+                return nameCmp != 0 ? nameCmp : string.CompareOrdinal(a.PsgcCode, b.PsgcCode);
+            });
+            byProvince[code] = bucket;
+        }
+
+        _byProvince = byProvince;
         Metadata = new PhilippineLocalityDirectoryMetadata(
             document.Metadata.Source,
             document.Metadata.Dataset,
@@ -143,6 +185,60 @@ public sealed class PhilippineLocalityDirectory : IPhilippineLocalityDirectory
         return _byRegion.TryGetValue(regionCode.Trim(), out var list)
             ? list
             : Array.Empty<PhilippineLocality>();
+    }
+
+    public IReadOnlyList<PhilippineProvince> ListProvinces() => _provinces;
+
+    public IReadOnlyList<PhilippineLocality> ListByProvinceCode(string provinceCode)
+    {
+        if (string.IsNullOrWhiteSpace(provinceCode))
+        {
+            return Array.Empty<PhilippineLocality>();
+        }
+
+        return _byProvince.TryGetValue(provinceCode.Trim(), out var list)
+            ? list
+            : Array.Empty<PhilippineLocality>();
+    }
+
+    private static string ProvinceKey(PhilippineLocality locality)
+    {
+        if (!string.IsNullOrWhiteSpace(locality.ProvinceCode))
+        {
+            return locality.ProvinceCode;
+        }
+
+        if (locality.RegionCode == MetroManilaCode)
+        {
+            return MetroManilaCode;
+        }
+
+        if (locality.PsgcCode.StartsWith("19999", StringComparison.Ordinal))
+        {
+            return SpecialGeographicAreaCode;
+        }
+
+        return locality.PsgcCode;
+    }
+
+    private static string ProvinceLabel(PhilippineLocality locality)
+    {
+        if (!string.IsNullOrWhiteSpace(locality.ProvinceName))
+        {
+            return locality.ProvinceName;
+        }
+
+        if (locality.RegionCode == MetroManilaCode)
+        {
+            return "Metro Manila";
+        }
+
+        if (locality.PsgcCode.StartsWith("19999", StringComparison.Ordinal))
+        {
+            return "Special Geographic Area";
+        }
+
+        return PhilippineLocality.FriendlyName(locality.Name);
     }
 
     public IReadOnlyList<PhilippineLocality> Search(string query, int limit = DefaultSearchLimit)

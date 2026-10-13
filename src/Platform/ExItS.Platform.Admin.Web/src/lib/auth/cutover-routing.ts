@@ -13,11 +13,15 @@ export type ExperienceOrigins = {
 };
 
 const LOCAL_REACT_CLIENT_ORIGIN = "http://127.0.0.1:5177";
+const PREVIEW_ADMIN_HOST = "admin.exitsapps.com";
+const PREVIEW_PERSONAL_ORIGIN = "https://my.exitsapps.com";
+const PREVIEW_POS_ORIGIN = "https://pos.exitsapps.com";
 
 export function resolveExperienceOrigins(input: {
   organization?: string | null;
   personal?: string | null;
   localValidation: boolean;
+  pageHost?: string | null;
 }): ExperienceOrigins {
   const organization = sanitizeOrigin(input.organization);
   const personal = sanitizeOrigin(input.personal);
@@ -25,6 +29,12 @@ export function resolveExperienceOrigins(input: {
     return {
       organization: organization ?? personal,
       personal: personal ?? organization,
+    };
+  }
+  if ((input.pageHost ?? "").trim().toLowerCase() === PREVIEW_ADMIN_HOST) {
+    return {
+      organization: PREVIEW_POS_ORIGIN,
+      personal: PREVIEW_PERSONAL_ORIGIN,
     };
   }
   if (input.localValidation) {
@@ -53,6 +63,26 @@ export function sanitizeOrigin(raw: string | null | undefined): string | null {
     return null;
   }
   return parsed.origin;
+}
+
+/**
+ * After admin-site sign-in, a non-platform account leaves this host.
+ * An organization membership opens POS. Otherwise the account opens Personal.
+ */
+export function choosePostAdminLoginWorkspace(
+  items: readonly WebWorkspaceItem[],
+  selectedOrganizationId?: string | null,
+): WebWorkspaceItem | null {
+  const organizations = items.filter(
+    (item) => item.app.toLowerCase() === WORKSPACE_APPS.organization,
+  );
+  if (organizations.length > 0) {
+    const selected = selectedOrganizationId
+      ? organizations.find((item) => item.organizationId === selectedOrganizationId)
+      : undefined;
+    return selected ?? organizations[0] ?? null;
+  }
+  return items.find((item) => item.app.toLowerCase() === WORKSPACE_APPS.personal) ?? null;
 }
 
 export function chooseAutomaticWorkspace(items: readonly WebWorkspaceItem[]): WebWorkspaceItem | null {

@@ -6,7 +6,6 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { LoadingState } from "@/components/ui/skeleton";
 import { groupNotificationsByDay } from "@/features/personal/notification-archive";
 import {
@@ -106,11 +105,10 @@ export function PersonalNotificationsPanel({ onNavigateAway }: PersonalNotificat
                     const hasActionDestination = destination !== "/personal/notifications";
                     return (
                       <li key={item.id}>
-                        <Card
+                        <article
                           className={cn(
-                            "flex flex-col gap-2",
-                            unread &&
-                              "border-[var(--exits-info)] bg-[color-mix(in_srgb,var(--exits-info)_6%,transparent)]",
+                            "flex flex-col gap-1 border-b border-border py-3",
+                            unread && "bg-[color-mix(in_srgb,var(--exits-info)_8%,transparent)] px-2",
                           )}
                           data-testid={`notification-row-${item.id}`}
                         >
@@ -157,7 +155,7 @@ export function PersonalNotificationsPanel({ onNavigateAway }: PersonalNotificat
                               {t("notifications.markRead")}
                             </Button>
                           ) : null}
-                        </Card>
+                        </article>
                       </li>
                     );
                   })}

@@ -112,8 +112,8 @@ describe("BranchCreatePage", () => {
     renderPage();
 
     expect(screen.getByTestId("branch-create-page")).toBeInTheDocument();
-    expect(screen.getByTestId("branch-create-country")).toHaveAttribute("readonly");
-    expect(screen.getByTestId("branch-create-country")).toHaveValue(BRANCH_DEFAULT_COUNTRY_CODE);
+    expect(screen.getByTestId("branch-create-country")).toBeDisabled();
+    expect(screen.getByTestId("branch-create-country")).toHaveAttribute("data-country-code", BRANCH_DEFAULT_COUNTRY_CODE);
     expect(screen.getByTestId("branch-create-timezone")).toHaveAttribute("readonly");
     expect(screen.getByTestId("branch-create-timezone")).toHaveValue(BRANCH_DEFAULT_TIME_ZONE);
     expect(screen.getByTestId("branch-create-type-retail")).toBeInTheDocument();

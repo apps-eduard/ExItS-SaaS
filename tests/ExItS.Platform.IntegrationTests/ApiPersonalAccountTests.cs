@@ -172,6 +172,168 @@ public sealed class ApiPersonalAccountTests(PostgreSqlFixture fixture) : IAsyncL
     }
 
     [Fact]
+    public async Task Personal_profile_saves_address_and_privacy_without_publishing_them()
+    {
+        var token = await LoginPersonalAsync();
+        using var update = Authed(HttpMethod.Put, "/api/v1/personal/profile", token);
+        update.Content = JsonContent.Create(new
+        {
+            displayName = "Ana Reyes",
+            firstName = "Ana",
+            lastName = "Reyes",
+            phone = "09170000000",
+            country = "Philippines",
+            addressLine1 = "12 Rizal",
+            barangay = "Poblacion",
+            cityMunicipality = "Kalibo",
+            province = "Aklan",
+            dateOfBirth = "1990-01-01",
+            showCity = "Public",
+            showMobile = "Private",
+            showEmail = "Private",
+        });
+        var updateResponse = await _client.SendAsync(update);
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var saved = await updateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("12 Rizal", saved.GetProperty("addressLine1").GetString());
+        Assert.Equal("Poblacion", saved.GetProperty("barangay").GetString());
+        Assert.Equal("Private", saved.GetProperty("showMobile").GetString());
+        Assert.Equal(100, saved.GetProperty("completionPercent").GetInt32());
+        Assert.Empty(saved.GetProperty("missingForStaff").EnumerateArray());
+
+        using var rename = Authed(HttpMethod.Put, "/api/v1/personal/profile", token);
+        rename.Content = JsonContent.Create(new { displayName = "Ana R" });
+        var renameResponse = await _client.SendAsync(rename);
+        Assert.Equal(HttpStatusCode.OK, renameResponse.StatusCode);
+        var renamed = await renameResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Ana R", renamed.GetProperty("displayName").GetString());
+        Assert.Equal("12 Rizal", renamed.GetProperty("addressLine1").GetString());
+        Assert.Equal("1990-01-01", renamed.GetProperty("dateOfBirth").GetString());
+
+        var ownerId = saved.GetProperty("userIdentityId").GetGuid();
+        var stranger = await LoginPersonalAsync();
+        using var publicView = Authed(HttpMethod.Get, $"/api/v1/personal/people/{ownerId}/profile", stranger);
+        var publicResponse = await _client.SendAsync(publicView);
+        Assert.Equal(HttpStatusCode.OK, publicResponse.StatusCode);
+        var visible = await publicResponse.Content.ReadAsStringAsync();
+        Assert.Contains("Kalibo", visible, StringComparison.Ordinal);
+        Assert.DoesNotContain("12 Rizal", visible, StringComparison.Ordinal);
+        Assert.DoesNotContain("Poblacion", visible, StringComparison.Ordinal);
+        Assert.DoesNotContain("1990-01-01", visible, StringComparison.Ordinal);
+        Assert.DoesNotContain("09170000000", visible, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Personal_addresses_are_multiple_country_aware_and_have_one_primary()
+    {
+        var token = await LoginPersonalAsync();
+        var home = await SaveAddressAsync(token, null, new
+        {
+            addressType = "Home",
+            country = "Philippines",
+            addressLine1 = "123 Example Street",
+            barangay = "Poblacion",
+            cityMunicipality = "Kalibo",
+            provinceState = "Aklan",
+            postalCode = "5600",
+            isPrimary = true,
+        });
+        var office = await SaveAddressAsync(token, null, new
+        {
+            addressType = "Office",
+            country = "Saudi Arabia",
+            addressLine1 = "King Fahd Road",
+            cityMunicipality = "Riyadh",
+            provinceState = "Riyadh Province",
+            postalCode = "11564",
+            isPrimary = false,
+        });
+        var other = await SaveAddressAsync(token, null, new
+        {
+            addressType = "Other",
+            country = "Japan",
+            addressLine1 = "1 Chome",
+            cityMunicipality = "Tokyo",
+            provinceState = "Tokyo",
+            isPrimary = false,
+        });
+
+        var addresses = other.GetProperty("addresses").EnumerateArray().ToArray();
+        Assert.Equal(3, addresses.Length);
+        Assert.Single(addresses, address => address.GetProperty("isPrimary").GetBoolean());
+        Assert.Equal("Aklan", addresses.Single(address => address.GetProperty("addressType").GetString() == "Home").GetProperty("provinceState").GetString());
+        Assert.False(other.TryGetProperty("region", out _));
+        Assert.DoesNotContain("\"region\"", other.GetRawText(), StringComparison.OrdinalIgnoreCase);
+
+        var homeId = addresses.Single(address => address.GetProperty("addressType").GetString() == "Home").GetProperty("id").GetGuid();
+        var officeId = addresses.Single(address => address.GetProperty("addressType").GetString() == "Office").GetProperty("id").GetGuid();
+        var otherId = addresses.Single(address => address.GetProperty("addressType").GetString() == "Other").GetProperty("id").GetGuid();
+        _ = office;
+        _ = other;
+
+        using var makePrimary = Authed(HttpMethod.Post, $"/api/v1/personal/profile/addresses/{officeId}/primary", token);
+        var primaryResponse = await _client.SendAsync(makePrimary);
+        Assert.Equal(HttpStatusCode.OK, primaryResponse.StatusCode);
+        var switched = await primaryResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var switchedAddresses = switched.GetProperty("addresses").EnumerateArray().ToArray();
+        Assert.Single(switchedAddresses, address => address.GetProperty("isPrimary").GetBoolean());
+        Assert.True(switchedAddresses.Single(address => address.GetProperty("id").GetGuid() == officeId).GetProperty("isPrimary").GetBoolean());
+        Assert.False(switchedAddresses.Single(address => address.GetProperty("id").GetGuid() == homeId).GetProperty("isPrimary").GetBoolean());
+        Assert.Equal("Riyadh Province", switchedAddresses.Single(address => address.GetProperty("id").GetGuid() == officeId).GetProperty("provinceState").GetString());
+
+        var stranger = await LoginPersonalAsync();
+        using var crossUser = Authed(HttpMethod.Put, $"/api/v1/personal/profile/addresses/{homeId}", stranger);
+        crossUser.Content = JsonContent.Create(new
+        {
+            addressType = "Home",
+            country = "Philippines",
+            addressLine1 = "Stolen",
+            barangay = "Poblacion",
+            cityMunicipality = "Kalibo",
+            provinceState = "Aklan",
+            isPrimary = true,
+        });
+        var crossResponse = await _client.SendAsync(crossUser);
+        Assert.Equal(HttpStatusCode.NotFound, crossResponse.StatusCode);
+        var crossBody = await crossResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("123 Example Street", crossBody, StringComparison.Ordinal);
+
+        var edited = await SaveAddressAsync(token, homeId, new
+        {
+            addressType = "Home",
+            country = "Philippines",
+            addressLine1 = "125 Example Street",
+            barangay = "Poblacion",
+            cityMunicipality = "Kalibo",
+            provinceState = "Aklan",
+            isPrimary = false,
+        });
+        Assert.Equal(
+            "125 Example Street",
+            edited.GetProperty("addresses").EnumerateArray().Single(address => address.GetProperty("id").GetGuid() == homeId).GetProperty("addressLine1").GetString());
+
+        using var deleteOther = Authed(HttpMethod.Delete, $"/api/v1/personal/profile/addresses/{otherId}", token);
+        var deleteResponse = await _client.SendAsync(deleteOther);
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+        var remaining = await deleteResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, remaining.GetProperty("addresses").GetArrayLength());
+        Assert.Single(remaining.GetProperty("addresses").EnumerateArray(), address => address.GetProperty("isPrimary").GetBoolean());
+    }
+
+    private async Task<JsonElement> SaveAddressAsync(string token, Guid? addressId, object body)
+    {
+        var path = addressId is null
+            ? "/api/v1/personal/profile/addresses"
+            : $"/api/v1/personal/profile/addresses/{addressId}";
+        using var request = Authed(addressId is null ? HttpMethod.Post : HttpMethod.Put, path, token);
+        request.Content = JsonContent.Create(body);
+        var response = await _client.SendAsync(request);
+        var payload = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.OK, payload);
+        return JsonSerializer.Deserialize<JsonElement>(payload);
+    }
+
+    [Fact]
     public async Task Unauthenticated_profile_update_is_rejected()
     {
         using var request = new HttpRequestMessage(HttpMethod.Put, "/api/v1/personal/profile")

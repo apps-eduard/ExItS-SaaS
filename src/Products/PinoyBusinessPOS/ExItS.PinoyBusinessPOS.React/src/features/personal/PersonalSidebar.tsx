@@ -1,6 +1,9 @@
 import { useMemo } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
-import { ArrowLeftRight } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { symbol } from "@/components/icons/MaterialSymbol";
+
+const ExpandIcon = symbol("expand_more");
+const SwitchIcon = symbol("swap_horiz");
 import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
 import { SidebarBrandHeader } from "@/components/exits/SidebarBrandHeader";
 import { SidebarNavGroup } from "@/components/exits/SidebarNavGroup";
@@ -21,15 +24,18 @@ import { findActiveGroupId } from "@/features/shell/sidebar-nav-group-accordion"
 import { isAccordionNavGroup } from "@/features/shell/sidebar-nav-group-helpers";
 import { useSidebarNavGroupAccordion } from "@/features/shell/useSidebarNavGroupAccordion";
 import { useSidebarNavTooltipEnabled } from "@/features/shell/useSidebarNavTooltipEnabled";
+import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 
 /** Desktop (lg+) Personal sidebar — primary tabs + More destinations as groups. */
 export function PersonalSidebar() {
   const { t } = useI18n();
+  const { preferences } = usePreferences();
+  const iconRail = preferences.navigationMode === "compact";
   const location = useLocation();
-  const { workspaces } = useWorkspace();
+  const { canSwitch, switching, switchToBusiness, online } = useSwitchToBusiness();
   const openPreferencesDestination = usePreferencesDestinationClick();
   const openNotificationsDestination = useNotificationsDestinationClick();
   const groups = buildPersonalSidebarGroups();
@@ -50,8 +56,9 @@ export function PersonalSidebar() {
     activeGroupId,
   });
   const tooltipEnabled = useSidebarNavTooltipEnabled();
-  const switchLabel = t("workspace.switch");
-  const showWorkspaceFooter = workspaces.length > 0;
+  const switchLabel = switching
+    ? t("personal.more.switchingBusiness")
+    : t("personal.more.switchToBusiness");
 
   const renderItem = (item: PersonalNavItem) => {
     const Icon = item.icon;
@@ -84,7 +91,7 @@ export function PersonalSidebar() {
         aria-current={isActive ? "page" : undefined}
         className={cn("admin-sidebar__link", isActive && "admin-sidebar__link--active")}
       >
-        <Icon className="admin-sidebar__icon size-4 shrink-0" aria-hidden />
+        <Icon className="admin-sidebar__icon size-5 shrink-0" strokeWidth={1.75} aria-hidden />
         <span className="admin-sidebar__label min-w-0 flex-1 truncate">{label}</span>
       </NavLink>
     );
@@ -137,9 +144,14 @@ export function PersonalSidebar() {
                 id={group.id}
                 title={t(group.titleKey)}
                 icon={group.icon}
-                expanded={accordion.isGroupExpanded(group.id)}
+                chevron={ExpandIcon}
+                expanded={iconRail || accordion.isGroupExpanded(group.id)}
                 active={activeGroupId === group.id}
-                onToggle={() => accordion.toggleGroup(group.id)}
+                onToggle={() => {
+                  if (!iconRail) {
+                    accordion.toggleGroup(group.id);
+                  }
+                }}
               >
                 <ul className="m-0 list-none space-y-0.5 p-0">{group.items.map(renderItem)}</ul>
               </SidebarNavGroup>
@@ -148,18 +160,20 @@ export function PersonalSidebar() {
         })}
       </nav>
 
-      {showWorkspaceFooter ? (
+      {canSwitch ? (
         <div className="admin-sidebar__footer">
           <ExitsTooltip content={switchLabel} disabled={!tooltipEnabled}>
-            <Link
-              to="/workspace"
-              className="admin-sidebar__switch"
+            <button
+              type="button"
+              className="admin-sidebar__switch w-full cursor-pointer border-0 bg-transparent text-left"
               data-testid="personal-sidebar-switch-workspace"
               aria-label={switchLabel}
+              disabled={switching || !online}
+              onClick={() => void switchToBusiness()}
             >
-              <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
+              <SwitchIcon className="size-5 shrink-0" aria-hidden />
               <span className="admin-sidebar__label">{switchLabel}</span>
-            </Link>
+            </button>
           </ExitsTooltip>
         </div>
       ) : null}

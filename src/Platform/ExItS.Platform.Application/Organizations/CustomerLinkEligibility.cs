@@ -4,6 +4,7 @@ using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.Application.Organizations;
 
@@ -26,7 +27,8 @@ public sealed record CustomerLinkEligibilityDto(
     string? DisplayName = null,
     Guid? UserIdentityId = null,
     Guid? ExistingBusinessCustomerId = null,
-    Guid? ExistingPendingRequestId = null);
+    Guid? ExistingPendingRequestId = null,
+    string? RelationshipContext = null);
 
 /// <summary>
 /// Single authoritative eligibility evaluator for Organization → ExItS Personal customer linking.
@@ -39,6 +41,7 @@ public sealed class EvaluateCustomerLinkEligibility
     private readonly ICustomerLinkRequestRepository _requests;
     private readonly ILinkedCustomerAppUserRepository _links;
     private readonly IPersonalOrganizationConnectionBlockRepository? _blocks;
+    private readonly IProductLocalRoleGrantRepository? _productRoles;
     private readonly IClock _clock;
 
     public EvaluateCustomerLinkEligibility(
@@ -47,7 +50,8 @@ public sealed class EvaluateCustomerLinkEligibility
         ICustomerLinkRequestRepository requests,
         ILinkedCustomerAppUserRepository links,
         IClock clock,
-        IPersonalOrganizationConnectionBlockRepository? blocks = null)
+        IPersonalOrganizationConnectionBlockRepository? blocks = null,
+        IProductLocalRoleGrantRepository? productRoles = null)
     {
         _users = users;
         _memberships = memberships;
@@ -55,6 +59,7 @@ public sealed class EvaluateCustomerLinkEligibility
         _links = links;
         _clock = clock;
         _blocks = blocks;
+        _productRoles = productRoles;
     }
 
     public async Task<ApplicationResult<CustomerLinkEligibilityDto>> ExecuteAsync(
@@ -84,6 +89,50 @@ public sealed class EvaluateCustomerLinkEligibility
             .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Customer links attach to the Personal ExItS user. An organization staff login is resolved
+    /// to its linked Personal user when that correlation exists.
+    /// </summary>
+    public async Task<ApplicationResult<PlatformUser>> ResolveCanonicalPersonalAsync(
+        PlatformUser target,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (IsPlatformStaffIdentity(target))
+        {
+            return ApplicationResult<PlatformUser>.Failure(
+                DomainErrorCodes.CustomerLinkPersonalIdentityRequired,
+                "Customer link targets must be Personal identities, not platform staff.");
+        }
+
+        if (!IsOrganizationStaffLogin(target))
+        {
+            return ApplicationResult<PlatformUser>.Success(target);
+        }
+
+        if (target.LinkedPersonalUserId is null)
+        {
+            return ApplicationResult<PlatformUser>.Failure(
+                DomainErrorCodes.CustomerLinkPersonalIdentityRequired,
+                "This staff login has no linked Personal ExItS account. Use their Personal ExItS ID.");
+        }
+
+        var personal = await _users
+            .GetByIdAsync(target.LinkedPersonalUserId, cancellationToken)
+            .ConfigureAwait(false);
+        if (personal is null
+            || personal.Status != AccountStatus.Active
+            || IsOrganizationStaffLogin(personal)
+            || IsPlatformStaffIdentity(personal))
+        {
+            return ApplicationResult<PlatformUser>.Failure(
+                DomainErrorCodes.CustomerLinkPersonalIdentityRequired,
+                "This staff login has no linked Personal ExItS account. Use their Personal ExItS ID.");
+        }
+
+        return ApplicationResult<PlatformUser>.Success(personal);
+    }
+
     public async Task<ApplicationResult<CustomerLinkEligibilityDto>> EvaluateResolvedAsync(
         PlatformOrganizationId organizationId,
         PlatformUser target,
@@ -91,26 +140,17 @@ public sealed class EvaluateCustomerLinkEligibility
         PlatformUserId? actorUserId = null,
         CancellationToken cancellationToken = default)
     {
-        if (target.IsOrganizationScopedStaff
-            || target.HomeOrganizationId is not null
-            || !string.IsNullOrWhiteSpace(target.StaffNumber))
+        _ = actorUserId;
+        var canonical = await ResolveCanonicalPersonalAsync(target, cancellationToken).ConfigureAwait(false);
+        if (!canonical.IsSuccess)
         {
             return ApplicationResult<CustomerLinkEligibilityDto>.Success(
                 new CustomerLinkEligibilityDto(
                     CustomerLinkEligibilityStatuses.InvalidTarget,
-                    "Invite a Personal ExItS account, not an organization staff login."));
+                    canonical.ErrorMessage ?? "This ExItS account isn't available for linking."));
         }
 
-        if (actorUserId is not null && target.Id == actorUserId)
-        {
-            return ApplicationResult<CustomerLinkEligibilityDto>.Success(
-                new CustomerLinkEligibilityDto(
-                    CustomerLinkEligibilityStatuses.OwnerOfOrganization,
-                    "You're already the owner of this business.",
-                    target.PublicUserId,
-                    target.DisplayName,
-                    target.Id.Value));
-        }
+        target = canonical.Value!;
 
         if (_blocks is not null
             && await CustomerConnectionBlockSupport
@@ -126,33 +166,8 @@ public sealed class EvaluateCustomerLinkEligibility
                     target.Id.Value));
         }
 
-        var ownerMembership = await _memberships
-            .FindActiveOwnerByOrganizationAsync(organizationId, cancellationToken)
+        var relationship = await DescribeRelationshipAsync(target, organizationId, cancellationToken)
             .ConfigureAwait(false);
-        if (ownerMembership is not null && ownerMembership.UserId == target.Id)
-        {
-            return ApplicationResult<CustomerLinkEligibilityDto>.Success(
-                new CustomerLinkEligibilityDto(
-                    CustomerLinkEligibilityStatuses.OwnerOfOrganization,
-                    "You're already the owner of this business.",
-                    target.PublicUserId,
-                    target.DisplayName,
-                    target.Id.Value));
-        }
-
-        var linkedStaff = await _users
-            .FindActiveStaffByHomeOrgAndLinkedPersonalUserIdAsync(organizationId, target.Id, cancellationToken)
-            .ConfigureAwait(false);
-        if (linkedStaff is not null)
-        {
-            return ApplicationResult<CustomerLinkEligibilityDto>.Success(
-                new CustomerLinkEligibilityDto(
-                    CustomerLinkEligibilityStatuses.OrganizationStaff,
-                    "This person already works for this business and can't also be linked as a customer.",
-                    target.PublicUserId,
-                    target.DisplayName,
-                    target.Id.Value));
-        }
 
         var activeLink = await _links
             .FindActiveByUserAndOrganizationAsync(target.Id, organizationId, cancellationToken)
@@ -207,8 +222,75 @@ public sealed class EvaluateCustomerLinkEligibility
                 "Eligible to invite.",
                 target.PublicUserId,
                 target.DisplayName,
-                target.Id.Value));
+                target.Id.Value,
+                RelationshipContext: relationship));
     }
+
+    private async Task<string?> DescribeRelationshipAsync(
+        PlatformUser personal,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var personalMembership = await _memberships
+            .FindActiveByUserAndOrganizationAsync(personal.Id, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (personalMembership?.Role == OrganizationRole.OrganizationOwner)
+        {
+            return OrganizationRoleDisplay.Owner;
+        }
+
+        var linkedStaff = await _users
+            .FindActiveStaffByHomeOrgAndLinkedPersonalUserIdAsync(organizationId, personal.Id, cancellationToken)
+            .ConfigureAwait(false);
+        var authorityUserId = linkedStaff?.Id ?? personalMembership?.UserId;
+        var authorityRole = personalMembership?.Role;
+        if (linkedStaff is not null)
+        {
+            var staffMembership = await _memberships
+                .FindActiveByUserAndOrganizationAsync(linkedStaff.Id, organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            authorityRole = staffMembership?.Role ?? authorityRole;
+            authorityUserId = linkedStaff.Id;
+        }
+
+        if (authorityRole is null && linkedStaff is null)
+        {
+            return null;
+        }
+
+        if (authorityRole == OrganizationRole.OrganizationAdministrator)
+        {
+            return OrganizationRoleDisplay.Administrator;
+        }
+
+        if (_productRoles is not null && authorityUserId is not null)
+        {
+            var grant = await _productRoles
+                .FindActiveByUserOrganizationProductAsync(
+                    organizationId,
+                    authorityUserId,
+                    ProductCode.PinoyBusinessPos,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (grant is not null && grant.Status == ProductLocalRoleGrantStatus.Active)
+            {
+                var label = ProductRoleDisplay.ToDisplayLabel(grant.RoleCode);
+                if (!string.IsNullOrWhiteSpace(label)
+                    && !string.Equals(label, ProductRoleDisplay.PosOwner, StringComparison.Ordinal))
+                {
+                    return label;
+                }
+            }
+        }
+
+        return OrganizationRoleDisplay.Staff;
+    }
+
+    private static bool IsOrganizationStaffLogin(PlatformUser user) =>
+        user.IsOrganizationScopedStaff || user.HomeOrganizationId is not null;
+
+    private static bool IsPlatformStaffIdentity(PlatformUser user) =>
+        !IsOrganizationStaffLogin(user) && !string.IsNullOrWhiteSpace(user.StaffNumber);
 
     /// <summary>Maps eligibility status to create-path failure when not Eligible.</summary>
     public static ApplicationResult<T> ToCreateFailure<T>(CustomerLinkEligibilityDto eligibility)

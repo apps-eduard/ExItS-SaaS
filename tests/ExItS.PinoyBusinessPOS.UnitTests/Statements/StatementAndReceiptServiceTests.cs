@@ -46,7 +46,7 @@ public sealed class StatementAndReceiptServiceTests
         var dto = statement.Value!;
         Assert.Equal(100m, dto.OpeningBalance); // only c1 before period
         Assert.Contains(dto.Lines, l => l.IsReversed && l.EntryType == "Credit");
-        Assert.Contains(dto.Lines, l => l.EntryType == "Repayment" && l.Amount == 40m);
+        Assert.Contains(dto.Lines, l => l.EntryType == "Repayment" && l.Amount == 40m && l.RecordedBy == Actor);
         Assert.Equal(dto.ClosingBalance, dto.OpeningBalance + dto.Lines.Sum(l => l.SignedEffect));
 
         var ledger = await harness.Ledger.ListAllChronologicalAsync(customer.OrganizationId, customer.Id);

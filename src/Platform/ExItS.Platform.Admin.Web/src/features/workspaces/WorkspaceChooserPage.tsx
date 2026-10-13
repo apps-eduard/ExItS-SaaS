@@ -6,22 +6,13 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePreferences } from "@/hooks/use-preferences";
+import { readConfiguredExperienceOrigins } from "@/lib/auth/continue-after-admin-auth";
 import {
   buildSessionEstablishUrl,
   chooseAutomaticWorkspace,
   planWorkspaceLaunch,
-  resolveExperienceOrigins,
 } from "@/lib/auth/cutover-routing";
-import { env, isLocalValidationToolsEnabled } from "@/lib/env";
-
-function configuredOrigins() {
-  const runtime = typeof window === "undefined" ? undefined : window.__EXITS_PLATFORM_ADMIN_WEB__;
-  return resolveExperienceOrigins({
-    organization: runtime?.organizationWebOrigin,
-    personal: runtime?.personalWebOrigin,
-    localValidation: isLocalValidationToolsEnabled(),
-  });
-}
+import { env } from "@/lib/env";
 
 export function WorkspaceChooserPage() {
   const { t } = usePreferences();
@@ -59,7 +50,7 @@ export function WorkspaceChooserPage() {
   }, [t]);
 
   async function openWorkspace(item: WebWorkspaceItem) {
-    const plan = planWorkspaceLaunch(item, configuredOrigins());
+    const plan = planWorkspaceLaunch(item, readConfiguredExperienceOrigins());
     if (plan.kind === "platform") {
       navigate(plan.path, { replace: true });
       return;

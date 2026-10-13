@@ -2,6 +2,7 @@
 export function registerSW(options?: {
   immediate?: boolean;
   onNeedRefresh?: () => void;
+  onRegisteredSW?: (swUrl: string, registration: ServiceWorkerRegistration | undefined) => void;
   onRegisterError?: (error?: unknown) => void;
   onOfflineReady?: () => void;
 }): (reloadPage?: boolean) => Promise<void> {

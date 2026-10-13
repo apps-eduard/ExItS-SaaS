@@ -133,6 +133,13 @@ export function resolveDestinationRouting(input: {
   return { outcome: "ShowChooser" };
 }
 
+/** Prefer the organization home when a business has more than one working experience. */
+export function selectBusinessEntry(
+  destinations: WorkspaceDestination[],
+): WorkspaceDestination | null {
+  return destinations.find((destination) => destination.experience === "manage_business") ?? destinations[0] ?? null;
+}
+
 export function destinationRequiresBranch(destination: WorkspaceDestination): boolean {
   return isBranchRequiredExperience(destination.experience);
 }

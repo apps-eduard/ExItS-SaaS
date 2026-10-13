@@ -229,6 +229,66 @@ internal static class CustomerOrderEndpoints
                     ct)
                 .ConfigureAwait(false);
         });
+
+        group.MapPost("/{orderId:guid}/confirm-payment", async (
+            HttpRequest request,
+            Guid organizationId,
+            Guid orderId,
+            ConfirmCustomerOrderPaymentRequest? body,
+            ConfirmCustomerOrderPayment useCase,
+            IPosIdempotencyService idempotency,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorizeSeller(request, access, organizationId, UtangCapability.ManageCustomerOrders, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CustomerOrderConfirmPayment,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        orderId,
+                        body ?? new ConfirmCustomerOrderPaymentRequest(),
+                        actorId,
+                        ct2),
+                    dto => dto,
+                    Results.Ok,
+                    ct)
+                .ConfigureAwait(false);
+        });
+
+        group.MapPost("/{orderId:guid}/payment-not-received", async (
+            HttpRequest request,
+            Guid organizationId,
+            Guid orderId,
+            DeclineCustomerOrderPayment useCase,
+            IPosIdempotencyService idempotency,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorizeSeller(request, access, organizationId, UtangCapability.ManageCustomerOrders, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CustomerOrderDeclinePayment,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, orderId, actorId, ct2),
+                    dto => dto,
+                    Results.Ok,
+                    ct)
+                .ConfigureAwait(false);
+        });
     }
 
     private static void MapFulfillment(

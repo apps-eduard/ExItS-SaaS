@@ -715,10 +715,34 @@ internal static class AuthEndpoints
 
         app.MapPost("/api/v1/platform/auth/web-handoff/redeem", async (
             RedeemWebHandoffRequest body,
+            HttpContext http,
             RedeemWebHandoffTicket useCase,
+            IPlatformAuthSessionRepository sessions,
+            IPlatformSessionTokenService tokens,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             var result = await useCase.ExecuteAsync(body.Ticket, ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null && !string.IsNullOrWhiteSpace(result.Value.SessionToken))
+            {
+                var session = await sessions
+                    .GetByTokenHashAsync(tokens.HashToken(result.Value.SessionToken), ct)
+                    .ConfigureAwait(false);
+                if (session is not null)
+                {
+                    // Replace any leftover product cookie so the next request follows this handoff.
+                    AppendSessionCookie(
+                        http,
+                        result.Value.SessionToken,
+                        session.ExpiresAtUtc,
+                        sessionOptions.Value,
+                        env,
+                        configuration);
+                }
+            }
+
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
         .AllowAnonymous()

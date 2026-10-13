@@ -69,8 +69,10 @@ services:
       AllowedHosts: ${PACKAGING_ALLOWED_HOSTS:-localhost;127.0.0.1}
       Security__EnforceHttps: "false"
       DataProtection__KeysPath: /var/exits/dataprotection
+      ProfilePhotos__RootPath: /var/exits/profile-photos
     volumes:
       - platform_api_dataprotection_keys:/var/exits/dataprotection
+      - platform_api_profile_photos:/var/exits/profile-photos
     ports:
       - "${PLATFORM_API_HOST_PORT:-8081}:8080"
     networks:
@@ -108,6 +110,7 @@ volumes:
   platform_db_data:
   pos_db_data:
   platform_api_dataprotection_keys:
+  platform_api_profile_photos:
 
 networks:
   exits-packaging:

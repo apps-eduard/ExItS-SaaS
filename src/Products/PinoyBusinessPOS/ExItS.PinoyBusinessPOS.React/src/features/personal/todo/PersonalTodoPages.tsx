@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Check,
-  FoldVertical,
   Loader2,
   Pencil,
   Plus,
@@ -13,7 +12,6 @@ import {
   Save,
   Search,
   Trash2,
-  UnfoldVertical,
   Users,
   X,
 } from "lucide-react";
@@ -60,9 +58,9 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
 import {
+  PersonalTodoBoard,
   PersonalTodoFilterRail,
   PersonalTodoTaskRow,
-  type PersonalTodoExpandAllCommand,
 } from "@/features/personal/todo/PersonalTodoTasklistUi";
 import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
 import { useMediaMin } from "@/hooks/useMediaQuery";
@@ -177,10 +175,6 @@ export function PersonalTodoHubPage() {
   const [tab, setTab] = useState<TodoAgendaTab>(() => parseTodoAgendaTab(searchParams.get("tab")));
   const [createFormOpen, setCreateFormOpen] = useState(() => searchParams.get("add") === "1");
   const [searchQuery, setSearchQuery] = useState("");
-  const [allRowsExpanded, setAllRowsExpanded] = useState(true);
-  const [expandAllCommand, setExpandAllCommand] = useState<PersonalTodoExpandAllCommand | null>(
-    null,
-  );
   const [conflictBanner, setConflictBanner] = useState(false);
   const [form, setForm] = useState<TodoFormState>(emptyTodoForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -438,12 +432,6 @@ export function PersonalTodoHubPage() {
     [cachedTodos],
   );
 
-  function toggleAllRowsExpanded() {
-    const nextExpanded = !allRowsExpanded;
-    setAllRowsExpanded(nextExpanded);
-    setExpandAllCommand({ expanded: nextExpanded, token: Date.now() });
-  }
-
   if (online && todosQuery.isPending) {
     return <LoadingSkeleton label={t("personal.todo.loading")} />;
   }
@@ -494,12 +482,6 @@ export function PersonalTodoHubPage() {
         offlineBlocked={offlineBlocked}
         peekMode={false}
         selected={false}
-        expandAllCommand={expandAllCommand}
-        onExpandedChange={(expanded) => {
-          if (!expanded) {
-            setAllRowsExpanded(false);
-          }
-        }}
         onSelect={() => undefined}
         onComplete={() => actionMutation.mutate({ action: "complete", todo: item })}
         onCancel={() => actionMutation.mutate({ action: "cancel", todo: item })}
@@ -546,7 +528,9 @@ export function PersonalTodoHubPage() {
         >
           <Button
             type="button"
-            appearance="outline"
+            intent="primary"
+            appearance="solid"
+            emphasis="soft"
             className="personal-todo-tasklist-rail__new w-full"
             data-testid="todo-new-todo"
             onClick={() => setCreateFormOpen(true)}
@@ -577,30 +561,6 @@ export function PersonalTodoHubPage() {
                 />
               </span>
             </label>
-            <Button
-              type="button"
-              intent="info"
-              appearance="solid"
-              emphasis="soft"
-              size="icon"
-              className="personal-todo-tasklist-card__expand-toggle"
-              data-testid="todo-toggle-all-rows"
-              disabled={filtered.length === 0}
-              aria-label={
-                allRowsExpanded ? t("uiStandards.collapseAll") : t("uiStandards.expandAll")
-              }
-              aria-pressed={allRowsExpanded}
-              title={
-                allRowsExpanded ? t("uiStandards.collapseAll") : t("uiStandards.expandAll")
-              }
-              onClick={toggleAllRowsExpanded}
-            >
-              {allRowsExpanded ? (
-                <FoldVertical className="size-4" aria-hidden />
-              ) : (
-                <UnfoldVertical className="size-4" aria-hidden />
-              )}
-            </Button>
           </div>
 
           {filtered.length === 0 ? (
@@ -611,9 +571,7 @@ export function PersonalTodoHubPage() {
               detail={t(emptyState.detailKey)}
             />
           ) : (
-            <ul className="personal-todo-tasklist-card__groups m-0 list-none p-0" data-testid="todo-list">
-              {filtered.map((item) => renderTodoRow(item))}
-            </ul>
+            <PersonalTodoBoard items={filtered} renderItem={renderTodoRow} />
           )}
         </section>
       </div>

@@ -162,6 +162,7 @@ export const posCustomerStatementLineSchema = z.object({
   isReversed: z.boolean(),
   runningBalance: z.number(),
   sourceSaleId: guidSchema.nullable().optional(),
+  recordedBy: guidSchema.nullable().optional(),
 });
 
 export const posCustomerStatementSchema = z.object({

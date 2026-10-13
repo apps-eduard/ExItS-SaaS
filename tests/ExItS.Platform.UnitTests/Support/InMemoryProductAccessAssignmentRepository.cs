@@ -34,6 +34,18 @@ internal sealed class InMemoryProductAccessAssignmentRepository : IProductAccess
         return Task.FromResult(match);
     }
 
+    public Task<ProductAccessAssignment?> FindActiveByUserAndProductAsync(
+        PlatformUserId userId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var match = _byId.Values.FirstOrDefault(a =>
+            a.UserId == userId
+            && a.ProductCode == productCode
+            && a.Status == ProductAccessStatus.Active);
+        return Task.FromResult(match);
+    }
+
     public Task<(IReadOnlyList<ProductAccessAssignment> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         ProductAccessStatus? status,

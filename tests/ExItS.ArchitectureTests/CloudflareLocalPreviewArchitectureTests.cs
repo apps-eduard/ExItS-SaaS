@@ -130,6 +130,7 @@ public class CloudflareLocalPreviewArchitectureTests
             "options.CorrelationCookie.SameSite = SameSiteMode.Lax;",
             program,
             StringComparison.Ordinal);
+        Assert.Contains("options.Events.OnRemoteFailure", program, StringComparison.Ordinal);
     }
 
     [Fact]

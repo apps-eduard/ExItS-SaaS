@@ -16,6 +16,11 @@ export type PhilippineRegionDto = {
   regionName: string;
 };
 
+export type PhilippineProvinceDto = {
+  provinceCode: string;
+  provinceName: string;
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
 }
@@ -73,6 +78,36 @@ export async function listPhilippineRegions(signal?: AbortSignal): Promise<Phili
   });
   const items = Array.isArray(body) ? body : [];
   return items.map(normalizePhilippineRegion).filter((x) => x.regionCode.length > 0);
+}
+
+function normalizePhilippineProvince(raw: unknown): PhilippineProvinceDto {
+  const r = asRecord(raw);
+  return {
+    provinceCode: String(r.provinceCode ?? r.ProvinceCode ?? ""),
+    provinceName: String(r.provinceName ?? r.ProvinceName ?? ""),
+  };
+}
+
+export async function listPhilippineProvinces(signal?: AbortSignal): Promise<PhilippineProvinceDto[]> {
+  const body = await platformRequest<unknown>({
+    path: "/api/v1/platform/reference/ph/provinces",
+    signal,
+  });
+  const items = Array.isArray(body) ? body : [];
+  return items.map(normalizePhilippineProvince).filter((item) => item.provinceCode.length > 0);
+}
+
+export async function listPhilippineLocalitiesByProvince(
+  provinceCode: string,
+  signal?: AbortSignal,
+): Promise<PhilippineLocalityDto[]> {
+  const encoded = encodeURIComponent(provinceCode);
+  const body = await platformRequest<unknown>({
+    path: `/api/v1/platform/reference/ph/provinces/${encoded}/localities`,
+    signal,
+  });
+  const items = Array.isArray(body) ? body : [];
+  return items.map(normalizePhilippineLocality).filter((item) => item.psgcCode.length > 0);
 }
 
 export async function listPhilippineLocalitiesByRegion(

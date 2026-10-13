@@ -12,6 +12,7 @@ import {
   FulfillmentPickup,
   getCartQuantity,
   incrementCartLine,
+  setCartLineQuantity,
   resolveFulfillmentSelection,
 } from "@/features/customer-ordering/personal-merchant-cart";
 import {
@@ -83,6 +84,19 @@ describe("personal merchant cart", () => {
     expect(getCartQuantity(state, product.productId)).toBe(1);
   });
 
+  it("stores the entered kilograms for a kilo product", () => {
+    let state = ensureMerchantCart(
+      EMPTY_PERSONAL_MERCHANT_CART,
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "A",
+    );
+    state = setCartLineQuantity(state, product, 1.25);
+    expect(getCartQuantity(state, product.productId)).toBe(1.25);
+    expect(cartMerchandiseSubtotal(state)).toBe(62.5);
+    state = setCartLineQuantity(state, product, 0);
+    expect(state.lines).toHaveLength(0);
+  });
+
   it("resolves pickup vs delivery without inventing readiness", () => {
     const branches = [
       {
@@ -152,6 +166,41 @@ describe("seller order actions", () => {
           status: "Accepted",
           fulfillmentType: "Pickup",
           fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "Cash",
+          paymentStatus: "Unpaid",
+        }),
+      ),
+    ).not.toContain("MarkCollected");
+    expect(
+      availableSellerActions(
+        order({
+          status: "Accepted",
+          fulfillmentType: "Pickup",
+          fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "ManualGCash",
+          paymentStatus: "Pending",
+        }),
+      ),
+    ).not.toContain("MarkCollected");
+    expect(
+      availableSellerActions(
+        order({
+          status: "Accepted",
+          fulfillmentType: "Pickup",
+          fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "Cash",
+          paymentStatus: "Paid",
+        }),
+      ),
+    ).toContain("MarkCollected");
+    expect(
+      availableSellerActions(
+        order({
+          status: "Accepted",
+          fulfillmentType: "Pickup",
+          fulfillmentStatus: "ReadyForPickup",
+          paymentMethod: "Utang",
+          paymentStatus: "Unpaid",
         }),
       ),
     ).toContain("MarkCollected");

@@ -1,7 +1,9 @@
 namespace ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 
 /// <summary>
-/// V1 payment placeholder kept separate from order and fulfillment status.
+/// Payment lifecycle, kept separate from order and fulfillment status.
+/// Cash starts Unpaid. Manual GCash starts Pending until the seller confirms receipt.
+/// Utang stays Unpaid; debt is posted through Business Utang on completion.
 /// </summary>
 public enum CustomerOrderPaymentStatus
 {

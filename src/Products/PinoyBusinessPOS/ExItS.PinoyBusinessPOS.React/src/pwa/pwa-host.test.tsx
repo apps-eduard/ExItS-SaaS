@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { AppProviders } from "@/app/providers";
-import { POS_PWA_NEED_REFRESH_EVENT, PwaUpdateHost } from "@/pwa/PwaUpdateHost";
+import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 
 const registerSW = vi.fn();
 
@@ -25,19 +24,19 @@ describe("PWA update host", () => {
       expect(screen.getByTestId("pwa-update-host")).toHaveAttribute("data-ready", "true");
     });
     expect(registerSW).not.toHaveBeenCalled();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("can surface the notice from the test refresh event without registering SW in development", async () => {
-    const user = userEvent.setup();
+  it("does not show an update prompt", async () => {
     render(
       <AppProviders>
         <PwaUpdateHost />
       </AppProviders>,
     );
-    window.dispatchEvent(new Event(POS_PWA_NEED_REFRESH_EVENT));
-    expect(await screen.findByRole("status")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Refresh" }));
-    expect(registerSW).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByTestId("pwa-update-host")).toHaveAttribute("data-ready", "true");
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Refresh now" })).not.toBeInTheDocument();
   });
 });

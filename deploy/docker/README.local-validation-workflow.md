@@ -2,7 +2,11 @@
 
 Personal Staging preview only. **Not Production.** Does **not** start P14-WP03.
 
-## FAST host mode (preferred daily workflow)
+## Fast local development (separate ports, same databases)
+
+For day-to-day code changes, use `.\tools\Start-LocalDev.ps1`. It reuses `platform-db` and `pos-db` and does not rebuild images. The public preview can stay up on the same databases. Details and the port table are in [README.local-validation.md](README.local-validation.md). Refresh the preview images with `.\tools\Start-DockerLocalValidation.ps1 -Build`.
+
+## FAST host mode (same ports as Docker validation)
 
 From the repository root:
 

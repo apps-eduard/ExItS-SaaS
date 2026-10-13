@@ -122,6 +122,7 @@ describe("CustomerFormPage save vs resolve link", () => {
       userIdentityId,
       existingBusinessCustomerId: null,
       existingPendingRequestId: null,
+      relationshipContext: null,
     });
   });
 
@@ -290,16 +291,17 @@ describe("CustomerFormPage save vs resolve link", () => {
     expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
   });
 
-  it("hides Save when eligibility reports owner self", async () => {
+  it("keeps Save when the person is also the organization owner", async () => {
     const user = userEvent.setup();
     vi.mocked(publicIdentityClient.evaluateCustomerLinkEligibility).mockResolvedValue({
-      status: "OwnerOfOrganization",
-      message: "You're already the owner of this business.",
+      status: "Eligible",
+      message: "Eligible to invite.",
       publicUserId: "EX-1234-5678",
       displayName: "Rosa Personal",
       userIdentityId,
       existingBusinessCustomerId: null,
       existingPendingRequestId: null,
+      relationshipContext: "Owner",
     });
     renderCreate();
 
@@ -308,22 +310,23 @@ describe("CustomerFormPage save vs resolve link", () => {
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("customer-link-eligibility-OwnerOfOrganization")).toBeInTheDocument();
+      expect(screen.getByTestId("customer-save")).toBeInTheDocument();
     });
-    expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
-    expect(publicIdentityClient.createBusinessCustomerWithPersonalLink).not.toHaveBeenCalled();
+    expect(screen.getByTestId("customer-link-relationship")).toHaveTextContent("Organization owner");
+    expect(screen.queryByText(/can't also be linked as a customer/i)).not.toBeInTheDocument();
   });
 
-  it("hides Save when eligibility reports organization staff", async () => {
+  it("keeps Save when the person also works for the business", async () => {
     const user = userEvent.setup();
     vi.mocked(publicIdentityClient.evaluateCustomerLinkEligibility).mockResolvedValue({
-      status: "OrganizationStaff",
-      message: "staff",
+      status: "Eligible",
+      message: "Eligible to invite.",
       publicUserId: "EX-1234-5678",
       displayName: "Rosa Personal",
       userIdentityId,
       existingBusinessCustomerId: null,
       existingPendingRequestId: null,
+      relationshipContext: "Cashier",
     });
     renderCreate();
 
@@ -332,8 +335,12 @@ describe("CustomerFormPage save vs resolve link", () => {
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("customer-link-eligibility-OrganizationStaff")).toBeInTheDocument();
+      expect(screen.getByTestId("customer-save")).toBeInTheDocument();
     });
-    expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-link-relationship")).toHaveTextContent(
+      "Also works for this business",
+    );
+    expect(screen.getByTestId("customer-link-relationship")).toHaveTextContent("Cashier");
+    expect(screen.queryByText(/can't also be linked as a customer/i)).not.toBeInTheDocument();
   });
 });

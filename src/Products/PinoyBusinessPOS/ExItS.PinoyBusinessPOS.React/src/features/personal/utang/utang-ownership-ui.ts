@@ -7,7 +7,7 @@ import type { DashboardMetricTone } from "@/features/reports/DashboardMetricCard
  * | Ownership        | Metric card tone | Ownership chip |
  * |------------------|------------------|----------------|
  * | My record        | emphasis         | primary        |
- * | Shared with me   | shared           | info           |
+ * | Shared info      | shared           | info           |
  * | Read only (tag)  | —                | warning        |
  *
  * All ownership/read-only chips use emphasis + square.

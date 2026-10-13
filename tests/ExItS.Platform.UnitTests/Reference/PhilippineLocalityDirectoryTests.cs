@@ -61,6 +61,25 @@ public sealed class PhilippineLocalityDirectoryTests
     }
 
     [Fact]
+    public void Provinces_list_every_province_and_filter_cities()
+    {
+        var provinces = _directory.ListProvinces();
+        Assert.Contains(provinces, province => province.ProvinceName == "Aklan");
+        Assert.Contains(provinces, province => province.ProvinceName == "Metro Manila");
+        Assert.Contains(provinces, province => province.ProvinceName == "Bacolod City");
+
+        var aklan = provinces.Single(province => province.ProvinceName == "Aklan");
+        var aklanCities = _directory.ListByProvinceCode(aklan.ProvinceCode);
+        Assert.Contains(aklanCities, city => city.Name.Contains("Kalibo", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(aklanCities, city => city.ProvinceName == "Ilocos Norte");
+
+        var metro = provinces.Single(province => province.ProvinceName == "Metro Manila");
+        var metroCities = _directory.ListByProvinceCode(metro.ProvinceCode);
+        Assert.Contains(metroCities, city => city.PsgcCode == "1381300000");
+        Assert.Contains(metroCities, city => city.PsgcCode == "1381701000");
+    }
+
+    [Fact]
     public void Unknown_and_non_city_codes_are_absent()
     {
         Assert.Null(_directory.GetByPsgcCode("9999999999"));

@@ -52,6 +52,8 @@ export const OFFLINE_OPERATION_TYPES = {
   CustomerOrderAccept: "customer_order.accept",
   CustomerOrderReject: "customer_order.reject",
   CustomerOrderComplete: "customer_order.complete",
+  CustomerOrderConfirmPayment: "customer_order.confirm_payment",
+  CustomerOrderDeclinePayment: "customer_order.decline_payment",
   /** Online-only expense create — mirrors server PosMutationIdempotencyHelper expense.create. */
   ExpenseCreate: "expense.create",
   /** Online-only supplier payable payment — mirrors OfflineOperationTypes.SupplierPayablePayment. */

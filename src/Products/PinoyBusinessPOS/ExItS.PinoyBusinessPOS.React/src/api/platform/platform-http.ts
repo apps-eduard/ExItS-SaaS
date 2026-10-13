@@ -103,6 +103,7 @@ export type PlatformRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   body?: unknown;
+  formData?: FormData;
   signal?: AbortSignal;
   skipAntiforgery?: boolean;
   /** When true, 401 responses do not trigger the central session-expiry transition. */
@@ -244,7 +245,7 @@ async function executePlatformRequest<T>(
     "X-Correlation-Id": requestCorrelationId,
   });
 
-  if (options.body !== undefined) {
+  if (options.body !== undefined && options.formData === undefined) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -264,7 +265,7 @@ async function executePlatformRequest<T>(
     method,
     credentials: "include",
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body: options.formData ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
     signal: options.signal,
   });
 

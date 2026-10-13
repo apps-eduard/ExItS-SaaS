@@ -188,6 +188,21 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
             .ConfigureAwait(false);
     }
 
+    public async Task<int> CountActiveNonOwnerStaffAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(MembershipStatus.Active);
+        var owner = nameof(OrganizationRole.OrganizationOwner);
+        return await _db.OrganizationMemberships.AsNoTracking()
+            .CountAsync(
+                m => m.OrganizationId == organizationId.Value
+                     && m.Status == active
+                     && m.Role != owner,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<OrganizationMembership>> ListActiveBusinessInboxRecipientsAsync(
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default)
@@ -204,6 +219,17 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
             .ConfigureAwait(false);
         return records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList();
     }
+
+    public Task<bool> StaffIdInUseAsync(
+        PlatformOrganizationId organizationId,
+        string staffId,
+        OrganizationMembershipId exceptMembershipId,
+        CancellationToken cancellationToken = default) =>
+        _db.OrganizationMemberships.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                 && m.StaffId == staffId
+                 && m.Id != exceptMembershipId.Value,
+            cancellationToken);
 
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {

@@ -58,6 +58,18 @@ vi.mock("@/features/customers/CustomerStoreDetailsEditDrawer", () => ({
   CustomerStoreDetailsEditDrawer: () => null,
 }));
 
+vi.mock("@/components/exits/ToastProvider", () => ({
+  useToast: () => ({ showToast: vi.fn() }),
+}));
+
+vi.mock("@/features/customers/RecordPaymentModal", () => ({
+  RecordPaymentModal: () => null,
+}));
+
+vi.mock("@/features/customers/PaymentHistorySection", () => ({
+  PaymentHistorySection: () => null,
+}));
+
 vi.mock("@/api/platform/public-identity-client", () => ({
   resolvePublicUserId: vi.fn().mockResolvedValue({
     displayName: "John Dela Cruz",
@@ -156,9 +168,10 @@ describe("CustomerDetailPage delivery placement", () => {
       </QueryClientProvider>,
     );
 
+    fireEvent.click(await screen.findByTestId("customer-tab-store"));
     const section = await screen.findByTestId("customer-delivery-section");
     await waitFor(() => {
-      expect(screen.getByTestId("customer-store-details")).toContainElement(section);
+      expect(screen.getByTestId("customer-delivery-card")).toContainElement(section);
     });
   });
 });

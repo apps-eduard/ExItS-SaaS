@@ -1,60 +1,57 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowUp, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { EmptyState } from "@/components/exits/EmptyState";
-import { FilterChip } from "@/components/exits/FilterChip";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { SearchField } from "@/components/exits/SearchField";
 import { Button } from "@/components/ui/button";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
-import { UiStandardCatalogTable } from "@/features/ui-standards/UiStandardCatalogTable";
 import { UiStandardLiveSamples } from "@/features/ui-standards/UiStandardLiveSamples";
 import { UiStandardsPreferencePreview } from "@/features/ui-standards/UiStandardsPreferencePreview";
 import { useUiStandardsDisclosure } from "@/features/ui-standards/useUiStandardsDisclosure";
 import {
-  filterCatalogRows,
   filterLiveCards,
+  isUiStandardNavGroup,
   parseUiStandardCategoryParam,
-  UI_STANDARD_FILTER_OPTIONS,
+  UI_STANDARD_NAV,
   type UiStandardFilterCategory,
+  type UiStandardNavItem,
 } from "@/features/ui-standards/ui-standard-catalog";
 
 /**
- * Canonical ExItS UI Standard page — live samples + catalog + locked ExitsTable reference.
+ * Canonical ExItS UI Standard page — live samples and the locked ExitsTable reference.
  * Route: /ui-standards ( /ui-standard aliases here ).
  * Classic / Simple modes removed (TASK-66D).
  */
 export function UiStandardsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [category, setCategory] = useState<UiStandardFilterCategory>(() =>
     parseUiStandardCategoryParam(searchParams.get("category")),
   );
   const { isOpen, setOpen } = useUiStandardsDisclosure();
+  const mainRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [formOpen, setFormOpen] = useState(true);
 
   useEffect(() => {
-    setQuery(searchParams.get("q") ?? "");
     setCategory(parseUiStandardCategoryParam(searchParams.get("category")));
   }, [searchParams]);
 
   const syncParams = useCallback(
-    (next: { q?: string; category?: UiStandardFilterCategory }) => {
+    (next: { category?: UiStandardFilterCategory }) => {
       setSearchParams(
         (prev) => {
           const params = new URLSearchParams(prev);
-          const q = next.q !== undefined ? next.q : params.get("q") ?? "";
           const cat =
             next.category !== undefined
               ? next.category
               : parseUiStandardCategoryParam(params.get("category"));
 
-          if (q.trim()) params.set("q", q.trim());
-          else params.delete("q");
+          params.delete("q");
 
           if (cat !== "all") params.set("category", cat);
           else params.delete("category");
 
-          // Drop obsolete Classic/Simple view param if present.
           params.delete("view");
           return params;
         },
@@ -72,27 +69,14 @@ export function UiStandardsPage() {
     [syncParams],
   );
 
-  const setSearchQuery = useCallback(
-    (next: string) => {
-      setQuery(next);
-      syncParams({ q: next });
-    },
-    [syncParams],
-  );
-
   const clearFilters = useCallback(() => {
-    setQuery("");
     setCategory("all");
-    syncParams({ q: "", category: "all" });
+    syncParams({ category: "all" });
   }, [syncParams]);
 
   const visibleLiveCards = useMemo(
-    () => filterLiveCards(category, query),
-    [category, query],
-  );
-  const visibleCatalogRows = useMemo(
-    () => filterCatalogRows(category, query),
-    [category, query],
+    () => filterLiveCards(category, ""),
+    [category],
   );
 
   const visibleLiveIds = useMemo(
@@ -108,16 +92,94 @@ export function UiStandardsPage() {
   }, [category, setOpen]);
 
   const hasLive = visibleLiveCards.length > 0;
-  const hasCatalog = visibleCatalogRows.length > 0;
   const showExitsTableReference = category === "data";
-  const hasAnyResult = hasLive || hasCatalog || showExitsTableReference;
+  const hasAnyResult = hasLive || showExitsTableReference;
+
+  useEffect(() => {
+    const node = mainRef.current;
+    if (!node) return;
+    const update = () => {
+      setShowScrollTop(node.scrollTop > 48);
+    };
+    update();
+    node.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(node);
+    return () => {
+      node.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }, [category, hasAnyResult]);
+
+  const scrollMainToTop = useCallback(() => {
+    const node = mainRef.current;
+    if (!node) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  }, []);
+
+  function renderNavItem(item: UiStandardNavItem, child: boolean) {
+    const selected = category === item.id;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={"ui-standards-sidenav__item" + (child ? " ui-standards-sidenav__item--child" : "")}
+        aria-pressed={selected}
+        data-selected={selected ? "true" : "false"}
+        data-testid={`ui-standards-filter-${item.id}`}
+        onClick={() => setCategoryFilter(item.id)}
+      >
+        {item.label}
+      </button>
+    );
+  }
 
   if (!isFrontendLocalValidationMode()) {
     return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="ui-standards-page">
+    <div
+      className="exits-page ui-standards-page flex min-h-0 min-w-0 flex-1 flex-col"
+      data-testid="ui-standards-page"
+    >
+      <div className="ui-standards-layout">
+        <nav className="ui-standards-sidenav" aria-label="UI standard categories" data-testid="ui-standards-sidenav">
+          <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
+            {UI_STANDARD_NAV.map((entry) => {
+              if (isUiStandardNavGroup(entry)) {
+                return (
+                  <div key={entry.id} className="ui-standards-sidenav__group">
+                    <button
+                      type="button"
+                      className="ui-standards-sidenav__item"
+                      aria-expanded={formOpen}
+                      data-testid={`ui-standards-filter-${entry.id}`}
+                      onClick={() => setFormOpen((open) => !open)}
+                    >
+                      {entry.label}
+                      <ChevronRight className="ui-standards-sidenav__chevron" aria-hidden />
+                    </button>
+                    {formOpen ? (
+                      <div className="ui-standards-sidenav__sublist" role="group" aria-label={entry.label}>
+                        {entry.children.map((child) => renderNavItem(child, true))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              }
+              return renderNavItem(entry, false);
+            })}
+          </div>
+        </nav>
+
+        <div className="ui-standards-main-frame">
+        <div
+          ref={mainRef}
+          className="ui-standards-main flex min-w-0 flex-col gap-3"
+          data-testid="ui-standards-main"
+        >
       <PageHeader
         title="ExItS UI Standard"
         description="Live reference for shared components, interaction patterns, and design standards."
@@ -126,43 +188,12 @@ export function UiStandardsPage() {
         Changes to global components should be reflected here and throughout the application.
       </p>
 
-      <UiStandardsPreferencePreview />
-
-      <div
-        className="sticky top-0 z-20 -mx-1 flex flex-col gap-2 border-b border-border bg-[color-mix(in_srgb,var(--exits-bg)_92%,transparent)] px-1 py-2 backdrop-blur-md"
-        data-testid="ui-standards-filter-bar"
-      >
-        <SearchField
-          label="Search UI standards"
-          value={query}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onClear={() => setSearchQuery("")}
-          placeholder="Search UI standards..."
-          testId="ui-standards-search"
-        />
-        <div
-          className="flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-0.5"
-          role="group"
-          aria-label="UI standard categories"
-          data-testid="ui-standards-category-filters"
-        >
-          {UI_STANDARD_FILTER_OPTIONS.map((opt) => (
-            <FilterChip
-              key={opt.id}
-              selected={category === opt.id}
-              onClick={() => setCategoryFilter(opt.id)}
-              data-testid={`ui-standards-filter-${opt.id}`}
-            >
-              {opt.label}
-            </FilterChip>
-          ))}
-        </div>
-      </div>
+      {category === "all" ? <UiStandardsPreferencePreview /> : null}
 
       {!hasAnyResult ? (
         <EmptyState
           title="No UI standards found"
-          detail="Try another search or filter."
+          detail="Try another filter."
           size="compact"
           testId="ui-standards-empty"
           action={
@@ -185,8 +216,6 @@ export function UiStandardsPage() {
             </section>
           ) : null}
 
-          {hasCatalog ? <UiStandardCatalogTable rows={visibleCatalogRows} /> : null}
-
           {showExitsTableReference ? (
             <section
               className="flex min-w-0 flex-col gap-2"
@@ -205,6 +234,20 @@ export function UiStandardsPage() {
           ) : null}
         </>
       )}
+        </div>
+        {showScrollTop ? (
+          <button
+            type="button"
+            className="ui-standards-scroll-top"
+            aria-label="Back to top"
+            data-testid="ui-standards-scroll-top"
+            onClick={scrollMainToTop}
+          >
+            <ArrowUp className="size-5" aria-hidden />
+          </button>
+        ) : null}
+        </div>
+      </div>
     </div>
   );
 }

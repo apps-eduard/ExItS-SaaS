@@ -5,11 +5,9 @@ namespace ExItS.PinoyBusinessPOS.Application.Options;
 /// (<c>X-Pos-Installation-Device-Id</c> + Platform <c>/pos-devices/authorize</c>).
 /// </summary>
 /// <remarks>
-/// Pure React PWA current policy: set <see cref="EnforcementEnabled"/> to false only in
-/// Local Validation / non-Production so the web PWA can operate without requiring browser
-/// registration. Device registration endpoints, capacity, history, and revoke remain available
-/// for optional/manual use and for future Capacitor.
-/// Future Capacitor / native transactional client should set
+/// Web/PWA sets <see cref="EnforcementEnabled"/> to false. Device registration is disabled
+/// on the website. User/org/capability/business rules still apply.
+/// Capacitor Android and iOS apps set
 /// <c>PosDeviceAuthorization__EnforcementEnabled=true</c>
 /// (reuse DeviceIdentityProvider, installation GUID, registration, revocation, and Platform authorize).
 /// Production startup fails closed if this is disabled.
@@ -20,7 +18,8 @@ public sealed class PosDeviceAuthorizationOptions
 
     /// <summary>
     /// When true (default), money-affecting APIs require an active authorized POS installation.
-    /// When false, the device gate is skipped; user/org/capability/business rules still apply.
+    /// When false, the website skips device registration.
+    /// User/org/capability/business rules still apply.
     /// </summary>
     public bool EnforcementEnabled { get; set; } = true;
 }

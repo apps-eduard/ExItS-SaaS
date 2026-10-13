@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildSessionEstablishUrl,
   chooseAutomaticWorkspace,
+  choosePostAdminLoginWorkspace,
   decideProductEntry,
   planWorkspaceLaunch,
   readExternalCallbackQuery,
@@ -19,6 +20,19 @@ const organization = {
 };
 
 describe("admin cutover routing", () => {
+  it("sends a non-platform account to POS when an organization exists, otherwise Personal", () => {
+    expect(choosePostAdminLoginWorkspace([platform])).toBeNull();
+    expect(choosePostAdminLoginWorkspace([personal, organization])?.app).toBe("organization");
+    expect(choosePostAdminLoginWorkspace([personal, organization], "org-1")?.organizationId).toBe("org-1");
+    expect(choosePostAdminLoginWorkspace([personal])?.app).toBe("personal");
+    const preview = resolveExperienceOrigins({
+      localValidation: true,
+      pageHost: "admin.exitsapps.com",
+    });
+    expect(preview.personal).toBe("https://my.exitsapps.com");
+    expect(preview.organization).toBe("https://pos.exitsapps.com");
+  });
+
   it("sends a platform user to Platform Admin", () => {
     expect(chooseAutomaticWorkspace([platform])?.app).toBe("platform");
     expect(planWorkspaceLaunch(platform, {}).kind).toBe("platform");

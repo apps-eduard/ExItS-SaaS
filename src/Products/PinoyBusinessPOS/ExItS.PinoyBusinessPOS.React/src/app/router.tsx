@@ -18,12 +18,13 @@ import { PersonalOwnershipTransfersPage } from "@/features/personal/ownership/Pe
 import { PersonalStaffInvitationsPage } from "@/features/personal/staff/PersonalStaffInvitationsPage";
 import { PersonalWorkplacesPage } from "@/features/personal/workplaces/PersonalWorkplacesPage";
 import { PersonalProfilePage } from "@/features/personal/PersonalProfilePage";
+import { PersonalBusinessesPage } from "@/features/personal/businesses/PersonalBusinessesPage";
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
+import { PersonalProductSubscriptionsPage } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
 import { SubscriptionCheckoutPage } from "@/features/subscription-checkout/SubscriptionCheckoutPage";
-import { SubscriptionPaymentSimulatorPage } from "@/features/subscription-checkout/SubscriptionPaymentSimulatorPage";
 import { PaymentResultPage } from "@/features/subscription-checkout/PaymentResultPage";
 import { BillingPaymentReturnPage } from "@/features/subscription-checkout/BillingPaymentReturnPage";
 import { PreOrgCheckoutShell } from "@/features/subscription-checkout/PreOrgCheckoutShell";
@@ -387,7 +388,6 @@ export const appRoutes = [
         children: [
           { path: ":paymentId", element: <SubscriptionCheckoutPage /> },
           { path: ":paymentId/result", element: <PaymentResultPage /> },
-          { path: ":paymentId/:channel", element: <SubscriptionPaymentSimulatorPage /> },
         ],
       },
       {
@@ -477,7 +477,9 @@ export const appRoutes = [
                 element: <PersonalStaffInvitationsPage />,
               },
               { path: "profile", element: <PersonalProfilePage /> },
+              { path: "businesses", element: <PersonalBusinessesPage /> },
               { path: "explore-pos", element: <PersonalExplorePosPage /> },
+              { path: "subscriptions", element: <PersonalProductSubscriptionsPage /> },
               {
                 path: "start-business",
                 element: <PersonalStartBusinessPage />,

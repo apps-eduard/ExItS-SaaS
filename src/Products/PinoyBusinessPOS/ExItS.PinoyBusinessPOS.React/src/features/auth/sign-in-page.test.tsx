@@ -75,6 +75,13 @@ describe("SignInPage LOGIN-UX-01", () => {
     vi.mocked(probeExternalAuthProvider).mockClear();
   });
 
+  it("explains a failed Google return", () => {
+    renderSignInPage("/sign-in?external=failed");
+    expect(screen.getByTestId("auth-error")).toHaveTextContent(
+      "Google sign-in did not finish. Try again.",
+    );
+  });
+
   it("defaults to Sign In tab with active indicator", () => {
     renderSignInPage();
     expect(screen.getByTestId("auth-tab-sign-in")).toHaveAttribute("aria-selected", "true");

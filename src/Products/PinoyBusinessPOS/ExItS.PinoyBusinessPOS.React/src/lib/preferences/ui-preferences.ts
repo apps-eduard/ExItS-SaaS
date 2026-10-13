@@ -16,6 +16,15 @@ export const primaryColorPreferenceSchema = z.enum([
   "rose",
   "orange",
 ]);
+export const backgroundColorPreferenceSchema = z.enum([
+  "theme",
+  "blue",
+  "violet",
+  "teal",
+  "rose",
+  "sand",
+  "slate",
+]);
 export const controlShapePreferenceSchema = z.enum(["standard", "soft", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
 export const navigationModePreferenceSchema = z.enum([
@@ -34,6 +43,8 @@ export const uiPreferencesSchema = z.object({
   density: densityPreferenceSchema.default("balance"),
   /** Missing in older storage → green (POS default accent). */
   primaryColor: primaryColorPreferenceSchema.default("green"),
+  /** Missing in older storage → the wash that follows the theme color. */
+  backgroundColor: backgroundColorPreferenceSchema.default("theme"),
   /** Missing in older storage → standard interactive radius. */
   controlShape: controlShapePreferenceSchema.default("standard"),
   /** Missing in older storage → follow OS prefers-reduced-motion. */
@@ -48,6 +59,7 @@ export type ThemePreference = z.infer<typeof themePreferenceSchema>;
 export type LocalePreference = z.infer<typeof localePreferenceSchema>;
 export type DensityPreference = z.infer<typeof densityPreferenceSchema>;
 export type PrimaryColorPreference = z.infer<typeof primaryColorPreferenceSchema>;
+export type BackgroundColorPreference = z.infer<typeof backgroundColorPreferenceSchema>;
 export type ControlShapePreference = z.infer<typeof controlShapePreferenceSchema>;
 export type MotionPreference = z.infer<typeof motionPreferenceSchema>;
 export type NavigationModePreference = z.infer<typeof navigationModePreferenceSchema>;
@@ -86,6 +98,16 @@ export const PRIMARY_COLOR_OPTIONS = [
   "orange",
 ] as const satisfies readonly PrimaryColorPreference[];
 
+export const BACKGROUND_COLOR_OPTIONS = [
+  "theme",
+  "blue",
+  "violet",
+  "teal",
+  "rose",
+  "sand",
+  "slate",
+] as const satisfies readonly BackgroundColorPreference[];
+
 export const CONTROL_SHAPE_OPTIONS = [
   "standard",
   "soft",
@@ -97,6 +119,7 @@ export const defaultUiPreferences: UiPreferences = {
   locale: "en",
   density: "balance",
   primaryColor: "green",
+  backgroundColor: "theme",
   controlShape: "standard",
   motion: "system",
   navigationMode: "standard",
@@ -149,6 +172,10 @@ export function applyPrimaryColor(primaryColor: PrimaryColorPreference): void {
   document.documentElement.dataset.accent = primaryColor;
 }
 
+export function applyBackgroundColor(backgroundColor: BackgroundColorPreference): void {
+  document.documentElement.dataset.background = backgroundColor;
+}
+
 export function applyControlShape(controlShape: ControlShapePreference): void {
   document.documentElement.dataset.controlShape = controlShape;
 }
@@ -170,6 +197,7 @@ export function applyUiPreferences(preferences: UiPreferences): void {
   applyLocale(preferences.locale);
   applyDensity(preferences.density);
   applyPrimaryColor(preferences.primaryColor);
+  applyBackgroundColor(preferences.backgroundColor);
   applyControlShape(preferences.controlShape);
   applyMotion(preferences.motion);
   applyNavigationMode(preferences.navigationMode);

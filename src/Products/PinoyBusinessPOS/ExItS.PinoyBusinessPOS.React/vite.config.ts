@@ -61,17 +61,20 @@ export default defineConfig(({ mode }) => ({
         enabled: false,
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2}"],
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api\//, /\/platform-api\//, /\/pos-api\//],
         runtimeCaching: [
           {
+            // Google's browser callback must stay outside the service worker.
+            // An intercepted navigation replays the callback without the correlation cookie.
             urlPattern: ({ url }) =>
-              url.pathname.startsWith("/api/") ||
-              url.pathname.includes("/platform-api/") ||
-              url.pathname.includes("/pos-api/") ||
-              /\/(auth|session)\//i.test(url.pathname),
+              !url.pathname.includes("/auth/external/") &&
+              (url.pathname.startsWith("/api/") ||
+                url.pathname.includes("/platform-api/") ||
+                url.pathname.includes("/pos-api/") ||
+                /\/(auth|session)\//i.test(url.pathname)),
             handler: "NetworkOnly",
           },
           {

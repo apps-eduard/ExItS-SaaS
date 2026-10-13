@@ -76,8 +76,10 @@ services:
       ForwardedHeaders__KnownNetworks__0: ${PRODUCTION_TRUSTED_PROXY_NETWORK:-172.16.0.0/12}
       ForwardedHeaders__KnownNetworks__1: "10.0.0.0/8"
       DataProtection__KeysPath: /var/exits/dataprotection
+      ProfilePhotos__RootPath: /var/exits/profile-photos
     volumes:
       - platform_api_dataprotection_keys:/var/exits/dataprotection
+      - platform_api_profile_photos:/var/exits/profile-photos
     expose:
       - "8080"
     # Images intentionally omit curl/wget; verify via reverse-proxy /platform/health after start.
@@ -173,6 +175,7 @@ volumes:
   platform_db_data:
   pos_db_data:
   platform_api_dataprotection_keys:
+  platform_api_profile_photos:
 
 networks:
   exits-production-internal:

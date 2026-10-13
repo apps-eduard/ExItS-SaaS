@@ -59,6 +59,22 @@ internal static class PersonalEndpoints
             return Results.Ok(result);
         });
 
+        personal.MapGet("/product-affiliations", async (
+            HttpContext http,
+            ListPersonalProductAffiliations listAffiliations,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await listAffiliations
+                .ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         personal.MapGet("/workplaces", async (
             HttpContext http,
             ListPersonalWorkplaces listWorkplaces,
@@ -71,6 +87,42 @@ internal static class PersonalEndpoints
 
             var result = await listWorkplaces
                 .ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/workplaces/{membershipId:guid}/password-reset-requests", async (
+            HttpContext http,
+            Guid membershipId,
+            RequestStaffPasswordReset requestReset,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await requestReset
+                .ExecuteAsync(PlatformUserId.From(userId), membershipId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/workplaces/{membershipId:guid}/password-reset-requests/{requestId:guid}/complete", async (
+            HttpContext http,
+            Guid membershipId,
+            Guid requestId,
+            CompleteStaffPasswordResetBody? body,
+            CompleteStaffPasswordReset completeReset,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await completeReset
+                .ExecuteAsync(PlatformUserId.From(userId), membershipId, requestId, body?.NewPassword, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
@@ -520,6 +572,58 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        personal.MapGet("/profile/photo", async (
+            HttpContext http,
+            IPersonalProfilePhotoStore photos,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var photo = await photos.ReadAsync(userId, ct).ConfigureAwait(false);
+            if (photo is null)
+            {
+                return Results.NotFound();
+            }
+
+            return Results.File(photo.Content, photo.ContentType);
+        });
+
+        personal.MapPost("/profile/photo", async (
+            HttpContext http,
+            UploadPersonalProfilePhoto uploadPhoto,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out var accountProfileId, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!http.Request.HasFormContentType)
+            {
+                return Results.BadRequest();
+            }
+
+            var form = await http.Request.ReadFormAsync(ct).ConfigureAwait(false);
+            var file = form.Files.GetFile("file");
+            if (file is null || file.Length == 0 || file.Length > PersonalProfilePhotoRules.MaxBytes)
+            {
+                return Results.BadRequest();
+            }
+
+            await using var stream = file.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct).ConfigureAwait(false);
+            var result = await uploadPhoto.ExecuteAsync(
+                PlatformUserId.From(userId),
+                AccountProfileId.From(accountProfileId),
+                buffer.ToArray(),
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         personal.MapPut("/profile", async (
             HttpContext http,
             UpdatePersonalProfileRequest body,
@@ -537,6 +641,166 @@ internal static class PersonalEndpoints
                 body,
                 ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        personal.MapPost("/profile/addresses", async (
+            HttpContext http,
+            SavePersonalAddressRequest body,
+            ManagePersonalAddresses addresses,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out var accountProfileId, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await addresses.AddAsync(
+                PlatformUserId.From(userId),
+                AccountProfileId.From(accountProfileId),
+                body,
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        personal.MapPut("/profile/addresses/{addressId:guid}", async (
+            HttpContext http,
+            Guid addressId,
+            SavePersonalAddressRequest body,
+            ManagePersonalAddresses addresses,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out var accountProfileId, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await addresses.UpdateAsync(
+                PlatformUserId.From(userId),
+                AccountProfileId.From(accountProfileId),
+                PersonalAddressId.From(addressId),
+                body,
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        personal.MapDelete("/profile/addresses/{addressId:guid}", async (
+            HttpContext http,
+            Guid addressId,
+            ManagePersonalAddresses addresses,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out var accountProfileId, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await addresses.DeleteAsync(
+                PlatformUserId.From(userId),
+                AccountProfileId.From(accountProfileId),
+                PersonalAddressId.From(addressId),
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        personal.MapPost("/profile/addresses/{addressId:guid}/primary", async (
+            HttpContext http,
+            Guid addressId,
+            ManagePersonalAddresses addresses,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out var accountProfileId, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await addresses.SetPrimaryAsync(
+                PlatformUserId.From(userId),
+                AccountProfileId.From(accountProfileId),
+                PersonalAddressId.From(addressId),
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        personal.MapGet("/people/{subjectUserId:guid}/profile", async (
+            HttpContext http,
+            Guid subjectUserId,
+            GetPersonalConnectionProfile getConnectionProfile,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getConnectionProfile
+                .ExecuteAsync(PlatformUserId.From(userId), PlatformUserId.From(subjectUserId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        var relationshipProfiles = app.MapGroup("/api/v1/platform/organizations/{organizationId:guid}/personal-profiles");
+        relationshipProfiles.MapGet("/{personalUserId:guid}/staff", async (
+            Guid organizationId,
+            Guid personalUserId,
+            PlatformOrganizationAuthz authz,
+            GetRelationshipScopedPersonalProfile getProfile,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await getProfile
+                .ForStaffAsync(PlatformOrganizationId.From(organizationId), PlatformUserId.From(personalUserId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+        relationshipProfiles.MapGet("/{personalUserId:guid}/customer", async (
+            Guid organizationId,
+            Guid personalUserId,
+            PlatformOrganizationAuthz authz,
+            GetRelationshipScopedPersonalProfile getProfile,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await getProfile
+                .ForCustomerAsync(PlatformOrganizationId.From(organizationId), PlatformUserId.From(personalUserId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+        relationshipProfiles.MapGet("/{personalUserId:guid}/customer-photo", async (
+            Guid organizationId,
+            Guid personalUserId,
+            PlatformOrganizationAuthz authz,
+            GetRelationshipScopedPersonalProfile getProfile,
+            IPersonalProfilePhotoStore photos,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var visible = await getProfile
+                .ForCustomerAsync(PlatformOrganizationId.From(organizationId), PlatformUserId.From(personalUserId), ct)
+                .ConfigureAwait(false);
+            if (!visible.IsSuccess)
+            {
+                return Results.NotFound();
+            }
+
+            var photo = await photos.ReadAsync(personalUserId, ct).ConfigureAwait(false);
+            return photo is null
+                ? Results.NotFound()
+                : Results.File(photo.Content, photo.ContentType);
         });
 
         personal.MapGet("/settings", async (
@@ -1749,4 +2013,6 @@ internal static class PersonalEndpoints
     }
 
     internal sealed record ClaimPersonalAdRewardRequest(string ClaimKey);
+
+    internal sealed record CompleteStaffPasswordResetBody(string? NewPassword);
 }

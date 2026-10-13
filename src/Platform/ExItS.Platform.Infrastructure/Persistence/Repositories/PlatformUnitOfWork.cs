@@ -72,11 +72,7 @@ internal sealed class PlatformUnitOfWork : IPlatformUnitOfWork
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            var bytesA = lockKeyA.ToByteArray();
-            var key1 = BitConverter.ToInt32(bytesA, 0);
-            var key2 = lockKeyB == Guid.Empty
-                ? BitConverter.ToInt32(bytesA, 4)
-                : BitConverter.ToInt32(lockKeyB.ToByteArray(), 0);
+            var (key1, key2) = ToAdvisoryKeys(lockKeyA, lockKeyB);
             await _db.Database
                 .ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key1}, {key2})", cancellationToken)
                 .ConfigureAwait(false);
@@ -84,5 +80,33 @@ internal sealed class PlatformUnitOfWork : IPlatformUnitOfWork
             await action(cancellationToken).ConfigureAwait(false);
             await tx.CommitAsync(cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
+    }
+
+    public async Task AcquireTransactionAdvisoryLockAsync(
+        Guid lockKeyA,
+        Guid lockKeyB,
+        CancellationToken cancellationToken = default)
+    {
+        var provider = _db.Database.ProviderName ?? string.Empty;
+        if (!provider.Contains("Npgsql", StringComparison.OrdinalIgnoreCase)
+            || _db.Database.CurrentTransaction is null)
+        {
+            return;
+        }
+
+        var (key1, key2) = ToAdvisoryKeys(lockKeyA, lockKeyB);
+        await _db.Database
+            .ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key1}, {key2})", cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private static (int Key1, int Key2) ToAdvisoryKeys(Guid lockKeyA, Guid lockKeyB)
+    {
+        var bytesA = lockKeyA.ToByteArray();
+        var key1 = BitConverter.ToInt32(bytesA, 0);
+        var key2 = lockKeyB == Guid.Empty
+            ? BitConverter.ToInt32(bytesA, 4)
+            : BitConverter.ToInt32(lockKeyB.ToByteArray(), 0);
+        return (key1, key2);
     }
 }

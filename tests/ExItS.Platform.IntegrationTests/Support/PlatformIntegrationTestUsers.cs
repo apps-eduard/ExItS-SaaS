@@ -135,6 +135,30 @@ internal static class PlatformIntegrationTestUsers
     }
 
     /// <summary>
+    /// Fills the Personal profile fields a staff invitation accept requires.
+    /// Address stays private; this does not change visibility defaults.
+    /// </summary>
+    internal static async Task SaveStaffReadyPersonalProfileAsync(HttpClient client, string sessionToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, "/api/v1/personal/profile");
+        request.Headers.Add("X-ExItS-Session-Token", sessionToken);
+        request.Content = JsonContent.Create(new
+        {
+            displayName = "Integration Person",
+            firstName = "Integration",
+            lastName = "Person",
+            phone = "09171234567",
+            country = "Philippines",
+            addressLine1 = "12 Rizal",
+            barangay = "Poblacion",
+            cityMunicipality = "Kalibo",
+            province = "Aklan",
+        });
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
     /// Accepts a staff invite into an existing organization via token + password,
     /// yielding a distinct org-scoped staff identity (never attaches to a Personal user).
     /// </summary>

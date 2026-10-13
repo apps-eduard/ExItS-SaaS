@@ -6,9 +6,15 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
-import { ACCOUNT_CONTEXT_SWITCH_PATH, useSwitchToBusiness } from "@/workspace/use-switch-to-business";
+import {
+  ACCOUNT_CONTEXT_SWITCH_PATH,
+  PERSONAL_BUSINESSES_PATH,
+  useSwitchToBusiness,
+} from "@/workspace/use-switch-to-business";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { resolveAuthenticatedRoleLabelKey } from "@/lib/authenticated-role-label";
+import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
+import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import { deriveUserInitials, resolveUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/cn";
 
@@ -40,7 +46,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
   const { t } = useI18n();
   const navigate = useNavigate();
   const { session, refreshSession } = useSession();
-  const { sessionGrant, boundWorkspace, clearBoundWorkspace } = useWorkspace();
+  const { sessionGrant, boundWorkspace, clearBoundWorkspace, workspaces } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [switchingPersonal, setSwitchingPersonal] = useState(false);
   const {
@@ -52,11 +58,14 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
   const initials = deriveUserInitials(session);
+  const avatarSrc = profilePhotoSrc(usePersonalAvatarPhoto());
   const roleLabelKey = resolveAuthenticatedRoleLabelKey(session, sessionGrant);
   const roleLabel = roleLabelKey ? t(roleLabelKey) : null;
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
   const canReturnToPersonal =
     sessionAccountClass(session) === "Organization" && !isOrganizationContextLocked(session);
+  const canSwitchBusiness =
+    canReturnToPersonal && workspaces.length > 1;
   const isPersonal = sessionAccountClass(session) === "Personal";
   const showSwitchToBusiness = isPersonal && canSwitchToBusiness;
 
@@ -105,10 +114,21 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           onKeyDown={onKeyDown}
         >
           <span
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground"
+            className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground"
             aria-hidden="true"
           >
-            {initials ? initials : <User className="size-4" aria-hidden="true" />}
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="size-8 object-cover"
+                data-testid="account-menu-avatar-photo"
+              />
+            ) : initials ? (
+              initials
+            ) : (
+              <User className="size-4" aria-hidden="true" />
+            )}
           </span>
           {!compact ? (
             <>
@@ -173,18 +193,35 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           <MenuSeparator />
         </>
       ) : null}
+      {boundWorkspace && canSwitchBusiness ? (
+        <MenuItem
+          data-testid="account-switch-business"
+          disabled={switchingPersonal}
+          onSelect={() => {
+            setOpen(false);
+            void (async () => {
+              setSwitchingPersonal(true);
+              navigate(ACCOUNT_CONTEXT_SWITCH_PATH, { replace: true });
+              try {
+                const result = await ensurePersonalSessionProfile({ session, refreshSession });
+                if (!result.ok) {
+                  navigate("/workspace", { replace: true });
+                  return;
+                }
+                clearBoundWorkspace();
+                navigate(PERSONAL_BUSINESSES_PATH, { replace: true });
+              } finally {
+                setSwitchingPersonal(false);
+              }
+            })();
+          }}
+        >
+          <Building2 className="size-4 shrink-0" aria-hidden="true" />
+          {t("account.switchBusiness")}
+        </MenuItem>
+      ) : null}
       {boundWorkspace ? (
         <>
-          <MenuItem
-            onSelect={() => {
-              setOpen(false);
-              clearBoundWorkspace();
-              navigate("/workspace");
-            }}
-          >
-            <Building2 className="size-4 shrink-0" aria-hidden="true" />
-            {t("workspace.switch")}
-          </MenuItem>
           <MenuItem
             onSelect={() => {
               setOpen(false);

@@ -41,13 +41,6 @@ export function paymentResultPath(paymentId: string): string {
   return `/subscription-checkout/${paymentId}`;
 }
 
-export function paymentChannelPath(
-  paymentId: string,
-  channel: "gcash" | "maya" | "card",
-): string {
-  return `/subscription-checkout/${paymentId}/${channel}`;
-}
-
 export function checkoutTitleKey(payment: SubscriptionPaymentTransactionDto): MessageKey {
   const status = normalizePaymentStatus(payment.status);
   if (status === "paid") return "subscriptionCheckout.state.paidTitle";

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, CalendarClock, Check, Hourglass, Loader2, RefreshCw, Store, Users, X } from "lucide-react";
 import {
@@ -78,6 +79,7 @@ function statusTone(
 
 export function PersonalCustomerLinksPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<CustomerLinksTab>("pending");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -109,12 +111,16 @@ export function PersonalCustomerLinksPage() {
       setActionError(null);
       await invalidateAfterDecision();
     },
-    onError: (error) =>
+    onError: (error) => {
+      if (error instanceof PlatformApiError && error.errorCode === "application.personal.profile.incomplete") {
+        navigate("/personal/profile?complete=customer&return=/personal/customer-links");
+      }
       setActionError(
         error instanceof PlatformApiError
           ? error.message
           : t("personal.customerLinks.acceptFailed"),
-      ),
+      );
+    },
   });
 
   const decline = useMutation({

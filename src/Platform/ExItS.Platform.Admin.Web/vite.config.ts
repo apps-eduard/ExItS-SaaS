@@ -32,7 +32,15 @@ function resolveAllowedHosts(): string[] {
   ];
 }
 
+/** Default 8095 matches Docker admin-web. Fast local dev sets ADMIN_DEV_PORT to a free port. */
+function resolveDevPort(): number {
+  const raw = process.env.ADMIN_DEV_PORT?.trim();
+  const parsed = raw ? Number(raw) : 8095;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 8095;
+}
+
 const publicHost = resolveDevPublicHost();
+const devPort = resolveDevPort();
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), exitsRuntimeConfigPlugin()],
@@ -49,7 +57,7 @@ export default defineConfig({
   server: {
     // Bind all interfaces so Tailscale/LAN can open :8095; /api still proxies to loopback API.
     host: true,
-    port: 8095,
+    port: devPort,
     strictPort: true,
     // Android emulator Host 10.0.2.2; ADMIN_DEV_PUBLIC_HOST for Tailscale/LAN.
     allowedHosts: resolveAllowedHosts(),
@@ -57,7 +65,7 @@ export default defineConfig({
       ? {
           hmr: {
             host: publicHost,
-            clientPort: 8095,
+            clientPort: devPort,
             protocol: "ws",
           },
         }

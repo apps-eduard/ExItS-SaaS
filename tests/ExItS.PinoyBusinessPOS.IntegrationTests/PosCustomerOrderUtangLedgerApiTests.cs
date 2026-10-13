@@ -111,6 +111,159 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
     }
 
     [Fact]
+    public async Task Cash_pickup_persists_requested_time_and_rejects_invalid_retries()
+    {
+        await using var factory = CreateFactory();
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var customer = await CreateLinkedCustomerAsync(client, org, PlatformBusinessCustomerId, "Pickup Ana");
+        await ApproveCustomerCreditAsync(client, org, customer.CustomerId, 20m);
+        var product = await CreateProductAsync(client, org, "Coffee", "Piece", 75m, "co-pickup-coffee");
+        await EnableInventoryAsync(client, org, product.ProductId, 2m);
+
+        var clientOrderId = Guid.NewGuid();
+        const string idempotencyKey = "pickup-place-once";
+        using (var placed = await PostPlaceAsync(
+            client,
+            org,
+            product.ProductId,
+            1m,
+            "Cash",
+            PlatformBusinessCustomerId,
+            clientOrderId,
+            idempotencyKey,
+            "2027-06-15",
+            "14:30"))
+        {
+            Assert.Equal(HttpStatusCode.Created, placed.StatusCode);
+            var order = (await placed.Content.ReadFromJsonAsync<CustomerOrderDto>(JsonOptions))!;
+            Assert.Equal(75m, order.Total);
+            Assert.Equal("Cash", order.PaymentMethod);
+            Assert.Equal("2027-06-15 14:30", order.RequestedPickupLocal);
+            Assert.Equal("Asia/Manila", order.RequestedPickupTimeZoneId);
+            Assert.NotNull(order.RequestedPickupAtUtc);
+
+            using var buyer = PersonalScoped(
+                HttpMethod.Get,
+                $"/api/v1/pos/customer-orders/mine/{order.OrderId:D}",
+                org,
+                PersonalUser);
+            using var buyerResponse = await client.SendAsync(buyer);
+            Assert.Equal(HttpStatusCode.OK, buyerResponse.StatusCode);
+            var buyerOrder = (await buyerResponse.Content.ReadFromJsonAsync<CustomerOrderDto>(JsonOptions))!;
+            Assert.Equal(order.OrderId, buyerOrder.OrderId);
+            Assert.Equal(order.RequestedPickupLocal, buyerOrder.RequestedPickupLocal);
+
+            using var seller = Scoped(
+                HttpMethod.Get,
+                $"/api/v1/pos/organizations/{org:D}/customer-orders/{order.OrderId:D}",
+                org,
+                SellerActor);
+            using var sellerResponse = await client.SendAsync(seller);
+            Assert.Equal(HttpStatusCode.OK, sellerResponse.StatusCode);
+            var sellerOrder = (await sellerResponse.Content.ReadFromJsonAsync<CustomerOrderDto>(JsonOptions))!;
+            Assert.Equal(order.OrderId, sellerOrder.OrderId);
+            Assert.Equal("2027-06-15 14:30", sellerOrder.RequestedPickupLocal);
+        }
+
+        using (var replay = await PostPlaceAsync(
+            client,
+            org,
+            product.ProductId,
+            1m,
+            "Cash",
+            PlatformBusinessCustomerId,
+            clientOrderId,
+            idempotencyKey,
+            "2027-06-15",
+            "14:30"))
+        {
+            Assert.Equal(HttpStatusCode.Created, replay.StatusCode);
+            var replayed = (await replay.Content.ReadFromJsonAsync<CustomerOrderDto>(JsonOptions))!;
+            Assert.Equal(clientOrderId, replayed.OrderId);
+        }
+
+        Assert.Equal(1, await CountSellerOrdersAsync(client, org));
+
+        using (var past = await PostPlaceAsync(
+            client,
+            org,
+            product.ProductId,
+            1m,
+            "Cash",
+            PlatformBusinessCustomerId,
+            Guid.NewGuid(),
+            "past-pickup",
+            "2020-01-01",
+            "10:00"))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, past.StatusCode);
+        }
+
+        using (var gcash = await PostPlaceAsync(
+            client,
+            org,
+            product.ProductId,
+            1m,
+            "ManualGCash",
+            PlatformBusinessCustomerId,
+            Guid.NewGuid(),
+            "gcash-missing-ref",
+            null,
+            null))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, gcash.StatusCode);
+        }
+
+        using (var utang = await PostPlaceAsync(
+            client,
+            org,
+            product.ProductId,
+            1m,
+            "Utang",
+            PlatformBusinessCustomerId,
+            Guid.NewGuid(),
+            "utang-short",
+            null,
+            null))
+        {
+            Assert.NotEqual(HttpStatusCode.Created, utang.StatusCode);
+        }
+
+        using (var unlinked = await PostPlaceAsync(
+            client,
+            org,
+            product.ProductId,
+            1m,
+            "Cash",
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "unlinked-buyer",
+            null,
+            null))
+        {
+            Assert.NotEqual(HttpStatusCode.Created, unlinked.StatusCode);
+        }
+
+        using (var stock = await PostPlaceAsync(
+            client,
+            org,
+            product.ProductId,
+            5m,
+            "Cash",
+            PlatformBusinessCustomerId,
+            Guid.NewGuid(),
+            "stock-conflict",
+            null,
+            null))
+        {
+            Assert.NotEqual(HttpStatusCode.Created, stock.StatusCode);
+        }
+
+        Assert.Equal(1, await CountSellerOrdersAsync(client, org));
+    }
+
+    [Fact]
     public async Task Cancelled_utang_order_before_completion_creates_no_charge()
     {
         await using var factory = CreateFactory();
@@ -191,6 +344,32 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
         return (await response.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions))!;
     }
 
+    private static async Task ApproveCustomerCreditAsync(
+        HttpClient client,
+        Guid orgId,
+        Guid customerId,
+        decimal creditLimit)
+    {
+        using var put = Scoped(HttpMethod.Put, $"{Customers}/{customerId:D}/credit-policy", orgId, SellerActor);
+        put.Content = JsonContent.Create(
+            new UpsertCustomerCreditPolicyRequest(creditLimit, 30, "checkout audit"),
+            options: JsonOptions);
+        using var putResponse = await client.SendAsync(put);
+        putResponse.EnsureSuccessStatusCode();
+
+        using var get = Scoped(HttpMethod.Get, $"{Customers}/{customerId:D}/credit-policy", orgId, SellerActor);
+        using var getResponse = await client.SendAsync(get);
+        getResponse.EnsureSuccessStatusCode();
+        var policy = (await getResponse.Content.ReadFromJsonAsync<CustomerCreditPolicyReadDto>(JsonOptions))!;
+
+        using var approve = Scoped(HttpMethod.Post, $"{Customers}/{customerId:D}/credit-policy/approve", orgId, SellerActor);
+        approve.Content = JsonContent.Create(
+            new ApproveCustomerCreditPolicyRequest("checkout audit", policy.ExpectedUpdatedAtUtc!.Value),
+            options: JsonOptions);
+        using var approveResponse = await client.SendAsync(approve);
+        approveResponse.EnsureSuccessStatusCode();
+    }
+
     private static async Task<CreditEntryDto> CreateCreditAsync(
         HttpClient client,
         Guid orgId,
@@ -238,6 +417,7 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
     private static async Task EnableInventoryAsync(HttpClient client, Guid orgId, Guid productId, decimal qty)
     {
         using var request = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/enable", orgId, SellerActor);
+        request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.BranchHeaderName, TestBranchId.ToString("D"));
         request.Content = JsonContent.Create(
             qty > 0m
                 ? new EnableInventoryTrackingRequest(OpeningQuantity: qty, UnitCost: 1m)
@@ -253,6 +433,58 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
         Guid productId,
         decimal quantity) =>
         await PlacePersonalOrderAsync(client, orgId, productId, quantity, "Utang");
+
+    private static async Task<HttpResponseMessage> PostPlaceAsync(
+        HttpClient client,
+        Guid orgId,
+        Guid productId,
+        decimal quantity,
+        string paymentMethod,
+        Guid platformBusinessCustomerId,
+        Guid clientOrderId,
+        string idempotencyKey,
+        string? requestedPickupDate,
+        string? requestedPickupTime)
+    {
+        var request = PersonalScoped(
+            HttpMethod.Post,
+            $"/api/v1/pos/customer-orders/organizations/{orgId:D}",
+            orgId,
+            PersonalUser);
+        request.Content = JsonContent.Create(
+            new PlaceCustomerOrderRequest(
+                "Pickup",
+                TestBranchId,
+                "Personal",
+                "Ana Reyes",
+                PersonalUser,
+                platformBusinessCustomerId,
+                null,
+                null,
+                [new PlaceCustomerOrderLineRequest(productId, quantity)],
+                null,
+                clientOrderId,
+                idempotencyKey,
+                paymentMethod,
+                null,
+                requestedPickupDate,
+                requestedPickupTime),
+            options: JsonOptions);
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<int> CountSellerOrdersAsync(HttpClient client, Guid orgId)
+    {
+        using var request = Scoped(
+            HttpMethod.Get,
+            $"/api/v1/pos/organizations/{orgId:D}/customer-orders",
+            orgId,
+            SellerActor);
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var page = (await response.Content.ReadFromJsonAsync<CustomerOrderPagedResult>(JsonOptions))!;
+        return page.TotalCount;
+    }
 
     private static async Task<CustomerOrderDto> PlacePersonalOrderAsync(
         HttpClient client,
@@ -312,6 +544,28 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
 
     private static async Task MarkCollectedAsync(HttpClient client, Guid orgId, Guid orderId)
     {
+        using (var get = Scoped(
+            HttpMethod.Get,
+            $"/api/v1/pos/organizations/{orgId:D}/customer-orders/{orderId:D}",
+            orgId,
+            SellerActor))
+        using (var current = await client.SendAsync(get))
+        {
+            current.EnsureSuccessStatusCode();
+            var order = (await current.Content.ReadFromJsonAsync<CustomerOrderDto>(JsonOptions))!;
+            if (order.PaymentMethod is "Cash" or "ManualGCash" && order.PaymentStatus != "Paid")
+            {
+                using var confirm = Scoped(
+                    HttpMethod.Post,
+                    $"/api/v1/pos/organizations/{orgId:D}/customer-orders/{orderId:D}/confirm-payment",
+                    orgId,
+                    SellerActor);
+                confirm.Content = JsonContent.Create(new { amountReceived = order.Total }, options: JsonOptions);
+                using var confirmed = await client.SendAsync(confirm);
+                confirmed.EnsureSuccessStatusCode();
+            }
+        }
+
         using var request = Scoped(
             HttpMethod.Post,
             $"/api/v1/pos/organizations/{orgId:D}/customer-orders/{orderId:D}/mark-collected",
@@ -445,6 +699,8 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PosDatabase", connectionString);
+            // Host env may set LocalValidation__Enabled=true. This factory uses Testcontainers, not port 15534.
+            builder.UseSetting("LocalValidation:Enabled", "false");
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<ILinkedCustomerPlatformAuthorization>();
@@ -456,7 +712,11 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
             });
             builder.ConfigureAppConfiguration((_, config) =>
             {
-                config.AddInMemoryCollection(new Dictionary<string, string?>());
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["ConnectionStrings:PosDatabase"] = connectionString,
+                    ["LocalValidation:Enabled"] = "false"
+                });
             });
         }
     }

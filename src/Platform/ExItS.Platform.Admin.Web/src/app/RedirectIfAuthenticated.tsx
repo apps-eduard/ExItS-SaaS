@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
+import { NonPlatformProductRedirect } from "@/app/NonPlatformProductRedirect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/use-session";
+import { isProductAccountClass } from "@/lib/auth/continue-after-admin-auth";
 import { resolvePostLoginPath } from "@/lib/auth/safe-return-path";
 
 export function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
-  const { status } = useSession();
+  const { session, status } = useSession();
   const [params] = useSearchParams();
 
   if (status === "loading") {
@@ -17,6 +19,9 @@ export function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
   }
 
   if (status === "authenticated") {
+    if (isProductAccountClass(session?.accountClass)) {
+      return <NonPlatformProductRedirect />;
+    }
     return <Navigate to={resolvePostLoginPath(params.get("return"))} replace />;
   }
 

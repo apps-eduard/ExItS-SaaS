@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { catalogs } from "@/i18n/messages";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
@@ -68,160 +68,279 @@ describe("UiStandardsPage", () => {
 
     expect(screen.getByTestId("ui-standards-page")).toBeInTheDocument();
     expect(screen.getByText("ExItS UI Standard")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-filter-bar")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standards-search")).not.toBeInTheDocument();
+    const samples = screen.getByTestId("ui-standard-cards");
+    const playgroundCard = within(samples).getByTestId("ui-standard-card-button-playground");
+    const buttonsCard = within(samples).getByTestId("ui-standard-card-buttons");
+    expect(playgroundCard.compareDocumentPosition(buttonsCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId("ui-standards-live-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-cards")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-button-playground")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-intent-primary")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-appearance-solid")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-card-button-playground")).getByText(
+        "Button playground",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-view-switcher")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-view-classic")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-view-simple")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-simple-catalog")).not.toBeInTheDocument();
+    const sidenav = screen.getByTestId("ui-standards-sidenav");
+    expect(sidenav).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-category-filters")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-filter-all")).toHaveTextContent("Global preview");
+    expect(screen.getByTestId("ui-standards-filter-all")).toHaveAttribute("data-selected", "true");
+    expect(within(screen.getByTestId("ui-standards-main")).getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
+    expect(within(sidenav).queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-sticky-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-buttons-section")).not.toBeInTheDocument();
   });
 
-  it("keeps Intent separate from Appearance on the Buttons live card", () => {
+  it("keeps the Buttons live card on the Quasar samples", () => {
     renderPage();
     const buttons = screen.getByTestId("ui-standard-card-buttons");
-    expect(within(buttons).getByText("Intent / Tone (8 locked)")).toBeInTheDocument();
-    expect(within(buttons).getByText("Appearance / Treatment")).toBeInTheDocument();
-    expect(within(buttons).queryByTestId("ui-standard-intent-outline")).not.toBeInTheDocument();
-    expect(within(buttons).queryByTestId("ui-standard-intent-ghost")).not.toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-intent-help")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-intent-contrast")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-appearance-outline")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-appearance-ghost")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-appearance-elevated")).toBeInTheDocument();
+    expect(within(buttons).getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
+    expect(within(buttons).queryByText("Common actions")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("One Primary per group")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("Intent / Tone (8 locked)")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("Appearance / Treatment")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("States")).not.toBeInTheDocument();
+    expect(within(buttons).queryByTestId("ui-standard-intent-primary")).not.toBeInTheDocument();
+    expect(within(buttons).queryByTestId("ui-standard-appearance-solid")).not.toBeInTheDocument();
   });
 
   it("renders Prime-style Button gallery sections mapped to ExItS axes", () => {
     renderPage();
     const gallery = screen.getByTestId("ui-standard-button-gallery");
     expect(gallery).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-default")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-severities")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-text")).toBeInTheDocument();
-    expect(within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText("Text (Ghost)")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-text-compose-commands")).toBeInTheDocument();
+    const quasar = screen.getByTestId("ui-standard-btn-quasar-standard");
+    expect(quasar).toBeInTheDocument();
+    expect(within(quasar).getByText("Standard buttons")).toBeInTheDocument();
+    expect(within(quasar).getByText("cursor: ext-btn-standard-primary")).toBeInTheDocument();
+    const outline = screen.getByTestId("ui-standard-btn-quasar-outline");
+    expect(within(outline).getByText("Button outline")).toBeInTheDocument();
+    expect(within(outline).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--outline",
+    );
+    expect(within(outline).getByRole("button", { name: "Standard" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(within(outline).getByRole("button", { name: "Black" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(within(outline).getByRole("button", { name: "Success" })).toBeInTheDocument();
+    expect(within(outline).getByRole("button", { name: "Info" })).toBeInTheDocument();
+    const raised = screen.getByTestId("ui-standard-btn-quasar-raised");
+    expect(within(raised).getByText("Raised")).toBeInTheDocument();
+    expect(within(raised).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--raised",
+    );
+    const roundSolid = screen.getByTestId("ui-standard-btn-quasar-round-solid");
+    expect(within(roundSolid).getByText("Rounded icon solid")).toBeInTheDocument();
+    expect(within(roundSolid).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--icon",
+    );
+    const roundOutline = screen.getByTestId("ui-standard-btn-quasar-round-outline");
+    expect(within(roundOutline).getByText("Rounded icon outlined")).toBeInTheDocument();
+    expect(within(roundOutline).getByRole("button", { name: "Help" })).toHaveClass(
+      "ui-standards-qbtn--outline",
+    );
+    const ghost = screen.getByTestId("ui-standard-btn-quasar-ghost");
+    expect(within(ghost).getByText("Button ghost")).toBeInTheDocument();
+    expect(within(ghost).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--ghost",
+    );
+    expect(within(ghost).getByRole("button", { name: "Standard" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(within(ghost).getByRole("button", { name: "Black" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(within(roundOutline).getByRole("button", { name: "Standard" })).not.toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    const glossy = screen.getByTestId("ui-standard-btn-quasar-glossy");
+    expect(within(glossy).getByText("Button glossy")).toBeInTheDocument();
+    expect(within(glossy).getByRole("button", { name: "Warn" })).toHaveClass(
+      "ui-standards-qbtn--glossy",
+    );
     expect(
-      within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText("EXITS BUTTON + GHOST"),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText(
-        "EXITS BUTTON + GHOST + PRIMARY",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("ui-standard-btn-gallery-text")).queryByText(
-        "EXITS BUTTON + GHOST + SUCCESS",
-      ),
-    ).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-outlined")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-group")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-splitbutton")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-templating")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-icons")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-raised")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-icons")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-text")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-outlined")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-loading")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary")).toHaveAttribute(
-      "data-gallery-severity",
-      "primary",
+      screen.getByTestId("ui-standard-btn-quasar-raised").compareDocumentPosition(ghost),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(ghost.compareDocumentPosition(glossy)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const gradient = screen.getByTestId("ui-standard-btn-quasar-gradient");
+    expect(within(gradient).getByText("Button gradient")).toBeInTheDocument();
+    expect(within(gradient).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--gradient",
     );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-help")).toHaveAttribute(
-      "data-gallery-severity",
-      "help",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-warn")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary")).toHaveAttribute(
-      "data-gallery-severity",
-      "secondary",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-contrast")).toHaveAttribute(
-      "data-gallery-severity",
-      "contrast",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).not.toContain(
-      "exits-severity-btn",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).not.toContain(
-      "var(--exits-severity-primary)",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).toContain(
-      "bg-primary",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary").className).toContain(
-      "var(--exits-severity-secondary)",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary").className).toContain(
-      "exits-severity-btn",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severities").textContent).not.toMatch(
-      /Primary · Secondary · Success/,
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-group-save")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-split-primary")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-template-primeng")).toHaveTextContent(
-      "PrimeNG",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-round-text-success")).toHaveAttribute(
-      "data-appearance",
-      "ghost",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-round-outlined-danger")).toHaveAttribute(
-      "data-appearance",
-      "outline",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-loading-plain")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-raised-success")).toHaveAttribute(
-      "data-appearance",
-      "elevated",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-text-danger")).toHaveAttribute(
-      "data-appearance",
-      "ghost",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-outlined-info")).toHaveAttribute(
-      "data-appearance",
-      "outline",
-    );
-  });
-
-  it("updates Button playground preview and snippet from selected props", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.selectOptions(screen.getByTestId("ui-standard-btn-pg-intent"), "danger");
-    await user.selectOptions(screen.getByTestId("ui-standard-btn-pg-appearance"), "outline");
-    const previewBtn = within(screen.getByTestId("ui-standard-btn-pg-preview")).getByRole("button");
-    expect(previewBtn).toHaveAttribute("data-intent", "danger");
-    expect(previewBtn).toHaveAttribute("data-appearance", "outline");
-    expect(previewBtn).toHaveTextContent("Save");
-    const snippet = screen.getByTestId("ui-standard-btn-pg-snippet");
-    expect(snippet).toHaveTextContent('intent="danger"');
-    expect(snippet).toHaveTextContent('appearance="outline"');
-    expect(snippet).toHaveTextContent('shape="auto"');
-  });
-
-  it("copies Button playground snippet via clipboard and toast", async () => {
-    const user = userEvent.setup();
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText },
+    expect(within(gradient).getByRole("button", { name: "Primary" })).toHaveStyle({
+      backgroundColor: "#1976d2",
     });
+    expect(within(gradient).getByRole("button", { name: "Secondary" })).toHaveStyle({
+      backgroundColor: "#26a69a",
+    });
+    expect(glossy.compareDocumentPosition(gradient)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const roundGhost = screen.getByTestId("ui-standard-btn-quasar-round-ghost");
+    expect(within(roundGhost).getByText("Rounded icon ghost")).toBeInTheDocument();
+    expect(within(roundGhost).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--icon",
+      "ui-standards-qbtn--ghost",
+    );
+    expect(within(roundGhost).getByRole("button", { name: "Standard" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(screen.queryByTestId("ui-standard-btn-quasar-rounded-ghost")).not.toBeInTheDocument();
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-rounded")).getByRole("button", {
+      name: "Primary",
+    })).toHaveClass("ui-standards-qbtn--rounded");
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-flat")).getByRole("button", {
+      name: "Primary",
+    })).toHaveClass("ui-standards-qbtn--flat");
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-round-icon")).getByText("Rounded icon")).toBeInTheDocument();
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-square-icon")).getByRole("button", {
+      name: "Primary",
+    })).toHaveClass("ui-standards-qbtn--square");
+    expect(within(quasar).getByRole("button", { name: "Standard" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Secondary" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Success" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Info" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Amber" })).toBeInTheDocument();
+    expect(within(quasar).queryByRole("button", { name: "Brown 5" })).not.toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Danger" })).toBeInTheDocument();
+    expect(within(quasar).queryByRole("button", { name: "Deep Orange" })).not.toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Warn" })).toBeInTheDocument();
+    expect(within(quasar).queryByRole("button", { name: "Purple" })).not.toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Help" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Black" })).toBeInTheDocument();
+    expect(within(screen.getByTestId("ui-standard-card-buttons")).queryByText("Gallery — locked standard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-gallery-default")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-gallery-severities")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-gallery-loading")).not.toBeInTheDocument();
+  });
+
+  it("updates Button playground preview from selected props", async () => {
+    const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByTestId("ui-standard-btn-pg-copy"));
-    expect(writeText).toHaveBeenCalled();
-    expect(writeText.mock.calls[0][0]).toContain("<Button");
-    expect(writeText.mock.calls[0][0]).toContain('intent="primary"');
-    expect(await screen.findByText("Snippet copied")).toBeInTheDocument();
+    const playground = screen.getByTestId("ui-standard-card-button-playground");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn",
+    );
+    const intentSelect = screen.getByTestId("ui-standard-btn-pg-intent");
+    const intentOptions = within(intentSelect).getAllByRole("option").map((option) => option.textContent);
+    expect(intentOptions[0]).toBe("Standard");
+    expect(intentOptions.at(-1)).toBe("Black");
+    expect(intentOptions).toHaveLength(10);
+    const appearanceSelect = screen.getByTestId("ui-standard-btn-pg-appearance");
+    const appearanceOptions = within(appearanceSelect)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    expect(appearanceOptions[0]).toBe("Standard");
+    expect(appearanceOptions.at(-1)).toBe("Flat");
+    await user.selectOptions(intentSelect, "danger");
+    await user.selectOptions(appearanceSelect, "outline");
+    const previewBtn = within(screen.getByTestId("ui-standard-btn-pg-preview")).getByRole("button");
+    expect(previewBtn).toHaveClass("ui-standards-qbtn--outline");
+    expect(previewBtn).toHaveStyle({ color: "#ef4444" });
+    expect(previewBtn).toHaveTextContent("Standard");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline",
+    );
+    const shapeSelect = screen.getByTestId("ui-standard-btn-pg-shape");
+    expect(within(shapeSelect).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Square",
+      "Standard",
+      "Soft",
+      "Pill",
+    ]);
+    await user.selectOptions(shapeSelect, "square");
+    expect(previewBtn).toHaveAttribute("data-shape", "square");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline square",
+    );
+    expect(screen.queryByTestId("ui-standard-btn-pg-size")).not.toBeInTheDocument();
+    const density = screen.getByTestId("ui-standard-btn-pg-density");
+    expect(within(density).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Tight",
+      "Compact",
+      "Standard",
+      "Comfort",
+      "Relaxed",
+    ]);
+    await user.selectOptions(density, "tight");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "tight");
+    await user.selectOptions(density, "relaxed");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "relaxed");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline square relaxed",
+    );
+    const icon = screen.getByTestId("ui-standard-btn-pg-icon");
+    expect(within(icon).getAllByRole("option").map((option) => option.textContent)?.[0]).toBe("None");
+    expect(within(icon).getAllByRole("option")).toHaveLength(11);
+    await user.selectOptions(icon, "star");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview-icon")).toBeInTheDocument();
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline square relaxed star",
+    );
+    await user.selectOptions(icon, "none");
+    expect(screen.queryByTestId("ui-standard-btn-pg-preview-icon")).not.toBeInTheDocument();
+    expect(previewBtn).toHaveTextContent("Standard");
+    const labelInput = screen.getByTestId("ui-standard-btn-pg-label");
+    await user.clear(labelInput);
+    await user.type(labelInput, "SAVE");
+    expect(previewBtn).toHaveTextContent("SAVE");
+    await user.clear(labelInput);
+    await user.type(labelInput, "save");
+    expect(previewBtn).toHaveTextContent("save");
+    await user.click(screen.getByTestId("ui-standard-btn-pg-icon-only"));
+    expect(previewBtn).not.toHaveTextContent("Standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview-icon")).toBeInTheDocument();
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn icon danger outline square relaxed",
+    );
+    expect(screen.getByTestId("ui-standard-btn-pg-ripple")).toBeInTheDocument();
+    expect(previewBtn).toHaveAttribute("data-ripple", "no-ripple");
+    expect(screen.getByText("No ripple")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-btn-pg-ripple"));
+    expect(previewBtn).toHaveAttribute("data-ripple", "ripple");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn icon danger outline square relaxed ripple",
+    );
+    await user.click(previewBtn);
+    expect(screen.getByTestId("ui-standard-btn-pg-ripple-wave")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-btn-pg-disabled"));
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn icon danger outline square relaxed ripple disabled",
+    );
+    await user.click(screen.getByTestId("ui-standard-btn-quasar-standard-row-primary"));
+    expect(screen.getByTestId("ui-standard-qbtn-ripple-wave")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-btn-pg-reset"));
+    expect(screen.getByTestId("ui-standard-btn-pg-intent")).toHaveValue("standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-appearance")).toHaveValue("standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-shape")).toHaveValue("standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-density")).toHaveValue("balance");
+    expect(screen.getByTestId("ui-standard-btn-pg-icon")).toHaveValue("none");
+    expect(labelInput).toHaveValue("Standard");
+    expect(previewBtn).toHaveTextContent("Standard");
+    expect(previewBtn).toHaveAttribute("data-ripple", "no-ripple");
+    expect(previewBtn).toHaveAttribute("data-shape", "standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "balance");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn",
+    );
+    expect(screen.queryByTestId("ui-standard-btn-pg-preview-icon")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-pg-copy")).not.toBeInTheDocument();
   });
 
   it("updates StatusChip playground and keeps fixed samples below", async () => {
@@ -251,7 +370,8 @@ describe("UiStandardsPage", () => {
     const user = userEvent.setup();
     renderPage();
     const preview = screen.getByTestId("ui-standards-preference-preview");
-    expect(within(preview).getByText("Global Preference Preview")).toBeInTheDocument();
+    expect(within(preview).getByText("Global preview")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-main")).toContainElement(preview);
     expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
     await user.click(within(screen.getByTestId("ui-standards-pref-control-shape")).getByRole("radio", {
       name: "Control Shape: Pill",
@@ -277,44 +397,45 @@ describe("UiStandardsPage", () => {
     expect(within(preview).getByText("QuantityStepper Outline (standard)")).toBeInTheDocument();
   });
 
-  it("shows Do / Don’t guidance card", () => {
-    renderPage();
-    const card = screen.getByTestId("ui-standard-card-dodont");
-    expect(within(card).getByText("Do / Don’t")).toBeInTheDocument();
-    expect(within(card).getByText("Use one Primary action per action group.")).toBeInTheDocument();
-    expect(
-      within(card).getByText("Intent describes meaning. Appearance describes presentation."),
-    ).toBeInTheDocument();
-    expect(
-      within(card).getByText("Soft appearance and Soft shape are independent properties."),
-    ).toBeInTheDocument();
-    expect(within(card).getByText(/Desktop TABLE/)).toBeInTheDocument();
-  });
-
-  it("finds playground and Do/Don’t via search keywords", async () => {
+  it("toggles Global Preference Preview and offers back to top after scroll", async () => {
     const user = userEvent.setup();
     renderPage();
-    const search = screen.getByTestId("ui-standards-search").querySelector("input");
-    expect(search).toBeTruthy();
+    await user.click(screen.getByTestId("ui-standards-filter-buttons"));
+    expect(screen.queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-all"));
+    expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-preference-preview-toggle"));
+    expect(screen.queryByTestId("ui-standards-preference-auto-samples")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-preference-preview-toggle"));
+    expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
 
-    await user.clear(search!);
-    await user.type(search!, "playground");
+    const main = screen.getByTestId("ui-standards-main");
+    expect(screen.queryByTestId("ui-standards-scroll-top")).not.toBeInTheDocument();
+    Object.defineProperty(main, "scrollTop", { configurable: true, get: () => 120 });
+    main.dispatchEvent(new Event("scroll"));
+    expect(await screen.findByTestId("ui-standards-scroll-top")).toHaveAttribute(
+      "aria-label",
+      "Back to top",
+    );
+  });
+
+  it("does not show the removed Do / Don’t card", () => {
+    renderPage();
+    expect(screen.queryByTestId("ui-standard-card-dodont")).not.toBeInTheDocument();
+    expect(screen.queryByText("Standards catalog")).not.toBeInTheDocument();
+  });
+
+  it("keeps playground, status, and select samples without a page search", () => {
+    renderPage();
+    expect(screen.queryByTestId("ui-standards-search")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-status")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-selects")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-dodont")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
-
-    await user.clear(search!);
-    await user.type(search!, "primary");
-    expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
-
-    await user.clear(search!);
-    await user.type(search!, "auto");
     expect(screen.getByTestId("ui-standard-button-playground")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-status-playground")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
   });
 
   it("shows Soft Outline Solid appearances on the Status live card", () => {
@@ -402,11 +523,9 @@ describe("UiStandardsPage", () => {
     );
   });
 
-  it("shows accent and metric card color variations on the Cards live card", async () => {
-    const user = userEvent.setup();
-    renderPage();
+  it("shows accent and metric card color variations on the Cards live card", () => {
+    renderPage("/ui-standards?category=cards");
 
-    await user.click(screen.getByTestId("ui-standards-filter-cards"));
     const cards = screen.getByTestId("ui-standard-card-cards");
     expect(within(cards).getByTestId("ui-standard-card-accent-start-primary")).toHaveAttribute(
       "data-treatment",
@@ -423,9 +542,8 @@ describe("UiStandardsPage", () => {
 
   it("toggles selectable Cards selection on click", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("/ui-standards?category=cards");
 
-    await user.click(screen.getByTestId("ui-standards-filter-cards"));
     const main = screen.getByTestId("ui-standard-card-selectable-main");
     const iloilo = screen.getByTestId("ui-standard-card-selectable-iloilo");
     expect(main).toHaveAttribute("aria-checked", "true");
@@ -440,11 +558,9 @@ describe("UiStandardsPage", () => {
     expect(main).not.toHaveAttribute("data-selected");
   });
 
-  it("shows distinct treatment samples including Selected and Featured", async () => {
-    const user = userEvent.setup();
-    renderPage();
+  it("shows distinct treatment samples including Selected and Featured", () => {
+    renderPage("/ui-standards?category=cards");
 
-    await user.click(screen.getByTestId("ui-standards-filter-cards"));
     const treatments = screen.getByTestId("ui-standard-card-treatments");
     expect(within(treatments).getByTestId("ui-standard-card-treatment-surface")).toHaveAttribute(
       "data-treatment",
@@ -472,42 +588,35 @@ describe("UiStandardsPage", () => {
     );
   });
 
-  it("filters live cards and catalog rows by category + search", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByTestId("ui-standards-filter-overlays"));
+  it("filters live cards by category", () => {
+    renderPage("/ui-standards?category=overlays");
     expect(screen.getByTestId("ui-standard-card-drawer")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-modal")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-confirm")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-form-drawer")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-table")).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId("ui-standards-filter-selects"));
+    cleanup();
+    renderPage("/ui-standards?category=selects");
     expect(screen.getByTestId("ui-standard-card-selects")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-select-standard")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-select-multi")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-select-switch")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-forms")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-exits-select")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-row-exits-select")).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId("ui-standards-filter-all"));
-    const search = screen.getByTestId("ui-standards-search").querySelector("input");
-    expect(search).toBeTruthy();
-    await user.clear(search!);
-    await user.type(search!, "toast");
+    cleanup();
+    renderPage("/ui-standards?category=messages");
     expect(screen.getByTestId("ui-standard-card-messages")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-toasts")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-table")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-message-gallery")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-row-message-gallery")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-catalog-row-toast")).not.toBeInTheDocument();
   });
 
-  it("Navigation filter surfaces underline ExitsTabs and ModuleSubnav samples", async () => {
-    const user = userEvent.setup();
-    renderPage();
+  it("Navigation filter surfaces underline ExitsTabs and ModuleSubnav samples", () => {
+    renderPage("/ui-standards?category=navigation");
 
-    await user.click(screen.getByTestId("ui-standards-filter-navigation"));
     const nav = screen.getByTestId("ui-standard-card-nav");
     expect(nav).toBeInTheDocument();
     expect(within(nav).getByTestId("ui-standard-tabs-underline")).toBeInTheDocument();
@@ -522,9 +631,8 @@ describe("UiStandardsPage", () => {
 
   it("Data filter surfaces the locked ExitsTable reference demo", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("/ui-standards?category=data");
 
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
     expect(screen.getByTestId("ui-standards-data-exits-table")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tables-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-table")).toBeInTheDocument();
@@ -576,10 +684,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByRole("menuitem", { name: "SKU" })).toBeInTheDocument();
   });
 
-  it("Responsive Data View locks search, sort, export, page size, and category filter as default", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
+  it("Responsive Data View locks search, sort, export, page size, and category filter as default", () => {
+    renderPage("/ui-standards?category=data");
+
 
     const card = screen.getByTestId("ui-standard-card-table");
     expect(within(card).getByTestId("ui-standard-responsive-data-search")).toBeInTheDocument();
@@ -595,8 +702,7 @@ describe("UiStandardsPage", () => {
 
   it("switches Responsive Data View device preview between TABLE and LIST", async () => {
     const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
+    renderPage("/ui-standards?category=data");
 
     const card = screen.getByTestId("ui-standard-card-table");
     expect(within(card).getAllByText("Juan Dela Cruz").length).toBeGreaterThanOrEqual(1);
@@ -656,8 +762,7 @@ describe("UiStandardsPage", () => {
 
   it("switches Approved ExitsTable device preview (md 768: Desktop/Tablet TABLE, Mobile LIST)", async () => {
     const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
+    renderPage("/ui-standards?category=data");
 
     expect(screen.getByTestId("ui-standards-table-mode")).toHaveTextContent(
       "Desktop · 1280px · TABLE",
@@ -721,13 +826,9 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-table-view-modal")).not.toBeInTheDocument();
   });
 
-  it("finds responsive data preview via desktop/tablet/mobile search", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    const search = screen.getByTestId("ui-standards-search").querySelector("input");
-    expect(search).toBeTruthy();
-    await user.clear(search!);
-    await user.type(search!, "mobile");
+  it("shows the responsive data preview on the Data category", () => {
+    renderPage("/ui-standards?category=data");
+    expect(screen.queryByTestId("ui-standards-search")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-table")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-responsive-data-preview")).toBeInTheDocument();
   });
@@ -741,10 +842,6 @@ describe("UiStandardsPage", () => {
 
   it("opens Forms filter with Form Controls and QuantityStepper variant card", () => {
     renderPage("/ui-standards?category=forms");
-    expect(screen.getByTestId("ui-standards-filter-forms")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
     expect(screen.getByTestId("ui-standard-card-forms")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-quantity-stepper")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-quantity-stepper")).toBeInTheDocument();
@@ -762,30 +859,342 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-qty-pill")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-quantity-stepper-legacy")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-qty-legacy")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-quantity-stepper")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-row-quantity-stepper")).not.toBeInTheDocument();
+  });
+
+  it("nests Input, Radio, and Checkbox under Form Components", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const group = screen.getByTestId("ui-standards-filter-form-components");
+    expect(group).toHaveTextContent("Form Components");
+    expect(group).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("ui-standards-filter-inputs")).toHaveTextContent("Input");
+    expect(screen.getByTestId("ui-standards-filter-radio")).toHaveTextContent("Radio");
+    expect(screen.getByTestId("ui-standards-filter-checkbox")).toHaveTextContent("Checkbox");
+    expect(screen.getByTestId("ui-standards-filter-toggle")).toHaveTextContent("Toggle");
+    expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveTextContent("Dropdown");
+    await user.click(screen.getByTestId("ui-standards-filter-radio"));
+    expect(screen.getByTestId("ui-standards-filter-radio")).toHaveAttribute("data-selected", "true");
+    const playground = screen.getByTestId("ui-standard-card-radio-playground");
+    const samples = screen.getByTestId("ui-standard-card-radio");
+    expect(playground.compareDocumentPosition(samples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(samples).getByTestId("ui-standard-radio-standard")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(samples).getByTestId("ui-standard-radio-standard")).not.toHaveClass("ui-standards-qradio--dark-ink");
+    expect(within(samples).getByTestId("ui-standard-radio-icon-standard")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(playground).getByTestId("ui-standard-radio-pg-field")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(samples).getByTestId("ui-standard-radio-primary")).toHaveAttribute("aria-checked", "true");
+    await user.click(within(samples).getByTestId("ui-standard-radio-primary"));
+    expect(within(samples).getByTestId("ui-standard-radio-primary")).toHaveAttribute("aria-checked", "false");
+    await user.click(within(samples).getByTestId("ui-standard-radio-icon-primary"));
+    expect(within(samples).getByTestId("ui-standard-radio-icon-primary")).toHaveAttribute("aria-checked", "false");
+    await user.click(within(samples).getByTestId("ui-standard-radio-dark-primary"));
+    expect(within(samples).getByTestId("ui-standard-radio-dark-primary")).toHaveAttribute("aria-checked", "false");
+    expect(within(samples).getByTestId("ui-standard-radio-dark-standard")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
+    expect(within(samples).getByTestId("ui-standard-radio-dark-primary")).toHaveStyle({ "--qradio-color": "#1976d2" });
+    expect(within(samples).queryByTestId("ui-standard-radio-dark-line")).not.toBeInTheDocument();
+    expect(within(samples).getByTestId("ui-standard-radio-icons")).toBeInTheDocument();
+    expect(within(samples).getByTestId("ui-standard-radio-icon-primary")).toHaveClass("ui-standards-qradio--icons");
+    expect(within(samples).getByTestId("ui-standard-radio-danger")).toBeInTheDocument();
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext radio");
+    await user.selectOptions(within(playground).getByTestId("ui-standard-radio-pg-intent"), "primary");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext radio primary",
+    );
+    await user.selectOptions(within(playground).getByTestId("ui-standard-radio-pg-type"), "icons");
+    await user.selectOptions(within(playground).getByTestId("ui-standard-radio-pg-density"), "comfort");
+    expect(within(playground).getByTestId("ui-standard-radio-pg-field")).toHaveClass("ui-standards-qradio--icons");
+    expect(within(playground).getByTestId("ui-standard-radio-pg-preview")).toHaveAttribute("data-density", "comfort");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext radio primary icons comfort",
+    );
+    expect(screen.queryByTestId("ui-standard-card-inputs")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-checkbox"));
+    expect(screen.getByTestId("ui-standards-filter-checkbox")).toHaveAttribute("data-selected", "true");
+    const checkboxPlayground = screen.getByTestId("ui-standard-card-checkbox-playground");
+    const checkboxSamples = screen.getByTestId("ui-standard-card-checkbox");
+    expect(checkboxPlayground.compareDocumentPosition(checkboxSamples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).toHaveStyle({
+      "--qcheckbox-color": "#9e9e9e",
+    });
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).toHaveAttribute("aria-checked", "false");
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).not.toHaveClass(
+      "ui-standards-qcheckbox--dark-ink",
+    );
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-standard")).toHaveStyle({
+      "--qcheckbox-color": "#9e9e9e",
+    });
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary")).toHaveStyle({
+      "--qcheckbox-color": "#1976d2",
+    });
+    expect(within(checkboxSamples).queryByTestId("ui-standard-checkbox-icons")).not.toBeInTheDocument();
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf")).toHaveAttribute("aria-checked", "mixed");
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-ft")).toHaveAttribute("aria-checked", "false");
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf-indet")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-ft-indet")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-field")).toHaveStyle({
+      "--qcheckbox-color": "#9e9e9e",
+    });
+    expect(within(checkboxPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext checkbox",
+    );
+    expect(within(checkboxPlayground).queryByTestId("ui-standard-checkbox-pg-type")).not.toBeInTheDocument();
+    await user.selectOptions(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-intent"), "primary");
+    await user.selectOptions(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-density"), "comfort");
+    expect(within(checkboxPlayground).getByTestId("ui-standard-checkbox-pg-preview")).toHaveAttribute(
+      "data-density",
+      "comfort",
+    );
+    expect(within(checkboxPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext checkbox primary comfort",
+    );
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf")).toHaveAttribute("aria-checked", "true");
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-reset"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf")).toHaveAttribute("aria-checked", "mixed");
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf-indet")).toHaveAttribute(
+      "aria-checked",
+      "mixed",
+    );
+    expect(screen.queryByTestId("ui-standard-card-radio")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-toggle"));
+    expect(screen.getByTestId("ui-standards-filter-toggle")).toHaveAttribute("data-selected", "true");
+    const togglePlayground = screen.getByTestId("ui-standard-card-toggle-playground");
+    const toggleSamples = screen.getByTestId("ui-standard-card-toggle");
+    expect(togglePlayground.compareDocumentPosition(toggleSamples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-standard")).toHaveStyle({ "--qtoggle-color": "#9e9e9e" });
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-standard")).toHaveClass("ui-standards-qtoggle--standard");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-standard"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-standard")).toHaveAttribute("data-state", "off");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary")).toHaveAttribute("data-state", "off");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary")).toHaveAttribute("data-state", "off");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary")).toHaveClass("ui-standards-qtoggle--icons");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-standard")).toHaveStyle({ "--qtoggle-color": "#9e9e9e" });
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-standard")).toHaveClass("ui-standards-pill-switch--standard");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary")).toHaveStyle({ "--qtoggle-color": "#1976d2" });
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-colors")).toHaveTextContent("Standard");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-icons")).toHaveTextContent("Standard with icons");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill")).toHaveTextContent("Solid");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-outline-primary")).toHaveClass(
+      "ui-standards-pill-switch--outline",
+    );
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-black")).toHaveAttribute("data-state", "on");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-icon-black")).toBeInTheDocument();
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success")).toHaveTextContent("ON");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success")).toHaveAttribute("data-state", "off");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-label-success")).toHaveTextContent("OFF");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf")).toHaveAttribute("data-state", "indet");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf-indet")).toHaveAttribute("data-state", "on");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pilot-badge")).toHaveTextContent(
+      "TOGGLE STANDARD — APPROVED / LOCKED",
+    );
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext toggle");
+    await user.click(within(togglePlayground).getByTestId("ui-standards-copy-command-expand"));
+    expect(within(togglePlayground).getByText(/Use the locked ExItS Toggle Standard/)).toBeInTheDocument();
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-intent"), "primary");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-density"), "comfort");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-preview")).toHaveAttribute("data-density", "comfort");
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext toggle primary comfort",
+    );
+    expect(within(togglePlayground).queryByTestId("ui-standard-toggle-pg-dense")).not.toBeInTheDocument();
+    expect(within(togglePlayground).queryByRole("option", { name: "Ghost" })).not.toBeInTheDocument();
+    expect(within(togglePlayground).queryByRole("option", { name: "Rounded" })).not.toBeInTheDocument();
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-reset")).toHaveAttribute("aria-label", "Reset");
+    await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field"));
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field")).toHaveAttribute("data-state", "off");
+    await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field"));
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field")).toHaveAttribute("data-state", "on");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-variety"), "solid");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-appearance"), "raised");
+    await user.selectOptions(within(togglePlayground).getByTestId("ui-standard-toggle-pg-icon"), "check");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-preview")).toHaveAttribute("data-variety", "solid");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-preview")).toHaveAttribute("data-appearance", "raised");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field")).toHaveClass(
+      "ui-standards-pill-switch--appearance-raised",
+    );
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field-icon")).toBeInTheDocument();
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext toggle primary solid raised comfort check",
+    );
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf")).toHaveAttribute("data-state", "on");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-order-reset"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf")).toHaveAttribute("data-state", "indet");
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf-indet")).toHaveAttribute("data-state", "on");
+    expect(screen.queryByTestId("ui-standard-card-checkbox")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-dropdown"));
+    expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveAttribute("data-selected", "true");
+    const dropdownPlayground = screen.getByTestId("ui-standard-card-dropdown-playground");
+    const dropdownSamples = screen.getByTestId("ui-standard-card-dropdown");
+    expect(dropdownPlayground.compareDocumentPosition(dropdownSamples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard")).toHaveStyle({ "--qdropdown-color": "#ffffff" });
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard")).toHaveClass("ui-standards-qdropdown--standard");
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-dark-standard")).toHaveStyle({ "--qdropdown-color": "#ffffff" });
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-filled-primary")).toHaveClass("ui-standards-qdropdown--filled");
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-outlined-primary")).toHaveClass("ui-standards-qdropdown--outlined");
+    await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field"));
+    await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-option-option-2"));
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field")).toHaveTextContent("Option 2");
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext dropdown");
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-intent"), "primary");
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-appearance"), "outlined");
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-density"), "comfort");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute("data-density", "comfort");
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dropdown primary outlined comfort",
+    );
+    await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-shape"), "rounded");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveAttribute("data-shape", "rounded");
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dropdown primary outlined rounded comfort",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-dark"));
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute(
+      "data-preview-theme",
+      "dark",
+    );
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveClass(
+      "ui-standards-qdropdown--on-dark",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-light"));
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute(
+      "data-preview-theme",
+      "light",
+    );
+    expect(screen.queryByTestId("ui-standard-card-toggle")).not.toBeInTheDocument();
+  });
+
+  it("opens Input filter with a playground card and an input samples card", async () => {
+    const user = userEvent.setup();
+    renderPage("/ui-standards?category=inputs");
+    expect(screen.getByTestId("ui-standards-filter-inputs")).toHaveTextContent("Input");
+    expect(screen.getByTestId("ui-standards-filter-inputs")).toHaveAttribute("data-selected", "true");
+    expect(screen.queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
+    const samples = screen.getByTestId("ui-standard-cards");
+    const playgroundCard = within(samples).getByTestId("ui-standard-card-input-playground");
+    const inputsCard = within(samples).getByTestId("ui-standard-card-inputs");
+    expect(playgroundCard.compareDocumentPosition(inputsCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(playgroundCard).getByText("Input playground")).toBeInTheDocument();
+    expect(within(inputsCard).getByText("Input samples")).toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-pilot-badge")).toHaveTextContent(
+      "INPUT STANDARD — APPROVED / LOCKED",
+    );
+    expect(within(inputsCard).getByTestId("ui-standard-input-pilot-lede")).toHaveTextContent("ext input");
+    const typesCard = within(samples).getByTestId("ui-standard-card-input-types");
+    expect(inputsCard.compareDocumentPosition(typesCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(typesCard).getAllByText("Input types").length).toBeGreaterThan(0);
+    expect(within(typesCard).getByLabelText("Password")).toHaveAttribute("type", "password");
+    expect(within(typesCard).getByTestId("ui-standard-input-type-password-toggle")).toBeInTheDocument();
+    expect(within(typesCard).getByText("Sample: name@email.com")).toBeInTheDocument();
+    expect(within(typesCard).getByText("+63 9XX XXX XXXX")).toBeInTheDocument();
+    expect(within(typesCard).getByText("09XX XXX XXXX")).toBeInTheDocument();
+    expect(within(typesCard).getByLabelText("Textarea").tagName).toBe("TEXTAREA");
+    await user.type(within(typesCard).getByLabelText("Email"), "not-an-email");
+    expect(within(typesCard).getByText("Enter a valid email address.")).toBeInTheDocument();
+    await user.type(within(typesCard).getByLabelText("Mobile local"), "09171234567");
+    expect(within(typesCard).getByLabelText("Mobile local")).toHaveValue("0917 123 4567");
+    await user.type(within(typesCard).getByLabelText("Mobile international"), "9171234567");
+    expect(within(typesCard).getByLabelText("Mobile international")).toHaveValue("+63 917 123 4567");
+    expect(within(playgroundCard).queryByTestId("ui-standard-input-pg-type")).not.toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-standard")).toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-outlined")).toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-outlined-primary")).toHaveAttribute(
+      "data-appearance",
+      "outlined",
+    );
+    expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
+    const playground = screen.getByTestId("ui-standard-input-playground");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext input",
+    );
+    await user.click(within(playground).getByTestId("ui-standards-copy-command-expand"));
+    expect(within(playground).getByText(/Use the locked ExItS Input Standard/)).toBeInTheDocument();
+    await user.selectOptions(screen.getByTestId("ui-standard-input-pg-intent"), "primary");
+    await user.selectOptions(screen.getByTestId("ui-standard-input-pg-appearance"), "outlined");
+    await user.selectOptions(screen.getByTestId("ui-standard-input-pg-shape"), "rounded");
+    expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-appearance", "outlined");
+    expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-shape", "rounded");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext input primary outlined rounded",
+    );
+    const labelInput = screen.getByTestId("ui-standard-input-pg-label");
+    await user.clear(labelInput);
+    await user.type(labelInput, "SAVE");
+    expect(within(screen.getByTestId("ui-standard-input-pg-preview")).getByLabelText("SAVE")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-input-pg-reset"));
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext input",
+    );
+    expect(labelInput).toHaveValue("Standard");
+  });
+
+  it("opens Breadcrumbs filter with basic and custom separator only", () => {
+    renderPage("/ui-standards?category=breadcrumbs");
+    expect(screen.getByTestId("ui-standards-filter-breadcrumbs")).toHaveTextContent("Breadcrumbs");
+    expect(screen.getByTestId("ui-standards-filter-breadcrumbs")).toHaveAttribute("data-selected", "true");
+    const card = screen.getByTestId("ui-standard-card-breadcrumbs");
+    const basic = within(card).getByTestId("ui-standard-breadcrumb-basic");
+    const custom = within(card).getByTestId("ui-standard-breadcrumb-separator");
+    expect(within(basic).getByText("Basic")).toBeInTheDocument();
+    expect(within(custom).getByText("Custom separators")).toBeInTheDocument();
+    const basicText = within(basic).getByTestId("ui-standard-breadcrumb-basic-text");
+    expect(within(basicText).getByText("Home").closest("li")).toHaveClass("ui-standards-qbreadcrumbs__el--link");
+    expect(within(basicText).getByText("Components").closest("li")).toHaveClass("ui-standards-qbreadcrumbs__el--link");
+    expect(within(basicText).getByText("Breadcrumbs").closest("li")).not.toHaveClass("ui-standards-qbreadcrumbs__el--link");
+    expect(within(basicText).getByText("Breadcrumbs")).toHaveAttribute("aria-current", "page");
+    expect(within(basicText).getAllByText("/")).toHaveLength(2);
+    expect(within(basic).getByTestId("ui-standard-breadcrumb-basic-icons")).toBeInTheDocument();
+    expect(within(basic).getByLabelText("Navigation")).toBeInTheDocument();
+    const dashes = within(custom).getByTestId("ui-standard-breadcrumb-separator-dashes");
+    expect(within(dashes).getAllByText("---")).toHaveLength(2);
+    expect(within(custom).getByTestId("ui-standard-breadcrumb-separator-arrow")).toBeInTheDocument();
+    expect(within(custom).getByTestId("ui-standard-breadcrumb-separator-chevron")).toBeInTheDocument();
+    expect(screen.queryByText("Electronics")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gutters")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-inputs")).not.toBeInTheDocument();
   });
 
   it("opens Buttons filter from category=buttons with full button gallery", () => {
     renderPage("/ui-standards?category=buttons");
-    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
+    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute("data-selected", "true");
+    expect(screen.queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-button-pilot-badge")).toHaveTextContent(
       "BUTTON STANDARD — APPROVED / LOCKED",
     );
     expect(screen.getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-dodont")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-upload")).not.toBeInTheDocument();
   });
 
   it("opens Messages filter from category=messages with locked message gallery", () => {
     renderPage("/ui-standards?category=messages");
-    expect(screen.getByTestId("ui-standards-filter-messages")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
     expect(screen.getByTestId("ui-standard-card-messages")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-message-pilot-badge")).toHaveTextContent(
       "MESSAGE STANDARD — APPROVED / LOCKED",
@@ -824,10 +1233,6 @@ describe("UiStandardsPage", () => {
 
   it("maps legacy category=actions to Buttons filter", () => {
     renderPage("/ui-standards?category=actions");
-    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
   });
 });

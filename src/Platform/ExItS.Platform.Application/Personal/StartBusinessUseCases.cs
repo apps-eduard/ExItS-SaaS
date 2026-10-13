@@ -80,7 +80,9 @@ public sealed record StartBusinessResultDto(
     /// <summary>Pending SaaS checkout payment (PayNow). Activation happens only after Paid.</summary>
     Guid? PaymentTransactionId = null,
     string? PaymentReferenceNumber = null,
-    bool RequiresCheckout = false);
+    bool RequiresCheckout = false,
+    /// <summary>True when this user already had an organization for the product and it was reused.</summary>
+    bool ReusedExistingOrganization = false);
 
 public sealed class StartBusinessForPersonalUser
 {
@@ -149,6 +151,7 @@ public sealed class StartBusinessForPersonalUser
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly UserProductAffiliationGuard _affiliations;
 
     public StartBusinessForPersonalUser(
         CreatePlatformOrganization createOrganization,
@@ -183,7 +186,8 @@ public sealed class StartBusinessForPersonalUser
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        UserProductAffiliationGuard affiliations)
     {
         _createOrganization = createOrganization;
         _addMembership = addMembership;
@@ -218,6 +222,7 @@ public sealed class StartBusinessForPersonalUser
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _affiliations = affiliations;
     }
 
     public async Task<ApplicationResult<StartBusinessResultDto>> ExecuteAsync(
@@ -235,6 +240,45 @@ public sealed class StartBusinessForPersonalUser
             ? ProductCode.PinoyBusinessPos
             : request.ProductCode.Trim().ToLowerInvariant();
 
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "Platform User was not found.");
+        }
+
+        ApplicationResult<StartBusinessResultDto>? outcome = null;
+        await _unitOfWork.ExecuteWithAdvisoryLockAsync(
+            ProductAffiliationLocks.ForEmail(user.NormalizedEmail),
+            ProductAffiliationLocks.ForProduct(productCode),
+            async lockCt =>
+            {
+                outcome = await ExecuteUnderAffiliationLockAsync(
+                    userId,
+                    currentSessionId,
+                    request,
+                    productCode,
+                    ipAddress,
+                    userAgent,
+                    lockCt).ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        return outcome ?? ApplicationResult<StartBusinessResultDto>.Failure(
+            ApplicationErrorCodes.ConcurrencyConflict,
+            "Organization creation could not be completed. Try again.");
+    }
+
+    private async Task<ApplicationResult<StartBusinessResultDto>> ExecuteUnderAffiliationLockAsync(
+        PlatformUserId userId,
+        PlatformAuthSessionId currentSessionId,
+        StartBusinessRequest request,
+        string productCode,
+        string? ipAddress,
+        string? userAgent,
+        CancellationToken cancellationToken)
+    {
         if (request.PrimaryBusinessTypeId == Guid.Empty)
         {
             return ApplicationResult<StartBusinessResultDto>.Failure(
@@ -261,6 +305,46 @@ public sealed class StartBusinessForPersonalUser
             AuditOutcome.Succeeded,
             summary: "Start a Business flow initiated from Personal session.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        var affiliation = await _affiliations
+            .FindAsync(userId, ProductCode.Create(productCode), cancellationToken)
+            .ConfigureAwait(false);
+        if (affiliation is not null)
+        {
+            var affiliatedOrganization = await _organizations
+                .GetByIdAsync(PlatformOrganizationId.From(affiliation.OrganizationId), cancellationToken)
+                .ConfigureAwait(false);
+            var affiliatedMembership = affiliatedOrganization is null
+                ? null
+                : await _memberships
+                    .FindCurrentByUserAndOrganizationAsync(userId, affiliatedOrganization.Id, cancellationToken)
+                    .ConfigureAwait(false);
+            if (affiliatedOrganization is not null
+                && affiliatedMembership is not null
+                && affiliatedMembership.Role == OrganizationRole.OrganizationOwner)
+            {
+                return await ResumeExistingStartBusinessAsync(
+                        userId,
+                        currentSessionId,
+                        affiliatedOrganization,
+                        affiliatedMembership,
+                        request,
+                        productCode,
+                        ipAddress,
+                        userAgent,
+                        cancellationToken,
+                        reusedExistingOrganization: true)
+                    .ConfigureAwait(false);
+            }
+
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                ApplicationErrorCodes.ProductAffiliationConflict,
+                UserProductAffiliationGuard.AlreadyHaveOrganizationMessage);
+        }
+
+        // A staff workplace on a separate identity does not block this Personal user
+        // from owning their own organization. A second owned organization is still
+        // rejected by the affiliation check above.
 
         PlatformOrganization? existingOrganization = null;
         try
@@ -292,7 +376,8 @@ public sealed class StartBusinessForPersonalUser
                         productCode,
                         ipAddress,
                         userAgent,
-                        cancellationToken)
+                        cancellationToken,
+                        reusedExistingOrganization: true)
                     .ConfigureAwait(false);
             }
 
@@ -638,7 +723,8 @@ public sealed class StartBusinessForPersonalUser
         string productCode,
         string? ipAddress,
         string? userAgent,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool reusedExistingOrganization = false)
     {
         AccountProfile orgProfile;
         try
@@ -740,7 +826,8 @@ public sealed class StartBusinessForPersonalUser
             ProductCode: productCode,
             PrimaryBusinessTypeId: organization.PrimaryBusinessTypeId?.Value,
             PrimaryBranchId: (await _branches.GetPrimaryAsync(organization.Id, cancellationToken).ConfigureAwait(false))?.Id.Value,
-            ExpiresAtUtc: login.ExpiresAtUtc));
+            ExpiresAtUtc: login.ExpiresAtUtc,
+            ReusedExistingOrganization: reusedExistingOrganization));
     }
 
     private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId? TrialDefinitionId);

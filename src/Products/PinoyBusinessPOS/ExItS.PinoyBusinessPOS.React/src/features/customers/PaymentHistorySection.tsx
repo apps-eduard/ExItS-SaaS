@@ -20,6 +20,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
@@ -115,6 +116,10 @@ export function PaymentHistorySection(props: PaymentHistorySectionProps) {
   });
 
   const repaymentsQuery = props.customerKind === "personal" ? personalRepaymentsQuery : businessRepaymentsQuery;
+  const actors = useActorDirectory(
+    workspace?.organizationId,
+    (repaymentsQuery.data?.items ?? []).map((payment) => payment.recordedBy),
+  );
 
   const actionMutation = useMutation({
     mutationFn: async (action: PendingAction) => {
@@ -205,6 +210,8 @@ export function PaymentHistorySection(props: PaymentHistorySectionProps) {
             {items.map((payment) => {
               const isPendingCheck = payment.checkClearingStatus === "PendingClearing";
               const isCheck = payment.paymentMethod === "Check";
+              const recordedByName =
+                actors.resolve(payment.recordedBy)?.displayName?.trim() || "—";
               return (
                 <li
                   key={payment.repaymentId}
@@ -212,23 +219,33 @@ export function PaymentHistorySection(props: PaymentHistorySectionProps) {
                   data-testid={`customer-payment-history-${payment.repaymentId}`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="m-0 font-semibold tabular-nums">
-                      <MoneyDisplay amount={payment.amount} />
+                    <p className="m-0 font-semibold">
+                      <span>{t(methodLabelKey(payment.paymentMethod))}</span>
+                      <span className="tabular-nums">
+                        {" · "}
+                        <MoneyDisplay amount={payment.amount} />
+                      </span>
                     </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {isCheck ? (
-                        <StatusChip tone={clearingTone(payment.checkClearingStatus)}>
-                          {t(clearingStatusLabelKey(payment.checkClearingStatus))}
-                        </StatusChip>
-                      ) : null}
-                      <StatusChip tone={payment.status === "Active" ? "success" : "warning"}>
-                        {payment.status}
-                      </StatusChip>
-                    </div>
+                    {isCheck || payment.status !== "Active" ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isCheck ? (
+                          <StatusChip tone={clearingTone(payment.checkClearingStatus)}>
+                            {t(clearingStatusLabelKey(payment.checkClearingStatus))}
+                          </StatusChip>
+                        ) : null}
+                        {payment.status !== "Active" ? (
+                          <StatusChip tone="warning">{payment.status}</StatusChip>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
 
-                  <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                    {t(methodLabelKey(payment.paymentMethod))} ·{" "}
+                  <p
+                    className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid={`customer-payment-recorded-by-${payment.repaymentId}`}
+                  >
+                    {recordedByName}
+                    {" · "}
                     {new Date(payment.recordedAtUtc).toLocaleString()}
                   </p>
                   {payment.remarks?.trim() ? (

@@ -1,6 +1,7 @@
 ﻿using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -174,6 +175,7 @@ public sealed class RequestPasswordReset
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly PlatformCredentialLifecycleOptions _lifecycle;
+    private readonly IStaffPasswordResetCoordinator? _staffPasswordResets;
 
     public RequestPasswordReset(
         IPlatformUserRepository users,
@@ -184,7 +186,8 @@ public sealed class RequestPasswordReset
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        IOptions<PlatformCredentialLifecycleOptions> lifecycle)
+        IOptions<PlatformCredentialLifecycleOptions> lifecycle,
+        IStaffPasswordResetCoordinator? staffPasswordResets = null)
     {
         _users = users;
         _credentials = credentials;
@@ -195,6 +198,7 @@ public sealed class RequestPasswordReset
         _unitOfWork = unitOfWork;
         _clock = clock;
         _lifecycle = lifecycle.Value;
+        _staffPasswordResets = staffPasswordResets;
     }
 
     public async Task<ApplicationResult<CredentialWorkflowAckDto>> ExecuteAsync(
@@ -228,6 +232,15 @@ public sealed class RequestPasswordReset
         var credential = await _credentials.GetByUserIdAsync(user.Id, cancellationToken).ConfigureAwait(false);
         if (credential is null)
         {
+            return ApplicationResult<CredentialWorkflowAckDto>.Success(ack);
+        }
+
+        // Org staff passwords change only after the organization approves. Do not email a usable token yet.
+        if (user.IsOrganizationScopedStaff && _staffPasswordResets is not null)
+        {
+            await _staffPasswordResets
+                .EnsurePendingForStaffAsync(user, cancellationToken)
+                .ConfigureAwait(false);
             return ApplicationResult<CredentialWorkflowAckDto>.Success(ack);
         }
 

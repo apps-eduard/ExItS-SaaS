@@ -16,10 +16,10 @@ public sealed class PosDeviceTransactionAuthorizerTests
     private static readonly Guid OrgId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     [Fact]
-    public async Task Enforcement_disabled_allows_without_installation_id_and_skips_platform()
+    public async Task Testing_skips_device_gate_when_enforcement_is_paused()
     {
         var handler = new RecordingHandler();
-        var authorizer = CreateAuthorizer(enforcementEnabled: false, handler);
+        var authorizer = CreateAuthorizer(enforcementEnabled: false, handler, environmentName: "Testing");
 
         var request = CreateRequest(installationDeviceId: null);
         var denied = await authorizer.EnsureAuthorizedAsync(request, OrgId, CancellationToken.None);
@@ -29,16 +29,15 @@ public sealed class PosDeviceTransactionAuthorizerTests
     }
 
     [Fact]
-    public async Task Enforcement_disabled_allows_when_platform_would_be_unavailable()
+    public async Task Web_skips_device_registration_even_when_devices_exist()
     {
         var handler = new RecordingHandler
         {
-            Responder = _ => throw new HttpRequestException("Platform down"),
+            Responder = _ => JsonContent(HttpStatusCode.OK, """[{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}]"""),
         };
-        var authorizer = CreateAuthorizer(enforcementEnabled: false, handler);
+        var authorizer = CreateAuthorizer(enforcementEnabled: false, handler, environmentName: "Development");
 
-        var request = CreateRequest(installationDeviceId: "device-1");
-        var denied = await authorizer.EnsureAuthorizedAsync(request, OrgId, CancellationToken.None);
+        var denied = await authorizer.EnsureAuthorizedAsync(CreateRequest(null), OrgId, CancellationToken.None);
 
         Assert.Null(denied);
         Assert.Equal(0, handler.CallCount);
@@ -153,6 +152,12 @@ public sealed class PosDeviceTransactionAuthorizerTests
 
         return context.Request;
     }
+
+    private static HttpResponseMessage JsonContent(HttpStatusCode status, string json) =>
+        new(status)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        };
 
     private static HttpResponseMessage JsonProblem(HttpStatusCode status, string errorCode) =>
         new(status)

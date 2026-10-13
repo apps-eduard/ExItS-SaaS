@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
+using Microsoft.Extensions.Options;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
@@ -175,7 +177,9 @@ internal static class InvitationEndpoints
                     StatusCodes.Status403Forbidden);
             }
 
-            var result = await useCase.ExecuteAsync(body.Input ?? string.Empty, ct).ConfigureAwait(false);
+            var result = await useCase
+                .ExecuteAsync(PlatformOrganizationId.From(organizationId), body.Input ?? string.Empty, ct)
+                .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
@@ -335,8 +339,20 @@ internal static class InvitationEndpoints
         app.MapPost("/api/v1/platform/invitations/accept", async (
             AcceptInvitationRequest body,
             AcceptOrganizationInvitation useCase,
+            IOptions<PlatformPasswordOptions> passwordOptions,
             CancellationToken ct) =>
         {
+            var policyError = PlatformPasswordPolicy.Validate(
+                body.Password,
+                passwordOptions.Value);
+            if (policyError is not null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.PasswordInvalid,
+                    policyError,
+                    StatusCodes.Status400BadRequest);
+            }
+
             var result = await useCase
                 .ExecuteAsync(
                     body.Token ?? string.Empty,

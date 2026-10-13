@@ -8,6 +8,7 @@ import * as assignmentsClient from "@/api/platform/membership-branch-assignments
 import * as authClient from "@/api/platform/platform-auth-client";
 import * as rolesClient from "@/api/platform/product-local-roles-client";
 import * as inviteClient from "@/api/platform/staff-invitation-client";
+import * as passwordResetClient from "@/api/platform/staff-password-reset-client";
 import {
   isOrganizationOwnerMembershipRole,
   OrgStaffPage,
@@ -56,6 +57,14 @@ vi.mock("@/api/platform/membership-branch-assignments-client", async (importOrig
   return {
     ...actual,
     listMembershipBranchAssignments: vi.fn(),
+  };
+});
+
+vi.mock("@/api/platform/staff-password-reset-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof passwordResetClient>();
+  return {
+    ...actual,
+    listOrganizationStaffPasswordResets: vi.fn(async () => []),
   };
 });
 

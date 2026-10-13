@@ -99,6 +99,7 @@ import {
   PlatformSettingsLayout,
   PlatformSettingsSectionPage,
 } from "@/features/settings/PlatformSettingsPage";
+import { NonPlatformProductRedirect } from "@/app/NonPlatformProductRedirect";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
 import { PreferencesProvider } from "@/hooks/use-preferences";
@@ -128,7 +129,9 @@ function AuthRoutes() {
 function ProtectedShell() {
   return (
     <RequireSession>
-      <AuthorizedAppShell />
+      <NonPlatformProductRedirect>
+        <AuthorizedAppShell />
+      </NonPlatformProductRedirect>
     </RequireSession>
   );
 }

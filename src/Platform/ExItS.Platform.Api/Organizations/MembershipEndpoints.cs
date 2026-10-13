@@ -2,6 +2,7 @@ using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Governance;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Governance;
 using ExItS.Platform.Domain.Authorization;
@@ -306,9 +307,111 @@ internal static class MembershipEndpoints
                         body.JobTitle,
                         body.WorkPhone,
                         body.WorkEmail,
-                        body.IsBusinessContact),
+                        body.IsBusinessContact,
+                        body.StaffId,
+                        body.Country,
+                        body.AddressLine1,
+                        body.AddressLine2,
+                        body.Barangay,
+                        body.CityMunicipality,
+                        body.ProvinceState,
+                        body.PostalCode,
+                        body.AssignStaffId,
+                        body.FirstName,
+                        body.MiddleName,
+                        body.LastName,
+                        body.DateOfBirth,
+                        body.Gender,
+                        body.Nationality,
+                        body.ProfilePhotoUrl,
+                        body.MobileNumber,
+                        body.Email,
+                        body.StaffDisplayName),
                     actorReference: actorReference,
                     cancellationToken: ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/members/{membershipId:guid}/personal-photo", async (
+            Guid organizationId,
+            Guid membershipId,
+            MembershipBusinessProfileUseCases useCases,
+            PlatformOrganizationAuthz organizationAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await organizationAuthz
+                .EnsureCanViewOrganizationAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var photo = await useCases.OpenLinkedPersonalPhotoAsync(organizationId, membershipId, ct)
+                .ConfigureAwait(false);
+            return photo is null
+                ? Results.NotFound()
+                : Results.File(photo.Content, photo.ContentType);
+        });
+
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/members/{membershipId:guid}/staff-photo", async (
+            Guid organizationId,
+            Guid membershipId,
+            IPersonalProfilePhotoStore photos,
+            PlatformOrganizationAuthz organizationAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await organizationAuthz
+                .EnsureCanViewOrganizationAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var photo = await photos.ReadForKeyAsync(StaffProfilePhoto.StorageKey(membershipId), ct).ConfigureAwait(false);
+            return photo is null
+                ? Results.NotFound()
+                : Results.File(photo.Content, photo.ContentType);
+        });
+
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/staff-id-settings", async (
+            Guid organizationId,
+            MembershipBusinessProfileUseCases useCases,
+            PlatformOrganizationAuthz organizationAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await organizationAuthz
+                .EnsureCanViewOrganizationAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCases.GetStaffIdSettingsAsync(organizationId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        app.MapPut("/api/v1/platform/organizations/{organizationId:guid}/staff-id-settings", async (
+            Guid organizationId,
+            UpdateOrganizationStaffIdSettingsRequest body,
+            MembershipBusinessProfileUseCases useCases,
+            PlatformOrganizationAuthz organizationAuthz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await organizationAuthz
+                .EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.MembershipBusinessProfileUpdated, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCases.UpdateStaffIdSettingsAsync(organizationId, body.Prefix, body.NextNumber, body.PadDigits, ct)
+                    .ConfigureAwait(false),
                 Results.Ok);
         });
 
@@ -901,7 +1004,31 @@ internal sealed record UpdateMembershipBusinessProfileRequest(
     string? JobTitle,
     string? WorkPhone,
     string? WorkEmail,
-    bool IsBusinessContact);
+    bool IsBusinessContact,
+    string? StaffId = null,
+    string? Country = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? Barangay = null,
+    string? CityMunicipality = null,
+    string? ProvinceState = null,
+    string? PostalCode = null,
+    bool AssignStaffId = false,
+    string? FirstName = null,
+    string? MiddleName = null,
+    string? LastName = null,
+    string? DateOfBirth = null,
+    string? Gender = null,
+    string? Nationality = null,
+    string? ProfilePhotoUrl = null,
+    string? MobileNumber = null,
+    string? Email = null,
+    string? StaffDisplayName = null);
+
+internal sealed record UpdateOrganizationStaffIdSettingsRequest(
+    string Prefix,
+    int NextNumber,
+    int PadDigits);
 internal sealed record SetMembershipBranchAssignmentsRequest(
     string? Scope,
     IReadOnlyList<Guid>? BranchIds,

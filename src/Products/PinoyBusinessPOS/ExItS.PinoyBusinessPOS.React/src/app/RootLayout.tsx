@@ -52,9 +52,12 @@ export function RootLayout() {
       pathname: location.pathname,
       grant: sessionGrant,
     });
+  const isUiStandards =
+    location.pathname === "/ui-standards" || location.pathname.startsWith("/ui-standards/");
   const showOrgBottomNav =
     !isPersonal &&
     !isOnboarding &&
+    !isUiStandards &&
     !useAdminShell &&
     !useOpsShell &&
     !isDesktop &&
@@ -73,7 +76,11 @@ export function RootLayout() {
     <>
       <WorkspaceBootNavigator />
       <PersonalMerchantCartProvider>
-        {useAdminShell ? (
+        {isUiStandards ? (
+          <AppShell header={<AppTopBar />} fullScreen>
+            <Outlet />
+          </AppShell>
+        ) : useAdminShell ? (
           <AdminManagementShell header={<AppTopBar hideDesktopBrand />}>
             <Outlet />
           </AdminManagementShell>

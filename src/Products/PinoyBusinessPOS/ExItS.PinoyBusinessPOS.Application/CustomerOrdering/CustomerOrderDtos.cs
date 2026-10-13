@@ -81,7 +81,17 @@ public sealed record CustomerOrderDto(
     Guid? CollectedBy,
     DateTimeOffset? CompletedAtUtc,
     Guid? CompletedBy,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    string? PaymentReference = null,
+    string? RequestedPickupLocal = null,
+    string? RequestedPickupTimeZoneId = null,
+    DateTimeOffset? RequestedPickupAtUtc = null,
+    decimal? AmountReceived = null,
+    decimal? ChangeAmount = null,
+    DateTimeOffset? PaymentConfirmedAtUtc = null,
+    Guid? PaymentConfirmedBy = null);
+
+public sealed record ConfirmCustomerOrderPaymentRequest(decimal? AmountReceived = null);
 
 public sealed record CustomerOrderListItemDto(
     Guid OrderId,
@@ -133,7 +143,10 @@ public sealed record PlaceCustomerOrderRequest(
     PlaceCustomerOrderDeliveryRequest? Delivery = null,
     Guid? ClientOrderId = null,
     string? IdempotencyKey = null,
-    string? PaymentMethod = null);
+    string? PaymentMethod = null,
+    string? PaymentReference = null,
+    string? RequestedPickupDate = null,
+    string? RequestedPickupTime = null);
 
 public sealed record QuoteCustomerOrderDeliveryRequest(
     Guid FulfillmentBranchId,
@@ -238,7 +251,15 @@ public static class CustomerOrderMaps
             order.CollectedBy,
             order.CompletedAtUtc,
             order.CompletedBy,
-            order.UpdatedAtUtc);
+            order.UpdatedAtUtc,
+            order.PaymentReference,
+            order.RequestedPickupLocal,
+            order.RequestedPickupTimeZoneId,
+            order.RequestedPickupAtUtc,
+            order.AmountReceived,
+            order.ChangeAmount,
+            order.PaymentConfirmedAtUtc,
+            order.PaymentConfirmedBy);
 
     public static CustomerOrderListItemDto MapListItem(CustomerOrder order) =>
         new(

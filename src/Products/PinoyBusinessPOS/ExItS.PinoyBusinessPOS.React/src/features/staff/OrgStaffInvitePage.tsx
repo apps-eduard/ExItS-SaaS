@@ -8,6 +8,7 @@ import {
 import { POS_LOCAL_ROLE_CASHIER, POS_LOCAL_ROLE_OWNER } from "@/api/platform/product-local-roles-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -171,12 +172,18 @@ export function OrgStaffInvitePage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("staffInvite.personalAccount")}
           </p>
-          <p className="m-0 text-[length:var(--exits-text-sm)]">
-            {t("staffInvite.invitingTo").replace(
-              "{org}",
-              boundWorkspace.organizationDisplayName ?? t("staffInvite.thisBusiness"),
-            )}
-          </p>
+          {target.canInviteAsStaff === false ? (
+            <Notice tone="warning" testId="staff-invite-already-staff">
+              {t("staffInvite.alreadyStaffElsewhere")}
+            </Notice>
+          ) : (
+            <p className="m-0 text-[length:var(--exits-text-sm)]">
+              {t("staffInvite.invitingTo").replace(
+                "{org}",
+                boundWorkspace.organizationDisplayName ?? t("staffInvite.thisBusiness"),
+              )}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -189,9 +196,11 @@ export function OrgStaffInvitePage() {
             >
               {t("staffInvite.tryAnother")}
             </Button>
-            <Button type="button" disabled={submitting} onClick={() => setStep("access")}>
-              {t("staffInvite.continue")}
-            </Button>
+            {target.canInviteAsStaff === false ? null : (
+              <Button type="button" disabled={submitting} onClick={() => setStep("access")}>
+                {t("staffInvite.continue")}
+              </Button>
+            )}
           </div>
         </section>
       ) : null}

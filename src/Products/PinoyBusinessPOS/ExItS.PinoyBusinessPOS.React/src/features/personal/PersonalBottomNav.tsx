@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { MoreHorizontal } from "lucide-react";
+import { symbol } from "@/components/icons/MaterialSymbol";
 import { PERSONAL_PRIMARY_NAV_ITEMS } from "@/features/personal/personal-nav-config";
 import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
 import { useMediaMin } from "@/hooks/useMediaQuery";
@@ -10,7 +10,7 @@ const moreTab = {
   to: "/personal/more",
   end: false,
   labelKey: "personal.nav.more" as const,
-  icon: MoreHorizontal,
+  icon: symbol("more_horiz"),
   testId: "personal-nav-more",
 };
 

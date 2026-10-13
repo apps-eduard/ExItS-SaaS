@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as linkStatusClient from "@/api/platform/customer-link-status-client";
@@ -62,6 +62,26 @@ vi.mock("@/access/pos-capabilities", () => ({
 
 vi.mock("@/api/platform/public-identity-client", () => ({
   resolvePublicUserId: vi.fn(),
+}));
+
+vi.mock("@/api/platform/linked-customer-profile-client", () => ({
+  getLinkedCustomerPersonalProfile: vi.fn().mockResolvedValue({
+    userIdentityId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+    firstName: "Ana",
+    lastName: "Personal",
+    mobileNumber: "09170001111",
+    email: "ana@example.com",
+    cityMunicipality: "Kalibo",
+    provinceState: "Aklan",
+    country: "Philippines",
+    displayName: "Ana Personal",
+    addressLine1: "12 Rizal",
+    addressLine2: "2nd floor",
+    barangay: "Poblacion",
+    postalCode: "5600",
+    profilePhotoUrl: "https://lh3.googleusercontent.com/a/ana-photo",
+    gender: "Female",
+  }),
 }));
 
 vi.mock("@/features/customers/CreditPolicySection", () => ({
@@ -172,6 +192,16 @@ describe("CustomerDetailPage Platform link status", () => {
     });
   });
 
+  async function openStoreSettings() {
+    const tab = await screen.findByTestId("customer-tab-store");
+    fireEvent.click(tab);
+  }
+
+  async function openCreditPayments() {
+    const tab = await screen.findByTestId("customer-tab-credit");
+    fireEvent.click(tab);
+  }
+
   async function expectStatus(label: RegExp | string) {
     await waitFor(() => {
       const inline = screen.queryByTestId("customer-connection-status-chip-inline");
@@ -191,9 +221,10 @@ describe("CustomerDetailPage Platform link status", () => {
     renderDetail();
     await expectStatus(/Local customer/i);
     expect(linkStatusClient.getCustomerLinkStatus).not.toBeCalled();
-    expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
+    await openStoreSettings();
+    expect(screen.queryByTestId("customer-store-details")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-personal-profile")).not.toBeInTheDocument();
-    expect(screen.getByTestId("customer-edit-store-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("customer-edit-store-details")).not.toBeInTheDocument();
   });
 
   it("shows Request sent from Platform even when EX-ID is stored", async () => {
@@ -225,7 +256,7 @@ describe("CustomerDetailPage Platform link status", () => {
     renderDetail(`/customers/${customerId}?pendingLink=1`);
     await expectStatus(/Request sent/i);
     expect(screen.getByTestId("customer-link-after-create-success")).toBeInTheDocument();
-    expect(screen.getByText(/What happens next/i)).toBeInTheDocument();
+    expect(screen.queryByText(/What happens next/i)).not.toBeInTheDocument();
   });
 
   it("shows Linked from Platform", async () => {
@@ -242,8 +273,23 @@ describe("CustomerDetailPage Platform link status", () => {
     await waitFor(() => {
       expect(screen.getByTestId("customer-personal-profile")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
-    expect(screen.getByTestId("customer-edit-store-details")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-personal-profile-name")).toHaveTextContent("Ana Personal");
+      expect(screen.getByTestId("customer-personal-profile-email")).toHaveTextContent("ana@example.com");
+      expect(screen.getByTestId("customer-details-mobile")).toHaveTextContent("09170001111");
+      expect(screen.getByTestId("customer-details-gender")).toHaveTextContent("Female");
+      expect(screen.queryByText("Other info")).not.toBeInTheDocument();
+      expect(screen.getByTestId("customer-details-address-line")).toHaveTextContent("12 Rizal");
+    });
+    await openStoreSettings();
+    expect(screen.getByTestId("customer-online-ordering-value")).toHaveTextContent("Use store default");
+    const orderingTag = screen.getByTestId("customer-online-ordering-effective");
+    expect(orderingTag).toHaveTextContent("Allowed");
+    expect(orderingTag).toHaveAttribute("data-appearance", "emphasis");
+    expect(orderingTag).toHaveAttribute("data-tone", "success");
+    expect(screen.getByTestId("customer-online-ordering-choices")).toHaveClass("grid-cols-3");
+    expect(screen.queryByTestId("customer-store-details")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-edit-store-details")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-edit")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
   });
@@ -277,8 +323,15 @@ describe("CustomerDetailPage Platform link status", () => {
     });
     expect(screen.queryByTestId("customer-link-history")).not.toBeInTheDocument();
     const linkRow = screen.getByTestId("customer-personal-profile-link-row");
+    expect(linkRow).toHaveTextContent(/Connected since/i);
     expect(linkRow).toHaveTextContent(new Date("2026-08-18T08:00:00Z").toLocaleString());
-    expect(screen.getByTestId("customer-personal-profile-link-status")).toHaveTextContent(/Linked/i);
+    expect(screen.queryByTestId("customer-personal-profile-link-status")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-header-photo")).toHaveAttribute(
+        "data-photo-url",
+        "https://lh3.googleusercontent.com/a/ana-photo",
+      );
+    });
   });
 
   it("hides connection history when Platform returns an empty list", async () => {
@@ -313,9 +366,11 @@ describe("CustomerDetailPage Platform link status", () => {
   it("shows unavailable on Platform fetch error and does not invent Linked", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockRejectedValue(new Error("boom"));
     renderDetail();
+    await openStoreSettings();
     await waitFor(() => {
-      expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
+      expect(screen.getByTestId("customer-tab-store")).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("customer-store-details")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-personal-profile")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
@@ -389,6 +444,7 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail();
+    await openCreditPayments();
     await waitFor(() => {
       expect(screen.getByTestId("customer-repay")).toBeInTheDocument();
     });

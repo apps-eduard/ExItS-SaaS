@@ -1,0 +1,281 @@
+.personal-owned-businesses {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 0 1rem 1rem;
+  overflow: hidden;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: none;
+  color: var(--exits-text);
+  text-align: start;
+}
+
+.personal-owned-businesses__head {
+  margin-inline: -1rem;
+  padding: 1rem 1rem 0.85rem;
+  border-bottom: 1px solid var(--exits-border);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--exits-info) 24%, var(--exits-surface)),
+    color-mix(in srgb, var(--exits-primary) 20%, var(--exits-surface))
+  );
+}
+
+[data-testid="personal-owned-businesses"] {
+  border-color: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-border));
+  border-top: 6px solid var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__head {
+  background: transparent;
+  background-image: none;
+  border-bottom: none;
+  padding-bottom: 0.35rem;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__list {
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__entry + .personal-owned-businesses__entry {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__rule {
+  display: none;
+}
+
+[data-testid="personal-owned-businesses"] .personal-owned-businesses__row {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--exits-border);
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--exits-primary);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
+[data-testid="personal-staff-workplaces"] {
+  border-color: color-mix(in srgb, var(--exits-info) 18%, var(--exits-border));
+  border-top: 6px solid var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 6%, var(--exits-surface));
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__head {
+  background: transparent;
+  background-image: none;
+  border-bottom: none;
+  padding-bottom: 0.35rem;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__list {
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__entry + .personal-owned-businesses__entry {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__rule {
+  display: none;
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__mark {
+  color: var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 10%, var(--exits-surface));
+}
+
+[data-testid="personal-staff-workplaces"] .personal-owned-businesses__row {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--exits-border);
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--exits-info);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
+.personal-owned-businesses__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--exits-text);
+}
+
+.personal-owned-businesses__lede {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--exits-text-muted);
+}
+
+.personal-owned-businesses__list {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  margin: 1.125rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.personal-owned-businesses__entry + .personal-owned-businesses__entry {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--exits-border);
+}
+
+.personal-owned-businesses__row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.personal-owned-businesses__headline {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.personal-owned-businesses__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.personal-owned-businesses__mark svg,
+.personal-owned-businesses__mark .material-symbols-outlined {
+  width: 1.375rem;
+  height: 1.375rem;
+  font-size: 1.375rem;
+}
+
+.personal-owned-businesses__rule {
+  align-self: stretch;
+  width: 1px;
+  flex-shrink: 0;
+  background: var(--exits-border);
+}
+
+.personal-owned-businesses__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.personal-owned-businesses__name {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--exits-text);
+}
+
+.personal-owned-businesses__product,
+.personal-owned-businesses__meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--exits-text-muted);
+}
+
+.personal-owned-businesses__product {
+  font-weight: 600;
+}
+
+.personal-owned-businesses__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.personal-owned-businesses__sep {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  white-space: pre;
+}
+
+.personal-owned-businesses__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.625rem;
+  line-height: 1;
+}
+
+.personal-owned-businesses__status {
+  color: var(--exits-success);
+  font-weight: 600;
+}
+
+.personal-owned-businesses__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.personal-owned-businesses .personal-owned-businesses__open,
+.personal-owned-businesses .personal-owned-businesses__explore {
+  height: 2.75rem;
+  min-height: 2.75rem;
+  font-size: 0.875rem;
+}
+
+.personal-owned-businesses .personal-owned-businesses__open,
+.personal-owned-businesses .personal-owned-businesses__explore {
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .personal-owned-businesses {
+    padding: 0 1.25rem 1.25rem;
+  }
+
+  .personal-owned-businesses__head {
+    margin-inline: -1.25rem;
+    padding: 1.15rem 1.25rem 0.9rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .personal-owned-businesses__headline {
+    flex-wrap: wrap;
+  }
+
+  .personal-owned-businesses__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .personal-owned-businesses__open,
+  .personal-owned-businesses__explore {
+    width: 100%;
+  }
+}

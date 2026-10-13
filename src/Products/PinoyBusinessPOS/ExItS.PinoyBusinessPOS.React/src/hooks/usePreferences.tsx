@@ -8,6 +8,7 @@ import {
   type LocalePreference,
   type MotionPreference,
   type NavigationModePreference,
+  type BackgroundColorPreference,
   type PrimaryColorPreference,
   type TabStylePreference,
   type ThemePreference,
@@ -20,6 +21,7 @@ type PreferencesContextValue = {
   setLocale: (locale: LocalePreference) => void;
   setDensity: (density: DensityPreference) => void;
   setPrimaryColor: (primaryColor: PrimaryColorPreference) => void;
+  setBackgroundColor: (backgroundColor: BackgroundColorPreference) => void;
   setControlShape: (controlShape: ControlShapePreference) => void;
   setMotion: (motion: MotionPreference) => void;
   setNavigationMode: (navigationMode: NavigationModePreference) => void;
@@ -74,6 +76,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setBackgroundColor = useCallback((backgroundColor: BackgroundColorPreference) => {
+    setPreferences((current) => {
+      const next = { ...current, backgroundColor };
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const setControlShape = useCallback((controlShape: ControlShapePreference) => {
     setPreferences((current) => {
       const next = { ...current, controlShape };
@@ -113,6 +123,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setLocale,
       setDensity,
       setPrimaryColor,
+      setBackgroundColor,
       setControlShape,
       setMotion,
       setNavigationMode,
@@ -124,6 +135,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setLocale,
       setDensity,
       setPrimaryColor,
+      setBackgroundColor,
       setControlShape,
       setMotion,
       setNavigationMode,

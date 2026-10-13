@@ -17,8 +17,10 @@ import {
   type CustomerStatementTotalsView,
   type StatementEntryFilter,
 } from "@/features/customers/customer-statement-view";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 export type CustomerStatementViewProps = {
   testId: string;
@@ -60,7 +62,12 @@ export function CustomerStatementView({
   onPeriodEndChange,
 }: CustomerStatementViewProps) {
   const { t } = useI18n();
+  const workspace = usePosWorkspaceScope();
   const [entryFilter, setEntryFilter] = useState<StatementEntryFilter>("all");
+  const actors = useActorDirectory(
+    workspace?.organizationId,
+    (statement?.lines ?? []).map((line) => line.recordedBy),
+  );
 
   const filteredLines = useMemo(() => {
     const lines = statement?.lines ?? [];
@@ -224,6 +231,9 @@ export function CustomerStatementView({
                       <th className="min-w-[14rem] px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                         {t("expense.description")}
                       </th>
+                      <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("common.recordedBy")}
+                      </th>
                       <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
                         {t("expense.amount")}
                       </th>
@@ -231,7 +241,9 @@ export function CustomerStatementView({
                   </thead>
                   <tbody>
                     {filteredLines.map((line) => {
-                      const description = statementLineDescription(line);
+                      const description = statementLineDescription(line, t("customers.paymentReceived"));
+                      const recordedByName =
+                        actors.resolve(line.recordedBy)?.displayName?.trim() || "—";
                       const isCredit = line.entryType.toLowerCase() === "credit";
                       return (
                         <tr
@@ -259,6 +271,12 @@ export function CustomerStatementView({
                             ) : (
                               <span className="line-clamp-2">{description}</span>
                             )}
+                          </td>
+                          <td
+                            className="whitespace-nowrap px-3 py-2.5 align-middle"
+                            data-testid={`statement-recorded-by-${line.entryId}`}
+                          >
+                            {recordedByName}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right font-semibold tabular-nums">
                             <MoneyDisplay amount={line.amount} />

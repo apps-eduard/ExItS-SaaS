@@ -11,6 +11,19 @@ describe("platform api proxy", () => {
     expect(resolvePlatformApiProxyTarget()).toBe("http://127.0.0.1:8091");
   });
 
+  it("keeps the /platform-api prefix for Google sign-in", () => {
+    expect(
+      rewritePlatformApiProxyPath(
+        `${PLATFORM_API_PROXY_PREFIX}/api/v1/platform/auth/external/google/challenge`,
+      ),
+    ).toBe(`${PLATFORM_API_PROXY_PREFIX}/api/v1/platform/auth/external/google/challenge`);
+    expect(
+      rewritePlatformApiProxyPath(
+        `${PLATFORM_API_PROXY_PREFIX}/api/v1/platform/auth/external/google/callback`,
+      ),
+    ).toBe(`${PLATFORM_API_PROXY_PREFIX}/api/v1/platform/auth/external/google/callback`);
+  });
+
   it("strips the /platform-api prefix", () => {
     expect(
       rewritePlatformApiProxyPath(`${PLATFORM_API_PROXY_PREFIX}/api/v1/platform/auth/me`),

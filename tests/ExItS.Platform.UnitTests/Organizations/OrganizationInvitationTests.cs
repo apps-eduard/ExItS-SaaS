@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Common;
@@ -56,6 +57,50 @@ public sealed class OrganizationInvitationTests
         Assert.Equal("Staff", outbound.RoleDisplay);
         Assert.Equal(result.Value.AcceptToken, outbound.OpaqueToken);
         Assert.Null(outbound.StaffLogin);
+    }
+
+    [Fact]
+    public async Task CreateOrganizationInvitation_rejects_a_person_who_is_already_staff_elsewhere()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var users = new InMemoryPlatformUserRepository();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var invitations = new InMemoryOrganizationInvitationRepository();
+        var messages = new CapturingAuthOutboundMessageSink();
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
+            .ExecuteAsync("Invite Org", "invite-org")).Value!;
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "cashier_org001",
+            "cashier@ORG000001",
+            "new.staff@example.com",
+            PlatformOrganizationId.New(),
+            "Cashier",
+            T0);
+        await users.AddAsync(staff);
+
+        var create = new CreateOrganizationInvitation(
+            orgs,
+            invitations,
+            users,
+            new FakePublicOrganizationIdGenerator(),
+            messages,
+            uow,
+            clock);
+
+        var result = await create.ExecuteAsync(
+            org.Id,
+            "new.staff@example.com",
+            OrganizationRole.OrganizationMember,
+            invitedByUserId: null,
+            actorMembershipRole: OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: true);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ProductAffiliationConflict, result.ErrorCode);
+        Assert.Equal(ExistingStaffInvitationGuard.AlreadyStaffElsewhereMessage, result.ErrorMessage);
+        Assert.DoesNotContain(staff.HomeOrganizationId!.Value.ToString(), result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(messages.LastOfKind(PlatformAuthOutboundMessageKinds.OrganizationStaffInvitation));
     }
 
     [Fact]

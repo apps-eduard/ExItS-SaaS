@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Plus, UserRound, Users } from "lucide-react";
-import { canCreateCustomer, canViewSuppliers } from "@/access/pos-capabilities";
+import { canCreateCustomer, canEditCustomer, canViewSuppliers } from "@/access/pos-capabilities";
 import {
   listBusinessCustomers,
   listRelationships,
 } from "@/api/pos/pos-connected-suppliers-client";
-import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
+import {
+  listCustomers,
+  reactivateCustomer,
+  type PosCustomerListItem,
+} from "@/api/pos/pos-customers-client";
 import { listOrganizationBusinessCustomers } from "@/api/platform/business-customer-delivery-client";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -19,6 +23,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { Button } from "@/components/ui/button";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
@@ -26,6 +31,7 @@ import {
   filterCachedCustomers,
   listCachedCustomers,
 } from "@/offline/customer-cache";
+import { onlineRequiredDetailKey, ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
@@ -40,7 +46,11 @@ import {
   isPersonPosCustomer,
 } from "@/features/customers/customer-business-list";
 import { resolveDisplayedPersonalExItsId } from "@/features/customers/customer-link-status";
-import { parseKindForTest, type KindFilter } from "@/features/customers/customers-kind";
+import {
+  parseCustomerListTab,
+  type CustomerListTab,
+  type KindFilter,
+} from "@/features/customers/customers-kind";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 
 type StatusFilter = "Active" | "Inactive" | "";
@@ -67,8 +77,14 @@ const KIND_FILTERS: Array<{
   { value: "businesses", labelKey: "customers.kindBusinesses" },
 ];
 
+const DEACTIVATED_TAB: {
+  value: "deactivated";
+  labelKey: "customers.kindDeactivated";
+} = { value: "deactivated", labelKey: "customers.kindDeactivated" };
+
 export function CustomersListPage() {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const workspace = usePosWorkspaceScope();
@@ -79,8 +95,11 @@ export function CustomersListPage() {
   const [debounced, setDebounced] = useState("");
   const [status, setStatus] = useState<StatusFilter>("Active");
   const [cached, setCached] = useState<PosCustomerListItem[] | null>(null);
-  const kind = parseKindForTest(searchParams.get("kind"));
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
+  const [reactivateError, setReactivateError] = useState<string | null>(null);
+  const kind = parseCustomerListTab(searchParams.get("kind"));
   const allowCreate = canCreateCustomer(sessionGrant);
+  const allowEdit = canEditCustomer(sessionGrant);
   const allowBusiness = canViewSuppliers(sessionGrant);
 
   useEffect(() => {
@@ -88,18 +107,22 @@ export function CustomersListPage() {
     return () => window.clearTimeout(handle);
   }, [search]);
 
-  const setKind = (next: KindFilter) => {
+  const setKind = (next: CustomerListTab) => {
     const params = new URLSearchParams(searchParams);
     if (next === "all") params.delete("kind");
     else params.set("kind", next);
     setSearchParams(params, { replace: true });
   };
 
+  const showDeactivated = kind === "deactivated";
   const showPeople = kind === "all" || kind === "people";
   const showBusinesses = allowBusiness && (kind === "all" || kind === "businesses");
   /** Status chips only on People tab — avoids two competing “All” filters on All. */
   const showStatusFilter = showPeople;
-  const showAdd = allowCreate && (showPeople || kind === "businesses" || kind === "all");
+  const showAdd = allowCreate && !showDeactivated && (showPeople || kind === "businesses" || kind === "all");
+  const listTabs = allowBusiness
+    ? [...KIND_FILTERS, DEACTIVATED_TAB]
+    : [{ value: "all" as const, labelKey: "customers.title" as const }, DEACTIVATED_TAB];
 
   const peopleQuery = useQuery({
     queryKey: [
@@ -110,13 +133,35 @@ export function CustomersListPage() {
       debounced,
       status,
     ],
-    enabled: Boolean(workspace) && online && (showPeople || showBusinesses),
+    enabled: Boolean(workspace) && online && (showPeople || showBusinesses || showDeactivated),
     queryFn: ({ signal }) =>
       listCustomers(
         workspace!,
         {
           search: debounced || undefined,
           status: showPeople ? status || undefined : undefined,
+          pageSize: 50,
+        },
+        signal,
+      ),
+  });
+
+  const deactivatedQuery = useQuery({
+    queryKey: [
+      "customers",
+      "list",
+      workspace?.organizationId,
+      workspace?.branchId,
+      debounced,
+      "Inactive",
+    ],
+    enabled: Boolean(workspace) && online,
+    queryFn: ({ signal }) =>
+      listCustomers(
+        workspace!,
+        {
+          search: debounced || undefined,
+          status: "Inactive",
           pageSize: 50,
         },
         signal,
@@ -171,7 +216,9 @@ export function CustomersListPage() {
     );
   }, [offlineContext, online, peopleQuery.data, peopleQuery.isSuccess]);
 
-  const showCachedFallback = showPeople && (!online || peopleQuery.isError);
+  const showCachedFallback =
+    (showPeople && (!online || peopleQuery.isError))
+    || (showDeactivated && (!online || deactivatedQuery.isError));
 
   useEffect(() => {
     if (!offlineContext || !showCachedFallback) {
@@ -194,7 +241,7 @@ export function CustomersListPage() {
     ? filterCachedCustomers(cached, { search: debounced, status })
     : (peopleQuery.data?.items ?? []);
   const peopleItems = allPosItems.filter(isPersonPosCustomer);
-  const posBusinessItems = (peopleQuery.data?.items ?? []).filter(isBusinessPosCustomer);
+  const posBusinessItems = allPosItems.filter(isBusinessPosCustomer);
 
   const activeSupplierOrganizationIds = useMemo(() => {
     const ids = new Set<string>();
@@ -223,6 +270,11 @@ export function CustomersListPage() {
     [activeSupplierOrganizationIds, businessQuery.data, debounced, posBusinessItems],
   );
 
+  const deactivatedItems = usingCache
+    ? filterCachedCustomers(cached ?? [], { search: debounced, status: "Inactive" })
+    : (deactivatedQuery.data?.items ?? []);
+  const deactivatedCount = deactivatedQuery.isSuccess || usingCache ? deactivatedItems.length : null;
+
   const peopleReady = peopleQuery.isSuccess || usingCache;
   const businessesReady = businessQuery.isSuccess && peopleQuery.isSuccess;
   const peopleCount = peopleReady ? peopleItems.length : null;
@@ -240,11 +292,32 @@ export function CustomersListPage() {
         ? t("customers.business.search")
         : t("customers.search");
 
-  const kindCount = (filter: (typeof KIND_FILTERS)[number]): number | null => {
-    if (filter.value === "all") return allCount;
-    if (filter.value === "people") return peopleCount;
+  const tabCount = (value: CustomerListTab): number | null => {
+    if (value === "deactivated") return deactivatedCount;
+    if (value === "all") return allCount;
+    if (value === "people") return peopleCount;
     return businessCount;
   };
+
+  async function reactivate(customerId: string) {
+    if (!allowEdit || !workspace || reactivatingId) {
+      return;
+    }
+    if (!online) {
+      setReactivateError(t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.CustomerStatus)));
+      return;
+    }
+    setReactivatingId(customerId);
+    setReactivateError(null);
+    try {
+      await reactivateCustomer(workspace, customerId);
+      await queryClient.invalidateQueries({ queryKey: ["customers"] });
+    } catch (err) {
+      setReactivateError(err instanceof Error ? err.message : t("customers.reactivateFailed"));
+    } finally {
+      setReactivatingId(null);
+    }
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -276,23 +349,21 @@ export function CustomersListPage() {
         }
       />
 
-      {allowBusiness ? (
-        <div className="customers-kind-tabs">
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("customers.kindFilter")}
-            testId="customers-kind-filters"
-            items={KIND_FILTERS.map((filter) => ({
-              key: filter.value,
-              label: t(filter.labelKey),
-              count: kindCount(filter),
-              state: kind === filter.value ? "active" : "idle",
-              testId: `customers-kind-${filter.value}`,
-              onSelect: () => setKind(filter.value),
-            }))}
-          />
-        </div>
-      ) : null}
+      <div className="customers-kind-tabs">
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("customers.kindFilter")}
+          testId="customers-kind-filters"
+          items={listTabs.map((filter) => ({
+            key: filter.value,
+            label: t(filter.labelKey),
+            count: tabCount(filter.value),
+            state: kind === filter.value ? "active" : "idle",
+            testId: `customers-kind-${filter.value}`,
+            onSelect: () => setKind(filter.value),
+          }))}
+        />
+      </div>
 
       <div className="customers-toolbar" data-testid="customers-toolbar">
         <div className="customers-toolbar__search">
@@ -337,6 +408,72 @@ export function CustomersListPage() {
         <Notice tone="info" testId="customers-cached-notice">
           {t("offline.cachedCustomersNotice")}
         </Notice>
+      ) : null}
+
+      {showDeactivated ? (
+        <section
+          className="customers-section customers-section-panel"
+          data-testid="customers-deactivated-section"
+        >
+          {reactivateError ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]" data-testid="customers-reactivate-error">
+              {reactivateError}
+            </p>
+          ) : null}
+          {deactivatedQuery.isLoading && !usingCache ? <LoadingState label={t("loading.label")} /> : null}
+          {deactivatedQuery.isError && !usingCache ? (
+            <ErrorState title={t("error.title")} detail={(deactivatedQuery.error as Error).message} />
+          ) : null}
+          {(deactivatedQuery.isSuccess || usingCache) && deactivatedItems.length === 0 ? (
+            <EmptyState
+              align="center"
+              variant={debounced ? "filtered" : "default"}
+              icon={<Users className="size-5" strokeWidth={1.75} />}
+              title={t("customers.deactivatedEmpty")}
+              detail={t("customers.deactivatedEmptyDetail")}
+            />
+          ) : null}
+          <ul
+            className="exits-list customers-people-list m-0 grid list-none gap-2 p-0"
+            data-testid="customers-deactivated-list"
+          >
+            {deactivatedItems.map((customer) => {
+              const exitsId = resolveDisplayedPersonalExItsId(customer);
+              const relationshipStatus = resolvePeopleRelationshipStatus(
+                customer,
+                customerLinkOverlay,
+              );
+              return (
+                <li key={customer.customerId} className="flex min-w-0 items-stretch gap-2">
+                  <div className="min-w-0 flex-1">
+                    <CustomerListCard
+                      href={`/customers/${customer.customerId}`}
+                      testId={`customer-row-${customer.customerId}`}
+                      name={customer.displayName}
+                      kind={isPersonPosCustomer(customer) ? "personal" : "local"}
+                      relationshipStatus={relationshipStatus}
+                      accountStatus={customer.status}
+                      exitsId={exitsId}
+                      exitsIdTestId={`customer-exits-id-${customer.customerId}`}
+                    />
+                  </div>
+                  {allowEdit ? (
+                    <Button
+                      type="button"
+                      variant="success"
+                      className="self-center"
+                      data-testid={`customer-reactivate-${customer.customerId}`}
+                      disabled={reactivatingId === customer.customerId}
+                      onClick={() => void reactivate(customer.customerId)}
+                    >
+                      {t("customers.reactivate")}
+                    </Button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
 
       {showPeople ? (

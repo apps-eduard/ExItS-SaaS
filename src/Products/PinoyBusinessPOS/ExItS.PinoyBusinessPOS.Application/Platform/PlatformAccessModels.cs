@@ -95,7 +95,8 @@ public sealed record OrganizationBranchDto(
     Guid? AreaId = null,
     string? AreaName = null,
     /// <summary>Retail (default) or Warehouse. Controls retail-sale eligibility.</summary>
-    string BranchType = "Retail");
+    string BranchType = "Retail",
+    IReadOnlyList<BranchOperatingHoursDayDto>? OperatingHours = null);
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,

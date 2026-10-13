@@ -65,6 +65,7 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
             new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
+        await PlatformIntegrationTestUsers.SaveStaffReadyPersonalProfileAsync(_client, token);
         return (userId, email, token);
     }
 
@@ -253,6 +254,42 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
         var inviteBody = await inviteResponse.Content.ReadFromJsonAsync<JsonElement>();
         // Regression: staff-invitations previously dropped ProductRole (always null on wire).
         Assert.Equal("Cashier", inviteBody.GetProperty("productRole").GetString());
+    }
+
+    [Fact]
+    public async Task Incomplete_personal_profile_blocks_staff_invitation_acceptance()
+    {
+        var (_, _, _, _, ownerToken) = await SeedOrgOwnerAsync("gate");
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "gap");
+        var login = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = email, password });
+        login.EnsureSuccessStatusCode();
+        var personalToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
+
+        using var staffInvite = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/staff-invitations",
+            ownerToken,
+            new { email, role = "OrganizationMember" });
+        var inviteResponse = await _client.SendAsync(staffInvite);
+        Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
+        var token = (await inviteResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("acceptToken").GetString();
+
+        using var acceptRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            personalToken,
+            new { token, password = "Correct-Horse-9!" });
+        var acceptResponse = await _client.SendAsync(acceptRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, acceptResponse.StatusCode);
+        var body = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(ApplicationErrorCodes.PersonalProfileIncomplete, body.GetProperty("errorCode").GetString());
+        var detail = body.GetProperty("detail").GetString()!;
+        Assert.Contains("AddressLine1", detail, StringComparison.Ordinal);
+        Assert.Contains("Barangay", detail, StringComparison.Ordinal);
+        _ = userId;
     }
 
     [Fact]

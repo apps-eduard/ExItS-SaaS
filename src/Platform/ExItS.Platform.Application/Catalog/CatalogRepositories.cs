@@ -101,4 +101,14 @@ public interface IPlatformUnitOfWork
         Func<CancellationToken, Task> action,
         CancellationToken cancellationToken = default) =>
         action(cancellationToken);
+
+    /// <summary>
+    /// Takes another advisory lock on the transaction already opened by
+    /// <see cref="ExecuteWithAdvisoryLockAsync"/>. No-op outside that transaction.
+    /// </summary>
+    Task AcquireTransactionAdvisoryLockAsync(
+        Guid lockKeyA,
+        Guid lockKeyB,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }

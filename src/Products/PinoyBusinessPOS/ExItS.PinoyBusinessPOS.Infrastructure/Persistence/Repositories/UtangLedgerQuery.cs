@@ -158,19 +158,35 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
 
                 c.ReversalReason,
 
+                c.SourceSaleId,
+
             })
 
             .ToListAsync(cancellationToken)
 
             .ConfigureAwait(false);
 
-
+        var saleIds = credits
+            .Where(c => c.SourceSaleId is Guid)
+            .Select(c => c.SourceSaleId!.Value)
+            .Distinct()
+            .ToList();
+        var saleRecordedBy = saleIds.Count == 0
+            ? new Dictionary<Guid, Guid>()
+            : await _db.Sales.AsNoTracking()
+                .Where(s => s.OrganizationId == orgId && saleIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.RecordedBy })
+                .ToDictionaryAsync(s => s.Id, s => s.RecordedBy, cancellationToken)
+                .ConfigureAwait(false);
 
         foreach (var c in credits)
 
         {
 
             var signed = c.Status == CreditEntryStatus.Active.ToString() ? c.Amount : 0m;
+            Guid? recordedBy = c.SourceSaleId is Guid saleId && saleRecordedBy.TryGetValue(saleId, out var actor)
+                ? actor
+                : null;
 
             entries.Add(new LedgerEntryDto(
 
@@ -192,7 +208,7 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
 
                 c.CreatedAtUtc,
 
-                null,
+                recordedBy,
 
                 c.ReversedAtUtc,
 

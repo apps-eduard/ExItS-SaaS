@@ -23,7 +23,9 @@ import {
   getPersonalSharedUtangPreference,
   listBorrowedRelationships,
   listLentRelationships,
+  updatePersonalContact,
   updatePersonalSharedUtangPreference,
+  type UpdatePersonalContactRequest,
   type UpdatePersonalSharedUtangPreferenceRequest,
 } from "@/api/platform/personal-utang-client";
 import type { CreatePersonalContactRequest } from "@/api/platform/personal-types";
@@ -100,6 +102,17 @@ export function useInvalidatePersonalPeople() {
 export function useResolvePublicUserMutation() {
   return useMutation({
     mutationFn: (value: string) => resolvePublicUserId(value.trim(), "utang-people"),
+  });
+}
+
+export function useUpdatePersonalContactMutation() {
+  const invalidate = useInvalidatePersonalPeople();
+  return useMutation({
+    mutationFn: (input: { contactId: string; body: UpdatePersonalContactRequest }) =>
+      updatePersonalContact(input.contactId, input.body),
+    onSuccess: async () => {
+      await invalidate();
+    },
   });
 }
 

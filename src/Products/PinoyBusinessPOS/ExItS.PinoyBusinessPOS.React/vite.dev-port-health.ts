@@ -20,6 +20,21 @@ export const DEV_PORT_TARGETS: readonly DevPortTarget[] = [
   { port: 15534, name: "POS DB" },
 ] as const;
 
+/** Fast local dev ports. Login on :5178 restarts these, not the public preview ports. */
+export const LOCAL_DEV_PORT_TARGETS: readonly DevPortTarget[] = [
+  { port: 5288, name: "Platform API" },
+  { port: 5290, name: "POS API" },
+  { port: 5178, name: "React POS" },
+  { port: 5195, name: "React Admin" },
+  { port: 8025, name: "Mailpit" },
+  { port: 15533, name: "Platform DB" },
+  { port: 15534, name: "POS DB" },
+] as const;
+
+export function resolveDevPortTargets(serverPort?: number): readonly DevPortTarget[] {
+  return serverPort === 5178 ? LOCAL_DEV_PORT_TARGETS : DEV_PORT_TARGETS;
+}
+
 export type DevPortHealthRow = DevPortTarget & {
   up: boolean;
 };
@@ -74,6 +89,9 @@ export function createDevPortHealthPlugin(): Plugin {
     name: "exits-dev-port-health",
     apply: "serve",
     configureServer(server) {
+      const targets = resolveDevPortTargets(
+        typeof server.config.server.port === "number" ? server.config.server.port : undefined,
+      );
       server.middlewares.use(async (request, response, next) => {
         const pathname = (request.url ?? "").split("?")[0] ?? "";
         if (pathname !== DEV_PORT_HEALTH_PATH) {
@@ -89,7 +107,7 @@ export function createDevPortHealthPlugin(): Plugin {
         }
 
         try {
-          const payload = await collectDevPortHealth();
+          const payload = await collectDevPortHealth(targets);
           response.statusCode = 200;
           response.setHeader("Content-Type", "application/json; charset=utf-8");
           response.setHeader("Cache-Control", "no-store");

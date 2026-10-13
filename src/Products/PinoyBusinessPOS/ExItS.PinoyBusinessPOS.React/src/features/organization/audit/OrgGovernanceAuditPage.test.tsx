@@ -101,8 +101,12 @@ describe("OrgGovernanceAuditPage", () => {
 
   it("renders audit rows for the bound organization only", async () => {
     renderPage(`/org/audit?organizationId=${OTHER_ORG}`);
-    expect(await screen.findByTestId("audit-row")).toHaveTextContent("Profile name changed");
-    expect(screen.getByTestId("audit-row")).toHaveTextContent("Organization profile updated");
+    const rows = await screen.findAllByTestId("audit-row");
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row).toHaveTextContent("Profile name changed");
+      expect(row).toHaveTextContent("Organization profile updated");
+    }
     await waitFor(() => expect(getOrganizationAudit).toHaveBeenCalled());
     expect(getOrganizationAudit.mock.calls[0]?.[0]).toBe(ORG_ID);
     expect(getOrganizationAudit.mock.calls[0]?.[0]).not.toBe(OTHER_ORG);
@@ -111,7 +115,7 @@ describe("OrgGovernanceAuditPage", () => {
   it("applies from, to, actor, action, outcome, and branch filters", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByTestId("audit-row");
+    await screen.findAllByTestId("audit-row");
     await user.type(screen.getByLabelText("From"), "2026-10-01");
     await user.type(screen.getByLabelText("To"), "2026-10-02");
     await user.type(screen.getByLabelText("Actor"), "olivia");
@@ -135,7 +139,7 @@ describe("OrgGovernanceAuditPage", () => {
     const user = userEvent.setup();
     getOrganizationAudit.mockResolvedValue(page([row()], 40));
     renderPage();
-    await screen.findByTestId("audit-row");
+    await screen.findAllByTestId("audit-row");
     await user.type(screen.getByLabelText("Actor"), "olivia");
     await user.click(screen.getByTestId("audit-apply"));
     await waitFor(() => expect(lastQuery().actor).toBe("olivia"));
@@ -179,6 +183,6 @@ describe("OrgGovernanceAuditPage", () => {
     renderPage();
     expect(await screen.findByTestId("audit-load-error")).toBeInTheDocument();
     await user.click(screen.getByTestId("audit-retry"));
-    expect(await screen.findByTestId("audit-row")).toBeInTheDocument();
+    expect((await screen.findAllByTestId("audit-row")).length).toBeGreaterThan(0);
   });
 });

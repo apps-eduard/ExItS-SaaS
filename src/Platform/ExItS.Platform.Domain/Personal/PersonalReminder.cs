@@ -15,6 +15,7 @@ public sealed class PersonalReminder
     public PersonalReminderId Id { get; }
     public PersonalDebtRelationshipId DebtRelationshipId { get; }
     public PlatformUserId CreatedByUserIdentityId { get; }
+    public PersonalReminderAudience? Audience { get; }
     public PersonalReminderScheduleType ScheduleType { get; }
     public string? Message { get; private set; }
     public DateTimeOffset ScheduledForUtc { get; private set; }
@@ -29,6 +30,7 @@ public sealed class PersonalReminder
         PersonalReminderId id,
         PersonalDebtRelationshipId debtRelationshipId,
         PlatformUserId createdByUserIdentityId,
+        PersonalReminderAudience? audience,
         PersonalReminderScheduleType scheduleType,
         string? message,
         DateTimeOffset scheduledForUtc,
@@ -42,6 +44,7 @@ public sealed class PersonalReminder
         Id = id;
         DebtRelationshipId = debtRelationshipId;
         CreatedByUserIdentityId = createdByUserIdentityId;
+        Audience = audience;
         ScheduleType = scheduleType;
         Message = message;
         ScheduledForUtc = scheduledForUtc;
@@ -60,6 +63,7 @@ public sealed class PersonalReminder
         DateTimeOffset scheduledForUtc,
         DateTimeOffset utcNow,
         string? message = null,
+        PersonalReminderAudience? audience = null,
         PersonalReminderId? id = null)
     {
         ArgumentNullException.ThrowIfNull(debtRelationshipId);
@@ -72,11 +76,17 @@ public sealed class PersonalReminder
             throw new DomainException(DomainErrorCodes.InvalidPersonalReminder, "Reminder schedule type is invalid.");
         }
 
+        if (audience is not null && !Enum.IsDefined(audience.Value))
+        {
+            throw new DomainException(DomainErrorCodes.InvalidPersonalReminder, "Reminder audience is invalid.");
+        }
+
         message = NormalizeMessage(message);
         return new PersonalReminder(
             id ?? PersonalReminderId.New(),
             debtRelationshipId,
             createdByUserIdentityId,
+            audience,
             scheduleType,
             message,
             scheduledForUtc,
@@ -100,11 +110,13 @@ public sealed class PersonalReminder
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? deliveredAtUtc,
-        int deliveryAttemptCount) =>
+        int deliveryAttemptCount,
+        PersonalReminderAudience? audience = null) =>
         new(
             id,
             debtRelationshipId,
             createdByUserIdentityId,
+            audience,
             scheduleType,
             message,
             scheduledForUtc,
@@ -208,6 +220,78 @@ public sealed class PersonalReminder
         }
 
         return "You have a Personal Utang reminder.";
+    }
+
+    /// <summary>
+    /// Self notifies only the person who scheduled the reminder.
+    /// Counterparty notifies only the other ExItS user on a shared ledger.
+    /// A missing audience keeps older reminders on that same counterparty-or-self rule.
+    /// </summary>
+    public static IReadOnlyList<PlatformUserId> ResolveRecipients(
+        PersonalReminderAudience? audience,
+        PlatformUserId createdByUserIdentityId,
+        PlatformUserId? creditorUserIdentityId,
+        PlatformUserId? debtorUserIdentityId)
+    {
+        ArgumentNullException.ThrowIfNull(createdByUserIdentityId);
+
+        if (audience == PersonalReminderAudience.Self)
+        {
+            return [createdByUserIdentityId];
+        }
+
+        var counterparty = CounterpartyUserIdentityId(
+            createdByUserIdentityId,
+            creditorUserIdentityId,
+            debtorUserIdentityId);
+
+        if (audience == PersonalReminderAudience.Counterparty)
+        {
+            if (counterparty is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPersonalReminder,
+                    "Remind them is only available when the other person has an ExItS account on a shared ledger.");
+            }
+
+            return [counterparty];
+        }
+
+        var recipients = new List<PlatformUserId>();
+        if (creditorUserIdentityId is not null && creditorUserIdentityId != createdByUserIdentityId)
+        {
+            recipients.Add(creditorUserIdentityId);
+        }
+
+        if (debtorUserIdentityId is not null && debtorUserIdentityId != createdByUserIdentityId)
+        {
+            recipients.Add(debtorUserIdentityId);
+        }
+
+        if (recipients.Count == 0)
+        {
+            recipients.Add(createdByUserIdentityId);
+        }
+
+        return recipients;
+    }
+
+    private static PlatformUserId? CounterpartyUserIdentityId(
+        PlatformUserId createdByUserIdentityId,
+        PlatformUserId? creditorUserIdentityId,
+        PlatformUserId? debtorUserIdentityId)
+    {
+        if (creditorUserIdentityId == createdByUserIdentityId)
+        {
+            return debtorUserIdentityId == createdByUserIdentityId ? null : debtorUserIdentityId;
+        }
+
+        if (debtorUserIdentityId == createdByUserIdentityId)
+        {
+            return creditorUserIdentityId == createdByUserIdentityId ? null : creditorUserIdentityId;
+        }
+
+        return null;
     }
 
     private static string? NormalizeMessage(string? message)

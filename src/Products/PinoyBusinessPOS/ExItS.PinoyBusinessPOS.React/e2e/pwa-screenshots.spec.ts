@@ -40,12 +40,7 @@ test.describe("PWA static shell evidence", () => {
       fullPage: true,
     });
 
-    await page.evaluate(() => window.dispatchEvent(new Event("exits-pos:pwa-need-refresh")));
-    await expect(page.getByRole("status")).toContainText("Update available");
-    await page.screenshot({
-      path: path.join(screenshotDir, "03-update-available-375x812.png"),
-      fullPage: true,
-    });
+    await expect(page.getByRole("button", { name: "Refresh" })).toHaveCount(0);
   });
 
   test("02 offline shell 375", async ({ page }) => {

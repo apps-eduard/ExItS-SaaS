@@ -46,8 +46,30 @@ if ! printf '%s' "$build_sha" | grep -Eq '^[A-Za-z0-9._-]+$'; then
   build_sha="unknown"
 fi
 
-printf 'window.__EXITS_PLATFORM_ADMIN_WEB__={app:"Platform Admin React",platformApiBaseUrl:"%s",platformApiSameOrigin:%s,localValidationToolsEnabled:%s,buildSha:"%s"};\n' \
-  "$url" "$same_origin" "$tools_enabled" "$build_sha" > /tmp/exits-platform-admin-web-config.js
+web_origin() {
+  value="${1:-}"
+  case "$value" in
+    http://*|https://*)
+      ;;
+    *)
+      printf ''
+      return
+      ;;
+  esac
+  case "$value" in
+    *['\"`$\;']*)
+      printf ''
+      return
+      ;;
+  esac
+  printf '%s' "${value%/}"
+}
+
+org_origin="$(web_origin "${ORGANIZATION_WEB_ORIGIN:-}")"
+personal_origin="$(web_origin "${PERSONAL_WEB_ORIGIN:-}")"
+
+printf 'window.__EXITS_PLATFORM_ADMIN_WEB__={app:"Platform Admin React",platformApiBaseUrl:"%s",platformApiSameOrigin:%s,localValidationToolsEnabled:%s,buildSha:"%s",organizationWebOrigin:"%s",personalWebOrigin:"%s"};\n' \
+  "$url" "$same_origin" "$tools_enabled" "$build_sha" "$org_origin" "$personal_origin" > /tmp/exits-platform-admin-web-config.js
 
 proxy_target="${PLATFORM_API_PROXY_TARGET:-}"
 if [ -n "$proxy_target" ]; then
@@ -67,7 +89,9 @@ if [ -n "$proxy_target" ]; then
   esac
   # /api/ for authenticated Platform calls; /health(+ /ready) for dashboard Platform readiness
   # (must not hit SPA index.html or this container's /nginx-health).
-  printf 'location /api/ {\n    proxy_pass %s;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n    proxy_set_header Cookie $http_cookie;\n    proxy_pass_header Set-Cookie;\n    client_max_body_size 10m;\n}\nlocation = /health {\n    proxy_pass %s;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n}\nlocation = /health/ready {\n    proxy_pass %s;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n}\n' "$proxy_target" "$proxy_target" "$proxy_target" > /tmp/exits-api-proxy.conf
+  # A literal proxy_pass host is resolved once at nginx start. Recreating platform-api
+  # then leaves Admin on a stale address, so /api answers 404 and the login page stays blank.
+  printf 'resolver 127.0.0.11 valid=10s ipv6=off;\nset $exits_platform_api_upstream %s;\nlocation /api/ {\n    proxy_pass $exits_platform_api_upstream;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n    proxy_set_header Cookie $http_cookie;\n    proxy_pass_header Set-Cookie;\n    client_max_body_size 10m;\n}\nlocation = /health {\n    proxy_pass $exits_platform_api_upstream;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n}\nlocation = /health/ready {\n    proxy_pass $exits_platform_api_upstream;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n}\n' "$proxy_target" > /tmp/exits-api-proxy.conf
 else
   printf '# no API reverse proxy\n' > /tmp/exits-api-proxy.conf
 fi

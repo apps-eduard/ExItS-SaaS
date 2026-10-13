@@ -15,6 +15,11 @@ internal sealed class EmptyPhilippineLocalityDirectory : IPhilippineLocalityDire
     public IReadOnlyList<PhilippineLocality> ListByRegionCode(string regionCode) =>
         Array.Empty<PhilippineLocality>();
 
+    public IReadOnlyList<PhilippineProvince> ListProvinces() => Array.Empty<PhilippineProvince>();
+
+    public IReadOnlyList<PhilippineLocality> ListByProvinceCode(string provinceCode) =>
+        Array.Empty<PhilippineLocality>();
+
     public PhilippineLocality? GetByPsgcCode(string psgcCode) => null;
 
     public bool Contains(string psgcCode) => false;

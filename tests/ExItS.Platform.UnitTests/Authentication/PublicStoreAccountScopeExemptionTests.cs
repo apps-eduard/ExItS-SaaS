@@ -27,6 +27,15 @@ public sealed class PublicStoreAccountScopeExemptionTests
         Assert.False(AccountScopeGuardMiddleware.IsPublicStoreDiscoveryPath(path));
     }
 
+    [Theory]
+    [InlineData("/api/v1/platform/webhooks/paymongo")]
+    [InlineData("/api/webhooks/paymongo")]
+    [InlineData("/API/V1/PLATFORM/WEBHOOKS/PAYMONGO")]
+    public void PayMongo_webhook_paths_are_exempt_from_account_scope(string path)
+    {
+        Assert.True(AccountScopeGuardMiddleware.IsPayMongoWebhookPath(path));
+    }
+
     [Fact]
     public void PUBSTORE_09_public_store_endpoints_keep_allow_anonymous_and_rate_limiting()
     {

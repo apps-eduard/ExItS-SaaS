@@ -79,7 +79,8 @@ public sealed record OrganizationBranchDto(
     Guid? AreaId = null,
     string? AreaName = null,
     /// <summary>Retail (default) or Warehouse.</summary>
-    string BranchType = nameof(OrganizationBranchType.Retail));
+    string BranchType = nameof(OrganizationBranchType.Retail),
+    IReadOnlyList<BranchOperatingHoursDayDto>? OperatingHours = null);
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
@@ -333,7 +334,14 @@ public sealed class ListBranches(
             var areaName = branch.AreaId is { } assignedAreaId
                 ? areaNames.GetValueOrDefault(assignedAreaId.Value)
                 : null;
-            result.Add(BranchMapper.ToDto(branch, policy, readiness, caps, branchAreas, areaName));
+            result.Add(BranchMapper.ToDto(
+                branch,
+                policy,
+                readiness,
+                caps,
+                branchAreas,
+                areaName,
+                schedule is null ? null : GetBranchOperatingHours.MapOperatingHours(schedule)));
         }
 
         return result;
@@ -1119,7 +1127,8 @@ internal static class BranchMapper
         BranchFulfillmentReadinessResult? readiness = null,
         BranchEntitlementCapabilities? entitlements = null,
         IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? activeDeliveryServiceAreas = null,
-        string? areaName = null) =>
+        string? areaName = null,
+        IReadOnlyList<BranchOperatingHoursDayDto>? operatingHours = null) =>
         new(
             x.Id.Value,
             x.OrganizationId.Value,
@@ -1172,7 +1181,8 @@ internal static class BranchMapper
             activeDeliveryServiceAreas,
             x.AreaId?.Value,
             areaName,
-            x.BranchType.ToString());
+            x.BranchType.ToString(),
+            operatingHours);
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

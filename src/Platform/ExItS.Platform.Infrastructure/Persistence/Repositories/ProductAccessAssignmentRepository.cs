@@ -42,6 +42,22 @@ internal sealed class ProductAccessAssignmentRepository : IProductAccessAssignme
         return record is null ? null : IdentityAccessEntityMapper.ToAssignmentDomain(record);
     }
 
+    public async Task<ProductAccessAssignment?> FindActiveByUserAndProductAsync(
+        PlatformUserId userId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(ProductAccessStatus.Active);
+        var record = await _db.ProductAccessAssignments.AsNoTracking()
+            .FirstOrDefaultAsync(
+                a => a.UserId == userId.Value
+                     && a.ProductCode == productCode.Value
+                     && a.Status == active,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : IdentityAccessEntityMapper.ToAssignmentDomain(record);
+    }
+
     public async Task<(IReadOnlyList<ProductAccessAssignment> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         ProductAccessStatus? status,

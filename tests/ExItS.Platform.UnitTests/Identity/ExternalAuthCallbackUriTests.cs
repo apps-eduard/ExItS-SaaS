@@ -27,6 +27,17 @@ public sealed class ExternalAuthCallbackUriTests
     }
 
     [Fact]
+    public void TryCreate_allows_loopback_http_for_local_dev()
+    {
+        var created = ExternalAuthCallbackUri.TryCreate("http://127.0.0.1:5178", out var redirectUri);
+
+        Assert.True(created);
+        Assert.Equal(
+            "http://127.0.0.1:5178/platform-api/api/v1/platform/auth/external/google/callback",
+            redirectUri);
+    }
+
+    [Fact]
     public void TryCreate_rejects_http_and_foreign_paths()
     {
         Assert.False(ExternalAuthCallbackUri.TryCreate("http://my.exitsapps.com", out _));
