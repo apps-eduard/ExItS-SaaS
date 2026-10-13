@@ -5,7 +5,6 @@ import {
   Coins,
   Inbox,
   LayoutDashboard,
-  Loader2,
   MoreHorizontal,
   PackageCheck,
   Receipt,
@@ -15,10 +14,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import {
-  getActionButtonStyle,
-  getActionIcon,
-} from "@/components/exits/action-semantics";
+import { getActionIcon } from "@/components/exits/action-semantics";
 import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -73,7 +69,6 @@ import { FilterChip } from "@/components/exits/FilterChip";
 import type { PosSaleDto } from "@/api/pos/pos-sales-client";
 import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
-import { UiStandardsDoDont } from "@/features/ui-standards/UiStandardsDoDont";
 import { UiStandardsButtonGallery } from "@/features/ui-standards/UiStandardsButtonGallery";
 import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -239,11 +234,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
     };
   }
 
-  const SaveIcon = getActionIcon("save");
   const CreateIcon = getActionIcon("create");
-  const AddIcon = getActionIcon("add");
   const EditIcon = getActionIcon("edit");
-  const ActivateIcon = getActionIcon("activate");
   const DeactivateIcon = getActionIcon("deactivate");
   const DeleteIcon = getActionIcon("delete");
   const RetryIcon = getActionIcon("retry");
@@ -353,6 +345,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("buttons") ? (
           <Card
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-button-playground"
+          >
+            <CardTitle>Button playground</CardTitle>
+            <UiStandardsButtonPlayground />
+          </Card>
+        ) : null}
+
+        {show("buttons") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
             data-testid="ui-standard-card-buttons"
           >
             <CardTitle>{t("uiStandards.buttonPilotTitle")}</CardTitle>
@@ -363,196 +365,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               {t("uiStandards.buttonPilotBadge")}
             </p>
             <UiStandardsButtonGallery />
-            <UiStandardsButtonPlayground />
-            <div className="flex flex-col gap-2">
-              <SectionLabel>Common actions</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" {...getActionButtonStyle("save")}>
-                  {SaveIcon ? <SaveIcon className="size-4" aria-hidden /> : null}
-                  Save
-                </Button>
-                <Button type="button" {...getActionButtonStyle("create")}>
-                  {CreateIcon ? (
-                    <CreateIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
-                  ) : null}
-                  Create
-                </Button>
-                <Button type="button" {...getActionButtonStyle("add")}>
-                  {AddIcon ? (
-                    <AddIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
-                  ) : null}
-                  Add
-                </Button>
-                <Button type="button" {...getActionButtonStyle("edit")}>
-                  {EditIcon ? <EditIcon className="size-4" aria-hidden /> : null}
-                  Edit
-                </Button>
-                <Button type="button" {...getActionButtonStyle("cancel")}>
-                  Cancel
-                </Button>
-                <Button type="button" {...getActionButtonStyle("activate")}>
-                  {ActivateIcon ? <ActivateIcon className="size-4" aria-hidden /> : null}
-                  Activate
-                </Button>
-                <Button type="button" {...getActionButtonStyle("deactivate")}>
-                  {DeactivateIcon ? <DeactivateIcon className="size-4" aria-hidden /> : null}
-                  Deactivate
-                </Button>
-                <Button type="button" {...getActionButtonStyle("delete")}>
-                  {DeleteIcon ? (
-                    <DeleteIcon className={`size-4 ${buttonIconMotion.delete}`} aria-hidden />
-                  ) : null}
-                  Delete
-                </Button>
-              </div>
-            </div>
-            <div
-              className="flex flex-col gap-2 border-t border-border pt-3"
-              data-testid="ui-standard-hierarchy-good"
-            >
-              <SectionLabel>One Primary per group</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" {...getActionButtonStyle("create")}>
-                  {CreateIcon ? (
-                    <CreateIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
-                  ) : null}
-                  Create customer
-                </Button>
-                <Button type="button" {...getActionButtonStyle("add", { isPrimaryInGroup: false })}>
-                  {AddIcon ? <AddIcon className="size-4" aria-hidden /> : null}
-                  Add existing
-                </Button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Intent / Tone (8 locked)</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["Primary", "primary"],
-                    ["Secondary", "neutral"],
-                    ["Success", "success"],
-                    ["Info", "info"],
-                    ["Warn", "warning"],
-                    ["Help", "help"],
-                    ["Danger", "danger"],
-                    ["Contrast", "contrast"],
-                  ] as const
-                ).map(([label, intent]) => (
-                  <Button
-                    key={intent}
-                    type="button"
-                    intent={intent}
-                    appearance="solid"
-                    emphasis="strong"
-                    data-testid={`ui-standard-intent-${intent}`}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Locked Diamond severities (strong solid). Secondary → intent=&quot;neutral&quot;. Help and
-                Contrast are first-class intents.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Appearance / Treatment</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["Solid", "solid"],
-                    ["Outline", "outline"],
-                    ["Ghost", "ghost"],
-                    ["Elevated", "elevated"],
-                    ["Gradient", "gradient"],
-                  ] as const
-                ).map(([label, appearance]) => (
-                  <Button
-                    key={appearance}
-                    type="button"
-                    intent="primary"
-                    appearance={appearance}
-                    data-testid={`ui-standard-appearance-${appearance}`}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Appearance = how it is drawn. All samples use Primary intent. Gradient is
-                brand-primary preferred.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Shape</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["Standard", "standard"],
-                    ["Soft", "soft"],
-                    ["Pill", "pill"],
-                  ] as const
-                ).map(([label, shape]) => (
-                  <Button
-                    key={shape}
-                    type="button"
-                    intent="primary"
-                    appearance="solid"
-                    shape={shape}
-                    data-testid={`ui-standard-shape-${shape}`}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["standard", "Save"],
-                    ["soft", "Create"],
-                    ["pill", "Add"],
-                  ] as const
-                ).map(([shape, label]) => (
-                  <Button
-                    key={`shape-icon-${shape}`}
-                    type="button"
-                    intent="primary"
-                    appearance="solid"
-                    shape={shape}
-                    data-testid={`ui-standard-shape-icon-${shape}`}
-                  >
-                    {CreateIcon ? (
-                      <CreateIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
-                    ) : null}
-                    {label}
-                  </Button>
-                ))}
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Shape = geometry. All samples use Primary + Solid. Default product controls use
-                Auto (follows Control Shape preference). Second row shows with-icon variety.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>States</SectionLabel>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" intent="primary" appearance="solid" disabled>
-                  {SaveIcon ? <SaveIcon className="size-4" aria-hidden /> : null}
-                  Save
-                </Button>
-                <Button type="button" intent="primary" appearance="solid" disabled aria-busy="true">
-                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
-                  Saving…
-                </Button>
-                <TableActionButton action="edit" label="Edit" testId="ui-standard-table-action-edit" />
-                <TableActionButton
-                  action="delete"
-                  label="Delete"
-                  testId="ui-standard-table-action-delete"
-                />
-              </div>
-            </div>
           </Card>
         ) : null}
 
@@ -2365,8 +2177,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             </div>
           </Card>
         ) : null}
-
-        {show("dodont") ? <UiStandardsDoDont /> : null}
       </div>
 
       <ConfirmActionDialog

@@ -10,7 +10,9 @@
 
 The shared ExItS `Button` component is the **canonical button implementation** for Pinoy Business POS React.
 
-Pages **MUST** reuse it.
+**Locked global command:** the Button playground on `/ui-standards` → **Buttons**. New buttons are requested with `ext btn`. That command is the ExItS Button standard to use.
+
+Pages **MUST** reuse the shared `Button`.
 
 Pages **MUST NOT** create local visual button systems when the shared `Button` can express the required action.
 
@@ -310,40 +312,42 @@ Buttons **MUST** inherit Preferences: theme, density, control shape, motion, pri
 
 ---
 
-## Cursor shorthand (locked)
+## Cursor command (locked global)
 
-Paste into Cursor tasks. Diamond **Text** = ExItS **Ghost**.
+The Button playground is the locked way to ask for an ExItS button. Copy the command from the playground. Standard values are omitted.
 
-### Base
+```
+ext btn [icon] [intent] [appearance] [shape] [density] [icon name] [ripple] [disabled]
+```
 
-`EXITS BUTTON`
+| Token | When it appears | Values |
+|-------|-----------------|--------|
+| `ext btn` | Always | Default button |
+| `icon` | Icon only is on | Icon-only control |
+| intent | Not Standard | `primary` `secondary` `success` `info` `amber` `danger` `warn` `help` `black` |
+| appearance | Not Standard | `outline` `raised` `ghost` `glossy` `gradient` `rounded` `flat` |
+| shape | Not Standard | `square` `soft` `pill` |
+| density | Not Standard | `tight` `compact` `comfort` `relaxed` |
+| icon name | Not None | `check` `plus` `star` `bookmark` `bell` `info` `heart` `trash` `alert` `moon` |
+| `ripple` | Ripple is on | Click ripple |
+| `disabled` | Disabled is on | Non-interactive |
 
-### Appearance
+Label text keeps the typed capitalization. `SAVE` stays `SAVE`. `save` stays `save`.
 
-`SOLID` · `OUTLINE` · `GHOST` · `ELEVATED` · `GRADIENT`
+| Command | Meaning |
+|---------|---------|
+| `ext btn` | Standard intent, appearance, shape, and density. No icon. Ripple off. |
+| `ext btn primary` | Primary intent |
+| `ext btn primary outline` | Primary + outline |
+| `ext btn primary ghost pill` | Primary + ghost + pill |
+| `ext btn icon` | Icon only, otherwise standard |
+| `ext btn icon ghost` | Icon only + ghost |
+| `ext btn compact star` | Compact density + star icon |
+| `ext btn primary ripple disabled` | Primary, ripple on, disabled |
 
-### Severity (intent)
+Do **not** use the retired `EXITS BUTTON + …` phrases for new work.
 
-`PRIMARY` · `SECONDARY` · `SUCCESS` · `INFO` · `WARN` · `HELP` · `DANGER` · `CONTRAST`
-
-Secondary → `intent="neutral"`. Warn → `intent="warning"`.
-
-### Shape / options
-
-`PILL` · `ROUND` · `ICON ONLY` · `GROUP` · `SPLIT` · `LOADING`
-
-### Examples
-
-| Phrase | Meaning |
-|--------|---------|
-| `EXITS BUTTON + GHOST + SUCCESS` | Ghost (Text) + Success |
-| `EXITS BUTTON + OUTLINE + DANGER` | Outline + Danger |
-| `EXITS BUTTON + SOLID + PRIMARY` | Default filled primary |
-| `EXITS BUTTON + ELEVATED + INFO` | Raised + Info |
-| `EXITS BUTTON + SOLID + PILL + WARN` | Rounded (pill) + Warn |
-| `EXITS BUTTON + GHOST + ROUND + ICON ONLY` | Rounded Text |
-
-UI Standards → Buttons gallery cards include copyable Cursor commands. Severity sections show one compose sample (`EXITS BUTTON + GHOST + PRIMARY`); swap PRIMARY for other severities.
+Map the command onto the shared `Button` (`intent`, `appearance`, `shape`, `size="icon"` for icon only). The playground on `/ui-standards` → Buttons is the visual reference. Do not mass-replace existing buttons.
 
 ---
 
@@ -351,14 +355,8 @@ UI Standards → Buttons gallery cards include copyable Cursor commands. Severit
 
 `/ui-standards` → **Buttons** shows:
 
-1. **Gallery** — locked Diamond Full sample + Cursor copy commands
-2. Common actions
-3. One Primary per group
-4. Intent / Tone (8 locked)
-5. Appearance / Treatment (all Primary)
-6. States
-
-Outline / Ghost / Elevated / Gradient appear only under Appearance — never under Intent.
+1. **Button playground** — locked global command and live preview
+2. **Button samples** — Quasar-style treatment samples
 
 ---
 

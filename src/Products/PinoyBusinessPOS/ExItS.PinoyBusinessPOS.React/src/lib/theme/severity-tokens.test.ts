@@ -134,19 +134,12 @@ describe("Diamond LIGHT severity tokens", () => {
     expect(readToken(light, "--exits-primary")).not.toBe(readToken(light, "--exits-severity-primary"));
   });
 
-  it("wires UI Standards gallery non-primary solids to severity CSS variables (Primary uses brand)", () => {
+  it("keeps the Buttons live samples off the removed Diamond gallery fills", () => {
+    expect(gallerySrc).not.toContain("ui-standard-btn-gallery-default");
     expect(gallerySrc).not.toContain("var(--exits-severity-primary)");
-    expect(gallerySrc).toContain("var(--exits-severity-secondary)");
-    expect(gallerySrc).toContain("var(--exits-severity-success)");
-    expect(gallerySrc).toContain("var(--exits-severity-info)");
-    expect(gallerySrc).toContain("var(--exits-severity-warn)");
-    expect(gallerySrc).toContain("var(--exits-severity-help)");
-    expect(gallerySrc).toContain("var(--exits-severity-danger)");
-    expect(gallerySrc).toContain("var(--exits-severity-contrast)");
-    expect(gallerySrc).toContain("var(--exits-severity-secondary-foreground)");
+    expect(gallerySrc).not.toContain("var(--exits-severity-secondary)");
     expect(gallerySrc).not.toMatch(/!bg-\[#34d399\]/);
     expect(gallerySrc).not.toMatch(/!bg-\[#4ade80\]/);
     expect(gallerySrc).not.toMatch(/!bg-\[#27272a\]/);
-    expect(gallerySrc).not.toMatch(/!bg-\[#ffffff\].*!text-\[#09090b\]/);
   });
 });

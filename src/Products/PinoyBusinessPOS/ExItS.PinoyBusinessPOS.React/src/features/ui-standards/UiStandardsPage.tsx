@@ -4,15 +4,12 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { SearchField } from "@/components/exits/SearchField";
 import { Button } from "@/components/ui/button";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
-import { UiStandardCatalogTable } from "@/features/ui-standards/UiStandardCatalogTable";
 import { UiStandardLiveSamples } from "@/features/ui-standards/UiStandardLiveSamples";
 import { UiStandardsPreferencePreview } from "@/features/ui-standards/UiStandardsPreferencePreview";
 import { useUiStandardsDisclosure } from "@/features/ui-standards/useUiStandardsDisclosure";
 import {
-  filterCatalogRows,
   filterLiveCards,
   parseUiStandardCategoryParam,
   UI_STANDARD_FILTER_OPTIONS,
@@ -20,13 +17,12 @@ import {
 } from "@/features/ui-standards/ui-standard-catalog";
 
 /**
- * Canonical ExItS UI Standard page — live samples + catalog + locked ExitsTable reference.
+ * Canonical ExItS UI Standard page — live samples and the locked ExitsTable reference.
  * Route: /ui-standards ( /ui-standard aliases here ).
  * Classic / Simple modes removed (TASK-66D).
  */
 export function UiStandardsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [category, setCategory] = useState<UiStandardFilterCategory>(() =>
     parseUiStandardCategoryParam(searchParams.get("category")),
   );
@@ -35,28 +31,24 @@ export function UiStandardsPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
-    setQuery(searchParams.get("q") ?? "");
     setCategory(parseUiStandardCategoryParam(searchParams.get("category")));
   }, [searchParams]);
 
   const syncParams = useCallback(
-    (next: { q?: string; category?: UiStandardFilterCategory }) => {
+    (next: { category?: UiStandardFilterCategory }) => {
       setSearchParams(
         (prev) => {
           const params = new URLSearchParams(prev);
-          const q = next.q !== undefined ? next.q : params.get("q") ?? "";
           const cat =
             next.category !== undefined
               ? next.category
               : parseUiStandardCategoryParam(params.get("category"));
 
-          if (q.trim()) params.set("q", q.trim());
-          else params.delete("q");
+          params.delete("q");
 
           if (cat !== "all") params.set("category", cat);
           else params.delete("category");
 
-          // Drop obsolete Classic/Simple view param if present.
           params.delete("view");
           return params;
         },
@@ -74,27 +66,14 @@ export function UiStandardsPage() {
     [syncParams],
   );
 
-  const setSearchQuery = useCallback(
-    (next: string) => {
-      setQuery(next);
-      syncParams({ q: next });
-    },
-    [syncParams],
-  );
-
   const clearFilters = useCallback(() => {
-    setQuery("");
     setCategory("all");
-    syncParams({ q: "", category: "all" });
+    syncParams({ category: "all" });
   }, [syncParams]);
 
   const visibleLiveCards = useMemo(
-    () => filterLiveCards(category, query),
-    [category, query],
-  );
-  const visibleCatalogRows = useMemo(
-    () => filterCatalogRows(category, query),
-    [category, query],
+    () => filterLiveCards(category, ""),
+    [category],
   );
 
   const visibleLiveIds = useMemo(
@@ -110,9 +89,8 @@ export function UiStandardsPage() {
   }, [category, setOpen]);
 
   const hasLive = visibleLiveCards.length > 0;
-  const hasCatalog = visibleCatalogRows.length > 0;
   const showExitsTableReference = category === "data";
-  const hasAnyResult = hasLive || hasCatalog || showExitsTableReference;
+  const hasAnyResult = hasLive || showExitsTableReference;
 
   useEffect(() => {
     const node = mainRef.current;
@@ -128,7 +106,7 @@ export function UiStandardsPage() {
       node.removeEventListener("scroll", update);
       observer?.disconnect();
     };
-  }, [category, query, hasAnyResult]);
+  }, [category, hasAnyResult]);
 
   const scrollMainToTop = useCallback(() => {
     const node = mainRef.current;
@@ -182,26 +160,12 @@ export function UiStandardsPage() {
         Changes to global components should be reflected here and throughout the application.
       </p>
 
-      <UiStandardsPreferencePreview />
-
-      <div
-        className="sticky top-0 z-20 -mx-1 flex flex-col gap-2 border-b border-border bg-[color-mix(in_srgb,var(--exits-bg)_92%,transparent)] px-1 py-2 backdrop-blur-md"
-        data-testid="ui-standards-filter-bar"
-      >
-        <SearchField
-          label="Search UI standards"
-          value={query}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onClear={() => setSearchQuery("")}
-          placeholder="Search UI standards..."
-          testId="ui-standards-search"
-        />
-      </div>
+      {category === "all" ? <UiStandardsPreferencePreview /> : null}
 
       {!hasAnyResult ? (
         <EmptyState
           title="No UI standards found"
-          detail="Try another search or filter."
+          detail="Try another filter."
           size="compact"
           testId="ui-standards-empty"
           action={
@@ -223,8 +187,6 @@ export function UiStandardsPage() {
               <UiStandardLiveSamples visibleCardIds={visibleLiveIds} />
             </section>
           ) : null}
-
-          {hasCatalog ? <UiStandardCatalogTable rows={visibleCatalogRows} /> : null}
 
           {showExitsTableReference ? (
             <section

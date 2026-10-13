@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { catalogs } from "@/i18n/messages";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
@@ -68,35 +68,48 @@ describe("UiStandardsPage", () => {
 
     expect(screen.getByTestId("ui-standards-page")).toBeInTheDocument();
     expect(screen.getByText("ExItS UI Standard")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-filter-bar")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standards-search")).not.toBeInTheDocument();
+    const samples = screen.getByTestId("ui-standard-cards");
+    const playgroundCard = within(samples).getByTestId("ui-standard-card-button-playground");
+    const buttonsCard = within(samples).getByTestId("ui-standard-card-buttons");
+    expect(playgroundCard.compareDocumentPosition(buttonsCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId("ui-standards-live-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-cards")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-button-playground")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-intent-primary")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-appearance-solid")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-card-button-playground")).getByText(
+        "Button playground",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-view-switcher")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-view-classic")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-view-simple")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-simple-catalog")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-sidenav")).toBeInTheDocument();
+    const sidenav = screen.getByTestId("ui-standards-sidenav");
+    expect(sidenav).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-category-filters")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-filter-all")).toHaveTextContent("Global preview");
+    expect(screen.getByTestId("ui-standards-filter-all")).toHaveAttribute("data-selected", "true");
+    expect(within(screen.getByTestId("ui-standards-main")).getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
+    expect(within(sidenav).queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-sticky-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-buttons-section")).not.toBeInTheDocument();
   });
 
-  it("keeps Intent separate from Appearance on the Buttons live card", () => {
+  it("keeps the Buttons live card on the Quasar samples", () => {
     renderPage();
     const buttons = screen.getByTestId("ui-standard-card-buttons");
-    expect(within(buttons).getByText("Intent / Tone (8 locked)")).toBeInTheDocument();
-    expect(within(buttons).getByText("Appearance / Treatment")).toBeInTheDocument();
-    expect(within(buttons).queryByTestId("ui-standard-intent-outline")).not.toBeInTheDocument();
-    expect(within(buttons).queryByTestId("ui-standard-intent-ghost")).not.toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-intent-help")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-intent-contrast")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-appearance-outline")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-appearance-ghost")).toBeInTheDocument();
-    expect(within(buttons).getByTestId("ui-standard-appearance-elevated")).toBeInTheDocument();
+    expect(within(buttons).getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
+    expect(within(buttons).queryByText("Common actions")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("One Primary per group")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("Intent / Tone (8 locked)")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("Appearance / Treatment")).not.toBeInTheDocument();
+    expect(within(buttons).queryByText("States")).not.toBeInTheDocument();
+    expect(within(buttons).queryByTestId("ui-standard-intent-primary")).not.toBeInTheDocument();
+    expect(within(buttons).queryByTestId("ui-standard-appearance-solid")).not.toBeInTheDocument();
   });
 
   it("renders Prime-style Button gallery sections mapped to ExItS axes", () => {
@@ -111,6 +124,12 @@ describe("UiStandardsPage", () => {
     expect(within(outline).getByText("Button outline")).toBeInTheDocument();
     expect(within(outline).getByRole("button", { name: "Primary" })).toHaveClass(
       "ui-standards-qbtn--outline",
+    );
+    expect(within(outline).getByRole("button", { name: "Standard" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(within(outline).getByRole("button", { name: "Black" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
     );
     expect(within(outline).getByRole("button", { name: "Success" })).toBeInTheDocument();
     expect(within(outline).getByRole("button", { name: "Info" })).toBeInTheDocument();
@@ -134,6 +153,15 @@ describe("UiStandardsPage", () => {
     expect(within(ghost).getByRole("button", { name: "Primary" })).toHaveClass(
       "ui-standards-qbtn--ghost",
     );
+    expect(within(ghost).getByRole("button", { name: "Standard" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(within(ghost).getByRole("button", { name: "Black" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(within(roundOutline).getByRole("button", { name: "Standard" })).not.toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
     const glossy = screen.getByTestId("ui-standard-btn-quasar-glossy");
     expect(within(glossy).getByText("Button glossy")).toBeInTheDocument();
     expect(within(glossy).getByRole("button", { name: "Warn" })).toHaveClass(
@@ -143,6 +171,28 @@ describe("UiStandardsPage", () => {
       screen.getByTestId("ui-standard-btn-quasar-raised").compareDocumentPosition(ghost),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(ghost.compareDocumentPosition(glossy)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const gradient = screen.getByTestId("ui-standard-btn-quasar-gradient");
+    expect(within(gradient).getByText("Button gradient")).toBeInTheDocument();
+    expect(within(gradient).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--gradient",
+    );
+    expect(within(gradient).getByRole("button", { name: "Primary" })).toHaveStyle({
+      backgroundColor: "#1976d2",
+    });
+    expect(within(gradient).getByRole("button", { name: "Secondary" })).toHaveStyle({
+      backgroundColor: "#26a69a",
+    });
+    expect(glossy.compareDocumentPosition(gradient)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const roundGhost = screen.getByTestId("ui-standard-btn-quasar-round-ghost");
+    expect(within(roundGhost).getByText("Rounded icon ghost")).toBeInTheDocument();
+    expect(within(roundGhost).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--icon",
+      "ui-standards-qbtn--ghost",
+    );
+    expect(within(roundGhost).getByRole("button", { name: "Standard" })).toHaveClass(
+      "ui-standards-qbtn--dark-ink",
+    );
+    expect(screen.queryByTestId("ui-standard-btn-quasar-rounded-ghost")).not.toBeInTheDocument();
     expect(within(screen.getByTestId("ui-standard-btn-quasar-rounded")).getByRole("button", {
       name: "Primary",
     })).toHaveClass("ui-standards-qbtn--rounded");
@@ -165,129 +215,132 @@ describe("UiStandardsPage", () => {
     expect(within(quasar).queryByRole("button", { name: "Purple" })).not.toBeInTheDocument();
     expect(within(quasar).getByRole("button", { name: "Help" })).toBeInTheDocument();
     expect(within(quasar).getByRole("button", { name: "Black" })).toBeInTheDocument();
-    expect(
-      quasar.compareDocumentPosition(screen.getByTestId("ui-standard-btn-gallery-default")),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(screen.getByTestId("ui-standard-btn-gallery-default")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-severities")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-text")).toBeInTheDocument();
-    expect(within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText("Text (Ghost)")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-text-compose-commands")).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText("EXITS BUTTON + GHOST"),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("ui-standard-btn-gallery-text")).getByText(
-        "EXITS BUTTON + GHOST + PRIMARY",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("ui-standard-btn-gallery-text")).queryByText(
-        "EXITS BUTTON + GHOST + SUCCESS",
-      ),
-    ).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-outlined")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-group")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-splitbutton")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-templating")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-icons")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-raised")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-icons")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-text")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-rounded-outlined")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-loading")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary")).toHaveAttribute(
-      "data-gallery-severity",
-      "primary",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-help")).toHaveAttribute(
-      "data-gallery-severity",
-      "help",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-warn")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary")).toHaveAttribute(
-      "data-gallery-severity",
-      "secondary",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-contrast")).toHaveAttribute(
-      "data-gallery-severity",
-      "contrast",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).not.toContain(
-      "exits-severity-btn",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).not.toContain(
-      "var(--exits-severity-primary)",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-primary").className).toContain(
-      "bg-primary",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary").className).toContain(
-      "var(--exits-severity-secondary)",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severity-secondary").className).toContain(
-      "exits-severity-btn",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-severities").textContent).not.toMatch(
-      /Primary · Secondary · Success/,
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-group-save")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-split-primary")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-template-primeng")).toHaveTextContent(
-      "PrimeNG",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-round-text-success")).toHaveAttribute(
-      "data-appearance",
-      "ghost",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-round-outlined-danger")).toHaveAttribute(
-      "data-appearance",
-      "outline",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-loading-plain")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-btn-gallery-raised-success")).toHaveAttribute(
-      "data-appearance",
-      "elevated",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-text-danger")).toHaveAttribute(
-      "data-appearance",
-      "ghost",
-    );
-    expect(screen.getByTestId("ui-standard-btn-gallery-outlined-info")).toHaveAttribute(
-      "data-appearance",
-      "outline",
-    );
+    expect(within(screen.getByTestId("ui-standard-card-buttons")).queryByText("Gallery — locked standard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-gallery-default")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-gallery-severities")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-gallery-loading")).not.toBeInTheDocument();
   });
 
-  it("updates Button playground preview and snippet from selected props", async () => {
+  it("updates Button playground preview from selected props", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.selectOptions(screen.getByTestId("ui-standard-btn-pg-intent"), "danger");
-    await user.selectOptions(screen.getByTestId("ui-standard-btn-pg-appearance"), "outline");
+    const playground = screen.getByTestId("ui-standard-card-button-playground");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn",
+    );
+    const intentSelect = screen.getByTestId("ui-standard-btn-pg-intent");
+    const intentOptions = within(intentSelect).getAllByRole("option").map((option) => option.textContent);
+    expect(intentOptions[0]).toBe("Standard");
+    expect(intentOptions.at(-1)).toBe("Black");
+    expect(intentOptions).toHaveLength(10);
+    const appearanceSelect = screen.getByTestId("ui-standard-btn-pg-appearance");
+    const appearanceOptions = within(appearanceSelect)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    expect(appearanceOptions[0]).toBe("Standard");
+    expect(appearanceOptions.at(-1)).toBe("Flat");
+    await user.selectOptions(intentSelect, "danger");
+    await user.selectOptions(appearanceSelect, "outline");
     const previewBtn = within(screen.getByTestId("ui-standard-btn-pg-preview")).getByRole("button");
-    expect(previewBtn).toHaveAttribute("data-intent", "danger");
-    expect(previewBtn).toHaveAttribute("data-appearance", "outline");
-    expect(previewBtn).toHaveTextContent("Save");
-    const snippet = screen.getByTestId("ui-standard-btn-pg-snippet");
-    expect(snippet).toHaveTextContent('intent="danger"');
-    expect(snippet).toHaveTextContent('appearance="outline"');
-    expect(snippet).toHaveTextContent('shape="auto"');
-  });
-
-  it("copies Button playground snippet via clipboard and toast", async () => {
-    const user = userEvent.setup();
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText },
-    });
-    renderPage();
-    await user.click(screen.getByTestId("ui-standard-btn-pg-copy"));
-    expect(writeText).toHaveBeenCalled();
-    expect(writeText.mock.calls[0][0]).toContain("<Button");
-    expect(writeText.mock.calls[0][0]).toContain('intent="primary"');
-    expect(await screen.findByText("Snippet copied")).toBeInTheDocument();
+    expect(previewBtn).toHaveClass("ui-standards-qbtn--outline");
+    expect(previewBtn).toHaveStyle({ color: "#ef4444" });
+    expect(previewBtn).toHaveTextContent("Standard");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline",
+    );
+    const shapeSelect = screen.getByTestId("ui-standard-btn-pg-shape");
+    expect(within(shapeSelect).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Square",
+      "Standard",
+      "Soft",
+      "Pill",
+    ]);
+    await user.selectOptions(shapeSelect, "square");
+    expect(previewBtn).toHaveAttribute("data-shape", "square");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline square",
+    );
+    expect(screen.queryByTestId("ui-standard-btn-pg-size")).not.toBeInTheDocument();
+    const density = screen.getByTestId("ui-standard-btn-pg-density");
+    expect(within(density).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Tight",
+      "Compact",
+      "Standard",
+      "Comfort",
+      "Relaxed",
+    ]);
+    await user.selectOptions(density, "tight");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "tight");
+    await user.selectOptions(density, "relaxed");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "relaxed");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline square relaxed",
+    );
+    const icon = screen.getByTestId("ui-standard-btn-pg-icon");
+    expect(within(icon).getAllByRole("option").map((option) => option.textContent)?.[0]).toBe("None");
+    expect(within(icon).getAllByRole("option")).toHaveLength(11);
+    await user.selectOptions(icon, "star");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview-icon")).toBeInTheDocument();
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn danger outline square relaxed star",
+    );
+    await user.selectOptions(icon, "none");
+    expect(screen.queryByTestId("ui-standard-btn-pg-preview-icon")).not.toBeInTheDocument();
+    expect(previewBtn).toHaveTextContent("Standard");
+    const labelInput = screen.getByTestId("ui-standard-btn-pg-label");
+    await user.clear(labelInput);
+    await user.type(labelInput, "SAVE");
+    expect(previewBtn).toHaveTextContent("SAVE");
+    await user.clear(labelInput);
+    await user.type(labelInput, "save");
+    expect(previewBtn).toHaveTextContent("save");
+    await user.click(screen.getByTestId("ui-standard-btn-pg-icon-only"));
+    expect(previewBtn).not.toHaveTextContent("Standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview-icon")).toBeInTheDocument();
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn icon danger outline square relaxed",
+    );
+    expect(screen.getByTestId("ui-standard-btn-pg-ripple")).toBeInTheDocument();
+    expect(previewBtn).toHaveAttribute("data-ripple", "no-ripple");
+    expect(screen.getByText("No ripple")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-btn-pg-ripple"));
+    expect(previewBtn).toHaveAttribute("data-ripple", "ripple");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn icon danger outline square relaxed ripple",
+    );
+    await user.click(previewBtn);
+    expect(screen.getByTestId("ui-standard-btn-pg-ripple-wave")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-btn-pg-disabled"));
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn icon danger outline square relaxed ripple disabled",
+    );
+    await user.click(screen.getByTestId("ui-standard-btn-quasar-standard-row-primary"));
+    expect(screen.getByTestId("ui-standard-qbtn-ripple-wave")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-btn-pg-reset"));
+    expect(screen.getByTestId("ui-standard-btn-pg-intent")).toHaveValue("standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-appearance")).toHaveValue("standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-shape")).toHaveValue("standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-density")).toHaveValue("balance");
+    expect(screen.getByTestId("ui-standard-btn-pg-icon")).toHaveValue("none");
+    expect(labelInput).toHaveValue("Standard");
+    expect(previewBtn).toHaveTextContent("Standard");
+    expect(previewBtn).toHaveAttribute("data-ripple", "no-ripple");
+    expect(previewBtn).toHaveAttribute("data-shape", "standard");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "balance");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext btn",
+    );
+    expect(screen.queryByTestId("ui-standard-btn-pg-preview-icon")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-btn-pg-copy")).not.toBeInTheDocument();
   });
 
   it("updates StatusChip playground and keeps fixed samples below", async () => {
@@ -317,7 +370,8 @@ describe("UiStandardsPage", () => {
     const user = userEvent.setup();
     renderPage();
     const preview = screen.getByTestId("ui-standards-preference-preview");
-    expect(within(preview).getByText("Global Preference Preview")).toBeInTheDocument();
+    expect(within(preview).getByText("Global preview")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-main")).toContainElement(preview);
     expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
     await user.click(within(screen.getByTestId("ui-standards-pref-control-shape")).getByRole("radio", {
       name: "Control Shape: Pill",
@@ -346,6 +400,10 @@ describe("UiStandardsPage", () => {
   it("toggles Global Preference Preview and offers back to top after scroll", async () => {
     const user = userEvent.setup();
     renderPage();
+    await user.click(screen.getByTestId("ui-standards-filter-buttons"));
+    expect(screen.queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-filter-all"));
+    expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
     await user.click(screen.getByTestId("ui-standards-preference-preview-toggle"));
     expect(screen.queryByTestId("ui-standards-preference-auto-samples")).not.toBeInTheDocument();
@@ -362,44 +420,22 @@ describe("UiStandardsPage", () => {
     );
   });
 
-  it("shows Do / Don’t guidance card", () => {
+  it("does not show the removed Do / Don’t card", () => {
     renderPage();
-    const card = screen.getByTestId("ui-standard-card-dodont");
-    expect(within(card).getByText("Do / Don’t")).toBeInTheDocument();
-    expect(within(card).getByText("Use one Primary action per action group.")).toBeInTheDocument();
-    expect(
-      within(card).getByText("Intent describes meaning. Appearance describes presentation."),
-    ).toBeInTheDocument();
-    expect(
-      within(card).getByText("Soft appearance and Soft shape are independent properties."),
-    ).toBeInTheDocument();
-    expect(within(card).getByText(/Desktop TABLE/)).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-dodont")).not.toBeInTheDocument();
+    expect(screen.queryByText("Standards catalog")).not.toBeInTheDocument();
   });
 
-  it("finds playground and Do/Don’t via search keywords", async () => {
-    const user = userEvent.setup();
+  it("keeps playground, status, and select samples without a page search", () => {
     renderPage();
-    const search = screen.getByTestId("ui-standards-search").querySelector("input");
-    expect(search).toBeTruthy();
-
-    await user.clear(search!);
-    await user.type(search!, "playground");
+    expect(screen.queryByTestId("ui-standards-search")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-status")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-selects")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-dodont")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
-
-    await user.clear(search!);
-    await user.type(search!, "primary");
-    expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
-
-    await user.clear(search!);
-    await user.type(search!, "auto");
     expect(screen.getByTestId("ui-standard-button-playground")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-status-playground")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
   });
 
   it("shows Soft Outline Solid appearances on the Status live card", () => {
@@ -487,11 +523,9 @@ describe("UiStandardsPage", () => {
     );
   });
 
-  it("shows accent and metric card color variations on the Cards live card", async () => {
-    const user = userEvent.setup();
-    renderPage();
+  it("shows accent and metric card color variations on the Cards live card", () => {
+    renderPage("/ui-standards?category=cards");
 
-    await user.click(screen.getByTestId("ui-standards-filter-cards"));
     const cards = screen.getByTestId("ui-standard-card-cards");
     expect(within(cards).getByTestId("ui-standard-card-accent-start-primary")).toHaveAttribute(
       "data-treatment",
@@ -508,9 +542,8 @@ describe("UiStandardsPage", () => {
 
   it("toggles selectable Cards selection on click", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("/ui-standards?category=cards");
 
-    await user.click(screen.getByTestId("ui-standards-filter-cards"));
     const main = screen.getByTestId("ui-standard-card-selectable-main");
     const iloilo = screen.getByTestId("ui-standard-card-selectable-iloilo");
     expect(main).toHaveAttribute("aria-checked", "true");
@@ -525,11 +558,9 @@ describe("UiStandardsPage", () => {
     expect(main).not.toHaveAttribute("data-selected");
   });
 
-  it("shows distinct treatment samples including Selected and Featured", async () => {
-    const user = userEvent.setup();
-    renderPage();
+  it("shows distinct treatment samples including Selected and Featured", () => {
+    renderPage("/ui-standards?category=cards");
 
-    await user.click(screen.getByTestId("ui-standards-filter-cards"));
     const treatments = screen.getByTestId("ui-standard-card-treatments");
     expect(within(treatments).getByTestId("ui-standard-card-treatment-surface")).toHaveAttribute(
       "data-treatment",
@@ -557,42 +588,35 @@ describe("UiStandardsPage", () => {
     );
   });
 
-  it("filters live cards and catalog rows by category + search", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByTestId("ui-standards-filter-overlays"));
+  it("filters live cards by category", () => {
+    renderPage("/ui-standards?category=overlays");
     expect(screen.getByTestId("ui-standard-card-drawer")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-modal")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-confirm")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-form-drawer")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-table")).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId("ui-standards-filter-selects"));
+    cleanup();
+    renderPage("/ui-standards?category=selects");
     expect(screen.getByTestId("ui-standard-card-selects")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-select-standard")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-select-multi")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-select-switch")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-forms")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-exits-select")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-row-exits-select")).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId("ui-standards-filter-all"));
-    const search = screen.getByTestId("ui-standards-search").querySelector("input");
-    expect(search).toBeTruthy();
-    await user.clear(search!);
-    await user.type(search!, "toast");
+    cleanup();
+    renderPage("/ui-standards?category=messages");
     expect(screen.getByTestId("ui-standard-card-messages")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-toasts")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-table")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-message-gallery")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-row-message-gallery")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-catalog-row-toast")).not.toBeInTheDocument();
   });
 
-  it("Navigation filter surfaces underline ExitsTabs and ModuleSubnav samples", async () => {
-    const user = userEvent.setup();
-    renderPage();
+  it("Navigation filter surfaces underline ExitsTabs and ModuleSubnav samples", () => {
+    renderPage("/ui-standards?category=navigation");
 
-    await user.click(screen.getByTestId("ui-standards-filter-navigation"));
     const nav = screen.getByTestId("ui-standard-card-nav");
     expect(nav).toBeInTheDocument();
     expect(within(nav).getByTestId("ui-standard-tabs-underline")).toBeInTheDocument();
@@ -607,9 +631,8 @@ describe("UiStandardsPage", () => {
 
   it("Data filter surfaces the locked ExitsTable reference demo", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("/ui-standards?category=data");
 
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
     expect(screen.getByTestId("ui-standards-data-exits-table")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tables-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-table")).toBeInTheDocument();
@@ -661,10 +684,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByRole("menuitem", { name: "SKU" })).toBeInTheDocument();
   });
 
-  it("Responsive Data View locks search, sort, export, page size, and category filter as default", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
+  it("Responsive Data View locks search, sort, export, page size, and category filter as default", () => {
+    renderPage("/ui-standards?category=data");
+
 
     const card = screen.getByTestId("ui-standard-card-table");
     expect(within(card).getByTestId("ui-standard-responsive-data-search")).toBeInTheDocument();
@@ -680,8 +702,7 @@ describe("UiStandardsPage", () => {
 
   it("switches Responsive Data View device preview between TABLE and LIST", async () => {
     const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
+    renderPage("/ui-standards?category=data");
 
     const card = screen.getByTestId("ui-standard-card-table");
     expect(within(card).getAllByText("Juan Dela Cruz").length).toBeGreaterThanOrEqual(1);
@@ -741,8 +762,7 @@ describe("UiStandardsPage", () => {
 
   it("switches Approved ExitsTable device preview (md 768: Desktop/Tablet TABLE, Mobile LIST)", async () => {
     const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByTestId("ui-standards-filter-data"));
+    renderPage("/ui-standards?category=data");
 
     expect(screen.getByTestId("ui-standards-table-mode")).toHaveTextContent(
       "Desktop · 1280px · TABLE",
@@ -806,13 +826,9 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-table-view-modal")).not.toBeInTheDocument();
   });
 
-  it("finds responsive data preview via desktop/tablet/mobile search", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    const search = screen.getByTestId("ui-standards-search").querySelector("input");
-    expect(search).toBeTruthy();
-    await user.clear(search!);
-    await user.type(search!, "mobile");
+  it("shows the responsive data preview on the Data category", () => {
+    renderPage("/ui-standards?category=data");
+    expect(screen.queryByTestId("ui-standards-search")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-table")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-responsive-data-preview")).toBeInTheDocument();
   });
@@ -826,10 +842,6 @@ describe("UiStandardsPage", () => {
 
   it("opens Forms filter with Form Controls and QuantityStepper variant card", () => {
     renderPage("/ui-standards?category=forms");
-    expect(screen.getByTestId("ui-standards-filter-forms")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
     expect(screen.getByTestId("ui-standard-card-forms")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-quantity-stepper")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-quantity-stepper")).toBeInTheDocument();
@@ -847,30 +859,24 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-qty-pill")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-quantity-stepper-legacy")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-qty-legacy")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-catalog-row-quantity-stepper")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-catalog-row-quantity-stepper")).not.toBeInTheDocument();
   });
 
   it("opens Buttons filter from category=buttons with full button gallery", () => {
     renderPage("/ui-standards?category=buttons");
-    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
+    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute("data-selected", "true");
+    expect(screen.queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-button-pilot-badge")).toHaveTextContent(
       "BUTTON STANDARD — APPROVED / LOCKED",
     );
     expect(screen.getByTestId("ui-standard-button-gallery")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-dodont")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-dodont")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-upload")).not.toBeInTheDocument();
   });
 
   it("opens Messages filter from category=messages with locked message gallery", () => {
     renderPage("/ui-standards?category=messages");
-    expect(screen.getByTestId("ui-standards-filter-messages")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
     expect(screen.getByTestId("ui-standard-card-messages")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-message-pilot-badge")).toHaveTextContent(
       "MESSAGE STANDARD — APPROVED / LOCKED",
@@ -909,10 +915,6 @@ describe("UiStandardsPage", () => {
 
   it("maps legacy category=actions to Buttons filter", () => {
     renderPage("/ui-standards?category=actions");
-    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
   });
 });

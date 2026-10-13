@@ -1,12 +1,20 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { StatusChip } from "@/components/exits/StatusChip";
 import type { StatusChipAppearance, StatusChipShape, StatusChipTone } from "@/components/exits/StatusChip";
 import {
-  Button,
-  type ButtonAppearance,
-  type ButtonIntentTone,
-} from "@/components/ui/button";
+  Bell,
+  Bookmark,
+  Check,
+  Heart,
+  Info,
+  Moon,
+  Plus,
+  Star,
+  Trash2,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { formatJsxProps } from "@/features/ui-standards/copyUiSnippet";
@@ -15,39 +23,74 @@ import {
   PlaygroundSection,
   UiStandardsSnippetBlock,
 } from "@/features/ui-standards/UiStandardsSnippetBlock";
+import { useQbtnRipple } from "@/features/ui-standards/UiStandardsQbtnRipple";
+import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
 
-const BUTTON_INTENTS: ReadonlyArray<{ label: string; value: ButtonIntentTone }> = [
-  { label: "Primary", value: "primary" },
-  { label: "Secondary", value: "neutral" },
-  { label: "Success", value: "success" },
-  { label: "Info", value: "info" },
-  { label: "Warn", value: "warning" },
-  { label: "Help", value: "help" },
-  { label: "Danger", value: "danger" },
-  { label: "Contrast", value: "contrast" },
-];
+const PLAYGROUND_INTENTS = [
+  { id: "standard", label: "Standard", bg: "#ffffff", fg: "#000000", border: true },
+  { id: "primary", label: "Primary", bg: "#1976d2", fg: "#ffffff" },
+  { id: "secondary", label: "Secondary", bg: "#26a69a", fg: "#ffffff" },
+  { id: "success", label: "Success", bg: "#22c55e", fg: "#ffffff" },
+  { id: "info", label: "Info", bg: "#0ea5e9", fg: "#ffffff" },
+  { id: "amber", label: "Amber", bg: "#ffc107", fg: "#000000" },
+  { id: "danger", label: "Danger", bg: "#ef4444", fg: "#ffffff" },
+  { id: "warn", label: "Warn", bg: "#ff5722", fg: "#ffffff" },
+  { id: "help", label: "Help", bg: "#a855f7", fg: "#ffffff" },
+  { id: "black", label: "Black", bg: "#000000", fg: "#ffffff" },
+] as const;
 
-const BUTTON_APPEARANCES: ReadonlyArray<{ label: string; value: ButtonAppearance }> = [
-  { label: "Solid", value: "solid" },
-  { label: "Outline", value: "outline" },
-  { label: "Ghost", value: "ghost" },
-  { label: "Elevated", value: "elevated" },
-  { label: "Gradient", value: "gradient" },
-];
+const PLAYGROUND_APPEARANCES = [
+  { id: "standard", label: "Standard" },
+  { id: "outline", label: "Outline" },
+  { id: "raised", label: "Raised" },
+  { id: "ghost", label: "Ghost" },
+  { id: "glossy", label: "Glossy" },
+  { id: "gradient", label: "Gradient" },
+  { id: "rounded", label: "Rounded" },
+  { id: "flat", label: "Flat" },
+] as const;
 
 const BUTTON_SHAPES = [
-  { label: "Auto", value: "auto" },
+  { label: "Square", value: "square" },
   { label: "Standard", value: "standard" },
   { label: "Soft", value: "soft" },
   { label: "Pill", value: "pill" },
-  { label: "Round", value: "round" },
 ] as const;
 
-const BUTTON_SIZES = [
-  { label: "Default", value: "default" },
-  { label: "Large", value: "large" },
-  { label: "Icon", value: "icon" },
+const BUTTON_DENSITIES = [
+  { label: "Tight", value: "tight" },
+  { label: "Compact", value: "compact" },
+  { label: "Standard", value: "balance" },
+  { label: "Comfort", value: "comfort" },
+  { label: "Relaxed", value: "relaxed" },
 ] as const;
+
+const BUTTON_PLAYGROUND_DEFAULTS = {
+  intent: "standard" as (typeof PLAYGROUND_INTENTS)[number]["id"],
+  appearance: "standard" as (typeof PLAYGROUND_APPEARANCES)[number]["id"],
+  shape: "standard" as (typeof BUTTON_SHAPES)[number]["value"],
+  density: "balance" as (typeof BUTTON_DENSITIES)[number]["value"],
+  iconId: "none",
+  iconOnly: false,
+  ripple: false,
+  disabled: false,
+  loading: false,
+  label: "Standard",
+};
+
+const BUTTON_ICONS: ReadonlyArray<{ id: string; label: string; Icon: LucideIcon | null }> = [
+  { id: "none", label: "None", Icon: null },
+  { id: "check", label: "Check", Icon: Check },
+  { id: "plus", label: "Plus", Icon: Plus },
+  { id: "star", label: "Star", Icon: Star },
+  { id: "bookmark", label: "Bookmark", Icon: Bookmark },
+  { id: "bell", label: "Bell", Icon: Bell },
+  { id: "info", label: "Info", Icon: Info },
+  { id: "heart", label: "Heart", Icon: Heart },
+  { id: "trash", label: "Trash", Icon: Trash2 },
+  { id: "alert", label: "Alert", Icon: TriangleAlert },
+  { id: "moon", label: "Moon", Icon: Moon },
+];
 
 const STATUS_TONES: ReadonlyArray<{ label: string; value: StatusChipTone }> = [
   { label: "Primary", value: "primary" },
@@ -75,6 +118,28 @@ const STATUS_SHAPES: ReadonlyArray<{ label: string; value: StatusChipShape }> = 
   { label: "Pill", value: "pill" },
   { label: "Square", value: "square" },
 ];
+
+function buttonCursorCommand(
+  intent: string,
+  appearance: string,
+  shape: string,
+  density: string,
+  iconId: string,
+  iconOnly: boolean,
+  ripple: boolean,
+  disabled: boolean,
+): string {
+  const parts = ["ext btn"];
+  if (iconOnly) parts.push("icon");
+  if (intent !== "standard") parts.push(intent);
+  if (appearance !== "standard") parts.push(appearance);
+  if (shape !== "standard") parts.push(shape);
+  if (density !== "balance") parts.push(density);
+  if (iconId !== "none") parts.push(iconId);
+  if (ripple) parts.push("ripple");
+  if (disabled) parts.push("disabled");
+  return parts.join(" ");
+}
 
 function CompactSelect<T extends string>({
   label,
@@ -110,44 +175,79 @@ function CompactSelect<T extends string>({
 }
 
 export function UiStandardsButtonPlayground() {
-  const [intent, setIntent] = useState<ButtonIntentTone>("primary");
-  const [appearance, setAppearance] = useState<ButtonAppearance>("solid");
-  const [shape, setShape] = useState<(typeof BUTTON_SHAPES)[number]["value"]>("auto");
-  const [size, setSize] = useState<(typeof BUTTON_SIZES)[number]["value"]>("default");
-  const [disabled, setDisabled] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [label, setLabel] = useState("Save");
+  const [intent, setIntent] = useState(BUTTON_PLAYGROUND_DEFAULTS.intent);
+  const [appearance, setAppearance] = useState(BUTTON_PLAYGROUND_DEFAULTS.appearance);
+  const [shape, setShape] = useState(BUTTON_PLAYGROUND_DEFAULTS.shape);
+  const [density, setDensity] = useState(BUTTON_PLAYGROUND_DEFAULTS.density);
+  const [iconId, setIconId] = useState(BUTTON_PLAYGROUND_DEFAULTS.iconId);
+  const [iconOnly, setIconOnly] = useState(BUTTON_PLAYGROUND_DEFAULTS.iconOnly);
+  const [ripple, setRipple] = useState(BUTTON_PLAYGROUND_DEFAULTS.ripple);
+  const [disabled, setDisabled] = useState(BUTTON_PLAYGROUND_DEFAULTS.disabled);
+  const [loading, setLoading] = useState(BUTTON_PLAYGROUND_DEFAULTS.loading);
+  const [label, setLabel] = useState(BUTTON_PLAYGROUND_DEFAULTS.label);
+  const chosenIcon = BUTTON_ICONS.find((icon) => icon.id === iconId)?.Icon ?? null;
+  const PreviewIcon = iconId === "none" ? (iconOnly ? Heart : null) : chosenIcon;
+  const sample = PLAYGROUND_INTENTS.find((item) => item.id === intent) ?? PLAYGROUND_INTENTS[1];
+  const accent = sample.bg.toLowerCase() === "#ffffff" ? "#000000" : sample.bg;
+  const transparent = appearance === "outline" || appearance === "ghost";
+  const darkInk = (sample.id === "standard" || sample.id === "black") && transparent;
+  const previewStyle: CSSProperties & { "--qbtn-bg"?: string } = transparent
+    ? {
+        color: accent,
+        borderColor: appearance === "outline" ? accent : "transparent",
+        backgroundColor: "transparent",
+      }
+    : { backgroundColor: sample.bg, color: sample.fg };
+  if (appearance === "gradient" && !transparent) previewStyle["--qbtn-bg"] = sample.bg;
+  const previewClass = [
+    "ui-standards-qbtn",
+    "ui-standards-qbtn--playground",
+    appearance === "outline" ? "ui-standards-qbtn--outline" : "",
+    appearance === "ghost" ? "ui-standards-qbtn--ghost" : "",
+    appearance === "raised" ? "ui-standards-qbtn--raised" : "",
+    appearance === "glossy" ? "ui-standards-qbtn--glossy" : "",
+    appearance === "gradient" ? "ui-standards-qbtn--gradient" : "",
+    appearance === "flat" ? "ui-standards-qbtn--flat" : "",
+    darkInk ? "ui-standards-qbtn--dark-ink" : "",
+    iconOnly ? "ui-standards-qbtn--icon-only" : "",
+    ripple ? "ui-standards-qbtn--ripple" : "",
+    !transparent && "border" in sample && sample.border ? "ui-standards-qbtn--border" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-  const snippet = useMemo(() => {
-    const props = formatJsxProps({
-      type: "button",
-      intent,
-      appearance,
-      shape,
-      size: size === "default" ? undefined : size,
-      disabled: disabled || undefined,
-      "aria-busy": loading || undefined,
-    });
-    const children =
-      size === "icon" ? `{/* icon */}` : label.trim() || "Save";
-    return `<Button\n${props}\n>\n  ${children}\n</Button>`;
-  }, [intent, appearance, shape, size, disabled, loading, label]);
+  const { showRipple, layer: rippleLayer } = useQbtnRipple(
+    ripple && !disabled && !loading,
+    "ui-standard-btn-pg-ripple-wave",
+  );
+
+  function resetPreview() {
+    setIntent(BUTTON_PLAYGROUND_DEFAULTS.intent);
+    setAppearance(BUTTON_PLAYGROUND_DEFAULTS.appearance);
+    setShape(BUTTON_PLAYGROUND_DEFAULTS.shape);
+    setDensity(BUTTON_PLAYGROUND_DEFAULTS.density);
+    setIconId(BUTTON_PLAYGROUND_DEFAULTS.iconId);
+    setIconOnly(BUTTON_PLAYGROUND_DEFAULTS.iconOnly);
+    setRipple(BUTTON_PLAYGROUND_DEFAULTS.ripple);
+    setDisabled(BUTTON_PLAYGROUND_DEFAULTS.disabled);
+    setLoading(BUTTON_PLAYGROUND_DEFAULTS.loading);
+    setLabel(BUTTON_PLAYGROUND_DEFAULTS.label);
+  }
 
   return (
-    <PlaygroundSection testId="ui-standard-button-playground">
-      <PlaygroundLabel>Playground</PlaygroundLabel>
+    <PlaygroundSection testId="ui-standard-button-playground" className="">
       <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <CompactSelect
           label="Intent"
           value={intent}
-          options={BUTTON_INTENTS}
+          options={PLAYGROUND_INTENTS.map((item) => ({ label: item.label, value: item.id }))}
           onChange={setIntent}
           testId="ui-standard-btn-pg-intent"
         />
         <CompactSelect
           label="Appearance"
           value={appearance}
-          options={BUTTON_APPEARANCES}
+          options={PLAYGROUND_APPEARANCES.map((item) => ({ label: item.label, value: item.id }))}
           onChange={setAppearance}
           testId="ui-standard-btn-pg-appearance"
         />
@@ -159,24 +259,31 @@ export function UiStandardsButtonPlayground() {
           testId="ui-standard-btn-pg-shape"
         />
         <CompactSelect
-          label="Size"
-          value={size}
-          options={[...BUTTON_SIZES]}
-          onChange={setSize}
-          testId="ui-standard-btn-pg-size"
+          label="Icon"
+          value={iconId}
+          options={BUTTON_ICONS.map((icon) => ({ label: icon.label, value: icon.id }))}
+          onChange={setIconId}
+          testId="ui-standard-btn-pg-icon"
         />
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)] sm:col-span-2">
+        <CompactSelect
+          label="Density"
+          value={density}
+          options={[...BUTTON_DENSITIES]}
+          onChange={setDensity}
+          testId="ui-standard-btn-pg-density"
+        />
+        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
           <span className="text-muted">Label</span>
           <Input
             name="ui-std-btn-label"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            disabled={size === "icon"}
             data-testid="ui-standard-btn-pg-label"
             aria-label="Button label"
           />
         </label>
-        <div className="flex flex-wrap items-center gap-4">
+      </div>
+      <div className="col-span-full flex flex-row flex-nowrap items-center gap-6">
           <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
             <Switch
               checked={disabled}
@@ -195,24 +302,61 @@ export function UiStandardsButtonPlayground() {
             />
             Loading
           </label>
+          <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+            <Switch
+              checked={iconOnly}
+              onCheckedChange={setIconOnly}
+              aria-label="Icon only"
+              data-testid="ui-standard-btn-pg-icon-only"
+            />
+            Icon only
+          </label>
+          <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+            <Switch
+              checked={ripple}
+              onCheckedChange={setRipple}
+              aria-label="Ripple"
+              data-testid="ui-standard-btn-pg-ripple"
+            />
+            {ripple ? "Ripple" : "No ripple"}
+          </label>
         </div>
-      </div>
       <PlaygroundLabel>Preview</PlaygroundLabel>
-      <div data-testid="ui-standard-btn-pg-preview">
-        <Button
+      <div className="flex flex-wrap items-center gap-3">
+      <div className="ui-standards-btn-pg-preview" data-testid="ui-standard-btn-pg-preview" data-density={density}>
+        <button
           type="button"
-          intent={intent}
-          appearance={appearance}
-          shape={shape}
-          size={size}
+          className={previewClass}
+          data-shape={shape}
+          style={{ ...previewStyle, textTransform: "none" }}
           disabled={disabled || loading}
           aria-busy={loading || undefined}
+          aria-label={iconOnly ? label.trim() || "Standard" : undefined}
+          data-ripple={ripple ? "ripple" : "no-ripple"}
+          onClick={showRipple}
         >
-          {size === "icon" ? "✓" : label.trim() || "Save"}
-        </Button>
+          <span className="ui-standards-qbtn-ripple-content">
+            {PreviewIcon ? (
+              <PreviewIcon className="size-4" aria-hidden data-testid="ui-standard-btn-pg-preview-icon" />
+            ) : null}
+            {iconOnly ? null : label.trim() || "Standard"}
+          </span>
+          {rippleLayer}
+        </button>
       </div>
-      <PlaygroundLabel>Code</PlaygroundLabel>
-      <UiStandardsSnippetBlock snippet={snippet} testIdPrefix="ui-standard-btn-pg" />
+      <button
+        type="button"
+        className="inline-flex h-9 items-center rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-[length:var(--exits-text-sm)]"
+        data-testid="ui-standard-btn-pg-reset"
+        onClick={resetPreview}
+      >
+        Reset
+      </button>
+      </div>
+      <UiStandardsCopyCommand
+        standard="Button"
+        command={buttonCursorCommand(intent, appearance, shape, density, iconId, iconOnly, ripple, disabled)}
+      />
     </PlaygroundSection>
   );
 }

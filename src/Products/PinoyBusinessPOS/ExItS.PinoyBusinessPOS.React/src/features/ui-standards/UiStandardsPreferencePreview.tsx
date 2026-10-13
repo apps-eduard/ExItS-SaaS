@@ -30,7 +30,7 @@ export function UiStandardsPreferencePreview() {
 
   return (
     <section
-      className="flex min-w-0 flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
+      className="ui-standards-preference-preview flex min-w-0 flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
       data-testid="ui-standards-preference-preview"
     >
       <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
@@ -42,7 +42,7 @@ export function UiStandardsPreferencePreview() {
           data-testid="ui-standards-preference-preview-toggle"
           onClick={() => setOpen((current) => !current)}
         >
-          <span>Global Preference Preview</span>
+          <span>Global preview</span>
           <ChevronDown className="ui-standards-preview-toggle__chevron size-4 shrink-0" aria-hidden />
         </button>
       </h2>

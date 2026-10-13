@@ -93,7 +93,7 @@ export const en = {
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
   "uiStandards.buttonPilotBadge": "BUTTON STANDARD — APPROVED / LOCKED",
   "uiStandards.buttonPilotLede":
-    "Diamond Full sample is the locked ExItS Button standard. All 8 severities locked (Primary · Secondary · Success · Info · Warn · Help · Danger · Contrast). Shared Button; Help/Contrast are first-class intents. See Docs/UI/exits-button-standard.md.",
+    "The Button playground is the locked ExItS Button standard. Request buttons with the Cursor command ext btn. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
   "uiStandards.messagePilotBadge": "MESSAGE STANDARD — APPROVED / LOCKED",
   "uiStandards.messagePilotLede":

@@ -33,7 +33,7 @@ export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
   id: UiStandardFilterCategory;
   label: string;
 }> = [
-  { id: "all", label: "All" },
+  { id: "all", label: "Global preview" },
   { id: "buttons", label: "Buttons" },
   { id: "messages", label: "Messages" },
   { id: "feedback", label: "Feedback" },
@@ -381,7 +381,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     category: "buttons",
     status: "Locked",
     summary:
-      "Diamond Full sample; 8 locked severities (incl. Help + Contrast); intent + appearance",
+      "Locked global ExItS Button standard. Cursor command ext btn from the Button playground.",
     keywords: [
       "button",
       "primary",
