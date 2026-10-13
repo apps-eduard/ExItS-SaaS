@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, BellPlus, BellRing, Check, CheckCheck, ChevronDown, ChevronRight, Send, Store, UserRoundCheck, Users, X } from "lucide-react";
+import { Ban, BellPlus, BellRing, Check, CheckCheck, ChevronRight, Send, Store, UserRoundCheck, Users, X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
   acceptPersonalUtangInvitationById,
   cancelPersonalReminder,
-  createPersonalUtangInvitation,
   createRelationshipReminder,
   declinePersonalUtangInvitation,
   declinePersonalUtangInvitationById,
@@ -619,40 +618,30 @@ export { PersonalMyQrPage } from "@/features/personal/social/PersonalMyQrPage";
 
 export function RelationshipInviteReminderPanel({
   relationshipId,
-  inviteeContactId,
+  counterpartyName,
+  canRemindThem,
 }: {
   relationshipId: string;
-  inviteeContactId: string | null;
+  counterpartyName: string;
+  canRemindThem: boolean;
 }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const [panelOpen, setPanelOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scheduledFor, setScheduledFor] = useState("");
   const remindersQuery = useQuery({
     queryKey: ["personal", "utang", "reminders", relationshipId],
     queryFn: ({ signal }) => listRelationshipReminders(relationshipId, signal),
   });
-
-  const invite = useMutation({
-    mutationFn: () => {
-      if (!inviteeContactId) throw new Error("no contact");
-      return createPersonalUtangInvitation(relationshipId, inviteeContactId);
-    },
-    onSuccess: async () => {
-      setError(null);
-      await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] });
-    },
-    onError: (err) =>
-      setError(err instanceof PlatformApiError ? err.message : t("personal.social.inviteFailed")),
-  });
+  const remindNameLabel = t("personal.social.remindName").replace("{name}", counterpartyName);
 
   const createReminder = useMutation({
-    mutationFn: () =>
+    mutationFn: (audience: "Self" | "Counterparty") =>
       createRelationshipReminder(relationshipId, {
         scheduleType: "OneTime",
         scheduledForUtc: new Date(scheduledFor).toISOString(),
         message: null,
+        audience,
       }),
     onSuccess: async () => {
       setScheduledFor("");
@@ -693,40 +682,11 @@ export function RelationshipInviteReminderPanel({
 
   return (
     <section className="catalog-form-section exits-animate-panel personal-section utang-invite-card flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
-      <button
-        type="button"
-        className="flex w-full min-w-0 items-center justify-between gap-2 border-0 bg-transparent p-0 text-left text-inherit"
-        aria-expanded={panelOpen}
-        aria-controls="utang-invite-reminder-body"
-        data-testid="utang-invite-reminder-toggle"
-        onClick={() => setPanelOpen((open) => !open)}
-      >
-        <span className="catalog-form-section__title m-0 flex min-w-0 items-center gap-2">
-          <BellRing className="size-4 shrink-0" aria-hidden="true" />
-          {t("personal.social.inviteAndRemind")}
-        </span>
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-            panelOpen && "rotate-180",
-          )}
-          aria-hidden="true"
-        />
-      </button>
-
-      {panelOpen ? (
-        <div id="utang-invite-reminder-body" className="flex flex-col gap-3">
-          {inviteeContactId ? (
-            <Button
-              type="button"
-              className="w-fit"
-              disabled={invite.isPending}
-              onClick={() => invite.mutate()}
-              data-testid="utang-invite-create"
-            >
-              {t("personal.social.inviteToExits")}
-            </Button>
-          ) : null}
+      <h2 className="catalog-form-section__title m-0 flex min-w-0 items-center gap-2">
+        <BellRing className="size-4 shrink-0" aria-hidden="true" />
+        {t("personal.social.inviteAndRemind")}
+      </h2>
+      <div id="utang-invite-reminder-body" className="flex flex-col gap-3">
           <form
             className="flex flex-col gap-2"
             onSubmit={(event) => {
@@ -735,7 +695,7 @@ export function RelationshipInviteReminderPanel({
                 setError(t("personal.social.reminderDateRequired"));
                 return;
               }
-              createReminder.mutate();
+              createReminder.mutate("Self");
             }}
           >
             <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
@@ -771,13 +731,37 @@ export function RelationshipInviteReminderPanel({
                 </Button>
               </div>
             </div>
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-              {t("personal.social.reminderServerHint")}
-            </p>
-            <Button type="submit" className="w-auto self-start" disabled={createReminder.isPending}>
-              <BellPlus className="size-4 shrink-0" aria-hidden="true" />
-              {t("personal.social.addReminder")}
-            </Button>
+            {canRemindThem ? null : (
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("personal.social.reminderHintMe")}
+              </p>
+            )}
+            <div className="flex min-w-0 flex-wrap gap-2">
+              <Button type="submit" className="w-auto" disabled={createReminder.isPending}>
+                <BellPlus className="size-4 shrink-0" aria-hidden="true" />
+                {t("personal.social.addReminder")}
+              </Button>
+              {canRemindThem ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-auto"
+                  disabled={createReminder.isPending}
+                  data-testid="utang-reminder-them"
+                  onClick={() => {
+                    if (!scheduledFor) {
+                      setError(t("personal.social.reminderDateRequired"));
+                      return;
+                    }
+                    setError(null);
+                    createReminder.mutate("Counterparty");
+                  }}
+                >
+                  <BellRing className="size-4 shrink-0" aria-hidden="true" />
+                  {remindNameLabel}
+                </Button>
+              ) : null}
+            </div>
           </form>
           {error ? (
             <p
@@ -794,7 +778,11 @@ export function RelationshipInviteReminderPanel({
                   <div className="exits-list__card flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="exits-list__name m-0 text-[length:var(--exits-text-sm)]">
-                        {reminder.scheduleType}
+                        {reminder.audience === "Counterparty"
+                          ? remindNameLabel
+                          : reminder.audience === "Self"
+                            ? t("personal.social.remindMe")
+                            : reminder.scheduleType}
                       </p>
                       <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                         {new Date(reminder.scheduledForUtc).toLocaleString()} · {reminder.status}
@@ -814,8 +802,7 @@ export function RelationshipInviteReminderPanel({
               ))}
             </ul>
           ) : null}
-        </div>
-      ) : null}
+      </div>
     </section>
   );
 }

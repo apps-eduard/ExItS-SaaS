@@ -177,7 +177,8 @@ internal sealed class PosCustomerOrderBranchDirectory(
                             "NCR")
                     ],
                     PickupReady: true,
-                    DeliveryReady: true)
+                    DeliveryReady: true,
+                    TimeZoneId: "Asia/Manila")
             ];
         }
 
@@ -343,6 +344,15 @@ internal sealed class PosCustomerOrderBranchDirectory(
             branch.IsPrimary,
             areas,
             branch.PickupReady,
-            branch.DeliveryReady);
+            branch.DeliveryReady,
+            branch.TimeZoneId,
+            branch.OperatingHours?
+                .Select(day => new CustomerOrderBranchHoursDaySnapshot(
+                    day.DayOfWeek,
+                    day.IsClosed,
+                    day.IsOpen24Hours,
+                    day.OpenTime,
+                    day.CloseTime))
+                .ToList());
     }
 }

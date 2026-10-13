@@ -66,7 +66,7 @@ internal static class Program
             localValidation = true,
         }));
 
-        app.MapGet("/health/services", async (CancellationToken ct) =>
+        app.MapGet("/health/services", async (HttpRequest request, CancellationToken ct) =>
         {
             if (!TryEnterIdleRead(out var busy))
             {
@@ -82,7 +82,7 @@ internal static class Program
 
             try
             {
-                var payload = await InvokeControlAsync(controlScript, ["-Action", "Status"], ct)
+                var payload = await InvokeControlAsync(controlScript, WithProfile(request, ["-Action", "Status"]), ct)
                     .ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(payload.StdOut);
                 var root = doc.RootElement.Clone();
@@ -101,7 +101,7 @@ internal static class Program
             }
         });
 
-        app.MapPost("/services/{serviceKey}/restart", async (string serviceKey, CancellationToken ct) =>
+        app.MapPost("/services/{serviceKey}/restart", async (HttpRequest request, string serviceKey, CancellationToken ct) =>
         {
             if (!SupervisorGuards.IsRestartableServiceKey(serviceKey))
             {
@@ -122,7 +122,7 @@ internal static class Program
                 SetProgress($"Restarting {serviceKey}...");
                 var payload = await InvokeControlAsync(
                         controlScript,
-                        ["-Action", "Restart", "-ServiceKey", serviceKey],
+                        WithProfile(request, ["-Action", "Restart", "-ServiceKey", serviceKey]),
                         ct)
                     .ConfigureAwait(false);
                 if (payload.ExitCode != 0)
@@ -146,7 +146,7 @@ internal static class Program
             }
         });
 
-        app.MapPost("/services/restart-all", async (CancellationToken ct) =>
+        app.MapPost("/services/restart-all", async (HttpRequest request, CancellationToken ct) =>
         {
             if (!TryBeginOperation("restart-all", out var conflict))
             {
@@ -158,7 +158,7 @@ internal static class Program
                 SetProgress("Restarting applications...");
                 var payload = await InvokeControlAsync(
                         controlScript,
-                        ["-Action", "RestartAll"],
+                        WithProfile(request, ["-Action", "RestartAll"]),
                         ct)
                     .ConfigureAwait(false);
                 if (payload.ExitCode != 0)
@@ -283,6 +283,21 @@ internal static class Program
             _activeOperation = null;
             _progressMessage = null;
         }
+    }
+
+    private static IReadOnlyList<string> WithProfile(HttpRequest request, IReadOnlyList<string> args)
+    {
+        var profile = request.Query["profile"].ToString();
+        if (!string.Equals(profile, "local-dev", StringComparison.OrdinalIgnoreCase))
+        {
+            return args;
+        }
+
+        var withProfile = new List<string>(args.Count + 2);
+        withProfile.AddRange(args);
+        withProfile.Add("-Profile");
+        withProfile.Add("local-dev");
+        return withProfile;
     }
 
     private static string ResolveBindUrl(IConfiguration configuration)

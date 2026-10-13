@@ -1,22 +1,4 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  ArrowLeftRight,
-  Bell,
-  BriefcaseBusiness,
-  Building2,
-  CheckSquare,
-  Compass,
-  Home,
-  Link2,
-  ListOrdered,
-  QrCode,
-  Settings,
-  Store,
-  UserPen,
-  UserPlus,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { symbol, type IconComponent } from "@/components/icons/MaterialSymbol";
 import type { MessageKey } from "@/i18n/messages";
 
 export type PersonalNavItemId =
@@ -44,7 +26,7 @@ export type PersonalNavItem = {
   id: PersonalNavItemId;
   to: string;
   labelKey: MessageKey;
-  icon: LucideIcon;
+  icon: IconComponent;
   testId: string;
   matchPrefixes: string[];
   end?: boolean;
@@ -53,7 +35,7 @@ export type PersonalNavItem = {
 export type PersonalNavAccordionGroup = {
   id: PersonalNavGroupId;
   titleKey: MessageKey;
-  icon: LucideIcon;
+  icon: IconComponent;
   items: readonly PersonalNavItem[];
 };
 
@@ -67,7 +49,7 @@ export const PERSONAL_PRIMARY_NAV_ITEMS: readonly PersonalNavItem[] = [
     id: "home",
     to: "/personal",
     labelKey: "personal.nav.home",
-    icon: Home,
+    icon: symbol("home"),
     testId: "personal-nav-home",
     matchPrefixes: ["/personal"],
     end: true,
@@ -76,7 +58,7 @@ export const PERSONAL_PRIMARY_NAV_ITEMS: readonly PersonalNavItem[] = [
     id: "utang",
     to: "/personal/utang",
     labelKey: "personal.nav.utang",
-    icon: Wallet,
+    icon: symbol("account_balance_wallet"),
     testId: "personal-nav-utang",
     matchPrefixes: ["/personal/utang"],
   },
@@ -84,7 +66,7 @@ export const PERSONAL_PRIMARY_NAV_ITEMS: readonly PersonalNavItem[] = [
     id: "todo",
     to: "/personal/todo",
     labelKey: "personal.nav.todo",
-    icon: CheckSquare,
+    icon: symbol("check_box"),
     testId: "personal-nav-todo",
     matchPrefixes: ["/personal/todo"],
   },
@@ -92,7 +74,7 @@ export const PERSONAL_PRIMARY_NAV_ITEMS: readonly PersonalNavItem[] = [
     id: "orders",
     to: "/personal/orders",
     labelKey: "personal.nav.orders",
-    icon: ListOrdered,
+    icon: symbol("list_alt"),
     testId: "personal-nav-orders",
     matchPrefixes: ["/personal/orders"],
   },
@@ -104,13 +86,13 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
     {
       id: "commerce",
       titleKey: "personal.more.group.commerce",
-      icon: Store,
+      icon: symbol("store"),
       items: [
         {
           id: "stores",
           to: "/personal/linked-merchants",
           labelKey: "personal.more.stores",
-          icon: Store,
+          icon: symbol("store"),
           testId: "personal-sidebar-stores",
           matchPrefixes: ["/personal/linked-merchants"],
         },
@@ -118,7 +100,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "customerLinks",
           to: "/personal/customer-links",
           labelKey: "personal.customerLinks.title",
-          icon: Link2,
+          icon: symbol("link"),
           testId: "personal-sidebar-customer-links",
           matchPrefixes: ["/personal/customer-links", "/personal/blocked-businesses"],
         },
@@ -127,13 +109,13 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
     {
       id: "social",
       titleKey: "personal.more.group.social",
-      icon: Users,
+      icon: symbol("group"),
       items: [
         {
           id: "people",
           to: "/personal/people",
           labelKey: "personal.home.people",
-          icon: Users,
+          icon: symbol("group"),
           testId: "personal-nav-people",
           matchPrefixes: ["/personal/people"],
         },
@@ -141,7 +123,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "notifications",
           to: "/personal/notifications",
           labelKey: "personal.social.notificationsTitle",
-          icon: Bell,
+          icon: symbol("notifications"),
           testId: "personal-nav-notifications",
           matchPrefixes: ["/personal/notifications"],
         },
@@ -149,7 +131,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "invitations",
           to: "/personal/invitations",
           labelKey: "personal.social.invitationsTitle",
-          icon: UserPlus,
+          icon: symbol("person_add"),
           testId: "personal-nav-invitations",
           matchPrefixes: ["/personal/invitations", "/personal/utang/invitations"],
         },
@@ -157,7 +139,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "qr",
           to: "/personal/my-qr",
           labelKey: "personal.social.qrTitle",
-          icon: QrCode,
+          icon: symbol("qr_code"),
           testId: "personal-nav-qr",
           matchPrefixes: ["/personal/my-qr"],
         },
@@ -165,7 +147,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "workplaces",
           to: "/personal/workplaces",
           labelKey: "personal.workplaces.moreTile",
-          icon: BriefcaseBusiness,
+          icon: symbol("business_center"),
           testId: "personal-nav-workplaces",
           matchPrefixes: ["/personal/workplaces", "/personal/staff-invitations"],
         },
@@ -173,7 +155,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "ownership",
           to: "/personal/ownership-transfers",
           labelKey: "personal.ownershipTransfers.moreTile",
-          icon: ArrowLeftRight,
+          icon: symbol("swap_horiz"),
           testId: "personal-nav-ownership",
           matchPrefixes: ["/personal/ownership-transfers"],
         },
@@ -182,13 +164,13 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
     {
       id: "business",
       titleKey: "personal.more.group.business",
-      icon: Settings,
+      icon: symbol("settings"),
       items: [
         {
           id: "guide",
           to: "/personal/guide",
           labelKey: "personal.guide.title",
-          icon: Compass,
+          icon: symbol("explore"),
           testId: "personal-nav-guide",
           matchPrefixes: ["/personal/guide"],
         },
@@ -196,7 +178,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "profile",
           to: "/personal/profile",
           labelKey: "personal.profile.edit",
-          icon: UserPen,
+          icon: symbol("edit"),
           testId: "personal-nav-profile",
           matchPrefixes: ["/personal/profile"],
         },
@@ -204,7 +186,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "subscriptions",
           to: "/personal/subscriptions",
           labelKey: "personal.subscriptions.title",
-          icon: Wallet,
+          icon: symbol("payments"),
           testId: "personal-nav-subscriptions",
           matchPrefixes: ["/personal/subscriptions"],
         },
@@ -212,7 +194,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "startBusiness",
           to: "/personal/businesses",
           labelKey: "personal.more.startBusiness",
-          icon: Building2,
+          icon: symbol("apartment"),
           testId: "personal-nav-start-business",
           matchPrefixes: ["/personal/businesses", "/personal/explore-pos", "/personal/start-business"],
         },
@@ -220,7 +202,7 @@ export function buildPersonalSidebarGroups(): readonly PersonalNavGroup[] {
           id: "preferences",
           to: "/settings/preferences",
           labelKey: "preferences.title",
-          icon: Settings,
+          icon: symbol("settings"),
           testId: "personal-nav-preferences",
           matchPrefixes: ["/settings/preferences"],
         },

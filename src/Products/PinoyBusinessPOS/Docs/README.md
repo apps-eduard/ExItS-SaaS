@@ -7,7 +7,9 @@ Product documentation for Pinoy Business POS.
 | Document | Description |
 |----------|-------------|
 | [ExItS Table Standard](UI/exits-table-standard.md) | Authoritative PinoyBusinessPOS React table UI contract — APPROVED / LOCKED revised (ExitsTable family, Actions, field-menu inline edit, Reset, portal overlay, vocabulary) |
-| [ExItS Button Standard](UI/exits-button-standard.md) | Authoritative PinoyBusinessPOS React button UI contract (shared Button, Diamond Full sample gallery, intents, shapes, treatments, icons, motion) |
+| [ExItS Button Standard](UI/exits-button-standard.md) | Authoritative PinoyBusinessPOS React button UI contract — APPROVED / LOCKED (`ext btn` playground command, shared Button) |
+| [ExItS Input Standard](UI/exits-input-standard.md) | Authoritative PinoyBusinessPOS React input UI contract — APPROVED / LOCKED (`ext input` playground command) |
+| [ExItS Toggle Standard](UI/exits-toggle-standard.md) | Authoritative PinoyBusinessPOS React toggle UI contract — APPROVED / LOCKED (`ext toggle` playground command) |
 | [ExItS Message Standard](UI/exits-message-standard.md) | Authoritative PinoyBusinessPOS React message UI contract (Notice + Toast; Diamond Full sample gallery; severity showcase-only) |
 | [ExItS Chip Standard](UI/exits-chip-standard.md) | Authoritative PinoyBusinessPOS React chip UI contract (Status / Filter / Tag / Removable / Count / CountBadge, tones, shapes, density) |
 | [ExItS Tabs Standard](UI/exits-tabs-standard.md) | Authoritative PinoyBusinessPOS React tabs UI contract (ExitsTabs variants, layouts, icons, counts, motion, a11y) |

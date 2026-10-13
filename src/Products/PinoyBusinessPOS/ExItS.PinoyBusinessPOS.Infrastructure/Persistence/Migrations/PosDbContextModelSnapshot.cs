@@ -38,6 +38,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("accepted_by");
 
+                    b.Property<decimal?>("AmountReceived")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount_received");
+
                     b.Property<string>("BranchNameSnapshot")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -253,6 +258,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("out_for_delivery_by");
 
+                    b.Property<DateTimeOffset?>("PaymentConfirmedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("payment_confirmed_at_utc");
+
+                    b.Property<Guid?>("PaymentConfirmedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_confirmed_by");
+
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -301,6 +314,20 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("RejectedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("rejected_by");
+
+                    b.Property<DateTimeOffset?>("RequestedPickupAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_pickup_at_utc");
+
+                    b.Property<string>("RequestedPickupLocal")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("requested_pickup_local");
+
+                    b.Property<string>("RequestedPickupTimeZoneId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("requested_pickup_time_zone_id");
 
                     b.Property<Guid>("SellerOrganizationId")
                         .HasColumnType("uuid")
@@ -395,9 +422,13 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_customer_orders_party_xor", "(customer_party_type = 'Personal' AND customer_platform_user_id IS NOT NULL AND customer_buyer_organization_id IS NULL) OR (customer_party_type = 'Organization' AND customer_buyer_organization_id IS NOT NULL AND customer_platform_user_id IS NULL)");
 
+                            t.HasCheckConstraint("ck_customer_orders_payment_confirmation", "(payment_status <> 'Paid' AND amount_received IS NULL AND payment_confirmed_at_utc IS NULL AND payment_confirmed_by IS NULL) OR (payment_status = 'Paid' AND amount_received IS NOT NULL AND amount_received >= total AND payment_confirmed_at_utc IS NOT NULL AND payment_confirmed_by IS NOT NULL AND (payment_method <> 'ManualGCash' OR amount_received = total))");
+
                             t.HasCheckConstraint("ck_customer_orders_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Utang')");
 
                             t.HasCheckConstraint("ck_customer_orders_payment_status", "payment_status IN ('Unpaid', 'Pending', 'Paid')");
+
+                            t.HasCheckConstraint("ck_customer_orders_pickup_request", "(requested_pickup_local IS NULL AND requested_pickup_time_zone_id IS NULL AND requested_pickup_at_utc IS NULL) OR (fulfillment_type = 'Pickup' AND requested_pickup_local IS NOT NULL AND requested_pickup_time_zone_id IS NOT NULL AND requested_pickup_at_utc IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_customer_orders_status", "status IN ('Draft', 'Submitted', 'Accepted', 'Rejected', 'Cancelled', 'Completed')");
 

@@ -49,6 +49,26 @@ public sealed class CustomerOrderEntityMapperTests
     }
 
     [Fact]
+    public void Payment_confirmation_round_trips_without_storing_change()
+    {
+        var record = BaseRecord(CustomerOrderFulfillmentType.Pickup);
+        record.PaymentStatus = nameof(CustomerOrderPaymentStatus.Paid);
+        record.AmountReceived = 150m;
+        record.PaymentConfirmedAtUtc = new DateTimeOffset(2026, 8, 24, 13, 0, 0, TimeSpan.Zero);
+        record.PaymentConfirmedBy = Guid.Parse("55555555-5555-4555-8555-555555555555");
+
+        var order = CustomerOrderEntityMapper.ToDomain(record, []);
+        Assert.Equal(150m, order.AmountReceived);
+        Assert.Equal(50m, order.ChangeAmount);
+        Assert.Equal(record.PaymentConfirmedBy, order.PaymentConfirmedBy);
+
+        var stored = CustomerOrderEntityMapper.ToRecord(order);
+        Assert.Equal(150m, stored.AmountReceived);
+        Assert.Equal(100m, stored.Total);
+        Assert.Null(stored.GetType().GetProperty("ChangeAmount"));
+    }
+
+    [Fact]
     public void Pickup_row_has_no_delivery_snapshot()
     {
         var record = BaseRecord(CustomerOrderFulfillmentType.Pickup);

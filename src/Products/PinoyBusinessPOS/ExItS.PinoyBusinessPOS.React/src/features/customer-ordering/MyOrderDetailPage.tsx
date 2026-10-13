@@ -39,6 +39,18 @@ function isDelivery(type: string): boolean {
   return type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0;
 }
 
+function paymentMethodLabel(code: string, t: (key: MessageKey) => string): string {
+  if (code === "Cash") return t("orders.paymentCash");
+  if (code === "ManualGCash") return t("orders.paymentGCashShort");
+  return t("orders.paymentUtang");
+}
+
+function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
+  if (status === "Paid") return t("orders.paymentPaid");
+  if (status === "Pending") return t("orders.paymentAwaitingVerification");
+  return t("orders.paymentUnpaid");
+}
+
 export function MyOrderDetailPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
@@ -185,11 +197,18 @@ export function MyOrderDetailPage() {
           </div>
           <div className="pc-fact-tile">
             <span className="pc-fact-tile__label">{t("orders.paymentMethod")}</span>
-            <span className="pc-fact-tile__value inline-flex items-center gap-1">
+            <span className="pc-fact-tile__value inline-flex items-center gap-1" data-testid="order-payment-method">
               <Wallet className="size-3.5 shrink-0" aria-hidden />
-              {order.paymentMethod}
+              {paymentMethodLabel(order.paymentMethod, t)}
             </span>
           </div>
+          {order.requestedPickupLocal ? (
+            <div className="pc-fact-tile" data-testid="order-requested-pickup">
+              <span className="pc-fact-tile__label">{t("orders.requestedPickupTime")}</span>
+              <span className="pc-fact-tile__value">{order.requestedPickupLocal}</span>
+              <span className="pc-fact-tile__value text-muted">{t("orders.requestedPickupNotGuaranteed")}</span>
+            </div>
+          ) : null}
           {order.paymentReference ? (
             <div className="pc-fact-tile" data-testid="order-payment-reference">
               <span className="pc-fact-tile__label">{t("checkout.paymentReference")}</span>
@@ -198,9 +217,9 @@ export function MyOrderDetailPage() {
           ) : null}
           <div className="pc-fact-tile">
             <span className="pc-fact-tile__label">{t("orders.paymentStatus")}</span>
-            <span className="pc-fact-tile__value inline-flex items-center gap-1">
+            <span className="pc-fact-tile__value inline-flex items-center gap-1" data-testid="order-payment-status">
               <CreditCard className="size-3.5 shrink-0" aria-hidden />
-              {order.paymentStatus}
+              {paymentStatusLabel(order.paymentStatus, t)}
             </span>
           </div>
         </div>

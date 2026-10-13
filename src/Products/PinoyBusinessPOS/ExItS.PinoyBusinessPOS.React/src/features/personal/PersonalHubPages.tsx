@@ -30,23 +30,21 @@ import {
 } from "@/api/platform/personal-utang-client";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { PersonalInstallMoreEntry } from "@/features/personal/PersonalInstallOffer";
-import { CountChip } from "@/components/exits/CountChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { Button } from "@/components/ui/button";
-import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
+import { symbol } from "@/components/icons/MaterialSymbol";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
-import {
-  UTANG_OWNERSHIP_MINE,
-  UTANG_OWNERSHIP_SHARED,
-  UTANG_READ_ONLY_CHIP,
-} from "@/features/personal/utang/utang-ownership-ui";
+
+const GroupIcon = symbol("group");
+const HandshakeIcon = symbol("handshake");
+const ShareIcon = symbol("share");
+const WalletIcon = symbol("account_balance_wallet");
 import { usePreferencesOverlay } from "@/features/preferences/PreferencesOverlay";
 import { PREFERENCES_DEFAULT_SECTION } from "@/features/preferences/preferences-sections";
 import { useNotificationsOverlay } from "@/features/personal/NotificationsOverlay";
@@ -56,6 +54,7 @@ import {
   isActiveUtangAccount,
   mergeUtangAccounts,
   sortUtangAccounts,
+  type UtangAccountRow,
   type UtangAccountSegment,
 } from "@/features/personal/utang/utang-workspace";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -66,6 +65,57 @@ import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 function parseSegment(raw: string | null): UtangAccountSegment {
   if (raw === "lent" || raw === "owe" || raw === "mine" || raw === "shared") return raw;
   return "all";
+}
+
+function UtangLedgerBoard({ accounts }: { accounts: UtangAccountRow[] }) {
+  const { t } = useI18n();
+  const columns = [
+    {
+      id: "mine",
+      tone: "primary",
+      label: t("personal.utang.ownershipMine"),
+      rows: accounts.filter((row) => row.isLedgerOwner),
+      testId: "utang-ledger-mine",
+    },
+    {
+      id: "shared",
+      tone: "info",
+      label: t("personal.utang.ownershipSharedWithMe"),
+      rows: accounts.filter((row) => !row.isLedgerOwner),
+      testId: "utang-ledger-shared",
+    },
+  ] as const;
+
+  return (
+    <div className="utang-ledger-board" data-testid="utang-ledger-board">
+      {columns.map((column) => (
+        <section
+          key={column.id}
+          className={`utang-ledger-board__column utang-ledger-board__column--${column.tone}`}
+          data-testid={column.testId}
+        >
+          <h3 className="utang-ledger-board__header">
+            {column.label}
+            <span className="utang-ledger-board__count">
+              {" "}
+              ({String(column.rows.length).padStart(2, "0")})
+            </span>
+          </h3>
+          {column.rows.length === 0 ? (
+            <p className="utang-ledger-board__empty m-0">{t("personal.utang.accountsFilterEmptyTitle")}</p>
+          ) : (
+            <ul className="utang-ledger-board__list m-0 list-none p-0">
+              {column.rows.map((row) => (
+                <li key={row.relationshipId}>
+                  <UtangAccountCard row={row} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+    </div>
+  );
 }
 
 export function PersonalUtangHubPage() {
@@ -163,145 +213,93 @@ export function PersonalUtangHubPage() {
           aria-label={t("personal.home.utangSummary")}
           data-testid="utang-hub-summary"
         >
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex min-w-0 flex-col gap-2" data-testid="utang-hub-owed-to-me">
-              <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
-                <HandCoins className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
-                {t("personal.home.owedToMe")}
-              </h3>
-              <div className="personal-summary-grid personal-summary-grid--balances" role="list">
-                <DashboardMetricCard
-                  label={
-                    <StatusChip
-                      tone={UTANG_OWNERSHIP_MINE.chipTone}
-                      appearance={UTANG_OWNERSHIP_MINE.appearance}
-                      shape={UTANG_OWNERSHIP_MINE.shape}
-                      data-testid="utang-hub-owed-to-me-mine-label"
-                    >
-                      {t("personal.utang.ownershipMine")}
-                    </StatusChip>
-                  }
-                  icon={HandCoins}
-                  tone={UTANG_OWNERSHIP_MINE.metricTone}
-                  testId="utang-hub-owed-to-me-mine"
-                  to="/personal/utang/lent"
-                >
-                  <MoneyDisplay amount={dashboard.totalLentBalance} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={
-                    <StatusChip
-                      tone={UTANG_OWNERSHIP_SHARED.chipTone}
-                      appearance={UTANG_OWNERSHIP_SHARED.appearance}
-                      shape={UTANG_OWNERSHIP_SHARED.shape}
-                      data-testid="utang-hub-owed-to-me-shared-label"
-                    >
-                      {t("personal.utang.ownershipSharedWithMe")}
-                    </StatusChip>
-                  }
-                  icon={HandCoins}
-                  tone={UTANG_OWNERSHIP_SHARED.metricTone}
-                  testId="utang-hub-owed-to-me-shared"
-                  to="/personal/utang/lent"
-                  tag={
-                    <StatusChip
-                      tone={UTANG_READ_ONLY_CHIP.tone}
-                      appearance={UTANG_READ_ONLY_CHIP.appearance}
-                      shape={UTANG_READ_ONLY_CHIP.shape}
-                      className="max-md:hidden"
-                      data-testid="utang-hub-owed-to-me-shared-readonly"
-                    >
-                      {t("personal.utang.readOnly")}
-                    </StatusChip>
-                  }
-                >
-                  <MoneyDisplay amount={dashboard.sharedWithMeLentBalance} />
-                </DashboardMetricCard>
-              </div>
+          <div className="tracker-summary-row">
+            <div className="tracker-summary tracker-summary--owed" data-testid="utang-hub-owed-to-me">
+              <span className="tracker-summary__head">
+                <span className="tracker-summary__icon tracker-summary__icon--owed" aria-hidden>
+                  <HandshakeIcon />
+                </span>
+                <span className="tracker-summary__copy">
+                  <span className="tracker-summary__title">{t("personal.home.trackerOwedTitle")}</span>
+                </span>
+              </span>
+              <span className="tracker-balance__rule" aria-hidden />
+              <span className="tracker-summary__foot">
+                <Link to="/personal/utang/owe" className="tracker-summary__stat" data-testid="utang-hub-i-owe-mine">
+                  <span className="tracker-summary__stat-label" data-testid="utang-hub-i-owe-mine-label">
+                    {t("personal.home.myIOweRecord")}
+                  </span>
+                  <MoneyDisplay amount={dashboard.totalBorrowedBalance} className="tracker-summary__stat-amount" />
+                </Link>
+                <span className="tracker-summary__vrule" aria-hidden />
+                <Link to="/personal/utang/lent" className="tracker-summary__stat" data-testid="utang-hub-owed-to-me-mine">
+                  <span className="tracker-summary__stat-label" data-testid="utang-hub-owed-to-me-mine-label">
+                    {t("personal.home.sharedOwedRecord")}
+                  </span>
+                  <MoneyDisplay amount={dashboard.totalLentBalance} className="tracker-summary__stat-amount" />
+                </Link>
+              </span>
             </div>
-            <div
-              className="flex min-w-0 flex-col gap-2 border-t border-border pt-3"
-              data-testid="utang-hub-i-owe"
-            >
-              <h3 className="m-0 inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-muted">
-                <Wallet className="size-[1.1rem] shrink-0 text-primary" aria-hidden />
-                {t("personal.home.iOwe")}
-              </h3>
-              <div className="personal-summary-grid personal-summary-grid--balances" role="list">
-                <DashboardMetricCard
-                  label={
-                    <StatusChip
-                      tone={UTANG_OWNERSHIP_MINE.chipTone}
-                      appearance={UTANG_OWNERSHIP_MINE.appearance}
-                      shape={UTANG_OWNERSHIP_MINE.shape}
-                      data-testid="utang-hub-i-owe-mine-label"
-                    >
-                      {t("personal.utang.ownershipMine")}
-                    </StatusChip>
-                  }
-                  icon={Wallet}
-                  tone={UTANG_OWNERSHIP_MINE.metricTone}
-                  testId="utang-hub-i-owe-mine"
-                  to="/personal/utang/owe"
-                >
-                  <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={
-                    <StatusChip
-                      tone={UTANG_OWNERSHIP_SHARED.chipTone}
-                      appearance={UTANG_OWNERSHIP_SHARED.appearance}
-                      shape={UTANG_OWNERSHIP_SHARED.shape}
-                      data-testid="utang-hub-i-owe-shared-label"
-                    >
-                      {t("personal.utang.ownershipSharedWithMe")}
-                    </StatusChip>
-                  }
-                  icon={Wallet}
-                  tone={UTANG_OWNERSHIP_SHARED.metricTone}
-                  testId="utang-hub-i-owe-shared"
-                  to="/personal/utang/owe"
-                  tag={
-                    <StatusChip
-                      tone={UTANG_READ_ONLY_CHIP.tone}
-                      appearance={UTANG_READ_ONLY_CHIP.appearance}
-                      shape={UTANG_READ_ONLY_CHIP.shape}
-                      className="max-md:hidden"
-                      data-testid="utang-hub-i-owe-shared-readonly"
-                    >
-                      {t("personal.utang.readOnly")}
-                    </StatusChip>
-                  }
-                >
-                  <MoneyDisplay amount={dashboard.sharedWithMeBorrowedBalance} />
-                </DashboardMetricCard>
-              </div>
+            <div className="tracker-summary tracker-summary--owe" data-testid="utang-hub-i-owe">
+              <span className="tracker-summary__head">
+                <span className="tracker-summary__icon tracker-summary__icon--owe" aria-hidden>
+                  <WalletIcon />
+                </span>
+                <span className="tracker-summary__copy">
+                  <span className="tracker-summary__title">{t("personal.home.trackerOweTitle")}</span>
+                </span>
+              </span>
+              <span className="tracker-balance__rule" aria-hidden />
+              <span className="tracker-summary__foot">
+                <Link to="/personal/utang/owe" className="tracker-summary__stat" data-testid="utang-hub-i-owe-shared">
+                  <span className="tracker-summary__stat-label" data-testid="utang-hub-i-owe-shared-label">
+                    {t("personal.home.myIOweRecord")}
+                  </span>
+                  <span className="tracker-summary__stat-label" data-testid="utang-hub-i-owe-shared-readonly">
+                    {t("personal.utang.readOnly")}
+                  </span>
+                  <MoneyDisplay amount={dashboard.sharedWithMeBorrowedBalance} className="tracker-summary__stat-amount" />
+                </Link>
+                <span className="tracker-summary__vrule" aria-hidden />
+                <Link to="/personal/utang/lent" className="tracker-summary__stat" data-testid="utang-hub-owed-to-me-shared">
+                  <span className="tracker-summary__stat-label" data-testid="utang-hub-owed-to-me-shared-label">
+                    {t("personal.home.sharedOwedRecord")}
+                  </span>
+                  <span className="tracker-summary__stat-label" data-testid="utang-hub-owed-to-me-shared-readonly">
+                    {t("personal.utang.readOnly")}
+                  </span>
+                  <MoneyDisplay amount={dashboard.sharedWithMeLentBalance} className="tracker-summary__stat-amount" />
+                </Link>
+              </span>
             </div>
           </div>
-          <div
-            className="flex flex-wrap items-center gap-2 border-t border-border pt-3"
-            data-testid="utang-hub-meta"
-          >
-            <Link to="/personal/people" className="inline-flex no-underline">
-              <CountChip
-                label={t("personal.home.people")}
-                count={dashboard.contactCount}
-                tone="info"
-              />
+          <div className="personal-home-metrics" data-testid="utang-hub-meta">
+            <Link to="/personal/people" className="personal-home-metric">
+              <span className="personal-home-metric__icon" aria-hidden="true">
+                <GroupIcon />
+              </span>
+              <span className="personal-home-metric__copy">
+                <span>{t("personal.home.people")}</span>
+              </span>
+              <strong className="personal-home-metric__value tabular-nums">{dashboard.contactCount}</strong>
             </Link>
-            <Link to="/personal/utang" className="inline-flex no-underline">
-              <CountChip
-                label={t("personal.home.activeMine")}
-                count={dashboard.activeRelationshipCount}
-                tone="primary"
-              />
+            <Link to="/personal/utang" className="personal-home-metric">
+              <span className="personal-home-metric__icon" aria-hidden="true">
+                <HandshakeIcon />
+              </span>
+              <span className="personal-home-metric__copy">
+                <span>{t("personal.home.activeMine")}</span>
+              </span>
+              <strong className="personal-home-metric__value tabular-nums">{dashboard.activeRelationshipCount}</strong>
             </Link>
-            <Link to="/personal/utang" className="inline-flex no-underline">
-              <CountChip
-                label={t("personal.home.activeShared")}
-                count={dashboard.sharedWithMeActiveCount ?? 0}
-                tone="info"
-              />
+            <Link to="/personal/utang" className="personal-home-metric">
+              <span className="personal-home-metric__icon" aria-hidden="true">
+                <ShareIcon />
+              </span>
+              <span className="personal-home-metric__copy">
+                <span>{t("personal.home.sharedLedgerStat")}</span>
+              </span>
+              <strong className="personal-home-metric__value tabular-nums">{dashboard.sharedWithMeActiveCount ?? 0}</strong>
             </Link>
           </div>
         </section>
@@ -373,10 +371,11 @@ export function PersonalUtangHubPage() {
       ) : (
         <>
           <section
-            className="catalog-form-section exits-animate-panel personal-section gap-3"
+            className="catalog-form-section exits-animate-panel personal-section gap-3 utang-hub-accounts"
             data-testid="utang-hub-accounts"
             aria-label={t("personal.utang.activeAccounts")}
           >
+            <div className="utang-hub-accounts__panel">
             <h2 className="catalog-form-section__title flex items-center gap-2 text-muted">
               <Users className="size-4 shrink-0" aria-hidden="true" />
               {t("personal.utang.activeAccounts")}
@@ -455,7 +454,7 @@ export function PersonalUtangHubPage() {
                 title={t("personal.utang.accountsFilterEmptyTitle")}
                 detail={t("personal.utang.accountsFilterEmptyDetail")}
               />
-            ) : (
+            ) : segment === "all" ? null : (
               <ul className="exits-list m-0 grid list-none gap-2 p-0">
                 {visibleAccounts.map((row) => (
                   <li key={row.relationshipId}>
@@ -464,6 +463,10 @@ export function PersonalUtangHubPage() {
                 ))}
               </ul>
             )}
+            </div>
+            {!accountsLoading && !accountsError && visibleAccounts.length > 0 && segment === "all" ? (
+              <UtangLedgerBoard accounts={visibleAccounts} />
+            ) : null}
           </section>
         </>
       )}

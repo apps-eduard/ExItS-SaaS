@@ -5,6 +5,8 @@ import { canManageCustomerOrders } from "@/access/pos-capabilities";
 import {
   acceptSellerCustomerOrder,
   completeSellerCustomerOrder,
+  confirmSellerCustomerOrderPayment,
+  declineSellerCustomerOrderPayment,
   getSellerCustomerOrder,
   markCollectedSellerCustomerOrder,
   markDeliveredSellerCustomerOrder,
@@ -35,6 +37,24 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function money(n: number): string {
   return `₱${n.toFixed(2)}`;
+}
+
+function paymentMethodLabel(code: string, t: (key: MessageKey) => string): string {
+  if (code === "Cash") return t("orders.paymentCash");
+  if (code === "ManualGCash") return t("orders.paymentGCashShort");
+  return t("orders.paymentUtang");
+}
+
+function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
+  if (status === "Paid") return t("orders.paymentPaid");
+  if (status === "Pending") return t("orders.paymentAwaitingVerification");
+  return t("orders.paymentUnpaid");
+}
+
+function parseCashReceived(value: string): number | null {
+  const cleaned = value.replace(/[₱,\s]/g, "");
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  return Number(cleaned);
 }
 
 const REJECT_REASONS = [
@@ -156,6 +176,7 @@ export function SellerOrderDetailPage() {
   const [showReject, setShowReject] = useState(false);
   const [rejectReason, setRejectReason] = useState<string>("UnableToFulfill");
   const [rejectNotes, setRejectNotes] = useState("");
+  const [cashReceived, setCashReceived] = useState("");
 
   const workspace = useMemo(
     () =>
@@ -175,10 +196,10 @@ export function SellerOrderDetailPage() {
     () => (query.data ? buildOrderActivityEvents(query.data) : []),
     [query.data],
   );
-  const actors = useActorDirectory(
-    workspace?.organizationId,
-    activityEvents.map((event) => event.actorId),
-  );
+  const actors = useActorDirectory(workspace?.organizationId, [
+    ...activityEvents.map((event) => event.actorId),
+    query.data?.paymentConfirmedBy,
+  ]);
 
   async function runAction(action: SellerOrderAction) {
     if (!workspace || !canManage || busy) return;
@@ -200,6 +221,53 @@ export function SellerOrderDetailPage() {
         return;
       }
       await runners[action]();
+      await query.refetch();
+    } catch (err) {
+      setError(describePosApiError(err, t, "orders.error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmCash() {
+    if (!workspace || !canManage || !query.data || busy) return;
+    const amount = parseCashReceived(cashReceived);
+    if (amount === null || amount < query.data.total) {
+      setError(t("orders.cashReceivedRequired"));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await confirmSellerCustomerOrderPayment(workspace, orderId, amount);
+      await query.refetch();
+    } catch (err) {
+      setError(describePosApiError(err, t, "orders.error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmGCash() {
+    if (!workspace || !canManage || !query.data || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await confirmSellerCustomerOrderPayment(workspace, orderId, query.data.total);
+      await query.refetch();
+    } catch (err) {
+      setError(describePosApiError(err, t, "orders.error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function markPaymentNotReceived() {
+    if (!workspace || !canManage || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineSellerCustomerOrderPayment(workspace, orderId);
       await query.refetch();
     } catch (err) {
       setError(describePosApiError(err, t, "orders.error"));
@@ -297,8 +365,24 @@ export function SellerOrderDetailPage() {
         <div>
           {t("orders.branch")}: <strong>{order.branchNameSnapshot}</strong>
         </div>
+        {order.requestedPickupLocal ? (
+          <div data-testid="order-requested-pickup">
+            {t("orders.requestedPickupTime")}: <strong>{order.requestedPickupLocal}</strong>
+            <p className="m-0 text-muted">{t("orders.requestedPickupNotGuaranteed")}</p>
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        className="catalog-form-section exits-animate-panel gap-2"
+        data-testid="seller-order-payment"
+      >
+        <h2 className="catalog-form-section__title">{t("orders.paymentSection")}</h2>
         <div>
-          {t("orders.paymentMethod")}: <strong>{order.paymentMethod}</strong>
+          {t("orders.paymentMethod")}: <strong>{paymentMethodLabel(order.paymentMethod, t)}</strong>
+        </div>
+        <div>
+          {t("orders.amountDue")}: <strong><MoneyDisplay amount={order.total} /></strong>
         </div>
         {order.paymentReference ? (
           <div data-testid="order-payment-reference">
@@ -306,8 +390,98 @@ export function SellerOrderDetailPage() {
           </div>
         ) : null}
         <div>
-          {t("orders.paymentStatus")}: <strong>{order.paymentStatus}</strong>
+          {t("orders.paymentStatus")}:{" "}
+          <strong data-testid="seller-payment-status">{paymentStatusLabel(order.paymentStatus, t)}</strong>
         </div>
+        {order.paymentMethod === "ManualGCash" && order.paymentStatus === "Paid" ? (
+          <p className="m-0 text-muted" data-testid="gcash-manual-confirmation">
+            {t("orders.gcashManuallyConfirmed")}
+          </p>
+        ) : null}
+        {order.paymentMethod === "Utang" ? (
+          <p className="m-0 text-muted">{t("orders.utangSettledOnComplete")}</p>
+        ) : null}
+        {order.paymentStatus === "Paid" && order.amountReceived != null ? (
+          <div data-testid="seller-amount-received">
+            {t("orders.cashReceived")}: <strong><MoneyDisplay amount={order.amountReceived} /></strong>
+            {order.changeAmount != null ? (
+              <div data-testid="seller-change">
+                {t("orders.change")}: <strong><MoneyDisplay amount={order.changeAmount} /></strong>
+              </div>
+            ) : null}
+            {order.paymentConfirmedAtUtc ? (
+              <p className="mb-0 mt-1 text-muted" data-testid="seller-payment-confirmed-by">
+                {t("orders.paymentConfirmed")}
+                {" · "}
+                {new Date(order.paymentConfirmedAtUtc).toLocaleString()}
+                {order.paymentConfirmedBy ? (
+                  <>
+                    {" · "}
+                    <ActorName
+                      actorId={order.paymentConfirmedBy}
+                      resolved={actors.resolve(order.paymentConfirmedBy)}
+                      isLoading={actors.isResolving}
+                    />
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {canManage && order.paymentMethod === "Cash" && order.paymentStatus === "Unpaid" && order.status !== "Rejected" && order.status !== "Cancelled" ? (
+          <div className="flex flex-col gap-2" data-testid="cash-payment-form">
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span>{t("orders.cashReceived")}</span>
+              <input
+                className="catalog-form-select"
+                inputMode="decimal"
+                data-testid="cash-received-input"
+                value={cashReceived}
+                onChange={(e) => setCashReceived(e.target.value)}
+              />
+            </label>
+            {parseCashReceived(cashReceived) !== null && parseCashReceived(cashReceived)! >= order.total ? (
+              <div data-testid="cash-change-preview">
+                {t("orders.change")}: <strong><MoneyDisplay amount={parseCashReceived(cashReceived)! - order.total} /></strong>
+              </div>
+            ) : null}
+            <Button
+              type="button"
+              data-testid="confirm-cash-received"
+              disabled={busy}
+              onClick={() => void confirmCash()}
+            >
+              {t("orders.confirmCashReceived")}
+            </Button>
+          </div>
+        ) : null}
+        {canManage && order.paymentMethod === "ManualGCash" && order.paymentStatus !== "Paid" && order.status !== "Rejected" && order.status !== "Cancelled" ? (
+          <div className="catalog-form-actions customer-order-detail-actions">
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="button"
+                data-testid="confirm-gcash-received"
+                disabled={busy}
+                onClick={() => void confirmGCash()}
+              >
+                {t("orders.confirmGCashReceived")}
+              </Button>
+            </div>
+            {order.paymentStatus === "Pending" ? (
+              <div className="catalog-form-actions__secondary">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  data-testid="payment-not-received"
+                  disabled={busy}
+                  onClick={() => void markPaymentNotReceived()}
+                >
+                  {t("orders.paymentNotReceived")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       {order.delivery ? (
@@ -424,6 +598,15 @@ export function SellerOrderDetailPage() {
           </div>
         </section>
       ) : (
+        <>
+        {order.fulfillmentType === "Pickup"
+        && order.fulfillmentStatus === "ReadyForPickup"
+        && (order.paymentMethod === "Cash" || order.paymentMethod === "ManualGCash")
+        && order.paymentStatus !== "Paid" ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="collect-needs-payment">
+            {t("orders.collectNeedsPayment")}
+          </p>
+        ) : null}
         <div className="catalog-form-actions customer-order-detail-actions" data-testid="seller-order-actions">
           <div className="catalog-form-actions__primary">
             {actions
@@ -456,6 +639,7 @@ export function SellerOrderDetailPage() {
             </div>
           ) : null}
         </div>
+        </>
       )}
     </div>
   );

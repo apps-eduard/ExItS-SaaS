@@ -337,6 +337,8 @@ builder.Services.AddScoped<RejectCustomerOrder>();
 builder.Services.AddScoped<CancelCustomerOrder>();
 builder.Services.AddScoped<AdvanceCustomerOrderFulfillment>();
 builder.Services.AddScoped<CompleteCustomerOrder>();
+builder.Services.AddScoped<ConfirmCustomerOrderPayment>();
+builder.Services.AddScoped<DeclineCustomerOrderPayment>();
 builder.Services.AddHttpClient<ICustomerOrderBranchDirectory, PosCustomerOrderBranchDirectory>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;

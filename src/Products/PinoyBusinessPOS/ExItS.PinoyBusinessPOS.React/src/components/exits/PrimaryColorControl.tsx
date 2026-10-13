@@ -3,9 +3,11 @@ import { useId } from "react";
 import { cn } from "@/lib/cn";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { PRIMARY_PALETTE_ACCENTS_LIGHT } from "@/lib/primary-palette-accents";
 import {
   PRIMARY_COLOR_OPTIONS,
+  type PrimaryColorPreference,
 } from "@/lib/preferences/ui-preferences";
 
 const LABEL_KEYS = {
@@ -23,7 +25,15 @@ const LABEL_KEYS = {
 /**
  * Clickable Primary color swatches — whole circle is the interactive target.
  */
-export function PrimaryColorControl() {
+export function PrimaryColorControl({
+  labelKey = "appearance.primary.label",
+  swatches,
+  onSelect,
+}: {
+  labelKey?: MessageKey;
+  swatches?: Partial<Record<PrimaryColorPreference, string>>;
+  onSelect?: (value: PrimaryColorPreference) => void;
+} = {}) {
   const { t } = useI18n();
   const { preferences, setPrimaryColor } = usePreferences();
   const labelId = useId();
@@ -34,7 +44,7 @@ export function PrimaryColorControl() {
       data-testid="preferences-primary-color"
     >
       <span id={labelId} className="exits-type-label text-foreground">
-        {t("appearance.primary.label")}
+        {t(labelKey)}
       </span>
       <div
         role="radiogroup"
@@ -63,11 +73,14 @@ export function PrimaryColorControl() {
                 selected &&
                   "ring-2 ring-[var(--exits-primary)] ring-offset-2 ring-offset-[var(--exits-bg)]",
               )}
-              onClick={() => setPrimaryColor(value)}
+              onClick={() => {
+                setPrimaryColor(value);
+                onSelect?.(value);
+              }}
             >
               <span
                 className="relative inline-flex size-[1.25rem] items-center justify-center rounded-full border border-black/10 shadow-sm"
-                style={{ backgroundColor: PRIMARY_PALETTE_ACCENTS_LIGHT[value] }}
+                style={{ backgroundColor: swatches?.[value] ?? PRIMARY_PALETTE_ACCENTS_LIGHT[value] }}
                 aria-hidden
               >
                 {selected ? (

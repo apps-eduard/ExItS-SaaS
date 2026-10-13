@@ -109,6 +109,7 @@ public sealed class CustomerOrderDomainTests
         Assert.Equal(Actor, order.ReadyBy);
         Assert.Equal(Utc.AddMinutes(3), order.ReadyAtUtc);
 
+        order.ConfirmPayment(order.Total, Actor, Utc.AddMinutes(4));
         order.MarkCollected(Utc.AddMinutes(4), Actor);
         Assert.Equal(Actor, order.CollectedBy);
         order.Complete(Actor, Utc.AddMinutes(5));
@@ -289,10 +290,12 @@ public sealed class CustomerOrderDomainTests
     }
 
     [Theory]
-    [InlineData(CustomerOrderPaymentMethod.Cash)]
-    [InlineData(CustomerOrderPaymentMethod.ManualGCash)]
-    [InlineData(CustomerOrderPaymentMethod.Utang)]
-    public void Submitted_orders_remain_unpaid_for_all_manual_methods(CustomerOrderPaymentMethod method)
+    [InlineData(CustomerOrderPaymentMethod.Cash, CustomerOrderPaymentStatus.Unpaid)]
+    [InlineData(CustomerOrderPaymentMethod.ManualGCash, CustomerOrderPaymentStatus.Pending)]
+    [InlineData(CustomerOrderPaymentMethod.Utang, CustomerOrderPaymentStatus.Unpaid)]
+    public void Submitted_orders_start_with_the_method_payment_status(
+        CustomerOrderPaymentMethod method,
+        CustomerOrderPaymentStatus expectedStatus)
     {
         var order = CustomerOrder.CreateSubmitted(
             Seller,
@@ -308,10 +311,123 @@ public sealed class CustomerOrderDomainTests
             paymentReference: method == CustomerOrderPaymentMethod.ManualGCash ? "  GCASH-1001  " : null);
 
         Assert.Equal(method, order.PaymentMethod);
-        Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
+        Assert.Equal(expectedStatus, order.PaymentStatus);
+        Assert.Null(order.AmountReceived);
+        Assert.Null(order.ChangeAmount);
+        Assert.Null(order.PaymentConfirmedAtUtc);
         Assert.Equal(
             method == CustomerOrderPaymentMethod.ManualGCash ? "GCASH-1001" : null,
             order.PaymentReference);
+    }
+
+    [Fact]
+    public void Fulfillment_does_not_mark_cash_paid()
+    {
+        var order = CreatePickup(CustomerOrderParty.Personal(PlatformUser, "Ana"));
+        order.Accept(Actor, Utc.AddMinutes(1));
+        order.MarkReady(Utc.AddMinutes(2), Actor);
+        var unpaid = Assert.Throws<DomainException>(() => order.MarkCollected(Utc.AddMinutes(3), Actor));
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation, unpaid.ErrorCode);
+        Assert.Equal(CustomerOrderFulfillmentStatus.ReadyForPickup, order.FulfillmentStatus);
+        Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
+
+        order.ConfirmPayment(order.Total, Actor, Utc.AddMinutes(3));
+        order.MarkCollected(Utc.AddMinutes(4), Actor);
+        order.Complete(Actor, Utc.AddMinutes(5));
+
+        Assert.Equal(CustomerOrderStatus.Completed, order.Status);
+        Assert.Equal(CustomerOrderPaymentStatus.Paid, order.PaymentStatus);
+        Assert.Equal(50m, order.Total);
+        Assert.Equal(50m, order.AmountReceived);
+    }
+
+    [Fact]
+    public void Cash_confirmation_records_received_amount_and_derives_change()
+    {
+        var order = CustomerOrder.CreateSubmitted(
+            Seller,
+            "ORD-260816-030",
+            CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
+            CustomerOrderFulfillmentType.Pickup,
+            BranchId,
+            "Main Branch",
+            [Line(1m, 350m)],
+            Actor,
+            Utc);
+
+        var shortPay = Assert.Throws<DomainException>(() => order.ConfirmPayment(349.99m, Actor, Utc.AddMinutes(1)));
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation, shortPay.ErrorCode);
+        Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
+
+        order.ConfirmPayment(500m, Actor, Utc.AddMinutes(2));
+        order.ConfirmPayment(500m, Actor, Utc.AddMinutes(9));
+
+        Assert.Equal(CustomerOrderPaymentStatus.Paid, order.PaymentStatus);
+        Assert.Equal(500m, order.AmountReceived);
+        Assert.Equal(150m, order.ChangeAmount);
+        Assert.Equal(350m, order.Total);
+        Assert.Equal(Actor, order.PaymentConfirmedBy);
+        Assert.Equal(Utc.AddMinutes(2), order.PaymentConfirmedAtUtc);
+
+        var changed = Assert.Throws<DomainException>(() => order.ConfirmPayment(600m, Actor, Utc.AddMinutes(3)));
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation, changed.ErrorCode);
+        Assert.Equal(500m, order.AmountReceived);
+    }
+
+    [Fact]
+    public void Manual_gcash_confirmation_records_the_total_and_decline_returns_to_unpaid()
+    {
+        var order = CustomerOrder.CreateSubmitted(
+            Seller,
+            "ORD-260816-031",
+            CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
+            CustomerOrderFulfillmentType.Pickup,
+            BranchId,
+            "Main Branch",
+            [Line(1m, 350m)],
+            Actor,
+            Utc,
+            paymentMethod: CustomerOrderPaymentMethod.ManualGCash,
+            paymentReference: "1234567890123");
+
+        Assert.Equal(CustomerOrderPaymentStatus.Pending, order.PaymentStatus);
+        order.DeclinePayment(Actor, Utc.AddMinutes(1));
+        Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
+        order.DeclinePayment(Actor, Utc.AddMinutes(2));
+
+        order.ConfirmPayment(null, Actor, Utc.AddMinutes(3));
+        Assert.Equal(CustomerOrderPaymentStatus.Paid, order.PaymentStatus);
+        Assert.Equal(350m, order.AmountReceived);
+        Assert.Equal(0m, order.ChangeAmount);
+        Assert.Equal("1234567890123", order.PaymentReference);
+
+        var declineAfterPay = Assert.Throws<DomainException>(() => order.DeclinePayment(Actor, Utc.AddMinutes(4)));
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation, declineAfterPay.ErrorCode);
+    }
+
+    [Fact]
+    public void Utang_cannot_be_confirmed_as_paid()
+    {
+        var order = CustomerOrder.CreateSubmitted(
+            Seller,
+            "ORD-260816-032",
+            CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
+            CustomerOrderFulfillmentType.Pickup,
+            BranchId,
+            "Main Branch",
+            [Line()],
+            Actor,
+            Utc,
+            paymentMethod: CustomerOrderPaymentMethod.Utang);
+        order.Accept(Actor, Utc.AddMinutes(1));
+        order.MarkReady(Utc.AddMinutes(2), Actor);
+        order.MarkCollected(Utc.AddMinutes(3), Actor);
+        order.Complete(Actor, Utc.AddMinutes(4));
+
+        var ex = Assert.Throws<DomainException>(() => order.ConfirmPayment(order.Total, Actor, Utc.AddMinutes(5)));
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation, ex.ErrorCode);
+        Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
+        Assert.Equal(CustomerOrderStatus.Completed, order.Status);
     }
 
     [Fact]
@@ -330,6 +446,48 @@ public sealed class CustomerOrderDomainTests
             paymentMethod: CustomerOrderPaymentMethod.ManualGCash));
 
         Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentReference, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Requested_pickup_time_is_an_immutable_snapshot()
+    {
+        var order = CustomerOrder.CreateSubmitted(
+            Seller,
+            "ORD-260816-022",
+            CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
+            CustomerOrderFulfillmentType.Pickup,
+            BranchId,
+            "Main Branch",
+            [Line()],
+            Actor,
+            Utc,
+            requestedPickupLocal: "2026-08-16 20:30",
+            requestedPickupTimeZoneId: "Asia/Manila",
+            requestedPickupAtUtc: Utc.AddHours(1));
+
+        Assert.Equal("2026-08-16 20:30", order.RequestedPickupLocal);
+        Assert.Equal("Asia/Manila", order.RequestedPickupTimeZoneId);
+        Assert.Equal(Utc.AddHours(1), order.RequestedPickupAtUtc);
+    }
+
+    [Fact]
+    public void Past_requested_pickup_time_is_rejected()
+    {
+        var ex = Assert.Throws<DomainException>(() => CustomerOrder.CreateSubmitted(
+            Seller,
+            "ORD-260816-023",
+            CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
+            CustomerOrderFulfillmentType.Pickup,
+            BranchId,
+            "Main Branch",
+            [Line()],
+            Actor,
+            Utc,
+            requestedPickupLocal: "2026-08-16 11:00",
+            requestedPickupTimeZoneId: "Asia/Manila",
+            requestedPickupAtUtc: Utc.AddMinutes(-5)));
+
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPickupRequest, ex.ErrorCode);
     }
 
     private static CustomerOrder CreatePickup(CustomerOrderParty party) =>

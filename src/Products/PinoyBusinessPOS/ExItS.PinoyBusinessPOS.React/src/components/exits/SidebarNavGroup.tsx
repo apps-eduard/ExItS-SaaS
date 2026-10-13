@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
 import { ChevronDown } from "lucide-react";
+import type { IconComponent } from "@/components/icons/MaterialSymbol";
 import { cn } from "@/lib/cn";
 
 /**
@@ -10,6 +10,7 @@ export function SidebarNavGroup({
   id,
   title,
   icon: Icon,
+  chevron: Chevron = ChevronDown,
   expanded,
   active = false,
   onToggle,
@@ -18,7 +19,8 @@ export function SidebarNavGroup({
 }: {
   id: string;
   title: string;
-  icon: LucideIcon;
+  icon: IconComponent;
+  chevron?: IconComponent;
   expanded: boolean;
   /** True when this group owns the current route. */
   active?: boolean;
@@ -66,7 +68,7 @@ export function SidebarNavGroup({
           )}
           aria-hidden="true"
         >
-          <ChevronDown
+          <Chevron
             className={cn(
               "admin-sidebar__group-chevron size-3.5 shrink-0",
               expanded && "admin-sidebar__group-chevron--open",

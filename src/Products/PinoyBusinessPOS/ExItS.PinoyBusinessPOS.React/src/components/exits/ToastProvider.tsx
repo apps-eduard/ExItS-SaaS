@@ -18,11 +18,14 @@ export type ToastAction = {
   href: string;
 };
 
+export type ToastPlacement = "corner" | "center";
+
 export type ToastPayload = {
   title: string;
   description?: string;
   tone?: ToastTone;
   action?: ToastAction;
+  placement?: ToastPlacement;
 };
 
 type ToastItem = {
@@ -31,6 +34,7 @@ type ToastItem = {
   description?: string;
   tone: ToastTone;
   action?: ToastAction;
+  placement: ToastPlacement;
 };
 
 export type ExitsToastApi = {
@@ -126,11 +130,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           description: messageOrPayload.description,
           tone: messageOrPayload.tone ?? "success",
           action: messageOrPayload.action,
+          placement: messageOrPayload.placement ?? "corner",
         }
       : {
           id,
           title: messageOrPayload,
           tone,
+          placement: "corner",
         };
 
     setToasts((current) => [...current, item]);
@@ -154,52 +160,69 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ showToast, toast: toastApi }), [showToast, toastApi]);
 
+  const cornerToasts = toasts.filter((toast) => toast.placement !== "center");
+  const centerToasts = toasts.filter((toast) => toast.placement === "center");
+
   return (
     <ToastContext.Provider value={value}>
       {children}
       <div className="exits-toast-region" aria-live="polite" aria-relevant="additions" data-testid="exits-toast-region">
-        {toasts.map((toast) => {
-          const Icon = TOAST_ICONS[toast.tone];
-          return (
-            <div
-              key={toast.id}
-              className={cn(
-                "exits-toast",
-                toast.tone === "success" && "exits-toast--success",
-                toast.tone === "info" && "exits-toast--info",
-                toast.tone === "error" && "exits-toast--error",
-                toast.tone === "warning" && "exits-toast--warning",
-              )}
-              role="status"
-              data-testid="exits-toast"
-              data-tone={toast.tone}
-            >
-              <span className="exits-toast__icon" aria-hidden>
-                <Icon className="size-4" />
-              </span>
-              <div className="exits-toast__body">
-                <div className="exits-toast__title">{toast.title}</div>
-                {toast.description ? (
-                  <div className="exits-toast__description">{toast.description}</div>
-                ) : null}
-                {toast.action ? (
-                  <ToastActionLink href={toast.action.href} label={toast.action.label} />
-                ) : null}
-              </div>
-              <button
-                type="button"
-                className="exits-toast__close"
-                data-testid="exits-toast-close"
-                aria-label="Close"
-                onClick={() => dismissToast(toast.id)}
-              >
-                <X className="size-4" aria-hidden />
-              </button>
-            </div>
-          );
-        })}
+        {cornerToasts.map((toast) => (
+          <ToastCard key={toast.id} toast={toast} onDismiss={dismissToast} />
+        ))}
+      </div>
+      <div
+        className="exits-toast-region exits-toast-region--center"
+        aria-live="polite"
+        aria-relevant="additions"
+        data-testid="exits-toast-region-center"
+      >
+        {centerToasts.map((toast) => (
+          <ToastCard key={toast.id} toast={toast} onDismiss={dismissToast} />
+        ))}
       </div>
     </ToastContext.Provider>
+  );
+}
+
+function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: string) => void }) {
+  const Icon = TOAST_ICONS[toast.tone];
+  return (
+    <div
+      className={cn(
+        "exits-toast",
+        toast.tone === "success" && "exits-toast--success",
+        toast.tone === "info" && "exits-toast--info",
+        toast.tone === "error" && "exits-toast--error",
+        toast.tone === "warning" && "exits-toast--warning",
+      )}
+      role="status"
+      data-testid="exits-toast"
+      data-tone={toast.tone}
+      data-placement={toast.placement}
+    >
+      <span className="exits-toast__icon" aria-hidden>
+        <Icon className="size-4" />
+      </span>
+      <div className="exits-toast__body">
+        <div className="exits-toast__title">{toast.title}</div>
+        {toast.description ? (
+          <div className="exits-toast__description">{toast.description}</div>
+        ) : null}
+        {toast.action ? (
+          <ToastActionLink href={toast.action.href} label={toast.action.label} />
+        ) : null}
+      </div>
+      <button
+        type="button"
+        className="exits-toast__close"
+        data-testid="exits-toast-close"
+        aria-label="Close"
+        onClick={() => onDismiss(toast.id)}
+      >
+        <X className="size-4" aria-hidden />
+      </button>
+    </div>
   );
 }
 

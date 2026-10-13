@@ -2377,6 +2377,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.DebtRelationshipId).HasColumnName("debt_relationship_id");
             entity.Property(e => e.CreatedByUserIdentityId).HasColumnName("created_by_user_identity_id");
+            entity.Property(e => e.Audience).HasColumnName("audience").HasMaxLength(32);
             entity.Property(e => e.ScheduleType).HasColumnName("schedule_type").HasMaxLength(32).IsRequired();
             entity.Property(e => e.Message).HasColumnName("message").HasMaxLength(280);
             entity.Property(e => e.ScheduledForUtc).HasColumnName("scheduled_for_utc");

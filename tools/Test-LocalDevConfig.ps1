@@ -25,6 +25,11 @@ Assert-True ($start -match 'PlatformDbVolume') 'Start-LocalDev uses the existing
 Assert-True ($start -match 'PosDbVolume') 'Start-LocalDev uses the existing POS volume identity'
 Assert-True ($stop -notmatch 'down -v') 'Stop-LocalDev does not delete volumes'
 Assert-True ($stop -match 'left running') 'Stop-LocalDev leaves PostgreSQL running'
+Assert-True ($start -match 'OnlyServices') 'Start-LocalDev can restart one local service'
+Assert-True ($stop -match 'OnlyServices') 'Stop-LocalDev can stop one local service'
+$control = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Invoke-LocalValidationControl.ps1') -Raw
+Assert-True ($control -match 'local-dev') 'Login restart can target the local profile'
+Assert-True ($control -match 'Start-LocalDev.ps1') 'Local profile restart uses Start-LocalDev'
 
 $compose = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\deploy\docker\compose.local-validation.yaml') -Raw
 Assert-True ($compose -match 'exits_local_validation_platform_db_data') 'Compose keeps the platform database volume'

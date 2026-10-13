@@ -391,6 +391,20 @@ public sealed class PlaceCustomerOrder
                 return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
             }
 
+            var pickup = RequestedPickupSchedule.Resolve(
+                fulfillmentType,
+                request.RequestedPickupDate,
+                request.RequestedPickupTime,
+                branch.TimeZoneId,
+                now,
+                branch.OperatingHours);
+            if (!pickup.IsSuccess)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(pickup.ErrorCode!, pickup.ErrorMessage!);
+            }
+
+            var (requestedPickupLocal, requestedPickupTimeZoneId, requestedPickupAtUtc) = pickup.Value;
+
             var businessDate = CustomerOrderNumbers.BusinessDateOf(now);
 
             CustomerOrder created;
@@ -453,7 +467,10 @@ public sealed class PlaceCustomerOrder
                                     orderId,
                                     paymentMethod,
                                     platformBusinessCustomerId,
-                                    paymentReference),
+                                    paymentReference,
+                                    requestedPickupLocal,
+                                    requestedPickupTimeZoneId,
+                                    requestedPickupAtUtc),
                                 cancellationToken: ct)
                             .ConfigureAwait(false);
                         return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
@@ -494,7 +511,10 @@ public sealed class PlaceCustomerOrder
                             orderId,
                             paymentMethod,
                             platformBusinessCustomerId,
-                            paymentReference),
+                            paymentReference,
+                            requestedPickupLocal,
+                            requestedPickupTimeZoneId,
+                            requestedPickupAtUtc),
                         cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -1477,6 +1497,132 @@ public sealed class CompleteCustomerOrder
             }
 
             return result;
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class ConfirmCustomerOrderPayment
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ConfirmCustomerOrderPayment(
+        ICustomerOrderRepository orders,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _orders = orders;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        ConfirmCustomerOrderPaymentRequest request,
+        Guid actorId,
+        CancellationToken cancellationToken = default) =>
+        MutateAsync(
+            sellerOrganizationId,
+            orderId,
+            order => order.ConfirmPayment(request.AmountReceived, actorId, _clock.UtcNow),
+            cancellationToken);
+
+    private async Task<ApplicationResult<CustomerOrderDto>> MutateAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        Action<CustomerOrder> mutate,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var order = await _orders
+                        .GetByIdAsync(
+                            PosOrganizationId.From(sellerOrganizationId),
+                            CustomerOrderId.From(orderId),
+                            ct)
+                        .ConfigureAwait(false);
+                    if (order is null)
+                    {
+                        return ApplicationResult<CustomerOrderDto>.Failure(
+                            ApplicationErrorCodes.CustomerOrderNotFound,
+                            "Customer order was not found.");
+                    }
+
+                    mutate(order);
+                    await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+                }, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class DeclineCustomerOrderPayment
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public DeclineCustomerOrderPayment(
+        ICustomerOrderRepository orders,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _orders = orders;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var order = await _orders
+                        .GetByIdAsync(
+                            PosOrganizationId.From(sellerOrganizationId),
+                            CustomerOrderId.From(orderId),
+                            ct)
+                        .ConfigureAwait(false);
+                    if (order is null)
+                    {
+                        return ApplicationResult<CustomerOrderDto>.Failure(
+                            ApplicationErrorCodes.CustomerOrderNotFound,
+                            "Customer order was not found.");
+                    }
+
+                    order.DeclinePayment(actorId, _clock.UtcNow);
+                    await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+                }, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (DomainException ex)
         {

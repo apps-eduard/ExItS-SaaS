@@ -31,13 +31,17 @@ param(
 
     [int]$PortWaitSeconds = 120,
 
-    [string]$ProgressFile = ''
+    [string]$ProgressFile = '',
+
+    [ValidateSet('validation', 'local-dev')]
+    [string]$Profile = 'validation'
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'LocalValidation.stack.ps1')
 . (Join-Path $PSScriptRoot 'LocalValidation.host-apps.ps1')
+. (Join-Path $PSScriptRoot 'LocalDev.stack.ps1')
 
 function Write-ProgressStatus([string]$Message) {
     # Prefer stderr so supervisor can keep stdout JSON-only.
@@ -61,11 +65,26 @@ Assert-LocalValidationControlNotProduction
 $repoRoot = Get-LocalValidationRepoRoot
 $startScript = Join-Path $repoRoot 'tools\Start-LocalValidation.ps1'
 $stopScript = Join-Path $repoRoot 'tools\Stop-LocalValidation.ps1'
+$localStartScript = Join-Path $repoRoot 'tools\Start-LocalDev.ps1'
+$localStopScript = Join-Path $repoRoot 'tools\Stop-LocalDev.ps1'
 $resetScript = Join-Path $repoRoot 'tools\Reset-LocalValidation.ps1'
+
+function Get-LocalDevHealthOverrides {
+    return @{
+        'platform-api' = (Get-LocalDevServicePort -ServiceKey 'platform-api')
+        'pos-api' = (Get-LocalDevServicePort -ServiceKey 'pos-api')
+        'react-pos' = (Get-LocalDevServicePort -ServiceKey 'react-pos')
+        'platform-admin' = (Get-LocalDevServicePort -ServiceKey 'platform-admin')
+    }
+}
 
 switch ($Action) {
     'Status' {
-        $snapshot = Get-LocalValidationControlHealthSnapshot
+        if ($Profile -eq 'local-dev') {
+            $snapshot = Get-LocalValidationControlHealthSnapshot -PortOverrides (Get-LocalDevHealthOverrides)
+        } else {
+            $snapshot = Get-LocalValidationControlHealthSnapshot
+        }
         Write-JsonResult $snapshot
         exit 0
     }
@@ -73,6 +92,31 @@ switch ($Action) {
     'Restart' {
         if ([string]::IsNullOrWhiteSpace($ServiceKey)) {
             throw 'Restart requires -ServiceKey.'
+        }
+        if ($Profile -eq 'local-dev') {
+            $port = Get-LocalDevServicePort -ServiceKey $ServiceKey
+            if ($ServiceKey.Trim().ToLowerInvariant() -in @('platform-db', 'pos-db')) {
+                throw "Service '$ServiceKey' is not restartable (database health-only)."
+            }
+            Write-ProgressStatus "Restarting local $ServiceKey on port $port..."
+            & $localStopScript -OnlyServices @($ServiceKey)
+            if ($LASTEXITCODE -ne 0) {
+                throw "Stop-LocalDev -OnlyServices $ServiceKey failed ($LASTEXITCODE)."
+            }
+            Write-ProgressStatus "Starting local $ServiceKey on port $port..."
+            & $localStartScript -OnlyServices @($ServiceKey) -PortWaitSeconds $PortWaitSeconds
+            if ($LASTEXITCODE -ne 0) {
+                throw "Start-LocalDev -OnlyServices $ServiceKey failed ($LASTEXITCODE)."
+            }
+            Write-JsonResult ([pscustomobject]@{
+                    ok = $true
+                    action = 'Restart'
+                    profile = 'local-dev'
+                    serviceKey = $ServiceKey.Trim().ToLowerInvariant()
+                    port = $port
+                    message = "$ServiceKey restarted on port $port."
+                })
+            exit 0
         }
         $svc = Resolve-LocalValidationCatalogService -ServiceKey $ServiceKey
         if (-not $svc.Restartable) {
@@ -97,6 +141,24 @@ switch ($Action) {
     }
 
     'RestartAll' {
+        if ($Profile -eq 'local-dev') {
+            Write-ProgressStatus 'Restarting local applications on 5288, 5290, 5178, and 5195...'
+            & $localStopScript
+            if ($LASTEXITCODE -ne 0) {
+                throw "Stop-LocalDev failed ($LASTEXITCODE)."
+            }
+            & $localStartScript -PortWaitSeconds $PortWaitSeconds
+            if ($LASTEXITCODE -ne 0) {
+                throw "Start-LocalDev failed ($LASTEXITCODE)."
+            }
+            Write-JsonResult ([pscustomobject]@{
+                    ok = $true
+                    action = 'RestartAll'
+                    profile = 'local-dev'
+                    message = 'Local applications restarted on ports 5288, 5290, 5178, and 5195.'
+                })
+            exit 0
+        }
         $keys = @(Get-LocalValidationRestartableServiceKeys)
         Write-ProgressStatus "Restarting applications (0 of $($keys.Count))..."
         & $stopScript -KeepSupervisor

@@ -1,11 +1,11 @@
-import type { CSSProperties } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import type { IconComponent } from "@/components/icons/MaterialSymbol";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
 
 export type RoleActionTileProps = {
   label: string;
-  icon: LucideIcon;
+  icon: IconComponent;
   testId?: string;
   primary?: boolean;
   /** Marks the active route — same look as primary, not faded. */
@@ -13,6 +13,8 @@ export type RoleActionTileProps = {
   disabled?: boolean;
   className?: string;
   style?: CSSProperties;
+  /** Trailing control, such as a caret at the inline end. */
+  end?: ReactNode;
   /** Optional router location state (e.g. preferences returnTo). */
   state?: unknown;
 } & ({ to: string; onClick?: () => void } | { to?: never; onClick: () => void });
@@ -31,6 +33,7 @@ export function RoleActionTile(props: RoleActionTileProps) {
     disabled = false,
     className,
     style,
+    end,
   } = props;
   const classes = cn(
     "role-action-tile inline-flex w-full items-center gap-2 rounded-[var(--exits-radius-md)] border px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-medium no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -52,7 +55,8 @@ export function RoleActionTile(props: RoleActionTileProps) {
       >
         <Icon className="size-5" />
       </span>
-      <span className="role-action-tile__label min-w-0 wrap-break-word">{label}</span>
+      <span className="role-action-tile__label min-w-0 flex-1 wrap-break-word">{label}</span>
+      {end ? <span className="role-action-tile__end">{end}</span> : null}
     </>
   );
 

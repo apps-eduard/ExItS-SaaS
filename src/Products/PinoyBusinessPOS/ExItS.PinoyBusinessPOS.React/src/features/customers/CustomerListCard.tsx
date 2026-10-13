@@ -20,8 +20,8 @@ export type CustomerListRelationshipStatus =
   | "Declined"
   | "Inactive";
 
-/** Abnormal account status only — Active is intentionally omitted from the card. */
-export type CustomerListAbnormalAccountStatus = "Suspended" | "Disabled";
+/** Account status shown on the card. Active is omitted. Inactive means deactivated and still on file. */
+export type CustomerListAbnormalAccountStatus = "Suspended" | "Disabled" | "Inactive";
 
 export type CustomerListCardProps = {
   href: string;
@@ -48,6 +48,8 @@ export function resolveAbnormalAccountStatus(
       return "Suspended";
     case "disabled":
       return "Disabled";
+    case "inactive":
+      return "Inactive";
     default:
       return null;
   }
@@ -86,15 +88,26 @@ export function relationshipStatusTone(
 export function abnormalAccountStatusLabelKey(
   status: CustomerListAbnormalAccountStatus,
 ): MessageKey {
-  return status === "Suspended"
-    ? "customers.listCard.account.Suspended"
-    : "customers.listCard.account.Disabled";
+  switch (status) {
+    case "Suspended":
+      return "customers.listCard.account.Suspended";
+    case "Disabled":
+      return "customers.listCard.account.Disabled";
+    case "Inactive":
+      return "customers.listCard.account.Inactive";
+  }
 }
 
 export function abnormalAccountStatusTone(
   status: CustomerListAbnormalAccountStatus,
 ): StatusChipTone {
-  return status === "Suspended" ? "warning" : "danger";
+  switch (status) {
+    case "Suspended":
+    case "Inactive":
+      return "warning";
+    case "Disabled":
+      return "danger";
+  }
 }
 
 function kindLabelKey(kind: CustomerListCardKind): MessageKey {
@@ -134,6 +147,10 @@ function buildHelperLines(input: {
       t("customers.listCard.businessSuspendedTitle"),
       t("customers.listCard.businessSuspendedDetail"),
     ];
+  }
+
+  if (abnormalAccount === "Inactive") {
+    return [t("customers.listCard.deactivatedDetail")];
   }
 
   if (abnormalAccount === "Disabled") {

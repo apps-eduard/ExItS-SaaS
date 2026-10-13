@@ -42,6 +42,19 @@ function Get-LocalDevAppPorts {
     return $ports
 }
 
+function Get-LocalDevServicePort {
+    param([Parameter(Mandatory)][string]$ServiceKey)
+
+    switch ($ServiceKey.Trim().ToLowerInvariant()) {
+        'platform-api' { return [int]$LocalDevStack.PlatformApiPort }
+        'pos-api' { return [int]$LocalDevStack.PosApiPort }
+        'react-pos' { return [int]$LocalDevStack.ReactPosPort }
+        'platform-admin' { return [int]$LocalDevStack.AdminPort }
+        'mailpit' { return 8025 }
+        default { throw "Unknown fast-dev service '$ServiceKey'." }
+    }
+}
+
 function Test-LocalDevPortsDoNotOverlapValidation {
     $reserved = @(Get-LocalDevReservedValidationPorts)
     $devPorts = @(Get-LocalDevAppPorts -IncludeLoanManager)

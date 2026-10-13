@@ -37,7 +37,11 @@ Google sign-in on Personal uses this redirect URI, which must be listed on the s
 
 `http://127.0.0.1:5178/platform-api/api/v1/platform/auth/external/google/callback`
 
+PayMongo checkout on fast dev uses `LOCAL_VALIDATION_PAYMONGO_SECRET_KEY` and `LOCAL_VALIDATION_PAYMONGO_WEBHOOK_SECRET` from the gitignored env file. The return address is `http://127.0.0.1:5178`. Leave those keys empty and checkout stays unavailable.
+
 Public preview and fast local dev can run at the same time. They use the same PostgreSQL volumes, so users and business data match. A sign-in on one site does not carry the browser session to the other site. Neither mode runs EF migrations on startup.
+
+The sign-in Local Validation panel follows the page you opened. On `http://127.0.0.1:5178` it restarts the fast-dev apps on 5288, 5290, 5178, and 5195. On the public preview (`http://127.0.0.1:5177`) it restarts 8091, 8092, 5177, and 8095. Shared PostgreSQL on 15533 and 15534, and Mailpit on 8025, stay shared. Restart the loopback supervisor on 8099 after this change so the login buttons use the new profile.
 
 The preview site keeps serving the last built images. Refresh those images without stopping local dev:
 

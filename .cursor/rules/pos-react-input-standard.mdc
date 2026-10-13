@@ -1,0 +1,20 @@
+---
+description: PinoyBusinessPOS React ExItS Input — locked playground command ext input; follow exits-input-standard.md
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# PinoyBusinessPOS React Input Standard
+
+For PinoyBusinessPOS React text-field / textarea / input work:
+
+1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-input-standard.md` (authoritative contract).
+2. Request inputs with the locked playground command `ext input`. Example: `ext input`, `ext input primary outlined rounded`, `ext input filled required`. Do **not** invent a new shorthand.
+3. The Input playground on `/ui-standards` → Input is the locked visual reference. Samples and the Input types card sit under that same page.
+4. Intent, appearance, and shape stay separate. Appearances are Standard, Filled, Outlined, and Standout. Rounded is the outlined pill shape.
+5. The label floats on focus or when the field has text (0.9s). Filled and Standout keep the label inside the fill, above the value. Outlined puts the label on the border. Date and Time keep the label above the native value. Textarea wraps on its own row.
+6. Input types (password eye, email check, mobile masks, date, time, textarea) are on the types card. They are not command tokens.
+7. Do **not** mass-replace existing shared `Input` or `.exits-input` fields. Migrate a field only when the task asks for it. Search stays on the Search Field standard. Buttons stay on the Button standard.
+8. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
+
+Visual reference: `/ui-standards` → Input.

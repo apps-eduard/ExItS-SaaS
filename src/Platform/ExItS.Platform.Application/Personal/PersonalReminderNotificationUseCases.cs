@@ -13,6 +13,7 @@ public sealed record PersonalReminderDto(
     Guid Id,
     Guid DebtRelationshipId,
     Guid CreatedByUserIdentityId,
+    string? Audience,
     string ScheduleType,
     string? Message,
     DateTimeOffset ScheduledForUtc,
@@ -25,7 +26,8 @@ public sealed record PersonalReminderDto(
 public sealed record CreatePersonalReminderRequest(
     string ScheduleType,
     DateTimeOffset ScheduledForUtc,
-    string? Message);
+    string? Message,
+    string? Audience = null);
 
 public sealed record PersonalInAppNotificationDto(
     Guid Id,
@@ -105,6 +107,29 @@ public sealed class CreatePersonalReminder
                 "Reminder schedule type is invalid.");
         }
 
+        PersonalReminderAudience? audience = null;
+        if (!string.IsNullOrWhiteSpace(request.Audience))
+        {
+            if (!Enum.TryParse<PersonalReminderAudience>(request.Audience, ignoreCase: true, out var parsedAudience)
+                || !Enum.IsDefined(parsedAudience))
+            {
+                return ApplicationResult<PersonalReminderDto>.Failure(
+                    DomainErrorCodes.InvalidPersonalReminder,
+                    "Reminder audience is invalid.");
+            }
+
+            audience = parsedAudience;
+        }
+
+        if (audience == PersonalReminderAudience.Counterparty
+            && (!relationship.IsSharedLinked
+                || relationship.GetCounterpartyUserIdentityId(actingUserIdentityId) is null))
+        {
+            return ApplicationResult<PersonalReminderDto>.Failure(
+                DomainErrorCodes.InvalidPersonalReminder,
+                "Remind them is only available when the other person has an ExItS account on a shared ledger.");
+        }
+
         try
         {
             var reminder = PersonalReminder.Create(
@@ -113,7 +138,8 @@ public sealed class CreatePersonalReminder
                 scheduleType,
                 request.ScheduledForUtc,
                 _clock.UtcNow,
-                request.Message);
+                request.Message,
+                audience);
             await _reminders.AddAsync(reminder, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -140,6 +166,7 @@ public sealed class CreatePersonalReminder
             reminder.Id.Value,
             reminder.DebtRelationshipId.Value,
             reminder.CreatedByUserIdentityId.Value,
+            reminder.Audience?.ToString(),
             reminder.ScheduleType.ToString(),
             reminder.Message,
             reminder.ScheduledForUtc,
@@ -221,7 +248,6 @@ public sealed class DeliverPersonalReminder
 {
     private readonly IPersonalReminderRepository _reminders;
     private readonly IPersonalDebtRelationshipRepository _relationships;
-    private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalAccountSettingsRepository _settings;
     private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IPersonalNotificationDeliveryRepository _deliveries;
@@ -233,7 +259,6 @@ public sealed class DeliverPersonalReminder
     public DeliverPersonalReminder(
         IPersonalReminderRepository reminders,
         IPersonalDebtRelationshipRepository relationships,
-        IPersonalContactRepository contacts,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
         IPersonalNotificationDeliveryRepository deliveries,
@@ -244,7 +269,6 @@ public sealed class DeliverPersonalReminder
     {
         _reminders = reminders;
         _relationships = relationships;
-        _contacts = contacts;
         _settings = settings;
         _notifications = notifications;
         _deliveries = deliveries;
@@ -328,10 +352,11 @@ public sealed class DeliverPersonalReminder
                 .ConfigureAwait(false);
             PersonalReminder.EnsureDeliveryAllowed(deliveriesLastDay, lastDelivery, _clock.UtcNow);
 
-            var recipients = await ResolveRecipientsAsync(
-                relationship,
-                actingUserIdentityId,
-                cancellationToken).ConfigureAwait(false);
+            var recipients = PersonalReminder.ResolveRecipients(
+                reminder.Audience,
+                reminder.CreatedByUserIdentityId,
+                relationship.CreditorUserIdentityId,
+                relationship.DebtorUserIdentityId);
             var preview = PersonalReminder.BuildMinimizedPreview(reminder.Message);
             const string title = "Personal Utang reminder";
 
@@ -432,34 +457,6 @@ public sealed class DeliverPersonalReminder
         }
     }
 
-    private async Task<IReadOnlyList<PlatformUserId>> ResolveRecipientsAsync(
-        PersonalDebtRelationship relationship,
-        PlatformUserId actingUserIdentityId,
-        CancellationToken cancellationToken)
-    {
-        var recipients = new HashSet<Guid>();
-        if (relationship.CreditorUserIdentityId is not null
-            && relationship.CreditorUserIdentityId != actingUserIdentityId)
-        {
-            recipients.Add(relationship.CreditorUserIdentityId.Value);
-        }
-
-        if (relationship.DebtorUserIdentityId is not null
-            && relationship.DebtorUserIdentityId != actingUserIdentityId)
-        {
-            recipients.Add(relationship.DebtorUserIdentityId.Value);
-        }
-
-        // Unlinked contacts: notify the acting user only that delivery targeted the relationship owner side.
-        if (recipients.Count == 0)
-        {
-            recipients.Add(actingUserIdentityId.Value);
-        }
-
-        _ = _contacts;
-        _ = cancellationToken;
-        return recipients.Select(PlatformUserId.From).ToList();
-    }
 }
 
 public sealed class CancelPersonalReminder

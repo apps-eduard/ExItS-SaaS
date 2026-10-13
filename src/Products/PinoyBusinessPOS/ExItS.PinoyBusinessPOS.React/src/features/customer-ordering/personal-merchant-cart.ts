@@ -232,8 +232,13 @@ export function resolveFulfillmentSelection(
   }
 
   const selected =
-    (currentBranchId ? eligible.find((b) => b.branchId === currentBranchId) : undefined) ??
-    eligible[0];
+    (currentBranchId ? eligible.find((b) => b.branchId === currentBranchId) : undefined)
+    ?? eligible.find((b) =>
+      fulfillment.toLowerCase() === FulfillmentDelivery.toLowerCase()
+        ? b.deliveryOperational
+        : b.pickupOperational,
+    )
+    ?? eligible[0];
 
   return {
     fulfillmentType: fulfillment,

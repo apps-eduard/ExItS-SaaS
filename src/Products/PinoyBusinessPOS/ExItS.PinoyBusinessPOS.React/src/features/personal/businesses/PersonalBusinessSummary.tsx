@@ -1,8 +1,17 @@
-import { useState, type ReactNode } from "react";
+import { Fragment, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
-import { BriefcaseBusiness, Building2, type LucideIcon } from "lucide-react";
-import { listPersonalProductAffiliations } from "@/api/platform/product-affiliations-client";
+import { symbol } from "@/components/icons/MaterialSymbol";
+
+const ArrowForwardIcon = symbol("arrow_forward");
+const BusinessCenterIcon = symbol("business_center");
+const DoorOpenIcon = symbol("door_open");
+const LoginIcon = symbol("login");
+const StoreIcon = symbol("store");
+import {
+  listPersonalProductAffiliations,
+  type PersonalProductAffiliationDto,
+} from "@/api/platform/product-affiliations-client";
 import {
   listPersonalWorkplaces,
   type PersonalWorkplaceWire,
@@ -10,10 +19,10 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   affiliatedBusinesses,
-  businessMetaLine,
   ownsProductOrganization,
   resolveProductPortfolioCapability,
 } from "@/features/personal/businesses/product-portfolio-capability";
+import "./PersonalOwnedBusinesses.css";
 import { PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
 import { PERSONAL_WORKPLACES_QUERY_KEY } from "@/features/personal/workplaces/PersonalWorkplacesPage";
 import { WorkplaceSignInDialog } from "@/features/personal/workplaces/WorkplaceSignInDialog";
@@ -30,42 +39,190 @@ function staffPosRole(workplace: PersonalWorkplaceWire): string | null {
   return role || null;
 }
 
-function CardHeading({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+/** Organization ownership is shown as Owner. Product roles such as Cashier stay as given. */
+function friendlyRole(role: string | null | undefined, ownerLabel: string): string | null {
+  const value = role?.trim() ?? "";
+  if (!value) {
+    return null;
+  }
+  if (
+    value.localeCompare("Owner", undefined, { sensitivity: "accent" }) === 0 ||
+    value.localeCompare("POS Owner", undefined, { sensitivity: "accent" }) === 0 ||
+    value.localeCompare("OrganizationOwner", undefined, { sensitivity: "accent" }) === 0 ||
+    value.localeCompare("Organization Owner", undefined, { sensitivity: "accent" }) === 0
+  ) {
+    return ownerLabel;
+  }
+  return value;
+}
+
+function planCaption(plan: string | null | undefined, planWord: string): string | null {
+  const value = plan?.trim() ?? "";
+  if (!value) {
+    return null;
+  }
+  if (new RegExp(`\\b${planWord}\\b`, "i").test(value)) {
+    return value;
+  }
+  return `${value} ${planWord}`;
+}
+
+function MetaLine({ parts }: { parts: string[] }) {
+  if (parts.length === 0) {
+    return null;
+  }
+
   return (
-    <h2 className="catalog-form-section__title inline-flex items-center gap-1.5">
-      <Icon className="size-[1.1rem] shrink-0" aria-hidden />
-      {children}
-    </h2>
+    <p className="personal-owned-businesses__meta">
+      {parts.map((part, index) => (
+        <Fragment key={`${part}-${index}`}>
+          {index > 0 ? (
+            <span className="personal-owned-businesses__sep" aria-hidden="true">
+              {" "}
+              <span className="personal-owned-businesses__dot">·</span>
+              {" "}
+            </span>
+          ) : null}
+          <span
+            className={
+              part.localeCompare("Active", undefined, { sensitivity: "accent" }) === 0
+                ? "personal-owned-businesses__status"
+                : undefined
+            }
+          >
+            {part}
+          </span>
+        </Fragment>
+      ))}
+    </p>
   );
 }
 
-function BusinessHomeCard({
-  testId,
-  heading,
-  title,
-  organizationName,
-  meta,
-  managedByOrganization,
-  actions,
+function OwnedBusinessEntry({
+  row,
+  showExplore,
+  entering,
+  onOpen,
 }: {
-  testId: string;
-  heading: ReactNode;
-  title: string;
-  organizationName: string | null;
-  meta: string | null;
-  managedByOrganization: string | null;
-  actions: ReactNode;
+  row: PersonalProductAffiliationDto;
+  showExplore: boolean;
+  entering: boolean;
+  onOpen: (organizationId: string) => void;
 }) {
+  const { t } = useI18n();
+  const capability = resolveProductPortfolioCapability(row);
+  const role = friendlyRole(row.roleDisplay, t("personal.home.ownerRole"));
+  const plan = planCaption(row.planDisplayName, t("personal.home.planWord"));
+  const status = row.subscriptionStatus?.trim() ?? "";
+  const metaParts = [role, plan, status].filter((part): part is string => Boolean(part));
+
   return (
-    <li className="catalog-form-section flex h-full min-w-0 flex-col gap-1" data-testid={testId}>
-      {heading}
-      <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{title}</p>
-      {organizationName ? <p className="m-0">{organizationName}</p> : null}
-      {meta ? <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{meta}</p> : null}
-      {managedByOrganization ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{managedByOrganization}</p>
+    <li className="personal-owned-businesses__entry" data-testid={`personal-business-${row.productCode}`}>
+      <div className="personal-owned-businesses__row">
+        <span className="personal-owned-businesses__mark" aria-hidden="true">
+          <StoreIcon />
+        </span>
+        <span className="personal-owned-businesses__rule" aria-hidden="true" />
+        <div className="personal-owned-businesses__copy">
+          {row.organizationDisplayName ? (
+            <p className="personal-owned-businesses__name">{row.organizationDisplayName}</p>
+          ) : (
+            <p className="personal-owned-businesses__name">{row.productDisplayName}</p>
+          )}
+          {row.organizationDisplayName ? (
+            <p className="personal-owned-businesses__product">{row.productDisplayName}</p>
+          ) : null}
+          <MetaLine parts={metaParts} />
+          {!row.canManageBilling ? (
+            <p className="personal-owned-businesses__meta">
+              {t("personal.subscriptions.managedByOrganization")}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      {(capability.canOpenProduct && row.organizationId) || showExplore ? (
+        <div className="personal-owned-businesses__actions">
+          {capability.canOpenProduct && row.organizationId ? (
+            <Button
+              type="button"
+              intent="primary"
+              appearance="ghost"
+              className="personal-owned-businesses__open"
+              disabled={entering}
+              data-testid={`personal-business-open-${row.productCode}`}
+              onClick={() => onOpen(row.organizationId!)}
+            >
+              <DoorOpenIcon className="size-4" aria-hidden="true" />
+              {t("personal.home.openBusiness")}
+            </Button>
+          ) : null}
+          {showExplore ? (
+            <Button asChild intent="info" appearance="ghost" className="personal-owned-businesses__explore">
+              <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
+                {t("personal.home.exploreProducts")}
+                <ArrowForwardIcon className="size-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       ) : null}
-      <div className="mt-auto flex flex-wrap items-center gap-2">{actions}</div>
+    </li>
+  );
+}
+
+function WorkplaceEntry({
+  workplace,
+  showExplore,
+  onLogin,
+}: {
+  workplace: PersonalWorkplaceWire;
+  showExplore: boolean;
+  onLogin: () => void;
+}) {
+  const { t } = useI18n();
+  const role = staffPosRole(workplace);
+  const status = workplace.membershipStatus.trim();
+  const metaParts = [role, status].filter((part): part is string => Boolean(part));
+  const organizationName = workplace.organizationDisplayName.trim();
+  const productName = t("operations.shell.productName");
+
+  return (
+    <li
+      className="personal-owned-businesses__entry"
+      data-testid={`personal-staff-business-${workplace.membershipId}`}
+    >
+      <div className="personal-owned-businesses__row">
+        <span className="personal-owned-businesses__mark" aria-hidden="true">
+          <BusinessCenterIcon />
+        </span>
+        <span className="personal-owned-businesses__rule" aria-hidden="true" />
+        <div className="personal-owned-businesses__copy">
+          <p className="personal-owned-businesses__name">{organizationName || productName}</p>
+          {organizationName ? <p className="personal-owned-businesses__product">{productName}</p> : null}
+          <MetaLine parts={metaParts} />
+        </div>
+      </div>
+      <div className="personal-owned-businesses__actions">
+        <Button
+          type="button"
+          intent="primary"
+          appearance="ghost"
+          className="personal-owned-businesses__open"
+          data-testid={`personal-staff-login-${workplace.membershipId}`}
+          onClick={onLogin}
+        >
+          <LoginIcon className="size-4" aria-hidden="true" />
+          {t("personal.workplaces.login")}
+        </Button>
+        {showExplore ? (
+          <Button asChild intent="info" appearance="ghost" className="personal-owned-businesses__explore">
+            <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
+              {t("personal.home.exploreProducts")}
+              <ArrowForwardIcon className="size-4" aria-hidden="true" />
+            </Link>
+          </Button>
+        ) : null}
+      </div>
     </li>
   );
 }
@@ -118,22 +275,7 @@ export function PersonalBusinessSummary() {
       !ownedOrganizationIds.has(workplace.organizationId),
   );
   if (owned.length === 0 && staffWorkplaces.length === 0) {
-    return (
-      <section
-        className="catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2"
-        data-testid="personal-business-summary"
-      >
-        <h2 className="catalog-form-section__title">{t("personal.home.startBusinessCard")}</h2>
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("personal.home.startBusinessLede")}
-        </p>
-        <Button asChild className="w-fit">
-          <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-business">
-            {t("personal.businesses.start")}
-          </Link>
-        </Button>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -143,88 +285,44 @@ export function PersonalBusinessSummary() {
           {signInError}
         </p>
       ) : null}
-      <ul
-        className={
-          owned.length + staffWorkplaces.length > 1
-            ? "catalog-form-section-row personal-business-cards m-0 list-none p-0"
-            : "catalog-form-section-row m-0 list-none p-0"
-        }
-      >
-        {owned.map((row, index) => {
-          const capability = resolveProductPortfolioCapability(row);
-          const meta = businessMetaLine(row);
-          return (
-            <BusinessHomeCard
-              key={row.productCode}
-              testId={`personal-business-${row.productCode}`}
-              heading={
-                <CardHeading icon={Building2}>{t("personal.home.yourBusinesses")}</CardHeading>
-              }
-              title={row.productDisplayName}
-              organizationName={row.organizationDisplayName}
-              meta={meta || null}
-              managedByOrganization={
-                row.canManageBilling ? null : t("personal.subscriptions.managedByOrganization")
-              }
-              actions={
-                <>
-                  {capability.canOpenProduct && row.organizationId ? (
-                    <Button
-                      type="button"
-                      className="w-fit"
-                      disabled={entering}
-                      data-testid={`personal-business-open-${row.productCode}`}
-                      onClick={() => void enterBusiness(row.organizationId!)}
-                    >
-                      {t("personal.subscriptions.openProduct")}
-                    </Button>
-                  ) : null}
-                  {index === 0 ? (
-                    <Button asChild variant="ghost" className="w-fit">
-                      <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
-                        {t("personal.businesses.startAnother")}
-                      </Link>
-                    </Button>
-                  ) : null}
-                </>
-              }
-            />
-          );
-        })}
-        {staffWorkplaces.map((workplace, index) => {
-          return (
-            <BusinessHomeCard
-              key={workplace.membershipId}
-              testId={`personal-staff-business-${workplace.membershipId}`}
-              heading={
-                <CardHeading icon={BriefcaseBusiness}>{t("personal.home.yourWorkplace")}</CardHeading>
-              }
-              title={t("operations.shell.productName")}
-              organizationName={workplace.organizationDisplayName}
-              meta={staffPosRole(workplace)}
-              managedByOrganization={null}
-              actions={
-                <>
-                  <Button
-                    type="button"
-                    className="w-fit"
-                    data-testid={`personal-staff-login-${workplace.membershipId}`}
-                    onClick={() => setLoginWorkplace(workplace)}
-                  >
-                    {t("personal.workplaces.login")}
-                  </Button>
-                  {owned.length === 0 && index === 0 ? (
-                    <Button asChild variant="ghost" className="w-fit">
-                      <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
-                        {t("personal.businesses.startAnother")}
-                      </Link>
-                    </Button>
-                  ) : null}
-                </>
-              }
-            />
-          );
-        })}
+      <ul className="catalog-form-section-row personal-business-cards m-0 list-none p-0">
+        {owned.length > 0 ? (
+          <li className="personal-owned-businesses" data-testid="personal-owned-businesses">
+            <div className="personal-owned-businesses__head">
+              <h3 className="personal-owned-businesses__title">{t("personal.home.yourBusinesses")}</h3>
+              <p className="personal-owned-businesses__lede">{t("personal.home.yourBusinessesLede")}</p>
+            </div>
+            <ul className="personal-owned-businesses__list">
+              {owned.map((row, index) => (
+                <OwnedBusinessEntry
+                  key={row.productCode}
+                  row={row}
+                  showExplore={index === 0}
+                  entering={entering}
+                  onOpen={(organizationId) => void enterBusiness(organizationId)}
+                />
+              ))}
+            </ul>
+          </li>
+        ) : null}
+        {staffWorkplaces.length > 0 ? (
+          <li className="personal-owned-businesses" data-testid="personal-staff-workplaces">
+            <div className="personal-owned-businesses__head">
+              <h3 className="personal-owned-businesses__title">{t("personal.home.yourWorkplace")}</h3>
+              <p className="personal-owned-businesses__lede">{t("personal.home.yourWorkplaceLede")}</p>
+            </div>
+            <ul className="personal-owned-businesses__list">
+              {staffWorkplaces.map((workplace, index) => (
+                <WorkplaceEntry
+                  key={workplace.membershipId}
+                  workplace={workplace}
+                  showExplore={owned.length === 0 && index === 0}
+                  onLogin={() => setLoginWorkplace(workplace)}
+                />
+              ))}
+            </ul>
+          </li>
+        ) : null}
       </ul>
       <WorkplaceSignInDialog
         workplace={loginWorkplace}

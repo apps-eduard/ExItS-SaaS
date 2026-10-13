@@ -24,7 +24,8 @@
 [CmdletBinding()]
 param(
     [int]$PortWaitSeconds = 180,
-    [switch]$IncludeLoanManager
+    [switch]$IncludeLoanManager,
+    [string[]]$OnlyServices = @()
 )
 
 Set-StrictMode -Version Latest
@@ -98,6 +99,12 @@ function Assert-DockerAvailable {
     }
 }
 
+function Test-ShouldStartLocalDevService([string]$Key) {
+    if ($null -eq $OnlyServices -or @($OnlyServices).Count -eq 0) { return $true }
+    $normalized = @($OnlyServices | ForEach-Object { ([string]$_).Trim().ToLowerInvariant() })
+    return $normalized -contains $Key.Trim().ToLowerInvariant()
+}
+
 function Add-CorsOrigin([System.Collections.Generic.List[string]]$Origins, [string]$Origin) {
     if ([string]::IsNullOrWhiteSpace($Origin)) { return }
     if ($Origin.Trim() -eq '*') {
@@ -138,15 +145,17 @@ Write-Step 'Checking Docker and fast-dev ports...'
 Assert-DockerAvailable
 Write-Ok 'Fast dev uses the same databases as the public preview. Preview containers can stay running.'
 
+$partial = @($OnlyServices).Count -gt 0
 foreach ($entry in @(
-    @{ Port = $platformApiPort; Label = 'Platform API' },
-    @{ Port = $posApiPort; Label = 'POS API' },
-    @{ Port = $reactPosPort; Label = 'React Personal/Organization/POS' },
-    @{ Port = $adminPort; Label = 'Platform Admin' }
+    @{ Key = 'platform-api'; Port = $platformApiPort; Label = 'Platform API' },
+    @{ Key = 'pos-api'; Port = $posApiPort; Label = 'POS API' },
+    @{ Key = 'react-pos'; Port = $reactPosPort; Label = 'React Personal/Organization/POS' },
+    @{ Key = 'platform-admin'; Port = $adminPort; Label = 'Platform Admin' }
 )) {
+    if (-not (Test-ShouldStartLocalDevService ([string]$entry.Key))) { continue }
     Assert-PortFree -Port ([int]$entry.Port) -Label ([string]$entry.Label)
 }
-if ($IncludeLoanManager) {
+if ($IncludeLoanManager -and -not $partial) {
     Assert-PortFree -Port ([int]$LocalDevStack.LoanPort) -Label 'PinoyLoanManager'
 }
 Write-Ok 'Fast-dev ports are free'
@@ -238,10 +247,30 @@ if ($envMap.ContainsKey('LOCAL_VALIDATION_GOOGLE_CLIENT_ID') -and -not ([string]
     $platformEnv['PlatformAuthentication__External__PublicBrowserOrigin'] = "http://127.0.0.1:$reactPosPort"
     $platformEnv['PlatformAuthentication__External__TrustedProxyHost'] = '127.0.0.1'
 }
+$payMongoSecret = ''
+if ($envMap.ContainsKey('LOCAL_VALIDATION_PAYMONGO_SECRET_KEY')) {
+    $payMongoSecret = [string]$envMap['LOCAL_VALIDATION_PAYMONGO_SECRET_KEY']
+}
+if (-not [string]::IsNullOrWhiteSpace($payMongoSecret) -and -not $payMongoSecret.StartsWith('REPLACE_')) {
+    $platformEnv['PayMongo__SecretKey'] = $payMongoSecret
+    $platformEnv['PayMongo__PublicAppBaseUrl'] = "http://127.0.0.1:$reactPosPort"
+    $payMongoWebhook = ''
+    if ($envMap.ContainsKey('LOCAL_VALIDATION_PAYMONGO_WEBHOOK_SECRET')) {
+        $payMongoWebhook = [string]$envMap['LOCAL_VALIDATION_PAYMONGO_WEBHOOK_SECRET']
+    }
+    if (-not [string]::IsNullOrWhiteSpace($payMongoWebhook) -and -not $payMongoWebhook.StartsWith('REPLACE_')) {
+        $platformEnv['PayMongo__WebhookSecret'] = $payMongoWebhook
+    }
+    Write-Ok "PayMongo checkout is enabled for http://127.0.0.1:$reactPosPort"
+} else {
+    Write-Host '[local-dev] NOTE PayMongo secret is not set. Subscription checkout stays unavailable.' -ForegroundColor Yellow
+}
 for ($i = 0; $i -lt $origins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $origins[$i]
 }
 
+$windowPids = @()
+if (Test-ShouldStartLocalDevService 'platform-api') {
 Write-Step "Starting Platform API with dotnet watch on $platformApiPort..."
 $platformLaunch = Start-LocalValidationAppWindow `
     -Title 'ExItS LocalDev - Platform API' `
@@ -250,6 +279,7 @@ $platformLaunch = Start-LocalValidationAppWindow `
     -EnvMap $platformEnv `
     -Mode Watch `
     -ServiceKey 'localdev-platform-api'
+$windowPids += $platformLaunch.WindowProcessId
 $platformReady = Wait-LocalServiceReady `
     -ServiceName 'Platform API' `
     -HealthUri "http://127.0.0.1:$platformApiPort/health" `
@@ -257,6 +287,7 @@ $platformReady = Wait-LocalServiceReady `
     -WindowProcessId $platformLaunch.WindowProcessId `
     -ExitMarkerPath $platformLaunch.ExitMarkerPath
 Write-Ok ("Platform API ready ({0}s) http://127.0.0.1:{1}/health" -f $platformReady.ReadyInSeconds, $platformApiPort)
+}
 
 $posEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Development'
@@ -274,6 +305,7 @@ for ($i = 0; $i -lt $origins.Count; $i++) {
     $posEnv["Cors__AllowedOrigins__$i"] = $origins[$i]
 }
 
+if (Test-ShouldStartLocalDevService 'pos-api') {
 Write-Step "Starting POS API with dotnet watch on $posApiPort..."
 $posLaunch = Start-LocalValidationAppWindow `
     -Title 'ExItS LocalDev - POS API' `
@@ -282,6 +314,7 @@ $posLaunch = Start-LocalValidationAppWindow `
     -EnvMap $posEnv `
     -Mode Watch `
     -ServiceKey 'localdev-pos-api'
+$windowPids += $posLaunch.WindowProcessId
 $posReady = Wait-LocalServiceReady `
     -ServiceName 'POS API' `
     -HealthUri "http://127.0.0.1:$posApiPort/health" `
@@ -289,29 +322,33 @@ $posReady = Wait-LocalServiceReady `
     -WindowProcessId $posLaunch.WindowProcessId `
     -ExitMarkerPath $posLaunch.ExitMarkerPath
 Write-Ok ("POS API ready ({0}s) http://127.0.0.1:{1}/health" -f $posReady.ReadyInSeconds, $posApiPort)
+}
 
-$windowPids = @($platformLaunch.WindowProcessId, $posLaunch.WindowProcessId)
 $reactEnv = @{
     POS_DEV_PORT = "$reactPosPort"
     EXITS_PLATFORM_API_PROXY_TARGET = "http://127.0.0.1:$platformApiPort"
     EXITS_POS_API_PROXY_TARGET = "http://127.0.0.1:$posApiPort"
 }
+if (Test-ShouldStartLocalDevService 'react-pos') {
 Write-Step "Starting React Personal, Organization, and POS Vite on $reactPosPort..."
 $windowPids += Start-LocalValidationNpmDevWindow `
     -Title 'ExItS LocalDev - React POS' `
     -WorkingDirectory $reactDir `
     -EnvMap $reactEnv
+}
 $adminEnv = @{
     ADMIN_DEV_PORT = "$adminPort"
     VITE_PLATFORM_API_PROXY_TARGET = "http://127.0.0.1:$platformApiPort"
 }
+if (Test-ShouldStartLocalDevService 'platform-admin') {
 Write-Step "Starting Platform Admin Vite on $adminPort..."
 $windowPids += Start-LocalValidationNpmDevWindow `
     -Title 'ExItS LocalDev - Platform Admin' `
     -WorkingDirectory $adminDir `
     -EnvMap $adminEnv
+}
 
-if ($IncludeLoanManager) {
+if ($IncludeLoanManager -and -not $partial) {
     $loanDir = Join-Path $repoRoot 'src\Products\PinoyLoanManager\ExItS.PinoyLoanManager.Client'
     $loanEnv = @{
         EXITS_PLATFORM_API_PROXY_TARGET = "http://127.0.0.1:$platformApiPort"
@@ -323,8 +360,10 @@ if ($IncludeLoanManager) {
         -EnvMap $loanEnv
 }
 
-$frontPorts = @($reactPosPort, $adminPort)
-if ($IncludeLoanManager) { $frontPorts += [int]$LocalDevStack.LoanPort }
+$frontPorts = @()
+if (Test-ShouldStartLocalDevService 'react-pos') { $frontPorts += $reactPosPort }
+if (Test-ShouldStartLocalDevService 'platform-admin') { $frontPorts += $adminPort }
+if ($IncludeLoanManager -and -not $partial) { $frontPorts += [int]$LocalDevStack.LoanPort }
 foreach ($port in $frontPorts) {
     $ready = $false
     $frontDeadline = (Get-Date).AddSeconds($PortWaitSeconds)
@@ -338,6 +377,7 @@ foreach ($port in $frontPorts) {
     Write-Ok "Vite ready on http://127.0.0.1:$port"
 }
 
+if (-not $partial) {
 $state = [pscustomobject]@{
     Mode = 'LocalDev'
     StartedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
@@ -353,6 +393,7 @@ $state = [pscustomobject]@{
     PosDbVolume = [string]$LocalValidationStack.PosDbVolume
 }
 $state | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stateDir $LocalDevStack.StateFileName) -Encoding utf8
+}
 
 Write-Host ''
 Write-Ok 'Fast dev is running. Code edits do not rebuild Docker images.'
@@ -365,3 +406,4 @@ Write-Host ("  Platform DB      127.0.0.1:{0} volume {1}" -f $platformDbPort, $L
 Write-Host ("  POS DB           127.0.0.1:{0} volume {1}" -f $posDbPort, $LocalValidationStack.PosDbVolume)
 Write-Host '  Stop local apps: .\tools\Stop-LocalDev.ps1'
 Write-Host '  Refresh public preview images: .\tools\Start-DockerLocalValidation.ps1 -Build'
+exit 0

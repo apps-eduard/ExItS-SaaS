@@ -11,13 +11,12 @@ For PinoyBusinessPOS React button / CTA / icon-control work:
 1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-button-standard.md` (authoritative contract).
 2. Reuse the shared ExItS `Button` in `ExItS.PinoyBusinessPOS.React/src/components/ui/button.tsx`.
 3. Do **not** invent local visual button systems or third-party visual button skins when shared `Button` can express the action.
-4. Map Cursor shorthand to the real API (`PRIMARY` → `intent="primary" appearance="solid"`, secondary → `intent="neutral"`, etc.). Prefer canonical `intent` / `appearance` over legacy `variant` / `treatment`.
-5. Style severities from the locked palette in `pos-react-severity-palette.mdc`. Primary follows Preferences (`--exits-primary`). Info is `--exits-severity-info` (sky blue), not `--exits-info` (teal). No hardcoded brand greens or page-local palettes.
-6. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort).
-7. Icon-only controls need `size="icon"`, `aria-label`, and `title`/tooltip; `shape="round"` is for circular icon-only.
-8. Respect `prefers-reduced-motion` (no unnecessary lift / scale / rotate).
-9. Cancel → `CircleX`; Cancel & return → `CornerUpLeft`; Close-only → `X`; Back → `ArrowLeft`.
-10. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
+4. Request buttons with the locked playground command `ext btn` (see `exits-button-standard.md`). Example: `ext btn primary outline`, `ext btn icon ghost`, `ext btn compact star`. Do **not** invent a new shorthand. Map that command onto the shared `Button` (`intent` / `appearance` / `shape`; icon only uses `size="icon"`).
+5. The Button playground on `/ui-standards` → Buttons is the locked visual reference. Preserve Preferences theme (light / dark / system). Density words in the command are `tight`, `compact`, `comfort`, and `relaxed`; Standard density follows the current preference height.
+6. Icon-only controls (`ext btn icon`) need an accessible name and tooltip. `shape="round"` is for circular icon-only.
+7. Respect `prefers-reduced-motion` (no unnecessary lift / scale / rotate).
+8. Cancel → `CircleX`; Cancel & return → `CornerUpLeft`; Close-only → `X`; Back → `ArrowLeft`.
+9. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
 
 ## Default look (mandatory — agents get this wrong)
 

@@ -1,11 +1,12 @@
-import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import type { IconComponent } from "@/components/icons/MaterialSymbol";
 import { RoleActionTile } from "@/components/exits/RoleActionTile";
 import { cn } from "@/lib/cn";
 
 export type ActionTileDef = {
   key: string;
   label: string;
-  icon: LucideIcon;
+  icon: IconComponent;
   testId?: string;
   primary?: boolean;
   /** Current page — primary styling without disabled fade. */
@@ -15,6 +16,7 @@ export type ActionTileDef = {
   /** Optional router location state (e.g. preferences returnTo). */
   state?: unknown;
   onClick?: () => void;
+  end?: ReactNode;
 };
 
 export function ActionTileGrid({
@@ -60,6 +62,7 @@ export function ActionTileGrid({
               primary={isPrimary}
               current
               onClick={() => {}}
+              end={tile.end}
               className={tileClassName}
               style={{ animationDelay: `${40 + index * 35}ms` }}
             />
@@ -76,6 +79,7 @@ export function ActionTileGrid({
             current={tile.current}
             disabled={tile.disabled}
             onClick={tile.onClick}
+            end={tile.end}
             className={tileClassName}
             style={{ animationDelay: `${40 + index * 35}ms` }}
           />
@@ -91,6 +95,7 @@ export function ActionTileGrid({
             to={tile.to!}
             state={tile.state}
             onClick={tile.onClick}
+            end={tile.end}
             className={tileClassName}
             style={{ animationDelay: `${40 + index * 35}ms` }}
           />

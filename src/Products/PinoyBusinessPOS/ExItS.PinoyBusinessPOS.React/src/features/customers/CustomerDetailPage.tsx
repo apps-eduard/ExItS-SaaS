@@ -487,6 +487,9 @@ export function CustomerDetailPage() {
       setActionError(t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.CustomerStatus)));
       return;
     }
+    if (isActive && !window.confirm(t("customers.deactivateConfirm"))) {
+      return;
+    }
     setActing(true);
     setActionError(null);
     try {
@@ -580,10 +583,14 @@ export function CustomerDetailPage() {
         {...smartBack}
       />
       {!isActive ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" data-testid="customer-deactivated-notice">
           <span data-testid="customer-account-status">
-            <StatusChip tone="warning">{customer.status}</StatusChip>
+            <StatusChip tone="warning">{t("customers.statusInactive")}</StatusChip>
           </span>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("customers.deactivatedNotice")}
+          </p>
+          {statusToggleButton}
         </div>
       ) : null}
 
@@ -698,7 +705,7 @@ export function CustomerDetailPage() {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="catalog-form-section__title m-0">{t("customers.detailsTab")}</h2>
-                    {statusToggleButton}
+                    {isActive ? statusToggleButton : null}
                   </div>
                   <div className="personal-profile-fields">
                     <ReadOnlyField

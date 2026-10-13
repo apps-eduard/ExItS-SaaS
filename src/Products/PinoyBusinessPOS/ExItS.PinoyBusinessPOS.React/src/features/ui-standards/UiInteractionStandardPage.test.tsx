@@ -58,6 +58,25 @@ describe("ui-standard-catalog filters", () => {
     ]);
   });
 
+  it("Radio and Checkbox categories isolate their cards", () => {
+    expect(filterLiveCards("radio", "").map((c) => c.id)).toEqual(["radio"]);
+    expect(filterLiveCards("checkbox", "").map((c) => c.id)).toEqual(["checkbox"]);
+    expect(filterLiveCards("toggle", "").map((c) => c.id)).toEqual(["toggle"]);
+    expect(filterLiveCards("dropdown", "").map((c) => c.id)).toEqual(["dropdown"]);
+  });
+
+  it("Breadcrumbs category isolates the breadcrumb card", () => {
+    expect(filterLiveCards("breadcrumbs", "").map((c) => c.id)).toEqual(["breadcrumbs"]);
+  });
+
+  it("Input category isolates the input card", () => {
+    expect(filterLiveCards("inputs", "").map((c) => c.id)).toEqual(["inputs"]);
+    const rows = filterCatalogRows("inputs", "");
+    expect(rows.map((r) => r.id)).toEqual(["input-playground"]);
+    expect(rows[0]?.standard).toBe("Input");
+    expect(rows[0]?.status).toBe("Locked");
+  });
+
   it("Messages category isolates message gallery", () => {
     expect(filterLiveCards("messages", "").map((c) => c.id)).toEqual(["messages"]);
     const rows = filterCatalogRows("messages", "");

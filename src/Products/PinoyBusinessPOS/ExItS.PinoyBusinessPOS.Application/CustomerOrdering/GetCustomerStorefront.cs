@@ -121,9 +121,12 @@ public sealed class GetCustomerStorefront
             .ConfigureAwait(false);
         if (!IsOnlineOrderingAccepting(branches, fulfillmentBranchId))
         {
+            var paused = CustomerStorefrontFulfillment.AllEnabledBranchesPaused(branches);
             return ApplicationResult<CustomerStorefrontDto>.Failure(
                 ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
-                CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage);
+                paused
+                    ? CustomerStorefrontFulfillment.PausedMessage
+                    : CustomerOnlineOrderingAccessRules.StoreNotAcceptingMessage);
         }
 
         var selectedBranchId = ResolveStorefrontBranchId(branches, fulfillmentBranchId);
@@ -269,8 +272,26 @@ public sealed class GetCustomerStorefront
                         a.Id,
                         a.CityMunicipalityName,
                         a.RegionOrProvinceName))
+                    .ToList(),
+                b.TimeZoneId,
+                b.OperatingHours?
+                    .Select(day => new CustomerStorefrontHoursDayDto(
+                        day.DayOfWeek,
+                        day.IsClosed,
+                        day.IsOpen24Hours,
+                        day.OpenTime,
+                        day.CloseTime))
                     .ToList()))
             .ToList();
+
+        var fulfillmentAvailability = CustomerStorefrontFulfillment.Classify(
+            branches,
+            capability.CanCustomerDelivery);
+        if (!CustomerStorefrontFulfillment.HasPlaceableFulfillment(branches, capability.CanCustomerDelivery)
+            && fulfillmentAvailability == CustomerStorefrontFulfillment.Ready)
+        {
+            fulfillmentAvailability = CustomerStorefrontFulfillment.NoMethod;
+        }
 
         return ApplicationResult<CustomerStorefrontDto>.Success(new CustomerStorefrontDto(
             sellerOrganizationId,
@@ -284,7 +305,8 @@ public sealed class GetCustomerStorefront
             sellable.Count,
             page ?? 1,
             take,
-            branchDtos));
+            branchDtos,
+            fulfillmentAvailability));
     }
 
     private static bool IsOnlineOrderingAccepting(

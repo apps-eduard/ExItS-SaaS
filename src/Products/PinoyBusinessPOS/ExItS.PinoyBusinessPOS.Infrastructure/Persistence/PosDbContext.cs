@@ -2113,6 +2113,16 @@ public sealed class PosDbContext : DbContext
                     "ck_customer_orders_delivery_branch_lat_long_pair",
                     "(delivery_branch_latitude_snapshot IS NULL AND delivery_branch_longitude_snapshot IS NULL)"
                     + " OR (delivery_branch_latitude_snapshot IS NOT NULL AND delivery_branch_longitude_snapshot IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_customer_orders_pickup_request",
+                    "(requested_pickup_local IS NULL AND requested_pickup_time_zone_id IS NULL AND requested_pickup_at_utc IS NULL)"
+                    + " OR (fulfillment_type = 'Pickup' AND requested_pickup_local IS NOT NULL AND requested_pickup_time_zone_id IS NOT NULL AND requested_pickup_at_utc IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_customer_orders_payment_confirmation",
+                    "(payment_status <> 'Paid' AND amount_received IS NULL AND payment_confirmed_at_utc IS NULL AND payment_confirmed_by IS NULL)"
+                    + " OR (payment_status = 'Paid' AND amount_received IS NOT NULL AND amount_received >= total"
+                    + " AND payment_confirmed_at_utc IS NOT NULL AND payment_confirmed_by IS NOT NULL"
+                    + " AND (payment_method <> 'ManualGCash' OR amount_received = total))");
             });
 
             entity.HasKey(e => e.Id);
@@ -2133,6 +2143,21 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.PaymentReference)
                 .HasColumnName("payment_reference")
                 .HasMaxLength(CustomerOrder.PaymentReferenceMaxLength);
+            entity.Property(e => e.AmountReceived)
+                .HasColumnName("amount_received")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.PaymentConfirmedAtUtc)
+                .HasColumnName("payment_confirmed_at_utc");
+            entity.Property(e => e.PaymentConfirmedBy)
+                .HasColumnName("payment_confirmed_by");
+            entity.Property(e => e.RequestedPickupLocal)
+                .HasColumnName("requested_pickup_local")
+                .HasMaxLength(32);
+            entity.Property(e => e.RequestedPickupTimeZoneId)
+                .HasColumnName("requested_pickup_time_zone_id")
+                .HasMaxLength(64);
+            entity.Property(e => e.RequestedPickupAtUtc)
+                .HasColumnName("requested_pickup_at_utc");
             entity.Property(e => e.FulfillmentType).HasColumnName("fulfillment_type").HasMaxLength(32).IsRequired();
             entity.Property(e => e.FulfillmentBranchId).HasColumnName("fulfillment_branch_id").IsRequired();
             entity.Property(e => e.BranchNameSnapshot)

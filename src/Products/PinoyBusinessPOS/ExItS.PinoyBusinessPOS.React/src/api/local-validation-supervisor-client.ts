@@ -9,6 +9,23 @@ export const LOCAL_VALIDATION_SUPERVISOR_ORIGIN = "http://127.0.0.1:8099";
 /** Dev same-origin proxy prefix (avoids CORS; Vite → 127.0.0.1:8099). */
 export const LOCAL_VALIDATION_SUPERVISOR_PROXY_PREFIX = "/__dev__/lv-supervisor";
 
+/** Fast local login (Start-LocalDev). Public preview login stays on 5177. */
+export const LOCAL_DEV_LOGIN_PORT = "5178";
+
+export function resolveLocalValidationProfile(
+  port: string = typeof window === "undefined" ? "" : window.location.port,
+): "local-dev" | "validation" {
+  return port === LOCAL_DEV_LOGIN_PORT ? "local-dev" : "validation";
+}
+
+function withControlProfile(path: string): string {
+  if (resolveLocalValidationProfile() !== "local-dev") {
+    return path;
+  }
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}profile=local-dev`;
+}
+
 export function resolveSupervisorBaseUrl(): string {
   if (typeof window === "undefined") {
     return LOCAL_VALIDATION_SUPERVISOR_ORIGIN;
@@ -63,7 +80,7 @@ export async function fetchSupervisorHealth(
   signal?: AbortSignal,
 ): Promise<LocalValidationHealthResponse | null> {
   try {
-    const response = await fetch(supervisorUrl("/health/services"), {
+    const response = await fetch(supervisorUrl(withControlProfile("/health/services")), {
       method: "GET",
       cache: "no-store",
       signal,
@@ -111,7 +128,7 @@ export async function restartSupervisorService(serviceKey: string): Promise<{
   status: number;
 }> {
   const response = await fetch(
-    supervisorUrl(`/services/${encodeURIComponent(serviceKey)}/restart`),
+    supervisorUrl(withControlProfile(`/services/${encodeURIComponent(serviceKey)}/restart`)),
     { method: "POST", cache: "no-store" },
   );
   const body = await response.json().catch(() => ({}));
@@ -141,7 +158,7 @@ export async function restartAllSupervisorApps(): Promise<{
   message: string;
   status: number;
 }> {
-  const response = await fetch(supervisorUrl("/services/restart-all"), {
+  const response = await fetch(supervisorUrl(withControlProfile("/services/restart-all")), {
     method: "POST",
     cache: "no-store",
   });

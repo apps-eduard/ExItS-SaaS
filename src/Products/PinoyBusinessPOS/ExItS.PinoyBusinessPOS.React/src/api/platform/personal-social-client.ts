@@ -30,6 +30,7 @@ export const personalReminderSchema = z.object({
   id: guidSchema,
   debtRelationshipId: guidSchema,
   createdByUserIdentityId: guidSchema,
+  audience: z.string().nullable().optional().default(null),
   scheduleType: z.string(),
   message: z.string().nullable().optional().default(null),
   scheduledForUtc: z.string(),
@@ -92,6 +93,7 @@ function normalizeReminder(raw: unknown): unknown {
     id: pick(r, "id", "Id"),
     debtRelationshipId: pick(r, "debtRelationshipId", "DebtRelationshipId"),
     createdByUserIdentityId: pick(r, "createdByUserIdentityId", "CreatedByUserIdentityId"),
+    audience: pick(r, "audience", "Audience") ?? null,
     scheduleType: pick(r, "scheduleType", "ScheduleType"),
     message: pick(r, "message", "Message") ?? null,
     scheduledForUtc: pick(r, "scheduledForUtc", "ScheduledForUtc"),
@@ -230,7 +232,12 @@ export async function listRelationshipReminders(
 
 export async function createRelationshipReminder(
   relationshipId: string,
-  body: { scheduleType: string; scheduledForUtc: string; message?: string | null },
+  body: {
+    scheduleType: string;
+    scheduledForUtc: string;
+    message?: string | null;
+    audience: "Self" | "Counterparty";
+  },
   signal?: AbortSignal,
 ): Promise<PersonalReminderDto> {
   const raw = await platformRequest<unknown>({

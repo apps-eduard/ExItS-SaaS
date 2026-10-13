@@ -10,6 +10,12 @@ internal sealed class CustomerOrderRecord
     public string PaymentStatus { get; set; } = string.Empty;
     public string PaymentMethod { get; set; } = nameof(CustomerOrderPaymentMethod.Cash);
     public string? PaymentReference { get; set; }
+    public decimal? AmountReceived { get; set; }
+    public DateTimeOffset? PaymentConfirmedAtUtc { get; set; }
+    public Guid? PaymentConfirmedBy { get; set; }
+    public string? RequestedPickupLocal { get; set; }
+    public string? RequestedPickupTimeZoneId { get; set; }
+    public DateTimeOffset? RequestedPickupAtUtc { get; set; }
     public string FulfillmentType { get; set; } = string.Empty;
     public Guid FulfillmentBranchId { get; set; }
     public string BranchNameSnapshot { get; set; } = string.Empty;

@@ -47,15 +47,14 @@ export function UiStandardsSnippetBlock({
 export function PlaygroundSection({
   children,
   testId,
+  className = "border-b border-border pb-3",
 }: {
   children: ReactNode;
   testId?: string;
+  className?: string;
 }) {
   return (
-    <div
-      className="flex min-w-0 flex-col gap-2 border-b border-border pb-3"
-      data-testid={testId}
-    >
+    <div className={`flex min-w-0 flex-col gap-2 ${className}`} data-testid={testId}>
       {children}
     </div>
   );

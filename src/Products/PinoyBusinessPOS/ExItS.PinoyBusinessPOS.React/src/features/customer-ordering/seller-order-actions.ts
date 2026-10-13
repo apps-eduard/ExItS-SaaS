@@ -38,7 +38,7 @@ export function availableSellerActions(order: CustomerOrderDto): SellerOrderActi
   if (is(order.fulfillmentType, "Delivery") && is(order.fulfillmentStatus, "OutForDelivery")) {
     actions.push("MarkDelivered");
   }
-  if (is(order.fulfillmentType, "Pickup") && is(order.fulfillmentStatus, "ReadyForPickup")) {
+  if (is(order.fulfillmentType, "Pickup") && is(order.fulfillmentStatus, "ReadyForPickup") && canCollect(order)) {
     actions.push("MarkCollected");
   }
   if (is(order.fulfillmentStatus, "Delivered") || is(order.fulfillmentStatus, "Collected")) {
@@ -46,6 +46,11 @@ export function availableSellerActions(order: CustomerOrderDto): SellerOrderActi
   }
 
   return actions;
+}
+
+function canCollect(order: CustomerOrderDto): boolean {
+  const cashOrGcash = is(order.paymentMethod, "Cash") || is(order.paymentMethod, "ManualGCash");
+  return !cashOrGcash || is(order.paymentStatus, "Paid");
 }
 
 export type SellerOrderFilter = "New" | "Preparing" | "Ready" | "Issues" | "All";

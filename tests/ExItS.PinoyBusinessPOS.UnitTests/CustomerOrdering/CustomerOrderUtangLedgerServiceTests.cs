@@ -249,6 +249,10 @@ public sealed class CustomerOrderUtangLedgerServiceTests
         {
             order.Accept(Actor, Utc);
             order.MarkReady(Utc, Actor);
+            if (paymentMethod is CustomerOrderPaymentMethod.Cash or CustomerOrderPaymentMethod.ManualGCash)
+            {
+                order.ConfirmPayment(order.Total, Actor, Utc);
+            }
             order.MarkCollected(Utc, Actor);
             order.Complete(Actor, Utc);
         }

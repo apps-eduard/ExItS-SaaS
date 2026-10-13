@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import { usePreferences } from "@/hooks/usePreferences";
@@ -24,12 +25,21 @@ function cycleLabelKey(mode: NavigationModePreference): MessageKey {
  * Desktop shell control: cycles sidenav full → icons → hidden → full.
  * Persists via navigationMode preference (same as Preferences → Sidebar).
  */
-export function ShellSidebarModeButton({ className }: { className?: string }) {
+export function ShellSidebarModeButton({
+  className,
+  icon,
+  icons,
+}: {
+  className?: string;
+  icon?: ReactNode;
+  icons?: Partial<Record<NavigationModePreference, ReactNode>>;
+}) {
   const { t } = useI18n();
   const { preferences, setNavigationMode } = usePreferences();
   const mode = preferences.navigationMode;
   const next = nextNavigationModeCycle(mode);
   const label = t(cycleLabelKey(mode));
+  const modeIcon = icons?.[mode] ?? (mode === "reveal" ? icons?.standard : undefined);
 
   return (
     <IconButton
@@ -41,13 +51,15 @@ export function ShellSidebarModeButton({ className }: { className?: string }) {
       className={cn("app-top-bar__sidebar-mode", className)}
       onClick={() => setNavigationMode(next)}
     >
-      {mode === "compact" ? (
-        <PanelLeftClose aria-hidden="true" className="size-5" strokeWidth={2.15} />
-      ) : mode === "hidden" ? (
-        <PanelLeftOpen aria-hidden="true" className="size-5" strokeWidth={2.15} />
-      ) : (
-        <PanelLeft aria-hidden="true" className="size-5" strokeWidth={2.15} />
-      )}
+      {modeIcon ??
+        icon ??
+        (mode === "compact" ? (
+          <PanelLeftClose aria-hidden="true" className="size-5" strokeWidth={2.15} />
+        ) : mode === "hidden" ? (
+          <PanelLeftOpen aria-hidden="true" className="size-5" strokeWidth={2.15} />
+        ) : (
+          <PanelLeft aria-hidden="true" className="size-5" strokeWidth={2.15} />
+        ))}
     </IconButton>
   );
 }

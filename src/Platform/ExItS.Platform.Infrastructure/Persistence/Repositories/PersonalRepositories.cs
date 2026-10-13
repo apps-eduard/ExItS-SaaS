@@ -1225,6 +1225,16 @@ internal sealed class PersonalReminderRepository(PlatformDbContext db) : IPerson
         record.DeliveryAttemptCount = reminder.DeliveryAttemptCount;
     }
 
+    private static PersonalReminderAudience? ParseAudience(string? audience)
+    {
+        if (string.IsNullOrWhiteSpace(audience))
+        {
+            return null;
+        }
+
+        return Enum.Parse<PersonalReminderAudience>(audience, ignoreCase: true);
+    }
+
     private static PersonalReminder ToDomain(PersonalReminderRecord record) =>
         PersonalReminder.Rehydrate(
             PersonalReminderId.From(record.Id),
@@ -1238,7 +1248,8 @@ internal sealed class PersonalReminderRepository(PlatformDbContext db) : IPerson
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             record.DeliveredAtUtc,
-            record.DeliveryAttemptCount);
+            record.DeliveryAttemptCount,
+            ParseAudience(record.Audience));
 
     private static PersonalReminderRecord ToRecord(PersonalReminder reminder) =>
         new()
@@ -1246,6 +1257,7 @@ internal sealed class PersonalReminderRepository(PlatformDbContext db) : IPerson
             Id = reminder.Id.Value,
             DebtRelationshipId = reminder.DebtRelationshipId.Value,
             CreatedByUserIdentityId = reminder.CreatedByUserIdentityId.Value,
+            Audience = reminder.Audience?.ToString(),
             ScheduleType = reminder.ScheduleType.ToString(),
             Message = reminder.Message,
             ScheduledForUtc = reminder.ScheduledForUtc,

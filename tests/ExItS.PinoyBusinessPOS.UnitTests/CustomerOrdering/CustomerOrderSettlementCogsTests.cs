@@ -267,6 +267,7 @@ public sealed class CustomerOrderSettlementCogsTests
         var order = CreateSubmittedOrder(paymentMethod, productId, quantity, unitPrice);
         order.Accept(Actor, Utc);
         order.MarkReady(Utc, Actor);
+        ConfirmIfTendered(order);
         order.MarkCollected(Utc, Actor);
         order.Complete(Actor, Utc);
         return order;
@@ -292,9 +293,18 @@ public sealed class CustomerOrderSettlementCogsTests
             paymentReference: paymentMethod == CustomerOrderPaymentMethod.ManualGCash ? "GCASH-1001" : null);
         order.Accept(Actor, Utc);
         order.MarkReady(Utc, Actor);
+        ConfirmIfTendered(order);
         order.MarkCollected(Utc, Actor);
         order.Complete(Actor, Utc);
         return order;
+    }
+
+    private static void ConfirmIfTendered(CustomerOrder order)
+    {
+        if (order.PaymentMethod is CustomerOrderPaymentMethod.Cash or CustomerOrderPaymentMethod.ManualGCash)
+        {
+            order.ConfirmPayment(order.Total, Actor, Utc);
+        }
     }
 
     private static CustomerOrder CreateCompletedDeliveryOrder(CustomerOrderPaymentMethod paymentMethod)

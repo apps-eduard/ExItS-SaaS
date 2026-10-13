@@ -22,6 +22,7 @@ import { PersonalStoreIdentityCard } from "@/features/customer-ordering/Personal
 import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
+import { shopCheckoutBlocker } from "@/features/customer-ordering/checkout-place-readiness";
 import { ShopOrderCart } from "@/features/customer-ordering/ShopOrderCart";
 import { StoreProductCard } from "@/features/customer-ordering/StoreProductCard";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
@@ -367,7 +368,15 @@ export function MerchantShopPage() {
     storefront.branches[0] ??
     null;
   const showFloatingCart = !sideCartLayout && !cartSheetOpen && cart.lines.length > 0;
+  const checkoutBlock = shopCheckoutBlocker(
+    storefront.branches,
+    storefront.canCustomerDelivery,
+    storefront.fulfillmentAvailability,
+  );
   const continueToCheckout = () => {
+    if (checkoutBlock) {
+      return;
+    }
     navigate(`/personal/linked-merchants/${organizationId}/shop/checkout`);
   };
   const cartPanel = (sheet: boolean) => (
@@ -383,6 +392,7 @@ export function MerchantShopPage() {
       onEditWeight={setWeightProduct}
       onClear={clearLines}
       onContinue={continueToCheckout}
+      continueBlockedDetail={checkoutBlock ? t(checkoutBlock) : null}
     />
   );
 
