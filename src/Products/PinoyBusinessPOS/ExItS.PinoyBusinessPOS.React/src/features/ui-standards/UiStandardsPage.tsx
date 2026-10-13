@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowUp } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { EmptyState } from "@/components/exits/EmptyState";
-import { FilterChip } from "@/components/exits/FilterChip";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ export function UiStandardsPage() {
     parseUiStandardCategoryParam(searchParams.get("category")),
   );
   const { isOpen, setOpen } = useUiStandardsDisclosure();
+  const mainRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
@@ -112,12 +114,66 @@ export function UiStandardsPage() {
   const showExitsTableReference = category === "data";
   const hasAnyResult = hasLive || hasCatalog || showExitsTableReference;
 
+  useEffect(() => {
+    const node = mainRef.current;
+    if (!node) return;
+    const update = () => {
+      setShowScrollTop(node.scrollTop > 48);
+    };
+    update();
+    node.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(node);
+    return () => {
+      node.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }, [category, query, hasAnyResult]);
+
+  const scrollMainToTop = useCallback(() => {
+    const node = mainRef.current;
+    if (!node) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  }, []);
+
   if (!isFrontendLocalValidationMode()) {
     return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="ui-standards-page">
+    <div
+      className="exits-page ui-standards-page flex min-h-0 min-w-0 flex-1 flex-col"
+      data-testid="ui-standards-page"
+    >
+      <div className="ui-standards-layout">
+        <nav className="ui-standards-sidenav" aria-label="UI standard categories" data-testid="ui-standards-sidenav">
+          <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
+            {UI_STANDARD_FILTER_OPTIONS.map((opt) => {
+              const selected = category === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className="ui-standards-sidenav__item"
+                  aria-pressed={selected}
+                  data-selected={selected ? "true" : "false"}
+                  data-testid={`ui-standards-filter-${opt.id}`}
+                  onClick={() => setCategoryFilter(opt.id)}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <div className="ui-standards-main-frame">
+        <div
+          ref={mainRef}
+          className="ui-standards-main flex min-w-0 flex-col gap-3"
+          data-testid="ui-standards-main"
+        >
       <PageHeader
         title="ExItS UI Standard"
         description="Live reference for shared components, interaction patterns, and design standards."
@@ -140,23 +196,6 @@ export function UiStandardsPage() {
           placeholder="Search UI standards..."
           testId="ui-standards-search"
         />
-        <div
-          className="flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-0.5"
-          role="group"
-          aria-label="UI standard categories"
-          data-testid="ui-standards-category-filters"
-        >
-          {UI_STANDARD_FILTER_OPTIONS.map((opt) => (
-            <FilterChip
-              key={opt.id}
-              selected={category === opt.id}
-              onClick={() => setCategoryFilter(opt.id)}
-              data-testid={`ui-standards-filter-${opt.id}`}
-            >
-              {opt.label}
-            </FilterChip>
-          ))}
-        </div>
       </div>
 
       {!hasAnyResult ? (
@@ -205,6 +244,20 @@ export function UiStandardsPage() {
           ) : null}
         </>
       )}
+        </div>
+        {showScrollTop ? (
+          <button
+            type="button"
+            className="ui-standards-scroll-top"
+            aria-label="Back to top"
+            data-testid="ui-standards-scroll-top"
+            onClick={scrollMainToTop}
+          >
+            <ArrowUp className="size-5" aria-hidden />
+          </button>
+        ) : null}
+        </div>
+      </div>
     </div>
   );
 }

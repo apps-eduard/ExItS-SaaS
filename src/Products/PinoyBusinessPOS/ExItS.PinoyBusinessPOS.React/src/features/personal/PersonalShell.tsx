@@ -10,6 +10,7 @@ import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
+import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
 import { ShellSidebarModeButton } from "@/components/exits/ShellSidebarModeButton";
 import { IconButton } from "@/components/ui/icon-button";
 import { PersonalAvatarProvider } from "@/features/personal/PersonalAvatarProvider";
@@ -174,6 +175,10 @@ export function PersonalShell() {
                       returnTo: `${location.pathname}${location.search}`,
                     })
                   }
+                />
+                <ShellUiStandardsButton
+                  label={t("uiStandards.topbar")}
+                  className="app-top-bar__action"
                 />
                 <ShellPreferencesButton
                   label={t("topbar.preferences")}

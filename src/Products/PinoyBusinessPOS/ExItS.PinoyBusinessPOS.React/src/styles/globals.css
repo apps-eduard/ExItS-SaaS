@@ -4957,6 +4957,29 @@ button.exits-card {
   overflow: hidden;
 }
 
+/* UI standards reference fills the viewport. Other pages keep max-w-5xl.
+   Double class beats the shell's single-class width and gutter utilities. */
+.app-shell.app-shell--full {
+  max-width: none;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-shell--full #main-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell--full .app-top-bar {
+  margin-inline: 0;
+  margin-right: 0;
+}
+
 @media (min-width: 900px) {
   .app-shell--sell-floor {
     padding-left: max(1.25rem, env(safe-area-inset-left));
@@ -28900,4 +28923,321 @@ html[data-motion="reduced"] .exits-tooltip {
   max-width: 12ch;
   padding: 0;
   font-size: var(--exits-text-sm);
+}
+
+.ui-standards-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--exits-bg);
+}
+
+.ui-standards-layout {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.ui-standards-sidenav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 0.75rem 0.45rem;
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid var(--exits-border);
+  border-radius: 0;
+  background: var(--exits-surface);
+}
+
+.ui-standards-sidenav__list {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.ui-standards-main-frame {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.ui-standards-main {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.ui-standards-sidenav__item {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  border-radius: var(--exits-radius-md);
+  background: transparent;
+  color: var(--exits-text);
+  font: inherit;
+  font-size: var(--exits-text-sm);
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ui-standards-sidenav__item:hover,
+.ui-standards-sidenav__item:focus-visible {
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, transparent);
+}
+
+.ui-standards-sidenav__item[data-selected="true"] {
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
+  color: var(--exits-primary);
+  font-weight: 600;
+}
+
+.ui-standards-sidenav__item:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+@media (max-width: 719px) {
+  .ui-standards-layout {
+    grid-template-columns: 11.5rem minmax(0, 1fr);
+  }
+
+  .ui-standards-main {
+    padding: 1rem 0.875rem 1.5rem;
+  }
+}
+
+.ui-standards-scroll-top {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.25rem;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  border-radius: 999px;
+  background: var(--exits-surface);
+  color: var(--exits-primary);
+  box-shadow: var(--exits-shadow-lg);
+  cursor: pointer;
+}
+
+.ui-standards-scroll-top:hover,
+.ui-standards-scroll-top:focus-visible {
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+}
+
+.ui-standards-preview-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ui-standards-preview-toggle__chevron {
+  transition: transform 160ms ease;
+}
+
+.ui-standards-preview-toggle[aria-expanded="false"] .ui-standards-preview-toggle__chevron {
+  transform: rotate(-90deg);
+}
+
+/* Quasar QBtn “Standard” sample. Showcase only. */
+.ui-standards-q-example {
+  position: relative;
+  margin-top: 0.7rem;
+  padding: 1.35rem 1rem 1rem;
+  border: 1px solid var(--exits-border);
+  border-radius: 4px;
+  background: var(--exits-surface);
+}
+
+.ui-standards-q-example__label {
+  position: absolute;
+  top: 0;
+  left: 0.85rem;
+  transform: translateY(-50%);
+  padding: 0.15rem 0.7rem;
+  border-radius: 4px 4px 4px 0;
+  background: color-mix(in srgb, var(--exits-surface-muted) 88%, var(--exits-border));
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+  line-height: 1.6;
+}
+
+.ui-standards-q-example__label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  border-top: 6px solid color-mix(in srgb, var(--exits-surface-muted) 88%, var(--exits-border));
+  border-right: 8px solid transparent;
+}
+
+.ui-standards-q-example__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ui-standards-q-example__command {
+  display: block;
+  margin-top: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--exits-text-xs);
+  line-height: 1.5;
+  color: var(--exits-text-muted);
+}
+
+.ui-standards-qbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 4px 16px;
+  border: 0;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.715em;
+  letter-spacing: 0.0892857143em;
+  text-transform: uppercase;
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.2),
+    0 2px 2px rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+}
+
+.ui-standards-qbtn--outline {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.ui-standards-qbtn--outline:hover {
+  filter: none;
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.ui-standards-qbtn--ghost {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.ui-standards-qbtn--ghost:hover {
+  filter: none;
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.ui-standards-qbtn--raised {
+  box-shadow:
+    0 5px 5px -3px rgba(0, 0, 0, 0.28),
+    0 8px 10px 1px rgba(0, 0, 0, 0.18),
+    0 3px 14px 2px rgba(0, 0, 0, 0.14);
+}
+
+.ui-standards-qbtn--raised:hover {
+  filter: none;
+  transform: translateY(-2px);
+  box-shadow:
+    0 7px 8px -4px rgba(0, 0, 0, 0.28),
+    0 12px 17px 2px rgba(0, 0, 0, 0.18),
+    0 5px 22px 4px rgba(0, 0, 0, 0.14);
+}
+
+.ui-standards-qbtn--raised:active {
+  transform: translateY(0);
+}
+
+.ui-standards-qbtn--icon {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border-radius: 999px;
+  letter-spacing: 0;
+}
+
+.ui-standards-qbtn--square {
+  border-radius: 0;
+}
+
+.ui-standards-qbtn--rounded {
+  border-radius: 999px;
+}
+
+.ui-standards-qbtn--flat {
+  box-shadow: none;
+}
+
+.ui-standards-qbtn--glossy {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.32),
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(0, 0, 0, 0.08) 52%,
+    rgba(0, 0, 0, 0.04)
+  );
+}
+
+.ui-standards-qbtn:hover {
+  filter: brightness(0.96);
+}
+
+.ui-standards-qbtn:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+@media (max-width: 719px) {
+  .ui-standards-scroll-top {
+    right: 0.875rem;
+    bottom: 1rem;
+  }
 }

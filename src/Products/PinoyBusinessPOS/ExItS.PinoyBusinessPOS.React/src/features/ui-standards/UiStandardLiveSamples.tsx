@@ -362,9 +362,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             >
               {t("uiStandards.buttonPilotBadge")}
             </p>
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-button-pilot-lede">
-              {t("uiStandards.buttonPilotLede")}
-            </p>
             <UiStandardsButtonGallery />
             <UiStandardsButtonPlayground />
             <div className="flex flex-col gap-2">

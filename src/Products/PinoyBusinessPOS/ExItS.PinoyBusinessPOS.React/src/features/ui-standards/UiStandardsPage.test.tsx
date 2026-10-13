@@ -80,6 +80,7 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-view-classic")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-view-simple")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-simple-catalog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-sidenav")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-sticky-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-buttons-section")).not.toBeInTheDocument();
   });
@@ -102,6 +103,71 @@ describe("UiStandardsPage", () => {
     renderPage();
     const gallery = screen.getByTestId("ui-standard-button-gallery");
     expect(gallery).toBeInTheDocument();
+    const quasar = screen.getByTestId("ui-standard-btn-quasar-standard");
+    expect(quasar).toBeInTheDocument();
+    expect(within(quasar).getByText("Standard buttons")).toBeInTheDocument();
+    expect(within(quasar).getByText("cursor: ext-btn-standard-primary")).toBeInTheDocument();
+    const outline = screen.getByTestId("ui-standard-btn-quasar-outline");
+    expect(within(outline).getByText("Button outline")).toBeInTheDocument();
+    expect(within(outline).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--outline",
+    );
+    expect(within(outline).getByRole("button", { name: "Success" })).toBeInTheDocument();
+    expect(within(outline).getByRole("button", { name: "Info" })).toBeInTheDocument();
+    const raised = screen.getByTestId("ui-standard-btn-quasar-raised");
+    expect(within(raised).getByText("Raised")).toBeInTheDocument();
+    expect(within(raised).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--raised",
+    );
+    const roundSolid = screen.getByTestId("ui-standard-btn-quasar-round-solid");
+    expect(within(roundSolid).getByText("Rounded icon solid")).toBeInTheDocument();
+    expect(within(roundSolid).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--icon",
+    );
+    const roundOutline = screen.getByTestId("ui-standard-btn-quasar-round-outline");
+    expect(within(roundOutline).getByText("Rounded icon outlined")).toBeInTheDocument();
+    expect(within(roundOutline).getByRole("button", { name: "Help" })).toHaveClass(
+      "ui-standards-qbtn--outline",
+    );
+    const ghost = screen.getByTestId("ui-standard-btn-quasar-ghost");
+    expect(within(ghost).getByText("Button ghost")).toBeInTheDocument();
+    expect(within(ghost).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--ghost",
+    );
+    const glossy = screen.getByTestId("ui-standard-btn-quasar-glossy");
+    expect(within(glossy).getByText("Button glossy")).toBeInTheDocument();
+    expect(within(glossy).getByRole("button", { name: "Warn" })).toHaveClass(
+      "ui-standards-qbtn--glossy",
+    );
+    expect(
+      screen.getByTestId("ui-standard-btn-quasar-raised").compareDocumentPosition(ghost),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(ghost.compareDocumentPosition(glossy)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-rounded")).getByRole("button", {
+      name: "Primary",
+    })).toHaveClass("ui-standards-qbtn--rounded");
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-flat")).getByRole("button", {
+      name: "Primary",
+    })).toHaveClass("ui-standards-qbtn--flat");
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-round-icon")).getByText("Rounded icon")).toBeInTheDocument();
+    expect(within(screen.getByTestId("ui-standard-btn-quasar-square-icon")).getByRole("button", {
+      name: "Primary",
+    })).toHaveClass("ui-standards-qbtn--square");
+    expect(within(quasar).getByRole("button", { name: "Standard" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Secondary" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Success" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Info" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Amber" })).toBeInTheDocument();
+    expect(within(quasar).queryByRole("button", { name: "Brown 5" })).not.toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Danger" })).toBeInTheDocument();
+    expect(within(quasar).queryByRole("button", { name: "Deep Orange" })).not.toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Warn" })).toBeInTheDocument();
+    expect(within(quasar).queryByRole("button", { name: "Purple" })).not.toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Help" })).toBeInTheDocument();
+    expect(within(quasar).getByRole("button", { name: "Black" })).toBeInTheDocument();
+    expect(
+      quasar.compareDocumentPosition(screen.getByTestId("ui-standard-btn-gallery-default")),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(screen.getByTestId("ui-standard-btn-gallery-default")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-btn-gallery-severities")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-btn-gallery-text")).toBeInTheDocument();
@@ -275,6 +341,25 @@ describe("UiStandardsPage", () => {
     expect(qty?.className).toContain("quantity-stepper--outline");
     expect(qty?.className).toContain("quantity-stepper--cart");
     expect(within(preview).getByText("QuantityStepper Outline (standard)")).toBeInTheDocument();
+  });
+
+  it("toggles Global Preference Preview and offers back to top after scroll", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-preference-preview-toggle"));
+    expect(screen.queryByTestId("ui-standards-preference-auto-samples")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standards-preference-preview-toggle"));
+    expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
+
+    const main = screen.getByTestId("ui-standards-main");
+    expect(screen.queryByTestId("ui-standards-scroll-top")).not.toBeInTheDocument();
+    Object.defineProperty(main, "scrollTop", { configurable: true, get: () => 120 });
+    main.dispatchEvent(new Event("scroll"));
+    expect(await screen.findByTestId("ui-standards-scroll-top")).toHaveAttribute(
+      "aria-label",
+      "Back to top",
+    );
   });
 
   it("shows Do / Don’t guidance card", () => {

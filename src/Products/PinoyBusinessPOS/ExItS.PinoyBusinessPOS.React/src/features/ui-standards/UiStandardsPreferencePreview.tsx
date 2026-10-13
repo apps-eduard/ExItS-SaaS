@@ -10,6 +10,7 @@ import type {
   MotionPreference,
   ThemePreference,
 } from "@/lib/preferences/ui-preferences";
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -25,21 +26,32 @@ export function UiStandardsPreferencePreview() {
   } = usePreferences();
   const [previewSearch, setPreviewSearch] = useState("");
   const [previewQty, setPreviewQty] = useState(2);
+  const [open, setOpen] = useState(true);
 
   return (
     <section
       className="flex min-w-0 flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
       data-testid="ui-standards-preference-preview"
     >
-      <div className="flex min-w-0 flex-col gap-1">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          Global Preference Preview
-        </h2>
-        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-          Try Preferences → Control Shape, Density, Theme, and Motion. Auto samples below use the
-          real preference store (no demo-only state).
-        </p>
-      </div>
+      <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+        <button
+          type="button"
+          className="ui-standards-preview-toggle"
+          aria-expanded={open}
+          aria-controls="ui-standards-preference-preview-panel"
+          data-testid="ui-standards-preference-preview-toggle"
+          onClick={() => setOpen((current) => !current)}
+        >
+          <span>Global Preference Preview</span>
+          <ChevronDown className="ui-standards-preview-toggle__chevron size-4 shrink-0" aria-hidden />
+        </button>
+      </h2>
+      {open ? (
+        <div id="ui-standards-preference-preview-panel" className="flex min-w-0 flex-col gap-3">
+      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+        Try Preferences → Control Shape, Density, Theme, and Motion. Auto samples below use the
+        real preference store (no demo-only state).
+      </p>
 
       <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <SettingsSelect<ControlShapePreference>
@@ -137,6 +149,8 @@ export function UiStandardsPreferencePreview() {
           />
         </div>
       </div>
+        </div>
+      ) : null}
     </section>
   );
 }

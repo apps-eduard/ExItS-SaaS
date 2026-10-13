@@ -137,6 +137,10 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-theme-mode")).toBeInTheDocument();
     expect(screen.getByTestId("personal-appearance-menu")).toBeInTheDocument();
     expect(screen.getByTestId("personal-notification-bell")).toBeInTheDocument();
+    expect(screen.getByTestId("shell-ui-standards-button")).toHaveAttribute(
+      "href",
+      "/ui-standards?category=buttons",
+    );
     expect(screen.queryByTestId("personal-notification-bell-badge")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-home")).toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-utang")).toBeInTheDocument();
