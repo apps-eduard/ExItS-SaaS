@@ -185,7 +185,11 @@ export function UiStandardsQinput({
             type="button"
             className="ui-standards-qinput__clear"
             aria-label={`Clear ${label}`}
-            onClick={onClear}
+            data-testid={testId ? `${testId}-clear` : undefined}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClear?.();
+            }}
           >
             ×
           </button>

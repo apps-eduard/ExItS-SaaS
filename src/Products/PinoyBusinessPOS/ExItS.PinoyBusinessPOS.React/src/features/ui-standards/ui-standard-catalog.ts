@@ -9,13 +9,16 @@ export type UiStandardFilterCategory =
   | "slider"
   | "range"
   | "date"
+  | "time"
   | "breadcrumbs"
   | "messages"
   | "feedback"
   | "overlays"
   | "forms"
   | "upload"
-  | "cards"
+  | "card"
+  | "card-receipt"
+  | "shadow"
   | "selects"
   | "navigation"
   | "data"
@@ -31,6 +34,7 @@ export type UiStandardLiveCardId =
   | "slider"
   | "range"
   | "date"
+  | "time"
   | "breadcrumbs"
   | "messages"
   | "confirm"
@@ -43,7 +47,9 @@ export type UiStandardLiveCardId =
   | "selects"
   | "nav"
   | "table"
-  | "cards"
+  | "card"
+  | "cardReceipt"
+  | "shadow"
   | "states"
   | "dodont";
 
@@ -53,7 +59,7 @@ export type UiStandardNavItem = {
 };
 
 export type UiStandardNavGroup = {
-  id: "form-components";
+  id: "form-components" | "cards";
   label: string;
   children: readonly UiStandardNavItem[];
 };
@@ -79,6 +85,7 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
       { id: "slider", label: "Slider" },
       { id: "range", label: "Range" },
       { id: "date", label: "Date picker" },
+      { id: "time", label: "Time picker" },
     ],
   },
   { id: "breadcrumbs", label: "Breadcrumbs" },
@@ -87,7 +94,15 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
   { id: "overlays", label: "Overlays" },
   { id: "forms", label: "Forms" },
   { id: "upload", label: "Upload" },
-  { id: "cards", label: "Cards" },
+  {
+    id: "cards",
+    label: "Cards",
+    children: [
+      { id: "card", label: "Card" },
+      { id: "card-receipt", label: "Card receipt" },
+    ],
+  },
+  { id: "shadow", label: "Shadow" },
   { id: "selects", label: "Selects" },
   { id: "navigation", label: "Navigation" },
   { id: "data", label: "Data" },
@@ -227,6 +242,12 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     title: "Date picker",
     category: "date",
     keywords: ["date", "datepicker", "calendar", "qdate", "form"],
+  },
+  {
+    id: "time",
+    title: "Time picker",
+    category: "time",
+    keywords: ["time", "timepicker", "clock", "qtime", "form"],
   },
   {
     id: "messages",
@@ -424,36 +445,22 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     ],
   },
   {
-    id: "cards",
-    title: "Cards",
-    category: "cards",
-    keywords: [
-      "card",
-      "basic",
-      "summary",
-      "invoice",
-      "kpi",
-      "action",
-      "entity",
-      "product",
-      "selectable",
-      "status",
-      "compact",
-      "featured",
-      "treatment",
-      "bordered",
-      "elevated",
-      "accent",
-      "tint",
-      "primary",
-      "info",
-      "shared",
-      "emphasis",
-      "color",
-      "tone",
-      "metric",
-      "purchase summary",
-    ],
+    id: "card",
+    title: "Card",
+    category: "card",
+    keywords: ["card", "qcard", "basic", "flat", "bordered", "square", "dark", "gradient", "playground"],
+  },
+  {
+    id: "cardReceipt",
+    title: "Card receipt",
+    category: "card-receipt",
+    keywords: ["card", "receipt", "invoice", "purchase", "summary", "document"],
+  },
+  {
+    id: "shadow",
+    title: "Shadow",
+    category: "shadow",
+    keywords: ["shadow", "elevation", "inset", "small", "medium", "large", "playground"],
   },
   {
     id: "states",
@@ -552,6 +559,51 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
       "mobile",
       "playground",
     ],
+  },
+  {
+    id: "dropdown",
+    component: "Dropdown playground",
+    standard: "Dropdown",
+    category: "dropdown",
+    status: "Locked",
+    summary: "Locked global ExItS Dropdown standard. Cursor command ext dropdown from the Dropdown playground.",
+    keywords: ["dropdown", "select", "menu", "multi", "transition", "playground"],
+  },
+  {
+    id: "slider",
+    component: "Slider playground",
+    standard: "Slider",
+    category: "slider",
+    status: "Locked",
+    summary: "Locked global ExItS Slider standard. Cursor command ext slider from the Slider playground.",
+    keywords: ["slider", "thumb", "markers", "snap", "playground"],
+  },
+  {
+    id: "range",
+    component: "Range playground",
+    standard: "Range",
+    category: "range",
+    status: "Locked",
+    summary: "Locked global ExItS Range standard. Cursor command ext range from the Range playground.",
+    keywords: ["range", "min", "max", "drag", "playground"],
+  },
+  {
+    id: "date",
+    component: "Date picker playground",
+    standard: "Date",
+    category: "date",
+    status: "Locked",
+    summary: "Locked global ExItS Date picker standard. Cursor command ext date from the Date picker playground.",
+    keywords: ["date", "calendar", "roll", "range", "today", "playground"],
+  },
+  {
+    id: "time",
+    component: "Time picker playground",
+    standard: "Time",
+    category: "time",
+    status: "Pilot",
+    summary: "Pilot ExItS Time picker. Cursor command ext time from the Time picker playground.",
+    keywords: ["time", "clock", "roll", "24h", "now", "playground"],
   },
   {
     id: "action-semantics",
@@ -796,10 +848,28 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "card",
     component: "Card",
     standard: "Card",
-    category: "cards",
-    status: "Locked",
-    summary: "Types, treatments, KPI, summary/invoice, selectable cards",
-    keywords: ["card", "kpi", "entity", "summary", "invoice", "treatment", "featured"],
+    category: "card",
+    status: "Pilot",
+    summary: "Playground card with intent, header, body, and footer settings",
+    keywords: ["card", "qcard", "basic", "flat", "bordered", "square", "dark", "playground"],
+  },
+  {
+    id: "card-receipt",
+    component: "CustomerPurchaseSummaryDocument",
+    standard: "Card receipt",
+    category: "card-receipt",
+    status: "Pilot",
+    summary: "Sale receipt sample using the customer purchase summary document",
+    keywords: ["card", "receipt", "invoice", "purchase", "summary"],
+  },
+  {
+    id: "shadow",
+    component: "Shadow",
+    standard: "Shadow",
+    category: "shadow",
+    status: "Pilot",
+    summary: "Playground for none, small, medium, and large elevation, with inset",
+    keywords: ["shadow", "elevation", "inset", "playground"],
   },
   {
     id: "empty",
@@ -845,6 +915,9 @@ export function parseUiStandardCategoryParam(raw: string | null): UiStandardFilt
   // Legacy Actions filter → Buttons
   if (value === "actions") {
     return "buttons";
+  }
+  if (value === "cards") {
+    return "card";
   }
   const allowed = UI_STANDARD_FILTER_OPTIONS.map((o) => o.id);
   return (allowed.includes(value as UiStandardFilterCategory)

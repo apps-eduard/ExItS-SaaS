@@ -32,6 +32,7 @@ export function UiStandardsPage() {
   const mainRef = useRef<HTMLDivElement>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
+  const [cardsOpen, setCardsOpen] = useState(true);
 
   useEffect(() => {
     setCategory(parseUiStandardCategoryParam(searchParams.get("category")));
@@ -149,19 +150,21 @@ export function UiStandardsPage() {
           <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
             {UI_STANDARD_NAV.map((entry) => {
               if (isUiStandardNavGroup(entry)) {
+                const expanded = entry.id === "cards" ? cardsOpen : formOpen;
+                const toggle = entry.id === "cards" ? () => setCardsOpen((open) => !open) : () => setFormOpen((open) => !open);
                 return (
                   <div key={entry.id} className="ui-standards-sidenav__group">
                     <button
                       type="button"
                       className="ui-standards-sidenav__item"
-                      aria-expanded={formOpen}
+                      aria-expanded={expanded}
                       data-testid={`ui-standards-filter-${entry.id}`}
-                      onClick={() => setFormOpen((open) => !open)}
+                      onClick={toggle}
                     >
                       {entry.label}
                       <ChevronRight className="ui-standards-sidenav__chevron" aria-hidden />
                     </button>
-                    {formOpen ? (
+                    {expanded ? (
                       <div className="ui-standards-sidenav__sublist" role="group" aria-label={entry.label}>
                         {entry.children.map((child) => renderNavItem(child, true))}
                       </div>

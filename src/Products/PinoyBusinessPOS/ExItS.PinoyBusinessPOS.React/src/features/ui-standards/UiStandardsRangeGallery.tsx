@@ -9,7 +9,7 @@ import {
 } from "@/features/ui-standards/UiStandardsSliderGallery";
 
 /**
- * Quasar-style range samples for the Form Components pilot.
+ * Quasar-style range samples for the locked Range standard.
  * Showcase only — not a product range.
  * @see https://quasar.dev/vue-components/range
  */

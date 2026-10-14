@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { StatusChip } from "@/components/exits/StatusChip";
 import type { StatusChipAppearance, StatusChipShape, StatusChipTone } from "@/components/exits/StatusChip";
@@ -6,6 +6,7 @@ import {
   Bell,
   Bookmark,
   Check,
+  Clock,
   Heart,
   Info,
   Moon,
@@ -42,6 +43,7 @@ import { UiStandardsQcheckbox } from "@/features/ui-standards/UiStandardsCheckbo
 import { toggleAccent, UiStandardsPillToggle, UiStandardsQtoggle } from "@/features/ui-standards/UiStandardsToggleGallery";
 import {
   DROPDOWN_OPTIONS,
+  DROPDOWN_STANDARD_COLOR,
   dropdownAccent,
   UiStandardsQdropdown,
   type DropdownAppearance,
@@ -49,7 +51,8 @@ import {
 } from "@/features/ui-standards/UiStandardsDropdownGallery";
 import { UiStandardsQslider, sliderAccent } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { UiStandardsQrange, type SliderRangeValue } from "@/features/ui-standards/UiStandardsRangeGallery";
-import { DATE_PICKER_SAMPLE, DATE_RANGE_SAMPLE, UiStandardsQdate, type DateAppearance, type DatePickerValue, type DateVariety } from "@/features/ui-standards/UiStandardsDateGallery";
+import { DATE_PICKER_SAMPLE, DATE_RANGE_SAMPLE, UiStandardsQdate, isDateRangeValue, type DateAppearance, type DatePickerValue, type DateVariety } from "@/features/ui-standards/UiStandardsDateGallery";
+import { TIME_PICKER_SAMPLE, TIME_RANGE_SAMPLE, UiStandardsQtime, displayTime, isTimeRangeValue, type TimeAppearance, type TimePickerValue, type TimeVariety } from "@/features/ui-standards/UiStandardsTimeGallery";
 
 const PLAYGROUND_INTENTS = [
   { id: "standard", label: "Standard", bg: "#ffffff", fg: "#000000", border: true },
@@ -244,27 +247,29 @@ function CompactSelect<T extends string>({
   onChange: (value: T) => void;
   testId: string;
 }) {
+  const selected = options.find((opt) => opt.value === value);
   return (
-    <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
-      <span className="text-muted">{label}</span>
-      <select
-        className="exits-input h-8 min-w-0 rounded-[var(--exits-field-radius)] px-2 text-[length:var(--exits-text-sm)]"
-        value={value}
-        onChange={(e) => onChange(e.target.value as T)}
-        data-testid={testId}
-        aria-label={label}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value} disabled={opt.disabled}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="ui-standards-playground-select">
+      <UiStandardsQdropdown
+        label={label}
+        color={DROPDOWN_STANDARD_COLOR}
+        value={selected?.label ?? ""}
+        options={options.map((opt) => opt.label)}
+        disabledOptions={options.filter((opt) => opt.disabled).map((opt) => opt.label)}
+        standard
+        searchable={false}
+        onSelect={(nextLabel) => {
+          const match = options.find((opt) => opt.label === nextLabel);
+          if (!match || match.disabled) return;
+          onChange(match.value);
+        }}
+        testId={testId}
+      />
+    </div>
   );
 }
 
-function PlaygroundPreviewCard({
+export function PlaygroundPreviewCard({
   previewTestId,
   themeTestId,
   resetTestId,
@@ -1431,7 +1436,6 @@ export function UiStandardsDropdownPlayground() {
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Dropdown"
-        standardStatus="pilot"
         command={dropdownCursorCommand(intent, appearance, shape, density, transition, multi, disabled)}
       />
     </PlaygroundSection>
@@ -1569,7 +1573,6 @@ export function UiStandardsSliderPlayground() {
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Slider"
-        standardStatus="pilot"
         command={sliderCursorCommand(intent, stepNumber, showLabel || labelAlways, labelAlways, markers, snap, vertical, disabled)}
       />
     </PlaygroundSection>
@@ -1691,7 +1694,6 @@ export function UiStandardsRangePlayground() {
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Range"
-        standardStatus="pilot"
         command={rangeCursorCommand(intent, stepNumber, showLabel || labelAlways, labelAlways, markers, dragRange, disabled)}
       />
     </PlaygroundSection>
@@ -1716,29 +1718,113 @@ function dateCursorCommand(
   return parts.join(" ");
 }
 
+function dateInputCursorCommand(intent: string, inputAppearance: string, transition: string): string {
+  const parts = ["ext date input"];
+  if (intent !== "standard") parts.push(intent);
+  if (inputAppearance !== "standard") parts.push(inputAppearance);
+  if (transition !== "expand") parts.push(transition);
+  return parts.join(" ");
+}
+
+function dateTimeCursorCommand(intent: string, inputAppearance: string, transition: string, hour24: boolean): string {
+  const parts = ["ext date time"];
+  if (intent !== "standard") parts.push(intent);
+  if (inputAppearance !== "standard") parts.push(inputAppearance);
+  if (transition !== "expand") parts.push(transition);
+  if (hour24) parts.push("24h");
+  return parts.join(" ");
+}
+
 export function UiStandardsDatePlayground() {
   const [intent, setIntent] = useState("standard");
   const [appearance, setAppearance] = useState("standard");
   const [variety, setVariety] = useState("calendar");
+  const [inputAppearance, setInputAppearance] = useState<InputAppearance>("standard");
+  const [transition, setTransition] = useState<DropdownTransition>("expand");
+  const [inputOpen, setInputOpen] = useState(false);
+  const [inputMounted, setInputMounted] = useState(false);
+  const [dateTimeOpen, setDateTimeOpen] = useState(false);
+  const [dateTimeMounted, setDateTimeMounted] = useState(false);
+  const [dateTimeParts, setDateTimeParts] = useState({ date: false, time: false });
   const [showToday, setShowToday] = useState(false);
   const [range, setRange] = useState(false);
   const [disabled, setDisabled] = useState(false);
   const [value, setValue] = useState<DatePickerValue>(DATE_PICKER_SAMPLE);
   const [rangeValue, setRangeValue] = useState<DatePickerValue>(DATE_RANGE_SAMPLE);
+  const [timeValue, setTimeValue] = useState<TimePickerValue>(TIME_PICKER_SAMPLE);
+  const [timeRangeValue, setTimeRangeValue] = useState<TimePickerValue>(TIME_RANGE_SAMPLE);
+  const [hour24, setHour24] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
+
+  useEffect(() => {
+    if (inputOpen) {
+      setInputMounted(true);
+      return;
+    }
+    if (!inputMounted) return;
+    const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setInputMounted(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => setInputMounted(false), 180);
+    return () => window.clearTimeout(timeout);
+  }, [inputOpen, inputMounted]);
+
+  useEffect(() => {
+    if (dateTimeOpen) {
+      setDateTimeMounted(true);
+      return;
+    }
+    if (!dateTimeMounted) return;
+    const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setDateTimeMounted(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => setDateTimeMounted(false), 180);
+    return () => window.clearTimeout(timeout);
+  }, [dateTimeOpen, dateTimeMounted]);
+
+  useEffect(() => {
+    if (dateTimeOpen && dateTimeParts.date && dateTimeParts.time) setDateTimeOpen(false);
+  }, [dateTimeOpen, dateTimeParts]);
 
   function resetPreview() {
     setIntent("standard");
     setAppearance("standard");
     setVariety("calendar");
+    setInputAppearance("standard");
+    setTransition("expand");
+    setInputOpen(false);
+    setDateTimeOpen(false);
+    setDateTimeParts({ date: false, time: false });
     setShowToday(false);
     setRange(false);
     setDisabled(false);
     setValue(DATE_PICKER_SAMPLE);
     setRangeValue(DATE_RANGE_SAMPLE);
+    setTimeValue(TIME_PICKER_SAMPLE);
+    setTimeRangeValue(TIME_RANGE_SAMPLE);
+    setHour24(false);
     setPreviewKey((key) => key + 1);
   }
+
+  const dateValueText =
+    range && isDateRangeValue(rangeValue) ? `${rangeValue.from} – ${rangeValue.to}` : typeof value === "string" ? value : "";
+  const timeOnlyText =
+    range && isTimeRangeValue(timeRangeValue) ? `${timeRangeValue.from} – ${timeRangeValue.to}` : typeof timeValue === "string" ? timeValue : "";
+  const timeDisplay =
+    range && isTimeRangeValue(timeRangeValue)
+      ? `${displayTime(timeRangeValue.from, hour24)} – ${displayTime(timeRangeValue.to, hour24)}`
+      : typeof timeValue === "string"
+        ? displayTime(timeValue, hour24)
+        : "";
+  const dateTimeText =
+    range && isDateRangeValue(rangeValue) && isTimeRangeValue(timeRangeValue)
+      ? `${rangeValue.from} ${displayTime(timeRangeValue.from, hour24)} – ${rangeValue.to} ${displayTime(timeRangeValue.to, hour24)}`
+      : `${dateValueText} ${timeDisplay}`.trim();
 
   return (
     <PlaygroundSection testId="ui-standard-date-playground" className="">
@@ -1772,6 +1858,27 @@ export function UiStandardsDatePlayground() {
           onChange={setVariety}
           testId="ui-standard-date-pg-variety"
         />
+        <CompactSelect
+          label="Input appearance"
+          value={inputAppearance}
+          options={[
+            { label: "Standard", value: "standard" },
+            { label: "Soft", value: "soft" },
+            { label: "Soft outline", value: "soft-outline" },
+            { label: "Filled", value: "filled" },
+            { label: "Outlined", value: "outlined" },
+            { label: "Standout", value: "standout" },
+          ]}
+          onChange={(next) => setInputAppearance(next as InputAppearance)}
+          testId="ui-standard-date-pg-input-appearance"
+        />
+        <CompactSelect
+          label="Transition"
+          value={transition}
+          options={DROPDOWN_TRANSITIONS.map((item) => ({ label: item.label, value: item.id }))}
+          onChange={(next) => setTransition(next as DropdownTransition)}
+          testId="ui-standard-date-pg-transition"
+        />
       </div>
       <div className="flex flex-wrap gap-4">
         <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
@@ -1792,26 +1899,405 @@ export function UiStandardsDatePlayground() {
         themeTestId="ui-standard-date-pg-theme"
         resetTestId="ui-standard-date-pg-reset"
         onReset={resetPreview}
-        previewClassName="flex min-h-16 items-center"
+        previewClassName="flex min-h-16 flex-wrap items-start gap-4"
       >
-        <UiStandardsQdate
-          key={previewKey}
-          color={radioAccent(sample)}
-          ink={sample.fg}
-          value={range ? rangeValue : value}
-          range={range}
-          showToday={showToday}
-          disabled={disabled}
-          appearance={appearance as DateAppearance}
-          variety={variety as DateVariety}
-          onChange={range ? setRangeValue : setValue}
-          testId="ui-standard-date-pg-field"
-        />
+        <div className="ui-standards-date-preview-card" data-testid="ui-standard-date-pg-calendar-card">
+          <UiStandardsQdate
+            key={previewKey}
+            color={radioAccent(sample)}
+            ink={sample.fg}
+            value={range ? rangeValue : value}
+            range={range}
+            showToday={showToday}
+            disabled={disabled}
+            appearance={appearance as DateAppearance}
+            variety={variety as DateVariety}
+            onChange={range ? setRangeValue : setValue}
+            testId="ui-standard-date-pg-field"
+          />
+        </div>
+        <div className="ui-standards-date-preview-card ui-standards-date-preview-card--input" data-testid="ui-standard-date-pg-input-card">
+          <div className="ui-standards-date-preview-card__title">PREVIEW INPUT</div>
+          <div
+            onClick={() => {
+              if (!disabled) setInputOpen((open) => !open);
+            }}
+          >
+            <UiStandardsQinput
+              label="Date"
+              value={
+                range && isDateRangeValue(rangeValue)
+                  ? `${rangeValue.from} – ${rangeValue.to}`
+                  : typeof value === "string"
+                    ? value
+                    : ""
+              }
+              onChange={() => undefined}
+              accent={inputAccent(sample)}
+              fill={sample.bg}
+              ink={sample.fg}
+              appearance={inputAppearance}
+              disabled={disabled}
+              testId="ui-standard-date-pg-input"
+            />
+          </div>
+          {inputMounted ? (
+            <div
+              className="ui-standards-date-preview-pop"
+              data-transition={transition}
+              data-state={inputOpen ? "open" : "closed"}
+              data-testid="ui-standard-date-pg-input-pop"
+            >
+              <UiStandardsQdate
+                key={`input-${previewKey}`}
+                color={radioAccent(sample)}
+                ink={sample.fg}
+                value={range ? rangeValue : value}
+                range={range}
+                showToday={showToday}
+                disabled={disabled}
+                appearance={appearance as DateAppearance}
+                variety={variety as DateVariety}
+                onChange={range ? setRangeValue : setValue}
+                onPicked={() => setInputOpen(false)}
+                testId="ui-standard-date-pg-input-calendar"
+              />
+            </div>
+          ) : null}
+          <UiStandardsCopyCommand
+            standard="Date"
+            command={dateInputCursorCommand(intent, inputAppearance, transition)}
+            testId="ui-standard-date-pg-input-command"
+          />
+        </div>
+        <div className="ui-standards-date-preview-card ui-standards-date-preview-card--input ui-standards-date-preview-card--datetime" data-testid="ui-standard-date-pg-datetime-card">
+          <div className="ui-standards-date-preview-card__title">PREVIEW DATE AND TIME</div>
+          <div
+            onClick={() => {
+              if (disabled) return;
+              setDateTimeParts({ date: false, time: false });
+              setDateTimeOpen((open) => !open);
+            }}
+          >
+            <UiStandardsQinput
+              label="Date and time"
+              value={dateTimeText}
+              onChange={() => undefined}
+              accent={inputAccent(sample)}
+              fill={sample.bg}
+              ink={sample.fg}
+              appearance={inputAppearance}
+              disabled={disabled}
+              testId="ui-standard-date-pg-datetime"
+            />
+          </div>
+          {dateTimeMounted ? (
+            <div
+              className="ui-standards-date-preview-pop ui-standards-date-preview-pop--datetime"
+              data-transition={transition}
+              data-state={dateTimeOpen ? "open" : "closed"}
+              data-testid="ui-standard-date-pg-datetime-pop"
+            >
+              <UiStandardsQdate
+                key={`datetime-date-${previewKey}`}
+                color={radioAccent(sample)}
+                ink={sample.fg}
+                value={range ? rangeValue : value}
+                range={range}
+                showToday={showToday}
+                disabled={disabled}
+                appearance={appearance as DateAppearance}
+                variety={variety as DateVariety}
+                onChange={range ? setRangeValue : setValue}
+                onPicked={() => setDateTimeParts((parts) => ({ ...parts, date: true }))}
+                showValue={false}
+                testId="ui-standard-date-pg-datetime-calendar"
+              />
+              <UiStandardsQtime
+                key={`datetime-time-${previewKey}`}
+                color={radioAccent(sample)}
+                ink={sample.fg}
+                value={range ? timeRangeValue : timeValue}
+                range={range}
+                showNow={showToday}
+                hour24={hour24}
+                onHour24Change={setHour24}
+                hour24TestId="ui-standard-date-pg-24h"
+                disabled={disabled}
+                appearance={appearance as TimeAppearance}
+                variety={variety === "roll" ? "roll" : "clock"}
+                onChange={range ? setTimeRangeValue : setTimeValue}
+                onPicked={() => setDateTimeParts((parts) => ({ ...parts, time: true }))}
+                showValue={false}
+                testId="ui-standard-date-pg-datetime-clock"
+              />
+              <div className="ui-standards-datetime-values">
+                <div className="ui-standards-datetime-value" data-testid="ui-standard-date-pg-datetime-calendar-value">
+                  <span className="ui-standards-qdate__output-label">Value</span>
+                  <span className="ui-standards-qdate__output-text">{dateValueText}</span>
+                </div>
+                <div className="ui-standards-datetime-value" data-testid="ui-standard-date-pg-datetime-clock-value">
+                  <span className="ui-standards-qdate__output-label">Value</span>
+                  <span className="ui-standards-qdate__output-text">{timeOnlyText}</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <UiStandardsCopyCommand
+            standard="Date"
+            command={dateTimeCursorCommand(intent, inputAppearance, transition, hour24)}
+            testId="ui-standard-date-pg-datetime-command"
+          />
+        </div>
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Date"
-        standardStatus="pilot"
         command={dateCursorCommand(intent, appearance, variety, showToday, range, disabled)}
+      />
+    </PlaygroundSection>
+  );
+}
+
+function timeCursorCommand(
+  intent: string,
+  appearance: string,
+  variety: string,
+  hour24: boolean,
+  showNow: boolean,
+  range: boolean,
+  disabled: boolean,
+): string {
+  const parts = ["ext time"];
+  if (intent !== "standard") parts.push(intent);
+  if (appearance !== "standard") parts.push(appearance);
+  if (variety === "roll") parts.push("roll");
+  if (hour24) parts.push("24h");
+  if (showNow) parts.push("now");
+  if (range) parts.push("range");
+  if (disabled) parts.push("disabled");
+  return parts.join(" ");
+}
+
+function timeInputCursorCommand(intent: string, inputAppearance: string, transition: string): string {
+  const parts = ["ext time input"];
+  if (intent !== "standard") parts.push(intent);
+  if (inputAppearance !== "standard") parts.push(inputAppearance);
+  if (transition !== "expand") parts.push(transition);
+  return parts.join(" ");
+}
+
+export function UiStandardsTimePlayground() {
+  const [intent, setIntent] = useState("standard");
+  const [appearance, setAppearance] = useState("standard");
+  const [variety, setVariety] = useState("clock");
+  const [hour24, setHour24] = useState(false);
+  const [inputAppearance, setInputAppearance] = useState<InputAppearance>("standard");
+  const [transition, setTransition] = useState<DropdownTransition>("expand");
+  const [inputOpen, setInputOpen] = useState(false);
+  const [inputMounted, setInputMounted] = useState(false);
+  const [showNow, setShowNow] = useState(false);
+  const [range, setRange] = useState(false);
+  const [disabled, setDisabled] = useState(false);
+  const [value, setValue] = useState<TimePickerValue>(TIME_PICKER_SAMPLE);
+  const [rangeValue, setRangeValue] = useState<TimePickerValue>(TIME_RANGE_SAMPLE);
+  const [previewKey, setPreviewKey] = useState(0);
+  const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
+
+  useEffect(() => {
+    if (inputOpen) {
+      setInputMounted(true);
+      return;
+    }
+    if (!inputMounted) return;
+    const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setInputMounted(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => setInputMounted(false), 180);
+    return () => window.clearTimeout(timeout);
+  }, [inputOpen, inputMounted]);
+
+  function resetPreview() {
+    setIntent("standard");
+    setAppearance("standard");
+    setVariety("clock");
+    setHour24(false);
+    setInputAppearance("standard");
+    setTransition("expand");
+    setInputOpen(false);
+    setShowNow(false);
+    setRange(false);
+    setDisabled(false);
+    setValue(TIME_PICKER_SAMPLE);
+    setRangeValue(TIME_RANGE_SAMPLE);
+    setPreviewKey((key) => key + 1);
+  }
+
+  const shown =
+    range && isTimeRangeValue(rangeValue)
+      ? rangeValue.from || rangeValue.to
+        ? `${rangeValue.from ? displayTime(rangeValue.from, hour24) : ""} – ${rangeValue.to ? displayTime(rangeValue.to, hour24) : ""}`.trim()
+        : ""
+      : typeof value === "string" && value
+        ? displayTime(value, hour24)
+        : "";
+
+  return (
+    <PlaygroundSection testId="ui-standard-time-playground" className="">
+      <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <CompactSelect
+          label="Intent"
+          value={intent}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          onChange={setIntent}
+          testId="ui-standard-time-pg-intent"
+        />
+        <CompactSelect
+          label="Appearance"
+          value={appearance}
+          options={[
+            { label: "Standard", value: "standard" },
+            { label: "Raised", value: "raised" },
+            { label: "Gradient", value: "gradient" },
+            { label: "Flat", value: "flat" },
+          ]}
+          onChange={setAppearance}
+          testId="ui-standard-time-pg-appearance"
+        />
+        <CompactSelect
+          label="Variety"
+          value={variety}
+          options={[
+            { label: "Clock", value: "clock" },
+            { label: "Roll", value: "roll" },
+          ]}
+          onChange={setVariety}
+          testId="ui-standard-time-pg-variety"
+        />
+        <CompactSelect
+          label="Input appearance"
+          value={inputAppearance}
+          options={[
+            { label: "Standard", value: "standard" },
+            { label: "Soft", value: "soft" },
+            { label: "Soft outline", value: "soft-outline" },
+            { label: "Filled", value: "filled" },
+            { label: "Outlined", value: "outlined" },
+            { label: "Standout", value: "standout" },
+          ]}
+          onChange={(next) => setInputAppearance(next as InputAppearance)}
+          testId="ui-standard-time-pg-input-appearance"
+        />
+        <CompactSelect
+          label="Transition"
+          value={transition}
+          options={DROPDOWN_TRANSITIONS.map((item) => ({ label: item.label, value: item.id }))}
+          onChange={(next) => setTransition(next as DropdownTransition)}
+          testId="ui-standard-time-pg-transition"
+        />
+      </div>
+      <div className="flex flex-wrap gap-4">
+        <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+          <Switch checked={showNow} onCheckedChange={setShowNow} aria-label="Now" data-testid="ui-standard-time-pg-now" />
+          Now
+        </label>
+        <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+          <Switch checked={range} onCheckedChange={setRange} aria-label="Range" data-testid="ui-standard-time-pg-range" />
+          Range
+        </label>
+        <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+          <Switch checked={disabled} onCheckedChange={setDisabled} aria-label="Disabled" data-testid="ui-standard-time-pg-disabled" />
+          Disabled
+        </label>
+      </div>
+      <PlaygroundPreviewCard
+        previewTestId="ui-standard-time-pg-preview"
+        themeTestId="ui-standard-time-pg-theme"
+        resetTestId="ui-standard-time-pg-reset"
+        onReset={resetPreview}
+        previewClassName="flex min-h-16 flex-wrap items-start gap-4"
+      >
+        <div className="ui-standards-date-preview-card" data-testid="ui-standard-time-pg-clock-card">
+          <UiStandardsQtime
+            key={previewKey}
+            color={radioAccent(sample)}
+            ink={sample.fg}
+            value={range ? rangeValue : value}
+            range={range}
+            showNow={showNow}
+            hour24={hour24}
+            onHour24Change={setHour24}
+            hour24TestId="ui-standard-time-pg-24h"
+            disabled={disabled}
+            appearance={appearance as TimeAppearance}
+            variety={variety as TimeVariety}
+            onChange={range ? setRangeValue : setValue}
+            testId="ui-standard-time-pg-field"
+          />
+        </div>
+        <div className="ui-standards-date-preview-card ui-standards-date-preview-card--input" data-testid="ui-standard-time-pg-input-card">
+          <div className="ui-standards-date-preview-card__title">PREVIEW INPUT</div>
+          <div
+            onClick={() => {
+              if (!disabled) setInputOpen((open) => !open);
+            }}
+          >
+            <UiStandardsQinput
+              label="Time"
+              value={shown}
+              onChange={() => undefined}
+              accent={inputAccent(sample)}
+              fill={sample.bg}
+              ink={sample.fg}
+              appearance={inputAppearance}
+              disabled={disabled}
+              clearable
+              onClear={() => {
+                if (range) setRangeValue({ from: "", to: "" });
+                else setValue("");
+              }}
+              suffix={<Clock className="ui-standards-qinput__picker-icon" aria-hidden data-testid="ui-standard-time-pg-input-icon" />}
+              testId="ui-standard-time-pg-input"
+            />
+          </div>
+          {inputMounted ? (
+            <div
+              className="ui-standards-date-preview-pop"
+              data-transition={transition}
+              data-state={inputOpen ? "open" : "closed"}
+              data-testid="ui-standard-time-pg-input-pop"
+            >
+              <UiStandardsQtime
+                key={`input-${previewKey}`}
+                color={radioAccent(sample)}
+                ink={sample.fg}
+                value={range ? rangeValue : value}
+                range={range}
+                showNow={showNow}
+                hour24={hour24}
+                onHour24Change={setHour24}
+                disabled={disabled}
+                appearance={appearance as TimeAppearance}
+                variety={variety as TimeVariety}
+                onChange={range ? setRangeValue : setValue}
+                onPicked={() => setInputOpen(false)}
+                testId="ui-standard-time-pg-input-clock"
+              />
+            </div>
+          ) : null}
+          <UiStandardsCopyCommand
+            standard="Time"
+            standardStatus="pilot"
+            command={timeInputCursorCommand(intent, inputAppearance, transition)}
+            testId="ui-standard-time-pg-input-command"
+          />
+        </div>
+      </PlaygroundPreviewCard>
+      <UiStandardsCopyCommand
+        standard="Time"
+        standardStatus="pilot"
+        command={timeCursorCommand(intent, appearance, variety, hour24, showNow, range, disabled)}
       />
     </PlaygroundSection>
   );

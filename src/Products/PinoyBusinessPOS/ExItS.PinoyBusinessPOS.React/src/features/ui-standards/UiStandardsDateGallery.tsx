@@ -5,7 +5,7 @@ import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 import { DROPDOWN_STANDARD_COLOR, UiStandardsQdropdown } from "@/features/ui-standards/UiStandardsDropdownGallery";
 
 /**
- * Quasar-style date picker samples for the Form Components pilot.
+ * Quasar-style date picker samples for the locked Date picker standard.
  * Showcase only — not a product date picker.
  * @see https://quasar.dev/vue-components/date
  */
@@ -90,21 +90,26 @@ function DateRoll({
   disabled,
   testId,
   onChange,
+  onPicked,
 }: {
   label?: string;
   iso: string;
   disabled: boolean;
   testId?: string;
   onChange: (iso: string) => void;
+  onPicked?: () => void;
 }) {
   const date = parseIsoDate(iso);
   const year = date.getFullYear();
   const month = date.getMonth();
   const day = date.getDate();
   const maxDay = daysInMonth(year, month);
+  const [quick, setQuick] = useState<null | "month" | "day" | "year">(null);
+  const [browseYear, setBrowseYear] = useState(year);
+  const [browseMonth, setBrowseMonth] = useState(month);
   const columns = [
     {
-      id: "month",
+      id: "month" as const,
       label: "Month",
       previous: MONTHS_SHORT[(month + 11) % 12],
       current: MONTHS[month],
@@ -113,7 +118,7 @@ function DateRoll({
       onNext: () => onChange(rollIso(year, month + 1, day, false)),
     },
     {
-      id: "day",
+      id: "day" as const,
       label: "Date",
       previous: String(day === 1 ? maxDay : day - 1),
       current: String(day),
@@ -122,7 +127,7 @@ function DateRoll({
       onNext: () => onChange(rollIso(year, month, day + 1, true)),
     },
     {
-      id: "year",
+      id: "year" as const,
       label: "Year",
       previous: year > ROLL_YEAR_MIN ? String(year - 1) : "",
       current: String(year),
@@ -130,57 +135,201 @@ function DateRoll({
       onPrevious: () => onChange(rollIso(year - 1, month, day, false)),
       onNext: () => onChange(rollIso(year + 1, month, day, false)),
     },
-  ] as const;
+  ];
+  const yearPageStart = browseYear - (browseYear % 20);
+  const dayGrid = monthCells(new Date(browseYear, browseMonth, 1));
+
+  function openQuick(next: "month" | "day" | "year") {
+    setBrowseYear(year);
+    setBrowseMonth(month);
+    setQuick(next);
+  }
+
+  function chooseQuick(nextIso: string) {
+    onChange(nextIso);
+    setQuick(null);
+    onPicked?.();
+  }
 
   return (
     <div className="ui-standards-qdate__roll-group">
       {label ? <div className="ui-standards-qdate__roll-label">{label}</div> : null}
-      <div className="ui-standards-qdate__roll">
-        {columns.map((column) => (
-          <div
-            key={column.id}
-            className="ui-standards-qdate__roll-col"
-            onWheel={(event) => {
-              if (disabled) return;
-              event.preventDefault();
-              if (event.deltaY > 0) column.onNext();
-              else if (event.deltaY < 0) column.onPrevious();
-            }}
-          >
-            <span className="ui-standards-qdate__roll-caption">{column.label}</span>
+      {quick === "month" ? (
+        <div className="ui-standards-qdate__choices" role="listbox" aria-label="Month">
+          {MONTHS_SHORT.map((name, index) => (
             <button
+              key={name}
               type="button"
-              className="ui-standards-qdate__roll-btn"
-              aria-label={`Previous ${column.label}`}
+              className={"ui-standards-qdate__choice" + (index === month ? " ui-standards-qdate__choice--selected" : "")}
+              aria-pressed={index === month}
               disabled={disabled}
-              data-testid={testId ? `${testId}-roll-${column.id}-prev` : undefined}
-              onClick={column.onPrevious}
+              data-testid={testId ? `${testId}-pick-month-${index + 1}` : undefined}
+              onClick={() => chooseQuick(rollIso(year, index, day, false))}
             >
-              <ChevronUp aria-hidden />
+              {name}
             </button>
-            <div className="ui-standards-qdate__roll-window">
-              <span className="ui-standards-qdate__roll-item">{column.previous}</span>
-              <span
-                className="ui-standards-qdate__roll-item ui-standards-qdate__roll-item--current"
-                data-testid={testId ? `${testId}-roll-${column.id}` : undefined}
-              >
-                {column.current}
-              </span>
-              <span className="ui-standards-qdate__roll-item">{column.next}</span>
-            </div>
+          ))}
+        </div>
+      ) : null}
+      {quick === "year" ? (
+        <>
+          <div className="ui-standards-qdate__nav">
             <button
               type="button"
-              className="ui-standards-qdate__roll-btn"
-              aria-label={`Next ${column.label}`}
+              className="ui-standards-qdate__nav-btn"
+              aria-label="Previous years"
               disabled={disabled}
-              data-testid={testId ? `${testId}-roll-${column.id}-next` : undefined}
-              onClick={column.onNext}
+              onClick={() => setBrowseYear((current) => current - 20)}
             >
-              <ChevronDown aria-hidden />
+              <ChevronLeft aria-hidden />
+            </button>
+            <span className="ui-standards-qdate__month" data-testid={testId ? `${testId}-pick-year-range` : undefined}>
+              {yearPageStart} – {yearPageStart + 19}
+            </span>
+            <button
+              type="button"
+              className="ui-standards-qdate__nav-btn"
+              aria-label="Next years"
+              disabled={disabled}
+              onClick={() => setBrowseYear((current) => current + 20)}
+            >
+              <ChevronRight aria-hidden />
             </button>
           </div>
-        ))}
-      </div>
+          <div className="ui-standards-qdate__choices" role="listbox" aria-label="Year">
+            {Array.from({ length: 20 }, (_, index) => yearPageStart + index).map((pageYear) => (
+              <button
+                key={pageYear}
+                type="button"
+                className={"ui-standards-qdate__choice" + (pageYear === year ? " ui-standards-qdate__choice--selected" : "")}
+                aria-pressed={pageYear === year}
+                disabled={disabled || pageYear < ROLL_YEAR_MIN || pageYear > ROLL_YEAR_MAX}
+                data-testid={testId ? `${testId}-pick-year-${pageYear}` : undefined}
+                onClick={() => chooseQuick(rollIso(pageYear, month, day, false))}
+              >
+                {pageYear}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+      {quick === "day" ? (
+        <>
+          <div className="ui-standards-qdate__nav">
+            <button
+              type="button"
+              className="ui-standards-qdate__nav-btn"
+              aria-label="Previous month"
+              disabled={disabled}
+              onClick={() => {
+                const next = new Date(browseYear, browseMonth - 1, 1);
+                setBrowseYear(next.getFullYear());
+                setBrowseMonth(next.getMonth());
+              }}
+            >
+              <ChevronLeft aria-hidden />
+            </button>
+            <span className="ui-standards-qdate__month">
+              {MONTHS[browseMonth]} {browseYear}
+            </span>
+            <button
+              type="button"
+              className="ui-standards-qdate__nav-btn"
+              aria-label="Next month"
+              disabled={disabled}
+              onClick={() => {
+                const next = new Date(browseYear, browseMonth + 1, 1);
+                setBrowseYear(next.getFullYear());
+                setBrowseMonth(next.getMonth());
+              }}
+            >
+              <ChevronRight aria-hidden />
+            </button>
+          </div>
+          <div className="ui-standards-qdate__weekdays" aria-hidden>
+            {WEEKDAYS.map((name, index) => (
+              <span key={`${name}-${index}`}>{name}</span>
+            ))}
+          </div>
+          <div className="ui-standards-qdate__grid" role="grid">
+            {dayGrid.map((cell) => {
+              const cellIso = toIsoDate(cell);
+              const outside = cell.getMonth() !== browseMonth;
+              const selected = cellIso === iso;
+              return (
+                <button
+                  key={cellIso}
+                  type="button"
+                  role="gridcell"
+                  className={
+                    "ui-standards-qdate__day" +
+                    (outside ? " ui-standards-qdate__day--outside" : "") +
+                    (selected ? " ui-standards-qdate__day--selected" : "")
+                  }
+                  aria-pressed={selected}
+                  disabled={disabled}
+                  data-testid={testId && !outside ? `${testId}-pick-day-${cell.getDate()}` : undefined}
+                  onClick={() => chooseQuick(cellIso)}
+                >
+                  {cell.getDate()}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+      {quick ? null : (
+        <div className="ui-standards-qdate__roll">
+          {columns.map((column) => (
+            <div
+              key={column.id}
+              className="ui-standards-qdate__roll-col"
+              onWheel={(event) => {
+                if (disabled) return;
+                event.preventDefault();
+                if (event.deltaY > 0) column.onNext();
+                else if (event.deltaY < 0) column.onPrevious();
+              }}
+            >
+              <span className="ui-standards-qdate__roll-caption">{column.label}</span>
+              <button
+                type="button"
+                className="ui-standards-qdate__roll-btn"
+                aria-label={`Previous ${column.label}`}
+                disabled={disabled}
+                data-testid={testId ? `${testId}-roll-${column.id}-prev` : undefined}
+                onClick={column.onPrevious}
+              >
+                <ChevronUp aria-hidden />
+              </button>
+              <div className="ui-standards-qdate__roll-window">
+                <span className="ui-standards-qdate__roll-item">{column.previous}</span>
+                <button
+                  type="button"
+                  className="ui-standards-qdate__roll-item ui-standards-qdate__roll-item--current"
+                  aria-label={`Choose ${column.label}`}
+                  disabled={disabled}
+                  data-testid={testId ? `${testId}-roll-${column.id}` : undefined}
+                  onClick={() => openQuick(column.id)}
+                >
+                  {column.current}
+                </button>
+                <span className="ui-standards-qdate__roll-item">{column.next}</span>
+              </div>
+              <button
+                type="button"
+                className="ui-standards-qdate__roll-btn"
+                aria-label={`Next ${column.label}`}
+                disabled={disabled}
+                data-testid={testId ? `${testId}-roll-${column.id}-next` : undefined}
+                onClick={column.onNext}
+              >
+                <ChevronDown aria-hidden />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -197,6 +346,8 @@ export function UiStandardsQdate({
   variety = "calendar",
   onDark = false,
   onChange,
+  onPicked,
+  showValue = true,
   testId,
 }: {
   color: string;
@@ -210,6 +361,8 @@ export function UiStandardsQdate({
   variety?: DateVariety;
   onDark?: boolean;
   onChange?: (value: DatePickerValue) => void;
+  onPicked?: () => void;
+  showValue?: boolean;
   testId?: string;
 }) {
   const rangeValue = isDateRangeValue(value) ? value : { from: value, to: value };
@@ -255,6 +408,7 @@ export function UiStandardsQdate({
     if (!range || asSingle) {
       setAnchor(null);
       onChange?.(range ? { from: iso, to: iso } : iso);
+      onPicked?.();
       return;
     }
     if (!anchor) {
@@ -266,6 +420,7 @@ export function UiStandardsQdate({
     const to = anchor < iso ? iso : anchor;
     setAnchor(null);
     onChange?.({ from, to });
+    onPicked?.();
   }
 
   return (
@@ -305,6 +460,7 @@ export function UiStandardsQdate({
                 disabled={disabled}
                 testId={testId ? `${testId}-from` : undefined}
                 onChange={(iso) => onChange?.({ from: iso, to: iso > rangeValue.to ? iso : rangeValue.to })}
+                onPicked={onPicked}
               />
               <DateRoll
                 label="To"
@@ -312,6 +468,7 @@ export function UiStandardsQdate({
                 disabled={disabled}
                 testId={testId ? `${testId}-to` : undefined}
                 onChange={(iso) => onChange?.({ from: iso < rangeValue.from ? iso : rangeValue.from, to: iso })}
+                onPicked={onPicked}
               />
             </div>
           ) : (
@@ -323,6 +480,7 @@ export function UiStandardsQdate({
                 setAnchor(null);
                 onChange?.(iso);
               }}
+              onPicked={onPicked}
             />
           )
         ) : (
@@ -479,10 +637,12 @@ export function UiStandardsQdate({
             Today
           </button>
         ) : null}
-        <div className="ui-standards-qdate__output" data-testid={testId ? `${testId}-value` : undefined}>
-          <span className="ui-standards-qdate__output-label">Value</span>
-          <span className="ui-standards-qdate__output-text">{output}</span>
-        </div>
+        {showValue ? (
+          <div className="ui-standards-qdate__output" data-testid={testId ? `${testId}-value` : undefined}>
+            <span className="ui-standards-qdate__output-label">Value</span>
+            <span className="ui-standards-qdate__output-text">{output}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

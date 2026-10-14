@@ -3,7 +3,7 @@ import { INPUT_SAMPLES, type InputSample } from "@/features/ui-standards/UiStand
 import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 
 /**
- * Quasar-style slider samples for the Form Components pilot.
+ * Quasar-style slider samples for the locked Slider standard.
  * Showcase only — not a product slider.
  * @see https://quasar.dev/vue-components/slider
  */

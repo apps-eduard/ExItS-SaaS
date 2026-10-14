@@ -119,6 +119,23 @@ export const en = {
   "uiStandards.rangeSamplesTitle": "Range samples",
   "uiStandards.datePlaygroundTitle": "Date picker playground",
   "uiStandards.dateSamplesTitle": "Date picker samples",
+  "uiStandards.dropdownPilotBadge": "DROPDOWN STANDARD — APPROVED / LOCKED",
+  "uiStandards.dropdownPilotLede":
+    "The Dropdown playground is the locked ExItS Dropdown standard. Request dropdowns with the Cursor command ext dropdown. See Docs/UI/exits-dropdown-standard.md.",
+  "uiStandards.sliderPilotBadge": "SLIDER STANDARD — APPROVED / LOCKED",
+  "uiStandards.sliderPilotLede":
+    "The Slider playground is the locked ExItS Slider standard. Request sliders with the Cursor command ext slider. See Docs/UI/exits-slider-standard.md.",
+  "uiStandards.rangePilotBadge": "RANGE STANDARD — APPROVED / LOCKED",
+  "uiStandards.rangePilotLede":
+    "The Range playground is the locked ExItS Range standard. Request ranges with the Cursor command ext range. See Docs/UI/exits-range-standard.md.",
+  "uiStandards.datePilotBadge": "DATE PICKER STANDARD — APPROVED / LOCKED",
+  "uiStandards.datePilotLede":
+    "The Date picker playground is the locked ExItS Date picker standard. Request date pickers with the Cursor command ext date. See Docs/UI/exits-date-standard.md.",
+  "uiStandards.timePlaygroundTitle": "Time picker playground",
+  "uiStandards.timeSamplesTitle": "Time picker samples",
+  "uiStandards.cardPlaygroundTitle": "Card playground",
+  "uiStandards.cardReceiptTitle": "Card receipt",
+  "uiStandards.shadowPlaygroundTitle": "Shadow playground",
   "uiStandards.messagePilotBadge": "MESSAGE STANDARD — APPROVED / LOCKED",
   "uiStandards.messagePilotLede":
     "Diamond Full sample is the locked ExItS Message standard (includes Secondary · Contrast in the severity row). Product uses Notice + useExitsToast. See Docs/UI/exits-message-standard.md.",

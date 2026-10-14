@@ -20,6 +20,7 @@ export type UiStandardsCopyCommandProps = {
   context?: string;
   /** Pilot standards must not claim LOCKED. Default: locked. */
   standardStatus?: UiStandardsStandardStatus;
+  testId?: string;
 };
 
 function formatStandardLine(
@@ -123,6 +124,7 @@ export function UiStandardsCopyCommand({
   className,
   context,
   standardStatus = "locked",
+  testId = "ui-standards-copy-command",
 }: UiStandardsCopyCommandProps) {
   const [status, setStatus] = useState<CopyStatus>("idle");
   const [expanded, setExpanded] = useState(false);
@@ -163,7 +165,7 @@ export function UiStandardsCopyCommand({
   return (
     <div
       className={cn("mt-1.5 border-t border-border pt-1.5", className)}
-      data-testid="ui-standards-copy-command"
+      data-testid={testId}
       data-standard={standardAttr}
       data-command={command}
       onClick={(event) => event.stopPropagation()}

@@ -4,7 +4,7 @@ import { INPUT_SAMPLES, type InputSample } from "@/features/ui-standards/UiStand
 import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 
 /**
- * Quasar-style dropdown samples for the Form Components pilot.
+ * Quasar-style dropdown samples for the locked Dropdown standard.
  * Showcase only — not the product ExitsSelect.
  */
 export const DROPDOWN_OPTIONS = ["Option 1", "Option 2", "Option 3"] as const;
@@ -34,6 +34,7 @@ export function UiStandardsQdropdown({
   searchable = true,
   multiple = false,
   transition = "expand",
+  disabledOptions = [],
   onSelect,
   onChangeValues,
   testId,
@@ -52,6 +53,7 @@ export function UiStandardsQdropdown({
   searchable?: boolean;
   multiple?: boolean;
   transition?: DropdownTransition;
+  disabledOptions?: readonly string[];
   onSelect?: (value: string) => void;
   onChangeValues?: (values: string[]) => void;
   testId?: string;
@@ -240,18 +242,23 @@ export function UiStandardsQdropdown({
               </button>
             </div>
           ) : null}
-          {visible.map((option) => (
+          {visible.map((option) => {
+            const blocked = disabledOptions.includes(option);
+            return (
             <button
               key={option}
               type="button"
               role="option"
               aria-selected={selected.includes(option)}
+              disabled={blocked}
               className={
                 "ui-standards-qdropdown__option" +
                 (selected.includes(option) ? " ui-standards-qdropdown__option--selected" : "")
               }
               data-testid={testId ? `${testId}-option-${option.replace(/\s+/g, "-").toLowerCase()}` : undefined}
-              onClick={() => choose(option)}
+              onClick={() => {
+                if (!blocked) choose(option);
+              }}
             >
               {multiple ? (
                 <span
@@ -270,7 +277,8 @@ export function UiStandardsQdropdown({
               ) : null}
               <span className="ui-standards-qdropdown__option-label">{option}</span>
             </button>
-          ))}
+            );
+          })}
           {searchable && visible.length === 0 ? <p className="ui-standards-qdropdown__empty">No matches</p> : null}
         </div>
       ) : null}

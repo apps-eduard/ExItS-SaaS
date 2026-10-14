@@ -2,13 +2,11 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   Building2,
   ClipboardList,
-  Coins,
   Inbox,
   LayoutDashboard,
   MoreHorizontal,
   PackageCheck,
   Receipt,
-  ShoppingCart,
   Truck,
   UserRound,
   Users,
@@ -49,15 +47,12 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { TableActionButton } from "@/components/exits/TableActionButton";
 import { useExitsToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
-import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
+import { UiStandardsCardPlayground } from "@/features/ui-standards/UiStandardsCardPlayground";
+import { UiStandardsShadowPlayground } from "@/features/ui-standards/UiStandardsShadowPlayground";
 import { CreatableCombobox } from "@/components/exits/CreatableCombobox";
 import { Button, buttonIconMotion } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -77,6 +72,7 @@ import { UiStandardsDropdownGallery } from "@/features/ui-standards/UiStandardsD
 import { UiStandardsSliderGallery } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { UiStandardsRangeGallery } from "@/features/ui-standards/UiStandardsRangeGallery";
 import { UiStandardsDateGallery } from "@/features/ui-standards/UiStandardsDateGallery";
+import { UiStandardsTimeGallery } from "@/features/ui-standards/UiStandardsTimeGallery";
 import { UiStandardsBreadcrumbGallery } from "@/features/ui-standards/UiStandardsBreadcrumbGallery";
 import { UiStandardsInputGallery, UiStandardsInputTypes } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
@@ -91,6 +87,7 @@ import {
   UiStandardsSliderPlayground,
   UiStandardsRangePlayground,
   UiStandardsDatePlayground,
+  UiStandardsTimePlayground,
   UiStandardsSelectPlayground,
   UiStandardsStatusPlayground,
 } from "@/features/ui-standards/UiStandardsPlaygrounds";
@@ -193,7 +190,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [kindTab, setKindTab] = useState("personal");
   const [filterSegment, setFilterSegment] = useState("all");
   const [purchasingDest, setPurchasingDest] = useState("incoming");
-  const [selectableWarehouse, setSelectableWarehouse] = useState("main");
   const [search, setSearch] = useState("");
   const [notify, setNotify] = useState(true);
   const [allowAccess, setAllowAccess] = useState(true);
@@ -507,6 +503,12 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("dropdown") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-dropdown">
             <CardTitle>{t("uiStandards.dropdownSamplesTitle")}</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground" data-testid="ui-standard-dropdown-pilot-badge">
+              {t("uiStandards.dropdownPilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-dropdown-pilot-lede">
+              {t("uiStandards.dropdownPilotLede")}
+            </p>
             <UiStandardsDropdownGallery />
           </Card>
         ) : null}
@@ -524,6 +526,12 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("slider") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-slider">
             <CardTitle>{t("uiStandards.sliderSamplesTitle")}</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground" data-testid="ui-standard-slider-pilot-badge">
+              {t("uiStandards.sliderPilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-slider-pilot-lede">
+              {t("uiStandards.sliderPilotLede")}
+            </p>
             <UiStandardsSliderGallery />
           </Card>
         ) : null}
@@ -541,6 +549,12 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("range") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-range">
             <CardTitle>{t("uiStandards.rangeSamplesTitle")}</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground" data-testid="ui-standard-range-pilot-badge">
+              {t("uiStandards.rangePilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-range-pilot-lede">
+              {t("uiStandards.rangePilotLede")}
+            </p>
             <UiStandardsRangeGallery />
           </Card>
         ) : null}
@@ -558,7 +572,30 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("date") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-date">
             <CardTitle>{t("uiStandards.dateSamplesTitle")}</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground" data-testid="ui-standard-date-pilot-badge">
+              {t("uiStandards.datePilotBadge")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-date-pilot-lede">
+              {t("uiStandards.datePilotLede")}
+            </p>
             <UiStandardsDateGallery />
+          </Card>
+        ) : null}
+
+        {show("time") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-time-playground"
+          >
+            <CardTitle>{t("uiStandards.timePlaygroundTitle")}</CardTitle>
+            <UiStandardsTimePlayground />
+          </Card>
+        ) : null}
+
+        {show("time") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-time">
+            <CardTitle>{t("uiStandards.timeSamplesTitle")}</CardTitle>
+            <UiStandardsTimeGallery />
           </Card>
         ) : null}
 
@@ -2015,316 +2052,53 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           </Card>
         ) : null}
 
-        {show("cards") ? (
+        {show("card") ? (
           <Card
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
-            data-testid="ui-standard-card-cards"
+            data-testid="ui-standard-card-card-playground"
           >
-            <CardTitle>Cards</CardTitle>
-            <div className="flex flex-col gap-2">
-              <SectionLabel>Types</SectionLabel>
-              <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <Card treatment="bordered" data-testid="ui-standard-card-type-basic">
-                  <CardHeader>
-                    <div className="min-w-0">
-                      <CardTitle as="h4">Basic</CardTitle>
-                      <CardDescription>Grouped content / store information</CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="m-0 text-[length:var(--exits-text-sm)]">
-                      <span className="text-muted">Business hours</span>
-                      <br />
-                      8:00 AM – 8:00 PM
-                    </p>
-                  </CardContent>
-                  <CardFooter className="justify-end border-t-0 pt-0">
-                    <Button type="button" intent="neutral" appearance="outline" shape="soft">
-                      Edit
-                    </Button>
-                  </CardFooter>
-                </Card>
+            <CardTitle>{t("uiStandards.cardPlaygroundTitle")}</CardTitle>
+            <UiStandardsCardPlayground />
+          </Card>
+        ) : null}
 
-                <Card treatment="bordered" data-testid="ui-standard-card-type-kpi">
-                  <CardDescription className="uppercase tracking-wide">Today&apos;s sales</CardDescription>
-                  <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
-                    ₱24,850.00
-                  </p>
-                  <p className="m-0 text-[length:var(--exits-text-xs)] text-[var(--exits-success)]">
-                    +8.4% vs yesterday
-                  </p>
-                </Card>
+        {show("shadow") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-shadow-playground"
+          >
+            <CardTitle>{t("uiStandards.shadowPlaygroundTitle")}</CardTitle>
+            <UiStandardsShadowPlayground />
+          </Card>
+        ) : null}
 
-                <Card treatment="bordered" interactive data-testid="ui-standard-card-type-action">
-                  <CardHeader>
-                    <ShoppingCart className="size-4 text-[var(--exits-primary)]" aria-hidden />
-                    <div className="min-w-0">
-                      <CardTitle as="h4">Action</CardTitle>
-                      <CardDescription>Start a new customer transaction.</CardDescription>
-                    </div>
-                  </CardHeader>
-                </Card>
-
-                <Card treatment="bordered" interactive data-testid="ui-standard-card-type-entity">
-                  <CardHeader>
-                    <div
-                      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-[length:var(--exits-text-xs)] font-semibold"
-                      aria-hidden
-                    >
-                      KF
-                    </div>
-                    <div className="min-w-0">
-                      <CardTitle as="h4">Entity</CardTitle>
-                      <CardDescription>Kizy Fruits · Business customer</CardDescription>
-                    </div>
-                    <StatusChip tone="success">Active</StatusChip>
-                  </CardHeader>
-                </Card>
-
-                <Card
-                  treatment="accent"
-                  accentTone="warning"
-                  accentPosition="start"
-                  data-testid="ui-standard-card-type-status"
-                >
-                  <CardTitle as="h4">Status</CardTitle>
-                  <p className="m-0 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
-                    18 products
-                  </p>
-                  <StatusChip tone="warning">Needs attention</StatusChip>
-                </Card>
-
-                <Card treatment="bordered" padding="compact" data-testid="ui-standard-card-type-compact">
-                  <CardTitle as="h4" className="text-[length:var(--exits-text-sm)]">
-                    Compact
-                  </CardTitle>
-                  <CardDescription>Dense business information</CardDescription>
-                </Card>
-
-                <Card treatment="featured" data-testid="ui-standard-card-type-featured">
-                  <CardTitle as="h4">Featured</CardTitle>
-                  <CardDescription>Recommended / promoted option</CardDescription>
-                  <p className="m-0 mt-2 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
-                    ₱499
-                    <span className="text-[length:var(--exits-text-sm)] font-normal text-muted">
-                      {" "}
-                      / month
-                    </span>
-                  </p>
-                </Card>
-
-                <Card treatment="bordered" className="sm:col-span-2" data-testid="ui-standard-card-type-kpi-icon">
-                  <CardHeader className="items-center gap-2">
-                    <Coins className="size-4 shrink-0 text-muted" aria-hidden />
-                    <CardDescription className="uppercase tracking-wide">Cash in drawer</CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-0.5 pt-0">
-                    <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
-                      ₱8,420.00
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Accent — color (start edge)</SectionLabel>
-              <div
-                className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3"
-                data-testid="ui-standard-card-accent-start"
-              >
-                {(
-                  [
-                    ["primary", "Primary", "Brand / My record emphasis"],
-                    ["info", "Info", "Shared / informational"],
-                    ["success", "Success", "Positive / completed"],
-                    ["warning", "Warn", "Attention / caution"],
-                    ["danger", "Danger", "Critical / overdue"],
-                  ] as const
-                ).map(([tone, label, description]) => (
-                  <Card
-                    key={`start-${tone}`}
-                    treatment="accent"
-                    accentTone={tone}
-                    accentPosition="start"
-                    data-testid={`ui-standard-card-accent-start-${tone}`}
-                  >
-                    <CardTitle as="h4">{label}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
-                  </Card>
-                ))}
-              </div>
-              <SectionLabel>Accent — color (tint fill)</SectionLabel>
-              <div
-                className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3"
-                data-testid="ui-standard-card-accent-tint"
-              >
-                {(
-                  [
-                    ["primary", "Primary", "Brand tint surface"],
-                    ["info", "Info", "Shared tint surface"],
-                    ["success", "Success", "Positive tint surface"],
-                    ["warning", "Warn", "Attention tint surface"],
-                    ["danger", "Danger", "Critical tint surface"],
-                  ] as const
-                ).map(([tone, label, description]) => (
-                  <Card
-                    key={`tint-${tone}`}
-                    treatment="accent"
-                    accentTone={tone}
-                    accentPosition="tint"
-                    data-testid={`ui-standard-card-accent-tint-${tone}`}
-                  >
-                    <CardTitle as="h4">{label}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
-                  </Card>
-                ))}
-              </div>
-              <SectionLabel>Metric cards — tone color</SectionLabel>
-              <div
-                className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3"
-                role="list"
-                data-testid="ui-standard-card-metric-tones"
-              >
-                <DashboardMetricCard
-                  label="Default"
-                  icon={Coins}
-                  tone="default"
-                  testId="ui-standard-card-metric-default"
-                >
-                  ₱12,400.00
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label="Emphasis"
-                  icon={Coins}
-                  tone="emphasis"
-                  testId="ui-standard-card-metric-emphasis"
-                >
-                  ₱12,400.00
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label="Shared"
-                  icon={Wallet}
-                  tone="shared"
-                  testId="ui-standard-card-metric-shared"
-                >
-                  ₱3,250.00
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label="Attention"
-                  icon={Wallet}
-                  tone="attention"
-                  testId="ui-standard-card-metric-attention"
-                >
-                  ₱1,890.00
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label="Success"
-                  icon={Coins}
-                  tone="success"
-                  testId="ui-standard-card-metric-success"
-                >
-                  ₱24,850.00
-                </DashboardMetricCard>
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Accent cards use <code>treatment=&quot;accent&quot;</code> with{" "}
-                <code>accentTone</code> + <code>accentPosition</code> (start edge or tint fill).
-                Metric cards use DashboardMetricCard tones for ownership / severity surfaces
-                (emphasis, shared, attention, success).
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Selectable</SectionLabel>
-              <div
-                className="grid gap-2 sm:grid-cols-2"
-                role="radiogroup"
-                aria-label="Warehouse"
-                data-testid="ui-standard-card-selectable-group"
-              >
-                {(
-                  [
-                    ["main", "Main warehouse"],
-                    ["iloilo", "Iloilo warehouse"],
-                  ] as const
-                ).map(([key, label]) => (
-                  <Card
-                    key={key}
-                    as="button"
-                    type="button"
-                    role="radio"
-                    aria-checked={selectableWarehouse === key}
-                    treatment={selectableWarehouse === key ? "selected" : "bordered"}
-                    selected={selectableWarehouse === key}
-                    onClick={() => setSelectableWarehouse(key)}
-                    data-testid={`ui-standard-card-selectable-${key}`}
-                  >
-                    <CardTitle as="p">{label}</CardTitle>
-                    <CardDescription>Selectable option</CardDescription>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Treatments</SectionLabel>
-              <div
-                className="grid min-w-0 gap-3 rounded-[var(--exits-radius-md)] bg-[color-mix(in_srgb,var(--exits-surface-muted)_55%,var(--exits-bg))] p-3 sm:grid-cols-2 lg:grid-cols-3"
-                data-testid="ui-standard-card-treatments"
-              >
-                {(
-                  [
-                    ["Surface", "surface", "Quiet / flush with page"],
-                    ["Bordered", "bordered", "Default outlined surface"],
-                    ["Elevated", "elevated", "Raised shadow"],
-                    ["Interactive", "interactive", "Clickable (hover)"],
-                    ["Selected", "selected", "Chosen option"],
-                    ["Featured", "featured", "Promoted / preferred"],
-                  ] as const
-                ).map(([label, treatment, description]) => (
-                  <Card
-                    key={treatment}
-                    treatment={treatment}
-                    interactive={treatment === "interactive"}
-                    selected={treatment === "selected"}
-                    data-testid={`ui-standard-card-treatment-${treatment}`}
-                  >
-                    <CardTitle as="p">{label}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
-                  </Card>
-                ))}
-              </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Treatments are independent of accent color. Surface is flush, Bordered is the
-                default outline, Elevated lifts with shadow, Interactive hints clickability,
-                Selected uses Primary soft, Featured uses Primary emphasis.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Summary / invoice — Customer Purchase Summary</SectionLabel>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Same production BusinessDocument used for sale receipts (not a BIR invoice).
-              </p>
-              <div
-                className="min-h-0 w-full rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/20 p-2"
-                data-testid="ui-standard-card-invoice-sample"
-              >
-                <CustomerPurchaseSummaryDocument
-                  sale={DEMO_INVOICE_SALE}
-                  settings={DEFAULT_DOCUMENT_SETTINGS}
-                  identity={DEMO_INVOICE_IDENTITY}
-                  headerVisibility={DEMO_INVOICE_VISIBILITY}
-                  paymentLabel="Cash"
-                  cashierLabel="Cashier One"
-                  audience="Seller"
-                  preview
-                />
-              </div>
+        {show("cardReceipt") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-receipt"
+          >
+            <CardTitle>{t("uiStandards.cardReceiptTitle")}</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              Same production BusinessDocument used for sale receipts (not a BIR invoice).
+            </p>
+            <div
+              className="min-h-0 w-full rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/20 p-2"
+              data-testid="ui-standard-card-invoice-sample"
+            >
+              <CustomerPurchaseSummaryDocument
+                sale={DEMO_INVOICE_SALE}
+                settings={DEFAULT_DOCUMENT_SETTINGS}
+                identity={DEMO_INVOICE_IDENTITY}
+                headerVisibility={DEMO_INVOICE_VISIBILITY}
+                paymentLabel="Cash"
+                cashierLabel="Cashier One"
+                audience="Seller"
+                preview
+              />
             </div>
           </Card>
         ) : null}
+
 
         {show("states") ? (
           <Card
