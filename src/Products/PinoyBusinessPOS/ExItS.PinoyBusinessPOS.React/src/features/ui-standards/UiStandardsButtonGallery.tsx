@@ -44,6 +44,8 @@ function QuasarExampleCard({
   title,
   testId,
   outline = false,
+  soft = false,
+  softOutline = false,
   raised = false,
   icon = false,
   ghost = false,
@@ -57,6 +59,8 @@ function QuasarExampleCard({
   title: string;
   testId: string;
   outline?: boolean;
+  soft?: boolean;
+  softOutline?: boolean;
   raised?: boolean;
   icon?: boolean;
   ghost?: boolean;
@@ -77,6 +81,8 @@ function QuasarExampleCard({
             button={button}
             testId={testId}
             outline={outline}
+            soft={soft}
+            softOutline={softOutline}
             raised={raised}
             icon={icon}
             ghost={ghost}
@@ -101,6 +107,8 @@ function SampleQbtn({
   button,
   testId,
   outline,
+  soft,
+  softOutline,
   raised,
   icon,
   ghost,
@@ -113,6 +121,8 @@ function SampleQbtn({
   button: QuasarSampleButton;
   testId: string;
   outline: boolean;
+  soft: boolean;
+  softOutline: boolean;
   raised: boolean;
   icon: boolean;
   ghost: boolean;
@@ -126,7 +136,7 @@ function SampleQbtn({
   const accent = button.bg.toLowerCase() === "#ffffff" ? "#000000" : button.bg;
   const ButtonIcon = button.Icon;
   const transparent = outline || ghost;
-  const darkInk = (button.id === "standard" || button.id === "black") && ((outline && !icon) || ghost);
+  const darkInk = (button.id === "standard" || button.id === "black") && ((outline && !icon) || ghost || soft || softOutline);
   const filledStyle: CSSProperties & { "--qbtn-bg"?: string } = {
     backgroundColor: button.bg,
     color: button.fg,
@@ -140,6 +150,8 @@ function SampleQbtn({
         (icon ? " ui-standards-qbtn--icon" : "") +
         (square ? " ui-standards-qbtn--square" : "") +
         (rounded ? " ui-standards-qbtn--rounded" : "") +
+        (soft ? " ui-standards-qbtn--soft" : "") +
+        (softOutline ? " ui-standards-qbtn--soft-outline" : "") +
         (outline ? " ui-standards-qbtn--outline" : "") +
         (ghost ? " ui-standards-qbtn--ghost" : "") +
         (darkInk ? " ui-standards-qbtn--dark-ink" : "") +
@@ -147,12 +159,16 @@ function SampleQbtn({
         (raised ? " ui-standards-qbtn--raised" : "") +
         (!transparent && gradient ? " ui-standards-qbtn--gradient" : "") +
         (!transparent && !gradient && (glossy || button.glossy) ? " ui-standards-qbtn--glossy" : "") +
-        (!transparent && button.border ? " ui-standards-qbtn--border" : "")
+        (!transparent && !soft && !softOutline && button.border ? " ui-standards-qbtn--border" : "")
       }
       style={
-        transparent
-          ? { color: accent, borderColor: outline ? accent : "transparent", backgroundColor: "transparent" }
-          : filledStyle
+        softOutline
+          ? { color: accent, "--qbtn-bg": accent, borderColor: accent }
+          : soft
+            ? { color: accent, "--qbtn-bg": accent }
+            : transparent
+            ? { color: accent, borderColor: outline ? accent : "transparent", backgroundColor: "transparent" }
+            : filledStyle
       }
       aria-label={icon ? button.label : undefined}
       data-testid={`${testId}-${button.id}`}
@@ -180,6 +196,8 @@ function QuasarStandardButtons() {
         </p>
       </div>
       <QuasarExampleCard title="Button outline" testId="ui-standard-btn-quasar-outline" outline />
+      <QuasarExampleCard title="Button soft" testId="ui-standard-btn-quasar-soft" soft />
+      <QuasarExampleCard title="Button soft outline" testId="ui-standard-btn-quasar-soft-outline" softOutline />
       <QuasarExampleCard title="Raised" testId="ui-standard-btn-quasar-raised" raised />
       <QuasarExampleCard title="Button ghost" testId="ui-standard-btn-quasar-ghost" ghost />
       <QuasarExampleCard title="Button glossy" testId="ui-standard-btn-quasar-glossy" glossy />

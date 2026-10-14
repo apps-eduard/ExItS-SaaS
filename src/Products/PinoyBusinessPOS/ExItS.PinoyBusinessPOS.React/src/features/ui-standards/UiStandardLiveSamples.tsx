@@ -74,6 +74,9 @@ import { UiStandardsRadioGallery } from "@/features/ui-standards/UiStandardsRadi
 import { UiStandardsCheckboxGallery } from "@/features/ui-standards/UiStandardsCheckboxGallery";
 import { UiStandardsToggleGallery } from "@/features/ui-standards/UiStandardsToggleGallery";
 import { UiStandardsDropdownGallery } from "@/features/ui-standards/UiStandardsDropdownGallery";
+import { UiStandardsSliderGallery } from "@/features/ui-standards/UiStandardsSliderGallery";
+import { UiStandardsRangeGallery } from "@/features/ui-standards/UiStandardsRangeGallery";
+import { UiStandardsDateGallery } from "@/features/ui-standards/UiStandardsDateGallery";
 import { UiStandardsBreadcrumbGallery } from "@/features/ui-standards/UiStandardsBreadcrumbGallery";
 import { UiStandardsInputGallery, UiStandardsInputTypes } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
@@ -85,6 +88,9 @@ import {
   UiStandardsCheckboxPlayground,
   UiStandardsTogglePlayground,
   UiStandardsDropdownPlayground,
+  UiStandardsSliderPlayground,
+  UiStandardsRangePlayground,
+  UiStandardsDatePlayground,
   UiStandardsSelectPlayground,
   UiStandardsStatusPlayground,
 } from "@/features/ui-standards/UiStandardsPlaygrounds";
@@ -502,6 +508,57 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-dropdown">
             <CardTitle>{t("uiStandards.dropdownSamplesTitle")}</CardTitle>
             <UiStandardsDropdownGallery />
+          </Card>
+        ) : null}
+
+        {show("slider") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-slider-playground"
+          >
+            <CardTitle>{t("uiStandards.sliderPlaygroundTitle")}</CardTitle>
+            <UiStandardsSliderPlayground />
+          </Card>
+        ) : null}
+
+        {show("slider") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-slider">
+            <CardTitle>{t("uiStandards.sliderSamplesTitle")}</CardTitle>
+            <UiStandardsSliderGallery />
+          </Card>
+        ) : null}
+
+        {show("range") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-range-playground"
+          >
+            <CardTitle>{t("uiStandards.rangePlaygroundTitle")}</CardTitle>
+            <UiStandardsRangePlayground />
+          </Card>
+        ) : null}
+
+        {show("range") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-range">
+            <CardTitle>{t("uiStandards.rangeSamplesTitle")}</CardTitle>
+            <UiStandardsRangeGallery />
+          </Card>
+        ) : null}
+
+        {show("date") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-date-playground"
+          >
+            <CardTitle>{t("uiStandards.datePlaygroundTitle")}</CardTitle>
+            <UiStandardsDatePlayground />
+          </Card>
+        ) : null}
+
+        {show("date") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-date">
+            <CardTitle>{t("uiStandards.dateSamplesTitle")}</CardTitle>
+            <UiStandardsDateGallery />
           </Card>
         ) : null}
 

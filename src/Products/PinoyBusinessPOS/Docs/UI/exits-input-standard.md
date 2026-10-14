@@ -124,7 +124,7 @@ ext input [intent] [appearance] [shape] [density] [icon name] [clearable] [requi
 |-------|-----------------|--------|
 | `ext input` | Always | Default field |
 | intent | Not Standard | `primary` `secondary` `success` `info` `amber` `danger` `warn` `help` `black` |
-| appearance | Not Standard | `filled` `outlined` `standout` |
+| appearance | Not Standard | `soft` `soft-outline` `filled` `outlined` `standout` |
 | shape | Not Standard | `square` `rounded` |
 | density | Not Standard | `tight` `compact` `comfort` `relaxed` |
 | icon name | Not None | `check` `plus` `star` `bookmark` `bell` `info` `heart` `trash` `alert` `moon` |
@@ -140,6 +140,7 @@ Label text keeps the typed capitalization.
 | `ext input` | Standard intent, appearance, shape, and density |
 | `ext input primary` | Primary intent |
 | `ext input filled` | Filled appearance |
+| `ext input primary soft-outline` | Primary + soft tint with an accent border |
 | `ext input primary outlined rounded` | Primary + outlined + rounded |
 | `ext input filled required` | Filled and required |
 | `ext input standout clearable` | Standout with a clear control |

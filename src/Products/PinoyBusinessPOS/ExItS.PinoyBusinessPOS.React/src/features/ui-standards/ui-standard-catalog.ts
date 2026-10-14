@@ -6,6 +6,9 @@ export type UiStandardFilterCategory =
   | "checkbox"
   | "toggle"
   | "dropdown"
+  | "slider"
+  | "range"
+  | "date"
   | "breadcrumbs"
   | "messages"
   | "feedback"
@@ -25,6 +28,9 @@ export type UiStandardLiveCardId =
   | "checkbox"
   | "toggle"
   | "dropdown"
+  | "slider"
+  | "range"
+  | "date"
   | "breadcrumbs"
   | "messages"
   | "confirm"
@@ -70,6 +76,9 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
       { id: "checkbox", label: "Checkbox" },
       { id: "toggle", label: "Toggle" },
       { id: "dropdown", label: "Dropdown" },
+      { id: "slider", label: "Slider" },
+      { id: "range", label: "Range" },
+      { id: "date", label: "Date picker" },
     ],
   },
   { id: "breadcrumbs", label: "Breadcrumbs" },
@@ -200,6 +209,24 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     title: "Dropdown",
     category: "dropdown",
     keywords: ["dropdown", "select", "menu", "form", "qselect"],
+  },
+  {
+    id: "slider",
+    title: "Slider",
+    category: "slider",
+    keywords: ["slider", "qslider", "range", "track", "thumb", "form"],
+  },
+  {
+    id: "range",
+    title: "Range",
+    category: "range",
+    keywords: ["range", "qrange", "slider", "min", "max", "form"],
+  },
+  {
+    id: "date",
+    title: "Date picker",
+    category: "date",
+    keywords: ["date", "datepicker", "calendar", "qdate", "form"],
   },
   {
     id: "messages",

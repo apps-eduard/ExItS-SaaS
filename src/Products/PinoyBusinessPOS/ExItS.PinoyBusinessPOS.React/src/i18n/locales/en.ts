@@ -113,6 +113,12 @@ export const en = {
   "uiStandards.toggleSamplesTitle": "Toggle samples",
   "uiStandards.dropdownPlaygroundTitle": "Dropdown playground",
   "uiStandards.dropdownSamplesTitle": "Dropdown samples",
+  "uiStandards.sliderPlaygroundTitle": "Slider playground",
+  "uiStandards.sliderSamplesTitle": "Slider samples",
+  "uiStandards.rangePlaygroundTitle": "Range playground",
+  "uiStandards.rangeSamplesTitle": "Range samples",
+  "uiStandards.datePlaygroundTitle": "Date picker playground",
+  "uiStandards.dateSamplesTitle": "Date picker samples",
   "uiStandards.messagePilotBadge": "MESSAGE STANDARD — APPROVED / LOCKED",
   "uiStandards.messagePilotLede":
     "Diamond Full sample is the locked ExItS Message standard (includes Secondary · Contrast in the severity row). Product uses Notice + useExitsToast. See Docs/UI/exits-message-standard.md.",

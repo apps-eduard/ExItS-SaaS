@@ -132,6 +132,16 @@ describe("UiStandardsPage", () => {
       "ui-standards-qbtn--dark-ink",
     );
     expect(within(outline).getByRole("button", { name: "Success" })).toBeInTheDocument();
+    const soft = screen.getByTestId("ui-standard-btn-quasar-soft");
+    expect(within(soft).getByText("Button soft")).toBeInTheDocument();
+    expect(within(soft).getByRole("button", { name: "Primary" })).toHaveClass("ui-standards-qbtn--soft");
+    expect(within(soft).getByRole("button", { name: "Primary" })).toHaveStyle({ color: "#1976d2" });
+    const softOutline = screen.getByTestId("ui-standard-btn-quasar-soft-outline");
+    expect(within(softOutline).getByText("Button soft outline")).toBeInTheDocument();
+    expect(within(softOutline).getByRole("button", { name: "Primary" })).toHaveClass(
+      "ui-standards-qbtn--soft-outline",
+    );
+    expect(within(softOutline).getByRole("button", { name: "Primary" })).toHaveStyle({ color: "#1976d2" });
     expect(within(outline).getByRole("button", { name: "Info" })).toBeInTheDocument();
     const raised = screen.getByTestId("ui-standard-btn-quasar-raised");
     expect(within(raised).getByText("Raised")).toBeInTheDocument();
@@ -239,7 +249,17 @@ describe("UiStandardsPage", () => {
       .getAllByRole("option")
       .map((option) => option.textContent);
     expect(appearanceOptions[0]).toBe("Standard");
+    expect(appearanceOptions).toContain("Soft");
+    expect(appearanceOptions).toContain("Soft outline");
     expect(appearanceOptions.at(-1)).toBe("Flat");
+    await user.selectOptions(appearanceSelect, "soft");
+    expect(within(screen.getByTestId("ui-standard-btn-pg-preview")).getByRole("button")).toHaveClass(
+      "ui-standards-qbtn--soft",
+    );
+    await user.selectOptions(appearanceSelect, "soft-outline");
+    expect(within(screen.getByTestId("ui-standard-btn-pg-preview")).getByRole("button")).toHaveClass(
+      "ui-standards-qbtn--soft-outline",
+    );
     await user.selectOptions(intentSelect, "danger");
     await user.selectOptions(appearanceSelect, "outline");
     const previewBtn = within(screen.getByTestId("ui-standard-btn-pg-preview")).getByRole("button");
@@ -873,6 +893,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-filter-checkbox")).toHaveTextContent("Checkbox");
     expect(screen.getByTestId("ui-standards-filter-toggle")).toHaveTextContent("Toggle");
     expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveTextContent("Dropdown");
+    expect(screen.getByTestId("ui-standards-filter-slider")).toHaveTextContent("Slider");
+    expect(screen.getByTestId("ui-standards-filter-range")).toHaveTextContent("Range");
+    expect(screen.getByTestId("ui-standards-filter-date")).toHaveTextContent("Date picker");
     await user.click(screen.getByTestId("ui-standards-filter-radio"));
     expect(screen.getByTestId("ui-standards-filter-radio")).toHaveAttribute("data-selected", "true");
     const playground = screen.getByTestId("ui-standard-card-radio-playground");
@@ -887,11 +910,10 @@ describe("UiStandardsPage", () => {
     expect(within(samples).getByTestId("ui-standard-radio-primary")).toHaveAttribute("aria-checked", "false");
     await user.click(within(samples).getByTestId("ui-standard-radio-icon-primary"));
     expect(within(samples).getByTestId("ui-standard-radio-icon-primary")).toHaveAttribute("aria-checked", "false");
-    await user.click(within(samples).getByTestId("ui-standard-radio-dark-primary"));
-    expect(within(samples).getByTestId("ui-standard-radio-dark-primary")).toHaveAttribute("aria-checked", "false");
-    expect(within(samples).getByTestId("ui-standard-radio-dark-standard")).toHaveStyle({ "--qradio-color": "#9e9e9e" });
-    expect(within(samples).getByTestId("ui-standard-radio-dark-primary")).toHaveStyle({ "--qradio-color": "#1976d2" });
-    expect(within(samples).queryByTestId("ui-standard-radio-dark-line")).not.toBeInTheDocument();
+    await user.click(within(samples).getByTestId("ui-standard-radio-secondary"));
+    expect(within(samples).getByTestId("ui-standard-radio-secondary")).toHaveAttribute("aria-checked", "false");
+    expect(within(samples).getByTestId("ui-standard-radio-primary")).toHaveStyle({ "--qradio-color": "#1976d2" });
+    expect(within(samples).queryByText("Force dark mode")).not.toBeInTheDocument();
     expect(within(samples).getByTestId("ui-standard-radio-icons")).toBeInTheDocument();
     expect(within(samples).getByTestId("ui-standard-radio-icon-primary")).toHaveClass("ui-standards-qradio--icons");
     expect(within(samples).getByTestId("ui-standard-radio-danger")).toBeInTheDocument();
@@ -920,20 +942,15 @@ describe("UiStandardsPage", () => {
     });
     await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard"));
     expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).toHaveAttribute("aria-checked", "false");
-    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary"));
-    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary")).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    await user.click(within(checkboxSamples).getByTestId("ui-standard-checkbox-primary"));
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-primary")).toHaveAttribute("aria-checked", "false");
     expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-standard")).not.toHaveClass(
       "ui-standards-qcheckbox--dark-ink",
     );
-    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-standard")).toHaveStyle({
-      "--qcheckbox-color": "#9e9e9e",
-    });
-    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-dark-primary")).toHaveStyle({
+    expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-primary")).toHaveStyle({
       "--qcheckbox-color": "#1976d2",
     });
+    expect(within(checkboxSamples).queryByText("Force dark mode")).not.toBeInTheDocument();
     expect(within(checkboxSamples).queryByTestId("ui-standard-checkbox-icons")).not.toBeInTheDocument();
     expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-tf")).toHaveAttribute("aria-checked", "mixed");
     expect(within(checkboxSamples).getByTestId("ui-standard-checkbox-toggle-ft")).toHaveAttribute("aria-checked", "false");
@@ -983,12 +1000,12 @@ describe("UiStandardsPage", () => {
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-standard")).toHaveAttribute("data-state", "off");
     await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary"));
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary")).toHaveAttribute("data-state", "off");
-    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary"));
-    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary")).toHaveAttribute("data-state", "off");
+    await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-primary"));
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-primary")).toHaveAttribute("data-state", "off");
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-icon-primary")).toHaveClass("ui-standards-qtoggle--icons");
-    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-standard")).toHaveStyle({ "--qtoggle-color": "#9e9e9e" });
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-standard")).toHaveClass("ui-standards-pill-switch--standard");
-    expect(within(toggleSamples).getByTestId("ui-standard-toggle-dark-primary")).toHaveStyle({ "--qtoggle-color": "#1976d2" });
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-primary")).toHaveStyle({ "--qtoggle-color": "#1976d2" });
+    expect(within(toggleSamples).queryByText("Force dark mode")).not.toBeInTheDocument();
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-colors")).toHaveTextContent("Standard");
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-icons")).toHaveTextContent("Standard with icons");
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill")).toHaveTextContent("Solid");
@@ -1019,7 +1036,17 @@ describe("UiStandardsPage", () => {
     expect(within(togglePlayground).queryByTestId("ui-standard-toggle-pg-dense")).not.toBeInTheDocument();
     expect(within(togglePlayground).queryByRole("option", { name: "Ghost" })).not.toBeInTheDocument();
     expect(within(togglePlayground).queryByRole("option", { name: "Rounded" })).not.toBeInTheDocument();
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-soft-primary")).toHaveClass(
+      "ui-standards-qtoggle--appearance-soft",
+    );
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-soft-outline-primary")).toHaveClass(
+      "ui-standards-qtoggle--appearance-soft-outline",
+    );
+    expect(within(toggleSamples).getByTestId("ui-standard-toggle-pill-soft-outline-primary")).toHaveClass(
+      "ui-standards-pill-switch--appearance-soft-outline",
+    );
     expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-reset")).toHaveAttribute("aria-label", "Reset");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-theme")).toBeInTheDocument();
     await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field"));
     expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field")).toHaveAttribute("data-state", "off");
     await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field"));
@@ -1050,9 +1077,15 @@ describe("UiStandardsPage", () => {
     expect(dropdownPlayground.compareDocumentPosition(dropdownSamples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard")).toHaveStyle({ "--qdropdown-color": "#ffffff" });
     expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard")).toHaveClass("ui-standards-qdropdown--standard");
-    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-dark-standard")).toHaveStyle({ "--qdropdown-color": "#ffffff" });
+    expect(within(dropdownSamples).queryByText("Force dark mode")).not.toBeInTheDocument();
     expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-filled-primary")).toHaveClass("ui-standards-qdropdown--filled");
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-soft-primary")).toHaveClass("ui-standards-qdropdown--soft");
+    expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-soft-outline-primary")).toHaveClass(
+      "ui-standards-qdropdown--soft-outline",
+    );
     expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-outlined-primary")).toHaveClass("ui-standards-qdropdown--outlined");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-reset")).toHaveAttribute("aria-label", "Reset");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-theme")).toBeInTheDocument();
     await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field"));
     await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-option-option-2"));
     expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field")).toHaveTextContent("Option 2");
@@ -1067,24 +1100,169 @@ describe("UiStandardsPage", () => {
     );
     await user.selectOptions(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-shape"), "rounded");
     expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveAttribute("data-shape", "rounded");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-appearance").querySelector('option[value="standard"]')).toBeDisabled();
     expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
       "ext dropdown primary outlined rounded comfort",
     );
-    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-dark"));
+    const transitionSelect = within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-transition");
+    expect(within(transitionSelect).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Expand",
+      "Flip",
+      "Scale",
+      "Slide",
+    ]);
+    await user.selectOptions(transitionSelect, "scale");
+    expect(within(dropdownPlayground).queryByTestId("ui-standard-dropdown-pg-search")).not.toBeInTheDocument();
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-multi"));
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dropdown primary outlined rounded comfort scale multi",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-field"));
+    const dropdownMenu = within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-menu");
+    expect(dropdownMenu).toHaveAttribute("data-transition", "scale");
+    expect(dropdownMenu).toHaveAttribute("data-state", "open");
+    expect(within(dropdownMenu).queryByTestId("ui-standard-dropdown-pg-field-search")).not.toBeInTheDocument();
+    await user.click(within(dropdownMenu).getByTestId("ui-standard-dropdown-pg-field-select-all"));
+    expect(within(dropdownMenu).getByTestId("ui-standard-dropdown-pg-field-option-option-1").querySelector(".ui-standards-qdropdown__check--on")).not.toBeNull();
+    expect(within(dropdownMenu).getByText("All")).toBeInTheDocument();
+    expect(within(dropdownMenu).queryByText("Select all")).not.toBeInTheDocument();
+    expect(within(dropdownMenu).queryByText("Deselect all")).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-field")).toHaveTextContent(
+      "Option 1, Option 2, Option 3, Option 4, Option 5, Option 6",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-field"));
+    const reopenedMenu = within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-menu");
+    await user.click(within(reopenedMenu).getByTestId("ui-standard-dropdown-pg-field-select-all"));
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-search")).toHaveAttribute("placeholder", "None");
+    await user.type(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-search"), "option 2");
+    expect(within(reopenedMenu).getByTestId("ui-standard-dropdown-pg-field-option-option-2")).toBeInTheDocument();
+    expect(within(reopenedMenu).queryByTestId("ui-standard-dropdown-pg-field-option-option-6")).not.toBeInTheDocument();
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-search-clear"));
+    expect(within(reopenedMenu).getByTestId("ui-standard-dropdown-pg-field-option-option-6")).toBeInTheDocument();
+    expect(within(reopenedMenu).getByText("All")).toBeInTheDocument();
+    expect(within(dropdownPlayground).queryByTestId("ui-standard-dropdown-pg-light")).not.toBeInTheDocument();
+    expect(within(dropdownPlayground).queryByTestId("ui-standard-dropdown-pg-dark")).not.toBeInTheDocument();
+    const themeButton = within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-theme");
+    await user.click(themeButton);
+    const theme = document.documentElement.getAttribute("data-theme");
+    expect(theme === "light" || theme === "dark").toBe(true);
     expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute(
       "data-preview-theme",
-      "dark",
+      theme,
     );
-    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveClass(
-      "ui-standards-qdropdown--on-dark",
-    );
-    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-light"));
-    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute(
-      "data-preview-theme",
-      "light",
-    );
+    await user.click(themeButton);
+    expect(document.documentElement.getAttribute("data-theme")).toBe(theme === "dark" ? "light" : "dark");
+    window.localStorage.removeItem("exits.pos-client.ui-preferences.v1");
+    document.documentElement.dataset.theme = "system";
     expect(screen.queryByTestId("ui-standard-card-toggle")).not.toBeInTheDocument();
+  });
+
+  it("opens Slider and Range under Form Components", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByTestId("ui-standards-filter-slider"));
+    expect(screen.getByTestId("ui-standard-card-slider-playground")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-slider")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-slider-standard")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-slider")).not.toHaveTextContent("Force dark mode");
+    const slider = screen.getByTestId("ui-standard-slider-pg-field");
+    expect(slider).toHaveAttribute("aria-valuenow", "40");
+    slider.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(slider).toHaveAttribute("aria-valuenow", "41");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext slider");
+    await user.selectOptions(screen.getByTestId("ui-standard-slider-pg-intent"), "primary");
+    await user.click(screen.getByTestId("ui-standard-slider-pg-markers"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext slider primary markers");
+    await user.click(screen.getByTestId("ui-standards-filter-range"));
+    expect(screen.getByTestId("ui-standard-card-range-playground")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-range-standard-min")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-range")).not.toHaveTextContent("Force dark mode");
+    expect(screen.getByTestId("ui-standard-range-pg-field-min")).toHaveAttribute("aria-valuenow", "20");
+    expect(screen.getByTestId("ui-standard-range-pg-field-max")).toHaveAttribute("aria-valuenow", "70");
+    screen.getByTestId("ui-standard-range-pg-field-max").focus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByTestId("ui-standard-range-pg-field-max")).toHaveAttribute("aria-valuenow", "71");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext range");
+    await user.click(screen.getByTestId("ui-standard-range-pg-drag"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext range drag");
+  });
+
+  it("opens the Date picker under Form Components", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByTestId("ui-standards-filter-date"));
+    expect(screen.getByTestId("ui-standard-card-date-playground")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-date")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-date")).not.toHaveTextContent("Force dark mode");
+    expect(screen.getByTestId("ui-standard-date-intents-field")).toHaveTextContent("Standard, Primary, Secondary");
+    expect(screen.getByTestId("ui-standard-date-raised-standard")).toHaveClass("ui-standards-qdate--raised");
+    expect(screen.getByTestId("ui-standard-date-gradient-standard")).toHaveClass("ui-standards-qdate--gradient");
+    expect(screen.getByTestId("ui-standard-date-flat-standard")).toHaveClass("ui-standards-qdate--flat");
+    expect(screen.getByTestId("ui-standard-date-roll-standard")).toHaveClass("ui-standards-qdate--roll");
+    expect(screen.getByTestId("ui-standard-date-roll-standard-roll-month")).toHaveTextContent("October");
+    expect(screen.getByTestId("ui-standard-date-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-secondary")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-date-success")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-today-intents-field")).toHaveTextContent("Standard, Primary, Secondary");
+    expect(screen.queryByTestId("ui-standard-date-today-success")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-range-intents-field")).toHaveTextContent("Standard, Primary, Secondary");
+    expect(screen.queryByTestId("ui-standard-date-range-success")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-disabled-intents-field")).toHaveTextContent("Standard, Primary, Secondary");
+    expect(screen.queryByTestId("ui-standard-date-disabled-success")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-date-intents-field"));
+    await user.click(screen.getByTestId("ui-standard-date-intents-option-success"));
+    expect(screen.getByTestId("ui-standard-date-success")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-pg-field")).not.toHaveClass("ui-standards-qdate--today");
+    expect(screen.getByTestId("ui-standard-date-pg-field-month")).toHaveTextContent("October");
+    expect(screen.getByTestId("ui-standard-date-pg-field-year")).toHaveTextContent("2026");
+    expect(screen.getByTestId("ui-standard-date-pg-field-day-14")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("ui-standard-date-pg-field-value")).toHaveTextContent("2026-10-14");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-day-20"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-day-20")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("ui-standard-date-pg-field")).toHaveTextContent("Oct 20");
+    expect(screen.getByTestId("ui-standard-date-pg-field-value")).toHaveTextContent("2026-10-20");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-next"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-month")).toHaveTextContent("November");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext date");
+    await user.selectOptions(screen.getByTestId("ui-standard-date-pg-intent"), "primary");
+    await user.click(screen.getByTestId("ui-standard-date-pg-today"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-today")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-pg-field")).toHaveClass("ui-standards-qdate--today");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext date primary today");
+    await user.click(screen.getByTestId("ui-standard-date-pg-range"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-month")).toHaveTextContent("October");
+    expect(screen.getByTestId("ui-standard-date-pg-field-year")).toHaveTextContent("2026");
+    expect(screen.getByTestId("ui-standard-date-pg-field-value")).toHaveTextContent("2026-10-14 – 2026-10-20");
+    expect(screen.getByTestId("ui-standard-date-pg-field-day-16")).toHaveClass("ui-standards-qdate__day--in-range");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-day-8"));
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-day-22"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-value")).toHaveTextContent("2026-10-08 – 2026-10-22");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext date primary today range");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-year"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-year-range")).toHaveTextContent("2020 – 2039");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-year-2030"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-month-3")).toHaveAttribute("aria-pressed", "false");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-month-3"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-month")).toHaveTextContent("March");
+    expect(screen.getByTestId("ui-standard-date-pg-field-year")).toHaveTextContent("2030");
+    expect(screen.getByTestId("ui-standard-date-pg-field-day-1")).toBeInTheDocument();
+    await user.selectOptions(screen.getByTestId("ui-standard-date-pg-appearance"), "raised");
+    expect(screen.getByTestId("ui-standard-date-pg-field")).toHaveClass("ui-standards-qdate--raised");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext date primary raised today range");
+    await user.selectOptions(screen.getByTestId("ui-standard-date-pg-variety"), "roll");
+    expect(screen.getByTestId("ui-standard-date-pg-field")).toHaveClass("ui-standards-qdate--roll");
+    expect(screen.getByTestId("ui-standard-date-pg-field-from-roll-month")).toHaveTextContent("October");
+    expect(screen.getByTestId("ui-standard-date-pg-field-from-roll-day")).toHaveTextContent("8");
+    expect(screen.getByTestId("ui-standard-date-pg-field-to-roll-day")).toHaveTextContent("22");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-from-roll-day-next"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-value")).toHaveTextContent("2026-10-09 – 2026-10-22");
+    await user.click(screen.getByTestId("ui-standard-date-pg-field-from-roll-month-next"));
+    expect(screen.getByTestId("ui-standard-date-pg-field-from-roll-month")).toHaveTextContent("November");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext date primary raised roll today range");
   });
 
   it("opens Input filter with a playground card and an input samples card", async () => {
@@ -1120,6 +1298,10 @@ describe("UiStandardsPage", () => {
     expect(within(typesCard).getByLabelText("Mobile international")).toHaveValue("+63 917 123 4567");
     expect(within(playgroundCard).queryByTestId("ui-standard-input-pg-type")).not.toBeInTheDocument();
     expect(within(inputsCard).getByTestId("ui-standard-input-standard")).toBeInTheDocument();
+    expect(within(inputsCard).getByTestId("ui-standard-input-soft-outline-primary")).toHaveAttribute(
+      "data-appearance",
+      "soft-outline",
+    );
     expect(within(inputsCard).getByTestId("ui-standard-input-outlined")).toBeInTheDocument();
     expect(within(inputsCard).getByTestId("ui-standard-input-outlined-primary")).toHaveAttribute(
       "data-appearance",
@@ -1138,6 +1320,7 @@ describe("UiStandardsPage", () => {
     await user.selectOptions(screen.getByTestId("ui-standard-input-pg-shape"), "rounded");
     expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-appearance", "outlined");
     expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-shape", "rounded");
+    expect(screen.getByTestId("ui-standard-input-pg-appearance").querySelector('option[value="standard"]')).toBeDisabled();
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
       "ext input primary outlined rounded",

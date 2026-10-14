@@ -38,6 +38,8 @@ Toggle
 │
 ├─ Appearance
 │  ├─ Standard
+│  ├─ Soft
+│  ├─ Soft outline
 │  ├─ Outline
 │  ├─ Raised
 │  ├─ Glossy
@@ -63,4 +65,4 @@ Example: `ext toggle primary solid raised comfort check`
 
 ## Samples
 
-Standard, Standard with icons, Solid, Outline, Solid with icons, Solid with label, Toggle order, and Force dark mode. Samples can be clicked. The playground preview is a card and can be clicked. Reset is a pill icon button.
+Standard, Soft, Soft outline, Standard with icons, Solid, Solid soft, Solid soft outline, Outline, Solid with icons, Solid with label, and Toggle order. Samples can be clicked. The playground preview is a card and can be clicked. Reset is a pill icon button, and the theme icon switches light and dark for the whole app.

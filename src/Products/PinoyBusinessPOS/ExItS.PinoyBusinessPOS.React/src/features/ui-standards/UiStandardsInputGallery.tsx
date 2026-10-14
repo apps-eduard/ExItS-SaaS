@@ -26,7 +26,7 @@ export const INPUT_SAMPLES: readonly InputSample[] = [
   { id: "black", label: "Black", bg: "#000000", fg: "#ffffff" },
 ];
 
-export type InputAppearance = "standard" | "filled" | "outlined" | "standout";
+export type InputAppearance = "standard" | "soft" | "soft-outline" | "filled" | "outlined" | "standout";
 export type InputShape = "square" | "standard" | "rounded";
 
 export function inputAccent(sample: Pick<InputSample, "bg">): string {
@@ -378,6 +378,8 @@ export function UiStandardsInputGallery(): ReactNode {
   return (
     <div className="flex flex-col gap-4" data-testid="ui-standard-input-gallery">
       <InputExampleCard title="Standard" testId="ui-standard-input-standard" appearance="standard" />
+      <InputExampleCard title="Soft" testId="ui-standard-input-soft" appearance="soft" />
+      <InputExampleCard title="Soft outline" testId="ui-standard-input-soft-outline" appearance="soft-outline" />
       <InputExampleCard title="Filled" testId="ui-standard-input-filled" appearance="filled" />
       <InputExampleCard title="Outlined" testId="ui-standard-input-outlined" appearance="outlined" />
       <InputExampleCard title="Standout" testId="ui-standard-input-standout" appearance="standout" />
