@@ -109,6 +109,7 @@ describe("personal merchant cart", () => {
         deliveryOperational: false,
         onlineOrdersPaused: false,
         deliveryServiceAreas: null,
+        operatingHours: null,
         storeStatusMessage: null,
       },
     ];

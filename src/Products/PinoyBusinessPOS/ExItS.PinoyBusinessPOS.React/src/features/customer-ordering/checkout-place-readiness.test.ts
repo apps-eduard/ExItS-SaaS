@@ -45,6 +45,7 @@ function branch(partial: Partial<CustomerStorefrontBranchDto>): CustomerStorefro
     storeStatusMessage: null,
     deliveryServiceAreas: [],
     ...partial,
+    operatingHours: partial.operatingHours === undefined ? [] : partial.operatingHours,
   };
 }
 

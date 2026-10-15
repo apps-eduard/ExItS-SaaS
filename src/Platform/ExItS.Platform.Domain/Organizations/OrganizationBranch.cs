@@ -361,6 +361,13 @@ public sealed class OrganizationBranch
                 "Customer ordering is not available for warehouse branches.");
         }
 
+        if (enabled && !PickupEnabled && !DeliveryEnabled)
+        {
+            throw new DomainException(
+                DomainErrorCodes.BranchOrderingRequiresFulfillmentMethod,
+                "Turn on Pickup or Delivery before Online orders.");
+        }
+
         CustomerOrderingEnabled = enabled;
         if (!enabled)
         {
@@ -418,6 +425,13 @@ public sealed class OrganizationBranch
     public void SetOnlineOrdersPaused(bool paused, OnlineOrdersPauseReason? reason, DateTimeOffset utcNow)
     {
         EnsureMutable(utcNow);
+        if (!paused && CustomerOrderingEnabled && !PickupEnabled && !DeliveryEnabled)
+        {
+            throw new DomainException(
+                DomainErrorCodes.BranchOrderingRequiresFulfillmentMethod,
+                "Turn on Pickup or Delivery before Online orders.");
+        }
+
         OnlineOrdersPaused = paused;
         PauseReason = paused ? reason ?? OnlineOrdersPauseReason.Other : null;
         UpdatedAtUtc = utcNow;

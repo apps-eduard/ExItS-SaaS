@@ -25,10 +25,37 @@ public sealed class BranchFulfillmentAndDeliveryPolicyTests
         Assert.Equal(DomainErrorCodes.OrganizationBranchDeliveryLocationRequired, ex.ErrorCode);
 
         branch.UpdateCoordinates(14.5547m, 121.0244m, T0.AddMinutes(2));
-        branch.SetCustomerOrderingEnabled(true, T0.AddMinutes(3));
-        branch.SetFulfillmentCapabilities(true, true, T0.AddMinutes(4));
+        branch.SetFulfillmentCapabilities(true, true, T0.AddMinutes(3));
+        branch.SetCustomerOrderingEnabled(true, T0.AddMinutes(4));
         Assert.True(branch.CanOfferDeliveryLocation);
         Assert.True(branch.CanOfferPickup);
+    }
+
+    [Fact]
+    public void Online_orders_require_pickup_or_delivery()
+    {
+        var branch = OrganizationBranch.Create(Org, "BGC", "BGC", T0);
+        var ex = Assert.Throws<DomainException>(() => branch.SetCustomerOrderingEnabled(true, T0.AddMinutes(1)));
+        Assert.Equal(DomainErrorCodes.BranchOrderingRequiresFulfillmentMethod, ex.ErrorCode);
+        Assert.False(branch.CustomerOrderingEnabled);
+
+        branch.SetFulfillmentCapabilities(true, false, T0.AddMinutes(2));
+        branch.SetCustomerOrderingEnabled(true, T0.AddMinutes(3));
+        Assert.True(branch.CustomerOrderingEnabled);
+    }
+
+    [Fact]
+    public void Resuming_online_orders_requires_pickup_or_delivery()
+    {
+        var branch = OrganizationBranch.Create(Org, "BGC", "BGC", T0, pickupEnabled: true);
+        branch.SetCustomerOrderingEnabled(true, T0.AddMinutes(1));
+        branch.SetOnlineOrdersPaused(true, OnlineOrdersPauseReason.Other, T0.AddMinutes(2));
+        branch.SetFulfillmentCapabilities(false, false, T0.AddMinutes(3));
+
+        var ex = Assert.Throws<DomainException>(() =>
+            branch.SetOnlineOrdersPaused(false, null, T0.AddMinutes(4)));
+        Assert.Equal(DomainErrorCodes.BranchOrderingRequiresFulfillmentMethod, ex.ErrorCode);
+        Assert.True(branch.OnlineOrdersPaused);
     }
 
     [Fact]

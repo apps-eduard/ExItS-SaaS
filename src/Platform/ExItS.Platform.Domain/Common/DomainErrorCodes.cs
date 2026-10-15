@@ -81,6 +81,8 @@ public static class DomainErrorCodes
     public const string OrganizationBranchDeliveryLocationRequired = "platform.organization_branch.delivery_location_required";
     public const string InvalidBranchOperatingHours = "platform.organization_branch.operating_hours.invalid";
     public const string BranchFulfillmentNotReady = "platform.organization_branch.fulfillment.not_ready";
+    public const string BranchOrderingRequiresFulfillmentMethod =
+        "platform.organization_branch.ordering.requires_fulfillment_method";
     public const string InvalidBranchDeliveryPolicy = "platform.branch_delivery_policy.invalid";
     public const string DeliveryMinimumOrderNotMet = "platform.delivery.minimum_order_not_met";
     public const string DeliveryDistanceExceedsMaximum = "platform.delivery.distance_exceeds_maximum";
