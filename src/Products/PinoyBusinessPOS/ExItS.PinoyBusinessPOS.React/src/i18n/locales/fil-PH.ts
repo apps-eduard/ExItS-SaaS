@@ -3290,6 +3290,17 @@ export const filPH: Record<keyof typeof en, string> = {
   "appearance.primary.fuchsia": "Fuchsia",
   "appearance.primary.rose": "Rose",
   "appearance.primary.orange": "Orange",
+  "appearance.canvas.label": "Theme and background",
+  "appearance.themeColor.label": "Theme",
+  "appearance.background.menu": "Background",
+  "appearance.background.label": "Background color",
+  "appearance.background.theme": "Theme",
+  "appearance.background.blue": "Blue",
+  "appearance.background.violet": "Violet",
+  "appearance.background.teal": "Teal",
+  "appearance.background.rose": "Rose",
+  "appearance.background.sand": "Sand",
+  "appearance.background.slate": "Slate",
   "appearance.primary.amber": "Amber",
   "appearance.controlShape.label": "Control shape",
   "appearance.controlShape.standard": "Standard",
@@ -9068,12 +9079,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.home.guideCardTitle": "Tuklasin ang ExItS",
 
   "personal.home.iOwe": "May utang ako",
-  "personal.home.myOwedRecord": "My Owed Record",
-  "personal.home.myIOweRecord": "My I Owe Record",
-  "personal.home.sharedOwedRecord": "Shared Owed Record",
-  "personal.home.sharedIOweRecord": "Shared I Owe Record",
-  "personal.home.trackerOwedTitle": "OWED TO ME",
-  "personal.home.trackerOweTitle": "I OWE",
+  "personal.home.myOwedRecord": "I Owed",
+  "personal.home.myIOweRecord": "I owed",
+  "personal.home.sharedOwedRecord": "I lent",
+  "personal.home.sharedIOweRecord": "I lent",
+  "personal.home.trackerOwedTitle": "My Ledger",
+  "personal.home.trackerOweTitle": "Shared Ledger",
 
   "personal.home.loadErrorDetail": "Suriin ang koneksyon at subukan muli.",
 
@@ -9088,6 +9099,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.home.people": "Mga tao",
 
   "personal.home.personalTracker": "Personal Tracker",
+  "personal.home.welcome": "Welcome,",
 
   "personal.home.quickActions": "Mabilis na aksyon",
 
@@ -9713,6 +9725,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.formTitle": "Business details",
 
   "personal.startBusiness.lede": "Create your organization and open the owner workspace.",
+  "personal.startBusiness.staffNote": "Working as staff somewhere else does not stop you from creating your own organization.",
 
   "personal.startBusiness.loading": "Loading Start a Business?",
 

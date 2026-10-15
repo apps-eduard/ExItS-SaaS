@@ -10,6 +10,7 @@ import { createPosApiProxy } from "./vite.pos-api-proxy";
 import { blockServiceWorkerScriptsInDev } from "./vite.block-sw-in-dev";
 import { createDevPortHealthPlugin } from "./vite.dev-port-health";
 import { createLvSupervisorProxy } from "./vite.lv-supervisor-proxy";
+import { createSelectGlobalDefaultPlugin } from "./vite.select-global-default.js";
 import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -44,6 +45,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    createSelectGlobalDefaultPlugin(rootDir),
     blockServiceWorkerScriptsInDev(),
     createDevPortHealthPlugin(),
     VitePWA({

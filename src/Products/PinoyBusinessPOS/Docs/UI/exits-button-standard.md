@@ -255,7 +255,7 @@ New code should use `intent` + `appearance`. Prefer `getActionButtonStyle` over 
 
 | API | Use |
 |-----|-----|
-| `shape="auto"` (default) | Follows Control Shape preference |
+| `shape="auto"` (default) | Follows Control Shape preference (Square, Standard, Soft, Pill) |
 | `shape="standard"` | Fixed `--exits-radius-md` |
 | `shape="soft"` | More rounded |
 | `shape="pill"` | Capsule |
@@ -327,7 +327,7 @@ ext btn [icon] [intent] [appearance] [shape] [density] [icon name] [ripple] [dis
 | intent | Not Standard | `primary` `secondary` `success` `info` `amber` `danger` `warn` `help` `black` |
 | appearance | Not Standard | `soft` `soft-outline` `outline` `raised` `ghost` `glossy` `gradient` `rounded` `flat` |
 | shape | Not Standard | `square` `soft` `pill` |
-| density | Not Standard | `tight` `compact` `comfort` `relaxed` |
+| density | Not Standard | `compact` `comfort` |
 | icon name | Not None | `check` `plus` `star` `bookmark` `bell` `info` `heart` `trash` `alert` `moon` |
 | `ripple` | Ripple is on | Click ripple |
 | `disabled` | Disabled is on | Non-interactive |

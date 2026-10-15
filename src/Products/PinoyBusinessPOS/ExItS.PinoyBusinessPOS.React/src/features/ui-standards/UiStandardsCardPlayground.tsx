@@ -1,11 +1,11 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { usePreferences } from "@/hooks/usePreferences";
 import { Calendar, Share2 } from "lucide-react";
-import { DROPDOWN_STANDARD_COLOR, UiStandardsQdropdown } from "@/features/ui-standards/UiStandardsDropdownGallery";
 import { INPUT_SAMPLES } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsQslider } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { RADIO_STANDARD_COLOR } from "@/features/ui-standards/UiStandardsRadioGallery";
 import { UiStandardsQcheckbox } from "@/features/ui-standards/UiStandardsCheckboxGallery";
-import { PlaygroundPreviewCard } from "@/features/ui-standards/UiStandardsPlaygrounds";
+import { CompactSelect, PlaygroundPreviewCard, playgroundIntentColor } from "@/features/ui-standards/UiStandardsPlaygrounds";
 import { Switch } from "@/components/ui/switch";
 import { PlaygroundSection } from "@/features/ui-standards/UiStandardsSnippetBlock";
 import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
@@ -64,6 +64,28 @@ const ALIGN_OPTIONS: ReadonlyArray<{ label: string; value: CardActionAlign }> = 
   { label: "Center", value: "center" },
   { label: "End", value: "end" },
 ];
+
+const BUTTON_APPEARANCE_OPTIONS = [
+  { label: "Standard", value: "standard" },
+  { label: "Soft", value: "soft" },
+  { label: "Soft outline", value: "soft-outline" },
+  { label: "Outline", value: "outline" },
+  { label: "Raised", value: "raised" },
+  { label: "Ghost", value: "ghost" },
+  { label: "Glossy", value: "glossy" },
+  { label: "Gradient", value: "gradient" },
+  { label: "Rounded", value: "rounded" },
+  { label: "Flat", value: "flat" },
+] as const;
+
+const BUTTON_DENSITY_OPTIONS = [
+  { label: "Compact", value: "compact" },
+  { label: "Standard", value: "balance" },
+  { label: "Comfort", value: "comfort" },
+] as const;
+
+type ButtonAppearance = (typeof BUTTON_APPEARANCE_OPTIONS)[number]["value"];
+type ButtonDensity = (typeof BUTTON_DENSITY_OPTIONS)[number]["value"];
 
 const TITLE_ALIGN_OPTIONS: ReadonlyArray<{ label: string; value: CardTitleAlign }> = [
   { label: "Start", value: "start" },
@@ -204,6 +226,8 @@ function cardCursorCommand(
   body: CardBodyKind,
   footer: CardFooterKind,
   align: CardActionAlign,
+  buttonAppearance: ButtonAppearance,
+  buttonDensity: ButtonDensity,
   iconOnly: boolean,
   vertical: boolean,
   footerIntent: string,
@@ -269,7 +293,9 @@ function cardCursorCommand(
   else if (footer === "actions" && vertical) parts.push("icons-right");
   else if (footer === "actions" && iconOnly) parts.push("icons");
   else if (footer === "actions") parts.push("actions");
-  if (footer === "actions" && !vertical && align !== "start") parts.push(align);
+  if (footer === "actions" && align !== "start") parts.push(align);
+  if (footer === "actions" && buttonAppearance !== "standard") parts.push(`btn-${buttonAppearance}`);
+  if (footer === "actions" && buttonDensity !== "balance") parts.push(`btn-${buttonDensity}`);
   if (footer !== "none" && footerIntent !== "standard") parts.push(`footer-${footerIntent}`);
   return parts.join(" ");
 }
@@ -279,17 +305,52 @@ function sampleById(id: string) {
 }
 
 /** Outline uses the intent hue. Standard stays black so it stays visible on a light surface. */
-function outlineInk(sample: { id: string; bg: string; fg: string }) {
-  return sample.id === "standard" ? sample.fg : sample.bg;
+function intentPaint(sample: { id: string; bg: string }) {
+  return playgroundIntentColor(sample.id, sample.bg);
 }
 
-function CardIconActions() {
+function outlineInk(sample: { id: string; bg: string; fg: string }) {
+  return sample.id === "standard" ? sample.fg : intentPaint(sample);
+}
+
+function buttonAppearanceClass(appearance: ButtonAppearance): string {
+  if (appearance === "standard") return "";
+  return `ui-standards-qbtn ui-standards-qbtn--playground ui-standards-qbtn--${appearance}`;
+}
+
+function buttonAppearanceStyle(
+  appearance: ButtonAppearance,
+  sample: { id: string; bg: string; fg: string },
+): CSSProperties | undefined {
+  if (appearance === "standard") return undefined;
+  const accent = playgroundIntentColor(sample.id, sample.bg.toLowerCase() === "#ffffff" ? "#000000" : sample.bg);
+  if (appearance === "outline" || appearance === "ghost") {
+    return {
+      color: accent,
+      borderColor: appearance === "outline" ? accent : "transparent",
+      backgroundColor: "transparent",
+    };
+  }
+  if (appearance === "soft" || appearance === "soft-outline") {
+    return {
+      color: accent,
+      borderColor: appearance === "soft-outline" ? accent : undefined,
+      ["--qbtn-bg" as string]: accent,
+    };
+  }
+  const fill = intentPaint(sample);
+  const style: CSSProperties & { "--qbtn-bg"?: string } = { backgroundColor: fill, color: sample.fg };
+  if (appearance === "gradient") style["--qbtn-bg"] = fill;
+  return style;
+}
+
+function CardIconActions({ className, style }: { className: string; style?: CSSProperties }) {
   return (
     <>
-      <button type="button" aria-label="Event">
+      <button type="button" className={className || undefined} style={style} aria-label="Event">
         <Calendar aria-hidden />
       </button>
-      <button type="button" aria-label="Share">
+      <button type="button" className={className || undefined} style={style} aria-label="Share">
         <Share2 aria-hidden />
       </button>
     </>
@@ -311,21 +372,14 @@ function SettingSelect<T extends string>({
   testId: string;
   disabled?: boolean;
 }) {
-  const selected = options.find((option) => option.value === value);
   return (
-    <UiStandardsQdropdown
+    <CompactSelect
       label={label}
-      color={DROPDOWN_STANDARD_COLOR}
-      value={selected?.label ?? ""}
-      options={options.map((option) => option.label)}
-      standard
-      searchable={false}
-      disabled={disabled}
-      onSelect={(nextLabel) => {
-        const match = options.find((option) => option.label === nextLabel);
-        if (match) onChange(match.value);
-      }}
+      value={value}
+      options={options}
+      onChange={onChange}
       testId={testId}
+      disabled={disabled}
     />
   );
 }
@@ -425,6 +479,9 @@ export function UiStandardsCardPlayground() {
   const [footer, setFooter] = useState<CardFooterKind>("none");
   const [footerIntent, setFooterIntent] = useState("standard");
   const [align, setAlign] = useState<CardActionAlign>("start");
+  const [buttonAppearance, setButtonAppearance] = useState<ButtonAppearance>("standard");
+  const { preferences, setDensity } = usePreferences();
+  const buttonDensity = preferences.density;
   const [iconOnly, setIconOnly] = useState(false);
   const [vertical, setVertical] = useState(false);
   const [fill, setFill] = useState<CardFill>("solid");
@@ -458,7 +515,7 @@ export function UiStandardsCardPlayground() {
   const gradient = fill === "gradient";
   const gradientCss = GRADIENT_OPTIONS.find((option) => option.value === gradientDirection)?.css ?? "to bottom";
   const cardStyle = {
-    "--qcard-bg": sample.bg,
+    "--qcard-bg": intentPaint(sample),
     "--qcard-ink": sample.fg,
     "--qcard-gradient-dir": gradientCss,
     "--qcard-radius": cornerRadiusCss(stepCss(RADIUS_SIZES, radius), radiusCorners),
@@ -482,6 +539,8 @@ export function UiStandardsCardPlayground() {
     setFooter("none");
     setFooterIntent("standard");
     setAlign("start");
+    setButtonAppearance("standard");
+    setDensity("balance");
     setIconOnly(false);
     setVertical(false);
     setFill("solid");
@@ -509,9 +568,9 @@ export function UiStandardsCardPlayground() {
   const headerGradient = headerFill === "gradient";
   const headerGradientCss = GRADIENT_OPTIONS.find((option) => option.value === headerGradientDirection)?.css ?? "to bottom";
   const headerStyle = {
-    "--qcard-part-bg": headerSample.bg,
+    "--qcard-part-bg": intentPaint(headerSample),
     "--qcard-part-ink": headerSample.fg,
-    "--qheader-bg": headerSample.bg,
+    "--qheader-bg": intentPaint(headerSample),
     "--qheader-ink": headerSample.fg,
     "--qheader-gradient-dir": headerGradientCss,
     "--qheader-pad": stepCss(HEIGHT_PAD, height),
@@ -533,7 +592,7 @@ export function UiStandardsCardPlayground() {
     ...(headerFill === "outline" ? { color: outlineInk(headerSample) } : {}),
   } as CSSProperties;
   const footerStyle = {
-    "--qcard-part-bg": footerSample.bg,
+    "--qcard-part-bg": intentPaint(footerSample),
     "--qcard-part-ink": footerSample.fg,
   } as CSSProperties;
   const bodyPart =
@@ -563,16 +622,22 @@ export function UiStandardsCardPlayground() {
         style={footerTinted ? footerStyle : undefined}
         data-testid="ui-standard-card-pg-footer-part"
         data-intent={footerSample.id}
-        data-align={sideIcons ? undefined : align}
+        data-align={footer === "actions" ? align : undefined}
+        data-appearance={footer === "actions" ? buttonAppearance : undefined}
+        data-density={footer === "actions" ? buttonDensity : undefined}
       >
         {footer === "caption" ? (
           <span>Updated today</span>
         ) : actionIcons ? (
-          <CardIconActions />
+          <CardIconActions className={buttonAppearanceClass(buttonAppearance)} style={buttonAppearanceStyle(buttonAppearance, footerSample)} />
         ) : (
           <>
-            <button type="button">Action 1</button>
-            <button type="button">Action 2</button>
+            <button type="button" className={buttonAppearanceClass(buttonAppearance) || undefined} style={buttonAppearanceStyle(buttonAppearance, footerSample)}>
+              Action 1
+            </button>
+            <button type="button" className={buttonAppearanceClass(buttonAppearance) || undefined} style={buttonAppearanceStyle(buttonAppearance, footerSample)}>
+              Action 2
+            </button>
           </>
         )}
       </div>
@@ -876,7 +941,20 @@ export function UiStandardsCardPlayground() {
                 options={ALIGN_OPTIONS}
                 onChange={setAlign}
                 testId="ui-standard-card-pg-footer-align"
-                disabled={vertical}
+              />
+              <SettingSelect
+                label="Appearance"
+                value={buttonAppearance}
+                options={BUTTON_APPEARANCE_OPTIONS}
+                onChange={setButtonAppearance}
+                testId="ui-standard-card-pg-footer-appearance"
+              />
+              <SettingSelect
+                label="Density"
+                value={buttonDensity}
+                options={BUTTON_DENSITY_OPTIONS}
+                onChange={setDensity}
+                testId="ui-standard-card-pg-footer-density"
               />
               <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
                 <Switch
@@ -911,6 +989,8 @@ export function UiStandardsCardPlayground() {
           body,
           footer,
           align,
+          buttonAppearance,
+          buttonDensity,
           iconOnly,
           vertical,
           footerIntent,

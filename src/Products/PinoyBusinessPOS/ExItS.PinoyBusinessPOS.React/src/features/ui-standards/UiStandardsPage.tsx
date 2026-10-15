@@ -15,7 +15,7 @@ import {
   parseUiStandardCategoryParam,
   UI_STANDARD_NAV,
   type UiStandardFilterCategory,
-  type UiStandardNavItem,
+  type UiStandardNavChild,
 } from "@/features/ui-standards/ui-standard-catalog";
 
 /**
@@ -31,8 +31,11 @@ export function UiStandardsPage() {
   const { isOpen, setOpen } = useUiStandardsDisclosure();
   const mainRef = useRef<HTMLDivElement>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [formOpen, setFormOpen] = useState(true);
-  const [cardsOpen, setCardsOpen] = useState(true);
+  const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({
+    "form-components": true,
+    cards: true,
+    icons: true,
+  });
 
   useEffect(() => {
     setCategory(parseUiStandardCategoryParam(searchParams.get("category")));
@@ -94,7 +97,8 @@ export function UiStandardsPage() {
 
   const hasLive = visibleLiveCards.length > 0;
   const showExitsTableReference = category === "data";
-  const hasAnyResult = hasLive || showExitsTableReference;
+  const showLucide = category === "lucide";
+  const hasAnyResult = hasLive || showExitsTableReference || showLucide;
 
   useEffect(() => {
     const node = mainRef.current;
@@ -119,13 +123,28 @@ export function UiStandardsPage() {
     node.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }, []);
 
-  function renderNavItem(item: UiStandardNavItem, child: boolean) {
+  function renderNavItem(item: UiStandardNavChild, child: boolean) {
+    const className = "ui-standards-sidenav__item" + (child ? " ui-standards-sidenav__item--child" : "");
+    if ("href" in item) {
+      return (
+        <a
+          key={item.id}
+          className={className}
+          href={item.href}
+          target="_blank"
+          rel="noreferrer"
+          data-testid={`ui-standards-filter-${item.id}`}
+        >
+          {item.label}
+        </a>
+      );
+    }
     const selected = category === item.id;
     return (
       <button
         key={item.id}
         type="button"
-        className={"ui-standards-sidenav__item" + (child ? " ui-standards-sidenav__item--child" : "")}
+        className={className}
         aria-pressed={selected}
         data-selected={selected ? "true" : "false"}
         data-testid={`ui-standards-filter-${item.id}`}
@@ -150,8 +169,7 @@ export function UiStandardsPage() {
           <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
             {UI_STANDARD_NAV.map((entry) => {
               if (isUiStandardNavGroup(entry)) {
-                const expanded = entry.id === "cards" ? cardsOpen : formOpen;
-                const toggle = entry.id === "cards" ? () => setCardsOpen((open) => !open) : () => setFormOpen((open) => !open);
+                const expanded = groupOpen[entry.id] ?? true;
                 return (
                   <div key={entry.id} className="ui-standards-sidenav__group">
                     <button
@@ -159,7 +177,12 @@ export function UiStandardsPage() {
                       className="ui-standards-sidenav__item"
                       aria-expanded={expanded}
                       data-testid={`ui-standards-filter-${entry.id}`}
-                      onClick={toggle}
+                      onClick={() =>
+                        setGroupOpen((current) => ({
+                          ...current,
+                          [entry.id]: !(current[entry.id] ?? true),
+                        }))
+                      }
                     >
                       {entry.label}
                       <ChevronRight className="ui-standards-sidenav__chevron" aria-hidden />
@@ -216,6 +239,22 @@ export function UiStandardsPage() {
             <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-live-section">
               <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">Live samples</h2>
               <UiStandardLiveSamples visibleCardIds={visibleLiveIds} />
+            </section>
+          ) : null}
+
+          {showLucide ? (
+            <section className="ui-standards-icon-frame" data-testid="ui-standards-lucide">
+              <div className="ui-standards-icon-frame__bar">
+                <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">Lucide</h2>
+                <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer">
+                  Open in a new tab
+                </a>
+              </div>
+              <iframe
+                title="Lucide icons"
+                src="https://lucide.dev/icons"
+                data-testid="ui-standards-lucide-frame"
+              />
             </section>
           ) : null}
 

@@ -149,6 +149,16 @@ export function ExitsFileFormatIcon({
   );
 }
 
+/** Printer icon with the same badge label as CSV / XLS / PDF, in grey. */
+export function ExitsPrintFormatIcon({ className }: { className?: string }) {
+  return (
+    <span className={cn("exits-file-format-icon", "exits-file-format-icon--print", className)} aria-hidden>
+      <Printer className="exits-file-format-icon__doc" aria-hidden />
+      <span className="exits-file-format-icon__badge">PRT</span>
+    </span>
+  );
+}
+
 export type ExitsTableOutputAction = "csv" | "xlsx" | "pdf" | "print";
 
 export type ExitsTableOutputActionsProps = {
@@ -223,7 +233,7 @@ export function ExitsTableOutputActions({
       id: "print",
       label: printLabel,
       onClick: onPrint,
-      icon: <Printer className="size-4" aria-hidden />,
+      icon: <ExitsPrintFormatIcon />,
     },
   ];
 

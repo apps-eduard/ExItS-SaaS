@@ -305,19 +305,17 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standard-btn-pg-size")).not.toBeInTheDocument();
     const density = await openPlaygroundDropdown(user, "ui-standard-btn-pg-density");
     expect(within(density).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "Tight",
       "Compact",
       "Standard",
       "Comfort",
-      "Relaxed",
     ]);
-    await choosePlaygroundDropdown(user, "ui-standard-btn-pg-density", "tight");
-    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "tight");
-    await choosePlaygroundDropdown(user, "ui-standard-btn-pg-density", "relaxed");
-    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "relaxed");
+    await choosePlaygroundDropdown(user, "ui-standard-btn-pg-density", "compact");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "compact");
+    await choosePlaygroundDropdown(user, "ui-standard-btn-pg-density", "comfort");
+    expect(screen.getByTestId("ui-standard-btn-pg-preview")).toHaveAttribute("data-density", "comfort");
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext btn danger outline square relaxed",
+      "ext btn danger outline square comfort",
     );
     const icon = await openPlaygroundDropdown(user, "ui-standard-btn-pg-icon");
     expect(within(icon).getAllByRole("option").map((option) => option.textContent)?.[0]).toBe("None");
@@ -326,7 +324,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-btn-pg-preview-icon")).toBeInTheDocument();
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext btn danger outline square relaxed star",
+      "ext btn danger outline square comfort star",
     );
     await choosePlaygroundDropdown(user, "ui-standard-btn-pg-icon", "none");
     expect(screen.queryByTestId("ui-standard-btn-pg-preview-icon")).not.toBeInTheDocument();
@@ -343,7 +341,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-btn-pg-preview-icon")).toBeInTheDocument();
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext btn icon danger outline square relaxed",
+      "ext btn icon danger outline square comfort",
     );
     expect(screen.getByTestId("ui-standard-btn-pg-ripple")).toBeInTheDocument();
     expect(previewBtn).toHaveAttribute("data-ripple", "no-ripple");
@@ -352,14 +350,14 @@ describe("UiStandardsPage", () => {
     expect(previewBtn).toHaveAttribute("data-ripple", "ripple");
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext btn icon danger outline square relaxed ripple",
+      "ext btn icon danger outline square comfort ripple",
     );
     await user.click(previewBtn);
     expect(screen.getByTestId("ui-standard-btn-pg-ripple-wave")).toBeInTheDocument();
     await user.click(screen.getByTestId("ui-standard-btn-pg-disabled"));
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext btn icon danger outline square relaxed ripple disabled",
+      "ext btn icon danger outline square comfort ripple disabled",
     );
     await user.click(screen.getByTestId("ui-standard-btn-quasar-standard-row-primary"));
     expect(screen.getByTestId("ui-standard-qbtn-ripple-wave")).toBeInTheDocument();
@@ -410,6 +408,7 @@ describe("UiStandardsPage", () => {
     renderPage();
     const preview = screen.getByTestId("ui-standards-preference-preview");
     expect(within(preview).getByText("Global preview")).toBeInTheDocument();
+    expect(within(preview).getByTestId("preferences-primary-green")).toHaveAttribute("data-selected", "true");
     expect(screen.getByTestId("ui-standards-main")).toContainElement(preview);
     expect(screen.getByTestId("ui-standards-preference-auto-samples")).toBeInTheDocument();
     await user.click(within(screen.getByTestId("ui-standards-pref-control-shape")).getByRole("radio", {
@@ -621,6 +620,22 @@ describe("UiStandardsPage", () => {
     await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer", "actions");
     expect(screen.getByTestId("ui-standard-card-pg-footer-part")).toHaveTextContent("Action 1");
     expect(screen.getByTestId("ui-standard-card-pg-footer-part")).toHaveAttribute("data-align", "start");
+    expect(screen.getByTestId("ui-standard-card-pg-footer-part")).toHaveAttribute("data-appearance", "standard");
+    expect(screen.getByTestId("ui-standard-card-pg-footer-part")).toHaveAttribute("data-density", "balance");
+    await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer-appearance", "soft");
+    await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer-density", "compact");
+    expect(screen.getByTestId("ui-standard-card-pg-footer-part")).toHaveAttribute("data-appearance", "soft");
+    expect(screen.getByTestId("ui-standard-card-pg-footer-part")).toHaveAttribute("data-density", "compact");
+    expect(within(screen.getByTestId("ui-standard-card-pg-footer-part")).getByRole("button", { name: "Action 1" })).toHaveClass(
+      "ui-standards-qbtn--soft",
+    );
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext card primary no-header sections actions btn-soft btn-compact",
+    );
+    await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer-appearance", "standard");
+    await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer-density", "standard");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext card primary no-header sections actions");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext card primary no-header sections actions");
     await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer-align", "center");
     expect(screen.getByTestId("ui-standard-card-pg-footer-part")).toHaveAttribute("data-align", "center");
@@ -647,11 +662,15 @@ describe("UiStandardsPage", () => {
     expect(title.parentElement).toBe(sample);
     expect(verticalFooter.parentElement).toHaveClass("ui-standards-qcard__body-row");
     expect(verticalFooter).toHaveClass("ui-standards-qcard__footer--vertical");
+    expect(verticalFooter).toHaveAttribute("data-align", "center");
+    await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer-align", "end");
+    expect(verticalFooter).toHaveAttribute("data-align", "end");
+    await choosePlaygroundDropdown(user, "ui-standard-card-pg-footer-align", "center");
     expect(within(verticalFooter).getByRole("button", { name: "Event" })).toBeInTheDocument();
     expect(within(verticalFooter).getByRole("button", { name: "Share" })).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary header-secondary sections icons-right footer-success",
+      "ext card primary header-secondary sections icons-right center footer-success",
     );
     const radiusSlider = screen.getByTestId("ui-standard-card-pg-radius");
     radiusSlider.focus();
@@ -660,7 +679,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-radius")).toHaveAttribute("aria-valuenow", "10");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary radius-10 header-secondary sections icons-right footer-success",
+      "ext card primary radius-10 header-secondary sections icons-right center footer-success",
     );
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveAttribute("data-corners", "lt,lb,rt,rb");
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveStyle({ "--qcard-radius": "24px" });
@@ -671,14 +690,14 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveStyle({ "--qcard-radius": "0 24px 0 0" });
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary radius-rt-10 header-secondary sections icons-right footer-success",
+      "ext card primary radius-rt-10 header-secondary sections icons-right center footer-success",
     );
     await user.click(screen.getByTestId("ui-standard-card-pg-radius-corners-lt"));
     await user.click(screen.getByTestId("ui-standard-card-pg-radius-corners-lb"));
     await user.click(screen.getByTestId("ui-standard-card-pg-radius-corners-rb"));
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary radius-10 header-secondary sections icons-right footer-success",
+      "ext card primary radius-10 header-secondary sections icons-right center footer-success",
     );
     const elevationSlider = screen.getByTestId("ui-standard-card-pg-elevation");
     elevationSlider.focus();
@@ -687,14 +706,14 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveStyle({ "--qcard-shadow": "none" });
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 header-secondary sections icons-right footer-success",
+      "ext card primary flat radius-10 header-secondary sections icons-right center footer-success",
     );
     await user.click(screen.getByTestId("ui-standard-card-pg-border-sides-l"));
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveAttribute("data-border-sides", "l");
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveStyle({ "--qcard-border-width": "0 0 0 1px" });
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l header-secondary sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l header-secondary sections icons-right center footer-success",
     );
     const borderSlider = screen.getByTestId("ui-standard-card-pg-border-size");
     borderSlider.focus();
@@ -703,13 +722,13 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveStyle({ "--qcard-border-width": "0 0 0 10px" });
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l-10 header-secondary sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l-10 header-secondary sections icons-right center footer-success",
     );
     await choosePlaygroundDropdown(user, "ui-standard-card-pg-title-align", "center");
     expect(screen.getByTestId("ui-standard-card-pg-header-part")).toHaveAttribute("data-title-align", "center");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l-10 header-secondary title-center sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l-10 header-secondary title-center sections icons-right center footer-success",
     );
     const fontSlider = screen.getByTestId("ui-standard-card-pg-font");
     expect(within(screen.getByTestId("ui-standard-card-pg-header-settings")).getByTestId("ui-standard-card-pg-font")).toBe(fontSlider);
@@ -722,7 +741,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-font-value")).toHaveTextContent("H1");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l-10 header-secondary title-center h1 sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l-10 header-secondary title-center h1 sections icons-right center footer-success",
     );
     await user.keyboard("{End}");
     expect(screen.getByTestId("ui-standard-card-pg-header-part")).toHaveAttribute("data-font", "5");
@@ -747,7 +766,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-sample")).not.toHaveAttribute("data-height");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l-10 header-secondary title-center height-5 sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l-10 header-secondary title-center height-5 sections icons-right center footer-success",
     );
     widthSlider.focus();
     await user.keyboard("{ArrowLeft}");
@@ -759,7 +778,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveClass("ui-standards-qcard--release");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l-10 header-secondary title-center height-5 width-4 sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l-10 header-secondary title-center height-5 width-4 sections icons-right center footer-success",
     );
     await user.keyboard("{ArrowLeft}");
     expect(headerPart).toHaveAttribute("data-width", "3");
@@ -788,7 +807,7 @@ describe("UiStandardsPage", () => {
     expect(headerPart).toHaveAttribute("data-elevation", "5");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l-10 header-secondary title-center header-pill header-raised-5 header-radius-2 header-border-l height-5 sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l-10 header-secondary title-center header-pill header-raised-5 header-radius-2 header-border-l height-5 sections icons-right center footer-success",
     );
     await choosePlaygroundDropdown(user, "ui-standard-card-pg-header-fill", "gradient");
     expect(headerPart).toHaveAttribute("data-fill", "gradient");
@@ -813,7 +832,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveClass("ui-standards-qcard--release");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext card primary flat radius-10 border-l-10 header-secondary header-outline title-center header-pill header-position-5 header-raised-5 header-radius-2 header-border-l height-5 sections icons-right footer-success",
+      "ext card primary flat radius-10 border-l-10 header-secondary header-outline title-center header-pill header-position-5 header-raised-5 header-radius-2 header-border-l height-5 sections icons-right center footer-success",
     );
     await user.click(screen.getByTestId("ui-standard-card-pg-reset"));
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveAttribute("data-intent", "standard");
@@ -870,6 +889,246 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-shadow-pg-plate")).toHaveAttribute("data-inset", "false");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext shadow");
   });
+
+  it("opens the Table playground", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByTestId("ui-standards-filter-tables"));
+    expect(screen.getByTestId("ui-standard-card-table-playground")).toHaveTextContent("Table playground");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-separator", "horizontal");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveTextContent("Frozen Yogurt");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveClass("ui-standards-qtable--bordered");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-bordered", "true");
+    expect(screen.queryByTestId("ui-standard-table-pg-bordered")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "3");
+    const elevationSlider = screen.getByTestId("ui-standard-table-pg-elevation");
+    elevationSlider.focus();
+    await user.keyboard("{Home}");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "1");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveStyle({ "--qtable-shadow": "none" });
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table flat");
+    await user.keyboard("{End}");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "5");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table raised-5");
+    await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "3");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table");
+    expect(screen.queryByTestId("ui-standard-card-table")).not.toBeInTheDocument();
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-separator", "cell");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-separator", "cell");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveClass("ui-standards-qtable--cell");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-density", "balance");
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-density", "compact");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-density", "compact");
+    expect(screen.getByTestId("ui-standard-table-pg-tab-table")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("ui-standard-table-pg-table-card")).toHaveTextContent("Table");
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-header"));
+    expect(screen.getByTestId("ui-standard-table-pg-header-card")).toHaveTextContent("Intent");
+    expect(screen.getByTestId("ui-standard-table-pg-header-card")).not.toHaveTextContent("Treats");
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-footer"));
+    expect(screen.getByTestId("ui-standard-table-pg-footer-card")).toHaveTextContent("1-5 of 5");
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-features"));
+    expect(screen.getByTestId("ui-standard-table-pg-features-card")).toHaveTextContent("Search");
+    expect(screen.getByTestId("ui-standard-table-pg-features-card")).toHaveTextContent("Export");
+    expect(screen.getByTestId("ui-standard-table-pg-features-card")).toHaveTextContent("Filter");
+    expect(screen.queryByTestId("ui-standard-table-pg-flat")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-table"));
+    expect(screen.queryByTestId("ui-standard-table-pg-square")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-table-pg-dark")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-table-pg-loading"));
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-features"));
+    await user.click(screen.getByTestId("ui-standard-table-pg-search-toggle"));
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-export", "pdf");
+    await user.click(screen.getByTestId("ui-standard-table-pg-filter-toggle"));
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-table"));
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-search", "true");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-filter", "true");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-export", "pdf");
+    expect(screen.getByTestId("ui-standard-table-pg-search")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-filter")).toBeInTheDocument();
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-filter", "eclair");
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-filter", "cupcake");
+    expect(screen.getByTestId("ui-standard-table-pg-row-eclair")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-row-cupcake")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-table-pg-row-frozen-yogurt")).not.toBeInTheDocument();
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-filter", "eclair");
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-filter", "cupcake");
+    expect(screen.getByTestId("ui-standard-table-pg-row-frozen-yogurt")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-export-pdf")).toHaveTextContent("PDF");
+    await user.type(screen.getByTestId("ui-standard-table-pg-search"), "Cupcake");
+    expect(screen.getByTestId("ui-standard-table-pg-row-cupcake")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-table-pg-row-frozen-yogurt")).not.toBeInTheDocument();
+    await user.clear(screen.getByTestId("ui-standard-table-pg-search"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading search export-pdf filter",
+    );
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-features"));
+    await user.click(screen.getByTestId("ui-standard-table-pg-search-toggle"));
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-export", "pdf");
+    await user.click(screen.getByTestId("ui-standard-table-pg-filter-toggle"));
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-table"));
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-density", "compact");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-loading", "true");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveTextContent("Loading...");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading",
+    );
+    expect(screen.queryByTestId("ui-standard-table-pg-select-all")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-table-pg-multi-select"));
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-multi-select", "true");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading multi-select",
+    );
+    await user.click(screen.getByTestId("ui-standard-table-pg-select-all"));
+    expect(screen.getByTestId("ui-standard-table-pg-select-frozen-yogurt")).toBeChecked();
+    expect(screen.getByTestId("ui-standard-table-pg-select-cupcake")).toBeChecked();
+    await user.click(screen.getByTestId("ui-standard-table-pg-select-frozen-yogurt"));
+    expect(screen.getByTestId("ui-standard-table-pg-select-all")).toBePartiallyChecked();
+    await user.click(screen.getByTestId("ui-standard-table-pg-multi-select"));
+    expect(screen.queryByTestId("ui-standard-table-pg-select-all")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-action", "none");
+    expect(screen.queryByTestId("ui-standard-table-pg-actions-frozen-yogurt")).not.toBeInTheDocument();
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-action", "edit");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-action", "edit");
+    expect(screen.getByTestId("ui-standard-table-pg-actions-frozen-yogurt")).toBeInTheDocument();
+    const editAction = screen.getByRole("button", { name: "Edit Frozen Yogurt" });
+    expect(editAction).toHaveAttribute("data-shape", "round");
+    expect(editAction.querySelector(".material-symbols-outlined")).toHaveTextContent("edit");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-edit-kind", "inline");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-edit-effective", "inline");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute(
+      "data-editable",
+      "dessert,calories,fat,carbs,protein",
+    );
+    await user.click(editAction);
+    expect(screen.getByTestId("ui-standard-table-pg-cell-frozen-yogurt-dessert")).toHaveFocus();
+    await user.click(screen.getByTestId("ui-standard-table-pg-edit-cancel-frozen-yogurt"));
+    expect(screen.queryByTestId("ui-standard-table-pg-cell-frozen-yogurt-dessert")).not.toBeInTheDocument();
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-editable", "calories");
+    await user.click(screen.getByRole("button", { name: "Edit Frozen Yogurt" }));
+    expect(screen.getByTestId("ui-standard-table-pg-cell-frozen-yogurt-dessert")).toHaveFocus();
+    expect(screen.queryByTestId("ui-standard-table-pg-cell-frozen-yogurt-calories")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-table-pg-edit-cancel-frozen-yogurt"));
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-editable", "calories");
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-edit-kind", "dialog");
+    await user.click(screen.getByRole("button", { name: "Edit Frozen Yogurt" }));
+    expect(screen.getByTestId("ui-standard-table-pg-edit-dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-cell-frozen-yogurt-dessert")).toHaveFocus();
+    await user.click(screen.getByTestId("ui-standard-table-pg-edit-cancel"));
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-edit-kind", "inline");
+    await user.click(
+      within(screen.getByTestId("ui-standard-table-pg-preview-size")).getByRole("radio", {
+        name: "Preview size: Mobile",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Edit Frozen Yogurt" }));
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-edit-effective", "dialog");
+    expect(screen.getByTestId("ui-standard-table-pg-edit-dialog")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-table-pg-edit-cancel"));
+    await user.click(
+      within(screen.getByTestId("ui-standard-table-pg-preview-size")).getByRole("radio", {
+        name: "Preview size: Desktop",
+      }),
+    );
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading action-edit",
+    );
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-icon-shape", "square");
+    expect(screen.getByRole("button", { name: "Edit Frozen Yogurt" })).toHaveAttribute("data-shape", "square");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading action-edit icon-square",
+    );
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-action", "edit");
+    expect(screen.queryByTestId("ui-standard-table-pg-actions-frozen-yogurt")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-intent", "standard");
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-intent", "primary");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-intent", "primary");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveStyle({
+      "--qtable-bg": "var(--exits-primary)",
+      "--qtable-ink": "#ffffff",
+    });
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table primary separator-cell compact loading",
+    );
+    await user.click(screen.getByTestId("ui-standard-table-pg-alternate"));
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-alternate", "true");
+    expect(screen.getByTestId("ui-standard-table-pg-row-frozen-yogurt")).toHaveAttribute("data-tone", "solid");
+    expect(screen.getByTestId("ui-standard-table-pg-row-ice-cream-sandwich")).toHaveAttribute("data-tone", "soft");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table primary alternate separator-cell compact loading",
+    );
+    await user.click(screen.getByTestId("ui-standard-table-pg-alternate"));
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-intent", "standard");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading",
+    );
+    await user.click(screen.getByTestId("ui-standard-table-pg-tab-header"));
+    expect(screen.getByTestId("ui-standard-table-pg-header")).toHaveAttribute("data-appearance", "standard");
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-header-intent", "primary");
+    await choosePlaygroundDropdown(user, "ui-standard-table-pg-header-appearance", "soft-outline");
+    expect(screen.getByTestId("ui-standard-table-pg-header")).toHaveAttribute("data-intent", "primary");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveStyle({ "--qheader-accent": "var(--exits-primary)" });
+    expect(screen.getByTestId("ui-standard-table-pg-header")).toHaveAttribute("data-appearance", "soft-outline");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading header-primary header-soft-outline",
+    );
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-sort", "false");
+    await user.click(screen.getByTestId("ui-standard-table-pg-sort"));
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-sort", "true");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext table separator-cell compact loading header-primary header-soft-outline sort",
+    );
+    await user.click(screen.getByTestId("ui-standard-table-pg-sort-dessert"));
+    expect(screen.getByTestId("ui-standard-table-pg-sample").querySelector("tbody tr")).toHaveTextContent("Cupcake");
+    expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-device", "desktop");
+    expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-width", "1280");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-layout", "table");
+    expect(screen.getByTestId("ui-standard-table-pg-mode")).toHaveTextContent("Desktop · 1280px · TABLE");
+    await user.click(
+      within(screen.getByTestId("ui-standard-table-pg-preview-size")).getByRole("radio", {
+        name: "Preview size: Tablet",
+      }),
+    );
+    expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-device", "tablet");
+    expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-width", "834");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-layout", "table");
+    expect(screen.getByTestId("ui-standard-table-pg-mode")).toHaveTextContent("Tablet · 834px · TABLE");
+    await user.click(
+      within(screen.getByTestId("ui-standard-table-pg-preview-size")).getByRole("radio", {
+        name: "Preview size: Mobile",
+      }),
+    );
+    expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-device", "mobile");
+    expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-width", "390");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-layout", "list");
+    expect(screen.getByTestId("ui-standard-table-pg-mode")).toHaveTextContent("Mobile · 390px · LIST");
+    expect(screen.getByTestId("ui-standard-table-pg-sample").querySelector("table")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveTextContent("Cupcake");
+    expect(screen.getByTestId("ui-standard-table-pg-list-sort")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-table-pg-sort-calories"));
+    expect(screen.getByTestId("ui-standard-table-pg-list-sort")).toHaveTextContent("Calories");
+    expect(screen.getByTestId("ui-standard-table-pg-sample").querySelector(".ui-standards-qtable-list__title")).toHaveTextContent(
+      "Frozen Yogurt",
+    );
+    await user.click(screen.getByTestId("ui-standard-table-pg-reset"));
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-separator", "horizontal");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-density", "balance");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "3");
+    expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-device", "desktop");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-layout", "table");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table");
+  }, 20_000);
 
   it("filters live cards by category", () => {
     renderPage("/ui-standards?category=overlays");
@@ -1145,6 +1404,88 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standard-catalog-row-quantity-stepper")).not.toBeInTheDocument();
   });
 
+  it("opens Typography from the sidenav", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const item = screen.getByTestId("ui-standards-filter-typography");
+    expect(item).toHaveTextContent("Typography");
+    expect(item).not.toHaveAttribute("aria-expanded");
+    expect(screen.queryByTestId("ui-standards-filter-typography-playground")).not.toBeInTheDocument();
+
+    await user.click(item);
+    expect(item).toHaveAttribute("data-selected", "true");
+    const card = screen.getByTestId("ui-standard-card-typography-playground");
+    expect(within(screen.getByTestId("ui-standards-live-section")).getByTestId("ui-standard-card-typography-playground")).toBe(card);
+    expect(card).toHaveTextContent("Typography");
+    const preview = within(card).getByTestId("ui-standards-sidenav-type-preview");
+    expect(preview).toHaveClass("ui-standards-type-sample");
+    expect(preview.parentElement).toHaveClass("ui-standards-type-stage");
+    expect(screen.getByTestId("ui-standards-sidenav-type-weight")).toHaveTextContent("weight: 500");
+    expect(screen.getByTestId("ui-standards-sidenav-type-size")).toHaveTextContent("size: 0.875rem");
+    expect(preview).toHaveAttribute("data-font-weight", "500");
+    expect(preview).toHaveStyle({ "--sidenav-font-weight": "500" });
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography");
+
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fw-up"));
+    expect(screen.getByTestId("ui-standards-sidenav-type-weight")).toHaveTextContent("weight: 510");
+    expect(preview).toHaveAttribute("data-font-weight", "510");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography FW+1");
+
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fz-up"));
+    expect(screen.getByTestId("ui-standards-sidenav-type-size")).toHaveTextContent("size: 0.88375rem");
+    expect(preview).toHaveAttribute("data-font-size", "0.88375rem");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography FW+1 FZ+1");
+
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-reset"));
+    expect(screen.getByTestId("ui-standards-sidenav-type-weight")).toHaveTextContent("weight: 500");
+    expect(screen.getByTestId("ui-standards-sidenav-type-size")).toHaveTextContent("size: 0.875rem");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography");
+
+    const amount = screen.getByTestId("ui-standards-sidenav-type-amount");
+    await user.clear(amount);
+    await user.type(amount, "13");
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fw-up"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography FW+13");
+    expect(screen.getByTestId("ui-standards-sidenav-type-weight")).toHaveTextContent("weight: 565");
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fw-up"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography FW+26");
+    expect(screen.getByTestId("ui-standards-sidenav-type-weight")).toHaveTextContent("weight: 630");
+
+    await user.clear(amount);
+    await user.type(amount, "10");
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fz-up"));
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fz-up"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography FW+26 FZ+20");
+    expect(screen.getByTestId("ui-standards-sidenav-type-size")).toHaveTextContent("size: 1.05rem");
+    expect(preview).toHaveAttribute("data-font-weight", "630");
+    expect(preview).toHaveAttribute("data-font-size", "1.05rem");
+
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-reset"));
+    await user.clear(amount);
+    await user.type(amount, "13");
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fwz-up"));
+    await user.click(screen.getByTestId("ui-standards-sidenav-type-fwz-up"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext typography FWZ+26");
+    expect(screen.getByTestId("ui-standards-sidenav-type-weight")).toHaveTextContent("weight: 630");
+    expect(screen.getByTestId("ui-standards-sidenav-type-size")).toHaveTextContent("size: 1.1025rem");
+    expect(card).toHaveClass("w-1/2");
+  });
+
+  it("opens Lucide inside the page and links Google icons in a new tab", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const group = screen.getByTestId("ui-standards-filter-icons");
+    expect(group).toHaveTextContent("Icons");
+    expect(group).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("ui-standards-filter-lucide")).toHaveTextContent("Lucide");
+    const google = screen.getByTestId("ui-standards-filter-google-icons");
+    expect(google).toHaveAttribute("href", "https://fonts.google.com/icons");
+    expect(google).toHaveAttribute("target", "_blank");
+    await user.click(screen.getByTestId("ui-standards-filter-lucide"));
+    expect(screen.getByTestId("ui-standards-lucide-frame")).toHaveAttribute("src", "https://lucide.dev/icons");
+    expect(screen.getByRole("link", { name: "Open in a new tab" })).toHaveAttribute("href", "https://lucide.dev/icons");
+  });
+
   it("nests Input, Radio, and Checkbox under Form Components", async () => {
     const user = userEvent.setup();
     renderPage();
@@ -1155,7 +1496,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-filter-radio")).toHaveTextContent("Radio");
     expect(screen.getByTestId("ui-standards-filter-checkbox")).toHaveTextContent("Checkbox");
     expect(screen.getByTestId("ui-standards-filter-toggle")).toHaveTextContent("Toggle");
-    expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveTextContent("Dropdown");
+    expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveTextContent("Select");
     expect(screen.getByTestId("ui-standards-filter-slider")).toHaveTextContent("Slider");
     expect(screen.getByTestId("ui-standards-filter-range")).toHaveTextContent("Range");
     expect(screen.getByTestId("ui-standards-filter-date")).toHaveTextContent("Date picker");
@@ -1231,7 +1572,7 @@ describe("UiStandardsPage", () => {
     });
     expect(within(checkboxPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext checkbox",
+      "ext checkbox comfort",
     );
     expect(within(checkboxPlayground).queryByTestId("ui-standard-checkbox-pg-type")).not.toBeInTheDocument();
     await choosePlaygroundDropdown(user, "ui-standard-checkbox-pg-intent", "primary");
@@ -1287,7 +1628,10 @@ describe("UiStandardsPage", () => {
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-pilot-badge")).toHaveTextContent(
       "TOGGLE STANDARD — APPROVED / LOCKED",
     );
-    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext toggle");
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext toggle comfort",
+    );
     await user.click(within(togglePlayground).getByTestId("ui-standards-copy-command-expand"));
     expect(within(togglePlayground).getByText(/Use the locked ExItS Toggle Standard/)).toBeInTheDocument();
     await choosePlaygroundDropdown(user, "ui-standard-toggle-pg-intent", "primary");
@@ -1328,6 +1672,16 @@ describe("UiStandardsPage", () => {
       "data-command",
       "ext toggle primary solid raised comfort check",
     );
+    await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-alternate"));
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-preview")).toHaveAttribute("data-alternate", "true");
+    expect(within(togglePlayground).getByTestId("ui-standard-toggle-pg-field-alternate")).toHaveClass(
+      "ui-standards-pill-switch--appearance-soft",
+    );
+    expect(within(togglePlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext toggle primary solid raised alternate comfort check",
+    );
+    await user.click(within(togglePlayground).getByTestId("ui-standard-toggle-pg-alternate"));
     await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf"));
     expect(within(toggleSamples).getByTestId("ui-standard-toggle-order-tf")).toHaveAttribute("data-state", "on");
     await user.click(within(toggleSamples).getByTestId("ui-standard-toggle-order-reset"));
@@ -1355,14 +1709,31 @@ describe("UiStandardsPage", () => {
     await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field"));
     await user.click(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-option-option-2"));
     expect(within(dropdownSamples).getByTestId("ui-standard-dropdown-standard-field")).toHaveTextContent("Option 2");
-    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext dropdown");
-    await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-intent", "primary");
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dropdown primary outlined comfort",
+    );
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field").querySelector(".ui-standards-qdropdown__value")?.textContent).toBe("");
+    const intentSelect = await openPlaygroundDropdown(user, "ui-standard-dropdown-pg-intent");
+    expect(within(intentSelect).getByTestId("ui-standard-dropdown-pg-intent-option-primary")).toHaveStyle({
+      "--qoption-color": "var(--exits-primary)",
+    });
+    await user.click(within(intentSelect).getByTestId("ui-standard-dropdown-pg-intent-option-primary"));
     await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-appearance", "outlined");
     await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-density", "comfort");
     expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toHaveAttribute("data-density", "comfort");
     expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
       "ext dropdown primary outlined comfort",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-default-global"));
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-default-global")).toHaveAttribute(
+      "data-default-appearance",
+      "outlined",
+    );
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-default-global")).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
     await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-shape", "rounded");
     expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveAttribute("data-shape", "rounded");
@@ -1374,21 +1745,21 @@ describe("UiStandardsPage", () => {
     );
     const transitionSelect = await openPlaygroundDropdown(user, "ui-standard-dropdown-pg-transition");
     expect(within(transitionSelect).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "Expand",
-      "Flip",
+      "Flip up",
+      "Flip down",
       "Scale",
-      "Slide",
+      "Jump up",
     ]);
-    await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-transition", "scale");
+    await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-transition", "flip-up");
     expect(within(dropdownPlayground).queryByTestId("ui-standard-dropdown-pg-search")).not.toBeInTheDocument();
     await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-multi"));
     expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext dropdown primary outlined rounded comfort scale multi",
+      "ext dropdown primary outlined rounded comfort flip-up multi",
     );
     await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-field"));
     const dropdownMenu = within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-menu");
-    expect(dropdownMenu).toHaveAttribute("data-transition", "scale");
+    expect(dropdownMenu).toHaveAttribute("data-transition", "flip-up");
     expect(dropdownMenu).toHaveAttribute("data-state", "open");
     expect(within(dropdownMenu).queryByTestId("ui-standard-dropdown-pg-field-search")).not.toBeInTheDocument();
     await user.click(within(dropdownMenu).getByTestId("ui-standard-dropdown-pg-field-select-all"));
@@ -1400,10 +1771,30 @@ describe("UiStandardsPage", () => {
     expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-field")).toHaveTextContent(
       "Option 1, Option 2, Option 3, Option 4, Option 5, Option 6",
     );
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview-width")).toHaveClass("w-1/2");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-preview")).toContainElement(
+      within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-default-preview"),
+    );
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-default-preview")).toHaveTextContent("DEFAULT GLOBAL");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-default-field").querySelector(".ui-standards-qdropdown__value")?.textContent).toBe("");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-default-preview")).toHaveAttribute("data-density", "comfort");
+    await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-value", "short-value");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-field")).toHaveTextContent("6 Selected");
+    await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-value", "chips-value");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-chips").querySelectorAll(".ui-standards-qdropdown__chip")).toHaveLength(6);
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-placeholder"));
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field")).toHaveAttribute("data-placeholder-only", "true");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field").querySelector(".ui-standards-qdropdown__label")).toBeNull();
+    expect(within(dropdownPlayground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dropdown primary outlined rounded comfort flip-up multi placeholder value-chips",
+    );
+    await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-placeholder"));
+    await choosePlaygroundDropdown(user, "ui-standard-dropdown-pg-value", "standard");
     await user.click(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-field"));
     const reopenedMenu = within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-menu");
     await user.click(within(reopenedMenu).getByTestId("ui-standard-dropdown-pg-field-select-all"));
-    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-search")).toHaveAttribute("placeholder", "None");
+    expect(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-search")).toHaveAttribute("placeholder", "");
     await user.type(within(dropdownPlayground).getByTestId("ui-standard-dropdown-pg-field-search"), "option 2");
     expect(within(reopenedMenu).getByTestId("ui-standard-dropdown-pg-field-option-option-2")).toBeInTheDocument();
     expect(within(reopenedMenu).queryByTestId("ui-standard-dropdown-pg-field-option-option-6")).not.toBeInTheDocument();
@@ -1672,20 +2063,20 @@ describe("UiStandardsPage", () => {
     const playground = screen.getByTestId("ui-standard-input-playground");
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext input",
+      "ext input primary outlined",
     );
     await user.click(within(playground).getByTestId("ui-standards-copy-command-expand"));
     expect(within(playground).getByText(/Use the locked ExItS Input Standard/)).toBeInTheDocument();
     await choosePlaygroundDropdown(user, "ui-standard-input-pg-intent", "primary");
     await choosePlaygroundDropdown(user, "ui-standard-input-pg-appearance", "outlined");
-    await choosePlaygroundDropdown(user, "ui-standard-input-pg-shape", "rounded");
+    await choosePlaygroundDropdown(user, "ui-standard-input-pg-shape", "pill");
     expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-appearance", "outlined");
-    expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-shape", "rounded");
+    expect(screen.getByTestId("ui-standard-input-pg-field")).toHaveAttribute("data-shape", "pill");
     const inputAppearance = await openPlaygroundDropdown(user, "ui-standard-input-pg-appearance");
     expect(within(inputAppearance).getByTestId("ui-standard-input-pg-appearance-option-standard")).toBeDisabled();
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext input primary outlined rounded",
+      "ext input primary outlined pill",
     );
     const labelInput = screen.getByTestId("ui-standard-input-pg-label");
     await user.clear(labelInput);
@@ -1694,7 +2085,7 @@ describe("UiStandardsPage", () => {
     await user.click(screen.getByTestId("ui-standard-input-pg-reset"));
     expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
       "data-command",
-      "ext input",
+      "ext input primary outlined",
     );
     expect(labelInput).toHaveValue("Standard");
   });

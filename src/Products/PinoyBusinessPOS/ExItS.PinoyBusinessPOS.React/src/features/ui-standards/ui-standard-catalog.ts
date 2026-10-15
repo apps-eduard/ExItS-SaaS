@@ -19,10 +19,13 @@ export type UiStandardFilterCategory =
   | "card"
   | "card-receipt"
   | "shadow"
+  | "tables"
   | "selects"
   | "navigation"
   | "data"
-  | "states";
+  | "states"
+  | "lucide"
+  | "typography";
 
 export type UiStandardLiveCardId =
   | "buttons"
@@ -50,6 +53,8 @@ export type UiStandardLiveCardId =
   | "card"
   | "cardReceipt"
   | "shadow"
+  | "tablePlayground"
+  | "typographyPlayground"
   | "states"
   | "dodont";
 
@@ -58,10 +63,18 @@ export type UiStandardNavItem = {
   label: string;
 };
 
-export type UiStandardNavGroup = {
-  id: "form-components" | "cards";
+export type UiStandardNavLink = {
+  id: "google-icons";
   label: string;
-  children: readonly UiStandardNavItem[];
+  href: string;
+};
+
+export type UiStandardNavChild = UiStandardNavItem | UiStandardNavLink;
+
+export type UiStandardNavGroup = {
+  id: "form-components" | "cards" | "icons";
+  label: string;
+  children: readonly UiStandardNavChild[];
 };
 
 export type UiStandardNavEntry = UiStandardNavItem | UiStandardNavGroup;
@@ -81,7 +94,7 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
       { id: "radio", label: "Radio" },
       { id: "checkbox", label: "Checkbox" },
       { id: "toggle", label: "Toggle" },
-      { id: "dropdown", label: "Dropdown" },
+      { id: "dropdown", label: "Select" },
       { id: "slider", label: "Slider" },
       { id: "range", label: "Range" },
       { id: "date", label: "Date picker" },
@@ -103,14 +116,24 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
     ],
   },
   { id: "shadow", label: "Shadow" },
+  { id: "tables", label: "Table" },
   { id: "selects", label: "Selects" },
   { id: "navigation", label: "Navigation" },
   { id: "data", label: "Data" },
   { id: "states", label: "States" },
+  {
+    id: "icons",
+    label: "Icons",
+    children: [
+      { id: "lucide", label: "Lucide" },
+      { id: "google-icons", label: "Google icons", href: "https://fonts.google.com/icons" },
+    ],
+  },
+  { id: "typography", label: "Typography" },
 ];
 
 export const UI_STANDARD_FILTER_OPTIONS: readonly UiStandardNavItem[] = UI_STANDARD_NAV.flatMap((entry) =>
-  isUiStandardNavGroup(entry) ? [...entry.children] : [entry],
+  isUiStandardNavGroup(entry) ? entry.children.filter((child): child is UiStandardNavItem => !("href" in child)) : [entry],
 );
 
 export type UiStandardLiveCardDef = {
@@ -461,6 +484,18 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     title: "Shadow",
     category: "shadow",
     keywords: ["shadow", "elevation", "inset", "small", "medium", "large", "playground"],
+  },
+  {
+    id: "tablePlayground",
+    title: "Table",
+    category: "tables",
+    keywords: ["table", "qtable", "separator", "density", "flat", "search", "export", "filter", "playground"],
+  },
+  {
+    id: "typographyPlayground",
+    title: "Typography",
+    category: "typography",
+    keywords: ["typography", "font", "font-weight", "font-size", "playground"],
   },
   {
     id: "states",
@@ -870,6 +905,15 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     status: "Pilot",
     summary: "Playground for none, small, medium, and large elevation, with inset",
     keywords: ["shadow", "elevation", "inset", "playground"],
+  },
+  {
+    id: "table-playground",
+    component: "Table",
+    standard: "Table",
+    category: "tables",
+    status: "Pilot",
+    summary: "Playground table with table, header, footer, and features cards. Border stays on.",
+    keywords: ["table", "qtable", "separator", "density", "action", "intent", "playground"],
   },
   {
     id: "empty",

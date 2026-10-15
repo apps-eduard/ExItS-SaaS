@@ -5,6 +5,7 @@ import {
   EXITS_SELECT_TRIGGER_CLASS,
   type ExitsSelectOption,
 } from "@/components/exits/ExitsSelect";
+import { SearchField } from "@/components/exits/SearchField";
 import { DropdownMenu, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
 
@@ -20,6 +21,8 @@ export type ExitsMultiSelectProps<T extends string = string> = {
   menuLabel?: string;
   placeholder?: string;
   searchable?: boolean;
+  /** Menu search uses the standard Search field (icon). Plain input when omitted. */
+  searchField?: boolean;
   searchPlaceholder?: string;
   /** When false, hide Select all (empty selection already means “all”). Default true. */
   showSelectAll?: boolean;
@@ -52,6 +55,7 @@ export function ExitsMultiSelect<T extends string>({
   menuLabel,
   placeholder = "Select…",
   searchable = false,
+  searchField = false,
   searchPlaceholder = "Search…",
   showSelectAll = true,
   selectAllLabel = "Select all",
@@ -145,19 +149,33 @@ export function ExitsMultiSelect<T extends string>({
       )}
     >
       {searchable ? (
-        <div className="border-b border-border p-1.5">
-          <input
-            type="search"
-            className="exits-input w-full"
-            style={{ paddingInlineStart: "0.75rem" }}
-            value={query}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            data-testid={testId ? `${testId}-search` : undefined}
-            onChange={(event) => setQuery(event.target.value)}
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-          />
+        <div
+          className="border-b border-border p-1.5"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          {searchField ? (
+            <SearchField
+              label={searchPlaceholder}
+              value={query}
+              placeholder={searchPlaceholder}
+              onChange={(event) => setQuery(event.target.value)}
+              onClear={() => setQuery("")}
+              testId={testId ? `${testId}-search-field` : undefined}
+              data-testid={testId ? `${testId}-search` : undefined}
+            />
+          ) : (
+            <input
+              type="search"
+              className="exits-input w-full"
+              style={{ paddingInlineStart: "0.75rem" }}
+              value={query}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              data-testid={testId ? `${testId}-search` : undefined}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          )}
         </div>
       ) : null}
       <div className="receive-stock-category-menu__bulk" role="group">

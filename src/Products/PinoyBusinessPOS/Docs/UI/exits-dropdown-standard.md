@@ -4,7 +4,7 @@
 **Scope:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`
 **Visual authority:** `/ui-standards` → **Dropdown**
 
-**Locked global command:** the Dropdown playground on `/ui-standards` → **Dropdown**. New dropdowns are requested with `ext dropdown`.
+**Locked global command:** `ext dropdown primary outlined`. New dropdowns use Primary intent and Outlined appearance. Shape and density stay Standard unless named.
 
 This standard evolves with the Dropdown playground. Do **not** pin it permanently to a commit SHA.
 
@@ -12,15 +12,17 @@ Locking this standard does **not** restyle the product `ExitsSelect`. Existing s
 
 ## Command
 
-Defaults are omitted. `ext dropdown` is Standard intent, Standard appearance, Standard shape, Standard density, Expand transition, single select, enabled.
+Defaults are omitted. `ext dropdown` is Standard intent, Standard appearance, Standard shape, Standard density, Scale transition, single select, enabled.
+
+The playground opens on the locked global default, `ext dropdown primary outlined`. Reset returns to that lock.
 
 ```
 ext dropdown [intent] [appearance] [shape] [density] [transition] [multi] [disabled]
 ```
 
-Example: `ext dropdown primary outlined rounded comfort scale multi`
+Example: `ext dropdown primary outlined rounded comfort flip-up multi`
 
-Transition tokens are `flip`, `scale`, and `slide`. Expand is the default and is omitted. Rounded shape cannot use Standard appearance.
+Transition tokens are `flip-up`, `flip-down`, and `jump-up`. Scale is the default and is omitted. Rounded shape cannot use Standard appearance.
 
 ## Samples
 

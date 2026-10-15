@@ -32,6 +32,8 @@ describe("POS global control density", () => {
     expect(parseUiPreferences(JSON.stringify({ theme: "dark", locale: "en" })).density).toBe(
       "balance",
     );
+    expect(parseUiPreferences(JSON.stringify({ density: "tight" })).density).toBe("balance");
+    expect(parseUiPreferences(JSON.stringify({ density: "relaxed" })).density).toBe("balance");
   });
 
   it("applies compact/balance/comfort to documentElement dataset", () => {

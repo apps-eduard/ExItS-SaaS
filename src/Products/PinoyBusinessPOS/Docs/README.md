@@ -6,7 +6,7 @@ Product documentation for Pinoy Business POS.
 
 | Document | Description |
 |----------|-------------|
-| [ExItS Table Standard](UI/exits-table-standard.md) | Authoritative PinoyBusinessPOS React table UI contract — APPROVED / LOCKED revised (ExitsTable family, Actions, field-menu inline edit, Reset, portal overlay, vocabulary) |
+| [ExItS Typography Adjust](UI/exits-typography-adjust.md) | APPROVED / LOCKED — `table header fw+10`, `fz+n`, and `fwz+n` adjust the named target from its current weight and size |
 | [ExItS Button Standard](UI/exits-button-standard.md) | Authoritative PinoyBusinessPOS React button UI contract — APPROVED / LOCKED (`ext btn` playground command, shared Button) |
 | [ExItS Input Standard](UI/exits-input-standard.md) | Authoritative PinoyBusinessPOS React input UI contract — APPROVED / LOCKED (`ext input` playground command) |
 | [ExItS Toggle Standard](UI/exits-toggle-standard.md) | Authoritative PinoyBusinessPOS React toggle UI contract — APPROVED / LOCKED (`ext toggle` playground command) |

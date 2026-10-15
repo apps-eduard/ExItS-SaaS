@@ -14,14 +14,15 @@ import {
   Star,
   Sun,
   Trash2,
+  Lock,
   RotateCcw,
+  Search,
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePreferences } from "@/hooks/usePreferences";
 import { isDocumentThemeDark } from "@/lib/primary-palette-accents";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { formatJsxProps } from "@/features/ui-standards/copyUiSnippet";
 import {
@@ -31,6 +32,8 @@ import {
 } from "@/features/ui-standards/UiStandardsSnippetBlock";
 import { useQbtnRipple } from "@/features/ui-standards/UiStandardsQbtnRipple";
 import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
+import { INPUT_GLOBAL_DEFAULT_APPEARANCE, INPUT_GLOBAL_DEFAULT_INTENT } from "@/features/ui-standards/input-global-default";
+import { SELECT_GLOBAL_DEFAULT_APPEARANCE, SELECT_GLOBAL_DEFAULT_INTENT } from "@/features/ui-standards/select-global-default";
 import {
   INPUT_SAMPLES,
   UiStandardsQinput,
@@ -48,6 +51,7 @@ import {
   UiStandardsQdropdown,
   type DropdownAppearance,
   type DropdownTransition,
+  type DropdownValueDisplay,
 } from "@/features/ui-standards/UiStandardsDropdownGallery";
 import { UiStandardsQslider, sliderAccent } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { UiStandardsQrange, type SliderRangeValue } from "@/features/ui-standards/UiStandardsRangeGallery";
@@ -88,11 +92,9 @@ const BUTTON_SHAPES = [
 ] as const;
 
 const BUTTON_DENSITIES = [
-  { label: "Tight", value: "tight" },
   { label: "Compact", value: "compact" },
   { label: "Standard", value: "balance" },
   { label: "Comfort", value: "comfort" },
-  { label: "Relaxed", value: "relaxed" },
 ] as const;
 
 const BUTTON_PLAYGROUND_DEFAULTS = {
@@ -161,12 +163,19 @@ const INPUT_APPEARANCES = [
 const INPUT_SHAPES = [
   { label: "Square", value: "square" },
   { label: "Standard", value: "standard" },
+  { label: "Soft", value: "soft" },
+  { label: "Pill", value: "pill" },
+] as const;
+
+const DROPDOWN_SHAPES = [
+  { label: "Square", value: "square" },
+  { label: "Standard", value: "standard" },
   { label: "Rounded", value: "rounded" },
 ] as const;
 
 const INPUT_PLAYGROUND_DEFAULTS = {
-  intent: "standard" as (typeof INPUT_SAMPLES)[number]["id"],
-  appearance: "standard" as InputAppearance,
+  intent: INPUT_GLOBAL_DEFAULT_INTENT,
+  appearance: INPUT_GLOBAL_DEFAULT_APPEARANCE,
   shape: "standard" as InputShape,
   density: "balance" as (typeof BUTTON_DENSITIES)[number]["value"],
   iconId: "none",
@@ -177,6 +186,30 @@ const INPUT_PLAYGROUND_DEFAULTS = {
   label: "Standard",
 };
 
+function readInputGlobalDefault(): { intent: string; appearance: InputAppearance } {
+  try {
+    const stored = localStorage.getItem("exits-input-global-default");
+    if (stored?.startsWith("{")) {
+      const parsed = JSON.parse(stored) as { intent?: string; appearance?: string };
+      if (
+        parsed.intent &&
+        INPUT_SAMPLES.some((item) => item.id === parsed.intent) &&
+        parsed.appearance &&
+        INPUT_APPEARANCES.some((item) => item.id === parsed.appearance)
+      ) {
+        return { intent: parsed.intent, appearance: parsed.appearance as InputAppearance };
+      }
+    }
+  } catch {
+    /* The playground still has the file default. */
+  }
+  return { intent: INPUT_GLOBAL_DEFAULT_INTENT, appearance: INPUT_GLOBAL_DEFAULT_APPEARANCE };
+}
+
+function lockInputGlobalDefault(intent: string, appearance: string) {
+  localStorage.setItem("exits-input-global-default", JSON.stringify({ intent, appearance }));
+}
+
 function appearanceOptions<T extends string>(
   appearances: ReadonlyArray<{ id: T; label: string }>,
   shape: string,
@@ -184,7 +217,7 @@ function appearanceOptions<T extends string>(
   return appearances.map((item) => ({
     label: item.label,
     value: item.id,
-    disabled: shape === "rounded" && item.id === "standard",
+    disabled: (shape === "rounded" || shape === "pill") && item.id === "standard",
   }));
 }
 
@@ -234,38 +267,148 @@ function buttonCursorCommand(
   return parts.join(" ");
 }
 
-function CompactSelect<T extends string>({
+/** Preferences → Primary color. A palette change recolors every playground control that uses primary. */
+const PREFERENCE_PRIMARY_COLOR = "var(--exits-primary)";
+
+export function playgroundIntentColor(sampleId: string, color: string): string {
+  return sampleId === "primary" ? PREFERENCE_PRIMARY_COLOR : color;
+}
+
+export function CompactSelect<T extends string>({
   label,
   value,
   options,
   onChange,
   testId,
+  disabled = false,
+  multiple = false,
+  values,
+  onChangeValues,
+  placeholderOnly = false,
+  emptyText,
 }: {
   label: string;
   value: T;
-  options: ReadonlyArray<{ label: string; value: T; disabled?: boolean }>;
-  onChange: (value: T) => void;
+  options: ReadonlyArray<{ label: string; value: T; disabled?: boolean; color?: string }>;
+  onChange?: (value: T) => void;
   testId: string;
+  disabled?: boolean;
+  multiple?: boolean;
+  values?: readonly T[];
+  onChangeValues?: (values: T[]) => void;
+  /** Closed field shows the label as its empty text, the same way a placeholder-only global select does. */
+  placeholderOnly?: boolean;
+  emptyText?: string;
 }) {
+  const { preferences } = usePreferences();
   const selected = options.find((opt) => opt.value === value);
+  const sample = INPUT_SAMPLES.find((item) => item.id === SELECT_GLOBAL_DEFAULT_INTENT) ?? INPUT_SAMPLES[0];
+  const selectedLabels = options.filter((opt) => (values ?? []).includes(opt.value)).map((opt) => opt.label);
   return (
     <div className="ui-standards-playground-select">
       <UiStandardsQdropdown
         label={label}
-        color={DROPDOWN_STANDARD_COLOR}
-        value={selected?.label ?? ""}
+        color={playgroundIntentColor(sample.id, dropdownAccent(sample))}
+        value={multiple ? "" : (selected?.label ?? "")}
+        values={multiple ? selectedLabels : []}
         options={options.map((opt) => opt.label)}
+        optionColors={Object.fromEntries(options.filter((opt) => opt.color).map((opt) => [opt.label, opt.color as string]))}
         disabledOptions={options.filter((opt) => opt.disabled).map((opt) => opt.label)}
-        standard
+        appearance={SELECT_GLOBAL_DEFAULT_APPEARANCE}
+        shape={preferences.controlShape}
+        standard={sample.id === "standard"}
+        darkInk={sample.id === "black"}
         searchable={false}
+        disabled={disabled}
+        multiple={multiple}
+        placeholderOnly={placeholderOnly}
+        emptyText={emptyText}
         onSelect={(nextLabel) => {
           const match = options.find((opt) => opt.label === nextLabel);
           if (!match || match.disabled) return;
-          onChange(match.value);
+          onChange?.(match.value);
+        }}
+        onChangeValues={(nextLabels) => {
+          onChangeValues?.(options.filter((opt) => nextLabels.includes(opt.label)).map((opt) => opt.value));
         }}
         testId={testId}
       />
     </div>
+  );
+}
+
+export function PlaygroundSearchField({
+  label = "Search",
+  value = "",
+  onChange,
+  testId,
+  inputTestId,
+  className,
+}: {
+  label?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  testId?: string;
+  inputTestId?: string;
+  className?: string;
+}) {
+  const { preferences } = usePreferences();
+  const [draft, setDraft] = useState("");
+  const locked = readInputGlobalDefault();
+  const sample = INPUT_SAMPLES.find((item) => item.id === locked.intent) ?? INPUT_SAMPLES[0];
+  const shown = onChange ? value : draft;
+  function update(next: string) {
+    if (onChange) onChange(next);
+    else setDraft(next);
+  }
+  return (
+    <div className={"ui-standards-playground-search" + (className ? ` ${className}` : "")}>
+      <UiStandardsQinput
+        sampleId={sample.id}
+        label={label}
+        value={shown}
+        onChange={update}
+        onClear={() => update("")}
+        accent={playgroundIntentColor(sample.id, inputAccent(sample))}
+        fill={playgroundIntentColor(sample.id, sample.bg)}
+        ink={sample.fg}
+        appearance={locked.appearance}
+        shape={preferences.controlShape}
+        icon={Search}
+        clearable
+        testId={testId}
+        inputTestId={inputTestId}
+      />
+    </div>
+  );
+}
+
+function PlaygroundTextField({
+  label,
+  value,
+  onChange,
+  testId,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  testId: string;
+}) {
+  const { preferences } = usePreferences();
+  const sample = INPUT_SAMPLES.find((item) => item.id === INPUT_GLOBAL_DEFAULT_INTENT) ?? INPUT_SAMPLES[0];
+  return (
+    <UiStandardsQinput
+      sampleId={sample.id}
+      label={label}
+      value={value}
+      onChange={onChange}
+      accent={playgroundIntentColor(sample.id, inputAccent(sample))}
+      fill={playgroundIntentColor(sample.id, sample.bg)}
+      ink={sample.fg}
+      appearance={INPUT_GLOBAL_DEFAULT_APPEARANCE}
+      shape={preferences.controlShape}
+      inputTestId={testId}
+    />
   );
 }
 
@@ -276,6 +419,8 @@ export function PlaygroundPreviewCard({
   onReset,
   previewClassName,
   previewProps,
+  className,
+  cardTestId,
   children,
 }: {
   previewTestId: string;
@@ -284,13 +429,18 @@ export function PlaygroundPreviewCard({
   onReset: () => void;
   previewClassName: string;
   previewProps?: Record<string, string>;
+  className?: string;
+  cardTestId?: string;
   children: ReactNode;
 }) {
   const { preferences, setTheme } = usePreferences();
   const dark =
     preferences.theme === "dark" || (preferences.theme !== "light" && isDocumentThemeDark());
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[var(--exits-shadow-sm)]">
+    <div
+      className={`flex min-w-0 flex-col gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[var(--exits-shadow-sm)]${className ? ` ${className}` : ""}`}
+      data-testid={cardTestId}
+    >
       <div className="flex items-center justify-between gap-3">
         <PlaygroundLabel>Preview</PlaygroundLabel>
         <div className="flex items-center gap-2">
@@ -334,10 +484,11 @@ export function PlaygroundPreviewCard({
 }
 
 export function UiStandardsButtonPlayground() {
+  const { preferences, setDensity } = usePreferences();
+  const density = preferences.density;
   const [intent, setIntent] = useState(BUTTON_PLAYGROUND_DEFAULTS.intent);
   const [appearance, setAppearance] = useState(BUTTON_PLAYGROUND_DEFAULTS.appearance);
   const [shape, setShape] = useState(BUTTON_PLAYGROUND_DEFAULTS.shape);
-  const [density, setDensity] = useState(BUTTON_PLAYGROUND_DEFAULTS.density);
   const [iconId, setIconId] = useState(BUTTON_PLAYGROUND_DEFAULTS.iconId);
   const [iconOnly, setIconOnly] = useState(BUTTON_PLAYGROUND_DEFAULTS.iconOnly);
   const [ripple, setRipple] = useState(BUTTON_PLAYGROUND_DEFAULTS.ripple);
@@ -347,7 +498,8 @@ export function UiStandardsButtonPlayground() {
   const chosenIcon = BUTTON_ICONS.find((icon) => icon.id === iconId)?.Icon ?? null;
   const PreviewIcon = iconId === "none" ? (iconOnly ? Heart : null) : chosenIcon;
   const sample = PLAYGROUND_INTENTS.find((item) => item.id === intent) ?? PLAYGROUND_INTENTS[1];
-  const accent = sample.bg.toLowerCase() === "#ffffff" ? "#000000" : sample.bg;
+  const intentFill = playgroundIntentColor(sample.id, sample.bg);
+  const accent = playgroundIntentColor(sample.id, sample.bg.toLowerCase() === "#ffffff" ? "#000000" : sample.bg);
   const transparent = appearance === "outline" || appearance === "ghost";
   const soft = appearance === "soft";
   const softOutline = appearance === "soft-outline";
@@ -360,8 +512,8 @@ export function UiStandardsButtonPlayground() {
       }
     : soft || softOutline
       ? { color: accent, "--qbtn-bg": accent, ...(softOutline ? { borderColor: accent } : {}) }
-      : { backgroundColor: sample.bg, color: sample.fg };
-  if (appearance === "gradient" && !transparent) previewStyle["--qbtn-bg"] = sample.bg;
+      : { backgroundColor: intentFill, color: sample.fg };
+  if (appearance === "gradient" && !transparent) previewStyle["--qbtn-bg"] = intentFill;
   const previewClass = [
     "ui-standards-qbtn",
     "ui-standards-qbtn--playground",
@@ -437,16 +589,12 @@ export function UiStandardsButtonPlayground() {
           onChange={setDensity}
           testId="ui-standard-btn-pg-density"
         />
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
-          <span className="text-muted">Label</span>
-          <Input
-            name="ui-std-btn-label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            data-testid="ui-standard-btn-pg-label"
-            aria-label="Button label"
-          />
-        </label>
+        <PlaygroundTextField
+          label="Label"
+          value={label}
+          onChange={setLabel}
+          testId="ui-standard-btn-pg-label"
+        />
       </div>
       <div className="col-span-full flex flex-row flex-nowrap items-center gap-6">
           <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
@@ -523,10 +671,11 @@ export function UiStandardsButtonPlayground() {
 }
 
 export function UiStandardsInputPlayground() {
-  const [intent, setIntent] = useState(INPUT_PLAYGROUND_DEFAULTS.intent);
-  const [appearance, setAppearance] = useState(INPUT_PLAYGROUND_DEFAULTS.appearance);
+  const { preferences, setDensity } = usePreferences();
+  const density = preferences.density;
+  const [intent, setIntent] = useState<(typeof INPUT_SAMPLES)[number]["id"]>(INPUT_PLAYGROUND_DEFAULTS.intent);
+  const [appearance, setAppearance] = useState<InputAppearance>(INPUT_PLAYGROUND_DEFAULTS.appearance);
   const [shape, setShape] = useState(INPUT_PLAYGROUND_DEFAULTS.shape);
-  const [density, setDensity] = useState(INPUT_PLAYGROUND_DEFAULTS.density);
   const [iconId, setIconId] = useState(INPUT_PLAYGROUND_DEFAULTS.iconId);
   const [disabled, setDisabled] = useState(INPUT_PLAYGROUND_DEFAULTS.disabled);
   const [clearable, setClearable] = useState(INPUT_PLAYGROUND_DEFAULTS.clearable);
@@ -534,7 +683,9 @@ export function UiStandardsInputPlayground() {
   const [error, setError] = useState(INPUT_PLAYGROUND_DEFAULTS.error);
   const [label, setLabel] = useState(INPUT_PLAYGROUND_DEFAULTS.label);
   const [text, setText] = useState("");
+  const [globalDefault, setGlobalDefault] = useState(() => readInputGlobalDefault());
   const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
+  const lockedSample = INPUT_SAMPLES.find((item) => item.id === globalDefault.intent) ?? INPUT_SAMPLES[0];
   const PreviewIcon = BUTTON_ICONS.find((icon) => icon.id === iconId)?.Icon ?? null;
 
   function resetPreview() {
@@ -557,7 +708,7 @@ export function UiStandardsInputPlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-input-pg-intent"
         />
@@ -566,7 +717,7 @@ export function UiStandardsInputPlayground() {
           value={appearance}
           options={appearanceOptions(INPUT_APPEARANCES, shape)}
           onChange={(next) => {
-            if (shape === "rounded" && next === "standard") return;
+            if (shape === "pill" && next === "standard") return;
             setAppearance(next);
           }}
           testId="ui-standard-input-pg-appearance"
@@ -577,7 +728,7 @@ export function UiStandardsInputPlayground() {
           options={[...INPUT_SHAPES]}
           onChange={(next) => {
             setShape(next);
-            if (next === "rounded" && appearance === "standard") setAppearance("outlined");
+            if (next === "pill" && appearance === "standard") setAppearance("outlined");
           }}
           testId="ui-standard-input-pg-shape"
         />
@@ -595,16 +746,12 @@ export function UiStandardsInputPlayground() {
           onChange={setDensity}
           testId="ui-standard-input-pg-density"
         />
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
-          <span className="text-muted">Label</span>
-          <Input
-            name="ui-std-input-label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            data-testid="ui-standard-input-pg-label"
-            aria-label="Input label"
-          />
-        </label>
+        <PlaygroundTextField
+          label="Label"
+          value={label}
+          onChange={setLabel}
+          testId="ui-standard-input-pg-label"
+        />
       </div>
       <div className="col-span-full flex flex-row flex-nowrap items-center gap-6">
         <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
@@ -643,33 +790,82 @@ export function UiStandardsInputPlayground() {
           />
           Error
         </label>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)]"
+          aria-pressed={globalDefault.intent === intent && globalDefault.appearance === appearance}
+          data-testid="ui-standard-input-pg-default-global"
+          data-default-intent={globalDefault.intent}
+          data-default-appearance={globalDefault.appearance}
+          onClick={() => {
+            setGlobalDefault({ intent, appearance });
+            lockInputGlobalDefault(intent, appearance);
+          }}
+        >
+          <Lock className="size-4" aria-hidden />
+          default global
+        </button>
       </div>
       <PlaygroundPreviewCard
         previewTestId="ui-standard-input-pg-preview"
         themeTestId="ui-standard-input-pg-theme"
         resetTestId="ui-standard-input-pg-reset"
         onReset={resetPreview}
-        previewClassName="ui-standards-input-pg-preview flex min-h-16 items-center"
+        className="w-1/2"
+        cardTestId="ui-standard-input-pg-preview-width"
+        previewClassName="ui-standards-input-pg-preview grid min-h-16 w-full grid-cols-2 items-end gap-4"
         previewProps={{ "data-density": density }}
       >
-        <UiStandardsQinput
-          sampleId={sample.id}
-          label={label.trim() || "Standard"}
-          value={text}
-          onChange={setText}
-          accent={inputAccent(sample)}
-          fill={sample.bg}
-          ink={sample.fg}
-          appearance={appearance}
-          shape={shape}
-          disabled={disabled}
-          invalid={error}
-          clearable={clearable}
-          required={required}
-          onClear={() => setText("")}
-          icon={PreviewIcon}
-          testId="ui-standard-input-pg-field"
-        />
+        <div className="min-w-0">
+          <UiStandardsQinput
+            sampleId={sample.id}
+            label={label.trim() || "Standard"}
+            value={text}
+            onChange={setText}
+            accent={playgroundIntentColor(sample.id, inputAccent(sample))}
+            fill={playgroundIntentColor(sample.id, sample.bg)}
+            ink={sample.fg}
+            appearance={appearance}
+            shape={shape}
+            disabled={disabled}
+            invalid={error}
+            clearable={clearable}
+            required={required}
+            onClear={() => setText("")}
+            icon={PreviewIcon}
+            testId="ui-standard-input-pg-field"
+          />
+        </div>
+        <section
+          className="ui-standards-input-pg-default flex min-w-0 flex-col gap-3 border-l border-border pl-3"
+          data-density={density}
+          data-testid="ui-standard-input-pg-default-preview"
+        >
+          <PlaygroundLabel>DEFAULT GLOBAL</PlaygroundLabel>
+          <UiStandardsQinput
+            sampleId={lockedSample.id}
+            label="Standard"
+            value=""
+            accent={playgroundIntentColor(lockedSample.id, inputAccent(lockedSample))}
+            fill={playgroundIntentColor(lockedSample.id, lockedSample.bg)}
+            ink={lockedSample.fg}
+            appearance={globalDefault.appearance}
+            shape="standard"
+            testId="ui-standard-input-pg-default-field"
+          />
+          <div className="flex min-w-0 items-center gap-2">
+            <PlaygroundSearchField className="min-w-0 flex-1" testId="ui-standard-input-pg-default-search" />
+            <button
+              type="button"
+              className="inline-flex shrink-0 items-center gap-1.5 text-[length:var(--exits-text-sm)]"
+              aria-pressed
+              aria-label="Default search locked"
+              data-testid="ui-standard-input-pg-default-search-lock"
+            >
+              <Lock className="size-4" aria-hidden />
+            </button>
+          </div>
+        </section>
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Input"
@@ -856,9 +1052,10 @@ function radioCursorCommand(
 }
 
 export function UiStandardsRadioPlayground() {
+  const { preferences, setDensity } = usePreferences();
+  const density = preferences.density;
   const [intent, setIntent] = useState(RADIO_PLAYGROUND_DEFAULTS.intent);
   const [type, setType] = useState(RADIO_PLAYGROUND_DEFAULTS.type);
-  const [density, setDensity] = useState(RADIO_PLAYGROUND_DEFAULTS.density);
   const [dense, setDense] = useState(RADIO_PLAYGROUND_DEFAULTS.dense);
   const [disabled, setDisabled] = useState(RADIO_PLAYGROUND_DEFAULTS.disabled);
   const [label, setLabel] = useState(RADIO_PLAYGROUND_DEFAULTS.label);
@@ -879,7 +1076,7 @@ export function UiStandardsRadioPlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-radio-pg-intent"
         />
@@ -897,16 +1094,12 @@ export function UiStandardsRadioPlayground() {
           onChange={setDensity}
           testId="ui-standard-radio-pg-density"
         />
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
-          <span className="text-muted">Label</span>
-          <Input
-            name="ui-std-radio-label"
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            data-testid="ui-standard-radio-pg-label"
-            aria-label="Radio label"
-          />
-        </label>
+        <PlaygroundTextField
+          label="Label"
+          value={label}
+          onChange={setLabel}
+          testId="ui-standard-radio-pg-label"
+        />
       </div>
       <div className="flex flex-wrap gap-4">
         <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
@@ -933,7 +1126,7 @@ export function UiStandardsRadioPlayground() {
         <div className="ui-standards-radio-pg-preview" data-density={density} data-testid="ui-standard-radio-pg-preview">
           <UiStandardsQradio
             label={label.trim() || "Standard"}
-            color={radioAccent(sample)}
+            color={playgroundIntentColor(sample.id, radioAccent(sample))}
             checked
             dense={dense}
             icons={type === "icons"}
@@ -978,8 +1171,9 @@ function checkboxCursorCommand(intent: string, density: string, dense: boolean, 
 }
 
 export function UiStandardsCheckboxPlayground() {
+  const { preferences, setDensity } = usePreferences();
+  const density = preferences.density;
   const [intent, setIntent] = useState(CHECKBOX_PLAYGROUND_DEFAULTS.intent);
-  const [density, setDensity] = useState(CHECKBOX_PLAYGROUND_DEFAULTS.density);
   const [dense, setDense] = useState(CHECKBOX_PLAYGROUND_DEFAULTS.dense);
   const [disabled, setDisabled] = useState(CHECKBOX_PLAYGROUND_DEFAULTS.disabled);
   const [label, setLabel] = useState(CHECKBOX_PLAYGROUND_DEFAULTS.label);
@@ -999,7 +1193,7 @@ export function UiStandardsCheckboxPlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-checkbox-pg-intent"
         />
@@ -1010,16 +1204,12 @@ export function UiStandardsCheckboxPlayground() {
           onChange={setDensity}
           testId="ui-standard-checkbox-pg-density"
         />
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
-          <span className="text-muted">Label</span>
-          <Input
-            name="ui-std-checkbox-label"
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            data-testid="ui-standard-checkbox-pg-label"
-            aria-label="Checkbox label"
-          />
-        </label>
+        <PlaygroundTextField
+          label="Label"
+          value={label}
+          onChange={setLabel}
+          testId="ui-standard-checkbox-pg-label"
+        />
       </div>
       <div className="flex flex-wrap gap-4">
         <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
@@ -1050,7 +1240,7 @@ export function UiStandardsCheckboxPlayground() {
         >
           <UiStandardsQcheckbox
             label={label.trim() || "Standard"}
-            color={radioAccent(sample)}
+            color={playgroundIntentColor(sample.id, radioAccent(sample))}
             checked
             dense={dense}
             disabled={disabled}
@@ -1107,6 +1297,7 @@ function toggleCursorCommand(
   intent: string,
   variety: string,
   appearance: string,
+  alternate: boolean,
   density: string,
   iconId: string,
   disabled: boolean,
@@ -1115,6 +1306,7 @@ function toggleCursorCommand(
   if (intent !== "standard") parts.push(intent);
   if (variety !== "standard") parts.push(variety);
   if (appearance !== "standard") parts.push(appearance);
+  if (alternate) parts.push("alternate");
   if (density !== "balance") parts.push(density);
   if (iconId !== "none") parts.push(iconId);
   if (disabled) parts.push("disabled");
@@ -1122,18 +1314,22 @@ function toggleCursorCommand(
 }
 
 export function UiStandardsTogglePlayground() {
+  const { preferences, setDensity } = usePreferences();
+  const density = preferences.density;
   const [intent, setIntent] = useState(TOGGLE_PLAYGROUND_DEFAULTS.intent);
   const [variety, setVariety] = useState(TOGGLE_PLAYGROUND_DEFAULTS.variety);
   const [appearance, setAppearance] = useState(TOGGLE_PLAYGROUND_DEFAULTS.appearance);
-  const [density, setDensity] = useState(TOGGLE_PLAYGROUND_DEFAULTS.density);
   const [iconId, setIconId] = useState(TOGGLE_PLAYGROUND_DEFAULTS.iconId);
   const [disabled, setDisabled] = useState(TOGGLE_PLAYGROUND_DEFAULTS.disabled);
+  const [alternate, setAlternate] = useState(false);
   const [checked, setChecked] = useState(true);
+  const [alternateChecked, setAlternateChecked] = useState(false);
   const [label, setLabel] = useState(TOGGLE_PLAYGROUND_DEFAULTS.label);
   const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
   const PreviewIcon = BUTTON_ICONS.find((icon) => icon.id === iconId)?.Icon ?? null;
   const glyph = PreviewIcon ? <PreviewIcon aria-hidden /> : undefined;
   const outlined = variety === "outline" || appearance === "outline";
+  const alternateAppearance = appearance === "soft" ? "standard" : "soft";
 
   function resetPreview() {
     setIntent(TOGGLE_PLAYGROUND_DEFAULTS.intent);
@@ -1142,8 +1338,45 @@ export function UiStandardsTogglePlayground() {
     setDensity(TOGGLE_PLAYGROUND_DEFAULTS.density);
     setIconId(TOGGLE_PLAYGROUND_DEFAULTS.iconId);
     setDisabled(TOGGLE_PLAYGROUND_DEFAULTS.disabled);
+    setAlternate(false);
     setChecked(true);
+    setAlternateChecked(false);
     setLabel(TOGGLE_PLAYGROUND_DEFAULTS.label);
+  }
+
+  function renderToggle(nextAppearance: string, nextChecked: boolean, onSelect: () => void, testId: string) {
+    const nextOutlined = nextAppearance === "soft" ? false : outlined;
+    if (variety === "standard") {
+      return (
+        <UiStandardsQtoggle
+          label={label.trim() || "Standard"}
+          color={playgroundIntentColor(sample.id, toggleAccent(sample))}
+          checked={nextChecked}
+          disabled={disabled}
+          standard={sample.id === "standard"}
+          darkInk={sample.id === "black"}
+          appearance={nextAppearance}
+          glyph={glyph}
+          onSelect={onSelect}
+          testId={testId}
+        />
+      );
+    }
+    return (
+      <UiStandardsPillToggle
+        label={label.trim() || "Standard"}
+        color={playgroundIntentColor(sample.id, toggleAccent(sample))}
+        ink={sample.fg}
+        outline={nextOutlined}
+        standard={sample.id === "standard"}
+        disabled={disabled}
+        checked={nextChecked}
+        appearance={nextAppearance === "outline" ? "standard" : nextAppearance}
+        glyph={glyph}
+        onSelect={onSelect}
+        testId={testId}
+      />
+    );
   }
 
   return (
@@ -1152,7 +1385,7 @@ export function UiStandardsTogglePlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-toggle-pg-intent"
         />
@@ -1184,16 +1417,12 @@ export function UiStandardsTogglePlayground() {
           onChange={setDensity}
           testId="ui-standard-toggle-pg-density"
         />
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
-          <span className="text-muted">Label</span>
-          <Input
-            name="ui-std-toggle-label"
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            data-testid="ui-standard-toggle-pg-label"
-            aria-label="Toggle label"
-          />
-        </label>
+        <PlaygroundTextField
+          label="Label"
+          value={label}
+          onChange={setLabel}
+          testId="ui-standard-toggle-pg-label"
+        />
       </div>
       <div className="flex flex-wrap gap-4">
         <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
@@ -1205,47 +1434,37 @@ export function UiStandardsTogglePlayground() {
           />
           Disabled
         </label>
+        <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+          <Switch
+            checked={alternate}
+            onCheckedChange={setAlternate}
+            aria-label="Alternate"
+            data-testid="ui-standard-toggle-pg-alternate"
+          />
+          Alternate
+        </label>
       </div>
       <PlaygroundPreviewCard
         previewTestId="ui-standard-toggle-pg-preview"
         themeTestId="ui-standard-toggle-pg-theme"
         resetTestId="ui-standard-toggle-pg-reset"
         onReset={resetPreview}
-        previewClassName="ui-standards-toggle-pg-preview flex min-h-16 items-center"
-        previewProps={{ "data-density": density, "data-variety": variety, "data-appearance": appearance }}
+        previewClassName="ui-standards-toggle-pg-preview flex min-h-16 items-center gap-4"
+        previewProps={{ "data-density": density, "data-variety": variety, "data-appearance": appearance, "data-alternate": alternate ? "true" : "false" }}
       >
-          {variety === "standard" ? (
-            <UiStandardsQtoggle
-              label={label.trim() || "Standard"}
-              color={toggleAccent(sample)}
-              checked={checked}
-              disabled={disabled}
-              standard={sample.id === "standard"}
-              darkInk={sample.id === "black"}
-              appearance={appearance}
-              glyph={glyph}
-              onSelect={() => setChecked((value) => !value)}
-              testId="ui-standard-toggle-pg-field"
-            />
-          ) : (
-            <UiStandardsPillToggle
-              label={label.trim() || "Standard"}
-              color={toggleAccent(sample)}
-              ink={sample.fg}
-              outline={outlined}
-              standard={sample.id === "standard"}
-              disabled={disabled}
-              checked={checked}
-              appearance={appearance === "outline" ? "standard" : appearance}
-              glyph={glyph}
-              onSelect={() => setChecked((value) => !value)}
-              testId="ui-standard-toggle-pg-field"
-            />
-          )}
+          {renderToggle(appearance, checked, () => setChecked((value) => !value), "ui-standard-toggle-pg-field")}
+          {alternate
+            ? renderToggle(
+                alternateAppearance,
+                alternateChecked,
+                () => setAlternateChecked((value) => !value),
+                "ui-standard-toggle-pg-field-alternate",
+              )
+            : null}
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Toggle"
-        command={toggleCursorCommand(intent, variety, appearance, density, iconId, disabled)}
+        command={toggleCursorCommand(intent, variety, appearance, alternate, density, iconId, disabled)}
       />
     </PlaygroundSection>
   );
@@ -1261,25 +1480,71 @@ const DROPDOWN_APPEARANCES = [
 ] as const;
 
 const DROPDOWN_TRANSITIONS = [
+  { id: "flip-up", label: "Flip up" },
+  { id: "flip-down", label: "Flip down" },
+  { id: "scale", label: "Scale" },
+  { id: "jump-up", label: "Jump up" },
+] as const;
+
+const POPUP_TRANSITIONS = [
   { id: "expand", label: "Expand" },
   { id: "flip", label: "Flip" },
   { id: "scale", label: "Scale" },
   { id: "slide", label: "Slide" },
 ] as const;
 
+type PopupTransition = (typeof POPUP_TRANSITIONS)[number]["id"];
+
 const DROPDOWN_PLAYGROUND_OPTIONS = ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5", "Option 6"] as const;
 
+const DROPDOWN_VALUE_DISPLAYS: ReadonlyArray<{ label: string; value: DropdownValueDisplay }> = [
+  { label: "Standard", value: "standard" },
+  { label: "Short value", value: "short" },
+  { label: "Chips value", value: "chips" },
+];
+
 const DROPDOWN_PLAYGROUND_DEFAULTS = {
-  intent: "standard" as (typeof INPUT_SAMPLES)[number]["id"],
-  appearance: "standard" as DropdownAppearance,
-  shape: "standard" as (typeof INPUT_SHAPES)[number]["value"],
+  intent: SELECT_GLOBAL_DEFAULT_INTENT,
+  appearance: SELECT_GLOBAL_DEFAULT_APPEARANCE,
+  shape: "standard" as (typeof DROPDOWN_SHAPES)[number]["value"],
   density: "balance" as (typeof BUTTON_DENSITIES)[number]["value"],
-  transition: "expand" as DropdownTransition,
+  transition: "scale" as DropdownTransition,
   multi: false,
   disabled: false,
+  placeholderOnly: false,
+  valueDisplay: "standard" as DropdownValueDisplay,
   label: "Standard",
-  value: DROPDOWN_OPTIONS[0],
+  value: "",
 };
+
+function readSelectGlobalDefault(): { intent: string; appearance: DropdownAppearance } {
+  try {
+    const stored = localStorage.getItem("exits-select-global-default");
+    if (stored?.startsWith("{")) {
+      const parsed = JSON.parse(stored) as { intent?: string; appearance?: string };
+      if (
+        parsed.intent &&
+        INPUT_SAMPLES.some((item) => item.id === parsed.intent) &&
+        parsed.appearance &&
+        DROPDOWN_APPEARANCES.some((item) => item.id === parsed.appearance)
+      ) {
+        return { intent: parsed.intent, appearance: parsed.appearance as DropdownAppearance };
+      }
+    }
+  } catch {
+    /* The playground still has the file default. */
+  }
+  return { intent: SELECT_GLOBAL_DEFAULT_INTENT, appearance: SELECT_GLOBAL_DEFAULT_APPEARANCE };
+}
+
+function lockSelectGlobalDefault(intent: string, appearance: string) {
+  localStorage.setItem("exits-select-global-default", JSON.stringify({ intent, appearance }));
+  void fetch("/__exits/select-default", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ intent, appearance }),
+  }).catch(() => undefined);
+}
 
 function dropdownCursorCommand(
   intent: string,
@@ -1288,6 +1553,8 @@ function dropdownCursorCommand(
   density: string,
   transition: string,
   multi: boolean,
+  placeholderOnly: boolean,
+  valueDisplay: string,
   disabled: boolean,
 ): string {
   const parts = ["ext dropdown"];
@@ -1295,25 +1562,33 @@ function dropdownCursorCommand(
   if (appearance !== "standard") parts.push(appearance);
   if (shape !== "standard") parts.push(shape);
   if (density !== "balance") parts.push(density);
-  if (transition !== "expand") parts.push(transition);
+  if (transition !== "scale") parts.push(transition);
   if (multi) parts.push("multi");
+  if (placeholderOnly) parts.push("placeholder");
+  if (valueDisplay === "short") parts.push("value-short");
+  else if (valueDisplay === "chips") parts.push("value-chips");
   if (disabled) parts.push("disabled");
   return parts.join(" ");
 }
 
 export function UiStandardsDropdownPlayground() {
-  const [intent, setIntent] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.intent);
-  const [appearance, setAppearance] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.appearance);
+  const { preferences, setDensity } = usePreferences();
+  const density = preferences.density;
+  const [intent, setIntent] = useState<(typeof INPUT_SAMPLES)[number]["id"]>(DROPDOWN_PLAYGROUND_DEFAULTS.intent);
+  const [appearance, setAppearance] = useState<DropdownAppearance>(DROPDOWN_PLAYGROUND_DEFAULTS.appearance);
   const [shape, setShape] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.shape);
-  const [density, setDensity] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.density);
   const [disabled, setDisabled] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.disabled);
   const [multi, setMulti] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.multi);
+  const [placeholderOnly, setPlaceholderOnly] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.placeholderOnly);
+  const [valueDisplay, setValueDisplay] = useState<DropdownValueDisplay>(DROPDOWN_PLAYGROUND_DEFAULTS.valueDisplay);
   const [transition, setTransition] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.transition);
   const [label, setLabel] = useState(DROPDOWN_PLAYGROUND_DEFAULTS.label);
   const [value, setValue] = useState<string>(DROPDOWN_PLAYGROUND_DEFAULTS.value);
-  const [values, setValues] = useState<string[]>([DROPDOWN_PLAYGROUND_DEFAULTS.value]);
+  const [values, setValues] = useState<string[]>([]);
   const [previewKey, setPreviewKey] = useState(0);
+  const [globalDefault, setGlobalDefault] = useState(() => readSelectGlobalDefault());
   const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
+  const lockedSample = INPUT_SAMPLES.find((item) => item.id === globalDefault.intent) ?? INPUT_SAMPLES[0];
 
   function resetPreview() {
     setIntent(DROPDOWN_PLAYGROUND_DEFAULTS.intent);
@@ -1322,10 +1597,12 @@ export function UiStandardsDropdownPlayground() {
     setDensity(DROPDOWN_PLAYGROUND_DEFAULTS.density);
     setTransition(DROPDOWN_PLAYGROUND_DEFAULTS.transition);
     setMulti(DROPDOWN_PLAYGROUND_DEFAULTS.multi);
+    setPlaceholderOnly(DROPDOWN_PLAYGROUND_DEFAULTS.placeholderOnly);
+    setValueDisplay(DROPDOWN_PLAYGROUND_DEFAULTS.valueDisplay);
     setDisabled(DROPDOWN_PLAYGROUND_DEFAULTS.disabled);
     setLabel(DROPDOWN_PLAYGROUND_DEFAULTS.label);
     setValue(DROPDOWN_PLAYGROUND_DEFAULTS.value);
-    setValues([DROPDOWN_PLAYGROUND_DEFAULTS.value]);
+    setValues([]);
     setPreviewKey((key) => key + 1);
   }
 
@@ -1335,7 +1612,7 @@ export function UiStandardsDropdownPlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-dropdown-pg-intent"
         />
@@ -1352,7 +1629,7 @@ export function UiStandardsDropdownPlayground() {
         <CompactSelect
           label="Shape"
           value={shape}
-          options={[...INPUT_SHAPES]}
+          options={[...DROPDOWN_SHAPES]}
           onChange={(next) => {
             setShape(next);
             if (next === "rounded" && appearance === "standard") setAppearance("outlined");
@@ -1373,16 +1650,19 @@ export function UiStandardsDropdownPlayground() {
           onChange={setTransition}
           testId="ui-standard-dropdown-pg-transition"
         />
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-xs)]">
-          <span className="text-muted">Label</span>
-          <Input
-            name="ui-std-dropdown-label"
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            data-testid="ui-standard-dropdown-pg-label"
-            aria-label="Dropdown label"
-          />
-        </label>
+        <CompactSelect
+          label="Value"
+          value={valueDisplay}
+          options={DROPDOWN_VALUE_DISPLAYS}
+          onChange={setValueDisplay}
+          testId="ui-standard-dropdown-pg-value"
+        />
+        <PlaygroundTextField
+          label="Label"
+          value={label}
+          onChange={setLabel}
+          testId="ui-standard-dropdown-pg-label"
+        />
       </div>
       <div className="flex flex-wrap gap-4">
         <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
@@ -1406,37 +1686,87 @@ export function UiStandardsDropdownPlayground() {
           />
           Disabled
         </label>
+        <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+          <Switch
+            checked={placeholderOnly}
+            onCheckedChange={setPlaceholderOnly}
+            aria-label="Placeholder only"
+            data-testid="ui-standard-dropdown-pg-placeholder"
+          />
+          Placeholder only
+        </label>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)]"
+          aria-pressed={globalDefault.intent === intent && globalDefault.appearance === appearance}
+          data-testid="ui-standard-dropdown-pg-default-global"
+          data-default-intent={globalDefault.intent}
+          data-default-appearance={globalDefault.appearance}
+          onClick={() => {
+            setGlobalDefault({ intent, appearance });
+            lockSelectGlobalDefault(intent, appearance);
+          }}
+        >
+          <Lock className="size-4" aria-hidden />
+          default global
+        </button>
       </div>
       <PlaygroundPreviewCard
         previewTestId="ui-standard-dropdown-pg-preview"
         themeTestId="ui-standard-dropdown-pg-theme"
         resetTestId="ui-standard-dropdown-pg-reset"
         onReset={resetPreview}
-        previewClassName="ui-standards-dropdown-pg-preview flex min-h-16 items-center"
-        previewProps={{ "data-density": density, "data-appearance": appearance }}
+        className="w-1/2"
+        cardTestId="ui-standard-dropdown-pg-preview-width"
+        previewClassName="ui-standards-dropdown-pg-preview grid min-h-16 w-full grid-cols-2 items-end gap-4"
+        previewProps={{ "data-density": density, "data-appearance": appearance, "data-value-display": valueDisplay }}
       >
-          <UiStandardsQdropdown
-            key={previewKey}
-            label={label.trim() || "Standard"}
-            color={dropdownAccent(sample)}
-            value={value}
-            values={values}
-            options={DROPDOWN_PLAYGROUND_OPTIONS}
-            appearance={appearance}
-            shape={shape}
-            disabled={disabled}
-            multiple={multi}
-            transition={transition}
-            standard={sample.id === "standard"}
-            darkInk={sample.id === "black"}
-            onSelect={setValue}
-            onChangeValues={setValues}
-            testId="ui-standard-dropdown-pg-field"
-          />
+        <div className="min-w-0">
+            <UiStandardsQdropdown
+              key={previewKey}
+              label={label.trim() || "Standard"}
+              color={playgroundIntentColor(sample.id, dropdownAccent(sample))}
+              value={value}
+              values={values}
+              options={DROPDOWN_PLAYGROUND_OPTIONS}
+              appearance={appearance}
+              shape={shape}
+              disabled={disabled}
+              multiple={multi}
+              transition={transition}
+              valueDisplay={valueDisplay}
+              placeholderOnly={placeholderOnly}
+              emptyText=""
+              standard={sample.id === "standard"}
+              darkInk={sample.id === "black"}
+              onSelect={setValue}
+              onChangeValues={setValues}
+              testId="ui-standard-dropdown-pg-field"
+            />
+        </div>
+          <section
+            className="ui-standards-dropdown-pg-default flex min-w-0 flex-col gap-3 border-l border-border pl-3"
+            data-density={density}
+            data-testid="ui-standard-dropdown-pg-default-preview"
+          >
+            <PlaygroundLabel>DEFAULT GLOBAL</PlaygroundLabel>
+            <UiStandardsQdropdown
+              label="Standard"
+              color={playgroundIntentColor(lockedSample.id, dropdownAccent(lockedSample))}
+              value=""
+              options={DROPDOWN_PLAYGROUND_OPTIONS}
+              appearance={globalDefault.appearance}
+              emptyText=""
+              standard={lockedSample.id === "standard"}
+              darkInk={lockedSample.id === "black"}
+              searchable={false}
+              testId="ui-standard-dropdown-pg-default-field"
+            />
+          </section>
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Dropdown"
-        command={dropdownCursorCommand(intent, appearance, shape, density, transition, multi, disabled)}
+        command={dropdownCursorCommand(intent, appearance, shape, density, transition, multi, placeholderOnly, valueDisplay, disabled)}
       />
     </PlaygroundSection>
   );
@@ -1502,7 +1832,7 @@ export function UiStandardsSliderPlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-slider-pg-intent"
         />
@@ -1557,7 +1887,7 @@ export function UiStandardsSliderPlayground() {
         previewProps={{ "data-vertical": vertical ? "true" : "false" }}
       >
         <UiStandardsQslider
-          color={sliderAccent(sample)}
+          color={playgroundIntentColor(sample.id, sliderAccent(sample))}
           ink={sample.fg}
           value={value}
           step={stepNumber}
@@ -1628,7 +1958,7 @@ export function UiStandardsRangePlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-range-pg-intent"
         />
@@ -1678,7 +2008,7 @@ export function UiStandardsRangePlayground() {
         previewClassName="flex min-h-16 items-center"
       >
         <UiStandardsQrange
-          color={sliderAccent(sample)}
+          color={playgroundIntentColor(sample.id, sliderAccent(sample))}
           ink={sample.fg}
           value={value}
           step={stepNumber}
@@ -1740,7 +2070,7 @@ export function UiStandardsDatePlayground() {
   const [appearance, setAppearance] = useState("standard");
   const [variety, setVariety] = useState("calendar");
   const [inputAppearance, setInputAppearance] = useState<InputAppearance>("standard");
-  const [transition, setTransition] = useState<DropdownTransition>("expand");
+  const [transition, setTransition] = useState<PopupTransition>("expand");
   const [inputOpen, setInputOpen] = useState(false);
   const [inputMounted, setInputMounted] = useState(false);
   const [dateTimeOpen, setDateTimeOpen] = useState(false);
@@ -1832,7 +2162,7 @@ export function UiStandardsDatePlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-date-pg-intent"
         />
@@ -1875,8 +2205,8 @@ export function UiStandardsDatePlayground() {
         <CompactSelect
           label="Transition"
           value={transition}
-          options={DROPDOWN_TRANSITIONS.map((item) => ({ label: item.label, value: item.id }))}
-          onChange={(next) => setTransition(next as DropdownTransition)}
+          options={POPUP_TRANSITIONS.map((item) => ({ label: item.label, value: item.id }))}
+          onChange={(next) => setTransition(next as PopupTransition)}
           testId="ui-standard-date-pg-transition"
         />
       </div>
@@ -1904,7 +2234,7 @@ export function UiStandardsDatePlayground() {
         <div className="ui-standards-date-preview-card" data-testid="ui-standard-date-pg-calendar-card">
           <UiStandardsQdate
             key={previewKey}
-            color={radioAccent(sample)}
+            color={playgroundIntentColor(sample.id, radioAccent(sample))}
             ink={sample.fg}
             value={range ? rangeValue : value}
             range={range}
@@ -1933,8 +2263,8 @@ export function UiStandardsDatePlayground() {
                     : ""
               }
               onChange={() => undefined}
-              accent={inputAccent(sample)}
-              fill={sample.bg}
+              accent={playgroundIntentColor(sample.id, inputAccent(sample))}
+              fill={playgroundIntentColor(sample.id, sample.bg)}
               ink={sample.fg}
               appearance={inputAppearance}
               disabled={disabled}
@@ -1950,7 +2280,7 @@ export function UiStandardsDatePlayground() {
             >
               <UiStandardsQdate
                 key={`input-${previewKey}`}
-                color={radioAccent(sample)}
+                color={playgroundIntentColor(sample.id, radioAccent(sample))}
                 ink={sample.fg}
                 value={range ? rangeValue : value}
                 range={range}
@@ -1983,8 +2313,8 @@ export function UiStandardsDatePlayground() {
               label="Date and time"
               value={dateTimeText}
               onChange={() => undefined}
-              accent={inputAccent(sample)}
-              fill={sample.bg}
+              accent={playgroundIntentColor(sample.id, inputAccent(sample))}
+              fill={playgroundIntentColor(sample.id, sample.bg)}
               ink={sample.fg}
               appearance={inputAppearance}
               disabled={disabled}
@@ -2000,7 +2330,7 @@ export function UiStandardsDatePlayground() {
             >
               <UiStandardsQdate
                 key={`datetime-date-${previewKey}`}
-                color={radioAccent(sample)}
+                color={playgroundIntentColor(sample.id, radioAccent(sample))}
                 ink={sample.fg}
                 value={range ? rangeValue : value}
                 range={range}
@@ -2015,7 +2345,7 @@ export function UiStandardsDatePlayground() {
               />
               <UiStandardsQtime
                 key={`datetime-time-${previewKey}`}
-                color={radioAccent(sample)}
+                color={playgroundIntentColor(sample.id, radioAccent(sample))}
                 ink={sample.fg}
                 value={range ? timeRangeValue : timeValue}
                 range={range}
@@ -2092,7 +2422,7 @@ export function UiStandardsTimePlayground() {
   const [variety, setVariety] = useState("clock");
   const [hour24, setHour24] = useState(false);
   const [inputAppearance, setInputAppearance] = useState<InputAppearance>("standard");
-  const [transition, setTransition] = useState<DropdownTransition>("expand");
+  const [transition, setTransition] = useState<PopupTransition>("expand");
   const [inputOpen, setInputOpen] = useState(false);
   const [inputMounted, setInputMounted] = useState(false);
   const [showNow, setShowNow] = useState(false);
@@ -2149,7 +2479,7 @@ export function UiStandardsTimePlayground() {
         <CompactSelect
           label="Intent"
           value={intent}
-          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id }))}
+          options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
           onChange={setIntent}
           testId="ui-standard-time-pg-intent"
         />
@@ -2192,8 +2522,8 @@ export function UiStandardsTimePlayground() {
         <CompactSelect
           label="Transition"
           value={transition}
-          options={DROPDOWN_TRANSITIONS.map((item) => ({ label: item.label, value: item.id }))}
-          onChange={(next) => setTransition(next as DropdownTransition)}
+          options={POPUP_TRANSITIONS.map((item) => ({ label: item.label, value: item.id }))}
+          onChange={(next) => setTransition(next as PopupTransition)}
           testId="ui-standard-time-pg-transition"
         />
       </div>
@@ -2221,7 +2551,7 @@ export function UiStandardsTimePlayground() {
         <div className="ui-standards-date-preview-card" data-testid="ui-standard-time-pg-clock-card">
           <UiStandardsQtime
             key={previewKey}
-            color={radioAccent(sample)}
+            color={playgroundIntentColor(sample.id, radioAccent(sample))}
             ink={sample.fg}
             value={range ? rangeValue : value}
             range={range}
@@ -2247,8 +2577,8 @@ export function UiStandardsTimePlayground() {
               label="Time"
               value={shown}
               onChange={() => undefined}
-              accent={inputAccent(sample)}
-              fill={sample.bg}
+              accent={playgroundIntentColor(sample.id, inputAccent(sample))}
+              fill={playgroundIntentColor(sample.id, sample.bg)}
               ink={sample.fg}
               appearance={inputAppearance}
               disabled={disabled}
@@ -2270,7 +2600,7 @@ export function UiStandardsTimePlayground() {
             >
               <UiStandardsQtime
                 key={`input-${previewKey}`}
-                color={radioAccent(sample)}
+                color={playgroundIntentColor(sample.id, radioAccent(sample))}
                 ink={sample.fg}
                 value={range ? rangeValue : value}
                 range={range}

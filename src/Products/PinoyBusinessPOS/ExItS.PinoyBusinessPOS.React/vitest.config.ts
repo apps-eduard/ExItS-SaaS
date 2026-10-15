@@ -28,6 +28,7 @@ export default defineConfig({
       "vite.block-sw-in-dev.test.ts",
       "vite.dev-port-health.test.ts",
       "vite.lv-supervisor-proxy.test.ts",
+      "vite.select-global-default.test.ts",
       "scripts/emulator-port-forward.test.mjs",
     ],
   },

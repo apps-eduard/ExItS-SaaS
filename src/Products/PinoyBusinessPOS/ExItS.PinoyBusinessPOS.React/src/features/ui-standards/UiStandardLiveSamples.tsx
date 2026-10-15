@@ -49,6 +49,8 @@ import { useExitsToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { UiStandardsCardPlayground } from "@/features/ui-standards/UiStandardsCardPlayground";
 import { UiStandardsShadowPlayground } from "@/features/ui-standards/UiStandardsShadowPlayground";
+import { UiStandardsTablePlayground } from "@/features/ui-standards/UiStandardsTablePlayground";
+import { UiStandardsSidenavTypography } from "@/features/ui-standards/UiStandardsSidenavTypography";
 import { CreatableCombobox } from "@/components/exits/CreatableCombobox";
 import { Button, buttonIconMotion } from "@/components/ui/button";
 import {
@@ -1408,7 +1410,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                     value={densitySelect}
                     options={[
                       { value: "compact", label: "Compact" },
-                      { value: "balance", label: "Balance" },
+                      { value: "balance", label: "Standard" },
                       { value: "comfort", label: "Comfort" },
                     ]}
                     onChange={setDensitySelect}
@@ -2069,6 +2071,26 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           >
             <CardTitle>{t("uiStandards.shadowPlaygroundTitle")}</CardTitle>
             <UiStandardsShadowPlayground />
+          </Card>
+        ) : null}
+
+        {show("tablePlayground") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-table-playground"
+          >
+            <CardTitle>{t("uiStandards.tablePlaygroundTitle")}</CardTitle>
+            <UiStandardsTablePlayground />
+          </Card>
+        ) : null}
+
+        {show("typographyPlayground") ? (
+          <Card
+            className="flex w-1/2 min-w-0 flex-col gap-3 justify-self-center p-3 lg:col-span-2"
+            data-testid="ui-standard-card-typography-playground"
+          >
+            <CardTitle>Typography</CardTitle>
+            <UiStandardsSidenavTypography />
           </Card>
         ) : null}
 

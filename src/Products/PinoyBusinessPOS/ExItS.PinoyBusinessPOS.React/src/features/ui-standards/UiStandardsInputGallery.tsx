@@ -27,7 +27,7 @@ export const INPUT_SAMPLES: readonly InputSample[] = [
 ];
 
 export type InputAppearance = "standard" | "soft" | "soft-outline" | "filled" | "outlined" | "standout";
-export type InputShape = "square" | "standard" | "rounded";
+export type InputShape = "square" | "standard" | "soft" | "pill";
 
 export function inputAccent(sample: Pick<InputSample, "bg">): string {
   return sample.bg.toLowerCase() === "#ffffff" ? "#000000" : sample.bg;
@@ -88,6 +88,7 @@ export function UiStandardsQinput({
   hint,
   errorMessage,
   testId,
+  inputTestId,
 }: {
   sampleId?: string;
   label: string;
@@ -110,6 +111,7 @@ export function UiStandardsQinput({
   hint?: string;
   errorMessage?: string;
   testId?: string;
+  inputTestId?: string;
 }) {
   const Icon = icon ?? null;
   const picker = type === "date" || type === "time";
@@ -126,7 +128,8 @@ export function UiStandardsQinput({
       className={
         "ui-standards-qinput" +
         ` ui-standards-qinput--${appearance}` +
-        (shape === "rounded" ? " ui-standards-qinput--rounded" : "") +
+        (shape === "pill" ? " ui-standards-qinput--pill" : "") +
+        (shape === "soft" ? " ui-standards-qinput--shape-soft" : "") +
         (shape === "square" ? " ui-standards-qinput--square" : "") +
         (invalid ? " ui-standards-qinput--error" : "") +
         (disabled ? " ui-standards-qinput--disabled" : "") +
@@ -154,6 +157,7 @@ export function UiStandardsQinput({
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
             aria-label={label}
+            data-testid={inputTestId}
             rows={3}
             onChange={onChange ? (event) => onChange(event.target.value) : undefined}
           />
@@ -168,6 +172,7 @@ export function UiStandardsQinput({
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
             aria-label={label}
+            data-testid={inputTestId}
             onChange={onChange ? (event) => onChange(event.target.value) : undefined}
           />
         )}
@@ -388,10 +393,10 @@ export function UiStandardsInputGallery(): ReactNode {
       <InputExampleCard title="Outlined" testId="ui-standard-input-outlined" appearance="outlined" />
       <InputExampleCard title="Standout" testId="ui-standard-input-standout" appearance="standout" />
       <InputExampleCard
-        title="Rounded"
-        testId="ui-standard-input-rounded"
+        title="Pill"
+        testId="ui-standard-input-pill"
         appearance="outlined"
-        shape="rounded"
+        shape="pill"
       />
     </div>
   );

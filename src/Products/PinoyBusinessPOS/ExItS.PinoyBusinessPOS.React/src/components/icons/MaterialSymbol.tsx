@@ -21,6 +21,7 @@ const PERSONAL_SYMBOLS = [
   "checklist",
   "chevron_right",
   "dark_mode",
+  "delete",
   "door_open",
   "edit",
   "event_busy",
@@ -53,6 +54,7 @@ const PERSONAL_SYMBOLS = [
   "swap_horiz",
   "today",
   "view_sidebar",
+  "visibility",
 ] as const;
 
 const SYMBOL_STYLESHEET_ID = "personal-material-symbols";

@@ -20,6 +20,8 @@ type SettingsSelectProps<T extends string> = {
    */
   variant?: "cards" | "segmented";
   testId?: string;
+  /** Smaller segment labels that stay fully visible. */
+  compactLabels?: boolean;
 };
 
 /**
@@ -33,6 +35,7 @@ export function SettingsSelect<T extends string>({
   onChange,
   variant = "cards",
   testId,
+  compactLabels = false,
 }: SettingsSelectProps<T>) {
   const labelId = useId();
 
@@ -62,9 +65,12 @@ export function SettingsSelect<T extends string>({
                 aria-label={`${label}: ${option.label}`}
                 data-testid={option.testId}
                 className={cn(
-                  "inline-flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[var(--exits-control-radius)] px-2.5 py-1.5",
-                  "text-[length:var(--exits-text-sm)] font-medium transition-[background-color,color,box-shadow,border-color] duration-[var(--exits-motion-fast)]",
+                  "inline-flex min-h-8 min-w-0 items-center justify-center gap-1.5 rounded-[var(--exits-control-radius)] py-1.5",
+                  "font-medium transition-[background-color,color,box-shadow,border-color] duration-[var(--exits-motion-fast)]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-primary)]",
+                  compactLabels
+                    ? "flex-none px-1.5 text-[length:var(--exits-text-xs)]"
+                    : "flex-1 px-2.5 text-[length:var(--exits-text-sm)]",
                   selected
                     ? "bg-surface text-[var(--exits-primary)] shadow-sm ring-1 ring-[var(--exits-primary)]"
                     : "text-muted hover:bg-[color-mix(in_srgb,var(--exits-surface)_70%,transparent)] hover:text-foreground",
@@ -74,7 +80,7 @@ export function SettingsSelect<T extends string>({
                 }}
               >
                 {option.icon}
-                <span className="min-w-0 truncate">{option.label}</span>
+                <span className={compactLabels ? "whitespace-nowrap" : "min-w-0 truncate"}>{option.label}</span>
               </button>
             );
           })}

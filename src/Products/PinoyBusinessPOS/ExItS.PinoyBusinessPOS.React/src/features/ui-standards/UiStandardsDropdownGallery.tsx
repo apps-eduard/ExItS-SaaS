@@ -10,7 +10,60 @@ import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 export const DROPDOWN_OPTIONS = ["Option 1", "Option 2", "Option 3"] as const;
 
 export type DropdownAppearance = "standard" | "soft" | "soft-outline" | "filled" | "outlined" | "standout";
-export type DropdownTransition = "expand" | "flip" | "scale" | "slide";
+export type DropdownTransition = "flip-up" | "flip-down" | "scale" | "jump-up";
+export type DropdownValueDisplay = "standard" | "short" | "chips";
+
+function dropdownFieldValue(
+  multiple: boolean,
+  selected: readonly string[],
+  value: string,
+  valueDisplay: DropdownValueDisplay,
+  placeholderOnly: boolean,
+  label: string,
+  emptyText = "Select",
+) {
+  const chosen = multiple ? selected : value ? [value] : [];
+  if (chosen.length > 0 && valueDisplay === "chips") {
+    return { text: chosen.join(", "), chips: chosen, placeholder: false };
+  }
+  if (chosen.length >= 2 && valueDisplay === "short") {
+    return { text: `${chosen.length} Selected`, chips: null as string[] | null, placeholder: false };
+  }
+  if (chosen.length === 0) {
+    const text = placeholderOnly ? label.trim() || "Select" : emptyText;
+    return {
+      text,
+      chips: null as string[] | null,
+      placeholder: text.length > 0,
+    };
+  }
+  return { text: multiple ? chosen.join(", ") : value, chips: null as string[] | null, placeholder: false };
+}
+
+function ClosedDropdownValue({
+  field,
+  testId,
+}: {
+  field: { text: string; chips: readonly string[] | null; placeholder: boolean };
+  testId?: string;
+}) {
+  if (field.chips) {
+    return (
+      <span className="ui-standards-qdropdown__chips" data-testid={testId ? `${testId}-chips` : undefined}>
+        {field.chips.map((chip) => (
+          <span key={chip} className="ui-standards-qdropdown__chip">
+            {chip}
+          </span>
+        ))}
+      </span>
+    );
+  }
+  return (
+    <span className={"ui-standards-qdropdown__value" + (field.placeholder ? " ui-standards-qdropdown__value--placeholder" : "")}>
+      {field.text}
+    </span>
+  );
+}
 
 /** Button Standard is white. A dark edge keeps it visible on a light page. */
 export const DROPDOWN_STANDARD_COLOR = "#ffffff";
@@ -33,8 +86,12 @@ export function UiStandardsQdropdown({
   standard = false,
   searchable = true,
   multiple = false,
-  transition = "expand",
+  transition = "scale",
+  valueDisplay = "standard",
+  placeholderOnly = false,
+  emptyText = "Select",
   disabledOptions = [],
+  optionColors,
   onSelect,
   onChangeValues,
   testId,
@@ -45,7 +102,7 @@ export function UiStandardsQdropdown({
   values?: readonly string[];
   options?: readonly string[];
   appearance?: DropdownAppearance;
-  shape?: "square" | "standard" | "rounded";
+  shape?: "square" | "standard" | "soft" | "pill" | "rounded";
   disabled?: boolean;
   darkInk?: boolean;
   onDark?: boolean;
@@ -53,7 +110,11 @@ export function UiStandardsQdropdown({
   searchable?: boolean;
   multiple?: boolean;
   transition?: DropdownTransition;
+  valueDisplay?: DropdownValueDisplay;
+  placeholderOnly?: boolean;
+  emptyText?: string;
   disabledOptions?: readonly string[];
+  optionColors?: Readonly<Record<string, string>>;
   onSelect?: (value: string) => void;
   onChangeValues?: (values: string[]) => void;
   testId?: string;
@@ -67,7 +128,8 @@ export function UiStandardsQdropdown({
   const style = { "--qdropdown-color": color } as CSSProperties;
   const selected = multiple ? values : value ? [value] : [];
   const allSelected = options.length > 0 && options.every((option) => selected.includes(option));
-  const shown = multiple ? (selected.length > 0 ? selected.join(", ") : "None") : value;
+  const fieldValue = dropdownFieldValue(multiple, selected, value, valueDisplay, placeholderOnly, label, emptyText);
+  const shown = fieldValue.text;
   const needle = query.trim().toLowerCase();
   const visible = searchable && needle ? options.filter((option) => option.toLowerCase().includes(needle)) : options;
 
@@ -130,14 +192,17 @@ export function UiStandardsQdropdown({
         (darkInk ? " ui-standards-qdropdown--dark-ink" : "") +
         (onDark ? " ui-standards-qdropdown--on-dark" : "") +
         (standard ? " ui-standards-qdropdown--standard" : "") +
-        (open ? " ui-standards-qdropdown--open" : "")
+        (open ? " ui-standards-qdropdown--open" : "") +
+        (placeholderOnly ? " ui-standards-qdropdown--placeholder" : "") +
+        (valueDisplay === "chips" ? " ui-standards-qdropdown--chips" : "")
       }
       style={style}
       data-shape={shape}
       data-transition={transition}
+      data-value-display={valueDisplay}
+      data-placeholder-only={placeholderOnly ? "true" : "false"}
       data-testid={testId}
     >
-      <span className="ui-standards-qdropdown__label">{label}</span>
       {searchable ? (
         <div
           className="ui-standards-qdropdown__field"
@@ -146,6 +211,7 @@ export function UiStandardsQdropdown({
             if (!disabled && !open) setOpen(true);
           }}
         >
+          {placeholderOnly ? null : <span className="ui-standards-qdropdown__label">{label}</span>}
           {open ? (
             <input
               ref={inputRef}
@@ -164,7 +230,7 @@ export function UiStandardsQdropdown({
               onClick={(event) => event.stopPropagation()}
             />
           ) : (
-            <span className="ui-standards-qdropdown__value">{shown}</span>
+            <ClosedDropdownValue field={fieldValue} testId={testId} />
           )}
           {open && query ? (
             <button
@@ -204,7 +270,8 @@ export function UiStandardsQdropdown({
             if (!disabled) setOpen((current) => !current);
           }}
         >
-          <span className="ui-standards-qdropdown__value">{shown}</span>
+          {placeholderOnly ? null : <span className="ui-standards-qdropdown__label">{label}</span>}
+          <ClosedDropdownValue field={fieldValue} testId={testId} />
           <ChevronDown className="ui-standards-qdropdown__chevron" aria-hidden />
         </button>
       )}
@@ -244,6 +311,7 @@ export function UiStandardsQdropdown({
           ) : null}
           {visible.map((option) => {
             const blocked = disabledOptions.includes(option);
+            const optionColor = optionColors?.[option];
             return (
             <button
               key={option}
@@ -255,6 +323,8 @@ export function UiStandardsQdropdown({
                 "ui-standards-qdropdown__option" +
                 (selected.includes(option) ? " ui-standards-qdropdown__option--selected" : "")
               }
+              data-option-color={optionColor ? "" : undefined}
+              style={optionColor ? ({ "--qoption-color": optionColor } as CSSProperties) : undefined}
               data-testid={testId ? `${testId}-option-${option.replace(/\s+/g, "-").toLowerCase()}` : undefined}
               onClick={() => {
                 if (!blocked) choose(option);
