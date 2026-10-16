@@ -47,7 +47,22 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { TableActionButton } from "@/components/exits/TableActionButton";
 import { useExitsToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
-import { UiStandardsCardPlayground } from "@/features/ui-standards/UiStandardsCardPlayground";
+import {
+  UiStandardsCardBannerSample,
+  UiStandardsCardBookmarkSample,
+  UiStandardsCardClipSample,
+  UiStandardsCardFooterActionsSample,
+  UiStandardsCardFooterCaptionSample,
+  UiStandardsCardFooterSplitSample,
+  UiStandardsCardNotchSample,
+  UiStandardsCardPennantSample,
+  UiStandardsCardPlayground,
+  UiStandardsCardRibbonSample,
+  UiStandardsCardStackSample,
+  UiStandardsCardStampSample,
+  UiStandardsCardStripeSample,
+  UiStandardsCardTicketSample,
+} from "@/features/ui-standards/UiStandardsCardPlayground";
 import { UiStandardsShadowPlayground } from "@/features/ui-standards/UiStandardsShadowPlayground";
 import { UiStandardsTablePlayground } from "@/features/ui-standards/UiStandardsTablePlayground";
 import { UiStandardsSidenavTypography } from "@/features/ui-standards/UiStandardsSidenavTypography";
@@ -2061,6 +2076,27 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           >
             <CardTitle>{t("uiStandards.cardPlaygroundTitle")}</CardTitle>
             <UiStandardsCardPlayground />
+          </Card>
+        ) : null}
+
+        {show("card") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-cards">
+            <CardTitle>{t("uiStandards.cardSamplesTitle")}</CardTitle>
+            <UiStandardsCardBannerSample />
+            <UiStandardsCardPennantSample />
+            <div className="ui-standards-qcard-samples" data-testid="ui-standard-card-samples-grid">
+              <UiStandardsCardRibbonSample />
+              <UiStandardsCardTicketSample />
+              <UiStandardsCardBookmarkSample />
+              <UiStandardsCardFooterActionsSample />
+              <UiStandardsCardStampSample />
+              <UiStandardsCardStackSample />
+              <UiStandardsCardStripeSample />
+              <UiStandardsCardNotchSample />
+              <UiStandardsCardClipSample />
+              <UiStandardsCardFooterCaptionSample />
+              <UiStandardsCardFooterSplitSample />
+            </div>
           </Card>
         ) : null}
 

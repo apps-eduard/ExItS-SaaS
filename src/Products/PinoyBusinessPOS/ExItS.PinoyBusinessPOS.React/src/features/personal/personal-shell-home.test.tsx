@@ -192,6 +192,10 @@ describe("Personal shell and home (RMAP-22B)", () => {
       "Track personal Utang, to-dos, and your connected stores.",
     );
     expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-quick-actions-ribbon")).toHaveTextContent("Quick actions");
+    expect(screen.getByTestId("personal-quick-actions-pennant")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-todo-summary-ribbon")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-todo-summary-pennant")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-start-business")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-owe")).toBeInTheDocument();

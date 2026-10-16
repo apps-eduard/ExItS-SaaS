@@ -560,11 +560,10 @@ export function PersonalHomePage() {
         aria-label={t("personal.home.quickActions")}
         data-testid="personal-quick-actions"
       >
-        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <BoltIcon
-            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
-            aria-hidden
-          />
+        <h2 className="personal-quick-actions__ribbon" data-testid="personal-quick-actions-ribbon">
+          <span className="personal-quick-actions__pennant" aria-hidden data-testid="personal-quick-actions-pennant">
+            <BoltIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
+          </span>
           {t("personal.home.quickActions")}
         </h2>
         <ActionTileGrid
@@ -615,12 +614,14 @@ export function PersonalHomePage() {
       </section>
 
       <section
-        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        className="catalog-form-section exits-animate-panel personal-section personal-todo-summary gap-3"
         aria-label={t("personal.home.todoSummary")}
         data-testid="personal-todo-summary"
       >
-        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <ChecklistIcon className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0" aria-hidden />
+        <h2 className="personal-todo-summary__ribbon" data-testid="personal-todo-summary-ribbon">
+          <span className="personal-todo-summary__pennant" aria-hidden data-testid="personal-todo-summary-pennant">
+            <ChecklistIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
+          </span>
           {t("personal.home.todoSummary")}
         </h2>
         {todosQuery.isPending && cachedTodos.length === 0 ? (

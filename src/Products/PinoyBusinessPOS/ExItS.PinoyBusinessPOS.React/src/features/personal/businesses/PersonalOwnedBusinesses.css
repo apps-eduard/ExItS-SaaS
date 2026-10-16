@@ -63,7 +63,13 @@
 [data-testid="personal-staff-workplaces"] {
   border-color: color-mix(in srgb, var(--exits-info) 18%, var(--exits-border));
   border-top: 6px solid var(--exits-info);
-  background: color-mix(in srgb, var(--exits-info) 6%, var(--exits-surface));
+  background-color: color-mix(in srgb, var(--exits-info) 10%, var(--exits-surface));
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--exits-info) 8%, var(--exits-surface)) 0%,
+    color-mix(in srgb, var(--exits-info) 14%, var(--exits-surface)) 52%,
+    color-mix(in srgb, var(--exits-info) 10%, var(--exits-surface)) 100%
+  );
 }
 
 [data-testid="personal-staff-workplaces"] .personal-owned-businesses__head {

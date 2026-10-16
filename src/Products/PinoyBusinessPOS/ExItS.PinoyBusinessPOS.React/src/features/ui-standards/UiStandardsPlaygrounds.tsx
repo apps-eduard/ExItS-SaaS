@@ -33,6 +33,19 @@ import {
 import { useQbtnRipple } from "@/features/ui-standards/UiStandardsQbtnRipple";
 import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
 import { INPUT_GLOBAL_DEFAULT_APPEARANCE, INPUT_GLOBAL_DEFAULT_INTENT } from "@/features/ui-standards/input-global-default";
+import {
+  INTENT_GLOBAL_AMBER,
+  INTENT_GLOBAL_BLACK,
+  INTENT_GLOBAL_DANGER,
+  INTENT_GLOBAL_HELP,
+  INTENT_GLOBAL_INFO,
+  INTENT_GLOBAL_PRIMARY,
+  INTENT_GLOBAL_SECONDARY,
+  INTENT_GLOBAL_STANDARD,
+  INTENT_GLOBAL_SUCCESS,
+  INTENT_GLOBAL_WARN,
+  INTENT_GLOBAL_WARN_FOREGROUND,
+} from "@/features/ui-standards/intent-color-global-default";
 import { SELECT_GLOBAL_DEFAULT_APPEARANCE, SELECT_GLOBAL_DEFAULT_INTENT } from "@/features/ui-standards/select-global-default";
 import {
   INPUT_SAMPLES,
@@ -59,16 +72,16 @@ import { DATE_PICKER_SAMPLE, DATE_RANGE_SAMPLE, UiStandardsQdate, isDateRangeVal
 import { TIME_PICKER_SAMPLE, TIME_RANGE_SAMPLE, UiStandardsQtime, displayTime, isTimeRangeValue, type TimeAppearance, type TimePickerValue, type TimeVariety } from "@/features/ui-standards/UiStandardsTimeGallery";
 
 const PLAYGROUND_INTENTS = [
-  { id: "standard", label: "Standard", bg: "#ffffff", fg: "#000000", border: true },
-  { id: "primary", label: "Primary", bg: "#1976d2", fg: "#ffffff" },
-  { id: "secondary", label: "Secondary", bg: "#26a69a", fg: "#ffffff" },
-  { id: "success", label: "Success", bg: "#22c55e", fg: "#ffffff" },
-  { id: "info", label: "Info", bg: "#0ea5e9", fg: "#ffffff" },
-  { id: "amber", label: "Amber", bg: "#ffc107", fg: "#000000" },
-  { id: "danger", label: "Danger", bg: "#ef4444", fg: "#ffffff" },
-  { id: "warn", label: "Warn", bg: "#ff5722", fg: "#ffffff" },
-  { id: "help", label: "Help", bg: "#a855f7", fg: "#ffffff" },
-  { id: "black", label: "Black", bg: "#000000", fg: "#ffffff" },
+  { id: "standard", label: "Standard", bg: INTENT_GLOBAL_STANDARD, fg: "#000000", border: true },
+  { id: "primary", label: "Primary", bg: INTENT_GLOBAL_PRIMARY, fg: "#ffffff" },
+  { id: "secondary", label: "Secondary", bg: INTENT_GLOBAL_SECONDARY, fg: "#ffffff" },
+  { id: "success", label: "Success", bg: INTENT_GLOBAL_SUCCESS, fg: "#ffffff" },
+  { id: "info", label: "Info", bg: INTENT_GLOBAL_INFO, fg: "#ffffff" },
+  { id: "amber", label: "Amber", bg: INTENT_GLOBAL_AMBER, fg: "#000000" },
+  { id: "danger", label: "Danger", bg: INTENT_GLOBAL_DANGER, fg: "#ffffff" },
+  { id: "warn", label: "Warn", bg: INTENT_GLOBAL_WARN, fg: INTENT_GLOBAL_WARN_FOREGROUND },
+  { id: "help", label: "Help", bg: INTENT_GLOBAL_HELP, fg: "#ffffff" },
+  { id: "black", label: "Black", bg: INTENT_GLOBAL_BLACK, fg: "#ffffff" },
 ] as const;
 
 const PLAYGROUND_APPEARANCES = [
@@ -82,6 +95,7 @@ const PLAYGROUND_APPEARANCES = [
   { id: "gradient", label: "Gradient" },
   { id: "rounded", label: "Rounded" },
   { id: "flat", label: "Flat" },
+  { id: "medallion", label: "Medallion" },
 ] as const;
 
 const BUTTON_SHAPES = [
@@ -496,7 +510,10 @@ export function UiStandardsButtonPlayground() {
   const [loading, setLoading] = useState(BUTTON_PLAYGROUND_DEFAULTS.loading);
   const [label, setLabel] = useState(BUTTON_PLAYGROUND_DEFAULTS.label);
   const chosenIcon = BUTTON_ICONS.find((icon) => icon.id === iconId)?.Icon ?? null;
-  const PreviewIcon = iconId === "none" ? (iconOnly ? Heart : null) : chosenIcon;
+  const isMedallion = appearance === "medallion";
+  const showIconOnly = iconOnly || isMedallion;
+  const PreviewIcon = iconId === "none" ? (showIconOnly ? Heart : null) : chosenIcon;
+  const IconOnlyPreviewIcon = iconId === "none" ? Heart : chosenIcon;
   const sample = PLAYGROUND_INTENTS.find((item) => item.id === intent) ?? PLAYGROUND_INTENTS[1];
   const intentFill = playgroundIntentColor(sample.id, sample.bg);
   const accent = playgroundIntentColor(sample.id, sample.bg.toLowerCase() === "#ffffff" ? "#000000" : sample.bg);
@@ -504,31 +521,54 @@ export function UiStandardsButtonPlayground() {
   const soft = appearance === "soft";
   const softOutline = appearance === "soft-outline";
   const darkInk = (sample.id === "standard" || sample.id === "black") && (transparent || soft || softOutline);
-  const previewStyle: CSSProperties & { "--qbtn-bg"?: string } = transparent
-    ? {
-        color: accent,
-        borderColor: appearance === "outline" ? accent : "transparent",
-        backgroundColor: "transparent",
-      }
-    : soft || softOutline
-      ? { color: accent, "--qbtn-bg": accent, ...(softOutline ? { borderColor: accent } : {}) }
-      : { backgroundColor: intentFill, color: sample.fg };
-  if (appearance === "gradient" && !transparent) previewStyle["--qbtn-bg"] = intentFill;
+  const previewStyle: CSSProperties & { "--qbtn-bg"?: string; "--qbtn-icon-bg"?: string; "--qbtn-icon-fg"?: string } =
+    isMedallion
+      ? {
+          "--qbtn-icon-bg": intentFill,
+          "--qbtn-icon-fg": sample.fg,
+        }
+      : transparent
+        ? {
+            color: accent,
+            borderColor: appearance === "outline" ? accent : "transparent",
+            backgroundColor: "transparent",
+          }
+        : soft || softOutline
+          ? { color: accent, "--qbtn-bg": accent, ...(softOutline ? { borderColor: accent } : {}) }
+          : { backgroundColor: intentFill, color: sample.fg };
+  if (appearance === "gradient" && !transparent && !isMedallion) previewStyle["--qbtn-bg"] = intentFill;
   const previewClass = [
-    "ui-standards-qbtn",
-    "ui-standards-qbtn--playground",
-    appearance === "soft" ? "ui-standards-qbtn--soft" : "",
-    appearance === "soft-outline" ? "ui-standards-qbtn--soft-outline" : "",
-    appearance === "outline" ? "ui-standards-qbtn--outline" : "",
-    appearance === "ghost" ? "ui-standards-qbtn--ghost" : "",
-    appearance === "raised" ? "ui-standards-qbtn--raised" : "",
-    appearance === "glossy" ? "ui-standards-qbtn--glossy" : "",
-    appearance === "gradient" ? "ui-standards-qbtn--gradient" : "",
-    appearance === "flat" ? "ui-standards-qbtn--flat" : "",
-    darkInk ? "ui-standards-qbtn--dark-ink" : "",
-    iconOnly ? "ui-standards-qbtn--icon-only" : "",
-    ripple ? "ui-standards-qbtn--ripple" : "",
-    !transparent && !soft && !softOutline && "border" in sample && sample.border ? "ui-standards-qbtn--border" : "",
+    isMedallion ? "ui-standards-qbtn-icon-medallion" : "ui-standards-qbtn",
+    isMedallion ? "" : "ui-standards-qbtn--playground",
+    !isMedallion && appearance === "soft" ? "ui-standards-qbtn--soft" : "",
+    !isMedallion && appearance === "soft-outline" ? "ui-standards-qbtn--soft-outline" : "",
+    !isMedallion && appearance === "outline" ? "ui-standards-qbtn--outline" : "",
+    !isMedallion && appearance === "ghost" ? "ui-standards-qbtn--ghost" : "",
+    !isMedallion && appearance === "raised" ? "ui-standards-qbtn--raised" : "",
+    !isMedallion && appearance === "glossy" ? "ui-standards-qbtn--glossy" : "",
+    !isMedallion && appearance === "gradient" ? "ui-standards-qbtn--gradient" : "",
+    !isMedallion && appearance === "flat" ? "ui-standards-qbtn--flat" : "",
+    !isMedallion && darkInk ? "ui-standards-qbtn--dark-ink" : "",
+    !isMedallion && showIconOnly ? "ui-standards-qbtn--icon-only" : "",
+    !isMedallion && ripple ? "ui-standards-qbtn--ripple" : "",
+    !isMedallion && !transparent && !soft && !softOutline && "border" in sample && sample.border
+      ? "ui-standards-qbtn--border"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const iconOnlyPreviewClass = [
+    isMedallion ? "ui-standards-qbtn-icon-medallion" : "ui-standards-qbtn ui-standards-qbtn--playground ui-standards-qbtn--icon-only",
+    !isMedallion && appearance === "soft" ? "ui-standards-qbtn--soft" : "",
+    !isMedallion && appearance === "soft-outline" ? "ui-standards-qbtn--soft-outline" : "",
+    !isMedallion && appearance === "outline" ? "ui-standards-qbtn--outline" : "",
+    !isMedallion && appearance === "ghost" ? "ui-standards-qbtn--ghost" : "",
+    !isMedallion && appearance === "raised" ? "ui-standards-qbtn--raised" : "",
+    !isMedallion && appearance === "glossy" ? "ui-standards-qbtn--glossy" : "",
+    !isMedallion && appearance === "gradient" ? "ui-standards-qbtn--gradient" : "",
+    !isMedallion && appearance === "flat" ? "ui-standards-qbtn--flat" : "",
+    !isMedallion && darkInk ? "ui-standards-qbtn--dark-ink" : "",
+    !isMedallion && ripple ? "ui-standards-qbtn--ripple" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -639,17 +679,18 @@ export function UiStandardsButtonPlayground() {
         themeTestId="ui-standard-btn-pg-theme"
         resetTestId="ui-standard-btn-pg-reset"
         onReset={resetPreview}
-        previewClassName="ui-standards-btn-pg-preview flex min-h-16 items-center"
-        previewProps={{ "data-density": density }}
+        previewClassName="ui-standards-btn-pg-preview flex min-h-16 items-center gap-3"
+        previewProps={{ "data-density": density, "data-appearance": appearance }}
       >
         <button
           type="button"
           className={previewClass}
           data-shape={shape}
+          data-testid="ui-standard-btn-pg-preview-btn"
           style={{ ...previewStyle, textTransform: "none" }}
           disabled={disabled || loading}
           aria-busy={loading || undefined}
-          aria-label={iconOnly ? label.trim() || "Standard" : undefined}
+          aria-label={showIconOnly ? label.trim() || "Standard" : undefined}
           data-ripple={ripple ? "ripple" : "no-ripple"}
           onClick={showRipple}
         >
@@ -657,14 +698,36 @@ export function UiStandardsButtonPlayground() {
             {PreviewIcon ? (
               <PreviewIcon className="size-4" aria-hidden data-testid="ui-standard-btn-pg-preview-icon" />
             ) : null}
-            {iconOnly ? null : label.trim() || "Standard"}
+            {showIconOnly ? null : label.trim() || "Standard"}
           </span>
           {rippleLayer}
+        </button>
+        <button
+          type="button"
+          className={iconOnlyPreviewClass}
+          data-shape={shape}
+          data-testid="ui-standard-btn-pg-preview-icon-only"
+          style={{ ...previewStyle, textTransform: "none" }}
+          disabled={disabled || loading}
+          aria-busy={loading || undefined}
+          aria-label={label.trim() || "Standard"}
+          data-ripple={ripple ? "ripple" : "no-ripple"}
+          onClick={showRipple}
+        >
+          <span className="ui-standards-qbtn-ripple-content">
+            {IconOnlyPreviewIcon ? (
+              <IconOnlyPreviewIcon
+                className="size-4"
+                aria-hidden
+                data-testid="ui-standard-btn-pg-preview-icon-only-glyph"
+              />
+            ) : null}
+          </span>
         </button>
       </PlaygroundPreviewCard>
       <UiStandardsCopyCommand
         standard="Button"
-        command={buttonCursorCommand(intent, appearance, shape, density, iconId, iconOnly, ripple, disabled)}
+        command={buttonCursorCommand(intent, appearance, shape, density, iconId, iconOnly || isMedallion, ripple, disabled)}
       />
     </PlaygroundSection>
   );

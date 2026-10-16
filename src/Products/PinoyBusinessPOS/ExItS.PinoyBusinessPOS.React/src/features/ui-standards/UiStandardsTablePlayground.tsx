@@ -80,6 +80,8 @@ const SHAPE_OPTIONS: ReadonlyArray<{ label: string; value: IconShape }> = [
   { label: "Rounded", value: "rounded" },
 ];
 
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_ELEVATION = 3;
 
 /** 1 is flat. 3 matches the current table shadow. 5 is the highest raise. */
@@ -139,18 +141,31 @@ const ROWS = [
   { dessert: "Eclair", calories: "262", fat: "16.0", carbs: "23", protein: "6.0" },
   { dessert: "Cupcake", calories: "305", fat: "3.7", carbs: "67", protein: "4.3" },
   { dessert: "Gingerbread", calories: "356", fat: "16.0", carbs: "49", protein: "3.9" },
+  { dessert: "Donut", calories: "452", fat: "25.0", carbs: "51", protein: "4.9" },
+  { dessert: "Jelly bean", calories: "375", fat: "0.0", carbs: "94", protein: "0.0" },
+  { dessert: "KitKat", calories: "518", fat: "26.0", carbs: "65", protein: "7.0" },
+  { dessert: "Lollipop", calories: "392", fat: "0.2", carbs: "98", protein: "0.0" },
+  { dessert: "Honeycomb", calories: "408", fat: "3.2", carbs: "87", protein: "6.5" },
+  { dessert: "Nougat", calories: "360", fat: "8.0", carbs: "73", protein: "2.2" },
+  { dessert: "Marshmallow", calories: "318", fat: "0.2", carbs: "81", protein: "1.8" },
+  { dessert: "Brownie", calories: "466", fat: "29.0", carbs: "50", protein: "5.4" },
+  { dessert: "Cheesecake", calories: "321", fat: "23.0", carbs: "26", protein: "5.5" },
+  { dessert: "Macaron", calories: "407", fat: "21.0", carbs: "49", protein: "7.1" },
+  { dessert: "Tiramisu", calories: "283", fat: "15.0", carbs: "28", protein: "5.2" },
+  { dessert: "Pudding", calories: "158", fat: "4.6", carbs: "26", protein: "3.8" },
+  { dessert: "Cookie", calories: "488", fat: "24.0", carbs: "64", protein: "5.9" },
+  { dessert: "Waffle", calories: "291", fat: "14.0", carbs: "33", protein: "7.9" },
+  { dessert: "Pancake", calories: "227", fat: "9.0", carbs: "28", protein: "6.4" },
+  { dessert: "Muffin", calories: "377", fat: "16.0", carbs: "53", protein: "5.4" },
+  { dessert: "Tart", calories: "274", fat: "14.0", carbs: "34", protein: "3.1" },
+  { dessert: "Cannoli", calories: "339", fat: "18.0", carbs: "38", protein: "6.8" },
+  { dessert: "Baklava", calories: "428", fat: "23.0", carbs: "50", protein: "6.2" },
+  { dessert: "Churro", calories: "385", fat: "19.0", carbs: "48", protein: "4.1" },
 ] as const;
 
 function exportIntentColor(intent: (typeof EXPORT_OPTIONS)[number]["intent"]) {
   const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
   return playgroundIntentColor(sample.id, sample.bg);
-}
-
-function headerCheckOnSolidFill(appearance: HeaderAppearance, intent: string) {
-  if (appearance === "soft" || appearance === "soft-outline" || appearance === "ghost") {
-    return false;
-  }
-  return !(appearance === "standard" && intent === "standard");
 }
 
 function rowSelectId(dessert: string) {
@@ -171,6 +186,9 @@ function tableCursorCommand(
   editable: readonly ColumnId[],
   headerIntent: string,
   headerAppearance: HeaderAppearance,
+  footerOn: boolean,
+  footerIntent: string,
+  footerAppearance: HeaderAppearance,
   sort: boolean,
   search: boolean,
   filter: boolean,
@@ -198,6 +216,11 @@ function tableCursorCommand(
   }
   if (headerIntent !== "standard") parts.push(`header-${headerIntent}`);
   if (headerAppearance !== "standard") parts.push(`header-${headerAppearance}`);
+  if (!footerOn) parts.push("no-footer");
+  else {
+    if (footerIntent !== "standard") parts.push(`footer-${footerIntent}`);
+    if (footerAppearance !== "standard") parts.push(`footer-${footerAppearance}`);
+  }
   if (sort) parts.push("sort");
   if (search) parts.push("search");
   for (const option of EXPORT_OPTIONS) {
@@ -205,6 +228,19 @@ function tableCursorCommand(
   }
   if (filter) parts.push("filter");
   return parts.join(" ");
+}
+
+function GoogleIcon({ name }: { name: string }) {
+  return (
+    <span className="material-symbols-outlined" aria-hidden>
+      {name}
+    </span>
+  );
+}
+
+function sortIconName(active: boolean, direction: "asc" | "desc") {
+  if (!active) return "unfold_more";
+  return direction === "asc" ? "arrow_upward" : "arrow_downward";
 }
 
 function RowActions({
@@ -224,22 +260,38 @@ function RowActions({
   onSave: () => void;
   onCancel: () => void;
 }) {
+  const slug = rowSelectId(name);
+  if (editing) {
+    return (
+      <div className="ui-standards-qtable__actions" data-testid={`ui-standard-table-pg-actions-${slug}`}>
+        <button
+          type="button"
+          className="ui-standards-qtable__action ui-standards-qtable__action--save"
+          data-shape={shape}
+          aria-label={`Save ${name}`}
+          data-testid={`ui-standard-table-pg-edit-save-${slug}`}
+          onClick={onSave}
+        >
+          <GoogleIcon name="save" />
+        </button>
+        <button
+          type="button"
+          className="ui-standards-qtable__action ui-standards-qtable__action--reset"
+          data-shape={shape}
+          aria-label={`Reset ${name} to original`}
+          data-testid={`ui-standard-table-pg-edit-reset-${slug}`}
+          onClick={onCancel}
+        >
+          <GoogleIcon name="restart_alt" />
+        </button>
+      </div>
+    );
+  }
   const chosen = ACTION_OPTIONS.filter((option) => actions.includes(option.value));
   if (chosen.length === 0) return null;
-  const slug = rowSelectId(name);
   return (
     <div className="ui-standards-qtable__actions" data-testid={`ui-standard-table-pg-actions-${slug}`}>
-      {chosen.map((option) =>
-        option.value === "edit" && editing ? (
-          <span key="edit" className="ui-standards-qtable__edit-actions">
-            <button type="button" data-testid={`ui-standard-table-pg-edit-save-${slug}`} onClick={onSave}>
-              Save
-            </button>
-            <button type="button" data-testid={`ui-standard-table-pg-edit-cancel-${slug}`} onClick={onCancel}>
-              Cancel
-            </button>
-          </span>
-        ) : (
+      {chosen.map((option) => (
           <button
             key={option.value}
             type="button"
@@ -250,12 +302,9 @@ function RowActions({
             aria-label={`${option.labelFor} ${name}`}
             onClick={option.value === "edit" ? onEdit : undefined}
           >
-            <span className="material-symbols-outlined" aria-hidden>
-              {option.icon}
-            </span>
+            <GoogleIcon name={option.icon} />
           </button>
-        ),
-      )}
+        ))}
     </div>
   );
 }
@@ -324,9 +373,13 @@ export function UiStandardsTablePlayground() {
   const [rows, setRows] = useState<PlaygroundRow[]>(initialRows);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Record<ColumnId, string> | null>(null);
+  const [editBaseline, setEditBaseline] = useState<Record<ColumnId, string> | null>(null);
   const sampleRef = useRef<HTMLDivElement>(null);
   const [headerIntent, setHeaderIntent] = useState("standard");
   const [headerAppearance, setHeaderAppearance] = useState<HeaderAppearance>("standard");
+  const [footerOn, setFooterOn] = useState(true);
+  const [footerIntent, setFooterIntent] = useState("standard");
+  const [footerAppearance, setFooterAppearance] = useState<HeaderAppearance>("standard");
   const [sort, setSort] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -334,6 +387,8 @@ export function UiStandardsTablePlayground() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(false);
   const [filterValues, setFilterValues] = useState<string[]>([]);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [page, setPage] = useState(1);
   const [exports, setExports] = useState<readonly ExportId[]>([]);
   const [previewSize, setPreviewSize] = useState<UiStandardsDataPreviewDevice>(UI_STANDARDS_DATA_PREVIEW_DEFAULT);
   const [settingsTab, setSettingsTab] = useState("table");
@@ -344,6 +399,11 @@ export function UiStandardsTablePlayground() {
   const showActions = actions.length > 0;
   const tableSample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
   const headerSample = INPUT_SAMPLES.find((item) => item.id === headerIntent) ?? INPUT_SAMPLES[0];
+  const footerSample = INPUT_SAMPLES.find((item) => item.id === footerIntent) ?? INPUT_SAMPLES[0];
+  const checkBorder =
+    headerIntent === "standard" && headerAppearance === "standard"
+      ? "#9e9e9e"
+      : playgroundIntentColor(headerSample.id, inputAccent(headerSample));
   const { layout } = useResponsiveDataLayout({
     tableMinWidthPx: 768,
     layoutWidthPx: UI_STANDARDS_DATA_PREVIEW_WIDTHS[previewSize],
@@ -369,14 +429,19 @@ export function UiStandardsTablePlayground() {
       : matchedRows;
   const useDialog = layout === "list" || editKind === "dialog";
   const firstEditable = COLUMNS.find((column) => editable.includes(column.id))?.id ?? null;
-  const selectedCount = visibleRows.filter((row) => selected.has(row.id)).length;
-  const intentColor = playgroundIntentColor(headerSample.id, inputAccent(headerSample));
-  const headerCheckColor = headerCheckOnSolidFill(headerAppearance, headerIntent) ? headerSample.fg : intentColor;
-  const allSelected = visibleRows.length > 0 && selectedCount === visibleRows.length;
+  const pageCount = Math.max(1, Math.ceil(visibleRows.length / pageSize) || 1);
+  const safePage = Math.min(Math.max(page, 1), pageCount);
+  const pageStart = (safePage - 1) * pageSize;
+  const pageRows = visibleRows.slice(pageStart, pageStart + pageSize);
+  const rangeFrom = visibleRows.length === 0 ? 0 : pageStart + 1;
+  const rangeTo = Math.min(pageStart + pageSize, visibleRows.length);
+  const rangeText = `${rangeFrom}-${rangeTo} of ${visibleRows.length}`;
+  const selectedCount = pageRows.filter((row) => selected.has(row.id)).length;
+  const allSelected = pageRows.length > 0 && selectedCount === pageRows.length;
   const someSelected = selectedCount > 0 && !allSelected;
 
   function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(visibleRows.map((row) => row.id)));
+    setSelected(allSelected ? new Set() : new Set(pageRows.map((row) => row.id)));
   }
 
   function toggleRow(dessert: string) {
@@ -397,21 +462,38 @@ export function UiStandardsTablePlayground() {
     setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
   }
 
-  function beginEdit(row: PlaygroundRow) {
-    if (editable.length === 0) return;
-    setEditingId(row.id);
-    setEditDraft({
+  function snapshotRow(row: PlaygroundRow): Record<ColumnId, string> {
+    return {
       dessert: row.dessert,
       calories: row.calories,
       fat: row.fat,
       carbs: row.carbs,
       protein: row.protein,
-    });
+    };
+  }
+
+  function beginEdit(row: PlaygroundRow) {
+    if (editable.length === 0) return;
+    const snapshot = snapshotRow(row);
+    setEditingId(row.id);
+    setEditDraft(snapshot);
+    setEditBaseline(snapshot);
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditDraft(null);
+    setEditBaseline(null);
+  }
+
+  function resetEdit() {
+    if (!editBaseline || !editDraft) return;
+    const unchanged = COLUMNS.every((column) => editDraft[column.id] === editBaseline[column.id]);
+    if (unchanged) {
+      cancelEdit();
+      return;
+    }
+    setEditDraft({ ...editBaseline });
   }
 
   function saveEdit() {
@@ -419,6 +501,7 @@ export function UiStandardsTablePlayground() {
     setRows((current) => current.map((row) => (row.id === editingId ? { ...row, ...editDraft } : row)));
     setEditingId(null);
     setEditDraft(null);
+    setEditBaseline(null);
   }
 
   function updateDraft(columnId: ColumnId, value: string) {
@@ -459,9 +542,13 @@ export function UiStandardsTablePlayground() {
     setRows(initialRows());
     setEditingId(null);
     setEditDraft(null);
+    setEditBaseline(null);
     setIntent("standard");
     setHeaderIntent("standard");
     setHeaderAppearance("standard");
+    setFooterOn(true);
+    setFooterIntent("standard");
+    setFooterAppearance("standard");
     setSort(false);
     setSortColumn(null);
     setSortDir("asc");
@@ -469,6 +556,8 @@ export function UiStandardsTablePlayground() {
     setSearchQuery("");
     setFilter(false);
     setFilterValues([]);
+    setPageSize(DEFAULT_PAGE_SIZE);
+    setPage(1);
     setExports([]);
     setPreviewSize(UI_STANDARDS_DATA_PREVIEW_DEFAULT);
     setSettingsTab("table");
@@ -635,7 +724,29 @@ export function UiStandardsTablePlayground() {
             ),
             footer: (
           <SettingCard title="Footer" testId="ui-standard-table-pg-footer-card">
-            <div className="ui-standards-qtable__bottom">1-5 of 5</div>
+            <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+              <Switch
+                checked={footerOn}
+                onCheckedChange={setFooterOn}
+                aria-label="Footer"
+                data-testid="ui-standard-table-pg-footer-toggle"
+              />
+              Footer
+            </label>
+            <CompactSelect
+              label="Intent"
+              value={footerIntent}
+              options={INPUT_SAMPLES.map((item) => ({ label: item.label, value: item.id, color: playgroundIntentColor(item.id, inputAccent(item)) }))}
+              onChange={setFooterIntent}
+              testId="ui-standard-table-pg-footer-intent"
+            />
+            <CompactSelect
+              label="Appearance"
+              value={footerAppearance}
+              options={HEADER_APPEARANCES}
+              onChange={setFooterAppearance}
+              testId="ui-standard-table-pg-footer-appearance"
+            />
           </SettingCard>
             ),
             features: (
@@ -800,7 +911,7 @@ export function UiStandardsTablePlayground() {
                           onClick={() => chooseSort(column.id)}
                         >
                           <span>{column.label}</span>
-                          <span aria-hidden>{active ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
+                          <GoogleIcon name={sortIconName(active, sortDir)} />
                         </button>
                       );
                     })}
@@ -810,7 +921,7 @@ export function UiStandardsTablePlayground() {
                   <div className="ui-standards-qtable-list__select-all">
                     <UiStandardsQcheckbox
                       label="Select all"
-                      color={intentColor}
+                      color={checkBorder}
                       dense
                       checked={allSelected}
                       indeterminate={someSelected}
@@ -820,7 +931,7 @@ export function UiStandardsTablePlayground() {
                   </div>
                 ) : null}
               <ul className="ui-standards-qtable-list">
-                {visibleRows.map((row, index) => {
+                {pageRows.map((row, index) => {
                   const inline = editingId === row.id && !useDialog && editDraft;
                   const tone = alternate && index % 2 === 1 ? "soft" : "solid";
                   return (
@@ -829,7 +940,7 @@ export function UiStandardsTablePlayground() {
                       {multiSelect ? (
                         <UiStandardsQcheckbox
                           label={`Select ${row.dessert}`}
-                          color={intentColor}
+                          color={checkBorder}
                           dense
                           checked={selected.has(row.id)}
                           onSelect={() => toggleRow(row.id)}
@@ -854,7 +965,7 @@ export function UiStandardsTablePlayground() {
                           editing={inline}
                           onEdit={() => beginEdit(row)}
                           onSave={saveEdit}
-                          onCancel={cancelEdit}
+                          onCancel={resetEdit}
                         />
                       </div>
                     ) : null}
@@ -883,7 +994,7 @@ export function UiStandardsTablePlayground() {
                     <th className="ui-standards-qtable__check">
                       <UiStandardsQcheckbox
                         label="Select all"
-                        color={headerCheckColor}
+                        color={checkBorder}
                         dense
                         checked={allSelected}
                         indeterminate={someSelected}
@@ -903,7 +1014,7 @@ export function UiStandardsTablePlayground() {
                             onClick={() => chooseSort(column.id)}
                           >
                             <span>{column.label}</span>
-                            <span aria-hidden>{active ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
+                            <GoogleIcon name={sortIconName(active, sortDir)} />
                           </button>
                         ) : (
                           column.label
@@ -915,7 +1026,7 @@ export function UiStandardsTablePlayground() {
                 </tr>
               </thead>
               <tbody>
-                {visibleRows.map((row, index) => {
+                {pageRows.map((row, index) => {
                   const inline = editingId === row.id && !useDialog && editDraft;
                   const tone = alternate && index % 2 === 1 ? "soft" : "solid";
                   return (
@@ -924,7 +1035,7 @@ export function UiStandardsTablePlayground() {
                       <td className="ui-standards-qtable__check">
                         <UiStandardsQcheckbox
                           label={`Select ${row.dessert}`}
-                          color={intentColor}
+                          color={checkBorder}
                           dense
                           checked={selected.has(row.id)}
                           onSelect={() => toggleRow(row.id)}
@@ -946,7 +1057,7 @@ export function UiStandardsTablePlayground() {
                           editing={inline}
                           onEdit={() => beginEdit(row)}
                           onSave={saveEdit}
-                          onCancel={cancelEdit}
+                          onCancel={resetEdit}
                         />
                       </td>
                     ) : null}
@@ -982,11 +1093,56 @@ export function UiStandardsTablePlayground() {
             ) : null}
             {loading ? <div className="ui-standards-qtable__loading">Loading...</div> : null}
           </div>
+          {footerOn ? (
+          <div
+            className="ui-standards-qtable__bottom ui-standards-qtable__footer"
+            data-testid="ui-standard-table-pg-footer"
+            data-intent={footerIntent}
+            data-appearance={footerAppearance}
+            style={
+              {
+                "--qfooter-bg": playgroundIntentColor(footerSample.id, footerSample.bg),
+                "--qfooter-ink": footerSample.fg,
+                "--qfooter-accent": playgroundIntentColor(footerSample.id, inputAccent(footerSample)),
+              } as CSSProperties
+            }
+          >
+            <div className="ui-standards-qtable__footer-cluster">
+            <div className="ui-standards-qtable__footer-size">
+              <CompactSelect
+                label="Size"
+                value={String(pageSize)}
+                options={PAGE_SIZES.map((size) => ({ label: String(size), value: String(size) }))}
+                onChange={(next) => {
+                  setPageSize(Number(next));
+                  setPage(1);
+                }}
+                testId="ui-standard-table-pg-page-size"
+              />
+            </div>
+            <div className="ui-standards-qtable__footer-nav">
+              <button type="button" aria-label="First page" disabled={safePage <= 1} onClick={() => setPage(1)}>
+                <GoogleIcon name="keyboard_double_arrow_left" />
+              </button>
+              <button type="button" aria-label="Previous page" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
+                <GoogleIcon name="chevron_left" />
+              </button>
+              <span className="ui-standards-qtable__footer-range" data-testid="ui-standard-table-pg-range">{rangeText}</span>
+              <button type="button" aria-label="Next page" disabled={safePage >= pageCount} onClick={() => setPage(safePage + 1)}>
+                <GoogleIcon name="chevron_right" />
+              </button>
+              <button type="button" aria-label="Last page" disabled={safePage >= pageCount} onClick={() => setPage(pageCount)}>
+                <GoogleIcon name="keyboard_double_arrow_right" />
+              </button>
+            </div>
+            </div>
+          </div>
+          ) : null}
         </div>
           </div>
         </div>
       </PlaygroundPreviewCard>
-      <UiStandardsCopyCommand standard="Table" standardStatus="pilot" command={tableCursorCommand(intent, separator, density, elevation, loading, alternate, multiSelect, actions, iconShape, editKind, editable, headerIntent, headerAppearance, sort, search, filter, exports)} />
+      <UiStandardsCopyCommand standard="Table" standardStatus="pilot" command={tableCursorCommand(intent, separator, density, elevation, loading, alternate, multiSelect, actions, iconShape, editKind, editable, headerIntent, headerAppearance, footerOn, footerIntent, footerAppearance, sort, search, filter, exports)} />
     </PlaygroundSection>
   );
 }

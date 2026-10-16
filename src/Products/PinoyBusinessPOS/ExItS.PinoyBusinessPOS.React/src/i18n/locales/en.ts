@@ -135,6 +135,7 @@ export const en = {
   "uiStandards.timePlaygroundTitle": "Time picker playground",
   "uiStandards.timeSamplesTitle": "Time picker samples",
   "uiStandards.cardPlaygroundTitle": "Card playground",
+  "uiStandards.cardSamplesTitle": "Card samples",
   "uiStandards.cardReceiptTitle": "Card receipt",
   "uiStandards.shadowPlaygroundTitle": "Shadow playground",
   "uiStandards.tablePlaygroundTitle": "Table playground",
