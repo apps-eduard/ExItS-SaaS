@@ -623,26 +623,16 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext card");
     expect(screen.getByTestId("ui-standard-card-cards")).toHaveTextContent("Card samples");
     expect(screen.getByTestId("ui-standard-card-ribbon-sample")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-banner-heading")).toHaveTextContent("Card banner");
-    expect(screen.getByTestId("ui-standard-card-banner-blue")).toHaveAttribute("data-intent", "blue");
-    expect(screen.getByTestId("ui-standard-card-banner-purple")).toHaveAttribute("data-intent", "purple");
-    expect(screen.getByTestId("ui-standard-card-banner-pink")).toHaveAttribute("data-intent", "pink");
-    expect(screen.getByTestId("ui-standard-card-banner-amber")).toHaveAttribute("data-intent", "amber");
-    expect(screen.getByTestId("ui-standard-card-banner-ribbon-blue")).toHaveTextContent("Lorem ipsum");
-    expect(screen.getByTestId("ui-standard-card-banner-body-blue")).toHaveTextContent("Lorem ipsum dolor");
+    expect(screen.queryByTestId("ui-standard-card-banner-heading")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-pennant-heading")).toHaveTextContent("Card pennant");
     expect(screen.getByTestId("ui-standard-card-pennant-blue")).toHaveAttribute("data-intent", "blue");
     expect(screen.getByTestId("ui-standard-card-pennant-purple")).toHaveAttribute("data-intent", "purple");
     expect(screen.getByTestId("ui-standard-card-pennant-pink")).toHaveAttribute("data-intent", "pink");
     expect(screen.getByTestId("ui-standard-card-pennant-amber")).toHaveAttribute("data-intent", "amber");
-    expect(screen.getByTestId("ui-standard-card-pennant-info")).toHaveAttribute("data-intent", "info");
-    expect(screen.getByTestId("ui-standard-card-pennant-success")).toHaveAttribute("data-intent", "success");
-    expect(screen.getByTestId("ui-standard-card-pennant-danger")).toHaveAttribute("data-intent", "danger");
-    expect(screen.getByTestId("ui-standard-card-pennant-warn")).toHaveAttribute("data-intent", "warn");
+    expect(screen.getAllByTestId(/^ui-standard-card-pennant-(blue|purple|pink|amber|info|success|danger|warn)$/)).toHaveLength(4);
+    expect(screen.queryByTestId("ui-standard-card-pennant-info")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-pennant-ribbon-blue")).toHaveAttribute("aria-label", "Primary");
     expect(screen.getByTestId("ui-standard-card-pennant-ribbon-purple")).toHaveAttribute("aria-label", "Secondary");
-    expect(screen.getByTestId("ui-standard-card-pennant-ribbon-danger")).toHaveAttribute("aria-label", "Danger");
-    expect(screen.getByTestId("ui-standard-card-pennant-ribbon-warn")).toHaveAttribute("aria-label", "Warn");
     expect(screen.getByTestId("ui-standard-card-pennant-body-blue")).toHaveTextContent("Counter goals");
     expect(screen.getByTestId("ui-standard-card-pennant-body-blue")).toHaveTextContent("Primary");
     expect(screen.getByTestId("ui-standard-card-pennant-footer-blue")).toHaveTextContent("Open board");
@@ -654,15 +644,19 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-capsule-warn")).toHaveAttribute("data-intent", "warn");
     expect(screen.getByTestId("ui-standard-card-capsule-ring-magenta")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-capsule-body-magenta")).toHaveTextContent("Lorem Ipsum");
+    expect(screen.getByTestId("ui-standard-card-quick-action-heading")).toHaveTextContent("Card quick action");
+    expect(screen.getByTestId("ui-standard-card-quick-action-info")).toHaveTextContent("Money I owe");
+    expect(screen.getByTestId("ui-standard-card-quick-action-secondary")).toHaveTextContent("Add person");
+    expect(screen.getByTestId("ui-standard-card-welcome-heading")).toHaveTextContent("Card welcome");
+    expect(screen.getByTestId("ui-standard-card-page-header-heading")).toHaveTextContent("Card page header");
+    expect(screen.getByTestId("ui-standard-card-page-header-primary")).toHaveTextContent("Money I owe");
+    expect(screen.getByTestId("ui-standard-card-welcome-primary")).toHaveTextContent("Paul Uy");
+    expect(screen.getByTestId("ui-standard-card-avatar-row-heading")).toHaveTextContent("Card avatar row");
+    expect(screen.getByTestId("ui-standard-card-avatar-row-warn")).toHaveAttribute("data-intent", "warn");
+    expect(screen.getByTestId("ui-standard-card-avatar-row-warn")).toHaveTextContent("Mica Uy — payment overdue");
     expect(screen.getByTestId("ui-standard-card-ribbon-heading")).toHaveTextContent("Card ribbon");
-    expect(screen.getByTestId("ui-standard-card-title-tab-heading")).toHaveTextContent("Card title tab");
-    expect(screen.getByTestId("ui-standard-card-title-tab-cyan")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-title-tab-ribbon-info")).toHaveTextContent("Title 02");
-    expect(screen.getByTestId("ui-standard-card-title-tab-body-cyan")).toHaveTextContent("Lorem Ipsum");
-    expect(screen.getByTestId("ui-standard-card-option-heading")).toHaveTextContent("Card option");
-    expect(screen.getByTestId("ui-standard-card-option-01")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-option-ribbon-01")).toHaveTextContent("01");
-    expect(screen.getByTestId("ui-standard-card-option-body-01")).toHaveTextContent("Options 01");
+    expect(screen.queryByTestId("ui-standard-card-title-tab-heading")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-option-heading")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-infodata-heading")).toHaveTextContent("Card infodata");
     expect(screen.getByTestId("ui-standard-card-infodata-magenta")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-infodata-icon-magenta")).toBeInTheDocument();
@@ -684,11 +678,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pin-icon-amber")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-pin-ribbon-amber")).toHaveTextContent("Lorem Ipsum");
     expect(screen.getByTestId("ui-standard-card-pin-body-amber")).toHaveTextContent("Read more");
-    expect(screen.getByTestId("ui-standard-card-fold-heading")).toHaveTextContent("Card fold");
-    expect(screen.getByTestId("ui-standard-card-fold-info")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-fold-icon-info")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-fold-title-info")).toHaveTextContent("Research");
-    expect(screen.getByTestId("ui-standard-card-fold-body-info")).toHaveTextContent("Lorem ipsum");
+    expect(screen.queryByTestId("ui-standard-card-fold-heading")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-index-heading")).toHaveTextContent("Card index");
     expect(screen.getByTestId("ui-standard-card-index-info")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-index-icon-info")).toBeInTheDocument();
@@ -747,23 +737,18 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-bookmark-tab")).toHaveTextContent("Saved");
     expect(screen.getByTestId("ui-standard-card-stamp-heading")).toHaveTextContent("Card stamp");
     expect(screen.getByTestId("ui-standard-card-stamp-seal")).toHaveTextContent("OK");
-    expect(screen.getByTestId("ui-standard-card-stack-heading")).toHaveTextContent("Card stack");
-    expect(screen.getByTestId("ui-standard-card-stack-body")).toHaveTextContent("Shift handoff");
+    expect(screen.queryByTestId("ui-standard-card-stack-heading")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-stripe-heading")).toHaveTextContent("Card stripe");
     expect(screen.getByTestId("ui-standard-card-stripe-band")).toHaveTextContent("New");
     expect(screen.getByTestId("ui-standard-card-notch-heading")).toHaveTextContent("Card notch");
     expect(screen.getByTestId("ui-standard-card-notch-chip")).toHaveTextContent("JD");
     expect(screen.getByTestId("ui-standard-card-clip-heading")).toHaveTextContent("Card clip");
     expect(screen.getByTestId("ui-standard-card-clip-body")).toHaveTextContent("Attached memo");
-    expect(screen.getByTestId("ui-standard-card-footer-actions-heading")).toHaveTextContent("Card footer");
-    expect(screen.getByTestId("ui-standard-card-footer-bar-primary")).toHaveTextContent("Approve");
-    expect(screen.getByTestId("ui-standard-card-footer-bar-warning")).toHaveTextContent("Escalate");
+    expect(screen.queryByTestId("ui-standard-card-footer-actions-heading")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-footer-caption-heading")).toHaveTextContent("Card caption");
     expect(screen.getByTestId("ui-standard-card-footer-caption-bar")).toHaveTextContent("Updated 2 min ago");
     expect(screen.getByTestId("ui-standard-card-footer-success-bar")).toHaveTextContent("Settled · cash");
-    expect(screen.getByTestId("ui-standard-card-footer-split-heading")).toHaveTextContent("Card split footer");
-    expect(screen.getByTestId("ui-standard-card-footer-split-bar")).toHaveTextContent("Void");
-    expect(screen.getByTestId("ui-standard-card-footer-split-bar")).toHaveTextContent("Keep");
+    expect(screen.queryByTestId("ui-standard-card-footer-split-heading")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-invoice-sample")).not.toBeInTheDocument();
     await choosePlaygroundDropdown(user, "ui-standard-card-pg-card", "primary");
     expect(screen.getByTestId("ui-standard-card-pg-sample")).toHaveAttribute("data-intent", "primary");
@@ -1066,6 +1051,89 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-shadow-pg-plate")).toHaveAttribute("data-elevation", "medium");
     expect(screen.getByTestId("ui-standard-shadow-pg-plate")).toHaveAttribute("data-inset", "false");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext shadow");
+  });
+
+  it("opens the Dialog playground and samples", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByTestId("ui-standards-filter-dialog"));
+    expect(screen.getByTestId("ui-standards-filter-dialog")).toHaveAttribute("data-selected", "true");
+    const playground = screen.getByTestId("ui-standard-card-dialog-playground");
+    const samples = screen.getByTestId("ui-standard-card-dialog");
+    expect(playground).toHaveTextContent("Dialog playground");
+    expect(playground.compareDocumentPosition(samples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId("ui-standard-card-modal")).not.toBeInTheDocument();
+
+    const panel = within(playground).getByTestId("ui-standard-dialog-pg-panel");
+    expect(panel).toHaveAttribute("data-intent", "primary");
+    expect(panel).toHaveAttribute("data-size", "md");
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext dialog");
+
+    await choosePlaygroundDropdown(user, "ui-standard-dialog-pg-intent", "danger");
+    await choosePlaygroundDropdown(user, "ui-standard-dialog-pg-size", "large");
+    await user.click(within(playground).getByTestId("ui-standard-dialog-pg-footer"));
+    expect(panel).toHaveAttribute("data-intent", "danger");
+    expect(panel).toHaveAttribute("data-size", "lg");
+    expect(within(playground).queryByTestId("ui-standard-dialog-pg-panel-footer")).not.toBeInTheDocument();
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext dialog danger lg no-footer",
+    );
+
+    await user.click(within(playground).getByTestId("ui-standard-dialog-pg-open"));
+    expect(await screen.findByTestId("ui-standard-dialog-pg-modal")).toHaveTextContent("Save changes?");
+    await user.click(screen.getByTestId("ui-standard-dialog-pg-modal-close"));
+    expect(screen.queryByTestId("ui-standard-dialog-pg-modal")).not.toBeInTheDocument();
+
+    await user.click(within(playground).getByTestId("ui-standard-dialog-pg-reset"));
+    expect(within(playground).getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext dialog");
+
+    await user.click(within(samples).getByTestId("ui-standard-dialog-sample-delete"));
+    expect(await screen.findByTestId("ui-standard-dialog-delete")).toHaveTextContent("Delete this record?");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByTestId("ui-standard-dialog-delete")).not.toBeInTheDocument();
+
+    await user.click(within(samples).getByTestId("ui-standard-dialog-sample-persistent"));
+    expect(await screen.findByTestId("ui-standard-dialog-persistent")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.getByTestId("ui-standard-dialog-persistent")).toBeInTheDocument();
+  });
+
+  it("shows Quasar Basic and Styling dialog examples", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByTestId("ui-standards-filter-dialog"));
+    const samples = screen.getByTestId("ui-standard-card-dialog");
+    expect(within(samples).getByTestId("ui-standard-qdialog-basic")).toHaveTextContent("Basic");
+    expect(within(samples).getByTestId("ui-standard-qdialog-styling")).toHaveTextContent("Styling");
+
+    await user.click(within(samples).getByTestId("ui-standard-qdialog-open-alert"));
+    expect(await screen.findByRole("dialog", { name: "Alert" })).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-qdialog-alert-ok"));
+    expect(screen.queryByTestId("ui-standard-qdialog-alert")).not.toBeInTheDocument();
+
+    await user.click(within(samples).getByTestId("ui-standard-qdialog-open-confirm"));
+    expect(await screen.findByTestId("ui-standard-qdialog-confirm")).toHaveTextContent(
+      "You are currently not connected to any network.",
+    );
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByTestId("ui-standard-qdialog-confirm-backdrop"));
+    expect(screen.getByTestId("ui-standard-qdialog-confirm")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-qdialog-confirm-cancel"));
+    expect(screen.queryByTestId("ui-standard-qdialog-confirm")).not.toBeInTheDocument();
+
+    await user.click(within(samples).getByTestId("ui-standard-qdialog-open-icon"));
+    expect(await screen.findByRole("dialog", { name: "Close icon" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByTestId("ui-standard-qdialog-icon")).not.toBeInTheDocument();
+
+    await user.click(within(samples).getByTestId("ui-standard-qdialog-open-bar2"));
+    expect(await screen.findByTestId("ui-standard-qdialog-bar2")).toHaveClass("ui-standards-qdialog__card--primary");
+    await user.click(screen.getByTestId("ui-standard-qdialog-bar2-close"));
+    expect(screen.queryByTestId("ui-standard-qdialog-bar2")).not.toBeInTheDocument();
+
+    await user.click(within(samples).getByTestId("ui-standard-qdialog-open-toolbar"));
+    expect(await screen.findByTestId("ui-standard-qdialog-toolbar")).toHaveTextContent("Quasar Framework");
   });
 
   it("opens the Table playground", async () => {

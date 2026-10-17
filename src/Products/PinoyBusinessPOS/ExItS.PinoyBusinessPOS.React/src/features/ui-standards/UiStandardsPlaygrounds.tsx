@@ -395,7 +395,7 @@ export function PlaygroundSearchField({
   );
 }
 
-function PlaygroundTextField({
+export function PlaygroundTextField({
   label,
   value,
   onChange,

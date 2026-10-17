@@ -1,27 +1,30 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePreferences } from "@/hooks/usePreferences";
 import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
   BarChart3,
   Bell,
   Bookmark,
-  Briefcase,
   Calendar,
+  CalendarX,
   Check,
+  ChevronRight,
   Cog,
-  Crosshair,
   FileText,
   Heart,
   Info,
   Lightbulb,
-  Megaphone,
   MessagesSquare,
   Search,
   Share2,
   Star,
-  Trash2,
   TriangleAlert,
+  UserPlus,
 } from "lucide-react";
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
+import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { INPUT_SAMPLES, inputAccent } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsQslider } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { RADIO_STANDARD_COLOR } from "@/features/ui-standards/UiStandardsRadioGallery";
@@ -1136,37 +1139,6 @@ const RIBBON_PENDANT_SAMPLES = [
   },
 ] as const;
 
-const TITLE_TAB_SAMPLES = [
-  {
-    id: "cyan",
-    tabLabel: "Title 01",
-    color: "#4dd0e1",
-    fold: "#00838f",
-    ink: "#00838f",
-  },
-  {
-    id: "info",
-    tabLabel: "Title 02",
-    color: "#0ea5e9",
-    fold: "#0369a1",
-    ink: "#0284c7",
-  },
-  {
-    id: "primary",
-    tabLabel: "Title 03",
-    color: "#1976d2",
-    fold: "#0d47a1",
-    ink: "#1565c0",
-  },
-  {
-    id: "warn",
-    tabLabel: "Title 04",
-    color: "#ff5722",
-    fold: "#bf360c",
-    ink: "#e64a19",
-  },
-] as const;
-
 const PIN_CARD_SAMPLES = [
   {
     id: "amber",
@@ -1250,98 +1222,6 @@ export function UiStandardsCardPinSample() {
                 </div>
               </div>
               <span className="ui-standards-qcard__pin-ground" aria-hidden />
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-const FOLD_CARD_SAMPLES = [
-  {
-    id: "info",
-    title: "Research",
-    color: "#008eff",
-    deep: "#0066c2",
-    Icon: Search,
-  },
-  {
-    id: "success",
-    title: "Insights",
-    color: "#16a34a",
-    deep: "#166534",
-    Icon: BarChart3,
-  },
-  {
-    id: "warn",
-    title: "Alerts",
-    color: "#ff5722",
-    deep: "#c2410c",
-    Icon: TriangleAlert,
-  },
-  {
-    id: "amber",
-    title: "Discover",
-    color: "#f59e0b",
-    deep: "#b45309",
-    Icon: Lightbulb,
-  },
-] as const;
-
-/**
- * Showcase sample: white sleeve base with color overlay and top dog-ear folds.
- * Named "Card fold".
- */
-export function UiStandardsCardFoldSample() {
-  return (
-    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-fold-sample">
-      <CardSampleHeading testId="ui-standard-card-fold-heading">Card fold</CardSampleHeading>
-      <div className="ui-standards-qcard-row ui-standards-qcard-row--fold">
-        {FOLD_CARD_SAMPLES.map((sample) => {
-          const Icon = sample.Icon;
-          return (
-            <article
-              key={sample.id}
-              className="ui-standards-qcard ui-standards-qcard--fold"
-              data-intent={sample.id}
-              data-testid={`ui-standard-card-fold-${sample.id}`}
-              style={
-                {
-                  "--qcard-fold": sample.color,
-                  "--qcard-fold-deep": sample.deep,
-                } as CSSProperties
-              }
-            >
-              <div className="ui-standards-qcard__fold-base">
-                <div
-                  className="ui-standards-qcard__fold-panel"
-                  data-testid={`ui-standard-card-fold-body-${sample.id}`}
-                >
-                  <span
-                    className="ui-standards-qcard__fold-ear ui-standards-qcard__fold-ear--left"
-                    aria-hidden
-                  />
-                  <span
-                    className="ui-standards-qcard__fold-ear ui-standards-qcard__fold-ear--right"
-                    aria-hidden
-                  />
-                  <span
-                    className="ui-standards-qcard__fold-icon-wrap"
-                    aria-hidden
-                    data-testid={`ui-standard-card-fold-icon-${sample.id}`}
-                  >
-                    <Icon className="ui-standards-qcard__fold-icon" strokeWidth={2} />
-                  </span>
-                  <h3
-                    className="ui-standards-qcard__fold-title"
-                    data-testid={`ui-standard-card-fold-title-${sample.id}`}
-                  >
-                    {sample.title}
-                  </h3>
-                  <p className="ui-standards-qcard__fold-note m-0">{CARD_LOREM}</p>
-                </div>
-              </div>
             </article>
           );
         })}
@@ -1777,143 +1657,6 @@ export function UiStandardsCardInfodataSample() {
   );
 }
 
-const OPTION_CARD_SAMPLES = [
-  {
-    id: "01",
-    step: "01",
-    title: "Options 01",
-    color: "#22d3ee",
-    ink: "#06b6d4",
-    Icon: Lightbulb,
-  },
-  {
-    id: "02",
-    step: "02",
-    title: "Options 02",
-    color: "#0ea5e9",
-    ink: "#0284c7",
-    Icon: Info,
-  },
-  {
-    id: "03",
-    step: "03",
-    title: "Options 03",
-    color: "#22c55e",
-    ink: "#16a34a",
-    Icon: Check,
-  },
-  {
-    id: "04",
-    step: "04",
-    title: "Options 04",
-    color: "#ff5722",
-    ink: "#e64a19",
-    Icon: Star,
-  },
-] as const;
-
-/**
- * Showcase sample: rounded option card with left arrow ribbon step, corner icon, and accent trail.
- * Named "Card option".
- */
-export function UiStandardsCardOptionSample() {
-  return (
-    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-option-sample">
-      <CardSampleHeading testId="ui-standard-card-option-heading">Card option</CardSampleHeading>
-      <div className="ui-standards-qcard-row ui-standards-qcard-row--option">
-        {OPTION_CARD_SAMPLES.map((sample) => {
-          const Icon = sample.Icon;
-          return (
-            <article
-              key={sample.id}
-              className="ui-standards-qcard ui-standards-qcard--option"
-              data-intent={sample.id}
-              data-testid={`ui-standard-card-option-${sample.id}`}
-              style={
-                {
-                  "--qcard-option": sample.color,
-                  "--qcard-option-ink": sample.ink,
-                } as CSSProperties
-              }
-            >
-              <div
-                className="ui-standards-qcard__option-ribbon"
-                data-testid={`ui-standard-card-option-ribbon-${sample.id}`}
-              >
-                {sample.step}
-              </div>
-              <span className="ui-standards-qcard__option-icon" aria-hidden>
-                <Icon className="size-[1.15rem]" strokeWidth={1.75} />
-              </span>
-              <div
-                className="ui-standards-qcard__option-body"
-                data-testid={`ui-standard-card-option-body-${sample.id}`}
-              >
-                <div className="ui-standards-qcard__option-title">{sample.title}</div>
-                <p className="ui-standards-qcard__option-note m-0">{CARD_LOREM}</p>
-              </div>
-              <span className="ui-standards-qcard__option-accent" aria-hidden>
-                <span className="ui-standards-qcard__option-dot" />
-                <span className="ui-standards-qcard__option-dot" />
-                <span className="ui-standards-qcard__option-dot" />
-              </span>
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Showcase sample: soft pill card with a centered hanging title tab (reference layout).
- * Named "Card title tab".
- */
-export function UiStandardsCardTitleTabSample() {
-  return (
-    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-title-tab-sample">
-      <CardSampleHeading testId="ui-standard-card-title-tab-heading">Card title tab</CardSampleHeading>
-      <div className="ui-standards-qcard-row ui-standards-qcard-row--title-tab">
-        {TITLE_TAB_SAMPLES.map((sample) => (
-          <article
-            key={sample.id}
-            className="ui-standards-qcard ui-standards-qcard--title-tab"
-            data-intent={sample.id}
-            data-testid={`ui-standard-card-title-tab-${sample.id}`}
-            style={
-              {
-                "--qcard-tab": sample.color,
-                "--qcard-tab-fold": sample.fold,
-                "--qcard-tab-ink": sample.ink,
-              } as CSSProperties
-            }
-          >
-            <div
-              className="ui-standards-qcard__title-tab"
-              data-testid={`ui-standard-card-title-tab-ribbon-${sample.id}`}
-            >
-              <span className="ui-standards-qcard__title-tab-fold ui-standards-qcard__title-tab-fold--left" aria-hidden />
-              <span className="ui-standards-qcard__title-tab-fold ui-standards-qcard__title-tab-fold--right" aria-hidden />
-              <span className="ui-standards-qcard__title-tab-label">{sample.tabLabel}</span>
-            </div>
-            <div
-              className="ui-standards-qcard__title-tab-body"
-              data-testid={`ui-standard-card-title-tab-body-${sample.id}`}
-            >
-              <div className="ui-standards-qcard__title-tab-heading">Lorem Ipsum</div>
-              <p className="ui-standards-qcard__title-tab-note m-0">{CARD_LOREM}</p>
-              <span className="ui-standards-qcard__title-tab-gears" aria-hidden>
-                <Cog className="ui-standards-qcard__title-tab-gear ui-standards-qcard__title-tab-gear--a" strokeWidth={1.75} />
-                <Cog className="ui-standards-qcard__title-tab-gear ui-standards-qcard__title-tab-gear--b" strokeWidth={1.75} />
-              </span>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /**
  * Showcase sample: full edge-to-edge ribbon across the card, pendant medallion centered on the ribbon.
  */
@@ -2038,31 +1781,6 @@ export function UiStandardsCardStampSample() {
             </p>
           </div>
         </article>
-      </div>
-    </div>
-  );
-}
-
-/** Invented sample: layered stack showing depth behind the front card. */
-export function UiStandardsCardStackSample() {
-  return (
-    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-stack-sample">
-      <CardSampleHeading testId="ui-standard-card-stack-heading">Card stack</CardSampleHeading>
-      <div className="ui-standards-qcard-row ui-standards-qcard-row--stack">
-        <div className="ui-standards-qcard-stack" data-testid="ui-standard-card-stack">
-          <div className="ui-standards-qcard-stack__sheet" aria-hidden />
-          <div className="ui-standards-qcard-stack__sheet" aria-hidden />
-          <article className="ui-standards-qcard ui-standards-qcard--stack-front" data-testid="ui-standard-card-stack-front">
-            <div className="ui-standards-qcard__stack-body" data-testid="ui-standard-card-stack-body">
-              <div className="ui-standards-qcard__title">Shift handoff</div>
-              <div className="ui-standards-qcard__subtitle">3 notes under this card</div>
-              <div className="ui-standards-qcard__separator" />
-              <p className="ui-standards-qcard__note m-0">
-                Offset sheets behind the front card suggest a small pile of related items.
-              </p>
-            </div>
-          </article>
-        </div>
       </div>
     </div>
   );
@@ -2230,24 +1948,141 @@ export function UiStandardsCardCapsuleSample() {
   );
 }
 
-const FOOTER_ACTION_SAMPLES = [
-  {
-    intent: "primary",
-    title: "Restock request",
-    subtitle: "Shelf B · low stock",
-    color: "#1976d2",
-    ink: "#ffffff",
-    actions: ["Review", "Approve"],
-  },
-  {
-    intent: "warning",
-    title: "Delay notice",
-    subtitle: "Supplier ETA slipped",
-    color: "#f59e0b",
-    ink: "#451a03",
-    actions: ["Snooze", "Escalate"],
-  },
+/** Solid pill index card with ghost badge — Personal home Quick Actions style. */
+const QUICK_ACTION_SAMPLES = [
+  { id: "info", label: "Money I owe", Icon: ArrowDown, badge: "chevron" },
+  { id: "secondary", label: "Add person", Icon: UserPlus, badge: "plus" },
+  { id: "success", label: "Money I lent", Icon: ArrowUp, badge: "chevron" },
+  { id: "warn", label: "Overdue", Icon: CalendarX, badge: "chevron" },
 ] as const;
+
+export function UiStandardsCardQuickActionSample() {
+  return (
+    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-quick-action-sample">
+      <CardSampleHeading testId="ui-standard-card-quick-action-heading">Card quick action</CardSampleHeading>
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+        {QUICK_ACTION_SAMPLES.map((sample) => {
+          const Icon = sample.Icon;
+          return (
+            <div
+              key={sample.id}
+              className={`personal-home-index-card personal-home-index-card--${sample.id} personal-home-index-card--solid`}
+              data-intent={sample.id}
+              data-testid={`ui-standard-card-quick-action-${sample.id}`}
+            >
+              <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                <span className="personal-home-index-card__fold" />
+                <Icon className="size-[1.1rem]" />
+              </span>
+              <span className="personal-home-index-card__body">
+                <span className="personal-home-index-card__title">{sample.label}</span>
+              </span>
+              <strong
+                className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
+                aria-hidden="true"
+              >
+                {sample.badge === "plus" ? "+" : <ChevronRight className="size-4" />}
+              </strong>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Welcome header capsule — Personal home greeting style. */
+export function UiStandardsCardWelcomeSample() {
+  return (
+    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-welcome-sample">
+      <CardSampleHeading testId="ui-standard-card-welcome-heading">Card welcome</CardSampleHeading>
+      <div className="personal-home-capsule min-w-0" data-testid="ui-standard-card-welcome-primary">
+        <span className="personal-home-capsule__ring" aria-hidden="true">
+          <span className="personal-home-capsule__disc">
+            <PersonAvatar name="Paul Uy" size="md" className="personal-home-capsule__avatar" />
+          </span>
+        </span>
+        <div className="personal-home-capsule__body min-w-0">
+          <div className="personal-home-capsule__copy min-w-0">
+            <p className="personal-home-capsule__kicker">Welcome,</p>
+            <p className="personal-home-capsule__name m-0 min-w-0 truncate">Paul Uy</p>
+          </div>
+          <span className="personal-home-capsule__info inline-flex shrink-0">
+            <Info className="size-5" style={{ color: "var(--exits-severity-info, #0ea5e9)" }} aria-hidden />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Capsule page header with a back-arrow circle — Money I owe / lent header style. */
+export function UiStandardsCardPageHeaderSample() {
+  return (
+    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-page-header-sample">
+      <CardSampleHeading testId="ui-standard-card-page-header-heading">Card page header</CardSampleHeading>
+      <header className="page-header page-header--capsule relative flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 gap-1.5">
+          <div className="page-header__main flex min-w-0 flex-1 flex-col gap-1" data-testid="ui-standard-card-page-header-primary">
+            <div className="page-header__head">
+              <div className="page-header__title-row flex min-h-[var(--exits-control-height)] min-w-0 items-center gap-1">
+                <span className="page-header-capsule__ring page-header-capsule__back" aria-hidden="true">
+                  <span className="page-header-capsule__disc">
+                    <ArrowLeft className="size-7" />
+                  </span>
+                </span>
+                <p className="page-header__title exits-type-page-title m-0 min-w-0 truncate">Money I owe</p>
+                <Info className="size-5 shrink-0" style={{ color: "var(--exits-severity-info, #0ea5e9)" }} aria-hidden />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+/** Outline row with a connected avatar circle — Personal home Needs Attention style. */
+const AVATAR_ROW_SAMPLES = [
+  { id: "warn", name: "Mica Uy", note: "payment overdue", color: "var(--exits-warning, #ff5722)" },
+  { id: "info", name: "Juan Dela Cruz", note: "due soon", color: "var(--exits-severity-info, #0ea5e9)" },
+  { id: "success", name: "Ana Santos", note: "paid in full", color: "var(--exits-severity-success, #22c55e)" },
+  { id: "primary", name: "Paul Uy", note: "new request", color: "var(--exits-primary)" },
+] as const;
+
+export function UiStandardsCardAvatarRowSample() {
+  return (
+    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-avatar-row-sample">
+      <CardSampleHeading testId="ui-standard-card-avatar-row-heading">Card avatar row</CardSampleHeading>
+      <ul className="m-0 grid list-none gap-2 p-0">
+        {AVATAR_ROW_SAMPLES.map((sample) => (
+          <li key={sample.id}>
+            <div
+              className="personal-attention-row personal-home-infodata-card personal-home-infodata-card--row"
+              data-intent={sample.id}
+              data-testid={`ui-standard-card-avatar-row-${sample.id}`}
+              style={{ "--personal-infodata": sample.color } as CSSProperties}
+            >
+              <span className="personal-home-infodata-card__circle" aria-hidden="true">
+                <PersonAvatar name={sample.name} size="sm" className="personal-home-infodata-card__avatar" />
+              </span>
+              <span className="personal-home-infodata-card__body">
+                <span className="personal-home-infodata-card__title personal-attention-row__title">
+                  <span className="personal-attention-row__name">{sample.name}</span> — {sample.note}
+                </span>
+              </span>
+              <ChevronRight
+                className="size-5 shrink-0"
+                style={{ color: sample.color }}
+                aria-hidden
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 /** Pennant badge icons reuse the Quasar button-icon set for sample variety. */
 const PENNANT_SAMPLES = [
@@ -2291,126 +2126,7 @@ const PENNANT_SAMPLES = [
     ink: "#92400e",
     Icon: Bell,
   },
-  {
-    id: "info",
-    label: "Info",
-    title: "Live queue",
-    footer: "Open list",
-    color: "#0ea5e9",
-    soft: "#e0f2fe",
-    ink: "#0369a1",
-    Icon: Info,
-  },
-  {
-    id: "success",
-    label: "Success",
-    title: "Settled till",
-    footer: "View report",
-    color: "#22c55e",
-    soft: "#dcfce7",
-    ink: "#14532d",
-    Icon: Star,
-  },
-  {
-    id: "danger",
-    label: "Danger",
-    title: "Void alert",
-    footer: "Review",
-    color: "#ef4444",
-    soft: "#fee2e2",
-    ink: "#7f1d1d",
-    Icon: Trash2,
-  },
-  {
-    id: "warn",
-    label: "Warn",
-    title: "Low stock",
-    footer: "Restock",
-    color: "#ff5722",
-    soft: "#ffedd5",
-    ink: "#7c2d12",
-    Icon: TriangleAlert,
-  },
 ] as const;
-
-const BANNER_SAMPLES = [
-  {
-    id: "blue",
-    color: "#42a5f5",
-    soft: "#e3f2fd",
-    ink: "#1565c0",
-    Icon: Crosshair,
-  },
-  {
-    id: "purple",
-    color: "#ab47bc",
-    soft: "#f3e5f5",
-    ink: "#7b1fa2",
-    Icon: Briefcase,
-  },
-  {
-    id: "pink",
-    color: "#e91e63",
-    soft: "#fce4ec",
-    ink: "#ad1457",
-    Icon: Lightbulb,
-  },
-  {
-    id: "amber",
-    color: "#ff9800",
-    soft: "#fff3e0",
-    ink: "#e65100",
-    Icon: Megaphone,
-  },
-] as const;
-
-/** Showcase sample: folded arrow-ribbon banner cards matching the reference layout. */
-export function UiStandardsCardBannerSample() {
-  return (
-    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-banner-sample">
-      <CardSampleHeading testId="ui-standard-card-banner-heading">Card banner</CardSampleHeading>
-      <div className="ui-standards-qcard-row ui-standards-qcard-row--banner">
-        {BANNER_SAMPLES.map((sample) => {
-          const Icon = sample.Icon;
-          return (
-            <article
-              key={sample.id}
-              className="ui-standards-qcard ui-standards-qcard--banner"
-              data-intent={sample.id}
-              data-testid={`ui-standard-card-banner-${sample.id}`}
-              style={
-                {
-                  "--qcard-banner": sample.color,
-                  "--qcard-banner-soft": sample.soft,
-                  "--qcard-banner-ink": sample.ink,
-                } as CSSProperties
-              }
-            >
-              <div
-                className="ui-standards-qcard__banner-ribbon-wrap"
-                data-testid={`ui-standard-card-banner-ribbon-${sample.id}`}
-              >
-                <span className="ui-standards-qcard__banner-fold ui-standards-qcard__banner-fold--left" aria-hidden />
-                <span className="ui-standards-qcard__banner-fold ui-standards-qcard__banner-fold--right" aria-hidden />
-                <div className="ui-standards-qcard__banner-ribbon">
-                  <Icon className="ui-standards-qcard__banner-icon" aria-hidden strokeWidth={2.25} />
-                  <span className="ui-standards-qcard__banner-label">Lorem ipsum</span>
-                </div>
-              </div>
-              <div
-                className="ui-standards-qcard__banner-body"
-                data-testid={`ui-standard-card-banner-body-${sample.id}`}
-              >
-                <div className="ui-standards-qcard__banner-title">Lorem ipsum dolor</div>
-                <p className="ui-standards-qcard__banner-note m-0">{CARD_LOREM}</p>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /**
  * Invented sample: four tinted cards with a floating medallion + footer.
@@ -2467,48 +2183,6 @@ export function UiStandardsCardPennantSample() {
   );
 }
 
-/** Invented sample: colored action footers. */
-export function UiStandardsCardFooterActionsSample() {
-  return (
-    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-footer-actions-sample">
-      <CardSampleHeading testId="ui-standard-card-footer-actions-heading">Card footer</CardSampleHeading>
-      <div className="ui-standards-qcard-row ui-standards-qcard-row--footer-sample">
-        {FOOTER_ACTION_SAMPLES.map((sample) => (
-          <article
-            key={sample.intent}
-            className="ui-standards-qcard ui-standards-qcard--footer-sample"
-            data-intent={sample.intent}
-            data-testid={`ui-standard-card-footer-${sample.intent}`}
-            style={
-              {
-                "--qcard-part-bg": sample.color,
-                "--qcard-part-ink": sample.ink,
-              } as CSSProperties
-            }
-          >
-            <div className="ui-standards-qcard__section ui-standards-qcard__section--tight">
-              <div className="ui-standards-qcard__title">{sample.title}</div>
-              <div className="ui-standards-qcard__subtitle">{sample.subtitle}</div>
-              <p className="ui-standards-qcard__note m-0">Colored footer with quick actions under the body.</p>
-            </div>
-            <div
-              className="ui-standards-qcard__footer ui-standards-qcard__footer--intent"
-              data-align="end"
-              data-testid={`ui-standard-card-footer-bar-${sample.intent}`}
-            >
-              {sample.actions.map((action) => (
-                <button key={action} type="button">
-                  {action}
-                </button>
-              ))}
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /** Invented sample: caption-style colored footer strip. */
 export function UiStandardsCardFooterCaptionSample() {
   return (
@@ -2549,32 +2223,6 @@ export function UiStandardsCardFooterCaptionSample() {
             data-testid="ui-standard-card-footer-success-bar"
           >
             <span>Settled · cash</span>
-          </div>
-        </article>
-      </div>
-    </div>
-  );
-}
-
-/** Invented sample: split danger/success footer actions. */
-export function UiStandardsCardFooterSplitSample() {
-  return (
-    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-footer-split-sample">
-      <CardSampleHeading testId="ui-standard-card-footer-split-heading">Card split footer</CardSampleHeading>
-      <div className="ui-standards-qcard-row ui-standards-qcard-row--footer-sample">
-        <article className="ui-standards-qcard ui-standards-qcard--footer-sample" data-testid="ui-standard-card-footer-split">
-          <div className="ui-standards-qcard__section ui-standards-qcard__section--tight">
-            <div className="ui-standards-qcard__title">Void sale?</div>
-            <div className="ui-standards-qcard__subtitle">Order #9021 · ₱480.00</div>
-            <p className="ui-standards-qcard__note m-0">Split footer colors separate cancel from confirm.</p>
-          </div>
-          <div className="ui-standards-qcard__footer ui-standards-qcard__footer--split" data-testid="ui-standard-card-footer-split-bar">
-            <button type="button" className="ui-standards-qcard__footer-split-btn ui-standards-qcard__footer-split-btn--danger">
-              Void
-            </button>
-            <button type="button" className="ui-standards-qcard__footer-split-btn ui-standards-qcard__footer-split-btn--success">
-              Keep
-            </button>
           </div>
         </article>
       </div>

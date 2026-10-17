@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, Info } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -15,6 +15,10 @@ export type PageHeaderProps = {
   titleIcon?: LucideIcon;
   /** Optional content shown immediately before the page title, such as an avatar. */
   titleLeading?: ReactNode;
+  /** Optional content shown right after the info control (e.g. a round edit button). */
+  titleTrailing?: ReactNode;
+  /** Replaces the capsule circle content (back arrow / icon), e.g. with an avatar. */
+  circleContent?: ReactNode;
   /** Muted line under the title (e.g. branch name or record name). */
   subtitle?: ReactNode;
   /** Extra classes for the subtitle line. Replaces the default single-line trim. */
@@ -55,6 +59,7 @@ export type PageHeaderProps = {
    * `compact` — operational POS workspaces (Sell) — single dense row, no lede.
    */
   variant?: PageHeaderVariant;
+  className?: string;
 };
 
 /**
@@ -65,6 +70,8 @@ export function PageHeader({
   title,
   titleIcon: TitleIcon,
   titleLeading,
+  titleTrailing,
+  circleContent,
   subtitle,
   subtitleClassName,
   description,
@@ -77,6 +84,7 @@ export function PageHeader({
   backTestId = "page-header-back",
   onBack,
   variant = "default",
+  className,
 }: PageHeaderProps) {
   const { t } = useI18n();
   const [infoOpen, setInfoOpen] = useState(false);
@@ -85,7 +93,22 @@ export function PageHeader({
   const descriptionId = useId();
   const popoverTitleId = useId();
   const compact = variant === "compact";
+  const capsule = !compact;
   const showBack = Boolean(backTo && backLabel);
+  const handleBackClick = onBack
+    ? (event: MouseEvent<HTMLAnchorElement>) => {
+        if (
+          event.button === 0 &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.shiftKey &&
+          !event.altKey
+        ) {
+          event.preventDefault();
+          onBack();
+        }
+      }
+    : undefined;
   const hasDescription = Boolean(description?.trim()) && !compact;
   const toggleLabel = infoToggleLabel ?? t("pageHeader.infoToggle");
   const rightSlot = actions ?? trailing;
@@ -118,13 +141,15 @@ export function PageHeader({
       className={cn(
         "page-header relative flex min-w-0 flex-col",
         compact ? "page-header--compact gap-0" : "gap-1",
+        capsule && "page-header--capsule",
         infoOpen && "z-30",
+        className,
       )}
       data-testid="page-header"
       data-variant={variant}
     >
       <div className={cn("flex min-w-0", compact ? "items-center gap-1" : "gap-1.5")}>
-        {showBack ? (
+        {showBack && !capsule ? (
           <div
             className={cn(
               "flex shrink-0 items-center",
@@ -141,22 +166,7 @@ export function PageHeader({
                   ? "-ms-0.5 size-8 min-h-8 min-w-8"
                   : "-ms-1 size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)]",
               )}
-              onClick={
-                onBack
-                  ? (event) => {
-                      if (
-                        event.button === 0 &&
-                        !event.metaKey &&
-                        !event.ctrlKey &&
-                        !event.shiftKey &&
-                        !event.altKey
-                      ) {
-                        event.preventDefault();
-                        onBack();
-                      }
-                    }
-                  : undefined
-              }
+              onClick={handleBackClick}
             >
               <ArrowLeft className={cn("shrink-0 rtl:rotate-180", compact ? "size-4" : "size-5")} aria-hidden />
             </Link>
@@ -176,7 +186,34 @@ export function PageHeader({
                 compact ? "min-h-8" : "min-h-[var(--exits-control-height)]",
               )}
             >
-              {TitleIcon ? (
+              {capsule ? (
+                showBack ? (
+                  <Link
+                    to={backTo!}
+                    data-testid={backTestId}
+                    aria-label={backLabel}
+                    className="page-header-capsule__ring page-header-capsule__back"
+                    onClick={handleBackClick}
+                  >
+                    <span className="page-header-capsule__disc">
+                      {circleContent ?? <ArrowLeft className="size-7 shrink-0 rtl:rotate-180" aria-hidden />}
+                    </span>
+                  </Link>
+                ) : (
+                  <span className="page-header-capsule__ring" aria-hidden>
+                    <span className="page-header-capsule__disc">
+                      {circleContent ? (
+                        circleContent
+                      ) : TitleIcon ? (
+                        <TitleIcon className="size-6" />
+                      ) : (
+                        <span className="page-header-capsule__initial">{title.trim().charAt(0)}</span>
+                      )}
+                    </span>
+                  </span>
+                )
+              ) : null}
+              {TitleIcon && !(capsule && !showBack) ? (
                 <span className="page-header__title-icon shrink-0" aria-hidden>
                   <TitleIcon className={cn(compact ? "size-4" : "size-5")} />
                 </span>
@@ -209,6 +246,7 @@ export function PageHeader({
                 </Button>
                 </span>
               ) : null}
+              {titleTrailing}
             </div>
             {rightSlot ? (
               <div

@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
+import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
 import type { UtangAccountRow } from "@/features/personal/utang/utang-workspace";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -13,64 +13,86 @@ type UtangAccountCardProps = {
   row: UtangAccountRow;
 };
 
+/** Utang account row — Card settings layout shared with Money I owe / lent. */
 export function UtangAccountCard({ row }: UtangAccountCardProps) {
   const { t } = useI18n();
   const ownershipLabel = row.isLedgerOwner
     ? t("personal.utang.ownershipMine")
     : t("personal.utang.ownershipSharedWithMe");
+  const lent = row.perspective === "lent";
 
   return (
     <Link
       to={`/personal/utang/relationships/${row.relationshipId}`}
       className={cn(
-        "utang-account-card exits-list__card flex items-center justify-between gap-3 text-foreground no-underline",
+        "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-settings-card text-foreground no-underline",
+        lent ? "utang-settings-card--lent" : "utang-settings-card--owe",
         row.isLedgerOwner ? "utang-account-card--mine" : "utang-account-card--shared",
       )}
       data-testid={`utang-account-${row.relationshipId}`}
     >
-      <PersonAvatar name={row.displayName} size="sm" />
-      <div className="min-w-0 flex-1">
-        <p
-          className="m-0 truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+      <span className="ui-standards-qcard__settings-circle" aria-hidden="true">
+        <span className="ui-standards-qcard__settings-circle-core">
+          <PersonAvatar name={row.displayName} size="sm" className="utang-settings-card__avatar" />
+        </span>
+      </span>
+      <div className="ui-standards-qcard__settings-ribbon">
+        <div
+          className="ui-standards-qcard__settings-tab utang-settings-card__tab"
           data-utang-ownership=""
           data-testid={`utang-account-ownership-${row.relationshipId}`}
         >
-          {ownershipLabel}
-        </p>
-        <p className="exits-list__name m-0 truncate font-semibold">{row.displayName}</p>
-        <UtangDirectionTags
-          direction={row.perspective}
-          shared={row.isSharedLedger}
-          linkTestId={`utang-account-linked-${row.relationshipId}`}
-        />
-        <UtangDueCaption
-          dueDateUtc={row.dueDateUtc}
-          dueKind={row.dueKind}
-          testId={`utang-account-due-${row.relationshipId}`}
-        />
-      </div>
-      <div className="grid shrink-0 justify-items-start self-stretch">
-        {!row.isLedgerOwner ? (
-          <StatusChip
-            tone={UTANG_READ_ONLY_CHIP.tone}
-            appearance={UTANG_READ_ONLY_CHIP.appearance}
-            shape={UTANG_READ_ONLY_CHIP.shape}
-            className="col-start-1 row-start-1 self-start max-md:hidden"
-            data-testid={`utang-account-readonly-${row.relationshipId}`}
-          >
-            {t("personal.utang.readOnly")}
-          </StatusChip>
-        ) : null}
-        <div className="col-start-1 row-start-1 flex items-center gap-1 self-center">
-          <MoneyDisplay
-            amount={row.currentBalance}
-            className={cn(
-              "text-[length:var(--exits-text-base)] leading-tight",
-              row.perspective === "owe" && row.currentBalance > 0 && "text-[var(--exits-warning)]",
-            )}
-            testId={`utang-account-balance-${row.relationshipId}`}
-          />
-          <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+          <span className="truncate">{ownershipLabel}</span>
+          {row.dueKind !== "none" && row.dueDateUtc ? (
+            <>
+              <span className="utang-settings-card__tab-divider" aria-hidden />
+              <UtangDueCaption
+                dueDateUtc={row.dueDateUtc}
+                dueKind={row.dueKind}
+                testId={`utang-account-due-${row.relationshipId}`}
+                className={cn(
+                  "utang-settings-card__tab-text",
+                  row.dueKind === "overdue" && "utang-settings-card__tab-text--danger",
+                )}
+              />
+            </>
+          ) : null}
+          <span className="ui-standards-qcard__settings-fold" aria-hidden />
+        </div>
+        <div className="utang-settings-card__content">
+          <div className="utang-settings-card__meta min-w-0 flex-1">
+            <div className="utang-settings-card__headline">
+              <p className="utang-settings-card__name m-0 truncate">{row.displayName}</p>
+              <span className="utang-settings-card__amount">
+                <MoneyDisplay amount={row.currentBalance} testId={`utang-account-balance-${row.relationshipId}`} />
+                <ChevronRight className="size-5 shrink-0" aria-hidden />
+              </span>
+            </div>
+            <span className="utang-settings-card__tags">
+              <StatusChip tone={lent ? "success" : "warning"} appearance="emphasis" shape="square">
+                {lent ? t("personal.utang.owesYou") : t("personal.utang.youOwe")}
+              </StatusChip>
+              <StatusChip
+                tone={row.isSharedLedger ? "success" : "info"}
+                appearance="emphasis"
+                shape="square"
+                data-testid={`utang-account-linked-${row.relationshipId}`}
+              >
+                {row.isSharedLedger ? t("people.status.connected") : t("people.localContact")}
+              </StatusChip>
+              {!row.isLedgerOwner ? (
+                <StatusChip
+                  tone={UTANG_READ_ONLY_CHIP.tone}
+                  appearance={UTANG_READ_ONLY_CHIP.appearance}
+                  shape={UTANG_READ_ONLY_CHIP.shape}
+                  className="max-md:hidden"
+                  data-testid={`utang-account-readonly-${row.relationshipId}`}
+                >
+                  {t("personal.utang.readOnly")}
+                </StatusChip>
+              ) : null}
+            </span>
+          </div>
         </div>
       </div>
     </Link>

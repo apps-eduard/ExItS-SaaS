@@ -24273,7 +24273,7 @@ a.exits-chip--primary:hover {
 }
 
 @media (min-width: 1024px) {
-  .utang-detail-top:has(.utang-entry-card) {
+  .utang-detail-top:has(.utang-quick-actions) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 0.75rem;
@@ -24281,25 +24281,19 @@ a.exits-chip--primary:hover {
     align-items: start;
   }
 
-  .utang-detail-top:has(.utang-entry-card) > .utang-balance-card {
+  .utang-detail-top:has(.utang-quick-actions) > .utang-balance-card {
     grid-column: 1;
     grid-row: 1;
     align-self: start;
   }
 
-  .utang-detail-top:has(.utang-entry-card) > .utang-entry-card {
+  .utang-detail-top:has(.utang-quick-actions) > .utang-quick-actions {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 1;
     align-self: start;
   }
 
-  .utang-detail-top:has(.utang-entry-card) > .utang-invite-card {
-    grid-column: 1;
-    grid-row: 2;
-    align-self: start;
-  }
-
-  .utang-detail-top:has(.utang-entry-card) > :not(.utang-balance-card):not(.utang-entry-card):not(.utang-invite-card) {
+  .utang-detail-top:has(.utang-quick-actions) > :not(.utang-balance-card):not(.utang-quick-actions) {
     grid-column: 1 / -1;
   }
 }
@@ -24326,10 +24320,10 @@ a.exits-chip--primary:hover {
   margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  background-color: var(--exits-severity-danger, #ef4444);
-  color: var(--exits-severity-danger-foreground, #fff);
-  font-size: 0.8125rem;
-  font-weight: 650;
+  background-color: var(--exits-warning, #ff5722);
+  color: var(--exits-warning-foreground, #fff);
+  font-size: 0.9375rem;
+  font-weight: 550;
   line-height: 1.3;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -24346,7 +24340,7 @@ a.exits-chip--primary:hover {
   left: 0;
   width: 0;
   height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-danger, #ef4444));
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-warning, #ff5722));
   border-left: 0.7rem solid transparent;
 }
 
@@ -24389,13 +24383,13 @@ a.exits-chip--primary:hover {
     radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
     linear-gradient(
       145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-severity-danger, #ef4444)),
-      var(--exits-severity-danger, #ef4444) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-severity-danger, #ef4444))
+      color-mix(in srgb, #fff 22%, var(--exits-warning, #ff5722)),
+      var(--exits-warning, #ff5722) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-warning, #ff5722))
     );
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-danger, #ef4444) 18%, #fff),
-    0 3px 8px color-mix(in srgb, var(--exits-severity-danger, #ef4444) 42%, transparent);
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-warning, #ff5722) 18%, #fff),
+    0 3px 8px color-mix(in srgb, var(--exits-warning, #ff5722) 42%, transparent);
 }
 
 .personal-shell .personal-needs-attention__pennant-icon.material-symbols-outlined {
@@ -24641,10 +24635,10 @@ a.exits-chip--primary:hover {
   margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  background-color: var(--exits-severity-danger, #ef4444);
-  color: var(--exits-severity-danger-foreground, #fff);
-  font-size: 0.8125rem;
-  font-weight: 650;
+  background-color: var(--exits-warning, #ff5722);
+  color: var(--exits-warning-foreground, #fff);
+  font-size: 0.9375rem;
+  font-weight: 550;
   line-height: 1.3;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -24661,7 +24655,7 @@ a.exits-chip--primary:hover {
   left: 0;
   width: 0;
   height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-danger, #ef4444));
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-warning, #ff5722));
   border-left: 0.7rem solid transparent;
 }
 
@@ -24677,13 +24671,13 @@ a.exits-chip--primary:hover {
     radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
     linear-gradient(
       145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-severity-danger, #ef4444)),
-      var(--exits-severity-danger, #ef4444) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-severity-danger, #ef4444))
+      color-mix(in srgb, #fff 22%, var(--exits-warning, #ff5722)),
+      var(--exits-warning, #ff5722) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-warning, #ff5722))
     );
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-danger, #ef4444) 18%, #fff),
-    0 3px 8px color-mix(in srgb, var(--exits-severity-danger, #ef4444) 42%, transparent);
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-warning, #ff5722) 18%, #fff),
+    0 3px 8px color-mix(in srgb, var(--exits-warning, #ff5722) 42%, transparent);
 }
 
 .personal-quick-actions__pennant-icon {
@@ -24704,8 +24698,8 @@ a.exits-chip--primary:hover {
   /* Locked Button Standard Info (#0ea5e9). */
   background-color: var(--exits-severity-info, #0ea5e9);
   color: var(--exits-severity-info-foreground, #fff);
-  font-size: 0.8125rem;
-  font-weight: 650;
+  font-size: 0.9375rem;
+  font-weight: 550;
   line-height: 1.3;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -24784,8 +24778,8 @@ a.exits-chip--primary:hover {
   /* Success — distinct from Quick actions (warn) and Todo (info). */
   background-color: var(--exits-severity-success, #22c55e);
   color: var(--exits-severity-success-foreground, #fff);
-  font-size: 0.8125rem;
-  font-weight: 650;
+  font-size: 0.9375rem;
+  font-weight: 550;
   line-height: 1.3;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -24858,8 +24852,8 @@ a.exits-chip--primary:hover {
   /* Locked Button Standard Info (#0ea5e9). */
   background-color: var(--exits-severity-info, #0ea5e9);
   color: var(--exits-severity-info-foreground, #fff);
-  font-size: 0.8125rem;
-  font-weight: 650;
+  font-size: 0.9375rem;
+  font-weight: 550;
   line-height: 1.3;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -25059,6 +25053,196 @@ a.exits-chip--primary:hover {
   overflow: hidden;
   border-radius: 999px;
   background: var(--exits-surface);
+}
+
+.personal-home-capsule__disc {
+  position: relative;
+}
+
+.personal-home-capsule__disc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* PageHeader capsule — Personal home welcome look for child pages (Money I owe / lent). */
+.page-header--capsule {
+  --page-capsule-size: 4.25rem;
+  --page-capsule-from: #1565c0;
+  --page-capsule-to: #1976d2;
+}
+
+.page-header--capsule .page-header__main {
+  position: relative;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--page-capsule-size);
+  margin: 0.35rem 0 0.15rem calc(var(--page-capsule-size) * 0.42);
+  padding: 0.45rem 1.1rem 0.45rem calc(var(--page-capsule-size) * 0.92);
+  border-radius: 0.2rem;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--page-capsule-to) 42%, var(--exits-surface)) 0%,
+    color-mix(in srgb, var(--page-capsule-from) 18%, color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface))) 28%,
+    color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface)) 52%,
+    var(--exits-surface) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 4px 10px color-mix(in srgb, var(--page-capsule-from) 14%, transparent),
+    0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.page-header-capsule__ring {
+  position: absolute;
+  top: 0;
+  left: calc(var(--page-capsule-size) * -0.42);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--page-capsule-size);
+  height: var(--page-capsule-size);
+  border-radius: 999px;
+  box-shadow: 0 0 0 0.38rem var(--exits-surface);
+}
+
+.page-header-capsule__back {
+  text-decoration: none;
+  transition: transform 150ms ease;
+}
+
+.page-header-capsule__back:hover {
+  transform: scale(1.05);
+}
+
+.page-header-capsule__back:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 0.45rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-header-capsule__back,
+  .page-header-capsule__back:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+.page-header-capsule__disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #fff;
+  background-color: var(--exits-primary);
+}
+
+.page-header-capsule__disc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.page-header--capsule .page-header__head {
+  width: 100%;
+}
+
+.page-header--capsule .page-header__title-row {
+  flex: 1 1 auto;
+}
+
+/* Round glossy primary action beside the header info icon (e.g. edit). */
+.page-header-round-action {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #fff;
+  text-decoration: none;
+  background-color: var(--exits-primary);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 3px 8px color-mix(in srgb, var(--exits-primary) 32%, transparent);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.page-header-round-action:hover {
+  transform: scale(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 5px 12px color-mix(in srgb, var(--exits-primary) 40%, transparent);
+}
+
+.page-header-round-action:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-header-round-action,
+  .page-header-round-action:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+.page-header-capsule__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 1.35rem !important;
+}
+
+.page-header-capsule__initial {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.page-header--capsule .page-header__title {
+  flex: 1 1 auto;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--exits-text);
+}
+
+@media (min-width: 1024px) {
+  .page-header--capsule .page-header__title {
+    font-size: 1.35rem;
+  }
 }
 
 .personal-home-capsule__photo {
@@ -25979,6 +26163,11 @@ a.exits-chip--primary:hover {
   color: var(--personal-index-deep);
 }
 
+[data-theme="dark"] .personal-home-index-card .personal-home-index-card__badge--ghost,
+[data-theme="dark"] .personal-home-index-card .personal-home-index-card__ribbon {
+  color: #fff;
+}
+
 .personal-home-index-card:hover .personal-home-index-card__badge--ghost,
 .personal-home-index-card:focus-visible .personal-home-index-card__badge--ghost {
   background-color: color-mix(in srgb, var(--personal-index-to) 12%, transparent);
@@ -26341,6 +26530,648 @@ a.exits-chip--primary:hover {
   color: var(--exits-info);
 }
 
+.utang-summary-cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0.35rem 0 0.25rem 0.5rem;
+}
+
+@media (max-width: 1023px) {
+  .utang-summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 479px) {
+  .utang-summary-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.utang-hub-actions {
+  margin-left: 0.5rem;
+}
+
+.personal-tracker-card .utang-hub-actions {
+  margin-left: 0.5rem;
+}
+
+.utang-hub-accounts .personal-tracker-card__ribbon {
+  background-color: var(--exits-severity-info, #0ea5e9);
+  color: var(--exits-severity-info-foreground, #fff);
+}
+
+.utang-hub-accounts .personal-tracker-card__ribbon::after {
+  border-top-color: color-mix(in srgb, #000 38%, var(--exits-severity-info, #0ea5e9));
+}
+
+.utang-hub-accounts .personal-tracker-card__pennant {
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, #fff 22%, var(--exits-severity-info, #0ea5e9)),
+      var(--exits-severity-info, #0ea5e9) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-severity-info, #0ea5e9))
+    );
+  box-shadow:
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-info, #0ea5e9) 18%, #fff),
+    0 5px 5px -3px rgba(0, 0, 0, 0.28),
+    0 8px 10px 1px rgba(0, 0, 0, 0.18),
+    0 3px 14px 2px rgba(0, 0, 0, 0.14);
+}
+
+.utang-hub-accounts .personal-tracker-card__pennant-icon {
+  color: var(--exits-primary);
+}
+
+.personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
+  padding-top: 3.4rem;
+}
+
+@media (max-width: 639px) {
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
+    padding-top: 3.6rem;
+  }
+}
+
+.personal-tracker-card:has(.utang-hub-actions) {
+  row-gap: 1rem;
+}
+
+.personal-home-page .personal-section.personal-tracker-card.catalog-form-section:has(.utang-hub-actions) {
+  padding-inline: 1.85rem;
+}
+
+@media (max-width: 639px) {
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section:has(.utang-hub-actions) {
+    padding-inline: 0.85rem;
+  }
+}
+
+.personal-tracker-card:has(.utang-hub-actions) .personal-home-metrics,
+.personal-tracker-card:has(.utang-hub-actions) .tracker-summary-row {
+  column-gap: 1.5rem;
+  row-gap: 1rem;
+}
+
+.personal-tracker-card:has(.utang-hub-actions) .personal-home-metrics {
+  margin-left: 0.5rem;
+}
+
+.utang-summary-cards__action {
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* Money I lent / I owe rows — Card settings layout (avatar circle + name tab on a slanted ribbon). */
+.utang-settings-list {
+  padding: 0.35rem 0 0.35rem 0.9rem;
+}
+
+.utang-settings-list > li,
+.utang-settings-card {
+  min-width: 0;
+}
+
+.utang-settings-card__meta {
+  overflow: hidden;
+}
+
+@media (max-width: 639px) {
+  .utang-settings-list {
+    padding-left: 0.15rem;
+  }
+
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
+    padding-inline: 0.6rem;
+  }
+
+  .utang-settings-card .utang-settings-card__tab,
+  .utang-settings-card .utang-settings-card__tab[data-utang-ownership] {
+    flex-wrap: wrap;
+    max-width: none;
+    row-gap: 0.15rem;
+    white-space: normal;
+  }
+
+  .utang-settings-card .utang-settings-card__tab .truncate {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .utang-settings-card .ui-standards-qcard__settings-ribbon .utang-settings-card__content {
+    padding-right: 0;
+  }
+
+  .utang-settings-card .utang-settings-card__meta.utang-settings-card__meta {
+    overflow: visible;
+  }
+
+  .utang-settings-card .utang-settings-card__name {
+    font-weight: 500;
+  }
+
+  .utang-settings-card__tags > * {
+    padding-inline: 0.35rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .utang-settings-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.75rem;
+  }
+
+  .utang-settings-list.utang-settings-list--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.person-detail-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem 1.25rem;
+  align-items: start;
+  padding-left: 0.7rem;
+}
+
+@media (min-width: 1024px) {
+  .person-detail-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Person detail cards — Card ribbon title overhanging the top-left corner. */
+.person-ribbon-card.person-ribbon-card,
+.utang-ribbon-card.utang-ribbon-card,
+.personal-page .personal-section.utang-ribbon-card.catalog-form-section {
+  position: relative;
+  overflow: visible;
+  padding-top: 3.1rem;
+}
+
+.personal-page .personal-section.personal-quick-actions.utang-quick-actions.catalog-form-section {
+  position: relative;
+  overflow: visible;
+  margin-left: 0.7rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: none;
+  padding: 2.45rem 1.05rem 1rem;
+}
+
+.utang-quick-actions .personal-quick-actions__cards {
+  padding-left: 0.5rem;
+}
+
+button.personal-home-index-card {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.utang-detail-top .utang-ribbon-card,
+.utang-activity-card.utang-ribbon-card {
+  margin-left: 0.7rem;
+}
+
+.person-ribbon-card > .person-ribbon-card__toggle {
+  position: absolute;
+  top: 0.45rem;
+  right: 1rem;
+  left: 0;
+  width: auto;
+  min-height: 2.15rem;
+  justify-content: flex-end;
+}
+
+.person-ribbon-card__toggle .personal-tracker-card__ribbon {
+  top: 0;
+}
+
+.exits-checkbox__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.exits-checkbox__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: var(--exits-text-muted, rgba(0, 0, 0, 0.54));
+  transition: color 0.22s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.exits-checkbox__icon.exits-checkbox__icon--on {
+  color: var(--qcheckbox-color, var(--exits-primary));
+}
+
+.person-ribbon-card__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: var(--exits-text-base);
+  font-weight: 600;
+}
+
+.person-ribbon-card__checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-left: -0.6rem;
+}
+
+.person-ribbon-card__rule {
+  height: 1px;
+  margin: 0.15rem 0;
+  background: var(--exits-border);
+}
+
+.person-shared-card__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.person-shared-card__col {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.person-shared-card__divider {
+  height: 1px;
+  background: var(--exits-border);
+}
+
+@media (min-width: 640px) {
+  .person-shared-card__columns {
+    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .person-shared-card__divider {
+    width: 1px;
+    height: auto;
+    align-self: stretch;
+  }
+}
+
+.person-ribbon-card .personal-tracker-card__ribbon,
+.utang-ribbon-card .personal-tracker-card__ribbon {
+  background-color: var(--exits-primary);
+  color: var(--exits-primary-foreground, #fff);
+}
+
+.person-ribbon-card .personal-tracker-card__ribbon::after,
+.utang-ribbon-card .personal-tracker-card__ribbon::after {
+  border-top-color: color-mix(in srgb, #000 38%, var(--exits-primary));
+}
+
+.person-ribbon-card .personal-tracker-card__pennant,
+.utang-ribbon-card .personal-tracker-card__pennant {
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, #fff 22%, var(--exits-primary)),
+      var(--exits-primary) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-primary))
+    );
+  box-shadow:
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-primary) 18%, #fff),
+    0 5px 5px -3px rgba(0, 0, 0, 0.28),
+    0 8px 10px 1px rgba(0, 0, 0, 0.18),
+    0 3px 14px 2px rgba(0, 0, 0, 0.14);
+}
+
+.person-ribbon-card .personal-tracker-card__pennant-icon,
+.utang-ribbon-card .personal-tracker-card__pennant-icon {
+  color: var(--exits-primary-foreground, #fff);
+}
+
+/* Search sits on the ribbon row (top right of Active accounts). */
+.utang-hub-accounts .utang-search {
+  position: absolute;
+  top: 0.45rem;
+  right: 1.05rem;
+  z-index: 2;
+  width: min(16rem, 45%);
+}
+
+.utang-hub-accounts .utang-search input {
+  height: 2.2rem;
+}
+
+.utang-hub-filters__split {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.utang-hub-filters__divider {
+  width: 1px;
+  height: 1em;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+/* Active accounts "I lent | I owe" — I lent (left) | I owe (right). */
+.utang-hub-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.utang-hub-split__column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.utang-hub-split__title {
+  margin: 0;
+  color: var(--exits-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.utang-hub-split__divider {
+  height: 1px;
+  background: var(--exits-border);
+}
+
+@media (min-width: 768px) {
+  .utang-hub-split {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .utang-hub-split__divider {
+    width: 1px;
+    height: auto;
+    align-self: stretch;
+  }
+}
+
+.ui-standards-qcard.ui-standards-qcard--settings-card.utang-settings-card {
+  --qcard-settings-size: 3.6rem;
+  flex: none;
+  width: 100%;
+  max-width: 100%;
+  min-height: 4.7rem;
+  margin-left: 0;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: calc(var(--qcard-settings-size) * 0.25);
+  text-decoration: none;
+}
+
+.utang-settings-card .ui-standards-qcard__settings-ribbon {
+  min-height: 4.2rem;
+  gap: 0.2rem;
+  padding: 0.45rem 1.25rem 0.5rem 1.6rem;
+}
+
+.utang-settings-card--owe {
+  --qcard-settings: var(--exits-severity-info, #0ea5e9);
+  --qcard-settings-deep: #0369a1;
+}
+
+.utang-settings-card--lent {
+  --qcard-settings: var(--exits-severity-success, #16a34a);
+  --qcard-settings-deep: #166534;
+}
+
+.utang-settings-card.utang-account-card--shared,
+.utang-settings-card.utang-account-card--mine {
+  border: 0;
+  background: transparent;
+}
+
+.utang-settings-card .ui-standards-qcard__settings-ribbon {
+  z-index: auto;
+  clip-path: none;
+  border-radius: 0 999px 999px 0;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, #000 10%, var(--qcard-settings)),
+    var(--qcard-settings) 40%,
+    color-mix(in srgb, #fff 45%, var(--qcard-settings))
+  );
+  transition: box-shadow 150ms ease;
+}
+
+.utang-settings-card:hover .ui-standards-qcard__settings-ribbon,
+.utang-settings-card:focus-visible .ui-standards-qcard__settings-ribbon {
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--qcard-settings) 42%, transparent);
+}
+
+.utang-settings-card .ui-standards-qcard__settings-circle {
+  z-index: 5;
+  top: calc(50% + 0.3rem);
+  left: -0.35rem;
+  width: 2.24rem;
+  height: 2.24rem;
+  background: transparent;
+  box-shadow:
+    0 0 0 0.16rem var(--qcard-settings),
+    0 0 0 0.42rem var(--exits-surface);
+}
+
+.utang-settings-card .ui-standards-qcard__settings-circle-core {
+  width: 100%;
+  height: 100%;
+}
+
+.utang-settings-card__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 0.7rem !important;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.utang-settings-card__tab {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Card ribbon style: solid band, rounded except the fold corner, raised shadow, fold under the overhang. */
+.utang-settings-card .utang-settings-card__tab,
+.utang-settings-card .utang-settings-card__tab[data-utang-ownership] {
+  z-index: 4;
+  margin-top: -1.1rem;
+  margin-left: calc(-1.6rem - var(--qcard-settings-size) * 0.25 - 0.3rem);
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.2rem 0.2rem 0.2rem 0;
+  color: var(--qcard-settings-deep);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #fff;
+  box-shadow:
+    0 5px 5px -3px rgba(0, 0, 0, 0.28),
+    0 8px 10px 1px rgba(0, 0, 0, 0.18),
+    0 3px 14px 2px rgba(0, 0, 0, 0.14);
+  clip-path: none;
+}
+
+.utang-settings-card .utang-settings-card__tab .ui-standards-qcard__settings-fold {
+  top: 100%;
+  right: auto;
+  left: 0;
+  border-top: 0.5rem solid #cbd5e1;
+  border-right: 0;
+  border-left: 0.7rem solid transparent;
+}
+
+.utang-settings-card__headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-width: 0;
+  padding-top: 0.3rem;
+}
+
+.utang-settings-card__headline .utang-settings-card__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.utang-settings-card__headline .utang-settings-card__amount {
+  flex: 0 0 auto;
+}
+
+.utang-settings-card__name {
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.utang-settings-card__tags {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  margin-top: 0.2rem;
+}
+
+.utang-settings-card__tags > * {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.utang-settings-card .utang-settings-card__meta {
+  padding-left: 0.1rem;
+}
+
+.utang-settings-card__content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.utang-settings-card__meta,
+.utang-settings-card__meta .text-muted {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.utang-settings-card__balance {
+  color: #fff;
+}
+
+.utang-settings-card__amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #fff;
+}
+
+.utang-settings-card__amount > svg {
+  color: var(--exits-primary);
+}
+
+.utang-settings-card .utang-settings-card__content {
+  padding-right: 0;
+}
+
+.utang-settings-card .utang-settings-card__balance {
+  position: absolute;
+  top: 0;
+  right: 1.25rem;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0;
+  transform: none;
+}
+
+.utang-settings-card__amount {
+  line-height: 1;
+}
+
+@media (max-width: 639px) {
+  .utang-settings-card__amount > svg {
+    display: none;
+  }
+
+  .utang-settings-card .utang-settings-card__amount > span {
+    font-size: 1.05rem;
+  }
+
+  .utang-settings-card .utang-settings-card__balance {
+    right: 1.25rem;
+  }
+}
+
+.utang-settings-card__amount > span {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.utang-settings-card__tab-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 0.05rem 0.5rem;
+  background: color-mix(in srgb, var(--qcard-settings-deep) 40%, transparent);
+}
+
+.utang-settings-card .utang-settings-card__tab-text.utang-settings-card__tab-text--danger {
+  color: var(--exits-severity-danger, #ef4444);
+}
+
+.utang-settings-card .utang-settings-card__tab-text {
+  color: var(--qcard-settings-deep);
+  font-size: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
 .utang-hub-accounts__panel {
   display: flex;
   min-width: 0;
@@ -26440,6 +27271,22 @@ a.exits-chip--primary:hover {
   display: none;
 }
 
+.utang-ledger-board__list {
+  padding-left: 0.9rem;
+  gap: 1.35rem;
+}
+
+.utang-ledger-board .utang-settings-card.utang-account-card,
+.utang-ledger-board .utang-settings-card.utang-account-card--mine,
+.utang-ledger-board .utang-settings-card.utang-account-card--shared {
+  border: 0;
+  background: transparent;
+}
+
+.utang-ledger-board .utang-settings-card [data-utang-ownership] {
+  display: inline-flex;
+}
+
 .personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
   background: var(--exits-surface);
 }
@@ -26494,6 +27341,14 @@ a.exits-chip--primary:hover {
 .personal-attention-row.personal-home-infodata-card--row:hover {
   background-color: color-mix(in srgb, var(--personal-infodata) 8%, var(--exits-surface));
   box-shadow: none;
+}
+
+.personal-attention-row.personal-home-infodata-card--row {
+  padding-left: calc(var(--personal-infodata-size) * 0.66);
+}
+
+.personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__body {
+  margin-left: 0;
 }
 
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__body,
@@ -34135,6 +34990,481 @@ input.ui-standards-qdropdown__query {
 .ui-standards-qdate--on-dark .ui-standards-qtime__clock {
   background: transparent;
   border-color: #2a303c;
+}
+
+/* ExitsModal ribbon title — overhangs the panel's left edge (panel padding 1rem + 0.7rem). */
+.exits-modal__ribbon {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: calc(100% + 1.7rem);
+  margin: -0.45rem 0 0 -1.7rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.2rem 0.2rem 0.2rem 0;
+  background-color: var(--exits-primary);
+  color: var(--exits-primary-foreground, #fff);
+  font-size: 0.9375rem;
+  font-weight: 550;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 5px 5px -3px rgba(0, 0, 0, 0.28),
+    0 8px 10px 1px rgba(0, 0, 0, 0.18),
+    0 3px 14px 2px rgba(0, 0, 0, 0.14);
+}
+
+.exits-modal__ribbon::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-primary));
+  border-left: 0.7rem solid transparent;
+}
+
+.exits-modal__pennant {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: var(--exits-primary-foreground, #fff);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, #fff 22%, var(--exits-primary)),
+      var(--exits-primary) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-primary))
+    );
+  box-shadow:
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-primary) 18%, #fff),
+    0 5px 5px -3px rgba(0, 0, 0, 0.28),
+    0 8px 10px 1px rgba(0, 0, 0, 0.18),
+    0 3px 14px 2px rgba(0, 0, 0, 0.14);
+}
+
+.exits-modal__ribbon-head {
+  flex: 1 1 auto;
+}
+
+.exits-modal__ribbon-head > p {
+  margin-top: 0.85rem;
+}
+
+.utang-entry-dialog__head {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(max-content, 1fr);
+  align-items: center;
+  column-gap: 0.85rem;
+}
+
+.utang-entry-dialog__head > .utang-entry-dialog__amount:only-child {
+  grid-column: 1 / -1;
+}
+
+.utang-entry-dialog__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--exits-text);
+  font-size: var(--exits-text-lg, 1.125rem);
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.utang-entry-dialog__divider {
+  align-self: stretch;
+  width: 1px;
+  min-height: 1.25rem;
+  background: var(--exits-border-strong, var(--exits-border));
+}
+
+.utang-entry-dialog__head .utang-entry-dialog__amount {
+  justify-self: end;
+  color: var(--exits-text);
+  font-size: var(--exits-text-lg, 1.125rem);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.utang-entry-dialog__head .utang-entry-dialog__amount--changed {
+  color: var(--exits-primary);
+}
+
+/* Quasar QDialog showcase (Basic + Styling). */
+.ui-standards-qdialog {
+  --qdialog-primary: #1976d2;
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.4);
+  animation: ui-standards-qdialog-fade 0.3s ease;
+}
+
+.ui-standards-qdialog__card {
+  width: auto;
+  max-width: 560px;
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  border-radius: 4px;
+  background: var(--exits-surface, #fff);
+  color: var(--exits-text, rgba(0, 0, 0, 0.87));
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow:
+    0 11px 15px -7px rgba(0, 0, 0, 0.2),
+    0 24px 38px 3px rgba(0, 0, 0, 0.14),
+    0 9px 46px 8px rgba(0, 0, 0, 0.12);
+  outline: none;
+}
+
+.ui-standards-qdialog__card--fade {
+  animation: ui-standards-qdialog-fade 0.3s ease;
+}
+
+.ui-standards-qdialog__card--flip {
+  transform-origin: 50% 0;
+  animation: ui-standards-qdialog-flip 0.3s ease;
+}
+
+.ui-standards-qdialog__card--shake {
+  animation: ui-standards-qdialog-shake 0.15s ease-in-out 2;
+}
+
+.ui-standards-qdialog__card--min-350 {
+  min-width: min(350px, calc(100vw - 48px));
+}
+
+.ui-standards-qdialog__card--primary {
+  background: var(--qdialog-primary);
+  color: #fff;
+}
+
+@keyframes ui-standards-qdialog-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ui-standards-qdialog-flip {
+  from {
+    opacity: 0;
+    transform: perspective(400px) rotateX(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(400px) rotateX(0);
+  }
+}
+
+@keyframes ui-standards-qdialog-shake {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-standards-qdialog,
+  .ui-standards-qdialog__card {
+    animation: none;
+  }
+}
+
+.ui-standards-qdialog-section {
+  padding: 16px;
+}
+
+.ui-standards-qdialog-section--pt-none {
+  padding-top: 0;
+}
+
+.ui-standards-qdialog-section--pb-none {
+  padding-bottom: 0;
+}
+
+.ui-standards-qdialog-section--row {
+  display: flex;
+  align-items: center;
+}
+
+.ui-standards-qdialog-h6 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 2rem;
+  letter-spacing: 0.0125em;
+}
+
+.ui-standards-qdialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px;
+}
+
+.ui-standards-qdialog-avatar {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--qdialog-primary, #1976d2);
+  color: #fff;
+}
+
+.ui-standards-qdialog-btn {
+  --qdialog-primary: #1976d2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 4px 16px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--qdialog-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.0892857em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.2),
+    0 2px 2px rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.12);
+  transition: background-color 0.3s;
+}
+
+.ui-standards-qdialog-btn--flat {
+  background: transparent;
+  color: var(--qdialog-primary);
+  box-shadow: none;
+}
+
+.ui-standards-qdialog-btn--flat:hover,
+.ui-standards-qdialog-btn--flat:focus-visible {
+  background: color-mix(in srgb, var(--qdialog-primary) 10%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-qdialog-btn--flat {
+  --qdialog-primary: #64b5f6;
+}
+
+.ui-standards-qdialog-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ui-standards-qdialog-icon-btn--round {
+  border-radius: 50%;
+}
+
+.ui-standards-qdialog-icon-btn:hover,
+.ui-standards-qdialog-icon-btn:focus-visible {
+  background: rgba(127, 127, 127, 0.18);
+}
+
+.ui-standards-qdialog-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+}
+
+.ui-standards-qdialog-bar .ui-standards-qdialog-icon-btn {
+  width: 24px;
+  height: 24px;
+}
+
+.ui-standards-qdialog-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 0 12px;
+}
+
+.ui-standards-qdialog-toolbar__avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #1976d2;
+  color: #fff;
+  font-weight: 700;
+}
+
+.ui-standards-qdialog-toolbar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 21px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Dialog playground — static ExitsModal shell on a dimmed stage. */
+.ui-standards-dialog-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 14rem;
+  padding: 2rem 1rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.ui-standards-dialog-panel {
+  display: flex;
+  width: 100%;
+  max-width: 28rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-lg);
+}
+
+.ui-standards-dialog-panel[data-size="sm"] {
+  max-width: 24rem;
+}
+
+.ui-standards-dialog-panel[data-size="lg"] {
+  max-width: 32rem;
+}
+
+.ui-standards-dialog-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--exits-border);
+}
+
+.ui-standards-dialog-panel__title {
+  margin: 0;
+  color: var(--exits-text);
+  font-size: var(--exits-text-md);
+  font-weight: 600;
+}
+
+.ui-standards-dialog-panel__description {
+  margin: 0.25rem 0 0;
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+}
+
+.ui-standards-dialog-panel__close {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  color: var(--exits-text-muted);
+}
+
+.ui-standards-dialog-panel__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--exits-border);
+}
+
+.ui-standards-dialog-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.ui-standards-dialog-message__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: var(--dialog-tone, var(--exits-primary));
+  background: color-mix(in srgb, var(--dialog-tone, var(--exits-primary)) 14%, var(--exits-surface));
+}
+
+.ui-standards-dialog-samples {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ui-standards-dialog-sample {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--dialog-tone, var(--exits-primary)) 35%, var(--exits-border));
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--exits-motion-fast, 150ms) ease, transform var(--exits-motion-fast, 150ms) ease;
+}
+
+.ui-standards-dialog-sample:hover {
+  box-shadow: var(--exits-shadow-md);
+  transform: translateY(-1px);
+}
+
+.ui-standards-dialog-sample:focus-visible {
+  outline: 2px solid var(--dialog-tone, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.ui-standards-dialog-sample__label {
+  font-weight: 600;
+}
+
+.ui-standards-dialog-sample__caption {
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
 }
 
 .ui-standards-shadow-stage {

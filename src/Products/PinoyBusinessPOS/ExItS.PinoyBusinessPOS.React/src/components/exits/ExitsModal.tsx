@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import type { LucideIcon } from "lucide-react";
 import { getActionIcon } from "@/components/exits/action-semantics";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -32,7 +33,7 @@ export type ExitsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description?: string;
+  description?: ReactNode;
   children: ReactNode;
   /** Sticky footer actions (Cancel | Continue pattern). */
   footer?: ReactNode;
@@ -55,6 +56,10 @@ export type ExitsModalProps = {
   /** Optional form submit handler — wraps body+footer in <form>. */
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
   className?: string;
+  /** Render the title as a primary card ribbon overhanging the top-left corner. */
+  ribbon?: boolean;
+  /** Icon shown in the ribbon pennant (ribbon titles only). */
+  ribbonIcon?: LucideIcon;
 };
 
 /**
@@ -78,6 +83,8 @@ export function ExitsModal({
   id,
   onSubmit,
   className,
+  ribbon = false,
+  ribbonIcon: RibbonIcon,
 }: ExitsModalProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -161,13 +168,24 @@ export function ExitsModal({
   const body = (
     <>
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border pb-3">
-        <div className="min-w-0">
-          <h2
-            id={titleId}
-            className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground"
-          >
-            {title}
-          </h2>
+        <div className={cn("min-w-0", ribbon && "exits-modal__ribbon-head")}>
+          {ribbon ? (
+            <h2 id={titleId} className="exits-modal__ribbon" data-testid={`${testId}-ribbon`}>
+              {RibbonIcon ? (
+                <span className="exits-modal__pennant" aria-hidden>
+                  <RibbonIcon className="size-[0.95rem] shrink-0" />
+                </span>
+              ) : null}
+              {title}
+            </h2>
+          ) : (
+            <h2
+              id={titleId}
+              className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground"
+            >
+              {title}
+            </h2>
+          )}
           {description ? (
             <p
               id={descriptionId}
@@ -229,7 +247,8 @@ export function ExitsModal({
         tabIndex={-1}
         data-testid={testId}
         className={cn(
-          "flex w-full flex-col gap-3 overflow-hidden border border-border bg-surface p-4 shadow-[var(--exits-shadow-lg)]",
+          "flex w-full flex-col gap-3 border border-border bg-surface p-4 shadow-[var(--exits-shadow-lg)]",
+          ribbon ? "exits-modal--ribbon relative overflow-visible" : "overflow-hidden",
           "exits-motion-dialog motion-reduce:transition-none",
           fullHeightOnCompact
             ? cn(

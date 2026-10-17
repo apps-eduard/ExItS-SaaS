@@ -681,9 +681,11 @@ export function RelationshipInviteReminderPanel({
   }
 
   return (
-    <section className="catalog-form-section exits-animate-panel personal-section utang-invite-card flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
-      <h2 className="catalog-form-section__title m-0 flex min-w-0 items-center gap-2">
-        <BellRing className="size-4 shrink-0" aria-hidden="true" />
+    <section className="catalog-form-section exits-animate-panel personal-section utang-invite-card utang-ribbon-card flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
+      <h2 className="personal-tracker-card__ribbon">
+        <span className="personal-tracker-card__pennant" aria-hidden>
+          <BellRing className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+        </span>
         {t("personal.social.inviteAndRemind")}
       </h2>
       <div id="utang-invite-reminder-body" className="flex flex-col gap-3">

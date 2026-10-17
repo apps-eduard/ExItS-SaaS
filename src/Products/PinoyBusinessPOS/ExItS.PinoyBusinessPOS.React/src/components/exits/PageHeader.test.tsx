@@ -52,7 +52,7 @@ describe("PageHeader", () => {
     expect(screen.getByTestId("page-header-actions")).toHaveTextContent("Exit selling");
   });
 
-  it("renders canonical back link with accessible name and density-sized control", () => {
+  it("renders canonical back link with accessible name inside the capsule circle", () => {
     renderHeader(
       <PageHeader
         title="Shifts"
@@ -65,7 +65,22 @@ describe("PageHeader", () => {
     const back = screen.getByTestId("page-header-back-shifts");
     expect(back).toHaveAttribute("href", "/shifts");
     expect(back).toHaveAccessibleName("Back to shifts");
-    expect(back.className).toMatch(/exits-control-height/);
+    expect(back).toHaveClass("page-header-capsule__ring", "page-header-capsule__back");
+    expect(screen.getByTestId("page-header")).toHaveClass("page-header--capsule");
+  });
+
+  it("keeps the compact header free of the capsule", () => {
+    renderHeader(
+      <PageHeader
+        title="Sell"
+        variant="compact"
+        backTo="/home"
+        backLabel="Back to home"
+        backTestId="page-header-back-sell"
+      />,
+    );
+    expect(screen.getByTestId("page-header")).not.toHaveClass("page-header--capsule");
+    expect(screen.getByTestId("page-header-back-sell")).not.toHaveClass("page-header-capsule__back");
   });
 
   it("renders actions / badge slot when provided", () => {

@@ -14,7 +14,8 @@ export function isSharedRelationship(
 
 export type UtangPerspective = "lent" | "owe";
 
-export type UtangAccountSegment = "all" | "lent" | "owe" | "mine" | "shared";
+/** `split` groups every account I lent | I owe; `ledgers` groups My Record | Shared with Me. */
+export type UtangAccountSegment = "all" | "split" | "ledgers" | "lent" | "owe" | "mine" | "shared";
 
 export type UtangAccountRow = {
   relationshipId: string;

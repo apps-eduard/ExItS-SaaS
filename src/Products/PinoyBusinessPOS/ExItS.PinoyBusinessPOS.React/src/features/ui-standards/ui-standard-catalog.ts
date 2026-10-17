@@ -14,6 +14,7 @@ export type UiStandardFilterCategory =
   | "messages"
   | "feedback"
   | "overlays"
+  | "dialog"
   | "forms"
   | "upload"
   | "card"
@@ -43,6 +44,8 @@ export type UiStandardLiveCardId =
   | "confirm"
   | "drawer"
   | "modal"
+  | "dialogPlayground"
+  | "dialog"
   | "status"
   | "forms"
   | "quantityStepper"
@@ -105,6 +108,7 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
   { id: "messages", label: "Messages" },
   { id: "feedback", label: "Feedback" },
   { id: "overlays", label: "Overlays" },
+  { id: "dialog", label: "Dialog" },
   { id: "forms", label: "Forms" },
   { id: "upload", label: "Upload" },
   {
@@ -322,6 +326,30 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     title: "Modal",
     category: "overlays",
     keywords: ["modal", "exitsmodal", "payment", "record payment"],
+  },
+  {
+    id: "dialogPlayground",
+    title: "Dialog playground",
+    category: "dialog",
+    keywords: [
+      "dialog",
+      "modal",
+      "exitsmodal",
+      "playground",
+      "intent",
+      "size",
+      "fullscreen",
+      "persistent",
+      "footer",
+      "snippet",
+      "copy",
+    ],
+  },
+  {
+    id: "dialog",
+    title: "Dialog samples",
+    category: "dialog",
+    keywords: ["dialog", "modal", "alert", "confirm", "delete", "form", "scroll", "persistent"],
   },
   {
     id: "status",
@@ -734,6 +762,15 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     status: "Locked",
     summary: "Short contextual modal shell",
     keywords: ["modal", "exitsmodal", "payment"],
+  },
+  {
+    id: "exits-dialog",
+    component: "ExitsModal",
+    standard: "Dialog",
+    category: "dialog",
+    status: "Pilot",
+    summary: "Dialog intent, size, mobile height, and dismiss options. Cursor command ext dialog from the Dialog playground.",
+    keywords: ["dialog", "modal", "exitsmodal", "playground", "confirm", "persistent"],
   },
   {
     id: "input",

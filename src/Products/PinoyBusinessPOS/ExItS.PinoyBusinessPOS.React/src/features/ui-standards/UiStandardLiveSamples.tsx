@@ -48,31 +48,28 @@ import { TableActionButton } from "@/components/exits/TableActionButton";
 import { useExitsToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import {
-  UiStandardsCardBannerSample,
+  UiStandardsCardAvatarRowSample,
   UiStandardsCardBookmarkSample,
   UiStandardsCardCapsuleSample,
   UiStandardsCardClipSample,
-  UiStandardsCardFooterActionsSample,
   UiStandardsCardFooterCaptionSample,
-  UiStandardsCardFooterSplitSample,
   UiStandardsCardIdeaSample,
   UiStandardsCardInfodataSample,
   UiStandardsCardNotchSample,
-  UiStandardsCardOptionSample,
   UiStandardsCardPennantSample,
-  UiStandardsCardFoldSample,
   UiStandardsCardIndexSample,
   UiStandardsCardPinSample,
   UiStandardsCardStepSample,
+  UiStandardsCardPageHeaderSample,
   UiStandardsCardPlayground,
+  UiStandardsCardQuickActionSample,
   UiStandardsCardRibbonPendantSample,
   UiStandardsCardRibbonSample,
   UiStandardsCardSettingsSample,
-  UiStandardsCardStackSample,
   UiStandardsCardStampSample,
   UiStandardsCardStripeSample,
   UiStandardsCardTicketSample,
-  UiStandardsCardTitleTabSample,
+  UiStandardsCardWelcomeSample,
 } from "@/features/ui-standards/UiStandardsCardPlayground";
 import { UiStandardsShadowPlayground } from "@/features/ui-standards/UiStandardsShadowPlayground";
 import { UiStandardsTablePlayground } from "@/features/ui-standards/UiStandardsTablePlayground";
@@ -104,6 +101,11 @@ import { UiStandardsTimeGallery } from "@/features/ui-standards/UiStandardsTimeG
 import { UiStandardsBreadcrumbGallery } from "@/features/ui-standards/UiStandardsBreadcrumbGallery";
 import { UiStandardsInputGallery, UiStandardsInputTypes } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
+import {
+  UiStandardsDialogGallery,
+  UiStandardsDialogPlayground,
+} from "@/features/ui-standards/UiStandardsDialogPlayground";
+import { UiStandardsQdialogGallery } from "@/features/ui-standards/UiStandardsQdialogGallery";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   UiStandardsButtonPlayground,
@@ -709,6 +711,24 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             >
               Open modal
             </Button>
+          </Card>
+        ) : null}
+
+        {show("dialogPlayground") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-dialog-playground"
+          >
+            <CardTitle>{t("uiStandards.dialogPlaygroundTitle")}</CardTitle>
+            <UiStandardsDialogPlayground />
+          </Card>
+        ) : null}
+
+        {show("dialog") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-dialog">
+            <CardTitle>{t("uiStandards.dialogSamplesTitle")}</CardTitle>
+            <UiStandardsQdialogGallery />
+            <UiStandardsDialogGallery />
           </Card>
         ) : null}
 
@@ -2093,16 +2113,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("card") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-cards">
             <CardTitle>{t("uiStandards.cardSamplesTitle")}</CardTitle>
-            <UiStandardsCardBannerSample />
             <UiStandardsCardPennantSample />
             <UiStandardsCardCapsuleSample />
-            <UiStandardsCardTitleTabSample />
-            <UiStandardsCardOptionSample />
+            <UiStandardsCardWelcomeSample />
+            <UiStandardsCardPageHeaderSample />
+            <UiStandardsCardQuickActionSample />
+            <UiStandardsCardAvatarRowSample />
             <UiStandardsCardInfodataSample />
             <UiStandardsCardIdeaSample />
             <UiStandardsCardSettingsSample />
             <UiStandardsCardPinSample />
-            <UiStandardsCardFoldSample />
             <UiStandardsCardIndexSample />
             <UiStandardsCardStepSample />
             <div className="ui-standards-qcard-samples" data-testid="ui-standard-card-samples-grid">
@@ -2110,14 +2130,11 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               <UiStandardsCardRibbonPendantSample />
               <UiStandardsCardTicketSample />
               <UiStandardsCardBookmarkSample />
-              <UiStandardsCardFooterActionsSample />
               <UiStandardsCardStampSample />
-              <UiStandardsCardStackSample />
               <UiStandardsCardStripeSample />
               <UiStandardsCardNotchSample />
               <UiStandardsCardClipSample />
               <UiStandardsCardFooterCaptionSample />
-              <UiStandardsCardFooterSplitSample />
             </div>
           </Card>
         ) : null}

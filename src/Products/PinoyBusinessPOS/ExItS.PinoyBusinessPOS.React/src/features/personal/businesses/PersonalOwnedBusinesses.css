@@ -118,6 +118,10 @@
   --personal-step: var(--exits-info);
 }
 
+.personal-home-step-card--muted {
+  --personal-step: color-mix(in srgb, var(--exits-text-muted) 70%, var(--exits-surface));
+}
+
 .personal-home-step-card__rail {
   display: flex;
   flex: 0 0 6.5rem;

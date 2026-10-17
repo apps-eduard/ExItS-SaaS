@@ -357,9 +357,6 @@ export function PersonalHomePage() {
           </span>
           <div className="personal-home-capsule__body min-w-0">
             <div className="personal-home-capsule__copy min-w-0">
-              <p className="personal-home-welcome__kicker personal-home-capsule__kicker">
-                {t("personal.home.welcome")}
-              </p>
               <h1 className="personal-home-welcome__name personal-home-capsule__name m-0 min-w-0 truncate">
                 {displayName}
               </h1>
