@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { BranchFulfillmentReadinessDto } from "@/api/platform/branch-fulfillment-client";
 import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
+import { useToast } from "@/components/exits/ToastProvider";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Switch } from "@/components/ui/switch";
 import { BranchDeliveryOrgOfferGuardDialog } from "@/features/branches/BranchDeliveryOrgOfferGuardDialog";
@@ -43,8 +44,8 @@ type BranchOverviewPanelProps = {
   t: (key: MessageKey) => string;
   /** When false, branch Delivery ON is configured-only — not offered to buyers. */
   orgOfferDelivery?: boolean;
-  onTogglePickup: (enabled: boolean) => void;
-  onToggleDelivery: (enabled: boolean) => void;
+  onTogglePickup: (enabled: boolean, disableOrdering?: boolean) => void;
+  onToggleDelivery: (enabled: boolean, disableOrdering?: boolean) => void;
   onEnableOrdering: () => void;
   onPauseOrders: () => void;
   onResumeOrders: () => void;
@@ -72,8 +73,8 @@ type ChannelCardProps = {
 };
 
 type ToggleConfirm =
-  | { kind: "pickup"; next: boolean }
-  | { kind: "delivery"; next: boolean }
+  | { kind: "pickup"; next: boolean; disableOrdering?: boolean }
+  | { kind: "delivery"; next: boolean; disableOrdering?: boolean }
   | { kind: "ordering"; action: "enable" | "pause" | "resume" };
 
 function ChannelCard({
@@ -165,7 +166,11 @@ function confirmCopy(
       : {
           variant: "warning",
           title: t("branches.confirm.disablePickupTitle"),
-          description: t("branches.confirm.disablePickupDetail"),
+          description: t(
+            confirm.disableOrdering
+              ? "branches.confirm.disableLastMethodDetail"
+              : "branches.confirm.disablePickupDetail",
+          ),
           confirmLabel: t("branches.confirm.disablePickupConfirm"),
         };
   }
@@ -180,7 +185,11 @@ function confirmCopy(
       : {
           variant: "warning",
           title: t("branches.confirm.disableDeliveryTitle"),
-          description: t("branches.confirm.disableDeliveryDetail"),
+          description: t(
+            confirm.disableOrdering
+              ? "branches.confirm.disableLastMethodDetail"
+              : "branches.confirm.disableDeliveryDetail",
+          ),
           confirmLabel: t("branches.confirm.disableDeliveryConfirm"),
         };
   }
@@ -219,6 +228,7 @@ export function BranchOverviewPanel({
   onPauseOrders,
   onResumeOrders,
 }: BranchOverviewPanelProps) {
+  const { showToast } = useToast();
   const [toggleConfirm, setToggleConfirm] = useState<ToggleConfirm | null>(null);
   const [orgDeliveryGuardOpen, setOrgDeliveryGuardOpen] = useState(false);
   const orderingLabel = orderingEnablementLabel(readiness);
@@ -264,11 +274,19 @@ export function BranchOverviewPanel({
 
   function applyToggleConfirm(confirm: ToggleConfirm) {
     if (confirm.kind === "pickup") {
-      onTogglePickup(confirm.next);
+      if (confirm.disableOrdering) {
+        onTogglePickup(confirm.next, true);
+      } else {
+        onTogglePickup(confirm.next);
+      }
       return;
     }
     if (confirm.kind === "delivery") {
-      onToggleDelivery(confirm.next);
+      if (confirm.disableOrdering) {
+        onToggleDelivery(confirm.next, true);
+      } else {
+        onToggleDelivery(confirm.next);
+      }
       return;
     }
     if (confirm.action === "enable") {
@@ -341,7 +359,14 @@ export function BranchOverviewPanel({
             t={t}
             onCheckedChange={(next) => {
               if (next && pickup.enableBlocked) return;
-              setToggleConfirm({ kind: "pickup", next });
+              setToggleConfirm({
+                kind: "pickup",
+                next,
+                disableOrdering:
+                  !next &&
+                  readiness.customerOrderingEnabled &&
+                  !readiness.deliveryEnabled,
+              });
             }}
           />
           <ChannelCard
@@ -376,7 +401,14 @@ export function BranchOverviewPanel({
                 return;
               }
               if (next && delivery.enableBlocked) return;
-              setToggleConfirm({ kind: "delivery", next });
+              setToggleConfirm({
+                kind: "delivery",
+                next,
+                disableOrdering:
+                  !next &&
+                  readiness.customerOrderingEnabled &&
+                  !readiness.pickupEnabled,
+              });
             }}
           />
           <ChannelCard
@@ -401,6 +433,14 @@ export function BranchOverviewPanel({
             t={t}
             onCheckedChange={(next) => {
               if (next) {
+                if (!readiness.pickupEnabled && !readiness.deliveryEnabled) {
+                  showToast({
+                    title: t("branches.toggle.orderingNeedsMethod"),
+                    tone: "warning",
+                    placement: "center",
+                  });
+                  return;
+                }
                 if (readiness.onlineOrdersPaused) {
                   setToggleConfirm({ kind: "ordering", action: "resume" });
                   return;

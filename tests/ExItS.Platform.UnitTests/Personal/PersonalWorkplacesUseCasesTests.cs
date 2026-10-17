@@ -1,8 +1,11 @@
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Personal;
+using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Entitlements;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
+using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 using ExItS.Platform.UnitTests.TestSupport;
 
@@ -94,6 +97,76 @@ public sealed class PersonalWorkplacesUseCasesTests
         var leaked = await useCase.ExecuteAsync(otherPersonal.Id);
         Assert.True(leaked.IsSuccess);
         Assert.Empty(leaked.Value!);
+    }
+
+    [Fact]
+    public async Task List_returns_current_pos_plan_display_name_for_workplace()
+    {
+        var personal = PlatformUser.Create("kizy", "Kizy", "kizy@gmail.com", T0);
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var org = (await new CreatePlatformOrganization(
+                orgs,
+                new FakePublicOrganizationIdGenerator(),
+                new NoOpUnitOfWork(),
+                new FixedClock(T0))
+            .ExecuteAsync("Mica Store", "mica")).Value!;
+
+        var staffLogin = StaffLoginNameRules.Build("kizy", org.PublicOrganizationId!);
+        var staff = PlatformUser.CreateOrganizationStaff(
+            StaffLoginNameRules.DeriveUsername(staffLogin),
+            staffLogin,
+            "kizy@gmail.com",
+            org.Id,
+            "Kizy Staff",
+            T0,
+            linkedPersonalUserId: personal.Id);
+
+        var users = new InMemoryPlatformUserRepository();
+        await users.AddAsync(personal);
+        await users.AddAsync(staff);
+
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        await memberships.AddAsync(OrganizationMembership.Create(
+            org.Id,
+            staff.Id,
+            OrganizationRole.OrganizationMember,
+            T0));
+
+        var plan = Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("pro"),
+            "Pro",
+            T0);
+        plan.Activate(T0);
+        var version = PlanVersion.CreateDraft(plan, 1, T0, BillingPeriod.Monthly, true, [], T0);
+        version.Publish(T0);
+        var trial = TrialDefinition.Create(
+            plan.ProductCode,
+            "Trial",
+            TimeSpan.FromDays(14),
+            [],
+            [],
+            T0,
+            planId: plan.Id);
+        var plans = new InMemoryPlanRepository();
+        await plans.AddAsync(plan);
+        var subscriptions = new InMemorySubscriptionRepository();
+        await subscriptions.AddAsync(Subscription.StartTrial(org.Id, plan, version, trial, T0));
+
+        var useCase = new ListPersonalWorkplaces(
+            users,
+            memberships,
+            orgs,
+            new InMemoryProductLocalRoleGrantRepository(),
+            new InMemoryOrganizationMembershipBranchAssignmentRepository(),
+            new InMemoryOrganizationBranchRepository(),
+            new FixedClock(T0),
+            subscriptions: subscriptions,
+            plans: plans);
+
+        var result = await useCase.ExecuteAsync(personal.Id);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Pro", Assert.Single(result.Value!).PlanDisplayName);
     }
 
     [Fact]

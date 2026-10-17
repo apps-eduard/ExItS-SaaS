@@ -40,7 +40,8 @@ Input
 ├─ Shape
 │  ├─ Square
 │  ├─ Standard
-│  └─ Rounded             (outlined pill)
+│  ├─ Soft
+│  └─ Pill                (outlined)
 │
 └─ Flags
    ├─ Clearable
@@ -53,8 +54,8 @@ Input
 |------|---------|--------|
 | **Intent** | Accent color | `standard` · `primary` · `secondary` · `success` · `info` · `amber` · `danger` · `warn` · `help` · `black` |
 | **Appearance** | How the field is drawn | `standard` · `filled` · `outlined` · `standout` |
-| **Shape** | Geometry | `square` · `standard` · `rounded` |
-| **Density** | Playground type size and height | `tight` · `compact` · Standard (`balance`, omitted) · `comfort` · `relaxed` |
+| **Shape** | Geometry | `square` · `standard` · `soft` · `pill` |
+| **Density** | Playground type size and height | `compact` · Standard (`balance`, omitted) · `comfort` |
 | **Icon** | Optional leading Lucide icon | `check` · `plus` · `star` · `bookmark` · `bell` · `info` · `heart` · `trash` · `alert` · `moon` |
 
 White Standard fill uses a black accent. In dark mode, Standard and Black labels are white, except Standout and Error. Standout keeps its own fill and ink (white fill with black ink, or black fill with white ink). Error stays red.
@@ -63,6 +64,8 @@ White Standard fill uses a black accent. In dark mode, Standard and Black labels
 
 `ext input` — Standard intent, Standard underline, Standard shape, current density. Label rests in the field and floats when the field is focused or has text.
 
+The Input playground **default global** lock is `ext input primary outlined`. A new input uses that lock: Primary intent, Outlined appearance, Standard shape.
+
 ---
 
 ## Appearance
@@ -70,10 +73,11 @@ White Standard fill uses a black accent. In dark mode, Standard and Black labels
 | Appearance | Look |
 |------------|------|
 | **Standard** | Underline. The line grows from the center on focus or when the field has text. |
-| **Filled** | Accent wash. The label stays inside the top of the fill. Typed text sits below it. The clear control lines up with the text. |
+| **Filled** | Accent wash. The floated label sits just inside the top of the fill. Typed text is centered between that label and the bottom edge. The clear control lines up with the text. |
 | **Outlined** | Border. On focus or with text, the label sits on the top edge so the border cuts through the middle of the word. |
 | **Standout** | Solid fill and contrasting ink. Same inner layout as Filled. No underline. |
-| **Rounded** | Outlined pill. Shape token `rounded`, not a separate appearance. |
+| **Soft** / **Soft outline** | Same inner layout as Filled. Soft outline adds an accent border. |
+| **Pill** | Outlined pill. Shape token `pill`. Same radius as the button Pill shape. |
 
 Label and underline motion is **0.9s**. It stays at that duration so a reduced-motion snap does not collapse it.
 
@@ -87,11 +91,9 @@ Density scales type on the Input playground preview. Gallery samples stay at the
 
 | Token | Type size |
 |-------|-----------|
-| `tight` | 11px |
-| `compact` | 12px |
+| `compact` | 14px |
 | Standard (omitted) | 14px |
 | `comfort` | 16px |
-| `relaxed` | 18px |
 
 ---
 
@@ -124,9 +126,9 @@ ext input [intent] [appearance] [shape] [density] [icon name] [clearable] [requi
 |-------|-----------------|--------|
 | `ext input` | Always | Default field |
 | intent | Not Standard | `primary` `secondary` `success` `info` `amber` `danger` `warn` `help` `black` |
-| appearance | Not Standard | `filled` `outlined` `standout` |
-| shape | Not Standard | `square` `rounded` |
-| density | Not Standard | `tight` `compact` `comfort` `relaxed` |
+| appearance | Not Standard | `soft` `soft-outline` `filled` `outlined` `standout` |
+| shape | Not Standard | `square` `soft` `pill` |
+| density | Not Standard | `compact` `comfort` |
 | icon name | Not None | `check` `plus` `star` `bookmark` `bell` `info` `heart` `trash` `alert` `moon` |
 | `clearable` | Clearable is on | Clear control |
 | `required` | Required is on | Asterisk in the label |
@@ -140,7 +142,8 @@ Label text keeps the typed capitalization.
 | `ext input` | Standard intent, appearance, shape, and density |
 | `ext input primary` | Primary intent |
 | `ext input filled` | Filled appearance |
-| `ext input primary outlined rounded` | Primary + outlined + rounded |
+| `ext input primary soft-outline` | Primary + soft tint with an accent border |
+| `ext input primary outlined pill` | Primary + outlined + pill |
 | `ext input filled required` | Filled and required |
 | `ext input standout clearable` | Standout with a clear control |
 
@@ -153,7 +156,7 @@ Do **not** invent a new shorthand. Do **not** put a type token in the command.
 `/ui-standards` → **Input** shows:
 
 1. **Input playground** — locked global command and live preview
-2. **Input samples** — Standard, Filled, Outlined, Standout, and Rounded color rows
+2. **Input samples** — Standard, Filled, Outlined, Standout, and Pill color rows
 3. **Input types** — text, password, email, mobile, number, search, URL, date, time, and textarea
 
 ---

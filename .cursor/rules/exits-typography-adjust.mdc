@@ -1,0 +1,33 @@
+---
+description: Locked font-weight and font-size shorthand. Understand fw+n, fz+n, and fwz+n on a named target immediately.
+alwaysApply: true
+---
+
+# Typography adjust (LOCKED)
+
+When the user names a target and a typography token, apply it immediately. Do not ask what it means.
+
+```
+<table header> fw+10
+card title fz-5
+sidenav fwz+13
+```
+
+Tokens are case-insensitive. `fw+10` and `FW+10` are the same.
+
+## Tokens
+
+- `fw+n` / `fw-n` — font-weight. Change the target's current weight by n% of that current value. If the absolute change is under 10, use ±10. Round to the nearest integer. Clamp between 100 and 900. Example: weight 400 and `fw+1` becomes 410. Weight 500 and `fw+10` becomes 550.
+- `fz+n` / `fz-n` — font-size. Change the current size by n% and keep the unit (`px`, `rem`, `em`). Decimals stay. Example: `14px` and `fz+1` becomes `14.14px`.
+- `fwz+n` / `fwz-n` — font-weight and font-size together, using the same n and the same rules.
+
+## How to apply
+
+1. The words before the token are the target. Change only that target.
+2. Read the target's current font-weight and font-size. Apply the percent once to those current values.
+3. Repeated same tokens in one request add first, then apply once to the original current value. `fw+10 fw+10` is `fw+20` from the original, not two compounded steps.
+4. `fwz` adds the same total to both properties. Separate `fw` and `fz` tokens stay independent.
+5. Do not change a shared token used by other targets. Set the result on the named target.
+6. Leave the unit on font-size. Do not invent a new type scale.
+
+Playground reference: `/ui-standards` → Typography. Formula: `relative-typography.ts`. Detail: `src/Products/PinoyBusinessPOS/Docs/UI/exits-typography-adjust.md`.

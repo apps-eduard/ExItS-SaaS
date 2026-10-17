@@ -255,7 +255,7 @@ New code should use `intent` + `appearance`. Prefer `getActionButtonStyle` over 
 
 | API | Use |
 |-----|-----|
-| `shape="auto"` (default) | Follows Control Shape preference |
+| `shape="auto"` (default) | Follows Control Shape preference (Square, Standard, Soft, Pill) |
 | `shape="standard"` | Fixed `--exits-radius-md` |
 | `shape="soft"` | More rounded |
 | `shape="pill"` | Capsule |
@@ -325,9 +325,9 @@ ext btn [icon] [intent] [appearance] [shape] [density] [icon name] [ripple] [dis
 | `ext btn` | Always | Default button |
 | `icon` | Icon only is on | Icon-only control |
 | intent | Not Standard | `primary` `secondary` `success` `info` `amber` `danger` `warn` `help` `black` |
-| appearance | Not Standard | `outline` `raised` `ghost` `glossy` `gradient` `rounded` `flat` |
+| appearance | Not Standard | `soft` `soft-outline` `outline` `raised` `ghost` `glossy` `gradient` `rounded` `flat` |
 | shape | Not Standard | `square` `soft` `pill` |
-| density | Not Standard | `tight` `compact` `comfort` `relaxed` |
+| density | Not Standard | `compact` `comfort` |
 | icon name | Not None | `check` `plus` `star` `bookmark` `bell` `info` `heart` `trash` `alert` `moon` |
 | `ripple` | Ripple is on | Click ripple |
 | `disabled` | Disabled is on | Non-interactive |
@@ -339,6 +339,7 @@ Label text keeps the typed capitalization. `SAVE` stays `SAVE`. `save` stays `sa
 | `ext btn` | Standard intent, appearance, shape, and density. No icon. Ripple off. |
 | `ext btn primary` | Primary intent |
 | `ext btn primary outline` | Primary + outline |
+| `ext btn primary soft-outline` | Primary + soft tint with an accent border |
 | `ext btn primary ghost pill` | Primary + ghost + pill |
 | `ext btn icon` | Icon only, otherwise standard |
 | `ext btn icon ghost` | Icon only + ghost |

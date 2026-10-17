@@ -10,6 +10,8 @@ import {
   PersonalRelationshipDetailPage,
   countPendingOutgoingLoanProposals,
   mapPersonalUtangMutationError,
+  parseAdjustmentDelta,
+  projectUtangBalance,
   PERSONAL_UTANG_PROPOSAL_ERROR_CODES,
 } from "@/features/personal/utang/PersonalUtangPages";
 import { PlatformApiError } from "@/api/platform/platform-http";
@@ -334,8 +336,21 @@ function renderPath(path: string) {
   );
 }
 
+async function openEntryDialog(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByTestId("utang-qa-update-balance"));
+  return screen.findByTestId("utang-entry-dialog");
+}
+
+async function chooseEntryType(
+  user: ReturnType<typeof userEvent.setup>,
+  value: "Payment" | "Loan" | "Adjustment",
+) {
+  await user.click(screen.getByTestId("utang-entry-type"));
+  await user.click(await screen.findByTestId(`utang-entry-type-option-${value}`));
+}
+
 async function openUtangRecordForm(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByTestId("utang-record-toggle"));
+  await user.click(await screen.findByTestId("utang-summary-record"));
   await screen.findByTestId("utang-rel-contact");
 }
 
@@ -490,7 +505,8 @@ describe("Personal Utang shared-ledger UI", () => {
 
   it("hides record form by default on Money I lent", async () => {
     renderPath("/personal/utang/lent");
-    expect(await screen.findByTestId("utang-record-toggle")).toHaveTextContent("Record money lent");
+    expect(await screen.findByTestId("utang-summary-record")).toHaveTextContent("Record money lent");
+    expect(screen.queryByTestId("utang-record-dialog")).not.toBeInTheDocument();
     expect(screen.queryByTestId("utang-rel-contact")).not.toBeInTheDocument();
   });
 
@@ -553,9 +569,13 @@ describe("Personal Utang shared-ledger UI", () => {
     const user = userEvent.setup();
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
 
-    expect(await screen.findByTestId("utang-detail-ledger")).toHaveTextContent("Shared ledger");
+    expect(await screen.findByTestId("utang-detail-ledger")).toHaveTextContent("Shared with Me");
+    expect(screen.queryByTestId("utang-entry-submit")).not.toBeInTheDocument();
+    await openEntryDialog(user);
     expect(screen.getByTestId("utang-entry-submit")).toHaveTextContent("Save");
     expect(screen.getByTestId("utang-entry-confirm-hint")).toBeInTheDocument();
+    await user.click(screen.getByTestId("utang-entry-cancel"));
+    expect(screen.queryByTestId("utang-entry-dialog")).not.toBeInTheDocument();
 
     const incoming = await screen.findByTestId(`utang-history-entry-${pendingIncomingId}`);
     expect(within(incoming).getByTestId(`utang-waiting-you-${pendingIncomingId}`)).toHaveTextContent(
@@ -594,6 +614,60 @@ describe("Personal Utang shared-ledger UI", () => {
     await waitFor(() => expect(confirmMock).toHaveBeenCalled());
   });
 
+  it("opens the entry dialog from Update Balance with the amount focused", async () => {
+    const user = userEvent.setup();
+    renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
+
+    const quickActions = await screen.findByTestId("utang-detail-quick-actions");
+    expect(within(quickActions).getByText("Quick actions")).toBeInTheDocument();
+    expect(within(quickActions).getByTestId("utang-qa-reminders")).toHaveTextContent("Reminders");
+
+    const dialog = await openEntryDialog(user);
+    expect(dialog).toHaveAttribute("role", "dialog");
+    expect(within(dialog).getByTestId("utang-entry-dialog-ribbon")).toHaveTextContent("Update Balance");
+    expect(dialog).toHaveAccessibleName("Update Balance");
+    const head = within(dialog).getByTestId("utang-entry-dialog-head");
+    expect(within(head).getByTestId("utang-entry-dialog-balance")).toHaveTextContent("₱");
+    await waitFor(() => expect(screen.getByTestId("utang-entry-amount")).toHaveFocus());
+    await user.keyboard("{Escape}");
+    expect(screen.queryByTestId("utang-entry-dialog")).not.toBeInTheDocument();
+  });
+
+  it("swaps Amount for Adjustment on Correct balance and sends the signed delta", async () => {
+    const user = userEvent.setup();
+    renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
+    await openEntryDialog(user);
+    expect(screen.getByTestId("utang-entry-amount")).toBeInTheDocument();
+    expect(screen.queryByTestId("utang-entry-delta")).not.toBeInTheDocument();
+
+    await chooseEntryType(user, "Adjustment");
+    expect(screen.queryByTestId("utang-entry-amount")).not.toBeInTheDocument();
+    const delta = screen.getByTestId("utang-entry-delta");
+    expect(screen.getByLabelText("Adjustment (+/-)")).toBe(delta);
+
+    await user.type(screen.getByTestId("utang-entry-notes"), "Fix double entry");
+    await user.click(screen.getByTestId("utang-entry-submit"));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Enter an adjustment other than zero");
+    expect(recordPersonalUtangEntry).not.toHaveBeenCalled();
+
+    const headBalance = screen.getByTestId("utang-entry-dialog-balance");
+    const before = headBalance.textContent;
+    await user.type(delta, "-500");
+    expect(headBalance.textContent).not.toBe(before);
+    expect(headBalance).toHaveClass("utang-entry-dialog__amount--changed");
+    await user.clear(delta);
+    expect(headBalance.textContent).toBe(before);
+    await user.type(delta, "-500");
+    await user.click(screen.getByTestId("utang-entry-submit"));
+    await waitFor(() => expect(recordPersonalUtangEntry).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(recordPersonalUtangEntry).mock.calls[0]![1]).toMatchObject({
+      entryType: "Adjustment",
+      amount: 500,
+      adjustmentDelta: -500,
+      notes: "Fix double entry",
+    });
+  });
+
   it("maps pending-limit errorCode to friendly copy on record", async () => {
     const user = userEvent.setup();
     vi.mocked(recordPersonalUtangEntry).mockRejectedValueOnce(
@@ -604,8 +678,8 @@ describe("Personal Utang shared-ledger UI", () => {
     );
 
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
-    await screen.findByTestId("utang-entry-type");
-    await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
+    await openEntryDialog(user);
+    await chooseEntryType(user, "Payment");
     const amountInput = screen.getByTestId("utang-entry-amount");
     await user.clear(amountInput);
     await user.type(amountInput, "10");
@@ -701,16 +775,18 @@ describe("Personal Utang shared-ledger UI", () => {
     ]);
 
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
+    await openEntryDialog(user);
     expect(await screen.findByTestId("utang-pending-limit-hint")).toHaveTextContent(
       /You already have 3 entries waiting for Linked Ben's review/i,
     );
     expect(screen.getByTestId("utang-view-pending")).toHaveTextContent("View pending entries");
 
     // Ledger owner records Confirmed entries; client no longer blocks Loan at the pending limit.
-    await user.selectOptions(screen.getByTestId("utang-entry-type"), "Loan");
+    await chooseEntryType(user, "Loan");
+    expect(screen.getByTestId("utang-entry-type")).toHaveTextContent("Add amount");
     expect(screen.getByTestId("utang-entry-submit")).not.toBeDisabled();
 
-    await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
+    await chooseEntryType(user, "Payment");
     expect(screen.getByTestId("utang-entry-submit")).not.toBeDisabled();
   });
 });
@@ -853,6 +929,7 @@ describe("Personal Utang settlement UI", () => {
     renderPath(`/personal/utang/relationships/${relationshipId}`);
     expect(await screen.findByTestId("utang-detail-status")).toHaveTextContent("Settled");
     expect(screen.queryByTestId("utang-entry-type")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("utang-qa-update-balance")).not.toBeInTheDocument();
     expect(screen.queryByTestId("utang-settle")).not.toBeInTheDocument();
     expect(screen.queryByTestId("utang-mark-settled")).not.toBeInTheDocument();
     expect(screen.getByTestId("utang-history")).toBeInTheDocument();
@@ -1073,6 +1150,25 @@ describe("Personal Utang settlement UI", () => {
 
 describe("Personal Utang anti-spam helpers", () => {
   const t = (key: keyof typeof en) => en[key];
+
+  it("projects the balance after the typed entry", () => {
+    expect(projectUtangBalance(1000, "Payment", "250.00", "")).toBe(750);
+    expect(projectUtangBalance(1000, "Loan", "250.50", "")).toBe(1250.5);
+    expect(projectUtangBalance(1000, "Adjustment", "999", "-300")).toBe(700);
+    expect(projectUtangBalance(1000, "Adjustment", "", "")).toBe(1000);
+    expect(projectUtangBalance(1000, "Payment", "", "")).toBe(1000);
+  });
+
+  it("parses signed balance corrections", () => {
+    expect(parseAdjustmentDelta("+500")).toBe(500);
+    expect(parseAdjustmentDelta("-1,250.50")).toBe(-1250.5);
+    expect(parseAdjustmentDelta(" 75 ")).toBe(75);
+    expect(parseAdjustmentDelta("")).toBeNull();
+    expect(parseAdjustmentDelta("0")).toBeNull();
+    expect(parseAdjustmentDelta("-0.00")).toBeNull();
+    expect(parseAdjustmentDelta("abc")).toBeNull();
+    expect(parseAdjustmentDelta("1.234")).toBeNull();
+  });
 
   it("counts only pending outgoing Loan proposals", () => {
     expect(

@@ -198,8 +198,8 @@ public sealed class PublicStoreLandingLookupTests
         branch.UpdateCoordinates(14.5547m, 121.0244m, T0);
         if (enableCustomerOrdering)
         {
-            branch.SetCustomerOrderingEnabled(true, T0);
             branch.SetFulfillmentCapabilities(pickupEnabled: true, deliveryEnabled: false, T0);
+            branch.SetCustomerOrderingEnabled(true, T0);
         }
 
         var branches = new InMemoryOrganizationBranchRepository();

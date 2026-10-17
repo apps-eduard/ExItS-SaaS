@@ -1,4 +1,15 @@
-import { ArrowLeft, Check, ChevronDown, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  HandCoins,
+  Pencil,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -12,6 +23,8 @@ import {
 import { EmptyState } from "@/components/exits/EmptyState";
 
 import { ErrorState } from "@/components/exits/ErrorState";
+
+import { ExitsCheckbox } from "@/components/exits/ExitsCheckbox";
 
 import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 
@@ -81,6 +94,14 @@ import {
 
 const UTANG_NOTES_MAX_LENGTH = 512;
 
+function RibbonPennant({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span className="personal-tracker-card__pennant" aria-hidden>
+      <Icon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+    </span>
+  );
+}
+
 function LocalContactEditForm({
   contact,
   onClose,
@@ -97,7 +118,7 @@ function LocalContactEditForm({
 
   return (
     <form
-      className="catalog-form-section personal-section flex flex-col gap-3"
+      className="catalog-form-section personal-section person-ribbon-card flex flex-col gap-3"
       data-testid="person-local-edit"
       onSubmit={(event) => {
         event.preventDefault();
@@ -123,7 +144,10 @@ function LocalContactEditForm({
         );
       }}
     >
-      <h2 className="catalog-form-section__title m-0">{t("people.edit.title")}</h2>
+      <h2 className="personal-tracker-card__ribbon">
+        <RibbonPennant icon={Pencil} />
+        {t("people.edit.title")}
+      </h2>
       <Input
         label={t("people.displayName")}
         value={name}
@@ -478,6 +502,121 @@ export function PersonDetailPage() {
 
 
 
+  const connected = connection.status === "connected";
+  const showUtangForm =
+    connection.status !== "request_sent" &&
+    connection.status !== "request_received" &&
+    connection.status !== "blocked";
+
+  const connectedSafetyContent = connected ? (
+    <>
+      <p className="m-0 text-muted">
+        {t("people.detail.connectedSince").replace(
+          "{date}",
+          formatShortDate(contact.connectedAtUtc ?? contact.createdAtUtc),
+        )}
+      </p>
+
+      {!confirmUnlink && !confirmBlock ? (
+        <div className="flex min-w-0 flex-row flex-wrap gap-2">
+          <Button
+            type="button"
+            intent="primary"
+            appearance="solid"
+            emphasis="soft"
+            className="min-w-0 flex-1"
+            data-testid="person-detail-unlink"
+            onClick={() => {
+              setConfirmBlock(false);
+              setConfirmUnlink(true);
+            }}
+          >
+            {t("people.detail.unlink")}
+          </Button>
+          <Button
+            type="button"
+            intent="danger"
+            appearance="solid"
+            emphasis="soft"
+            className="min-w-0 flex-1"
+            data-testid="person-detail-block"
+            onClick={() => {
+              setConfirmUnlink(false);
+              setConfirmBlock(true);
+            }}
+          >
+            {t("people.detail.block")}
+          </Button>
+        </div>
+      ) : null}
+
+      {confirmUnlink ? (
+        <div className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3">
+          <p className="m-0 font-semibold">
+            {t("people.detail.unlinkConfirmTitle").replace("{name}", contact.displayName)}
+          </p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("people.detail.unlinkConfirmBody")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => setConfirmUnlink(false)}>
+              {t("people.add.cancel")}
+            </Button>
+            <Button
+              type="button"
+              intent="primary"
+              appearance="solid"
+              emphasis="soft"
+              disabled={unlinkContact.isPending}
+              onClick={() => {
+                setActionError(null);
+                void unlinkContact
+                  .mutateAsync(contact.id)
+                  .then(() => setConfirmUnlink(false))
+                  .catch((err) => {
+                    setActionError(err instanceof Error ? err.message : t("error.body"));
+                  });
+              }}
+            >
+              {t("people.detail.unlinkConfirmAction")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmBlock ? (
+        <div className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("people.detail.blockConfirmBody")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => setConfirmBlock(false)}>
+              {t("people.add.cancel")}
+            </Button>
+            <Button
+              type="button"
+              intent="danger"
+              appearance="solid"
+              emphasis="soft"
+              disabled={blockContact.isPending}
+              onClick={() => {
+                setActionError(null);
+                void blockContact
+                  .mutateAsync(contact.id)
+                  .then(() => setConfirmBlock(false))
+                  .catch((err) => {
+                    setActionError(err instanceof Error ? err.message : t("error.body"));
+                  });
+              }}
+            >
+              {t("people.detail.block")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </>
+  ) : null;
+
   return (
 
     <section className="personal-page exits-page flex w-full min-w-0 flex-col gap-4">
@@ -487,9 +626,28 @@ export function PersonDetailPage() {
         backTo="/personal/people"
         backLabel={t("people.backToFriends")}
         backTestId="person-detail-back"
+        circleContent={
+          connected ? (
+            <>
+              <ArrowLeft className="size-7 shrink-0 lg:hidden rtl:rotate-180" aria-hidden />
+              <span className="hidden size-full lg:contents">
+                <PersonAvatar name={contact.displayName} size="lg" className="page-header-capsule__avatar" />
+              </span>
+            </>
+          ) : undefined
+        }
+        subtitle={connected && publicUserId ? publicUserId : undefined}
+        subtitleClassName="truncate max-lg:hidden"
+        titleTrailing={
+          connected ? (
+            <StatusChip tone={statusTone(connection.status)} className="max-lg:hidden" data-testid="person-detail-header-status">
+              {statusLabel(connection.status)}
+            </StatusChip>
+          ) : null
+        }
       />
 
-      <div className="flex items-start gap-3">
+      <div className={cn("flex items-start gap-3", connected && "lg:hidden")}>
         <PersonAvatar name={contact.displayName} size="lg" />
 
         <div className="min-w-0 flex-1">
@@ -514,12 +672,15 @@ export function PersonDetailPage() {
         />
       ) : null}
 
-      {activeRelated.length > 0 ? (
-        <Card data-testid="person-detail-utang-records">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold uppercase tracking-wide">
+      <div className="person-detail-cards" data-testid="person-detail-cards">
+      {activeRelated.length > 0 || showUtangForm ? (
+        <Card className="person-ribbon-card flex flex-col gap-3" data-testid="person-detail-utang-card">
+          <h2 className="personal-tracker-card__ribbon">
+            <RibbonPennant icon={HandCoins} />
             {t("people.detail.utang")}
           </h2>
-          <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
+      {activeRelated.length > 0 ? (
+          <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="person-detail-utang-records">
             {activeRelated.map((rel) => {
               const owned = rel.isLedgerOwner !== false;
               return (
@@ -572,19 +733,14 @@ export function PersonDetailPage() {
               );
             })}
           </ul>
-        </Card>
       ) : null}
 
+      {activeRelated.length > 0 && showUtangForm ? (
+          <div className="person-ribbon-card__rule" role="separator" />
+      ) : null}
 
-
-      {connection.status !== "request_sent" &&
-      connection.status !== "request_received" &&
-      connection.status !== "blocked" ? (
-        <Card className="flex flex-col gap-3" data-testid="person-detail-utang-card">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("people.detail.utang")}
-          </h2>
-
+      {showUtangForm ? (
+        <>
           <ExitsPillSelect
             appearance="tile"
             value={mode}
@@ -723,17 +879,29 @@ export function PersonDetailPage() {
                     : t("people.detail.saveIBorrowed")}
             </Button>
           </div>
+        </>
+      ) : null}
         </Card>
       ) : null}
 
       {isConnected && linkedCounterpartyId ? (
-        <Card className="flex flex-col gap-3" data-testid="person-detail-shared-utang-prefs">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+        <Card
+          className="person-ribbon-card person-shared-card flex flex-col gap-3"
+          data-testid="person-detail-shared-utang-prefs"
+        >
+          <h2 className="personal-tracker-card__ribbon">
+            <RibbonPennant icon={SlidersHorizontal} />
             {t("personal.utang.prefsTitle").replace(
               "{name}",
               contact?.displayName ?? t("personal.utang.person"),
             )}
           </h2>
+          <div className="person-shared-card__columns">
+          <div className="person-shared-card__col">
+          <h3 className="person-ribbon-card__section-title" data-testid="person-detail-shared-settings-heading">
+            <Settings2 className="size-4 shrink-0 text-primary" aria-hidden />
+            {t("personal.utang.prefsSectionTitle")}
+          </h3>
           {sharedPrefsQuery.isLoading ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("loading.label")}</p>
           ) : sharedPrefsQuery.isError ? (
@@ -741,57 +909,62 @@ export function PersonDetailPage() {
               {t("personal.utang.prefsRequiresOnline")}
             </p>
           ) : (
-            <>
-              <label className="flex items-center justify-between gap-3 text-[length:var(--exits-text-sm)]">
-                <span>{t("personal.utang.prefsReceive")}</span>
-                <input
-                  type="checkbox"
-                  data-testid="person-detail-prefs-receive"
-                  checked={sharedPrefsQuery.data?.receiveSharedUtang ?? true}
-                  disabled={updateSharedPrefs.isPending}
-                  onChange={(event) => {
-                    const receive = event.target.checked;
-                    void updateSharedPrefs.mutateAsync({
-                      receiveSharedUtang: receive,
-                      autoAcceptSharedUtang: false,
-                      sharedUtangNotifications:
-                        sharedPrefsQuery.data?.sharedUtangNotifications ?? true,
-                      expectedVersion: sharedPrefsQuery.data?.version,
-                    });
-                  }}
-                />
-              </label>
-              <label className="flex items-center justify-between gap-3 text-[length:var(--exits-text-sm)]">
-                <span>{t("personal.utang.prefsNotifications")}</span>
-                <input
-                  type="checkbox"
-                  data-testid="person-detail-prefs-notifications"
-                  checked={sharedPrefsQuery.data?.sharedUtangNotifications ?? true}
-                  disabled={updateSharedPrefs.isPending}
-                  onChange={(event) => {
-                    void updateSharedPrefs.mutateAsync({
-                      receiveSharedUtang: sharedPrefsQuery.data?.receiveSharedUtang ?? true,
-                      autoAcceptSharedUtang: false,
-                      sharedUtangNotifications: event.target.checked,
-                      expectedVersion: sharedPrefsQuery.data?.version,
-                    });
-                  }}
-                />
-              </label>
-            </>
+            <div className="person-ribbon-card__checks">
+              <ExitsCheckbox
+                label={t("personal.utang.prefsReceive")}
+                testId="person-detail-prefs-receive"
+                checked={sharedPrefsQuery.data?.receiveSharedUtang ?? true}
+                disabled={updateSharedPrefs.isPending}
+                onCheckedChange={(receive) => {
+                  void updateSharedPrefs.mutateAsync({
+                    receiveSharedUtang: receive,
+                    autoAcceptSharedUtang: false,
+                    sharedUtangNotifications:
+                      sharedPrefsQuery.data?.sharedUtangNotifications ?? true,
+                    expectedVersion: sharedPrefsQuery.data?.version,
+                  });
+                }}
+              />
+              <ExitsCheckbox
+                label={t("personal.utang.prefsNotifications")}
+                testId="person-detail-prefs-notifications"
+                checked={sharedPrefsQuery.data?.sharedUtangNotifications ?? true}
+                disabled={updateSharedPrefs.isPending}
+                onCheckedChange={(notify) => {
+                  void updateSharedPrefs.mutateAsync({
+                    receiveSharedUtang: sharedPrefsQuery.data?.receiveSharedUtang ?? true,
+                    autoAcceptSharedUtang: false,
+                    sharedUtangNotifications: notify,
+                    expectedVersion: sharedPrefsQuery.data?.version,
+                  });
+                }}
+              />
+            </div>
           )}
+          </div>
+          <div className="person-shared-card__divider" role="separator" aria-orientation="vertical" />
+          <div className="person-shared-card__col">
+          <h3 className="person-ribbon-card__section-title" data-testid="person-detail-connection-heading">
+            <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden />
+            {t("people.detail.connectionAndSafety")}
+          </h3>
+          {connectedSafetyContent}
+          </div>
+          </div>
         </Card>
       ) : null}
 
-      <Card className="flex flex-col gap-3" data-testid="person-detail-connection-card">
+      {isConnected ? null : (
+      <Card className="person-ribbon-card flex flex-col gap-3" data-testid="person-detail-connection-card">
         <button
           type="button"
-          className="flex w-full items-center justify-between gap-2 border-0 bg-transparent p-0 text-left"
+          className="person-ribbon-card__toggle flex w-full items-center justify-between gap-2 border-0 bg-transparent p-0 text-left"
           aria-expanded={connectionCardOpen}
           data-testid="person-detail-connection-toggle"
           onClick={() => setConnectionCardOpen((open) => !open)}
         >
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold uppercase tracking-wide">
+          <h2 className="personal-tracker-card__ribbon">
+            <RibbonPennant icon={ShieldCheck} />
             {t("people.detail.connectionAndSafety")}
           </h2>
           <ChevronDown
@@ -905,114 +1078,6 @@ export function PersonDetailPage() {
 
 
 
-        {connection.status === "connected" ? (
-          <>
-            <p className="m-0 text-muted">
-              {t("people.detail.connectedSince").replace(
-                "{date}",
-                formatShortDate(contact.connectedAtUtc ?? contact.createdAtUtc),
-              )}
-            </p>
-
-            {!confirmUnlink && !confirmBlock ? (
-              <div className="flex min-w-0 flex-row flex-wrap gap-2">
-                <Button
-                  type="button"
-                  intent="primary"
-                  appearance="solid"
-                  emphasis="soft"
-                  className="min-w-0 flex-1"
-                  data-testid="person-detail-unlink"
-                  onClick={() => {
-                    setConfirmBlock(false);
-                    setConfirmUnlink(true);
-                  }}
-                >
-                  {t("people.detail.unlink")}
-                </Button>
-                <Button
-                  type="button"
-                  intent="danger"
-                  appearance="solid"
-                  emphasis="soft"
-                  className="min-w-0 flex-1"
-                  data-testid="person-detail-block"
-                  onClick={() => {
-                    setConfirmUnlink(false);
-                    setConfirmBlock(true);
-                  }}
-                >
-                  {t("people.detail.block")}
-                </Button>
-              </div>
-            ) : null}
-
-            {confirmUnlink ? (
-              <div className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3">
-                <p className="m-0 font-semibold">
-                  {t("people.detail.unlinkConfirmTitle").replace("{name}", contact.displayName)}
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("people.detail.unlinkConfirmBody")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" onClick={() => setConfirmUnlink(false)}>
-                    {t("people.add.cancel")}
-                  </Button>
-                  <Button
-                    type="button"
-                    intent="primary"
-                    appearance="solid"
-                    emphasis="soft"
-                    disabled={unlinkContact.isPending}
-                    onClick={() => {
-                      setActionError(null);
-                      void unlinkContact
-                        .mutateAsync(contact.id)
-                        .then(() => setConfirmUnlink(false))
-                        .catch((err) => {
-                          setActionError(err instanceof Error ? err.message : t("error.body"));
-                        });
-                    }}
-                  >
-                    {t("people.detail.unlinkConfirmAction")}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            {confirmBlock ? (
-              <div className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3">
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("people.detail.blockConfirmBody")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" onClick={() => setConfirmBlock(false)}>
-                    {t("people.add.cancel")}
-                  </Button>
-                  <Button
-                    type="button"
-                    intent="danger"
-                    appearance="solid"
-                    emphasis="soft"
-                    disabled={blockContact.isPending}
-                    onClick={() => {
-                      setActionError(null);
-                      void blockContact
-                        .mutateAsync(contact.id)
-                        .then(() => setConfirmBlock(false))
-                        .catch((err) => {
-                          setActionError(err instanceof Error ? err.message : t("error.body"));
-                        });
-                    }}
-                  >
-                    {t("people.detail.block")}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </>
-        ) : null}
 
         {connection.status === "blocked" ? (
           <>
@@ -1035,6 +1100,8 @@ export function PersonDetailPage() {
         ) : null}
 
       </Card>
+      )}
+      </div>
 
 
 

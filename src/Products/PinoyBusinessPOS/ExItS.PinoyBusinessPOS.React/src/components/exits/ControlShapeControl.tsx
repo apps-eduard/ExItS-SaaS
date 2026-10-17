@@ -5,6 +5,14 @@ import type { ControlShapePreference } from "@/lib/preferences/ui-preferences";
 
 /** Lightweight CSS shape glyphs — lucide has no soft/pill pair that reads clearly. */
 function ShapeIcon({ kind }: { kind: ControlShapePreference }) {
+  if (kind === "square") {
+    return (
+      <span
+        className="box-border size-3.5 shrink-0 border-2 border-current rounded-none"
+        aria-hidden="true"
+      />
+    );
+  }
   if (kind === "standard") {
     return (
       <span
@@ -41,6 +49,11 @@ export function ControlShapeControl() {
       variant="segmented"
       testId="preferences-control-shape"
       options={[
+        {
+          value: "square",
+          label: t("appearance.controlShape.square"),
+          icon: <ShapeIcon kind="square" />,
+        },
         {
           value: "standard",
           label: t("appearance.controlShape.standard"),

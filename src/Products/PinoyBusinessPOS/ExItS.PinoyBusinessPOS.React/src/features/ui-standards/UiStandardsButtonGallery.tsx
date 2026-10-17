@@ -11,10 +11,24 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties } from "react";
+import {
+  INTENT_GLOBAL_AMBER,
+  INTENT_GLOBAL_BLACK,
+  INTENT_GLOBAL_DANGER,
+  INTENT_GLOBAL_HELP,
+  INTENT_GLOBAL_INFO,
+  INTENT_GLOBAL_PRIMARY,
+  INTENT_GLOBAL_SECONDARY,
+  INTENT_GLOBAL_STANDARD,
+  INTENT_GLOBAL_SUCCESS,
+  INTENT_GLOBAL_WARN,
+  INTENT_GLOBAL_WARN_FOREGROUND,
+} from "@/features/ui-standards/intent-color-global-default";
 import { useQbtnRipple } from "@/features/ui-standards/UiStandardsQbtnRipple";
 
 /**
  * Quasar QBtn samples for the Buttons live card.
+ * Intent fills come from the locked Intent color global default.
  * @see https://quasar.dev/vue-components/button#standard
  */
 type QuasarSampleButton = {
@@ -28,22 +42,24 @@ type QuasarSampleButton = {
 };
 
 const QUASAR_STANDARD_BUTTONS: readonly QuasarSampleButton[] = [
-  { id: "standard", label: "Standard", bg: "#ffffff", fg: "#000000", border: true, Icon: Star },
-  { id: "primary", label: "Primary", bg: "#1976d2", fg: "#ffffff", Icon: Check },
-  { id: "secondary", label: "Secondary", bg: "#26a69a", fg: "#ffffff", Icon: Bookmark },
-  { id: "success", label: "Success", bg: "#22c55e", fg: "#ffffff", Icon: Check },
-  { id: "info", label: "Info", bg: "#0ea5e9", fg: "#ffffff", Icon: Info },
-  { id: "amber", label: "Amber", bg: "#ffc107", fg: "#000000", Icon: Bell },
-  { id: "danger", label: "Danger", bg: "#ef4444", fg: "#ffffff", Icon: Trash2 },
-  { id: "warn", label: "Warn", bg: "#ff5722", fg: "#ffffff", Icon: TriangleAlert },
-  { id: "help", label: "Help", bg: "#a855f7", fg: "#ffffff", Icon: Heart },
-  { id: "black", label: "Black", bg: "#000000", fg: "#ffffff", Icon: Moon },
+  { id: "standard", label: "Standard", bg: INTENT_GLOBAL_STANDARD, fg: "#000000", border: true, Icon: Star },
+  { id: "primary", label: "Primary", bg: INTENT_GLOBAL_PRIMARY, fg: "#ffffff", Icon: Check },
+  { id: "secondary", label: "Secondary", bg: INTENT_GLOBAL_SECONDARY, fg: "#ffffff", Icon: Bookmark },
+  { id: "success", label: "Success", bg: INTENT_GLOBAL_SUCCESS, fg: "#ffffff", Icon: Check },
+  { id: "info", label: "Info", bg: INTENT_GLOBAL_INFO, fg: "#ffffff", Icon: Info },
+  { id: "amber", label: "Amber", bg: INTENT_GLOBAL_AMBER, fg: "#000000", Icon: Bell },
+  { id: "danger", label: "Danger", bg: INTENT_GLOBAL_DANGER, fg: "#ffffff", Icon: Trash2 },
+  { id: "warn", label: "Warn", bg: INTENT_GLOBAL_WARN, fg: INTENT_GLOBAL_WARN_FOREGROUND, Icon: TriangleAlert },
+  { id: "help", label: "Help", bg: INTENT_GLOBAL_HELP, fg: "#ffffff", Icon: Heart },
+  { id: "black", label: "Black", bg: INTENT_GLOBAL_BLACK, fg: "#ffffff", Icon: Moon },
 ];
 
 function QuasarExampleCard({
   title,
   testId,
   outline = false,
+  soft = false,
+  softOutline = false,
   raised = false,
   icon = false,
   ghost = false,
@@ -57,6 +73,8 @@ function QuasarExampleCard({
   title: string;
   testId: string;
   outline?: boolean;
+  soft?: boolean;
+  softOutline?: boolean;
   raised?: boolean;
   icon?: boolean;
   ghost?: boolean;
@@ -77,6 +95,8 @@ function QuasarExampleCard({
             button={button}
             testId={testId}
             outline={outline}
+            soft={soft}
+            softOutline={softOutline}
             raised={raised}
             icon={icon}
             ghost={ghost}
@@ -101,6 +121,8 @@ function SampleQbtn({
   button,
   testId,
   outline,
+  soft,
+  softOutline,
   raised,
   icon,
   ghost,
@@ -113,6 +135,8 @@ function SampleQbtn({
   button: QuasarSampleButton;
   testId: string;
   outline: boolean;
+  soft: boolean;
+  softOutline: boolean;
   raised: boolean;
   icon: boolean;
   ghost: boolean;
@@ -126,7 +150,7 @@ function SampleQbtn({
   const accent = button.bg.toLowerCase() === "#ffffff" ? "#000000" : button.bg;
   const ButtonIcon = button.Icon;
   const transparent = outline || ghost;
-  const darkInk = (button.id === "standard" || button.id === "black") && ((outline && !icon) || ghost);
+  const darkInk = (button.id === "standard" || button.id === "black") && ((outline && !icon) || ghost || soft || softOutline);
   const filledStyle: CSSProperties & { "--qbtn-bg"?: string } = {
     backgroundColor: button.bg,
     color: button.fg,
@@ -140,6 +164,8 @@ function SampleQbtn({
         (icon ? " ui-standards-qbtn--icon" : "") +
         (square ? " ui-standards-qbtn--square" : "") +
         (rounded ? " ui-standards-qbtn--rounded" : "") +
+        (soft ? " ui-standards-qbtn--soft" : "") +
+        (softOutline ? " ui-standards-qbtn--soft-outline" : "") +
         (outline ? " ui-standards-qbtn--outline" : "") +
         (ghost ? " ui-standards-qbtn--ghost" : "") +
         (darkInk ? " ui-standards-qbtn--dark-ink" : "") +
@@ -147,12 +173,16 @@ function SampleQbtn({
         (raised ? " ui-standards-qbtn--raised" : "") +
         (!transparent && gradient ? " ui-standards-qbtn--gradient" : "") +
         (!transparent && !gradient && (glossy || button.glossy) ? " ui-standards-qbtn--glossy" : "") +
-        (!transparent && button.border ? " ui-standards-qbtn--border" : "")
+        (!transparent && !soft && !softOutline && button.border ? " ui-standards-qbtn--border" : "")
       }
       style={
-        transparent
-          ? { color: accent, borderColor: outline ? accent : "transparent", backgroundColor: "transparent" }
-          : filledStyle
+        softOutline
+          ? { color: accent, "--qbtn-bg": accent, borderColor: accent }
+          : soft
+            ? { color: accent, "--qbtn-bg": accent }
+            : transparent
+            ? { color: accent, borderColor: outline ? accent : "transparent", backgroundColor: "transparent" }
+            : filledStyle
       }
       aria-label={icon ? button.label : undefined}
       data-testid={`${testId}-${button.id}`}
@@ -180,6 +210,8 @@ function QuasarStandardButtons() {
         </p>
       </div>
       <QuasarExampleCard title="Button outline" testId="ui-standard-btn-quasar-outline" outline />
+      <QuasarExampleCard title="Button soft" testId="ui-standard-btn-quasar-soft" soft />
+      <QuasarExampleCard title="Button soft outline" testId="ui-standard-btn-quasar-soft-outline" softOutline />
       <QuasarExampleCard title="Raised" testId="ui-standard-btn-quasar-raised" raised />
       <QuasarExampleCard title="Button ghost" testId="ui-standard-btn-quasar-ghost" ghost />
       <QuasarExampleCard title="Button glossy" testId="ui-standard-btn-quasar-glossy" glossy />
@@ -203,6 +235,7 @@ function QuasarStandardButtons() {
         icon
         ghost
       />
+      <ButtonIconsSample />
       <QuasarExampleCard title="Rounded icon" testId="ui-standard-btn-quasar-round-icon" icon />
       <QuasarExampleCard
         title="Square icon"
@@ -210,6 +243,37 @@ function QuasarStandardButtons() {
         icon
         square
       />
+    </div>
+  );
+}
+
+/** Medallion icon buttons — same icon set used on Card pennant. */
+function ButtonIconsSample() {
+  return (
+    <div className="ui-standards-q-example" data-testid="ui-standard-btn-quasar-button-icons">
+      <div className="ui-standards-q-example__label">Medallion</div>
+      <div className="ui-standards-q-example__row ui-standards-qbtn-icons-row">
+        {QUASAR_STANDARD_BUTTONS.map((button) => {
+          const ButtonIcon = button.Icon;
+          return (
+            <button
+              key={button.id}
+              type="button"
+              className="ui-standards-qbtn-icon-medallion"
+              style={
+                {
+                  "--qbtn-icon-bg": button.bg,
+                  "--qbtn-icon-fg": button.fg,
+                } as CSSProperties
+              }
+              aria-label={button.label}
+              data-testid={`ui-standard-btn-quasar-button-icons-${button.id}`}
+            >
+              <ButtonIcon className="size-4" aria-hidden strokeWidth={2} />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

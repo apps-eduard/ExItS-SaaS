@@ -683,13 +683,19 @@ export function BranchFulfillmentEditPage() {
             busy={busy || !canManage}
             t={t}
             orgOfferDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
-            onTogglePickup={(enabled) => {
+            onTogglePickup={(enabled, disableOrdering) => {
               if (!canManage) return;
-              void toggleFulfillment({ pickupEnabled: enabled });
+              void toggleFulfillment({
+                pickupEnabled: enabled,
+                ...(disableOrdering ? { customerOrderingEnabled: false } : {}),
+              });
             }}
-            onToggleDelivery={(enabled) => {
+            onToggleDelivery={(enabled, disableOrdering) => {
               if (!canManage) return;
-              void toggleFulfillment({ deliveryEnabled: enabled });
+              void toggleFulfillment({
+                deliveryEnabled: enabled,
+                ...(disableOrdering ? { customerOrderingEnabled: false } : {}),
+              });
             }}
             onEnableOrdering={() => {
               if (!canManage) return;

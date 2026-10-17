@@ -1,0 +1,16 @@
+---
+description: Warn intent color is locked orange — never brown
+alwaysApply: true
+---
+
+# Warn intent color (LOCKED)
+
+Warn / warning uses the Button Standard intent lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/intent-color-global-default.ts`.
+
+- Locked fill: `INTENT_GLOBAL_WARN` = `#ff5722`
+- Token: `--exits-warning` (and `--exits-severity-warn` in light)
+- Amber (`INTENT_GLOBAL_AMBER` / `#ffc107`) is a separate intent
+- **Never** use brown (`#92400e`, `#b45309`, `#b54708`, `#ca8a04`, and kin) for warn
+
+Product UI that needs warn should use `var(--exits-warning)` or `INTENT_GLOBAL_WARN`, not a freehand amber/brown hex.

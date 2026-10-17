@@ -4,6 +4,7 @@ export const UI_PREFERENCES_STORAGE_KEY = "exits.pos-client.ui-preferences.v1";
 
 export const themePreferenceSchema = z.enum(["system", "light", "dark"]);
 export const localePreferenceSchema = z.enum(["en", "fil-PH", "ceb-PH", "ilo-PH", "hil-PH"]);
+/** Locked: Compact, Standard (`balance`), Comfort. Tight and Relaxed are retired. */
 export const densityPreferenceSchema = z.enum(["compact", "balance", "comfort"]);
 export const primaryColorPreferenceSchema = z.enum([
   "green",
@@ -25,7 +26,7 @@ export const backgroundColorPreferenceSchema = z.enum([
   "sand",
   "slate",
 ]);
-export const controlShapePreferenceSchema = z.enum(["standard", "soft", "pill"]);
+export const controlShapePreferenceSchema = z.enum(["square", "standard", "soft", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
 export const navigationModePreferenceSchema = z.enum([
   "standard",
@@ -109,6 +110,7 @@ export const BACKGROUND_COLOR_OPTIONS = [
 ] as const satisfies readonly BackgroundColorPreference[];
 
 export const CONTROL_SHAPE_OPTIONS = [
+  "square",
   "standard",
   "soft",
   "pill",
@@ -135,6 +137,9 @@ export function parseUiPreferences(raw: string | null): UiPreferences {
     // Retired Amber swatch → Orange (warm primary still available).
     if (parsedJson.primaryColor === "amber") {
       parsedJson.primaryColor = "orange";
+    }
+    if (parsedJson.density === "tight" || parsedJson.density === "relaxed") {
+      parsedJson.density = "balance";
     }
     const parsed = uiPreferencesSchema.safeParse(parsedJson);
     return parsed.success ? parsed.data : defaultUiPreferences;

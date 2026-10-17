@@ -1,4 +1,3 @@
-import { ChevronsDownUp, ChevronsUpDown, Equal } from "lucide-react";
 import { SettingsSelect } from "@/components/ui/settings-select";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -14,22 +13,11 @@ export function DensityControl() {
       value={preferences.density}
       onChange={setDensity}
       variant="segmented"
+      compactLabels
       options={[
-        {
-          value: "compact",
-          label: t("density.compact"),
-          icon: <ChevronsDownUp className="size-3.5 shrink-0" aria-hidden="true" />,
-        },
-        {
-          value: "balance",
-          label: t("density.balance"),
-          icon: <Equal className="size-3.5 shrink-0" aria-hidden="true" />,
-        },
-        {
-          value: "comfort",
-          label: t("density.comfort"),
-          icon: <ChevronsUpDown className="size-3.5 shrink-0" aria-hidden="true" />,
-        },
+        { value: "compact", label: t("density.compact") },
+        { value: "balance", label: t("density.balance") },
+        { value: "comfort", label: t("density.comfort") },
       ]}
     />
   );

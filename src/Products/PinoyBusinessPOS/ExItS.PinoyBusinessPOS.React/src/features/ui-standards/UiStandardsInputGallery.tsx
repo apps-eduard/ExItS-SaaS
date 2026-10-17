@@ -1,5 +1,18 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Eye, EyeOff, type LucideIcon } from "lucide-react";
+import {
+  INTENT_GLOBAL_AMBER,
+  INTENT_GLOBAL_BLACK,
+  INTENT_GLOBAL_DANGER,
+  INTENT_GLOBAL_HELP,
+  INTENT_GLOBAL_INFO,
+  INTENT_GLOBAL_PRIMARY,
+  INTENT_GLOBAL_SECONDARY,
+  INTENT_GLOBAL_STANDARD,
+  INTENT_GLOBAL_SUCCESS,
+  INTENT_GLOBAL_WARN,
+  INTENT_GLOBAL_WARN_FOREGROUND,
+} from "@/features/ui-standards/intent-color-global-default";
 
 /**
  * Locked ExItS Input samples. Visual authority for `ext input`.
@@ -14,20 +27,20 @@ export type InputSample = {
 };
 
 export const INPUT_SAMPLES: readonly InputSample[] = [
-  { id: "standard", label: "Standard", bg: "#ffffff", fg: "#000000" },
-  { id: "primary", label: "Primary", bg: "#1976d2", fg: "#ffffff" },
-  { id: "secondary", label: "Secondary", bg: "#26a69a", fg: "#ffffff" },
-  { id: "success", label: "Success", bg: "#22c55e", fg: "#ffffff" },
-  { id: "info", label: "Info", bg: "#0ea5e9", fg: "#ffffff" },
-  { id: "amber", label: "Amber", bg: "#ffc107", fg: "#000000" },
-  { id: "danger", label: "Danger", bg: "#ef4444", fg: "#ffffff" },
-  { id: "warn", label: "Warn", bg: "#ff5722", fg: "#ffffff" },
-  { id: "help", label: "Help", bg: "#a855f7", fg: "#ffffff" },
-  { id: "black", label: "Black", bg: "#000000", fg: "#ffffff" },
+  { id: "standard", label: "Standard", bg: INTENT_GLOBAL_STANDARD, fg: "#000000" },
+  { id: "primary", label: "Primary", bg: INTENT_GLOBAL_PRIMARY, fg: "#ffffff" },
+  { id: "secondary", label: "Secondary", bg: INTENT_GLOBAL_SECONDARY, fg: "#ffffff" },
+  { id: "success", label: "Success", bg: INTENT_GLOBAL_SUCCESS, fg: "#ffffff" },
+  { id: "info", label: "Info", bg: INTENT_GLOBAL_INFO, fg: "#ffffff" },
+  { id: "amber", label: "Amber", bg: INTENT_GLOBAL_AMBER, fg: "#000000" },
+  { id: "danger", label: "Danger", bg: INTENT_GLOBAL_DANGER, fg: "#ffffff" },
+  { id: "warn", label: "Warn", bg: INTENT_GLOBAL_WARN, fg: INTENT_GLOBAL_WARN_FOREGROUND },
+  { id: "help", label: "Help", bg: INTENT_GLOBAL_HELP, fg: "#ffffff" },
+  { id: "black", label: "Black", bg: INTENT_GLOBAL_BLACK, fg: "#ffffff" },
 ];
 
-export type InputAppearance = "standard" | "filled" | "outlined" | "standout";
-export type InputShape = "square" | "standard" | "rounded";
+export type InputAppearance = "standard" | "soft" | "soft-outline" | "filled" | "outlined" | "standout";
+export type InputShape = "square" | "standard" | "soft" | "pill";
 
 export function inputAccent(sample: Pick<InputSample, "bg">): string {
   return sample.bg.toLowerCase() === "#ffffff" ? "#000000" : sample.bg;
@@ -88,6 +101,7 @@ export function UiStandardsQinput({
   hint,
   errorMessage,
   testId,
+  inputTestId,
 }: {
   sampleId?: string;
   label: string;
@@ -110,6 +124,7 @@ export function UiStandardsQinput({
   hint?: string;
   errorMessage?: string;
   testId?: string;
+  inputTestId?: string;
 }) {
   const Icon = icon ?? null;
   const picker = type === "date" || type === "time";
@@ -126,7 +141,8 @@ export function UiStandardsQinput({
       className={
         "ui-standards-qinput" +
         ` ui-standards-qinput--${appearance}` +
-        (shape === "rounded" ? " ui-standards-qinput--rounded" : "") +
+        (shape === "pill" ? " ui-standards-qinput--pill" : "") +
+        (shape === "soft" ? " ui-standards-qinput--shape-soft" : "") +
         (shape === "square" ? " ui-standards-qinput--square" : "") +
         (invalid ? " ui-standards-qinput--error" : "") +
         (disabled ? " ui-standards-qinput--disabled" : "") +
@@ -154,6 +170,7 @@ export function UiStandardsQinput({
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
             aria-label={label}
+            data-testid={inputTestId}
             rows={3}
             onChange={onChange ? (event) => onChange(event.target.value) : undefined}
           />
@@ -168,6 +185,7 @@ export function UiStandardsQinput({
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
             aria-label={label}
+            data-testid={inputTestId}
             onChange={onChange ? (event) => onChange(event.target.value) : undefined}
           />
         )}
@@ -185,7 +203,11 @@ export function UiStandardsQinput({
             type="button"
             className="ui-standards-qinput__clear"
             aria-label={`Clear ${label}`}
-            onClick={onClear}
+            data-testid={testId ? `${testId}-clear` : undefined}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClear?.();
+            }}
           >
             ×
           </button>
@@ -378,14 +400,16 @@ export function UiStandardsInputGallery(): ReactNode {
   return (
     <div className="flex flex-col gap-4" data-testid="ui-standard-input-gallery">
       <InputExampleCard title="Standard" testId="ui-standard-input-standard" appearance="standard" />
+      <InputExampleCard title="Soft" testId="ui-standard-input-soft" appearance="soft" />
+      <InputExampleCard title="Soft outline" testId="ui-standard-input-soft-outline" appearance="soft-outline" />
       <InputExampleCard title="Filled" testId="ui-standard-input-filled" appearance="filled" />
       <InputExampleCard title="Outlined" testId="ui-standard-input-outlined" appearance="outlined" />
       <InputExampleCard title="Standout" testId="ui-standard-input-standout" appearance="standout" />
       <InputExampleCard
-        title="Rounded"
-        testId="ui-standard-input-rounded"
+        title="Pill"
+        testId="ui-standard-input-pill"
         appearance="outlined"
-        shape="rounded"
+        shape="pill"
       />
     </div>
   );

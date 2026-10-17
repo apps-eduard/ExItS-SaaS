@@ -1,9 +1,12 @@
+using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.Application.Personal;
 
@@ -31,7 +34,8 @@ public sealed record PersonalWorkplaceDto(
     string? ProductRoleDisplay,
     IReadOnlyList<PersonalWorkplaceBranchDto> Branches,
     string? PasswordResetStatus = null,
-    Guid? PasswordResetRequestId = null);
+    Guid? PasswordResetRequestId = null,
+    string? PlanDisplayName = null);
 
 /// <summary>
 /// Lists organization workplaces for the authenticated Personal user via LinkedPersonalUserId.
@@ -46,6 +50,8 @@ public sealed class ListPersonalWorkplaces
     private readonly IOrganizationMembershipBranchAssignmentRepository _assignments;
     private readonly IOrganizationBranchRepository _branches;
     private readonly IStaffPasswordResetRequestRepository? _passwordResets;
+    private readonly ISubscriptionRepository? _subscriptions;
+    private readonly IPlanRepository? _plans;
     private readonly IClock _clock;
 
     public ListPersonalWorkplaces(
@@ -56,7 +62,9 @@ public sealed class ListPersonalWorkplaces
         IOrganizationMembershipBranchAssignmentRepository assignments,
         IOrganizationBranchRepository branches,
         IClock clock,
-        IStaffPasswordResetRequestRepository? passwordResets = null)
+        IStaffPasswordResetRequestRepository? passwordResets = null,
+        ISubscriptionRepository? subscriptions = null,
+        IPlanRepository? plans = null)
     {
         _users = users;
         _memberships = memberships;
@@ -66,6 +74,8 @@ public sealed class ListPersonalWorkplaces
         _branches = branches;
         _clock = clock;
         _passwordResets = passwordResets;
+        _subscriptions = subscriptions;
+        _plans = plans;
     }
 
     public async Task<ApplicationResult<IReadOnlyList<PersonalWorkplaceDto>>> ExecuteAsync(
@@ -133,6 +143,8 @@ public sealed class ListPersonalWorkplaces
                 : ProductRoleDisplay.ToDisplayLabel(productRole);
 
             var branches = await ResolveBranchesAsync(membership, cancellationToken).ConfigureAwait(false);
+            var planDisplayName = await ResolvePosPlanDisplayNameAsync(membership.OrganizationId, cancellationToken)
+                .ConfigureAwait(false);
             resetByStaff.TryGetValue(staffUser.Id.Value, out var reset);
             var resetVisible = reset is not null && !reset.IsPastExpiry(utcNow);
 
@@ -151,7 +163,8 @@ public sealed class ListPersonalWorkplaces
                     productRoleDisplay,
                     branches,
                     resetVisible ? reset!.Status.ToString() : null,
-                    resetVisible ? reset!.Id.Value : null));
+                    resetVisible ? reset!.Id.Value : null,
+                    planDisplayName));
         }
 
         items.Sort((a, b) =>
@@ -166,6 +179,30 @@ public sealed class ListPersonalWorkplaces
         });
 
         return ApplicationResult<IReadOnlyList<PersonalWorkplaceDto>>.Success(items);
+    }
+
+    private async Task<string?> ResolvePosPlanDisplayNameAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        if (_subscriptions is null || _plans is null)
+        {
+            return null;
+        }
+
+        var subscription = await _subscriptions
+            .GetCurrentForOrganizationProductAsync(
+                organizationId,
+                ProductCode.Create(ProductCode.PinoyBusinessPos),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (subscription is null)
+        {
+            return null;
+        }
+
+        var plan = await _plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
+        return plan?.DisplayName;
     }
 
     private async Task<IReadOnlyList<PersonalWorkplaceBranchDto>> ResolveBranchesAsync(

@@ -123,13 +123,13 @@ Examples: `[3]`, `[12]`, `[99+]`
 
 | Shape | Radius | Role |
 |-------|--------|------|
-| **AUTO** | `--exits-control-radius` | Inherit Preferences → Control Shape (Standard / Soft / Pill) |
+| **AUTO** | `--exits-control-radius` | Inherit Preferences → Control Shape (Square / Standard / Soft / Pill) |
 | **STANDARD** | `--exits-radius-md` (~8px) | Explicit Control Shape Standard |
 | **SOFT** | `--exits-radius-soft` (~11px) | Explicit Control Shape Soft / count chips |
 | **PILL** | Fully rounded (`9999px` / `rounded-full`) | Explicit capsule; StatusChip default (compat) |
-| **SQUARE** | `--exits-radius-xs` (`0.25rem` / 4px) | Compact metadata tags (Beta, B2B, SKU, PO, …) — not a global Control Shape option |
+| **SQUARE** | `--exits-radius-xs` (`0.25rem` / 4px) | Compact metadata tags (Beta, B2B, SKU, PO, …). Global Control Shape Square is sharp `0`, the same as the button Square |
 
-**SQUARE is not sharp 0-radius.**
+Metadata **SQUARE** is not sharp 0-radius. Global Control Shape Square is.
 
 ### StatusChip Control Shape
 
