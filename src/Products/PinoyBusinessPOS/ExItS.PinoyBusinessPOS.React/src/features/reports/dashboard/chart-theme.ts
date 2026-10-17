@@ -3,7 +3,7 @@
 const FALLBACK = {
   primary: "#166534",
   success: "#166534",
-  warning: "#92400e",
+  warning: "#ff5722",
   danger: "#b42318",
   muted: "#64748b",
   text: "#0f172a",

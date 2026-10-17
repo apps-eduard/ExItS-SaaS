@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ToastProvider } from "@/components/exits/ToastProvider";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
 
 const updateOrganizationBranch = vi.fn();
@@ -30,6 +31,10 @@ vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
     supportedFulfillmentMethods: [],
     requirements: [],
   })),
+}));
+
+vi.mock("@/hooks/usePreferences", () => ({
+  usePreferences: () => ({ preferences: { locale: "en-PH" } }),
 }));
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -133,12 +138,14 @@ function renderPage(client?: QueryClient, initialEntry = `/org/branches/${branch
     });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <Routes>
-          <Route path="/org/branches" element={<div data-testid="branch-list">list</div>} />
-          <Route path="/org/branches/:branchId/fulfillment" element={<BranchFulfillmentEditPage />} />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <Routes>
+            <Route path="/org/branches" element={<div data-testid="branch-list">list</div>} />
+            <Route path="/org/branches/:branchId/fulfillment" element={<BranchFulfillmentEditPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }

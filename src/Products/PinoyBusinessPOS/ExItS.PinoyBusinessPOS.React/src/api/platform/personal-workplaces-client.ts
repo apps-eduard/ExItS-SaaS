@@ -26,6 +26,7 @@ export type PersonalWorkplaceWire = {
   branches: PersonalWorkplaceBranchWire[];
   passwordResetStatus?: string | null;
   passwordResetRequestId?: string | null;
+  planDisplayName?: string | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -67,6 +68,7 @@ function normalizeWorkplace(raw: unknown): PersonalWorkplaceWire {
     passwordResetRequestId: (r.passwordResetRequestId ?? r.PasswordResetRequestId ?? null) as
       | string
       | null,
+    planDisplayName: (r.planDisplayName ?? r.PlanDisplayName ?? null) as string | null,
   };
 }
 

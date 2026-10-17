@@ -1,0 +1,27 @@
+---
+description: Use a locked ExItS component when one already exists
+alwaysApply: true
+---
+
+# ExItS component priority (LOCKED)
+
+When adding or changing UI, use the locked ExItS component for that job. Do not add a native control or a new component when an ExItS component already exists.
+
+Search `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/components/exits/` and `/ui-standards` first.
+
+| Job | Use |
+| --- | --- |
+| Single choice | `ExitsSelect` |
+| Multiple choice | `ExitsMultiSelect` |
+| Switch | `Switch` |
+| Tabs | `ExitsTabs` |
+| Table / responsive rows | `ExitsTable`, `ExitsResponsiveDataView` |
+| Quantity | `QuantityStepper` with `variant="outline"` |
+| Status | `StatusChip` |
+| Confirm | `ConfirmActionDialog` |
+| Create or edit | `FormDrawer` |
+| Short dialog | `ExitsModal` |
+
+A table filter is `ExitsMultiSelect`. Empty selection means all rows.
+
+Detail: `.cursor/rules/exits-ui-architecture.mdc`.

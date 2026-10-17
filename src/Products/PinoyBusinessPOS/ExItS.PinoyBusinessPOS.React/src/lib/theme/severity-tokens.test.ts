@@ -57,7 +57,7 @@ const LIGHT_BASE = {
   "--exits-severity-secondary": "#f1f5f9",
   "--exits-severity-success": "#22c55e",
   "--exits-severity-info": "#0ea5e9",
-  "--exits-severity-warn": "#f97316",
+  "--exits-severity-warn": "#ff5722",
   "--exits-severity-help": "#a855f7",
   "--exits-severity-danger": "#ef4444",
   "--exits-severity-contrast": "#020617",
@@ -79,7 +79,7 @@ const DARK_BASE = {
   "--exits-severity-secondary": "#27272a",
   "--exits-severity-success": "#4ade80",
   "--exits-severity-info": "#38bdf8",
-  "--exits-severity-warn": "#fb923c",
+  "--exits-severity-warn": "#ff7043",
   "--exits-severity-help": "#c084fc",
   "--exits-severity-danger": "#f87171",
   "--exits-severity-contrast": "#ffffff",
@@ -110,7 +110,7 @@ describe("Diamond LIGHT severity tokens", () => {
   it("does not leak dark severity fills into the light theme block", () => {
     expect(light).not.toMatch(/--exits-severity-success:\s*#4ade80/i);
     expect(light).not.toMatch(/--exits-severity-info:\s*#38bdf8/i);
-    expect(light).not.toMatch(/--exits-severity-warn:\s*#fb923c/i);
+    expect(light).not.toMatch(/--exits-severity-warn:\s*#ff7043/i);
     expect(light).not.toMatch(/--exits-severity-help:\s*#c084fc/i);
     expect(light).not.toMatch(/--exits-severity-danger:\s*#f87171/i);
     expect(light).not.toMatch(/--exits-severity-secondary:\s*#27272a/i);
@@ -122,6 +122,7 @@ describe("Diamond LIGHT severity tokens", () => {
     expect(dark).not.toMatch(/--exits-severity-secondary:\s*#f1f5f9/i);
     expect(dark).not.toMatch(/--exits-severity-success:\s*#22c55e/i);
     expect(dark).not.toMatch(/--exits-severity-info:\s*#0ea5e9/i);
+    expect(dark).not.toMatch(/--exits-severity-warn:\s*#ff5722/i);
     expect(dark).not.toMatch(/--exits-severity-warn:\s*#f97316/i);
     expect(dark).not.toMatch(/--exits-severity-help:\s*#a855f7/i);
     expect(dark).not.toMatch(/--exits-severity-danger:\s*#ef4444/i);

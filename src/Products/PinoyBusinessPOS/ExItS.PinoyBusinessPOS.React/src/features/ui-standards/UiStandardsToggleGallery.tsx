@@ -121,11 +121,13 @@ function ToggleColor({
   testId,
   icons = false,
   onDark = false,
+  appearance = "standard",
 }: {
   sample: InputSample;
   testId: string;
   icons?: boolean;
   onDark?: boolean;
+  appearance?: string;
 }) {
   const [checked, setChecked] = useState(true);
   return (
@@ -135,6 +137,7 @@ function ToggleColor({
       checked={checked}
       icons={icons}
       onDark={onDark}
+      appearance={appearance}
       standard={sample.id === "standard"}
       darkInk={sample.id === "black"}
       onSelect={() => setChecked((value) => !value)}
@@ -295,6 +298,7 @@ function PillSwitch({
   labeled = false,
   outline = false,
   standard = false,
+  appearance = "standard",
   testId,
 }: {
   label: string;
@@ -304,6 +308,7 @@ function PillSwitch({
   labeled?: boolean;
   outline?: boolean;
   standard?: boolean;
+  appearance?: string;
   testId: string;
 }) {
   const [on, setOn] = useState(true);
@@ -321,7 +326,8 @@ function PillSwitch({
         (icons ? " ui-standards-pill-switch--icons" : "") +
         (labeled ? " ui-standards-pill-switch--label" : "") +
         (outline ? " ui-standards-pill-switch--outline" : "") +
-        (standard ? " ui-standards-pill-switch--standard" : "")
+        (standard ? " ui-standards-pill-switch--standard" : "") +
+        (appearance !== "standard" ? ` ui-standards-pill-switch--appearance-${appearance}` : "")
       }
       style={style}
       data-testid={testId}
@@ -354,12 +360,14 @@ function PillSwitchRow({
   icons = false,
   labeled = false,
   outline = false,
+  appearance = "standard",
 }: {
   title: string;
   testId: string;
   icons?: boolean;
   labeled?: boolean;
   outline?: boolean;
+  appearance?: string;
 }) {
   return (
     <div className="ui-standards-q-example" data-testid={testId}>
@@ -374,6 +382,7 @@ function PillSwitchRow({
             icons={icons}
             labeled={labeled}
             outline={outline}
+            appearance={appearance}
             standard={sample.id === "standard"}
             testId={`${testId}-${sample.id}`}
           />
@@ -402,21 +411,29 @@ export function UiStandardsToggleGallery(): ReactNode {
           ))}
         </div>
       </div>
+      <div className="ui-standards-q-example" data-testid="ui-standard-toggle-soft">
+        <div className="ui-standards-q-example__label">Soft</div>
+        <div className="ui-standards-q-example__row">
+          {INPUT_SAMPLES.map((sample) => (
+            <ToggleColor key={sample.id} sample={sample} appearance="soft" testId="ui-standard-toggle-soft" />
+          ))}
+        </div>
+      </div>
+      <div className="ui-standards-q-example" data-testid="ui-standard-toggle-soft-outline">
+        <div className="ui-standards-q-example__label">Soft outline</div>
+        <div className="ui-standards-q-example__row">
+          {INPUT_SAMPLES.map((sample) => (
+            <ToggleColor key={sample.id} sample={sample} appearance="soft-outline" testId="ui-standard-toggle-soft-outline" />
+          ))}
+        </div>
+      </div>
       <PillSwitchRow title="Solid" testId="ui-standard-toggle-pill" />
+      <PillSwitchRow title="Solid soft" testId="ui-standard-toggle-pill-soft" appearance="soft" />
+      <PillSwitchRow title="Solid soft outline" testId="ui-standard-toggle-pill-soft-outline" appearance="soft-outline" />
       <PillSwitchRow title="Outline" testId="ui-standard-toggle-pill-outline" outline />
       <PillSwitchRow title="Solid with icons" testId="ui-standard-toggle-pill-icon" icons />
       <PillSwitchRow title="Solid with label" testId="ui-standard-toggle-pill-label" labeled />
       <ToggleOrderSample />
-      <div className="ui-standards-q-example" data-testid="ui-standard-toggle-dark">
-        <div className="ui-standards-q-example__label">Force dark mode</div>
-        <div className="ui-standards-qtoggle-dark" data-testid="ui-standard-toggle-dark-panel">
-          <div className="ui-standards-qtoggle-dark__row">
-            {INPUT_SAMPLES.map((sample) => (
-              <ToggleColor key={sample.id} sample={sample} onDark testId="ui-standard-toggle-dark" />
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

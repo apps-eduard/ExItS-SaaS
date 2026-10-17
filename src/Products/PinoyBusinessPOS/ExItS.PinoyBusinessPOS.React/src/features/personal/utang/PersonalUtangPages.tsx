@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, Plus, UserPlus, Users, Wallet } from "lucide-react";
+import { ArrowLeft, BellRing, Check, CheckCircle2, ChevronRight, CircleAlert, HandCoins, Handshake, History, List, Loader2, PenLine, Plus, Share2, SlidersHorizontal, UserPlus, Users, Wallet, Zap, type LucideIcon } from "lucide-react";
 import {
   cancelPersonalUtangEntry,
   closePersonalDebtRelationship,
@@ -28,13 +28,19 @@ import {
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { getActionIcon } from "@/components/exits/action-semantics";
+import { ExitsModal } from "@/components/exits/ExitsModal";
+import { ExitsSelect } from "@/components/exits/ExitsSelect";
+import { MoneyInput } from "@/components/exits/MoneyQuantityInputs";
+import { Notice } from "@/components/exits/Notice";
+import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
+import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import {
   isSharedRelationship as workspaceIsSharedRelationship,
@@ -429,6 +435,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const requestedContactId = searchParams.get("contact") ?? "";
   const [contactId, setContactId] = useState(requestedContactId);
   const [recordFormOpen, setRecordFormOpen] = useState(Boolean(requestedContactId));
+  const [ledgerFilter, setLedgerFilter] = useState<"all" | "mine" | "shared">("all");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -502,6 +509,12 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const rows: CachedPersonalRelationship[] | PersonalDebtRelationshipSummaryDto[] = usingCache
     ? (cachedRows.length > 0 ? cachedRows : (listQuery.data ?? []))
     : (listQuery.data ?? []);
+  const mineCount = rows.filter((row) => row.isLedgerOwner !== false).length;
+  const sharedCount = rows.length - mineCount;
+  const visibleRows =
+    ledgerFilter === "all"
+      ? rows
+      : rows.filter((row) => (ledgerFilter === "mine" ? row.isLedgerOwner !== false : row.isLedgerOwner === false));
   const selectedLinked = contactId ? contactLooksLinked(contacts, contactId) : false;
   const existingSharedOwnedByMe =
     selectedLinked && contactId
@@ -708,37 +721,72 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
 
-      <section
-        className="catalog-form-section exits-animate-panel personal-section utang-record-card flex min-w-0 flex-col gap-2 overflow-hidden"
-        data-testid="utang-record-card"
-      >
+      <div className="personal-home-metrics utang-summary-cards" data-testid="utang-summary-cards">
         <button
           type="button"
-          className="catalog-form-section__title m-0 flex w-full items-center gap-2 border-0 bg-transparent p-0 text-left text-muted"
-          aria-expanded={recordFormOpen}
+          className="personal-home-index-card personal-home-index-card--secondary utang-summary-cards__action"
           aria-controls="utang-record-panel"
-          data-testid="utang-record-toggle"
-          onClick={() => setRecordFormOpen((open) => !open)}
+          aria-expanded={recordFormOpen}
+          data-testid="utang-summary-record"
+          onClick={() => setRecordFormOpen(true)}
         >
-          <span
-            className={cn(
-              "inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-primary transition-transform",
-              recordFormOpen && "rotate-45",
-            )}
+          <span className="personal-home-index-card__ribbon" aria-hidden="true">
+            <span className="personal-home-index-card__fold" />
+            <Plus className="personal-home-index-card__icon" />
+          </span>
+          <span className="personal-home-index-card__body">
+            <span className="personal-home-index-card__title">{recordFormLabel}</span>
+          </span>
+          <strong
+            className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
             aria-hidden="true"
           >
-            <Plus className="size-5" />
-          </span>
-          <span className="min-w-0 flex-1 truncate">{recordFormLabel}</span>
-          <ChevronDown
-            className={cn(
-              "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-              recordFormOpen && "rotate-180",
-            )}
-            aria-hidden="true"
-          />
+            +
+          </strong>
         </button>
-      {recordFormOpen ? (
+        {(
+          [
+            { id: "all", tone: "primary", label: t("personal.utang.filterAll"), Icon: List, count: rows.length },
+            { id: "mine", tone: "success", label: t("personal.home.activeMine"), Icon: Handshake, count: mineCount },
+            { id: "shared", tone: "info", label: t("personal.home.sharedLedgerStat"), Icon: Share2, count: sharedCount },
+          ] as const
+        ).map((filter) => {
+          const FilterIcon = filter.Icon;
+          return (
+            <button
+              key={filter.id}
+              type="button"
+              className={`personal-home-index-card personal-home-index-card--${filter.tone} utang-summary-cards__action utang-summary-cards__filter`}
+              aria-pressed={ledgerFilter === filter.id}
+              data-testid={`utang-summary-${filter.id}`}
+              onClick={() => setLedgerFilter(filter.id)}
+            >
+              <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                <span className="personal-home-index-card__fold" />
+                <FilterIcon className="personal-home-index-card__icon" />
+              </span>
+              <span className="personal-home-index-card__body">
+                <span className="personal-home-index-card__title">{filter.label}</span>
+              </span>
+              <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
+                {filter.count}
+              </strong>
+            </button>
+          );
+        })}
+      </div>
+
+      <ExitsModal
+        open={recordFormOpen}
+        onOpenChange={setRecordFormOpen}
+        title={recordFormLabel}
+        size="lg"
+        fullHeightOnCompact
+        closeOnEscape={false}
+        busy={createMutation.isPending}
+        testId="utang-record-dialog"
+        closeLabel={t("personal.utang.closeRecordDialog")}
+      >
       <form
         id="utang-record-panel"
         className={cn(
@@ -978,10 +1026,9 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           </Button>
         </div>
       </form>
-      ) : null}
-      </section>
+      </ExitsModal>
 
-      {rows.length === 0 ? (
+      {visibleRows.length === 0 ? (
         <EmptyState
               align="center"
               icon={<Users className="size-5" strokeWidth={1.75} />}
@@ -993,8 +1040,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           }
         />
       ) : (
-        <ul className="exits-list m-0 grid list-none gap-2 p-0">
-          {rows.map((row) => {
+        <ul className="utang-settings-list m-0 grid list-none gap-4 p-0">
+          {visibleRows.map((row) => {
             const name = contactLabel(contacts, row);
             const shared = isSharedRelationship(row);
             const owned = row.isLedgerOwner !== false;
@@ -1006,51 +1053,83 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                 <Link
                   to={`/personal/utang/relationships/${row.id}`}
                   className={cn(
-                    "exits-list__card utang-account-card flex items-center justify-between gap-3 text-foreground no-underline",
+                    "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-settings-card text-foreground no-underline",
+                    mode === "lent" ? "utang-settings-card--lent" : "utang-settings-card--owe",
                     !owned && "utang-account-card--shared",
                   )}
                   data-testid={`utang-rel-row-${row.id}`}
                 >
-                  <PersonAvatar name={name} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="m-0 truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                  <span className="ui-standards-qcard__settings-circle" aria-hidden="true">
+                    <span className="ui-standards-qcard__settings-circle-core">
+                      <PersonAvatar name={name} size="sm" className="utang-settings-card__avatar" />
+                    </span>
+                  </span>
+                  <div className="ui-standards-qcard__settings-ribbon">
+                    <div
+                      className="ui-standards-qcard__settings-tab utang-settings-card__tab"
                       data-utang-ownership=""
                       data-testid={`utang-rel-ownership-${row.id}`}
                     >
-                      {ownershipLabel}
-                    </p>
-                    <p className="exits-list__name m-0 truncate font-semibold">{name}</p>
-                    <p className="m-0 flex min-w-0 flex-wrap items-center gap-1 text-[length:var(--exits-text-sm)] text-muted">
-                      <UtangDirectionTags
-                        direction={mode === "lent" ? "lent" : "owe"}
-                        shared={shared}
-                        linkTestId={`utang-rel-ledger-${row.id}`}
-                      />
-                      {!owned ? (
-                        <span className="truncate">
-                          {t("personal.utang.managedByOther").replace("{name}", name)}
-                        </span>
+                      <span className="truncate">{ownershipLabel}</span>
+                      {formatDueLabel(row.dueDateUtc).kind !== "none" ? (
+                        <>
+                          <span className="utang-settings-card__tab-divider" aria-hidden />
+                          <UtangDueCaption
+                            dueDateUtc={row.dueDateUtc}
+                            className={cn(
+                              "utang-settings-card__tab-text",
+                              formatDueLabel(row.dueDateUtc).kind === "overdue" && "utang-settings-card__tab-text--danger",
+                            )}
+                          />
+                        </>
                       ) : null}
-                    </p>
-                    <WaitingChip origin={rowOrigin(row)} />
-                    <UtangDueCaption dueDateUtc={row.dueDateUtc} />
-                  </div>
-                  <div className="grid shrink-0 justify-items-start self-stretch">
-                    {!owned ? (
-                      <StatusChip
-                        tone={UTANG_READ_ONLY_CHIP.tone}
-                        appearance={UTANG_READ_ONLY_CHIP.appearance}
-                        shape={UTANG_READ_ONLY_CHIP.shape}
-                        className="col-start-1 row-start-1 self-start max-md:hidden"
-                        data-testid={`utang-rel-readonly-${row.id}`}
-                      >
-                        {t("personal.utang.readOnly")}
-                      </StatusChip>
-                    ) : null}
-                    <span className="col-start-1 row-start-1 self-center">
-                      <MoneyDisplay amount={row.currentBalance} />
-                    </span>
+                      <span className="ui-standards-qcard__settings-fold" aria-hidden />
+                    </div>
+                    <div className="utang-settings-card__content">
+                      <div className="utang-settings-card__meta min-w-0 flex-1">
+                        <div className="utang-settings-card__headline">
+                          <p className="utang-settings-card__name m-0 truncate">{name}</p>
+                          <span className="utang-settings-card__amount">
+                            <MoneyDisplay amount={row.currentBalance} />
+                            <ChevronRight className="size-5 shrink-0" aria-hidden />
+                          </span>
+                        </div>
+                        <span className="utang-settings-card__tags">
+                          <StatusChip
+                            tone={mode === "lent" ? "success" : "warning"}
+                            appearance="emphasis"
+                            shape="square"
+                          >
+                            {mode === "lent" ? t("personal.utang.owesYou") : t("personal.utang.youOwe")}
+                          </StatusChip>
+                          <StatusChip
+                            tone={shared ? "success" : "info"}
+                            appearance="emphasis"
+                            shape="square"
+                            data-testid={`utang-rel-ledger-${row.id}`}
+                          >
+                            {shared ? t("people.status.connected") : t("people.localContact")}
+                          </StatusChip>
+                          {!owned ? (
+                            <StatusChip
+                              tone={UTANG_READ_ONLY_CHIP.tone}
+                              appearance={UTANG_READ_ONLY_CHIP.appearance}
+                              shape={UTANG_READ_ONLY_CHIP.shape}
+                              className="max-md:hidden"
+                              data-testid={`utang-rel-readonly-${row.id}`}
+                            >
+                              {t("personal.utang.readOnly")}
+                            </StatusChip>
+                          ) : null}
+                        </span>
+                        {!owned ? (
+                          <p className="m-0 truncate text-[length:var(--exits-text-sm)]">
+                            {t("personal.utang.managedByOther").replace("{name}", name)}
+                          </p>
+                        ) : null}
+                        <WaitingChip origin={rowOrigin(row)} />
+                      </div>
+                    </div>
                   </div>
                 </Link>
               </li>
@@ -1068,6 +1147,59 @@ export function PersonalLentPage() {
 
 export function PersonalOwePage() {
   return <RelationshipListPage mode="owe" />;
+}
+
+/** Balance after the entry being typed, using the same signs as the server (payment −, loan +, adjustment ±). */
+export function projectUtangBalance(
+  currentBalance: number,
+  entryType: "Payment" | "Loan" | "Adjustment",
+  amount: string,
+  adjustmentDelta: string,
+): number {
+  const change =
+    entryType === "Adjustment"
+      ? (parseAdjustmentDelta(adjustmentDelta) ?? 0)
+      : (parseMoneyAmountInput(amount) ?? 0) * (entryType === "Payment" ? -1 : 1);
+  return Math.round((currentBalance + change) * 100) / 100;
+}
+
+/** Signed balance correction such as "+500", "-1,250.50"; null when empty, zero, or not a number. */
+export function parseAdjustmentDelta(value: string): number | null {
+  const cleaned = value.replace(/[,\s₱]/g, "");
+  if (!/^[+-]?(\d+(\.\d{0,2})?|\.\d{1,2})$/.test(cleaned)) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) && parsed !== 0 ? parsed : null;
+}
+
+function QuickActionIndexContent({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <>
+      <span className="personal-home-index-card__ribbon" aria-hidden="true">
+        <span className="personal-home-index-card__fold" />
+        <Icon className="personal-home-index-card__icon" />
+      </span>
+      <span className="personal-home-index-card__body">
+        <span className="personal-home-index-card__title">{label}</span>
+      </span>
+      <strong
+        className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
+        aria-hidden="true"
+      >
+        <ChevronRight className="personal-home-index-card__icon" />
+      </strong>
+    </>
+  );
+}
+
+function RibbonTitle({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return (
+    <h2 className="personal-tracker-card__ribbon">
+      <span className="personal-tracker-card__pennant" aria-hidden>
+        <Icon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+      </span>
+      {children}
+    </h2>
+  );
 }
 
 export function PersonalRelationshipDetailPage() {
@@ -1091,6 +1223,7 @@ export function PersonalRelationshipDetailPage() {
   const [settleOpen, setSettleOpen] = useState(false);
   const [settleError, setSettleError] = useState<string | null>(null);
   const pendingSettlementEntryIdRef = useRef<string | null>(null);
+  const [entryOpen, setEntryOpen] = useState(false);
 
   const contactsQuery = useQuery({
     queryKey: ["personal", "utang", "contacts"],
@@ -1193,7 +1326,10 @@ export function PersonalRelationshipDetailPage() {
 
   const recordMutation = useMutation({
     mutationFn: async () => {
-      const amt = parseMoneyAmountInput(amount);
+      const delta = entryType === "Adjustment" ? parseAdjustmentDelta(adjustmentDelta) : null;
+      if (entryType === "Adjustment" && delta == null) throw new Error("adjustment");
+      // The server stores a positive amount on every entry; a correction carries its size.
+      const amt = delta != null ? Math.abs(delta) : parseMoneyAmountInput(amount);
       if (amt == null || !(amt > 0)) throw new Error("amount");
       const purpose = notes.trim();
       if (!purpose) throw new Error("purpose");
@@ -1216,7 +1352,7 @@ export function PersonalRelationshipDetailPage() {
               entryId,
               entryType: "Adjustment" as const,
               amount: amt,
-              adjustmentDelta: Number(adjustmentDelta),
+              adjustmentDelta: delta as number,
               expectedVersion: version ?? null,
               notes: purpose,
             }
@@ -1255,6 +1391,7 @@ export function PersonalRelationshipDetailPage() {
       setAdjustmentDelta("");
       setNotes("");
       setFormError(null);
+      setEntryOpen(false);
       await invalidateUtang();
     },
     onError: (error) => {
@@ -1264,6 +1401,10 @@ export function PersonalRelationshipDetailPage() {
       }
       if (!online) {
         setFormError(t("offline.requiredPersonalUtangRecord"));
+        return;
+      }
+      if (error instanceof Error && error.message === "adjustment") {
+        setFormError(t("personal.utang.adjustmentDeltaRequired"));
         return;
       }
       if (error instanceof Error && error.message === "purpose") {
@@ -1471,8 +1612,28 @@ export function PersonalRelationshipDetailPage() {
     : t("personal.utang.statusActive");
   const listBack =
     detail.perspective === "Borrowed" ? personalPageBackNav.utangOwe : personalPageBackNav.utangLent;
+  const localCounterpartyContactId =
+    detail.perspective === "Borrowed" ? detail.creditorContactId : detail.debtorContactId;
+  const counterpartyUserIdentityId =
+    detail.perspective === "Borrowed" ? detail.creditorUserIdentityId : detail.debtorUserIdentityId;
+  const counterpartyContactId =
+    localCounterpartyContactId ??
+    (counterpartyUserIdentityId
+      ? contactsForLabel.find((contact) => contact.linkedUserIdentityId === counterpartyUserIdentityId)?.id
+      : undefined);
+  const showSharedSettingAction = Boolean(counterpartyContactId && counterpartyUserIdentityId);
+  const showRemindersAction = !relationshipClosed && online;
+  const showUpdateBalanceAction = isLedgerOwner && !relationshipClosed;
+  const newRecordHref = counterpartyContactId
+    ? `/personal/utang/${detail.perspective === "Borrowed" ? "owe" : "lent"}?contact=${encodeURIComponent(counterpartyContactId)}`
+    : null;
+  const counterpartyEditHref = counterpartyContactId
+    ? `/personal/people/${counterpartyContactId}${localCounterpartyContactId ? "?edit=1" : ""}`
+    : null;
   // An Adjustment rewrites a balance against a version this device may no longer be showing.
   const adjustmentBlocked = !online && entryType === "Adjustment";
+  const projectedBalance = projectUtangBalance(currentBalance, entryType, amount, adjustmentDelta);
+  const SaveIcon = getActionIcon("save");
   // Owner-model: unresolved-pending limit does not apply to new Confirmed writes.
   const loanBlockedByPendingLimit = false;
   const submitLabel = t("personal.utang.saveEntry");
@@ -1498,25 +1659,31 @@ export function PersonalRelationshipDetailPage() {
         backTo={listBack.to}
         backLabel={t(listBack.labelKey)}
         backTestId="page-header-back-utang-detail"
+        titleTrailing={
+          counterpartyEditHref ? (
+            <Link
+              to={counterpartyEditHref}
+              className="page-header-round-action"
+              aria-label={t("personal.utang.editPerson")}
+              title={t("personal.utang.editPerson")}
+              data-testid="utang-detail-edit"
+            >
+              <PenLine className="size-4" aria-hidden />
+            </Link>
+          ) : null
+        }
       />
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
       <div className="utang-detail-top">
       <div
-        className="utang-balance-card flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
+        className="utang-balance-card utang-ribbon-card flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
         data-testid="utang-balance-card"
       >
-        <h2 className="m-0 flex items-center gap-2 text-[length:var(--exits-text-base)] font-semibold">
-          {detail.perspective === "Borrowed" ? (
-            <Wallet className="size-5 shrink-0 text-primary" aria-hidden="true" />
-          ) : (
-            <HandCoins className="size-5 shrink-0 text-primary" aria-hidden="true" />
-          )}
-          <span className="min-w-0 flex-1">
-            {detail.perspective === "Borrowed"
-              ? t("personal.utang.youOweName").replace("{name}", ownerDisplayName)
-              : perspectiveLabel}
-          </span>
-        </h2>
+        <RibbonTitle icon={detail.perspective === "Borrowed" ? Wallet : HandCoins}>
+          {detail.perspective === "Borrowed"
+            ? t("personal.utang.youOweName").replace("{name}", ownerDisplayName)
+            : perspectiveLabel}
+        </RibbonTitle>
         <div id="utang-balance-panel" className="flex min-w-0 flex-col gap-2">
         <MoneyDisplay amount={currentBalance} className="text-[length:var(--exits-text-xl)]" />
         <p
@@ -1611,6 +1778,69 @@ export function PersonalRelationshipDetailPage() {
         </div>
       </div>
 
+      {showSharedSettingAction || showRemindersAction || showUpdateBalanceAction || newRecordHref ? (
+        <section
+          className="catalog-form-section exits-animate-panel personal-section personal-quick-actions utang-quick-actions gap-3"
+          aria-label={t("personal.home.quickActions")}
+          data-testid="utang-detail-quick-actions"
+        >
+          <h2 className="personal-quick-actions__ribbon">
+            <span className="personal-quick-actions__pennant" aria-hidden>
+              <Zap className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
+            </span>
+            {t("personal.home.quickActions")}
+          </h2>
+          <div className="personal-quick-actions__cards">
+            {showSharedSettingAction ? (
+              <Link
+                to={`/personal/people/${counterpartyContactId}`}
+                className="personal-home-index-card personal-home-index-card--primary personal-home-index-card--solid"
+                data-testid="utang-qa-shared-setting"
+              >
+                <QuickActionIndexContent icon={SlidersHorizontal} label={t("personal.utang.qaSharedSetting")} />
+              </Link>
+            ) : null}
+            {showRemindersAction ? (
+              <button
+                type="button"
+                className="personal-home-index-card personal-home-index-card--warn personal-home-index-card--solid"
+                data-testid="utang-qa-reminders"
+                onClick={() =>
+                  document
+                    .querySelector('[data-testid="utang-invite-reminder-panel"]')
+                    ?.scrollIntoView?.({ behavior: "smooth", block: "start" })
+                }
+              >
+                <QuickActionIndexContent icon={BellRing} label={t("personal.utang.qaReminders")} />
+              </button>
+            ) : null}
+            {showUpdateBalanceAction ? (
+              <button
+                type="button"
+                className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
+                data-testid="utang-qa-update-balance"
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setFormError(null);
+                  setEntryOpen(true);
+                }}
+              >
+                <QuickActionIndexContent icon={PenLine} label={t("personal.utang.qaUpdateBalance")} />
+              </button>
+            ) : null}
+            {newRecordHref ? (
+              <Link
+                to={newRecordHref}
+                className="personal-home-index-card personal-home-index-card--success personal-home-index-card--solid"
+                data-testid="utang-qa-new-record"
+              >
+                <QuickActionIndexContent icon={Plus} label={t("personal.utang.qaNewRecord")} />
+              </Link>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       {!relationshipClosed && online ? (
         <RelationshipInviteReminderPanel
           relationshipId={relationshipId}
@@ -1625,6 +1855,15 @@ export function PersonalRelationshipDetailPage() {
       {!relationshipClosed && !online ? (
         <OfflineNotice
           message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangReminder))}
+        />
+      ) : null}
+
+      {shared && pendingOutgoingCount > 0 ? (
+        <PendingOutgoingHint
+          count={pendingOutgoingCount}
+          name={personName === EM_DASH ? t("personal.utang.person") : personName}
+          atLimit={pendingAtLimit}
+          viewPendingTo={viewPendingTo}
         />
       ) : null}
 
@@ -1674,15 +1913,50 @@ export function PersonalRelationshipDetailPage() {
       ) : null}
 
       {canMutateFinances && !relationshipClosed ? (
+      <ExitsModal
+        open={entryOpen}
+        onOpenChange={setEntryOpen}
+        title={t("personal.utang.qaUpdateBalance")}
+        description={
+          <span className="utang-entry-dialog__head" data-testid="utang-entry-dialog-head">
+            {personName === EM_DASH ? null : (
+              <>
+                <span className="utang-entry-dialog__name">{personName}</span>
+                <span className="utang-entry-dialog__divider" aria-hidden />
+              </>
+            )}
+            <MoneyDisplay
+              amount={projectedBalance}
+              className={cn(
+                "utang-entry-dialog__amount",
+                projectedBalance !== currentBalance && "utang-entry-dialog__amount--changed",
+              )}
+              testId="utang-entry-dialog-balance"
+            />
+          </span>
+        }
+        busy={recordMutation.isPending}
+        closeLabel={t("personal.utang.closeRecordDialog")}
+        testId="utang-entry-dialog"
+        ribbon
+        ribbonIcon={PenLine}
+      >
       <form
-        className="utang-entry-card catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
+        className="utang-entry-form flex min-w-0 flex-col gap-2"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          const parsedAmount = parseMoneyAmountInput(amount);
-          if (parsedAmount == null || !(parsedAmount > 0)) {
-            setFormError(t("personal.utang.amountRequired"));
-            return;
+          if (entryType === "Adjustment") {
+            if (parseAdjustmentDelta(adjustmentDelta) == null) {
+              setFormError(t("personal.utang.adjustmentDeltaRequired"));
+              return;
+            }
+          } else {
+            const parsedAmount = parseMoneyAmountInput(amount);
+            if (parsedAmount == null || !(parsedAmount > 0)) {
+              setFormError(t("personal.utang.amountRequired"));
+              return;
+            }
           }
           if (!notes.trim()) {
             setFormError(
@@ -1704,82 +1978,78 @@ export function PersonalRelationshipDetailPage() {
           recordMutation.mutate();
         }}
       >
-        <h2 className="catalog-form-section__title m-0 flex items-center gap-2">
-          <PenLine className="size-4 shrink-0" aria-hidden="true" />
-          {t("personal.utang.entryType")}
-        </h2>
-        <div className="grid min-w-0 gap-2 lg:grid-cols-2 lg:items-end">
-          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span className="font-medium">{t("personal.utang.entryType")}</span>
-            <select
-              data-testid="utang-entry-type"
-              className="exits-select"
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:items-end">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <span id="utang-entry-type-label" className="exits-type-label">
+              {t("personal.utang.entryType")}
+            </span>
+            <ExitsSelect
               value={entryType}
-              onChange={(e) => setEntryType(e.target.value as typeof entryType)}
-            >
-              <option value="Payment">{t("personal.utang.recordPayment")}</option>
-              <option value="Loan">{t("personal.utang.addAmount")}</option>
-              <option value="Adjustment">{t("personal.utang.adjustBalance")}</option>
-            </select>
-          </label>
-          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span className="font-medium">{t("personal.utang.amount")}</span>
-            <div className="exits-currency-field">
-              <span className="exits-currency-field__prefix" aria-hidden>
-                ₱
-              </span>
-              <input
-                data-testid="utang-entry-amount"
-                type="text"
-                inputMode="decimal"
-                autoComplete="off"
-                className="exits-currency-field__input"
-                value={amount}
-                onChange={(e) => setAmount(normalizeMoneyAmountTyping(e.target.value))}
-                onBlur={() => {
-                  const parsed = parseMoneyAmountInput(amount);
-                  setAmount(formatMoneyAmountInput(parsed ?? 0));
-                }}
-                required
-                aria-label={t("personal.utang.amount")}
-              />
-            </div>
-          </label>
-        </div>
-        {entryType === "Adjustment" ? (
-          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("personal.utang.adjustmentDelta")}
-            <input
+              options={[
+                { value: "Payment", label: t("personal.utang.recordPayment") },
+                { value: "Loan", label: t("personal.utang.addAmount") },
+                { value: "Adjustment", label: t("personal.utang.adjustBalance") },
+              ]}
+              onChange={setEntryType}
+              aria-labelledby="utang-entry-type-label"
+              menuLabel={t("personal.utang.entryType")}
+              testId="utang-entry-type"
+            />
+          </div>
+          {entryType === "Adjustment" ? (
+            <Input
+              id="utang-entry-delta"
+              label={t("personal.utang.adjustmentDelta")}
+              data-exits-modal-autofocus="true"
               data-testid="utang-entry-delta"
               inputMode="decimal"
-              className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              autoComplete="off"
+              placeholder={t("personal.utang.adjustmentDeltaPlaceholder")}
               value={adjustmentDelta}
               onChange={(e) => setAdjustmentDelta(e.target.value)}
               required
             />
+          ) : (
+            <MoneyInput
+              id="utang-entry-amount"
+              label={t("personal.utang.amount")}
+              data-exits-modal-autofocus="true"
+              data-testid="utang-entry-amount"
+              autoComplete="off"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onBlur={() => {
+                const parsed = parseMoneyAmountInput(amount);
+                setAmount(formatMoneyAmountInput(parsed ?? 0));
+              }}
+              required
+            />
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <label htmlFor="utang-entry-notes" className="exits-type-label">
+            <UtangFieldLabel required>
+              {entryType === "Adjustment"
+                ? t("personal.utang.adjustmentReason")
+                : t("personal.utang.purpose")}
+            </UtangFieldLabel>
           </label>
-        ) : null}
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          <UtangFieldLabel required>
-            {entryType === "Adjustment"
-              ? t("personal.utang.adjustmentReason")
-              : t("personal.utang.purpose")}
-          </UtangFieldLabel>
           {entryType === "Adjustment" ? (
             <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
               {t("personal.utang.adjustmentReasonHelp")}
             </span>
           ) : null}
           <textarea
+            id="utang-entry-notes"
             data-testid="utang-entry-notes"
-            className="min-h-16 w-full min-w-0 resize-y rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+            className="exits-input min-h-20 w-full min-w-0 resize-y"
             value={notes}
             maxLength={UTANG_NOTES_MAX_LENGTH}
             required
             aria-required="true"
             onChange={(e) => setNotes(e.target.value)}
           />
-        </label>
+        </div>
         {adjustmentBlocked ? (
           <OfflineNotice
             message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangAdjustment))}
@@ -1789,53 +2059,55 @@ export function PersonalRelationshipDetailPage() {
           <OfflineNotice message={t("offline.requiredPersonalUtangRecord")} />
         ) : null}
         {shared && online && isLedgerOwner ? (
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="utang-entry-confirm-hint"
-          >
+          <Notice tone="info" testId="utang-entry-confirm-hint">
             {t("personal.utang.sharedEntryHint").replace("{name}", personName)}
-          </p>
-        ) : null}
-        {shared && pendingOutgoingCount > 0 ? (
-          <PendingOutgoingHint
-            count={pendingOutgoingCount}
-            name={personName === EM_DASH ? t("personal.utang.person") : personName}
-            atLimit={pendingAtLimit}
-            viewPendingTo={viewPendingTo}
-          />
+          </Notice>
         ) : null}
         {formError ? (
-          <p
-            role="alert"
-            className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-          >
+          <Notice tone="danger" testId="utang-entry-error">
             {formError}
-          </p>
+          </Notice>
         ) : null}
-        <Button
-          type="submit"
-          className="w-auto self-start"
-          disabled={
-            recordMutation.isPending ||
-            statusLocked ||
-            adjustmentBlocked ||
-            loanBlockedByPendingLimit ||
-            !online
-          }
-          data-testid="utang-entry-submit"
-        >
-          <Check className="size-4 shrink-0" aria-hidden="true" />
-          {submitLabel}
-        </Button>
+        <div className="flex min-w-0 flex-wrap justify-end gap-2 border-t border-border pt-3">
+          <Button
+            type="button"
+            intent="danger"
+            appearance="elevated"
+            emphasis="strong"
+            disabled={recordMutation.isPending}
+            onClick={() => setEntryOpen(false)}
+            data-testid="utang-entry-cancel"
+          >
+            {t("personal.utang.cancelEdit")}
+          </Button>
+          <Button
+            type="submit"
+            intent="primary"
+            appearance="elevated"
+            emphasis="strong"
+            disabled={
+              recordMutation.isPending ||
+              statusLocked ||
+              adjustmentBlocked ||
+              loanBlockedByPendingLimit ||
+              !online
+            }
+            data-testid="utang-entry-submit"
+          >
+            {SaveIcon ? <SaveIcon className="size-4 shrink-0" aria-hidden="true" /> : null}
+            {submitLabel}
+          </Button>
+        </div>
       </form>
+      </ExitsModal>
       ) : null}
       </div>
 
       <section
-        className="utang-activity-card catalog-form-section exits-animate-panel personal-section min-w-0 gap-2 overflow-hidden"
+        className="utang-activity-card utang-ribbon-card catalog-form-section exits-animate-panel personal-section min-w-0 gap-2"
         aria-label={t("personal.utang.activity")}
       >
-        <h2 className="catalog-form-section__title">{t("personal.utang.activity")}</h2>
+        <RibbonTitle icon={History}>{t("personal.utang.activity")}</RibbonTitle>
         {actionError ? (
           <p
             role="alert"

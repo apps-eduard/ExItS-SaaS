@@ -377,16 +377,28 @@ public sealed class UpdateBranchFulfillmentSettings
         try
         {
             var utcNow = _clock.UtcNow;
-            if (command.CustomerOrderingEnabled is bool ordering)
+            var ordering = command.CustomerOrderingEnabled;
+            if (ordering == true)
             {
-                if (ordering && !current.Value.CustomerOrderingReady)
+                if (!current.Value.CustomerOrderingReady)
                 {
                     return ApplicationResult<BranchFulfillmentReadinessDto>.Failure(
                         DomainErrorCodes.BranchFulfillmentNotReady,
                         "Customer ordering setup is incomplete.");
                 }
 
-                branch.SetCustomerOrderingEnabled(ordering, utcNow);
+                var pickupOn = command.PickupEnabled ?? branch.PickupEnabled;
+                var deliveryOn = command.DeliveryEnabled ?? branch.DeliveryEnabled;
+                if (!pickupOn && !deliveryOn)
+                {
+                    return ApplicationResult<BranchFulfillmentReadinessDto>.Failure(
+                        DomainErrorCodes.BranchOrderingRequiresFulfillmentMethod,
+                        "Turn on Pickup or Delivery before Online orders.");
+                }
+            }
+            else if (ordering == false)
+            {
+                branch.SetCustomerOrderingEnabled(false, utcNow);
             }
 
             if (command.PickupEnabled is bool pickup)
@@ -419,6 +431,19 @@ public sealed class UpdateBranchFulfillmentSettings
                 }
 
                 branch.SetFulfillmentCapabilities(branch.PickupEnabled, delivery, utcNow);
+            }
+
+            if (ordering != true
+                && branch.CustomerOrderingEnabled
+                && !branch.PickupEnabled
+                && !branch.DeliveryEnabled)
+            {
+                branch.SetCustomerOrderingEnabled(false, utcNow);
+            }
+
+            if (ordering == true)
+            {
+                branch.SetCustomerOrderingEnabled(true, utcNow);
             }
         }
         catch (DomainException ex)
@@ -474,7 +499,14 @@ public sealed class SetBranchOnlineOrdersPaused
             }
         }
 
-        branch.SetOnlineOrdersPaused(command.Paused, command.Paused ? reason : null, _clock.UtcNow);
+        try
+        {
+            branch.SetOnlineOrdersPaused(command.Paused, command.Paused ? reason : null, _clock.UtcNow);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<BranchFulfillmentReadinessDto>.Failure(ex.ErrorCode, ex.Message);
+        }
         await _branches.UpdateAsync(branch, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);

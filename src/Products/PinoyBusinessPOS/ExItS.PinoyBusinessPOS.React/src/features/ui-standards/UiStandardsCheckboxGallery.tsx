@@ -189,21 +189,6 @@ function CheckboxToggleOrder() {
   );
 }
 
-function CheckboxForceDark() {
-  return (
-    <div className="ui-standards-q-example" data-testid="ui-standard-checkbox-dark">
-      <div className="ui-standards-q-example__label">Force dark mode</div>
-      <div className="ui-standards-qcheckbox-dark" data-testid="ui-standard-checkbox-dark-panel">
-        <div className="ui-standards-qcheckbox-dark__row">
-          {INPUT_SAMPLES.map((sample) => (
-            <CheckboxColor key={sample.id} sample={sample} onDark testId="ui-standard-checkbox-dark" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function UiStandardsCheckboxGallery(): ReactNode {
   return (
     <div className="flex flex-col gap-4" data-testid="ui-standard-checkbox-gallery">
@@ -216,7 +201,6 @@ export function UiStandardsCheckboxGallery(): ReactNode {
         </div>
       </div>
       <CheckboxToggleOrder />
-      <CheckboxForceDark />
     </div>
   );
 }

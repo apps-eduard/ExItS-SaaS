@@ -1,0 +1,14 @@
+---
+description: Default for a new select is the Select playground lock
+alwaysApply: true
+---
+
+# Select default (LOCKED)
+
+When creating a select, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/select-global-default.ts`.
+
+The locked command is `ext dropdown primary outlined`: intent `SELECT_GLOBAL_DEFAULT_INTENT` and appearance `SELECT_GLOBAL_DEFAULT_APPEARANCE`. Shape and density stay Standard unless the user names them.
+
+The Form Components submenu **Select** playground has a lock labeled **default global**. That lock is what a new select is expected to use.
+
+Use `ExitsSelect` for one choice and `ExitsMultiSelect` for more than one. Do not pick a different intent or appearance unless the user names one.

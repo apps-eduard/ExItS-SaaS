@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { Notice } from "@/components/exits/Notice";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
@@ -92,6 +93,10 @@ export function ConnectedCommerceFulfillmentPanel({
   const [optimistic, setOptimistic] = useState<OptimisticPatch | null>(null);
   const [optimisticDefaults, setOptimisticDefaults] = useState<DefaultsPatch | null>(null);
   const [orgDeliveryGuardOpen, setOrgDeliveryGuardOpen] = useState(false);
+  const [lastMethodConfirm, setLastMethodConfirm] = useState<{
+    branch: OrganizationBranchDto;
+    channel: "pickup" | "delivery";
+  } | null>(null);
 
   const settingsQuery = useQuery({
     queryKey: ["connected-commerce", "fulfillment", organizationId],
@@ -257,6 +262,14 @@ export function ConnectedCommerceFulfillmentPanel({
       defaultDeliveryEnabled: partial.defaultDeliveryEnabled ?? defaultDelivery,
       defaultOnlineOrdersEnabled: partial.defaultOnlineOrdersEnabled ?? defaultOnline,
     };
+    if (next.defaultOnlineOrdersEnabled && !next.defaultPickupEnabled && !next.defaultDeliveryEnabled) {
+      showToast({
+        title: t("branches.toggle.orderingNeedsMethod"),
+        tone: "warning",
+        placement: "center",
+      });
+      return;
+    }
     setOptimisticDefaults(next);
     setToggleError(null);
     defaultsMutation.mutate(next);
@@ -272,6 +285,10 @@ export function ConnectedCommerceFulfillmentPanel({
     }
 
     if (channel === "pickup") {
+      if (!next && branch.customerOrderingEnabled && !branch.deliveryEnabled) {
+        setLastMethodConfirm({ branch, channel: "pickup" });
+        return;
+      }
       branchToggleMutation.mutate({
         branchId: branch.id,
         request: { pickupEnabled: next },
@@ -285,6 +302,10 @@ export function ConnectedCommerceFulfillmentPanel({
         setOrgDeliveryGuardOpen(true);
         return;
       }
+      if (!next && branch.customerOrderingEnabled && !branch.pickupEnabled) {
+        setLastMethodConfirm({ branch, channel: "delivery" });
+        return;
+      }
       branchToggleMutation.mutate({
         branchId: branch.id,
         request: { deliveryEnabled: next },
@@ -295,6 +316,14 @@ export function ConnectedCommerceFulfillmentPanel({
 
     // Online Orders: enable+resume when turning ON; pause when turning OFF (keep enabled).
     if (next) {
+      if (!branch.pickupEnabled && !branch.deliveryEnabled) {
+        showToast({
+          title: t("branches.toggle.orderingNeedsMethod"),
+          tone: "warning",
+          placement: "center",
+        });
+        return;
+      }
       const needsEnable = !branch.customerOrderingEnabled;
       const needsResume = branch.onlineOrdersPaused;
       branchToggleMutation.mutate({
@@ -576,6 +605,47 @@ export function ConnectedCommerceFulfillmentPanel({
         open={orgDeliveryGuardOpen}
         onCancel={() => setOrgDeliveryGuardOpen(false)}
         t={t}
+      />
+      <ConfirmActionDialog
+        open={lastMethodConfirm != null}
+        variant="warning"
+        title={t(
+          lastMethodConfirm?.channel === "delivery"
+            ? "branches.confirm.disableDeliveryTitle"
+            : "branches.confirm.disablePickupTitle",
+        )}
+        description={t("branches.confirm.disableLastMethodDetail")}
+        confirmLabel={t("branches.confirm.disablePickupConfirm")}
+        cancelLabel={t("branches.cancel")}
+        pending={branchToggleMutation.isPending}
+        testId="cc-last-method-confirm"
+        onCancel={() => {
+          if (!branchToggleMutation.isPending) {
+            setLastMethodConfirm(null);
+          }
+        }}
+        onConfirm={() => {
+          if (!lastMethodConfirm || branchToggleMutation.isPending) {
+            return;
+          }
+          const pending = lastMethodConfirm;
+          setLastMethodConfirm(null);
+          branchToggleMutation.mutate({
+            branchId: pending.branch.id,
+            request:
+              pending.channel === "pickup"
+                ? { pickupEnabled: false, customerOrderingEnabled: false }
+                : { deliveryEnabled: false, customerOrderingEnabled: false },
+            optimistic: {
+              branchId: pending.branch.id,
+              pickupEnabled: pending.channel === "pickup" ? false : pending.branch.pickupEnabled,
+              deliveryEnabled:
+                pending.channel === "delivery" ? false : pending.branch.deliveryEnabled,
+              customerOrderingEnabled: false,
+              onlineOrdersPaused: false,
+            },
+          });
+        }}
       />
     </div>
   );

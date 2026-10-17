@@ -34,7 +34,9 @@ Do **not** create a new Button system, modal/drawer shell, confirmation dialog, 
 | Tabs | `ExitsTabs` / `UnderlineTabBar` |
 | States | `EmptyState`, `LoadingState`, `ErrorState` |
 | Quantity | `QuantityStepper` (`components/exits/MoneyQuantity.tsx`) — **default `variant="outline"`** |
-| Forms | existing canonical form / select / search / upload controls |
+| Forms | existing canonical form / search / upload controls |
+| Single choice | `ExitsSelect` |
+| Multiple choice | `ExitsMultiSelect` (empty selection means all) |
 
 ### QuantityStepper
 

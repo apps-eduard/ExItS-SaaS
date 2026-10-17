@@ -1,0 +1,14 @@
+---
+description: Default for a new input is the Input playground lock
+alwaysApply: true
+---
+
+# Input default (LOCKED)
+
+When creating an input, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/input-global-default.ts`.
+
+The locked command is `ext input primary outlined`: intent `INPUT_GLOBAL_DEFAULT_INTENT` and appearance `INPUT_GLOBAL_DEFAULT_APPEARANCE`. Shape and density stay Standard unless the user names them.
+
+The Form Components submenu **Input** playground has a lock labeled **default global**. That lock is what a new input is expected to use.
+
+Use the locked ExItS input. Do not pick a different intent or appearance unless the user names one.

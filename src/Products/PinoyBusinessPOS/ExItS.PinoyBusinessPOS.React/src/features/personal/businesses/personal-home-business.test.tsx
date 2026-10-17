@@ -150,7 +150,7 @@ describe("Personal home businesses", () => {
     expect(screen.getByText("Businesses you own and manage")).toBeInTheDocument();
     expect(screen.getAllByText("Your businesses")).toHaveLength(1);
     const business = screen.getByTestId("personal-business-pinoy-business-pos");
-    expect(business).toHaveTextContent("Owner · Active");
+    expect(business.querySelector(".personal-owned-businesses__meta")).toHaveTextContent(/^Active$/);
     expect(business.querySelector(".personal-owned-businesses__status")).toHaveTextContent("Active");
     const open = screen.getByTestId("personal-business-open-pinoy-business-pos");
     expect(open).toHaveTextContent("Open business");
@@ -191,6 +191,7 @@ describe("Personal home businesses", () => {
             productRole: "Cashier",
             productRoleDisplay: "Cashier",
             branches: [],
+            planDisplayName: "Basic",
           },
         ],
       ),
@@ -205,8 +206,10 @@ describe("Personal home businesses", () => {
     const staffCard = screen.getByTestId(`personal-staff-business-${membershipId}`);
     expect(ownedSection).toHaveTextContent("Your businesses");
     expect(screen.getAllByText("Your businesses")).toHaveLength(1);
-    expect(ownedCard).toHaveTextContent("Owner · Pro plan · Active");
+    expect(ownedCard.querySelector(".personal-owned-businesses__meta")).toHaveTextContent(/^Pro plan · Active$/);
+    expect(ownedCard.querySelector(".personal-owned-businesses__plan")).toHaveTextContent("Pro plan");
     expect(ownedCard).not.toHaveTextContent("POS Owner");
+    expect(staffCard.querySelector(".personal-owned-businesses__meta")).toHaveTextContent(/^Basic plan · Active$/);
     expect(staffSection).toHaveClass("personal-owned-businesses");
     expect(staffSection).toHaveTextContent("Your workplace");
     expect(staffCard).toHaveTextContent("Cashier");
@@ -256,7 +259,9 @@ describe("Personal home businesses", () => {
     expect(screen.getByText("ABC Lending")).toBeInTheDocument();
     expect(screen.getAllByText("ABC Grocery")).toHaveLength(1);
     expect(screen.getAllByText("Your businesses")).toHaveLength(1);
-    expect(screen.getByTestId("personal-business-pinoy-loan-manager")).toHaveTextContent("Owner · Trialing");
+    expect(
+      screen.getByTestId("personal-business-pinoy-loan-manager").querySelector(".personal-owned-businesses__meta"),
+    ).toHaveTextContent(/^Trialing$/);
     const ownedSection = screen.getByTestId("personal-owned-businesses");
     expect(ownedSection).toContainElement(screen.getByTestId("personal-business-pinoy-business-pos"));
     expect(ownedSection).toContainElement(screen.getByTestId("personal-business-pinoy-loan-manager"));

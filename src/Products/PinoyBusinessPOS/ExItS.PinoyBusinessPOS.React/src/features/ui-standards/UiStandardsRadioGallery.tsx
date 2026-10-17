@@ -116,21 +116,6 @@ function RadioColor({
   );
 }
 
-function RadioForceDark() {
-  return (
-    <div className="ui-standards-q-example" data-testid="ui-standard-radio-dark">
-      <div className="ui-standards-q-example__label">Force dark mode</div>
-      <div className="ui-standards-qradio-dark" data-testid="ui-standard-radio-dark-panel">
-        <div className="ui-standards-qradio-dark__row">
-          {INPUT_SAMPLES.map((sample) => (
-            <RadioColor key={sample.id} sample={sample} onDark testId="ui-standard-radio-dark" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function UiStandardsRadioGallery(): ReactNode {
   return (
     <div className="flex flex-col gap-4" data-testid="ui-standard-radio-gallery">
@@ -150,7 +135,6 @@ export function UiStandardsRadioGallery(): ReactNode {
           ))}
         </div>
       </div>
-      <RadioForceDark />
     </div>
   );
 }

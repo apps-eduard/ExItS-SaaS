@@ -64,7 +64,7 @@ describe("Preferences icon top navigation", () => {
     expect(within(appearance).queryByText("Appearance")).not.toBeInTheDocument();
 
     expect(screen.getByRole("radio", { name: "Theme: System" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "Density: Balance" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Density: Standard" })).toBeInTheDocument();
     expect(screen.queryByRole("radio", { name: "Language: English" })).not.toBeInTheDocument();
   });
 
@@ -215,6 +215,10 @@ describe("Preferences icon top navigation", () => {
     expect(screen.getByRole("radio", { name: "Fuchsia" })).toHaveAttribute("title", "Fuchsia");
     expect(screen.queryByTestId("preferences-primary-amber")).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole("radio", { name: "Control shape: Square" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.controlShape).toBe("square");
+    });
     await user.click(screen.getByRole("radio", { name: "Control shape: Soft" }));
     await waitFor(() => {
       expect(document.documentElement.dataset.controlShape).toBe("soft");
@@ -271,6 +275,7 @@ describe("Preferences icon top navigation", () => {
     expect(globalsCss).toContain('[data-primary="cyan"]');
     expect(globalsCss).toContain('[data-primary="indigo"]');
     expect(globalsCss).toContain('[data-primary="fuchsia"]');
+    expect(globalsCss).toContain('[data-control-shape="square"]');
     expect(globalsCss).toContain('[data-control-shape="soft"]');
     expect(globalsCss).toContain('[data-control-shape="pill"]');
     expect(globalsCss).toContain('[data-motion="reduced"]');
@@ -303,7 +308,7 @@ describe("Preferences icon top navigation", () => {
     const primary = screen.getByTestId("preferences-primary-color");
     expect(within(primary).getAllByRole("radio")).toHaveLength(9);
     expect(within(screen.getByTestId("preferences-control-shape")).getAllByRole("radio")).toHaveLength(
-      3,
+      4,
     );
 
     const nav = screen.getByTestId("preferences-section-nav");
