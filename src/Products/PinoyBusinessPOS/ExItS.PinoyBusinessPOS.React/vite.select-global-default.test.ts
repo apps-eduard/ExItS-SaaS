@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { selectGlobalDefaultSource } from "./vite.select-global-default.js";
+import { selectGlobalDefaultSource } from "./vite.select-global-default";
 
 describe("select global default", () => {
   it("writes the locked command", () => {

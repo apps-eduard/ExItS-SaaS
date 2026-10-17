@@ -58,8 +58,6 @@ import { radioAccent, UiStandardsQradio } from "@/features/ui-standards/UiStanda
 import { UiStandardsQcheckbox } from "@/features/ui-standards/UiStandardsCheckboxGallery";
 import { toggleAccent, UiStandardsPillToggle, UiStandardsQtoggle } from "@/features/ui-standards/UiStandardsToggleGallery";
 import {
-  DROPDOWN_OPTIONS,
-  DROPDOWN_STANDARD_COLOR,
   dropdownAccent,
   UiStandardsQdropdown,
   type DropdownAppearance,

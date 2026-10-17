@@ -962,7 +962,7 @@ export function UiStandardsTablePlayground() {
                           actions={actions}
                           shape={iconShape}
                           name={row.dessert}
-                          editing={inline}
+                          editing={Boolean(inline)}
                           onEdit={() => beginEdit(row)}
                           onSave={saveEdit}
                           onCancel={resetEdit}
@@ -1054,7 +1054,7 @@ export function UiStandardsTablePlayground() {
                           actions={actions}
                           shape={iconShape}
                           name={row.dessert}
-                          editing={inline}
+                          editing={Boolean(inline)}
                           onEdit={() => beginEdit(row)}
                           onSave={saveEdit}
                           onCancel={resetEdit}
