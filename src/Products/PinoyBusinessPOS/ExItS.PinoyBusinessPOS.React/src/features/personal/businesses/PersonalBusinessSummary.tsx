@@ -71,7 +71,20 @@ function planCaption(plan: string | null | undefined, planWord: string): string 
   return `${value} ${planWord}`;
 }
 
-function MetaLine({ parts }: { parts: string[] }) {
+function MetaLine({ plan, status }: { plan: string | null; status: string }) {
+  const parts = [
+    plan ? { text: plan, className: "personal-owned-businesses__plan" } : null,
+    status
+      ? {
+          text: status,
+          className:
+            status.localeCompare("Active", undefined, { sensitivity: "accent" }) === 0
+              ? "personal-owned-businesses__status"
+              : undefined,
+        }
+      : null,
+  ].filter((part): part is { text: string; className: string | undefined } => part !== null);
+
   if (parts.length === 0) {
     return null;
   }
@@ -79,7 +92,7 @@ function MetaLine({ parts }: { parts: string[] }) {
   return (
     <p className="personal-owned-businesses__meta">
       {parts.map((part, index) => (
-        <Fragment key={`${part}-${index}`}>
+        <Fragment key={`${part.text}-${index}`}>
           {index > 0 ? (
             <span className="personal-owned-businesses__sep" aria-hidden="true">
               {" "}
@@ -87,15 +100,7 @@ function MetaLine({ parts }: { parts: string[] }) {
               {" "}
             </span>
           ) : null}
-          <span
-            className={
-              part.localeCompare("Active", undefined, { sensitivity: "accent" }) === 0
-                ? "personal-owned-businesses__status"
-                : undefined
-            }
-          >
-            {part}
-          </span>
+          <span className={part.className}>{part.text}</span>
         </Fragment>
       ))}
     </p>
@@ -120,7 +125,6 @@ function OwnedBusinessEntry({
   const role = friendlyRole(row.roleDisplay, t("personal.home.ownerRole"));
   const plan = planCaption(row.planDisplayName, t("personal.home.planWord"));
   const status = row.subscriptionStatus?.trim() ?? "";
-  const metaParts = [role, plan, status].filter((part): part is string => Boolean(part));
 
   const railLabel = role ?? t("personal.home.ownerRole");
 
@@ -138,7 +142,9 @@ function OwnedBusinessEntry({
       <div className="personal-home-step-card__panel">
         {showSectionHead ? (
           <div className="personal-owned-businesses__head">
-            <h3 className="personal-owned-businesses__title">{t("personal.home.yourBusinesses")}</h3>
+            <h3 className="personal-owned-businesses__title personal-owned-businesses__title--primary">
+              {t("personal.home.yourBusinesses")}
+            </h3>
             <p className="personal-owned-businesses__lede">{t("personal.home.yourBusinessesLede")}</p>
           </div>
         ) : null}
@@ -155,7 +161,7 @@ function OwnedBusinessEntry({
           {row.organizationDisplayName ? (
             <p className="personal-owned-businesses__product">{row.productDisplayName}</p>
           ) : null}
-          <MetaLine parts={metaParts} />
+          <MetaLine plan={plan} status={status} />
           {!row.canManageBilling ? (
             <p className="personal-owned-businesses__meta">
               {t("personal.subscriptions.managedByOrganization")}
@@ -227,8 +233,8 @@ function WorkplaceEntry({
 }) {
   const { t } = useI18n();
   const role = staffPosRole(workplace);
+  const plan = planCaption(workplace.planDisplayName, t("personal.home.planWord"));
   const status = workplace.membershipStatus.trim();
-  const metaParts = [role, status].filter((part): part is string => Boolean(part));
   const organizationName = workplace.organizationDisplayName.trim();
   const productName = t("operations.shell.productName");
 
@@ -257,7 +263,7 @@ function WorkplaceEntry({
             {organizationName || productName}
           </p>
           {organizationName ? <p className="personal-owned-businesses__product">{productName}</p> : null}
-          <MetaLine parts={metaParts} />
+          <MetaLine plan={plan} status={status} />
         </div>
         <div className="personal-owned-businesses__actions personal-owned-businesses__actions--login">
           <Button

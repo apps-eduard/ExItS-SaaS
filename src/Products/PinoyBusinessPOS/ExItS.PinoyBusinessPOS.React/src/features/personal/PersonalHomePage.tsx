@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { symbol, type IconComponent } from "@/components/icons/MaterialSymbol";
 
 const ArrowDownwardIcon = symbol("arrow_downward");
+const ArrowForwardIcon = symbol("arrow_forward");
 const ArrowUpwardIcon = symbol("arrow_upward");
 const BusinessCenterIcon = symbol("business_center");
 const ChevronRightIcon = symbol("chevron_right");
@@ -36,7 +37,6 @@ import {
   todoAgendaTabHref,
 } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
-import { CountBadge } from "@/components/exits/CountChip";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -60,12 +60,6 @@ import { useSession } from "@/session/SessionProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import { listCachedPersonalTodos } from "@/offline/personal-todo-cache";
-
-const personalSoftPrimaryButtonClass =
-  "border border-border bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))] text-[var(--exits-primary)] hover:border-[var(--exits-primary)] hover:bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))]";
-
-const personalSoftInfoButtonClass =
-  "border border-border bg-[color-mix(in_srgb,var(--exits-severity-info)_12%,var(--exits-surface))] text-[var(--exits-severity-info)] hover:border-[var(--exits-severity-info)] hover:bg-[color-mix(in_srgb,var(--exits-severity-info)_16%,var(--exits-surface))]";
 
 function pesoLabel(amount: number): string {
   return formatPeso(amount).replace("₱", "₱ ");
@@ -473,7 +467,7 @@ export function PersonalHomePage() {
             <span className="personal-home-index-card__body">
               <span className="personal-home-index-card__title">{t("personal.home.friends")}</span>
             </span>
-            <strong className="personal-home-index-card__badge tabular-nums">
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
               {dashboard.contactCount}
             </strong>
           </Link>
@@ -489,7 +483,7 @@ export function PersonalHomePage() {
             <span className="personal-home-index-card__body">
               <span className="personal-home-index-card__title">{t("personal.home.activeMine")}</span>
             </span>
-            <strong className="personal-home-index-card__badge tabular-nums">
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
               {dashboard.activeRelationshipCount}
             </strong>
           </Link>
@@ -505,7 +499,7 @@ export function PersonalHomePage() {
             <span className="personal-home-index-card__body">
               <span className="personal-home-index-card__title">{t("personal.home.sharedLedgerStat")}</span>
             </span>
-            <strong className="personal-home-index-card__badge tabular-nums">
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
               {dashboard.sharedWithMeActiveCount ?? 0}
             </strong>
           </Link>
@@ -537,6 +531,43 @@ export function PersonalHomePage() {
           </p>
         ) : storesToPayQuery.data ? (
           <>
+            <div
+              className="personal-home-metrics personal-home-metrics--pair"
+              data-testid="personal-stores-to-pay-meta"
+            >
+              <Link
+                to="/personal/linked-merchants"
+                className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
+                data-testid="personal-stat-stores"
+              >
+                <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                  <span className="personal-home-index-card__fold" />
+                  <StoreIcon className="personal-home-index-card__icon" />
+                </span>
+                <span className="personal-home-index-card__body">
+                  <span className="personal-home-index-card__title">{t("personal.home.stores")}</span>
+                </span>
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
+                  {storesToPayQuery.data.storeCount}
+                </strong>
+              </Link>
+              <Link
+                to="/personal/linked-merchants"
+                className="personal-home-index-card personal-home-index-card--primary personal-home-index-card--solid"
+                data-testid="personal-stat-stores-active"
+              >
+                <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                  <span className="personal-home-index-card__fold" />
+                  <WalletIcon className="personal-home-index-card__icon" />
+                </span>
+                <span className="personal-home-index-card__body">
+                  <span className="personal-home-index-card__title">{t("personal.home.active")}</span>
+                </span>
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
+                  {storesToPayQuery.data.activeCount}
+                </strong>
+              </Link>
+            </div>
             {storesToPayQuery.data.preview.length > 0 ? (
               <ul
                 className="personal-stores-to-pay-list m-0 grid list-none gap-2 p-0"
@@ -546,13 +577,20 @@ export function PersonalHomePage() {
                   <li key={`${store.organizationId}:${store.businessCustomerId}`}>
                     <Link
                       to={store.href}
-                      className="personal-stores-to-pay-row exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
+                      className="personal-stores-to-pay-row personal-home-infodata-card personal-home-infodata-card--row"
                       data-testid={`personal-store-row-${store.organizationId}`}
                     >
-                      <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
-                        {store.displayName}
+                      <span className="personal-home-infodata-card__circle" aria-hidden="true">
+                        <PersonAvatar
+                          name={store.displayName}
+                          size="sm"
+                          className="personal-home-infodata-card__avatar"
+                        />
                       </span>
-                      <span className="shrink-0 tabular-nums text-[length:var(--exits-text-sm)] font-semibold">
+                      <span className="personal-home-infodata-card__body">
+                        <span className="personal-home-infodata-card__title truncate">{store.displayName}</span>
+                      </span>
+                      <span className="personal-stores-to-pay-row__amount shrink-0 tabular-nums">
                         <MoneyDisplay amount={store.outstandingBalance} />
                       </span>
                     </Link>
@@ -569,39 +607,6 @@ export function PersonalHomePage() {
                   : t("personal.home.storesEmptyClear")}
               </p>
             )}
-            <div
-              className="personal-home-meta flex flex-wrap items-center gap-2"
-              data-testid="personal-stores-to-pay-meta"
-            >
-              <Button
-                asChild
-                intent="info"
-                appearance="solid"
-                emphasis="soft"
-                shape="auto"
-                className={personalSoftInfoButtonClass}
-              >
-                <Link to="/personal/linked-merchants" data-testid="personal-stat-stores">
-                  <StoreIcon className="size-4 shrink-0" aria-hidden="true" />
-                  {t("personal.home.stores")}
-                  <CountBadge count={storesToPayQuery.data.storeCount} tone="primary" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                intent="primary"
-                appearance="solid"
-                emphasis="soft"
-                shape="auto"
-                className={personalSoftPrimaryButtonClass}
-              >
-                <Link to="/personal/linked-merchants" data-testid="personal-stat-stores-active">
-                  <WalletIcon className="size-4 shrink-0" aria-hidden="true" />
-                  {t("personal.home.active")}
-                  <CountBadge count={storesToPayQuery.data.activeCount} tone="primary" />
-                </Link>
-              </Button>
-            </div>
           </>
         ) : null}
       </section>
@@ -628,29 +633,56 @@ export function PersonalHomePage() {
             </span>
             {t("personal.home.needsAttention")}
           </h2>
+          <Link
+            to="/personal/utang"
+            className="personal-needs-attention__view-all"
+            data-testid="personal-attention-view-all"
+          >
+            {t("personal.home.viewAllUtang")}
+            <ArrowForwardIcon className="personal-needs-attention__view-all-icon" aria-hidden />
+          </Link>
           <ul className="m-0 grid list-none gap-2 p-0">
             {attentionItems.map((item) => (
               <li key={item.key}>
                 <Link
                   to={item.href}
-                  className="personal-attention-row exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
+                  className="personal-attention-row personal-home-infodata-card personal-home-infodata-card--row"
                   data-testid={`personal-attention-${item.kind}`}
                 >
-                  <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
-                    {attentionTitle(item)}
+                  <span className="personal-home-infodata-card__circle" aria-hidden="true">
+                    {item.displayName ? (
+                      <PersonAvatar
+                        name={item.displayName}
+                        size="sm"
+                        className="personal-home-infodata-card__avatar"
+                      />
+                    ) : (
+                      <span className="personal-home-infodata-card__avatar flex items-center justify-center rounded-full bg-primary font-bold text-primary-foreground tabular-nums">
+                        {item.count}
+                      </span>
+                    )}
                   </span>
-                  <ChevronRightIcon className="size-4 shrink-0 text-muted" aria-hidden />
+                  <span className="personal-home-infodata-card__body">
+                    <span className="personal-home-infodata-card__title personal-attention-row__title">
+                      {item.displayName && item.kind !== "pendingConfirmation" ? (
+                        <>
+                          <span className="personal-attention-row__name">{item.displayName}</span>
+                          {t(
+                            item.kind === "overdue"
+                              ? "personal.home.attentionOverdueOne"
+                              : "personal.home.attentionDueSoonOne",
+                          ).replace("{name}", "")}
+                        </>
+                      ) : (
+                        attentionTitle(item)
+                      )}
+                    </span>
+                  </span>
+                  <ChevronRightIcon className="personal-attention-row__chevron shrink-0" aria-hidden />
                 </Link>
               </li>
             ))}
           </ul>
-          <Link
-            to="/personal/utang"
-            className="text-[length:var(--exits-text-sm)] font-medium text-[var(--exits-primary)] no-underline"
-            data-testid="personal-attention-view-all"
-          >
-            {t("personal.home.viewAllUtang")}
-          </Link>
         </section>
       ) : null}
       <section
@@ -667,7 +699,7 @@ export function PersonalHomePage() {
         <div className="personal-quick-actions__cards" data-testid="personal-quick-actions-cards">
           <Link
             to="/personal/businesses"
-            className="personal-home-infodata-card"
+            className="personal-home-infodata-card personal-home-infodata-card--info personal-home-infodata-card--compact"
             data-testid="personal-qa-start-business"
           >
             <span className="personal-home-infodata-card__circle" aria-hidden="true">
@@ -675,8 +707,8 @@ export function PersonalHomePage() {
             </span>
             <span className="personal-home-infodata-card__body">
               <span className="personal-home-infodata-card__title">{t("personal.home.actionStartBusiness")}</span>
-              <span className="personal-home-infodata-card__note">{t("personal.home.startBusinessLede")}</span>
             </span>
+            <ChevronRightIcon className="personal-attention-row__chevron shrink-0" aria-hidden />
           </Link>
           <Link
             to="/personal/utang/lent"
@@ -690,13 +722,13 @@ export function PersonalHomePage() {
             <span className="personal-home-index-card__body">
               <span className="personal-home-index-card__title">{t("personal.home.actionLent")}</span>
             </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
               <ChevronRightIcon className="personal-home-index-card__icon" />
             </strong>
           </Link>
           <Link
             to="/personal/utang/owe"
-            className="personal-home-index-card personal-home-index-card--warn personal-home-index-card--solid"
+            className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
             data-testid="personal-qa-owe"
           >
             <span className="personal-home-index-card__ribbon" aria-hidden="true">
@@ -706,7 +738,7 @@ export function PersonalHomePage() {
             <span className="personal-home-index-card__body">
               <span className="personal-home-index-card__title">{t("personal.home.actionOwe")}</span>
             </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
               <ChevronRightIcon className="personal-home-index-card__icon" />
             </strong>
           </Link>
@@ -722,7 +754,7 @@ export function PersonalHomePage() {
             <span className="personal-home-index-card__body">
               <span className="personal-home-index-card__title">{t("personal.home.actionStores")}</span>
             </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
               <ChevronRightIcon className="personal-home-index-card__icon" />
             </strong>
           </Link>
@@ -738,7 +770,7 @@ export function PersonalHomePage() {
             <span className="personal-home-index-card__body">
               <span className="personal-home-index-card__title">{t("personal.home.actionPeople")}</span>
             </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
               +
             </strong>
           </Link>
@@ -774,7 +806,7 @@ export function PersonalHomePage() {
             <div className="personal-todo-cards" data-testid="personal-todo-counts" role="list">
               <Link
                 to="/personal/todo?add=1"
-                className="personal-home-index-card personal-home-index-card--primary personal-home-index-card--solid"
+                className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
                 data-testid="personal-todo-add"
               >
                 <span className="personal-home-index-card__ribbon" aria-hidden="true">
@@ -785,7 +817,7 @@ export function PersonalHomePage() {
                   <span className="personal-home-index-card__title">{t("personal.home.actionTodo")}</span>
                 </span>
                 <strong
-                  className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard"
+                  className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
                   aria-hidden="true"
                 >
                   +
@@ -803,13 +835,13 @@ export function PersonalHomePage() {
                 <span className="personal-home-index-card__body">
                   <span className="personal-home-index-card__title">{t("personal.todo.countToday")}</span>
                 </span>
-                <strong className="personal-home-index-card__badge personal-home-index-card__badge--standard tabular-nums">
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
                   {counts.today}
                 </strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("upcoming")}
-                className="personal-home-index-card personal-home-index-card--secondary personal-home-index-card--solid"
+                className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
                 data-testid="personal-todo-stat-upcoming"
               >
                 <span className="personal-home-index-card__ribbon" aria-hidden="true">
@@ -819,7 +851,7 @@ export function PersonalHomePage() {
                 <span className="personal-home-index-card__body">
                   <span className="personal-home-index-card__title">{t("personal.todo.countUpcoming")}</span>
                 </span>
-                <strong className="personal-home-index-card__badge personal-home-index-card__badge--standard tabular-nums">
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
                   {counts.upcoming}
                 </strong>
               </Link>
@@ -835,7 +867,7 @@ export function PersonalHomePage() {
                 <span className="personal-home-index-card__body">
                   <span className="personal-home-index-card__title">{t("personal.todo.countOverdue")}</span>
                 </span>
-                <strong className="personal-home-index-card__badge personal-home-index-card__badge--standard tabular-nums">
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
                   {counts.overdue}
                 </strong>
               </Link>

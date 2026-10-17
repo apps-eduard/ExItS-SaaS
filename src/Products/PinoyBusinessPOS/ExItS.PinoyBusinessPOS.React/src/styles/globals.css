@@ -24326,14 +24326,8 @@ a.exits-chip--primary:hover {
   margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  background-color: var(--exits-warning, #ff5722);
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, #fff 28%, var(--exits-warning, #ff5722)),
-    var(--exits-warning, #ff5722) 48%,
-    color-mix(in srgb, #000 28%, var(--exits-warning, #ff5722))
-  );
-  color: var(--exits-warning-foreground, #fff);
+  background-color: var(--exits-severity-danger, #ef4444);
+  color: var(--exits-severity-danger-foreground, #fff);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.3;
@@ -24352,8 +24346,35 @@ a.exits-chip--primary:hover {
   left: 0;
   width: 0;
   height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-warning, #ff5722));
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-danger, #ef4444));
   border-left: 0.7rem solid transparent;
+}
+
+.personal-needs-attention__view-all {
+  position: absolute;
+  top: 0.45rem;
+  right: 1.05rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.35rem;
+  color: var(--exits-primary);
+  font-size: var(--exits-text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.personal-needs-attention__view-all:hover {
+  text-decoration: underline;
+}
+
+.personal-shell .personal-needs-attention__view-all-icon.material-symbols-outlined {
+  width: 1em;
+  height: 1em;
+  font-size: 1.1rem;
+  color: inherit;
 }
 
 .personal-needs-attention__pennant {
@@ -24368,13 +24389,13 @@ a.exits-chip--primary:hover {
     radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
     linear-gradient(
       145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-warning, #ff5722)),
-      var(--exits-warning, #ff5722) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-warning, #ff5722))
+      color-mix(in srgb, #fff 22%, var(--exits-severity-danger, #ef4444)),
+      var(--exits-severity-danger, #ef4444) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-severity-danger, #ef4444))
     );
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-warning, #ff5722) 18%, #fff),
-    0 3px 8px color-mix(in srgb, var(--exits-warning, #ff5722) 42%, transparent);
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-danger, #ef4444) 18%, #fff),
+    0 3px 8px color-mix(in srgb, var(--exits-severity-danger, #ef4444) 42%, transparent);
 }
 
 .personal-shell .personal-needs-attention__pennant-icon.material-symbols-outlined {
@@ -24451,6 +24472,46 @@ a.exits-chip--primary:hover {
     0 14px 28px color-mix(in srgb, var(--personal-infodata) 38%, transparent),
     0 2px 8px rgba(15, 23, 42, 0.1);
   z-index: 2;
+}
+
+.personal-home-infodata-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 4px 10px color-mix(in srgb, var(--personal-infodata) 16%, transparent),
+    0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.personal-home-infodata-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 6px 14px color-mix(in srgb, var(--personal-infodata) 20%, transparent),
+    0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.personal-home-infodata-card .personal-home-infodata-card__circle {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 0.38rem var(--exits-surface),
+    0 3px 8px color-mix(in srgb, var(--personal-infodata) 18%, transparent);
+}
+
+.personal-home-infodata-card--info {
+  --personal-infodata: var(--exits-severity-info, #0ea5e9);
+}
+
+.personal-home-infodata-card--compact {
+  --personal-infodata-size: 3.25rem;
+  border-radius: 0.2rem 999px 999px 0.2rem;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, #000 28%, var(--personal-infodata)),
+    var(--personal-infodata) 48%,
+    color-mix(in srgb, #fff 28%, var(--personal-infodata))
+  );
+}
+
+.personal-shell .personal-home-infodata-card--compact .personal-home-infodata-card__icon.material-symbols-outlined {
+  font-size: 1.6rem;
 }
 
 .personal-home-infodata-card:focus-visible {
@@ -24580,14 +24641,8 @@ a.exits-chip--primary:hover {
   margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  background-color: var(--exits-warning, #ff5722);
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, #fff 28%, var(--exits-warning, #ff5722)),
-    var(--exits-warning, #ff5722) 48%,
-    color-mix(in srgb, #000 28%, var(--exits-warning, #ff5722))
-  );
-  color: var(--exits-warning-foreground, #fff);
+  background-color: var(--exits-severity-danger, #ef4444);
+  color: var(--exits-severity-danger-foreground, #fff);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.3;
@@ -24606,7 +24661,7 @@ a.exits-chip--primary:hover {
   left: 0;
   width: 0;
   height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-warning, #ff5722));
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-danger, #ef4444));
   border-left: 0.7rem solid transparent;
 }
 
@@ -24622,13 +24677,13 @@ a.exits-chip--primary:hover {
     radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
     linear-gradient(
       145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-warning, #ff5722)),
-      var(--exits-warning, #ff5722) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-warning, #ff5722))
+      color-mix(in srgb, #fff 22%, var(--exits-severity-danger, #ef4444)),
+      var(--exits-severity-danger, #ef4444) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-severity-danger, #ef4444))
     );
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-warning, #ff5722) 18%, #fff),
-    0 3px 8px color-mix(in srgb, var(--exits-warning, #ff5722) 42%, transparent);
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-danger, #ef4444) 18%, #fff),
+    0 3px 8px color-mix(in srgb, var(--exits-severity-danger, #ef4444) 42%, transparent);
 }
 
 .personal-quick-actions__pennant-icon {
@@ -24646,14 +24701,8 @@ a.exits-chip--primary:hover {
   margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  /* Locked Button Standard Info (#0ea5e9) gradient. */
+  /* Locked Button Standard Info (#0ea5e9). */
   background-color: var(--exits-severity-info, #0ea5e9);
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, #fff 28%, var(--exits-severity-info, #0ea5e9)),
-    var(--exits-severity-info, #0ea5e9) 48%,
-    color-mix(in srgb, #000 28%, var(--exits-severity-info, #0ea5e9))
-  );
   color: var(--exits-severity-info-foreground, #fff);
   font-size: 0.8125rem;
   font-weight: 650;
@@ -24715,6 +24764,12 @@ a.exits-chip--primary:hover {
   padding: 2.45rem 1.05rem 1rem;
 }
 
+@media (max-width: 639px) {
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+    padding-top: 4.9rem;
+  }
+}
+
 .personal-tracker-card__ribbon {
   position: absolute;
   top: 0.45rem;
@@ -24726,14 +24781,8 @@ a.exits-chip--primary:hover {
   margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  /* Success gradient — distinct from Quick actions (warn) and Todo (info). */
+  /* Success — distinct from Quick actions (warn) and Todo (info). */
   background-color: var(--exits-severity-success, #22c55e);
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, #fff 28%, var(--exits-severity-success, #22c55e)),
-    var(--exits-severity-success, #22c55e) 48%,
-    color-mix(in srgb, #000 28%, var(--exits-severity-success, #22c55e))
-  );
   color: var(--exits-severity-success-foreground, #fff);
   font-size: 0.8125rem;
   font-weight: 650;
@@ -24792,7 +24841,7 @@ a.exits-chip--primary:hover {
   background: var(--exits-surface);
   box-shadow: none;
   /* Clear the overhanging ribbon so store rows sit below it. */
-  padding: 2.45rem 1.05rem 1rem;
+  padding: 3.6rem 1.05rem 1rem;
 }
 
 .personal-stores-to-pay__ribbon {
@@ -24806,15 +24855,9 @@ a.exits-chip--primary:hover {
   margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  /* Amber lock (#ffc107) — distinct from warn / info / success ribbons. */
-  background-color: #ffc107;
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, #fff 28%, #ffc107),
-    #ffc107 48%,
-    color-mix(in srgb, #000 28%, #ffc107)
-  );
-  color: #1e293b;
+  /* Locked Button Standard Info (#0ea5e9). */
+  background-color: var(--exits-severity-info, #0ea5e9);
+  color: var(--exits-severity-info-foreground, #fff);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.3;
@@ -24833,7 +24876,7 @@ a.exits-chip--primary:hover {
   left: 0;
   width: 0;
   height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, #ffc107);
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-info, #0ea5e9));
   border-left: 0.7rem solid transparent;
 }
 
@@ -24844,17 +24887,17 @@ a.exits-chip--primary:hover {
   height: 1.65rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  color: #1e293b;
+  color: #fff;
   background:
     radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
     linear-gradient(
       145deg,
-      color-mix(in srgb, #fff 22%, #ffc107),
-      #ffc107 48%,
-      color-mix(in srgb, #000 18%, #ffc107)
+      color-mix(in srgb, #fff 22%, var(--exits-severity-info, #0ea5e9)),
+      var(--exits-severity-info, #0ea5e9) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-severity-info, #0ea5e9))
     );
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, #ffc107 18%, #fff),
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-info, #0ea5e9) 18%, #fff),
     0 5px 5px -3px rgba(0, 0, 0, 0.28),
     0 8px 10px 1px rgba(0, 0, 0, 0.18),
     0 3px 14px 2px rgba(0, 0, 0, 0.14);
@@ -24968,17 +25011,17 @@ a.exits-chip--primary:hover {
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  width: calc(100% - var(--personal-capsule-size) * 0.32);
-  max-width: calc(100% - var(--personal-capsule-size) * 0.32);
+  width: calc(100% - var(--personal-capsule-size) * 0.42);
+  max-width: calc(100% - var(--personal-capsule-size) * 0.42);
   min-width: 0;
   height: var(--personal-capsule-size);
   min-height: var(--personal-capsule-size);
   max-height: var(--personal-capsule-size);
-  margin-left: calc(var(--personal-capsule-size) * 0.32);
-  padding: 0.4rem 0.85rem 0.4rem calc(var(--personal-capsule-size) * 0.72);
+  margin: 0.35rem 0 0.15rem calc(var(--personal-capsule-size) * 0.42);
+  padding: 0.45rem 1.1rem 0.45rem calc(var(--personal-capsule-size) * 0.92);
   overflow: visible;
   border: 0;
-  border-radius: var(--exits-radius-md);
+  border-radius: 0.2rem;
   background: linear-gradient(
     to right,
     color-mix(in srgb, var(--personal-capsule-ring-to) 42%, var(--exits-surface)) 0%,
@@ -24987,13 +25030,14 @@ a.exits-chip--primary:hover {
     var(--personal-capsule-soft-to) 100%
   );
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--personal-capsule-ring-to) 12%, transparent),
-    0 8px 22px color-mix(in srgb, var(--personal-capsule-ring-from) 18%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 4px 10px color-mix(in srgb, var(--personal-capsule-ring-from) 14%, transparent),
+    0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .personal-home-capsule__ring {
   position: absolute;
-  left: calc(var(--personal-capsule-size) * -0.32);
+  left: calc(var(--personal-capsule-size) * -0.42);
   top: 0;
   z-index: 2;
   display: grid;
@@ -25001,26 +25045,20 @@ a.exits-chip--primary:hover {
   width: var(--personal-capsule-size);
   height: var(--personal-capsule-size);
   border-radius: 999px;
-  background: linear-gradient(
-    to top,
-    var(--personal-capsule-ring-from) 0%,
-    var(--personal-capsule-ring-to) 100%
-  );
+  background: transparent;
   box-shadow:
-    0 5px 5px -3px rgba(0, 0, 0, 0.22),
-    0 8px 10px 1px rgba(0, 0, 0, 0.14),
-    0 3px 14px 2px color-mix(in srgb, var(--personal-capsule-ring-to) 28%, transparent);
+    0 0 0 0.38rem var(--exits-surface),
+    0 3px 8px color-mix(in srgb, var(--personal-capsule-ring-to) 16%, transparent);
 }
 
 .personal-home-capsule__disc {
   display: grid;
   place-items: center;
-  width: calc(var(--personal-capsule-size) * 0.7);
-  height: calc(var(--personal-capsule-size) * 0.7);
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   border-radius: 999px;
   background: var(--exits-surface);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--personal-capsule-ring-from) 10%, transparent);
 }
 
 .personal-home-capsule__photo {
@@ -25033,7 +25071,7 @@ a.exits-chip--primary:hover {
 .personal-home-capsule__avatar {
   width: 100% !important;
   height: 100% !important;
-  font-size: 0.95rem !important;
+  font-size: 1.35rem !important;
 }
 
 .personal-home-capsule__body {
@@ -25047,7 +25085,7 @@ a.exits-chip--primary:hover {
   max-height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .personal-home-capsule__copy {
@@ -25059,7 +25097,7 @@ a.exits-chip--primary:hover {
   min-width: 0;
   margin: 0;
   padding: 0;
-  margin-left: 0.9rem;
+  margin-left: 0.35rem;
 }
 
 .personal-home-welcome__kicker,
@@ -25094,10 +25132,6 @@ a.exits-chip--primary:hover {
 }
 
 @media (min-width: 1024px) {
-  .personal-home-capsule {
-    --personal-capsule-size: 4.5rem;
-  }
-
   .personal-home-welcome__name,
   .personal-home-capsule__name {
     font-size: 1.35rem;
@@ -25705,6 +25739,11 @@ a.exits-chip--primary:hover {
   align-items: stretch;
 }
 
+.personal-home-metrics--pair {
+  grid-template-columns: repeat(2, minmax(0, 25%));
+  margin-bottom: 0.4rem;
+}
+
 /* Metrics row — Card index style (left ribbon + right count badge). */
 .personal-home-index-card {
   --personal-index-from: #38bdf8;
@@ -25811,11 +25850,7 @@ a.exits-chip--primary:hover {
   height: 100%;
   border-radius: 0.45rem 0.45rem 0.45rem 0;
   color: #fff;
-  background: linear-gradient(
-    160deg,
-    var(--personal-index-from) 0%,
-    var(--personal-index-to) 100%
-  );
+  background: var(--personal-index-to);
   box-shadow:
     0 5px 5px -3px rgba(0, 0, 0, 0.28),
     0 8px 10px 1px rgba(0, 0, 0, 0.18),
@@ -25925,6 +25960,28 @@ a.exits-chip--primary:hover {
 
 .personal-home-index-card__badge--standard::before {
   content: none;
+}
+
+.personal-home-index-card__badge--ghost {
+  color: var(--personal-index-to);
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border-radius: 999px;
+  transition: background-color 150ms ease;
+}
+
+.personal-home-index-card__badge--ghost::before {
+  content: none;
+}
+
+.personal-home-index-card:not(.personal-home-index-card--solid) .personal-home-index-card__badge--ghost {
+  color: var(--personal-index-deep);
+}
+
+.personal-home-index-card:hover .personal-home-index-card__badge--ghost,
+.personal-home-index-card:focus-visible .personal-home-index-card__badge--ghost {
+  background-color: color-mix(in srgb, var(--personal-index-to) 12%, transparent);
 }
 
 .personal-home-index-card__badge--plus {
@@ -26387,19 +26444,105 @@ a.exits-chip--primary:hover {
   background: var(--exits-surface);
 }
 
-.personal-attention-row {
-  width: 100%;
+.personal-home-infodata-card--row {
+  --personal-infodata-size: 3.25rem;
+  --personal-infodata: var(--exits-severity-info, #0ea5e9);
+  gap: 0.75rem;
+  margin: 0.15rem 0 0.15rem calc(var(--personal-infodata-size) * 0.42);
+  border-radius: 0.2rem 999px 999px 0.2rem;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, #000 28%, var(--personal-infodata)),
+    var(--personal-infodata) 48%,
+    color-mix(in srgb, #fff 28%, var(--personal-infodata))
+  );
 }
 
-.personal-home-page .personal-needs-attention .personal-attention-row {
-  border: 1px solid var(--exits-border);
-  border-inline-start-width: 4px;
-  border-inline-start-color: var(--exits-warning);
-  background: var(--exits-surface);
+.personal-home-infodata-card__avatar {
+  position: relative;
+  z-index: 1;
+  width: 76% !important;
+  height: 76% !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 0 0 0.14rem rgba(255, 255, 255, 0.85);
 }
 
-.personal-stores-to-pay-row {
-  width: 100%;
+.personal-home-infodata-card--row .personal-home-infodata-card__title {
+  overflow: hidden;
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-stores-to-pay-row__amount {
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.personal-attention-row.personal-home-infodata-card--row {
+  --personal-infodata-size: 2.75rem;
+  --personal-infodata: var(--exits-warning, #ff5722);
+  border: 1.5px solid var(--personal-infodata);
+  color: var(--personal-infodata);
+  background-color: var(--exits-surface);
+  background-image: none;
+  box-shadow: none;
+}
+
+.personal-attention-row.personal-home-infodata-card--row:hover {
+  background-color: color-mix(in srgb, var(--personal-infodata) 8%, var(--exits-surface));
+  box-shadow: none;
+}
+
+.personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__body,
+.personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__title {
+  color: var(--personal-infodata);
+}
+
+.personal-shell .personal-attention-row .personal-attention-row__chevron.material-symbols-outlined {
+  color: var(--personal-infodata);
+}
+
+.personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__circle {
+  top: -1.5px;
+  left: calc(var(--personal-infodata-size) * -0.42 - 1.5px);
+  background-image: none;
+  box-shadow: 0 0 0 1.5px var(--personal-infodata);
+}
+
+.personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__circle::before {
+  content: none;
+}
+
+.personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__avatar {
+  font-size: 0.75rem !important;
+}
+
+.personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.personal-attention-row__name {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.personal-shell .personal-attention-row__chevron.material-symbols-outlined {
+  width: 1em;
+  height: 1em;
+  font-size: 1.35rem;
+  color: #fff;
+}
+
+.personal-stores-to-pay-row__amount > span {
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 @media (max-width: 639px) {
