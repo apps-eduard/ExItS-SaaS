@@ -3,10 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { symbol, type IconComponent } from "@/components/icons/MaterialSymbol";
 
-const ApartmentIcon = symbol("apartment");
+const ArrowDownwardIcon = symbol("arrow_downward");
+const ArrowUpwardIcon = symbol("arrow_upward");
+const BusinessCenterIcon = symbol("business_center");
 const ChevronRightIcon = symbol("chevron_right");
 const HandshakeIcon = symbol("handshake");
 const InfoIcon = symbol("info");
+const PaymentsIcon = symbol("payments");
 const PlaylistAddIcon = symbol("playlist_add");
 const ChecklistIcon = symbol("checklist");
 const TodayIcon = symbol("today");
@@ -33,7 +36,6 @@ import {
   todoAgendaTabHref,
 } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
-import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { CountBadge } from "@/components/exits/CountChip";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -41,8 +43,11 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { formatPeso } from "@/lib/format-money";
 import { InfoPopover } from "@/components/exits/InfoPopover";
 import { cn } from "@/lib/cn";
+import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { PersonalBusinessSummary } from "@/features/personal/businesses/PersonalBusinessSummary";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
+import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
+import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
   buildHomeAttentionItems,
@@ -83,6 +88,7 @@ function TrackerSummaryCard({
   sharedLabelTestId,
   showDivider,
   showTotal = true,
+  layout = "default",
 }: {
   title: string;
   mineLabel: string;
@@ -100,7 +106,59 @@ function TrackerSummaryCard({
   sharedLabelTestId: string;
   showDivider?: boolean;
   showTotal?: boolean;
+  layout?: "default" | "pendant";
 }) {
+  const foot = (
+    <span className="tracker-summary__foot">
+      <Link to={mineTo} className="tracker-summary__stat" data-testid={mineTestId}>
+        <span className="tracker-summary__stat-label" data-testid={mineLabelTestId}>
+          {mineLabel}
+        </span>
+        <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(mineAmount)}</span>
+      </Link>
+      <span
+        className="tracker-summary__vrule"
+        data-testid={showDivider ? "personal-owed-divider" : undefined}
+        aria-hidden
+      />
+      <Link to={sharedTo} className="tracker-summary__stat" data-testid={sharedTestId}>
+        <span className="tracker-summary__stat-label" data-testid={sharedLabelTestId}>
+          {sharedLabel}
+        </span>
+        <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(sharedAmount)}</span>
+      </Link>
+    </span>
+  );
+
+  if (layout === "pendant") {
+    return (
+      <div
+        className={`tracker-summary tracker-summary--${tone} tracker-summary--pendant`}
+        data-testid={rowTestId}
+      >
+        <span
+          className="tracker-summary__pendant"
+          aria-hidden
+          data-testid={`${rowTestId}-pendant`}
+        >
+          <Icon className="tracker-summary__pendant-icon" />
+        </span>
+        <div className="tracker-summary__stage">
+          <span className="tracker-summary__copy">
+            <span className="tracker-summary__title">{title}</span>
+            {showTotal ? (
+              <span className="tracker-summary__amount tabular-nums">
+                {pesoLabel(mineAmount + sharedAmount)}
+              </span>
+            ) : null}
+          </span>
+          <span className="tracker-balance__rule" aria-hidden />
+          {foot}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`tracker-summary tracker-summary--${tone}`} data-testid={rowTestId}>
       <span className="tracker-summary__head">
@@ -115,25 +173,7 @@ function TrackerSummaryCard({
         </span>
       </span>
       <span className="tracker-balance__rule" aria-hidden />
-      <span className="tracker-summary__foot">
-        <Link to={mineTo} className="tracker-summary__stat" data-testid={mineTestId}>
-          <span className="tracker-summary__stat-label" data-testid={mineLabelTestId}>
-            {mineLabel}
-          </span>
-          <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(mineAmount)}</span>
-        </Link>
-        <span
-          className="tracker-summary__vrule"
-          data-testid={showDivider ? "personal-owed-divider" : undefined}
-          aria-hidden
-        />
-        <Link to={sharedTo} className="tracker-summary__stat" data-testid={sharedTestId}>
-          <span className="tracker-summary__stat-label" data-testid={sharedLabelTestId}>
-            {sharedLabel}
-          </span>
-          <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(sharedAmount)}</span>
-        </Link>
-      </span>
+      {foot}
     </div>
   );
 }
@@ -142,6 +182,7 @@ export function PersonalHomePage() {
   const { t } = useI18n();
   const { session } = useSession();
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
+  const avatarPhotoSrc = profilePhotoSrc(usePersonalAvatarPhoto());
   const [infoOpen, setInfoOpen] = useState(false);
   const infoRootRef = useRef<HTMLDivElement>(null);
   const infoButtonRef = useRef<HTMLElement | null>(null);
@@ -299,40 +340,65 @@ export function PersonalHomePage() {
         ref={infoRootRef}
         className={cn("relative flex items-center gap-2", infoOpen && "z-30")}
       >
-        <div className="personal-home-welcome min-w-0">
-          <div className="min-w-0">
-            <p className="personal-home-welcome__kicker">{t("personal.home.welcome")}</p>
-            <div className="flex min-w-0 items-center gap-2">
-              <h1 className="personal-home-welcome__name m-0 min-w-0 truncate">{displayName}</h1>
-              <span ref={infoButtonRef} className="inline-flex shrink-0">
-            <Button
-              type="button"
-              intent="info"
-              appearance="ghost"
-              size="icon"
-              className="shrink-0"
-              aria-label={t("personal.info.open")}
-              aria-expanded={infoOpen}
-              aria-controls="personal-home-info-popover"
-              data-testid="personal-home-info"
-              onClick={() => setInfoOpen((open) => !open)}
-            >
-              <InfoIcon className="size-5" aria-hidden="true" />
-            </Button>
-              </span>
+        <div
+          className="personal-home-welcome personal-home-capsule min-w-0"
+          data-testid="personal-home-welcome"
+        >
+          <span className="personal-home-capsule__ring" aria-hidden="true">
+            <span className="personal-home-capsule__disc" data-testid="personal-home-avatar">
+              {avatarPhotoSrc ? (
+                <img
+                  className="personal-home-capsule__photo"
+                  src={avatarPhotoSrc}
+                  alt=""
+                />
+              ) : (
+                <PersonAvatar
+                  name={displayName}
+                  size="md"
+                  className="personal-home-capsule__avatar"
+                />
+              )}
+            </span>
+          </span>
+          <div className="personal-home-capsule__body min-w-0">
+            <div className="personal-home-capsule__copy min-w-0">
+              <p className="personal-home-welcome__kicker personal-home-capsule__kicker">
+                {t("personal.home.welcome")}
+              </p>
+              <h1 className="personal-home-welcome__name personal-home-capsule__name m-0 min-w-0 truncate">
+                {displayName}
+              </h1>
             </div>
+            <span ref={infoButtonRef} className="personal-home-capsule__info relative inline-flex shrink-0">
+              <Button
+                type="button"
+                intent="info"
+                appearance="ghost"
+                size="icon"
+                className="shrink-0"
+                aria-label={t("personal.info.open")}
+                aria-expanded={infoOpen}
+                aria-controls="personal-home-info-popover"
+                data-testid="personal-home-info"
+                onClick={() => setInfoOpen((open) => !open)}
+              >
+                <InfoIcon className="size-5" aria-hidden="true" />
+              </Button>
+              {infoOpen ? (
+                <InfoPopover
+                  id="personal-home-info-popover"
+                  titleId="personal-home-info-title"
+                  title={t("personal.info.title")}
+                  anchorRef={infoButtonRef}
+                  className="inset-x-auto start-auto end-0 w-[min(20rem,calc(100vw-1.5rem))] sm:inset-x-auto sm:start-auto sm:end-0 sm:w-[min(20rem,calc(100vw-1.5rem))]"
+                >
+                  <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">{t("personal.lede")}</p>
+                </InfoPopover>
+              ) : null}
+            </span>
           </div>
         </div>
-        {infoOpen ? (
-          <InfoPopover
-            id="personal-home-info-popover"
-            titleId="personal-home-info-title"
-            title={t("personal.info.title")}
-            anchorRef={infoButtonRef}
-          >
-            <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">{t("personal.lede")}</p>
-          </InfoPopover>
-        ) : null}
       </header>
 
       <PersonalGuideHomeCard />
@@ -345,11 +411,14 @@ export function PersonalHomePage() {
         aria-label={t("personal.home.personalTracker")}
         data-testid="personal-utang-summary"
       >
-        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <MonitoringIcon
-            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+        <h2 className="personal-tracker-card__ribbon" data-testid="personal-tracker-ribbon">
+          <span
+            className="personal-tracker-card__pennant"
             aria-hidden
-          />
+            data-testid="personal-tracker-pennant"
+          >
+            <MonitoringIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+          </span>
           {t("personal.home.personalTracker")}
         </h2>
         <div className="tracker-summary-row">
@@ -363,6 +432,7 @@ export function PersonalHomePage() {
             sharedTo="/personal/utang/lent"
             icon={HandshakeIcon}
             tone="owed"
+            layout="pendant"
             rowTestId="personal-utang-owed-to-me"
             mineTestId="personal-stat-borrowed-mine"
             sharedTestId="personal-stat-lent-mine"
@@ -381,6 +451,7 @@ export function PersonalHomePage() {
             sharedTo="/personal/utang/lent"
             icon={WalletIcon}
             tone="owe"
+            layout="pendant"
             rowTestId="personal-utang-i-owe"
             mineTestId="personal-stat-borrowed-shared"
             sharedTestId="personal-stat-lent-shared"
@@ -390,46 +461,70 @@ export function PersonalHomePage() {
           />
         </div>
         <div className="personal-home-metrics" data-testid="personal-home-meta">
-          <Link to="/personal/people" className="personal-home-metric" data-testid="personal-stat-people">
-            <span className="personal-home-metric__icon" aria-hidden="true">
-              <GroupIcon />
+          <Link
+            to="/personal/people"
+            className="personal-home-index-card personal-home-index-card--secondary"
+            data-testid="personal-stat-people"
+          >
+            <span className="personal-home-index-card__ribbon" aria-hidden="true">
+              <span className="personal-home-index-card__fold" />
+              <GroupIcon className="personal-home-index-card__icon" />
             </span>
-            <span className="personal-home-metric__copy">
-              <span>{t("personal.home.friends")}</span>
+            <span className="personal-home-index-card__body">
+              <span className="personal-home-index-card__title">{t("personal.home.friends")}</span>
             </span>
-            <strong className="personal-home-metric__value tabular-nums">{dashboard.contactCount}</strong>
+            <strong className="personal-home-index-card__badge tabular-nums">
+              {dashboard.contactCount}
+            </strong>
           </Link>
-          <Link to="/personal/utang" className="personal-home-metric" data-testid="personal-stat-active">
-            <span className="personal-home-metric__icon" aria-hidden="true">
-              <HandshakeIcon />
+          <Link
+            to="/personal/utang"
+            className="personal-home-index-card personal-home-index-card--success"
+            data-testid="personal-stat-active"
+          >
+            <span className="personal-home-index-card__ribbon" aria-hidden="true">
+              <span className="personal-home-index-card__fold" />
+              <HandshakeIcon className="personal-home-index-card__icon" />
             </span>
-            <span className="personal-home-metric__copy">
-              <span>{t("personal.home.activeMine")}</span>
+            <span className="personal-home-index-card__body">
+              <span className="personal-home-index-card__title">{t("personal.home.activeMine")}</span>
             </span>
-            <strong className="personal-home-metric__value tabular-nums">{dashboard.activeRelationshipCount}</strong>
+            <strong className="personal-home-index-card__badge tabular-nums">
+              {dashboard.activeRelationshipCount}
+            </strong>
           </Link>
-          <Link to="/personal/utang" className="personal-home-metric" data-testid="personal-stat-active-shared">
-            <span className="personal-home-metric__icon" aria-hidden="true">
-              <ShareIcon />
+          <Link
+            to="/personal/utang"
+            className="personal-home-index-card personal-home-index-card--info"
+            data-testid="personal-stat-active-shared"
+          >
+            <span className="personal-home-index-card__ribbon" aria-hidden="true">
+              <span className="personal-home-index-card__fold" />
+              <ShareIcon className="personal-home-index-card__icon" />
             </span>
-            <span className="personal-home-metric__copy">
-              <span>{t("personal.home.sharedLedgerStat")}</span>
+            <span className="personal-home-index-card__body">
+              <span className="personal-home-index-card__title">{t("personal.home.sharedLedgerStat")}</span>
             </span>
-            <strong className="personal-home-metric__value tabular-nums">{dashboard.sharedWithMeActiveCount ?? 0}</strong>
+            <strong className="personal-home-index-card__badge tabular-nums">
+              {dashboard.sharedWithMeActiveCount ?? 0}
+            </strong>
           </Link>
         </div>
       </section>
 
       <section
-        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        className="catalog-form-section exits-animate-panel personal-section personal-stores-to-pay gap-3"
         aria-label={t("personal.home.storesToPay")}
         data-testid="personal-stores-to-pay"
       >
-        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
-          <StoreIcon
-            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+        <h2 className="personal-stores-to-pay__ribbon" data-testid="personal-stores-to-pay-ribbon">
+          <span
+            className="personal-stores-to-pay__pennant"
             aria-hidden
-          />
+            data-testid="personal-stores-to-pay-pennant"
+          >
+            <StoreIcon className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
+          </span>
           {t("personal.home.storesToPay")}
         </h2>
         {(!online && !storesToPayQuery.data) || storesToPayQuery.isError ? (
@@ -523,11 +618,14 @@ export function PersonalHomePage() {
           aria-label={t("personal.home.needsAttention")}
           data-testid="personal-needs-attention"
         >
-          <h2 className="catalog-form-section__title personal-todo-create-form__title">
-            <NotificationIcon
-              className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+          <h2 className="personal-needs-attention__ribbon" data-testid="personal-needs-attention-ribbon">
+            <span
+              className="personal-needs-attention__pennant"
               aria-hidden
-            />
+              data-testid="personal-needs-attention-pennant"
+            >
+              <NotificationIcon className="personal-needs-attention__pennant-icon size-[0.95rem] shrink-0" />
+            </span>
             {t("personal.home.needsAttention")}
           </h2>
           <ul className="m-0 grid list-none gap-2 p-0">
@@ -566,51 +664,85 @@ export function PersonalHomePage() {
           </span>
           {t("personal.home.quickActions")}
         </h2>
-        <ActionTileGrid
-          emphasizePrimary
-          tiles={[
-            {
-              key: "start-business",
-              label: t("personal.home.actionStartBusiness"),
-              icon: ApartmentIcon,
-              testId: "personal-qa-start-business",
-              to: "/personal/businesses",
-              primary: true,
-            },
-            {
-              key: "lent",
-              label: t("personal.home.actionLent"),
-              icon: HandshakeIcon,
-              testId: "personal-qa-lent",
-              to: "/personal/utang/lent",
-              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
-            },
-            {
-              key: "owe",
-              label: t("personal.home.actionOwe"),
-              icon: WalletIcon,
-              testId: "personal-qa-owe",
-              to: "/personal/utang/owe",
-              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
-            },
-            {
-              key: "stores",
-              label: t("personal.home.actionStores"),
-              icon: StoreIcon,
-              testId: "personal-qa-stores",
-              to: "/personal/linked-merchants",
-              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
-            },
-            {
-              key: "people",
-              label: t("personal.home.actionPeople"),
-              icon: PersonAddIcon,
-              testId: "personal-qa-people",
-              to: "/personal/people",
-              end: <ChevronRightIcon className="personal-quick-actions__caret" aria-hidden="true" />,
-            },
-          ]}
-        />
+        <div className="personal-quick-actions__cards" data-testid="personal-quick-actions-cards">
+          <Link
+            to="/personal/businesses"
+            className="personal-home-infodata-card"
+            data-testid="personal-qa-start-business"
+          >
+            <span className="personal-home-infodata-card__circle" aria-hidden="true">
+              <BusinessCenterIcon className="personal-home-infodata-card__icon" />
+            </span>
+            <span className="personal-home-infodata-card__body">
+              <span className="personal-home-infodata-card__title">{t("personal.home.actionStartBusiness")}</span>
+              <span className="personal-home-infodata-card__note">{t("personal.home.startBusinessLede")}</span>
+            </span>
+          </Link>
+          <Link
+            to="/personal/utang/lent"
+            className="personal-home-index-card personal-home-index-card--success personal-home-index-card--solid"
+            data-testid="personal-qa-lent"
+          >
+            <span className="personal-home-index-card__ribbon" aria-hidden="true">
+              <span className="personal-home-index-card__fold" />
+              <ArrowUpwardIcon className="personal-home-index-card__icon" />
+            </span>
+            <span className="personal-home-index-card__body">
+              <span className="personal-home-index-card__title">{t("personal.home.actionLent")}</span>
+            </span>
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+              <ChevronRightIcon className="personal-home-index-card__icon" />
+            </strong>
+          </Link>
+          <Link
+            to="/personal/utang/owe"
+            className="personal-home-index-card personal-home-index-card--warn personal-home-index-card--solid"
+            data-testid="personal-qa-owe"
+          >
+            <span className="personal-home-index-card__ribbon" aria-hidden="true">
+              <span className="personal-home-index-card__fold" />
+              <ArrowDownwardIcon className="personal-home-index-card__icon" />
+            </span>
+            <span className="personal-home-index-card__body">
+              <span className="personal-home-index-card__title">{t("personal.home.actionOwe")}</span>
+            </span>
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+              <ChevronRightIcon className="personal-home-index-card__icon" />
+            </strong>
+          </Link>
+          <Link
+            to="/personal/linked-merchants"
+            className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
+            data-testid="personal-qa-stores"
+          >
+            <span className="personal-home-index-card__ribbon" aria-hidden="true">
+              <span className="personal-home-index-card__fold" />
+              <PaymentsIcon className="personal-home-index-card__icon" />
+            </span>
+            <span className="personal-home-index-card__body">
+              <span className="personal-home-index-card__title">{t("personal.home.actionStores")}</span>
+            </span>
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+              <ChevronRightIcon className="personal-home-index-card__icon" />
+            </strong>
+          </Link>
+          <Link
+            to="/personal/people"
+            className="personal-home-index-card personal-home-index-card--secondary personal-home-index-card--solid"
+            data-testid="personal-qa-people"
+          >
+            <span className="personal-home-index-card__ribbon" aria-hidden="true">
+              <span className="personal-home-index-card__fold" />
+              <PersonAddIcon className="personal-home-index-card__icon" />
+            </span>
+            <span className="personal-home-index-card__body">
+              <span className="personal-home-index-card__title">{t("personal.home.actionPeople")}</span>
+            </span>
+            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard" aria-hidden="true">
+              +
+            </strong>
+          </Link>
+        </div>
       </section>
 
       <section
@@ -642,46 +774,70 @@ export function PersonalHomePage() {
             <div className="personal-todo-cards" data-testid="personal-todo-counts" role="list">
               <Link
                 to="/personal/todo?add=1"
-                className="personal-todo-card personal-todo-card--add"
+                className="personal-home-index-card personal-home-index-card--primary personal-home-index-card--solid"
                 data-testid="personal-todo-add"
               >
-                <span className="personal-todo-card__icon" aria-hidden="true">
-                  <PlaylistAddIcon />
+                <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                  <span className="personal-home-index-card__fold" />
+                  <PlaylistAddIcon className="personal-home-index-card__icon" />
                 </span>
-                <span className="personal-todo-card__label">{t("personal.home.actionTodo")}</span>
+                <span className="personal-home-index-card__body">
+                  <span className="personal-home-index-card__title">{t("personal.home.actionTodo")}</span>
+                </span>
+                <strong
+                  className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--standard"
+                  aria-hidden="true"
+                >
+                  +
+                </strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("today")}
-                className="personal-todo-card personal-todo-card--today"
+                className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
                 data-testid="personal-todo-stat-today"
               >
-                <span className="personal-todo-card__icon" aria-hidden="true">
-                  <TodayIcon />
+                <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                  <span className="personal-home-index-card__fold" />
+                  <TodayIcon className="personal-home-index-card__icon" />
                 </span>
-                <span className="personal-todo-card__label">{t("personal.todo.countToday")}</span>
-                <strong className="personal-todo-card__count tabular-nums">{counts.today}</strong>
+                <span className="personal-home-index-card__body">
+                  <span className="personal-home-index-card__title">{t("personal.todo.countToday")}</span>
+                </span>
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--standard tabular-nums">
+                  {counts.today}
+                </strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("upcoming")}
-                className="personal-todo-card personal-todo-card--upcoming"
+                className="personal-home-index-card personal-home-index-card--secondary personal-home-index-card--solid"
                 data-testid="personal-todo-stat-upcoming"
               >
-                <span className="personal-todo-card__icon" aria-hidden="true">
-                  <UpcomingIcon />
+                <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                  <span className="personal-home-index-card__fold" />
+                  <UpcomingIcon className="personal-home-index-card__icon" />
                 </span>
-                <span className="personal-todo-card__label">{t("personal.todo.countUpcoming")}</span>
-                <strong className="personal-todo-card__count tabular-nums">{counts.upcoming}</strong>
+                <span className="personal-home-index-card__body">
+                  <span className="personal-home-index-card__title">{t("personal.todo.countUpcoming")}</span>
+                </span>
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--standard tabular-nums">
+                  {counts.upcoming}
+                </strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("overdue")}
-                className="personal-todo-card personal-todo-card--overdue"
+                className="personal-home-index-card personal-home-index-card--warn personal-home-index-card--solid"
                 data-testid="personal-todo-stat-overdue"
               >
-                <span className="personal-todo-card__icon" aria-hidden="true">
-                  <OverdueIcon />
+                <span className="personal-home-index-card__ribbon" aria-hidden="true">
+                  <span className="personal-home-index-card__fold" />
+                  <OverdueIcon className="personal-home-index-card__icon" />
                 </span>
-                <span className="personal-todo-card__label">{t("personal.todo.countOverdue")}</span>
-                <strong className="personal-todo-card__count tabular-nums">{counts.overdue}</strong>
+                <span className="personal-home-index-card__body">
+                  <span className="personal-home-index-card__title">{t("personal.todo.countOverdue")}</span>
+                </span>
+                <strong className="personal-home-index-card__badge personal-home-index-card__badge--standard tabular-nums">
+                  {counts.overdue}
+                </strong>
               </Link>
             </div>
             {counts.open === 0 && counts.completed === 0 ? (

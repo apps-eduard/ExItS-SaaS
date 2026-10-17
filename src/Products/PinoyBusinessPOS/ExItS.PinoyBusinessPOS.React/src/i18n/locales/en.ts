@@ -3105,6 +3105,7 @@ export const en = {
   "personal.home.openBusiness": "Open business",
   "personal.home.exploreProducts": "Explore products",
   "personal.home.ownerRole": "Owner",
+  "personal.home.staffRole": "Staff",
   "personal.home.planWord": "plan",
   "personal.home.yourWorkplace": "Your workplace",
   "personal.home.yourWorkplaceLede": "Organizations where you work",

@@ -50,18 +50,29 @@ import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import {
   UiStandardsCardBannerSample,
   UiStandardsCardBookmarkSample,
+  UiStandardsCardCapsuleSample,
   UiStandardsCardClipSample,
   UiStandardsCardFooterActionsSample,
   UiStandardsCardFooterCaptionSample,
   UiStandardsCardFooterSplitSample,
+  UiStandardsCardIdeaSample,
+  UiStandardsCardInfodataSample,
   UiStandardsCardNotchSample,
+  UiStandardsCardOptionSample,
   UiStandardsCardPennantSample,
+  UiStandardsCardFoldSample,
+  UiStandardsCardIndexSample,
+  UiStandardsCardPinSample,
+  UiStandardsCardStepSample,
   UiStandardsCardPlayground,
+  UiStandardsCardRibbonPendantSample,
   UiStandardsCardRibbonSample,
+  UiStandardsCardSettingsSample,
   UiStandardsCardStackSample,
   UiStandardsCardStampSample,
   UiStandardsCardStripeSample,
   UiStandardsCardTicketSample,
+  UiStandardsCardTitleTabSample,
 } from "@/features/ui-standards/UiStandardsCardPlayground";
 import { UiStandardsShadowPlayground } from "@/features/ui-standards/UiStandardsShadowPlayground";
 import { UiStandardsTablePlayground } from "@/features/ui-standards/UiStandardsTablePlayground";
@@ -2084,8 +2095,19 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             <CardTitle>{t("uiStandards.cardSamplesTitle")}</CardTitle>
             <UiStandardsCardBannerSample />
             <UiStandardsCardPennantSample />
+            <UiStandardsCardCapsuleSample />
+            <UiStandardsCardTitleTabSample />
+            <UiStandardsCardOptionSample />
+            <UiStandardsCardInfodataSample />
+            <UiStandardsCardIdeaSample />
+            <UiStandardsCardSettingsSample />
+            <UiStandardsCardPinSample />
+            <UiStandardsCardFoldSample />
+            <UiStandardsCardIndexSample />
+            <UiStandardsCardStepSample />
             <div className="ui-standards-qcard-samples" data-testid="ui-standard-card-samples-grid">
               <UiStandardsCardRibbonSample />
+              <UiStandardsCardRibbonPendantSample />
               <UiStandardsCardTicketSample />
               <UiStandardsCardBookmarkSample />
               <UiStandardsCardFooterActionsSample />

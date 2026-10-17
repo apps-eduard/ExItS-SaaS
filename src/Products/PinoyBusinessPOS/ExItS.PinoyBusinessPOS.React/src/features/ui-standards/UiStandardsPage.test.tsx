@@ -647,7 +647,74 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-pennant-body-blue")).toHaveTextContent("Primary");
     expect(screen.getByTestId("ui-standard-card-pennant-footer-blue")).toHaveTextContent("Open board");
     expect(screen.getByTestId("ui-standard-card-pennant-footer-amber")).toHaveTextContent("Share flyer");
+    expect(screen.getByTestId("ui-standard-card-capsule-heading")).toHaveTextContent("Card true capsule");
+    expect(screen.getByTestId("ui-standard-card-capsule-magenta")).toHaveAttribute("data-intent", "magenta");
+    expect(screen.getByTestId("ui-standard-card-capsule-info")).toHaveAttribute("data-intent", "info");
+    expect(screen.getByTestId("ui-standard-card-capsule-success")).toHaveAttribute("data-intent", "success");
+    expect(screen.getByTestId("ui-standard-card-capsule-warn")).toHaveAttribute("data-intent", "warn");
+    expect(screen.getByTestId("ui-standard-card-capsule-ring-magenta")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-capsule-body-magenta")).toHaveTextContent("Lorem Ipsum");
     expect(screen.getByTestId("ui-standard-card-ribbon-heading")).toHaveTextContent("Card ribbon");
+    expect(screen.getByTestId("ui-standard-card-title-tab-heading")).toHaveTextContent("Card title tab");
+    expect(screen.getByTestId("ui-standard-card-title-tab-cyan")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-title-tab-ribbon-info")).toHaveTextContent("Title 02");
+    expect(screen.getByTestId("ui-standard-card-title-tab-body-cyan")).toHaveTextContent("Lorem Ipsum");
+    expect(screen.getByTestId("ui-standard-card-option-heading")).toHaveTextContent("Card option");
+    expect(screen.getByTestId("ui-standard-card-option-01")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-option-ribbon-01")).toHaveTextContent("01");
+    expect(screen.getByTestId("ui-standard-card-option-body-01")).toHaveTextContent("Options 01");
+    expect(screen.getByTestId("ui-standard-card-infodata-heading")).toHaveTextContent("Card infodata");
+    expect(screen.getByTestId("ui-standard-card-infodata-magenta")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-infodata-icon-magenta")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-infodata-body-magenta")).toHaveTextContent("Infodata 01");
+    expect(screen.getByTestId("ui-standard-card-idea-heading")).toHaveTextContent("Card idea");
+    expect(screen.getByTestId("ui-standard-card-idea-coral")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-idea-label-coral")).toHaveTextContent("Idea");
+    expect(screen.getByTestId("ui-standard-card-idea-icon-coral")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-idea-body-coral")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-settings-heading")).toHaveTextContent("Card settings");
+    expect(screen.getByTestId("ui-standard-card-settings-magenta")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-settings-title-magenta")).toHaveTextContent("Settings");
+    expect(screen.getByTestId("ui-standard-card-settings-icon-magenta")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-settings-body-magenta")).toHaveTextContent(
+      "Customize tools and systems",
+    );
+    expect(screen.getByTestId("ui-standard-card-pin-heading")).toHaveTextContent("Card pin");
+    expect(screen.getByTestId("ui-standard-card-pin-amber")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-pin-icon-amber")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-pin-ribbon-amber")).toHaveTextContent("Lorem Ipsum");
+    expect(screen.getByTestId("ui-standard-card-pin-body-amber")).toHaveTextContent("Read more");
+    expect(screen.getByTestId("ui-standard-card-fold-heading")).toHaveTextContent("Card fold");
+    expect(screen.getByTestId("ui-standard-card-fold-info")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-fold-icon-info")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-fold-title-info")).toHaveTextContent("Research");
+    expect(screen.getByTestId("ui-standard-card-fold-body-info")).toHaveTextContent("Lorem ipsum");
+    expect(screen.getByTestId("ui-standard-card-index-heading")).toHaveTextContent("Card index");
+    expect(screen.getByTestId("ui-standard-card-index-info")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-index-icon-info")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-index-title-info")).toHaveTextContent(
+      "Lorem ipsum dolor sit amet",
+    );
+    expect(screen.getByTestId("ui-standard-card-index-badge-info")).toHaveTextContent("01");
+    expect(screen.getByTestId("ui-standard-card-index-body-info")).toHaveTextContent("Lorem ipsum");
+    expect(screen.getByTestId("ui-standard-card-step-heading")).toHaveTextContent("Card step");
+    expect(screen.getByTestId("ui-standard-card-step-warn")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-step-icon-warn")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-step-rail-warn")).toHaveTextContent("Step 01");
+    expect(screen.getByTestId("ui-standard-card-step-title-warn")).toHaveTextContent("Your title here");
+    expect(screen.getByTestId("ui-standard-card-step-body-warn")).toHaveTextContent("Lorem ipsum");
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-heading")).toHaveTextContent(
+      "Card ribbon pendant",
+    );
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-info")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-warn")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-success")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-icon-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-label-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-ribbon-pendant-body-primary")).toHaveTextContent(
+      "Our Changing Planet",
+    );
     expect(screen.getByTestId("ui-standard-card-ribbon-label-primary")).toHaveTextContent("Primary");
     expect(screen.getByTestId("ui-standard-card-ribbon-label-secondary")).toHaveTextContent("Secondary");
     expect(screen.getByTestId("ui-standard-card-ribbon-label-info")).toHaveTextContent("Info");
