@@ -119,7 +119,7 @@ describe("LinkedMerchantStatementPage", () => {
     await waitFor(() => {
       expect(screen.getByTestId("linked-merchant-statement-page")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("0.00 PHP");
+    expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("₱0.00");
     expect(screen.queryByTestId("linked-merchant-open-debt-button")).not.toBeInTheDocument();
     const receiptLink = screen.getByTestId("linked-merchant-activity-receipt-link");
     expect(receiptLink).toBeInTheDocument();
@@ -220,7 +220,7 @@ describe("LinkedMerchantStatementPage", () => {
     await waitFor(() => {
       expect(screen.getByTestId("merchant-statement-status-empty")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("0.00 PHP");
+    expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("₱0.00");
     expect(screen.queryByTestId("linked-merchant-open-debt-button")).not.toBeInTheDocument();
   });
 

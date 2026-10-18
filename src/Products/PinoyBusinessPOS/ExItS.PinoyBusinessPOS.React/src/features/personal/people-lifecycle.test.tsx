@@ -280,10 +280,12 @@ describe("People lifecycle UX", () => {
     );
 
     renderPeopleApp("/personal/people");
-    expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(screen.getByText("Request sent")).toBeInTheDocument();
-    expect(screen.getByText("Ana Cruz")).toBeInTheDocument();
-    expect(screen.getAllByText("Connected").length).toBeGreaterThanOrEqual(1);
+    const juanRow = await screen.findByTestId("people-row-c1");
+    expect(within(juanRow).getByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(within(juanRow).getByText("Request sent")).toBeInTheDocument();
+    const anaRow = screen.getByTestId("people-row-c2");
+    expect(within(anaRow).getByText("Ana Cruz")).toBeInTheDocument();
+    expect(within(anaRow).getByText("Connected")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /block/i })).not.toBeInTheDocument();
   });
@@ -579,8 +581,9 @@ describe("People lifecycle UX", () => {
     );
 
     renderPeopleApp("/personal/people");
-    expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(screen.getByText("Request sent")).toBeInTheDocument();
+    const juanRow = await screen.findByTestId("people-row-c1");
+    expect(within(juanRow).getByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(within(juanRow).getByText("Request sent")).toBeInTheDocument();
     expect(screen.queryByText(/Utang invitation/i)).not.toBeInTheDocument();
   });
 });

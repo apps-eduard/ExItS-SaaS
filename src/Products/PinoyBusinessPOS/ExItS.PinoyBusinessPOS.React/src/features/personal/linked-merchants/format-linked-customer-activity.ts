@@ -1,7 +1,8 @@
 import type { LinkedCustomerActivityItem } from "@/api/pos/pos-linked-customers-client";
 import { formatMoneyAmountInput } from "@/lib/money-input";
 
-const customerOrderNumberPattern = /^SO-\d+$/i;
+/** Current `ORD-YYMMDD-NNN[-Rn]` customer orders, plus legacy `SO-NNN` rows. */
+const customerOrderNumberPattern = /^(?:ORD-\d{6}-\d{3,}(?:-R\d+)?|SO-\d+)$/i;
 
 function formatSignedMoney(amount: number, sign: "+" | "−" | "" = ""): string {
   return `${sign}${formatMoneyAmountInput(Math.abs(amount))}`;

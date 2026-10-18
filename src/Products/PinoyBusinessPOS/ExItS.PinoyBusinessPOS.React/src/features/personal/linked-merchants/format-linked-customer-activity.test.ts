@@ -11,7 +11,7 @@ describe("formatLinkedCustomerActivity", () => {
         activityId: "a",
         occurredAtUtc: "2026-08-24T02:00:00Z",
         type: "UtangCharge",
-        referenceNumber: "260816-123",
+        referenceNumber: "ORD-260816-123",
         chargeAmount: 800,
         paymentAmount: null,
         adjustmentAmount: null,
@@ -20,7 +20,25 @@ describe("formatLinkedCustomerActivity", () => {
         hasDetails: true,
         sourceSaleId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
       }),
-    ).toBe("Online purchase · Order 260816-123 · +800.00");
+    ).toBe("Online purchase · Order ORD-260816-123 · +800.00");
+  });
+
+  it("does not label an in-store sale charge as an online purchase", () => {
+    expect(
+      formatLinkedCustomerActivityTitle({
+        activityId: "a",
+        occurredAtUtc: "2026-08-24T02:00:00Z",
+        type: "UtangCharge",
+        referenceNumber: "SAL-260816-007",
+        chargeAmount: 120,
+        paymentAmount: null,
+        adjustmentAmount: null,
+        balanceAfter: 120,
+        status: "Active",
+        hasDetails: true,
+        sourceSaleId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      }),
+    ).toBe("SAL-260816-007 · +120.00");
   });
 
   it("formats charge and payment titles", () => {

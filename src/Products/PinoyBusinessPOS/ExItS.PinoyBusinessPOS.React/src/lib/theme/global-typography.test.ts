@@ -55,7 +55,7 @@ describe("POS global typography hierarchy", () => {
     expect(block).toMatch(/font-weight:\s*var\(--exits-font-weight-medium\)/);
   });
 
-  it("uses restrained page/card titles, semibold section titles, and tabular KPIs", () => {
+  it("uses semibold page/section titles, restrained card titles, and tabular KPIs", () => {
     expect(pageHeaderSource).toContain("exits-type-page-title");
     expect(pageHeaderSource).not.toContain("font-bold");
 
@@ -68,7 +68,7 @@ describe("POS global typography hierarchy", () => {
     const kpi = globalsCss.match(/\.exits-type-kpi\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const heroKpi = globalsCss.match(/\.exits-type-hero-kpi\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
 
-    expect(pageTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-medium\)/);
+    expect(pageTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-semibold\)/);
     expect(sectionTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-semibold\)/);
     expect(cardTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-medium\)/);
     expect(body).toMatch(/font-weight:\s*var\(--exits-font-weight-regular\)/);
