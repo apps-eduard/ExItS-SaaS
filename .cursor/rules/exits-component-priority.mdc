@@ -11,6 +11,7 @@ Search `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/component
 
 | Job | Use |
 | --- | --- |
+| Text input | Locked global input (`exits-input-default.mdc`) |
 | Single choice | `ExitsSelect` |
 | Multiple choice | `ExitsMultiSelect` |
 | Switch | `Switch` |
@@ -23,5 +24,7 @@ Search `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/component
 | Short dialog | `ExitsModal` |
 
 A table filter is `ExitsMultiSelect`. Empty selection means all rows.
+
+Inputs and selects follow the global lock in `exits-input-default.mdc` and `exits-select-default.mdc`: intent, appearance, the 13px label, and the 14px text.
 
 Detail: `.cursor/rules/exits-ui-architecture.mdc`.

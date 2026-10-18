@@ -9,6 +9,8 @@ alwaysApply: false
 Authoritative docs: `src/Products/PinoyBusinessPOS/Docs/UI/EXITS_UI_STANDARD.md`  
 Visual source of truth: `/ui-standards` (production components win over demo text)
 
+`/ui-standards` is development only. It is not in production or preview builds. New showcase styles go in `src/features/ui-standards/ui-standards.css`, not `globals.css`. Product code must not import `UiStandardsPage`, `UiStandards*` components, or `ui-standards.css`. Detail: `src/Products/PinoyBusinessPOS/Docs/UI/ui-standards-development-only.md`.
+
 When implementing or modifying PinoyBusinessPOS React UI, follow these defaults unless the user explicitly overrides.
 
 ## Audit before creating

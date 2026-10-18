@@ -11,4 +11,15 @@ The locked command is `ext input primary outlined`: intent `INPUT_GLOBAL_DEFAULT
 
 The Form Components submenu **Input** playground has a lock labeled **default global**. That lock is what a new input is expected to use.
 
-Use the locked ExItS input. Do not pick a different intent or appearance unless the user names one.
+Use the locked ExItS input. Do not pick a different intent or appearance unless the user names one. On `/ui-standards`, the locked input is `PlaygroundTextField`, and the locked search is `PlaygroundSearchField`.
+
+## Type (LOCKED)
+
+The lock in `field-typography-global-default.ts` (same folder) covers every appearance except **Label above**:
+
+- Label: `FIELD_GLOBAL_LABEL_SIZE` = **13px** (`--qinput-label-size`). It is the same size inside the field and when raised. `FIELD_GLOBAL_FLOAT_SCALE` = 1, so the raised label slides up and does not shrink.
+- Typed text: `FIELD_GLOBAL_TEXT_SIZE` = **14px**.
+- Density changes the typed text only. It does not change the label.
+- Label above keeps its own static 14px label (`FIELD_GLOBAL_STACKED_LABEL_SIZE`). Do not touch it unless the user names Label above.
+
+Change these sizes only when the user asks. Update `field-typography-global-default.ts`, the tokens in `globals.css`, and `field-typography-global-default.test.ts` together.

@@ -2,7 +2,7 @@
 
 **Status:** ACTIVE  
 **Scope:** `ExItS.PinoyBusinessPOS.React`  
-**Compact visual reference:** `/ui-standards` (local-validation / DEV only; `/ui-standard` redirects here)  
+**Compact visual reference:** `/ui-standards` (development only — not in production or preview builds; `/ui-standard` redirects here). See [ui-standards-development-only.md](./ui-standards-development-only.md).  
 **Live samples + catalog:** single canonical page (search + category filters)
 
 This document locks **interaction semantics** so features reuse one set of primitives instead of inventing local Save/Edit/Delete/toast/confirm/drawer/modal patterns.

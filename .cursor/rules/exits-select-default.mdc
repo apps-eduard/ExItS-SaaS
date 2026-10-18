@@ -11,4 +11,18 @@ The locked command is `ext dropdown primary outlined`: intent `SELECT_GLOBAL_DEF
 
 The Form Components submenu **Select** playground has a lock labeled **default global**. That lock is what a new select is expected to use.
 
-Use `ExitsSelect` for one choice and `ExitsMultiSelect` for more than one. Do not pick a different intent or appearance unless the user names one.
+Use `ExitsSelect` for one choice and `ExitsMultiSelect` for more than one. Do not pick a different intent or appearance unless the user names one. On `/ui-standards`, the locked select is `CompactSelect`.
+
+## Type and open bar (LOCKED)
+
+The lock in `field-typography-global-default.ts` (same folder) matches the input lock. It covers every appearance except **Label above**:
+
+- Label: `FIELD_GLOBAL_LABEL_SIZE` = **13px** (`--qdropdown-label-size`). The label does not shrink.
+- Selected value: `FIELD_GLOBAL_TEXT_SIZE` = **14px**.
+- Open bar: every appearance shows a thick bottom edge that grows from the center. Thickness is `SELECT_GLOBAL_BAR_THICKNESS` = **3px**, and duration is `SELECT_GLOBAL_BAR_DURATION` = **0.7s**. Do not hide the bar on any appearance.
+- In the playground, the Label above field height matches the input at every density.
+- Label above keeps its own static 14px label (`FIELD_GLOBAL_STACKED_LABEL_SIZE`). Do not touch it unless the user names Label above.
+
+Do not put type values in `select-global-default.ts`. The playground lock button rewrites that file.
+
+Change these values only when the user asks. Update `field-typography-global-default.ts`, the tokens in `globals.css`, and `field-typography-global-default.test.ts` together.
