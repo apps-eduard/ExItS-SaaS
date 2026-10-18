@@ -454,7 +454,7 @@ export function PersonalHomePage() {
         <div className="personal-home-metrics" data-testid="personal-home-meta">
           <Link
             to="/personal/people"
-            className="personal-home-index-card personal-home-index-card--secondary"
+            className="personal-home-index-card personal-home-index-card--secondary personal-home-index-card--outline"
             data-testid="personal-stat-people"
           >
             <span className="personal-home-index-card__ribbon" aria-hidden="true">
@@ -470,7 +470,7 @@ export function PersonalHomePage() {
           </Link>
           <Link
             to="/personal/utang"
-            className="personal-home-index-card personal-home-index-card--success"
+            className="personal-home-index-card personal-home-index-card--success personal-home-index-card--outline"
             data-testid="personal-stat-active"
           >
             <span className="personal-home-index-card__ribbon" aria-hidden="true">
@@ -486,7 +486,7 @@ export function PersonalHomePage() {
           </Link>
           <Link
             to="/personal/utang"
-            className="personal-home-index-card personal-home-index-card--info"
+            className="personal-home-index-card personal-home-index-card--info personal-home-index-card--outline"
             data-testid="personal-stat-active-shared"
           >
             <span className="personal-home-index-card__ribbon" aria-hidden="true">

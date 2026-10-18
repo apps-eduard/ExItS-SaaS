@@ -209,16 +209,19 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-stat-people")).toHaveClass(
       "personal-home-index-card",
       "personal-home-index-card--secondary",
+      "personal-home-index-card--outline",
     );
-    expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("Friends");
+    expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("People");
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
     expect(screen.getByTestId("personal-stat-active")).toHaveClass(
       "personal-home-index-card",
       "personal-home-index-card--success",
+      "personal-home-index-card--outline",
     );
     expect(screen.getByTestId("personal-stat-active-shared")).toHaveClass(
       "personal-home-index-card",
       "personal-home-index-card--info",
+      "personal-home-index-card--outline",
     );
     expect(screen.getByTestId("personal-stat-lent-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();

@@ -25997,6 +25997,14 @@ a.exits-chip--primary:hover {
   border-color: color-mix(in srgb, var(--personal-index-card-start) 45%, var(--exits-border));
 }
 
+/* Outline — surface fill with an intent border, no shadow. */
+.personal-home-index-card--outline,
+.personal-home-index-card--outline:hover {
+  background: var(--exits-surface);
+  border-color: var(--personal-index-card-start);
+  box-shadow: none;
+}
+
 .personal-home-index-card--warn {
   --personal-index-from: #ff8a65;
   --personal-index-to: #ff5722;

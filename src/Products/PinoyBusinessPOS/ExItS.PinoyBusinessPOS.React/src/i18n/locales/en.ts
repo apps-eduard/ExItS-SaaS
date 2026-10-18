@@ -1979,7 +1979,7 @@ export const en = {
   "personal.home.trackerOweTitle": "Shared with Me",
   "personal.home.people": "People",
   "personal.home.friend": "Friend",
-  "personal.home.friends": "Friends",
+  "personal.home.friends": "People",
   "personal.home.active": "Active",
   "personal.home.activeMine": "My Record",
   "personal.home.activeShared": "Shared with Me",
