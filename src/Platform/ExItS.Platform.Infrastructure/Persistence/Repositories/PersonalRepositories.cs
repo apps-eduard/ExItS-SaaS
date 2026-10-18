@@ -437,10 +437,12 @@ internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersona
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(normalizedEmail);
+        var normalized = normalizedEmail.Trim().ToUpperInvariant();
         var record = await db.PersonalContacts.AsNoTracking()
             .FirstOrDefaultAsync(
                 x => x.OwnerUserIdentityId == ownerUserIdentityId.Value
-                     && x.Email == normalizedEmail
+                     && x.Email != null
+                     && x.Email.ToUpper() == normalized
                      && x.Status == nameof(PersonalContactStatus.Active),
                 cancellationToken)
             .ConfigureAwait(false);

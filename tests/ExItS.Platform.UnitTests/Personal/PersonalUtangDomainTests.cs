@@ -302,12 +302,12 @@ public sealed class PersonalUtangDomainTests
     }
 
     [Fact]
-    public void Contact_email_is_normalized_uppercase()
+    public void Contact_email_keeps_the_typed_case()
     {
         var user = PlatformUserId.New();
         var contact = PersonalContact.Create(user, "Friend", null, "Friend@Example.com", DateTimeOffset.UtcNow);
-        Assert.Equal("FRIEND@EXAMPLE.COM", contact.Email);
-        Assert.Equal("FRIEND@EXAMPLE.COM", PersonalContact.NormalizeOptionalEmail(" friend@example.com "));
+        Assert.Equal("Friend@Example.com", contact.Email);
+        Assert.Equal("friend@example.com", PersonalContact.NormalizeOptionalEmail(" friend@example.com "));
         Assert.Null(PersonalContact.NormalizeOptionalEmail("  "));
     }
 

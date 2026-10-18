@@ -325,7 +325,7 @@ public sealed class PersonalContact
             throw new DomainException(DomainErrorCodes.InvalidEmail, "Contact email is too long.");
         }
 
-        return trimmed.ToUpperInvariant();
+        return trimmed;
     }
 
     private static void EnsureUtc(DateTimeOffset value)
