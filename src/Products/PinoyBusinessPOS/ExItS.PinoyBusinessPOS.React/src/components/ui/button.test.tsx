@@ -140,7 +140,7 @@ describe("Button shape and treatment (locked standard)", () => {
     expect(plain).not.toContain("shadow-[var(--exits-shadow-sm)]");
 
     const standard = buttonVariants({ shape: "standard", treatment: "flat" });
-    expect(standard).toContain("rounded-[var(--exits-radius-md)]");
+    expect(standard).toContain("rounded-[var(--exits-radius-control)]");
     expect(standard).not.toContain("rounded-[var(--exits-control-radius)]");
   });
 

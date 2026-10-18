@@ -23,7 +23,7 @@ const globalsCss = readFileSync(
 describe("POS global Control Shape rollout", () => {
   it("Button auto follows control-radius; explicit shapes win; round stays round", () => {
     expect(buttonVariants({ shape: "auto" })).toContain("rounded-[var(--exits-control-radius)]");
-    expect(buttonVariants({ shape: "standard" })).toContain("rounded-[var(--exits-radius-md)]");
+    expect(buttonVariants({ shape: "standard" })).toContain("rounded-[var(--exits-radius-control)]");
     expect(buttonVariants({ shape: "standard" })).not.toContain(
       "rounded-[var(--exits-control-radius)]",
     );
@@ -119,10 +119,10 @@ describe("POS global Control Shape rollout", () => {
       /\[data-control-shape="pill"\][\s\S]*?--exits-control-radius:\s*9999px/,
     );
     expect(globalsCss).toMatch(
-      /\[data-control-shape="soft"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,
+      /\[data-control-shape="soft"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-control\)/,
     );
     expect(globalsCss).toMatch(
-      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,
+      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-control\)/,
     );
     expect(globalsCss).toMatch(
       /\.exits-input\s*\{[^}]*border-radius:\s*var\(--exits-field-radius/,
@@ -156,7 +156,7 @@ describe("POS global Control Shape rollout", () => {
       /\.exits-status-chip--shape-auto\s*\{[^}]*border-radius:\s*var\(--exits-control-radius\)/,
     );
     expect(globalsCss).toMatch(
-      /\.exits-status-chip--shape-standard\s*\{[^}]*border-radius:\s*var\(--exits-radius-md\)/,
+      /\.exits-status-chip--shape-standard\s*\{[^}]*border-radius:\s*var\(--exits-radius-control\)/,
     );
 
     render(createElement(TagChip, { tone: "info", children: "Beta" }));

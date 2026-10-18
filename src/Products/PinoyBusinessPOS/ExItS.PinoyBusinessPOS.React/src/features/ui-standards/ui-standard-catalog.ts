@@ -1,11 +1,15 @@
 export type UiStandardFilterCategory =
   | "all"
   | "buttons"
+  | "button-stepper"
+  | "button-group"
+  | "button-dropdown"
   | "inputs"
   | "radio"
   | "checkbox"
   | "toggle"
   | "dropdown"
+  | "tabs-select"
   | "slider"
   | "range"
   | "date"
@@ -15,13 +19,11 @@ export type UiStandardFilterCategory =
   | "feedback"
   | "overlays"
   | "dialog"
-  | "forms"
   | "upload"
   | "card"
   | "card-receipt"
   | "shadow"
   | "tables"
-  | "selects"
   | "navigation"
   | "data"
   | "states"
@@ -30,11 +32,14 @@ export type UiStandardFilterCategory =
 
 export type UiStandardLiveCardId =
   | "buttons"
+  | "buttonGroup"
+  | "buttonDropdown"
   | "inputs"
   | "radio"
   | "checkbox"
   | "toggle"
   | "dropdown"
+  | "tabsSelect"
   | "slider"
   | "range"
   | "date"
@@ -47,10 +52,8 @@ export type UiStandardLiveCardId =
   | "dialogPlayground"
   | "dialog"
   | "status"
-  | "forms"
   | "quantityStepper"
   | "upload"
-  | "selects"
   | "nav"
   | "table"
   | "card"
@@ -72,10 +75,17 @@ export type UiStandardNavLink = {
   href: string;
 };
 
-export type UiStandardNavChild = UiStandardNavItem | UiStandardNavLink;
+/** Second-level submenu inside a group (e.g. Form Components → Selects). */
+export type UiStandardNavSubgroup = {
+  id: "select-components";
+  label: string;
+  children: readonly UiStandardNavItem[];
+};
+
+export type UiStandardNavChild = UiStandardNavItem | UiStandardNavLink | UiStandardNavSubgroup;
 
 export type UiStandardNavGroup = {
-  id: "form-components" | "cards" | "icons";
+  id: "button-components" | "form-components" | "cards" | "icons";
   label: string;
   children: readonly UiStandardNavChild[];
 };
@@ -86,9 +96,27 @@ export function isUiStandardNavGroup(entry: UiStandardNavEntry): entry is UiStan
   return "children" in entry;
 }
 
+export function isUiStandardNavSubgroup(child: UiStandardNavChild): child is UiStandardNavSubgroup {
+  return "children" in child;
+}
+
+function navItemsOf(child: UiStandardNavChild): UiStandardNavItem[] {
+  if (isUiStandardNavSubgroup(child)) return [...child.children];
+  return "href" in child ? [] : [child];
+}
+
 export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
   { id: "all", label: "Global preview" },
-  { id: "buttons", label: "Buttons" },
+  {
+    id: "button-components",
+    label: "Buttons",
+    children: [
+      { id: "buttons", label: "Button" },
+      { id: "button-stepper", label: "Button stepper" },
+      { id: "button-group", label: "Button group" },
+      { id: "button-dropdown", label: "Button dropdown" },
+    ],
+  },
   {
     id: "form-components",
     label: "Form Components",
@@ -97,7 +125,14 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
       { id: "radio", label: "Radio" },
       { id: "checkbox", label: "Checkbox" },
       { id: "toggle", label: "Toggle" },
-      { id: "dropdown", label: "Select" },
+      {
+        id: "select-components",
+        label: "Selects",
+        children: [
+          { id: "dropdown", label: "Select" },
+          { id: "tabs-select", label: "Tabs select" },
+        ],
+      },
       { id: "slider", label: "Slider" },
       { id: "range", label: "Range" },
       { id: "date", label: "Date picker" },
@@ -109,7 +144,6 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
   { id: "feedback", label: "Feedback" },
   { id: "overlays", label: "Overlays" },
   { id: "dialog", label: "Dialog" },
-  { id: "forms", label: "Forms" },
   { id: "upload", label: "Upload" },
   {
     id: "cards",
@@ -121,7 +155,6 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
   },
   { id: "shadow", label: "Shadow" },
   { id: "tables", label: "Table" },
-  { id: "selects", label: "Selects" },
   { id: "navigation", label: "Navigation" },
   { id: "data", label: "Data" },
   { id: "states", label: "States" },
@@ -137,7 +170,7 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
 ];
 
 export const UI_STANDARD_FILTER_OPTIONS: readonly UiStandardNavItem[] = UI_STANDARD_NAV.flatMap((entry) =>
-  isUiStandardNavGroup(entry) ? entry.children.filter((child): child is UiStandardNavItem => !("href" in child)) : [entry],
+  isUiStandardNavGroup(entry) ? entry.children.flatMap(navItemsOf) : [entry],
 );
 
 export type UiStandardLiveCardDef = {
@@ -199,6 +232,18 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     ],
   },
   {
+    id: "buttonGroup",
+    title: "Button group",
+    category: "button-group",
+    keywords: ["button", "group", "segmented", "toggle", "toolbar", "spread", "btngroup"],
+  },
+  {
+    id: "buttonDropdown",
+    title: "Button dropdown",
+    category: "button-dropdown",
+    keywords: ["button", "dropdown", "menu", "split", "actions", "more", "btndropdown"],
+  },
+  {
     id: "inputs",
     title: "Input",
     category: "inputs",
@@ -251,6 +296,12 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     title: "Dropdown",
     category: "dropdown",
     keywords: ["dropdown", "select", "menu", "form", "qselect"],
+  },
+  {
+    id: "tabsSelect",
+    title: "Tabs select",
+    category: "tabs-select",
+    keywords: ["tabs", "tab", "qtabs", "select", "tablist", "inline label", "no caps", "scroll"],
   },
   {
     id: "slider",
@@ -390,24 +441,13 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     ],
   },
   {
-    id: "forms",
-    title: "Form Controls",
-    category: "forms",
-    keywords: [
-      "form",
-      "input",
-      "textarea",
-      "checkbox",
-      "validation",
-      "disabled",
-      "email",
-    ],
-  },
-  {
     id: "quantityStepper",
     title: "QuantityStepper",
-    category: "forms",
+    category: "button-stepper",
     keywords: [
+      "button",
+      "increment",
+      "decrement",
       "quantity",
       "stepper",
       "auto",
@@ -437,34 +477,6 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "drag",
       "drop",
       "exitsupload",
-    ],
-  },
-  {
-    id: "selects",
-    title: "Selects",
-    category: "selects",
-    keywords: [
-      "select",
-      "exitsselect",
-      "multi",
-      "multiselect",
-      "pill",
-      "size",
-      "attribute",
-      "search",
-      "searchable",
-      "switch",
-      "combobox",
-      "creatable",
-      "settings",
-      "segmented",
-      "dropdown",
-      "filter",
-      "payment method",
-      "playground",
-      "snippet",
-      "copy",
-      "disabled",
     ],
   },
   {
@@ -773,31 +785,13 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     keywords: ["dialog", "modal", "exitsmodal", "playground", "confirm", "persistent"],
   },
   {
-    id: "input",
-    component: "Input / SearchField / Switch",
-    standard: "Form controls",
-    category: "forms",
-    status: "Locked",
-    summary: "Canonical form fields, search, validation, disabled",
-    keywords: [
-      "form",
-      "input",
-      "search",
-      "switch",
-      "validation",
-      "textarea",
-      "checkbox",
-      "email",
-    ],
-  },
-  {
     id: "quantity-stepper",
     component: "QuantityStepper",
     standard: "Quantity stepper",
-    category: "forms",
+    category: "button-stepper",
     status: "Locked",
     summary:
-      "Standard = variant outline (surface + primary border, Control Shape). Also auto / field / standard / soft / pill. Forms filter card shows all capsule variants.",
+      "Standard = variant outline (surface + primary border, Control Shape). Also auto / field / standard / soft / pill. Button stepper card shows all capsule variants.",
     keywords: [
       "quantity",
       "stepper",
@@ -827,7 +821,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "exits-select",
     component: "ExitsSelect",
     standard: "Select",
-    category: "selects",
+    category: "dropdown",
     status: "Locked",
     summary: "Themed single-select listbox (standard + searchable)",
     keywords: ["select", "exitsselect", "dropdown", "searchable", "single"],
@@ -836,7 +830,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "exits-multi-select",
     component: "ExitsMultiSelect",
     standard: "Multi select",
-    category: "selects",
+    category: "dropdown",
     status: "Pilot",
     summary: "Themed multi-select with select-all / clear / optional search",
     keywords: ["multi", "multiselect", "select", "checkbox", "search"],
@@ -845,7 +839,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "exits-pill-select",
     component: "ExitsPillSelect",
     standard: "Pill select",
-    category: "selects",
+    category: "tabs-select",
     status: "Pilot",
     summary: "In-flow attribute select — pill chips or tile (forms); single or multi",
     keywords: ["pill", "tile", "size", "attribute", "variant", "chip", "select", "multi"],
@@ -854,7 +848,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "creatable-combobox",
     component: "CreatableCombobox",
     standard: "Creatable combobox",
-    category: "selects",
+    category: "dropdown",
     status: "Pilot",
     summary: "Searchable select with create-new free text",
     keywords: ["combobox", "creatable", "search", "select"],
@@ -863,7 +857,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "settings-select",
     component: "SettingsSelect",
     standard: "Settings select",
-    category: "selects",
+    category: "tabs-select",
     status: "Locked",
     summary: "In-flow cards / segmented preference choices (not a popup)",
     keywords: ["settings", "segmented", "cards", "theme", "select"],

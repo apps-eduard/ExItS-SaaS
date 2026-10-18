@@ -90,7 +90,7 @@ export const buttonVariantsCva = cva(
           "h-[var(--exits-control-height-lg)] min-h-[var(--exits-control-height-lg)] px-5 text-[length:var(--exits-text-md)]",
       },
       shape: {
-        standard: "rounded-[var(--exits-radius-md)]",
+        standard: "rounded-[var(--exits-radius-control)]",
         soft: "rounded-[var(--exits-radius-soft)]",
         pill: "rounded-full",
         round: "rounded-full",

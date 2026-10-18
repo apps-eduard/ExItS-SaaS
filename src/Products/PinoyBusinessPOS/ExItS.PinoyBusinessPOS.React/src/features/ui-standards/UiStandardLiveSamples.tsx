@@ -17,8 +17,6 @@ import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsModal } from "@/components/exits/ExitsModal";
-import { ExitsMultiSelect } from "@/components/exits/ExitsMultiSelect";
-import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import {
   cycleExitsTableSort,
@@ -74,7 +72,6 @@ import {
 import { UiStandardsShadowPlayground } from "@/features/ui-standards/UiStandardsShadowPlayground";
 import { UiStandardsTablePlayground } from "@/features/ui-standards/UiStandardsTablePlayground";
 import { UiStandardsSidenavTypography } from "@/features/ui-standards/UiStandardsSidenavTypography";
-import { CreatableCombobox } from "@/components/exits/CreatableCombobox";
 import { Button, buttonIconMotion } from "@/components/ui/button";
 import {
   Card,
@@ -82,14 +79,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { QuantityStepper } from "@/components/exits/MoneyQuantity";
-import { SettingsSelect } from "@/components/ui/settings-select";
-import { Switch } from "@/components/ui/switch";
 import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
-import { FilterChip } from "@/components/exits/FilterChip";
 import type { PosSaleDto } from "@/api/pos/pos-sales-client";
 import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
 import { UiStandardsButtonGallery } from "@/features/ui-standards/UiStandardsButtonGallery";
+import {
+  UiStandardsButtonDropdownGallery,
+  UiStandardsButtonGroupGallery,
+} from "@/features/ui-standards/UiStandardsButtonFamilyGalleries";
 import { UiStandardsRadioGallery } from "@/features/ui-standards/UiStandardsRadioGallery";
 import { UiStandardsCheckboxGallery } from "@/features/ui-standards/UiStandardsCheckboxGallery";
 import { UiStandardsToggleGallery } from "@/features/ui-standards/UiStandardsToggleGallery";
@@ -106,6 +104,7 @@ import {
   UiStandardsDialogPlayground,
 } from "@/features/ui-standards/UiStandardsDialogPlayground";
 import { UiStandardsQdialogGallery } from "@/features/ui-standards/UiStandardsQdialogGallery";
+import { UiStandardsQtabsGallery } from "@/features/ui-standards/UiStandardsQtabsGallery";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   UiStandardsButtonPlayground,
@@ -118,7 +117,6 @@ import {
   UiStandardsRangePlayground,
   UiStandardsDatePlayground,
   UiStandardsTimePlayground,
-  UiStandardsSelectPlayground,
   UiStandardsStatusPlayground,
 } from "@/features/ui-standards/UiStandardsPlaygrounds";
 import {
@@ -220,10 +218,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [kindTab, setKindTab] = useState("personal");
   const [filterSegment, setFilterSegment] = useState("all");
   const [purchasingDest, setPurchasingDest] = useState("incoming");
-  const [search, setSearch] = useState("");
-  const [notify, setNotify] = useState(true);
-  const [allowAccess, setAllowAccess] = useState(true);
-  const [paymentTerms, setPaymentTerms] = useState("30");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [amount, setAmount] = useState("1,250.00");
   const [stepperQty, setStepperQty] = useState(2);
@@ -240,19 +234,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [dataPreviewDevice, setDataPreviewDevice] = useState<UiStandardsDataPreviewDevice>(
     UI_STANDARDS_DATA_PREVIEW_DEFAULT,
   );
-  const [standardSelect, setStandardSelect] = useState("Cash");
-  const [searchSelect, setSearchSelect] = useState("iloilo");
-  const [multiSelect, setMultiSelect] = useState<string[]>(["Cash", "ManualGCash"]);
-  const [branchFilter, setBranchFilter] = useState("all");
-  const [comboboxValue, setComboboxValue] = useState("Sales");
-  const [comboboxOptions, setComboboxOptions] = useState(["Sales", "Kitchen", "Warehouse"]);
-  const [densitySelect, setDensitySelect] = useState<"compact" | "balance" | "comfort">("balance");
-  const [themeSelect, setThemeSelect] = useState<"system" | "light" | "dark">("system");
-  const [selectSearch, setSelectSearch] = useState("");
-  const [selectSwitch, setSelectSwitch] = useState(true);
-  const [sizeSingle, setSizeSingle] = useState("M");
-  const [tileTiming, setTileTiming] = useState("PayBefore");
-  const [sizeMulti, setSizeMulti] = useState<string[]>(["S", "L", "XL"]);
   const [coverImage, setCoverImage] = useState<ExitsUploadItem | null>(null);
   const [galleryImages, setGalleryImages] = useState<Array<ExitsUploadItem | null>>([
     null,
@@ -411,6 +392,20 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           </Card>
         ) : null}
 
+        {show("buttonGroup") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-button-group">
+            <CardTitle>{t("uiStandards.buttonGroupTitle")}</CardTitle>
+            <UiStandardsButtonGroupGallery />
+          </Card>
+        ) : null}
+
+        {show("buttonDropdown") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-button-dropdown">
+            <CardTitle>{t("uiStandards.buttonDropdownTitle")}</CardTitle>
+            <UiStandardsButtonDropdownGallery />
+          </Card>
+        ) : null}
+
         {show("inputs") ? (
           <Card
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
@@ -540,6 +535,13 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               {t("uiStandards.dropdownPilotLede")}
             </p>
             <UiStandardsDropdownGallery />
+          </Card>
+        ) : null}
+
+        {show("tabsSelect") ? (
+          <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-tabs-select">
+            <CardTitle>{t("uiStandards.tabsSelectTitle")}</CardTitle>
+            <UiStandardsQtabsGallery />
           </Card>
         ) : null}
 
@@ -926,84 +928,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           </>
         ) : null}
 
-        {show("forms") ? (
-          <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-forms">
-            <CardTitle>Form Controls</CardTitle>
-            <Input
-              label="Customer name"
-              name="ui-std-customer-name"
-              defaultValue="Juan Dela Cruz"
-              required
-            />
-            <SearchField
-              label="Search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onClear={() => setSearch("")}
-              placeholder="Search customers..."
-              testId="ui-standard-search"
-            />
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)]">
-              <span className="exits-type-label">Payment terms</span>
-              <ExitsSelect
-                value={paymentTerms}
-                options={[
-                  { value: "15", label: "Net 15" },
-                  { value: "30", label: "Net 30" },
-                  { value: "60", label: "Net 60" },
-                ]}
-                onChange={setPaymentTerms}
-                menuLabel="Payment terms"
-                testId="ui-standard-payment-terms"
-              />
-              <span className="text-[length:var(--exits-text-xs)] text-muted">
-                Default credit term in days.
-              </span>
-            </label>
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)]">
-              <span className="exits-type-label">Notes</span>
-              <textarea
-                className="exits-input min-h-20 rounded-[var(--exits-field-radius)] border border-border bg-surface px-[var(--exits-control-padding-x)] py-2"
-                defaultValue="Preferred morning delivery"
-                data-testid="ui-standard-notes"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-              <input
-                type="checkbox"
-                className="size-4"
-                checked={notify}
-                onChange={(e) => setNotify(e.target.checked)}
-                data-testid="ui-standard-checkbox-notify"
-              />
-              Send notification
-            </label>
-            <div className="flex items-center gap-2">
-              <Switch
-                aria-label="Allow customer access"
-                checked={allowAccess}
-                onCheckedChange={setAllowAccess}
-                showStateLabel={false}
-                data-testid="ui-standard-switch-access"
-              />
-              <span className="text-[length:var(--exits-text-sm)]">Allow customer access</span>
-            </div>
-            <Input label="Organization ID" name="ui-std-org-id" disabled defaultValue="ORG436352" />
-            <div className="flex flex-col gap-1.5">
-              <Input
-                label="Email"
-                name="ui-std-email"
-                aria-invalid
-                defaultValue="not-an-email"
-                data-testid="ui-standard-email-invalid"
-              />
-              <span className="text-[length:var(--exits-text-xs)] text-[var(--exits-danger)]">
-                Enter a valid email address.
-              </span>
-            </div>
-          </Card>
-        ) : null}
-
         {show("quantityStepper") ? (
           <Card
             className="flex min-w-0 flex-col gap-3 p-3"
@@ -1271,236 +1195,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   });
                 }}
               />
-            </div>
-          </Card>
-        ) : null}
-
-        {show("selects") ? (
-          <Card
-            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
-            data-testid="ui-standard-card-selects"
-          >
-            <CardTitle>Selects</CardTitle>
-            <UiStandardsSelectPlayground />
-            <div className="grid min-w-0 gap-4 md:grid-cols-2">
-              <div className="flex min-w-0 flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Standard — ExitsSelect</SectionLabel>
-                  <ExitsSelect
-                    value={standardSelect}
-                    options={[
-                      { value: "Cash", label: "Cash" },
-                      { value: "ManualGCash", label: "Manual GCash" },
-                      { value: "Check", label: "Check" },
-                    ]}
-                    onChange={setStandardSelect}
-                    menuLabel="Payment method"
-                    testId="ui-standard-select-standard"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Searchable — long lists</SectionLabel>
-                  <ExitsSelect
-                    value={searchSelect}
-                    searchable
-                    searchPlaceholder="Search branch…"
-                    options={[
-                      { value: "iloilo", label: "Iloilo Main" },
-                      { value: "mandurriao", label: "Mandurriao" },
-                      { value: "jaro", label: "Jaro" },
-                      { value: "molo", label: "Molo" },
-                      { value: "arevalo", label: "Arevalo" },
-                      { value: "lapaz", label: "La Paz" },
-                    ]}
-                    onChange={setSearchSelect}
-                    menuLabel="Branch"
-                    testId="ui-standard-select-searchable"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Multi select — ExitsMultiSelect</SectionLabel>
-                  <ExitsMultiSelect
-                    value={multiSelect}
-                    searchable
-                    options={[
-                      { value: "Cash", label: "Cash" },
-                      { value: "ManualGCash", label: "Manual GCash" },
-                      { value: "Check", label: "Check" },
-                      { value: "BankTransfer", label: "Bank transfer" },
-                      { value: "Card", label: "Card" },
-                    ]}
-                    onChange={setMultiSelect}
-                    placeholder="Payment methods…"
-                    menuLabel="Payment methods"
-                    testId="ui-standard-select-multi"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Pill select — attribute (single)</SectionLabel>
-                  <ExitsPillSelect
-                    aria-label="Size"
-                    value={sizeSingle}
-                    onChange={setSizeSingle}
-                    options={[
-                      { value: "XS", label: "XS" },
-                      { value: "S", label: "S" },
-                      { value: "M", label: "M" },
-                      { value: "L", label: "L" },
-                      { value: "XL", label: "XL" },
-                      { value: "XXL", label: "XXL" },
-                    ]}
-                    testId="ui-standard-select-pill-single"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Attribute select — tile (single)</SectionLabel>
-                  <ExitsPillSelect
-                    appearance="tile"
-                    aria-label="Payment timing"
-                    value={tileTiming}
-                    onChange={setTileTiming}
-                    options={[
-                      { value: "PayBefore", label: "Pay in advance" },
-                      { value: "PayOnDelivery", label: "Pay on delivery" },
-                      { value: "Utang", label: "Supplier Utang" },
-                    ]}
-                    className="grid-cols-3"
-                    testId="ui-standard-select-tile-single"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Pill select — multi</SectionLabel>
-                  <ExitsPillSelect
-                    mode="multi"
-                    aria-label="Available sizes"
-                    value={sizeMulti}
-                    onChange={setSizeMulti}
-                    options={[
-                      { value: "XS", label: "XS" },
-                      { value: "S", label: "S" },
-                      { value: "M", label: "M" },
-                      { value: "L", label: "L" },
-                      { value: "XL", label: "XL" },
-                      { value: "XXL", label: "XXL" },
-                    ]}
-                    testId="ui-standard-select-pill-multi"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Creatable combobox</SectionLabel>
-                  <CreatableCombobox
-                    value={comboboxValue}
-                    options={comboboxOptions}
-                    onChange={(next) => {
-                      setComboboxValue(next);
-                      if (!comboboxOptions.includes(next)) {
-                        setComboboxOptions((prev) => [...prev, next]);
-                      }
-                    }}
-                    placeholder="Department…"
-                    testId="ui-standard-select-combobox"
-                  />
-                </div>
-              </div>
-
-              <div className="flex min-w-0 flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Search field</SectionLabel>
-                  <SearchField
-                    label="Filter options"
-                    value={selectSearch}
-                    onChange={(e) => setSelectSearch(e.target.value)}
-                    onClear={() => setSelectSearch("")}
-                    placeholder="Search…"
-                    testId="ui-standard-select-search-field"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Switch — boolean select</SectionLabel>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      aria-label="Online payments"
-                      checked={selectSwitch}
-                      onCheckedChange={setSelectSwitch}
-                      data-testid="ui-standard-select-switch"
-                    />
-                    <span className="text-[length:var(--exits-text-sm)]">Online payments</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Filter chips — exclusive</SectionLabel>
-                  <div className="flex flex-wrap gap-2" role="group" aria-label="Branch filter">
-                    {(
-                      [
-                        ["all", "All"],
-                        ["active", "Active"],
-                        ["inactive", "Inactive"],
-                      ] as const
-                    ).map(([key, label]) => (
-                      <FilterChip
-                        key={key}
-                        selected={branchFilter === key}
-                        onClick={() => setBranchFilter(key)}
-                        data-testid={`ui-standard-select-filter-${key}`}
-                      >
-                        {label}
-                      </FilterChip>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Settings — segmented</SectionLabel>
-                  <SettingsSelect
-                    label="Density"
-                    variant="segmented"
-                    value={densitySelect}
-                    options={[
-                      { value: "compact", label: "Compact" },
-                      { value: "balance", label: "Standard" },
-                      { value: "comfort", label: "Comfort" },
-                    ]}
-                    onChange={setDensitySelect}
-                    testId="ui-standard-select-segmented"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Settings — cards</SectionLabel>
-                  <SettingsSelect
-                    label="Appearance"
-                    variant="cards"
-                    value={themeSelect}
-                    options={[
-                      { value: "system", label: "System" },
-                      { value: "light", label: "Light" },
-                      { value: "dark", label: "Dark" },
-                    ]}
-                    onChange={setThemeSelect}
-                    testId="ui-standard-select-cards"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <SectionLabel>Disabled / invalid</SectionLabel>
-                  <div className="grid gap-2">
-                    <ExitsSelect
-                      value="Cash"
-                      options={[{ value: "Cash", label: "Cash" }]}
-                      onChange={() => undefined}
-                      disabled
-                      testId="ui-standard-select-disabled"
-                    />
-                    <ExitsSelect
-                      value="Cash"
-                      options={[
-                        { value: "Cash", label: "Cash" },
-                        { value: "Check", label: "Check" },
-                      ]}
-                      onChange={setStandardSelect}
-                      invalid
-                      testId="ui-standard-select-invalid"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </Card>
         ) : null}

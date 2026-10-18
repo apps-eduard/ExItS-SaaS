@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { StatusChip } from "@/components/exits/StatusChip";
 import type { StatusChipAppearance, StatusChipShape, StatusChipTone } from "@/components/exits/StatusChip";
 import {
@@ -170,6 +169,7 @@ const INPUT_APPEARANCES = [
   { id: "filled", label: "Filled" },
   { id: "outlined", label: "Outlined" },
   { id: "standout", label: "Standout" },
+  { id: "stacked", label: "Label above" },
 ] as const;
 
 const INPUT_SHAPES = [
@@ -1010,78 +1010,6 @@ export function UiStandardsStatusPlayground() {
   );
 }
 
-/** ExitsSelect playground — real API only (no invented shape props). */
-export function UiStandardsSelectPlayground() {
-  const [value, setValue] = useState("Cash");
-  const [disabled, setDisabled] = useState(false);
-  const [searchable, setSearchable] = useState(false);
-
-  const options = useMemo(
-    () => [
-      { value: "Cash", label: "Cash" },
-      { value: "ManualGCash", label: "Manual GCash" },
-      { value: "Check", label: "Check" },
-    ],
-    [],
-  );
-
-  const snippet = useMemo(() => {
-    const props = formatJsxProps({
-      value,
-      disabled: disabled || undefined,
-      searchable: searchable || undefined,
-      menuLabel: "Payment method",
-    });
-    return `<ExitsSelect\n${props}\n  options={[/* … */]}\n  onChange={setValue}\n/>`;
-  }, [value, disabled, searchable]);
-
-  return (
-    <PlaygroundSection testId="ui-standard-select-playground">
-      <PlaygroundLabel>Playground — ExitsSelect</PlaygroundLabel>
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-        Canonical single-select API. Shape follows field radius (not Control Shape). No fabricated
-        props.
-      </p>
-      <div className="grid min-w-0 gap-2 sm:grid-cols-2">
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-            <Switch
-              checked={disabled}
-              onCheckedChange={setDisabled}
-              aria-label="Disabled"
-              data-testid="ui-standard-select-pg-disabled"
-            />
-            Disabled
-          </label>
-          <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-            <Switch
-              checked={searchable}
-              onCheckedChange={setSearchable}
-              aria-label="Searchable"
-              data-testid="ui-standard-select-pg-searchable"
-            />
-            Searchable
-          </label>
-        </div>
-      </div>
-      <PlaygroundLabel>Preview</PlaygroundLabel>
-      <div className="max-w-sm" data-testid="ui-standard-select-pg-preview">
-        <ExitsSelect
-          value={value}
-          options={options}
-          onChange={setValue}
-          disabled={disabled}
-          searchable={searchable}
-          menuLabel="Payment method"
-          testId="ui-standard-select-pg-control"
-        />
-      </div>
-      <PlaygroundLabel>Code</PlaygroundLabel>
-      <UiStandardsSnippetBlock snippet={snippet} testIdPrefix="ui-standard-select-pg" />
-    </PlaygroundSection>
-  );
-}
-
 const RADIO_TYPES = [
   { label: "Standard", value: "standard" },
   { label: "With icons", value: "icons" },
@@ -1538,6 +1466,7 @@ const DROPDOWN_APPEARANCES = [
   { id: "filled", label: "Filled" },
   { id: "outlined", label: "Outlined" },
   { id: "standout", label: "Standout" },
+  { id: "stacked", label: "Label above" },
 ] as const;
 
 const DROPDOWN_TRANSITIONS = [

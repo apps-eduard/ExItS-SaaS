@@ -96,7 +96,7 @@ describe("Primary accent + dashboard control shape", () => {
       /\[data-control-shape="pill"\][\s\S]*?--exits-control-radius:\s*9999px/,
     );
     expect(globalsCss).toMatch(
-      /\[data-control-shape="standard"\][\s\S]*?--exits-control-radius:\s*var\(--exits-radius-md\)/,
+      /\[data-control-shape="standard"\][\s\S]*?--exits-control-radius:\s*var\(--exits-radius-control\)/,
     );
   });
 
@@ -134,7 +134,7 @@ describe("Primary accent + dashboard control shape", () => {
 
   it("keeps form field radius independent of pill control shape", () => {
     expect(globalsCss).toMatch(
-      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,
+      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-control\)/,
     );
     expect(globalsCss).toMatch(
       /\.exits-input\s*\{[^}]*border-radius:\s*var\(--exits-field-radius/,

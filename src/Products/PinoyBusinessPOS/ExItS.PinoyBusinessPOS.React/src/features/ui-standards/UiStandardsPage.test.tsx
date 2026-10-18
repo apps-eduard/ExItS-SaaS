@@ -420,13 +420,10 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-status-shape-auto-soft")).toBeInTheDocument();
   });
 
-  it("renders ExitsSelect playground with real API only", () => {
+  it("does not show the removed ExitsSelect playground card", () => {
     renderPage();
-    expect(screen.getByTestId("ui-standard-select-playground")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-select-pg-control")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-select-pg-snippet")).toHaveTextContent("<ExitsSelect");
-    expect(screen.getByTestId("ui-standard-select-pg-snippet")).toHaveTextContent("onChange={setValue}");
-    expect(screen.queryByTestId("ui-standard-select-pg-shape")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-select-api")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-select-playground")).not.toBeInTheDocument();
   });
 
   it("wires Global Preference Preview to the real preference store", async () => {
@@ -495,7 +492,8 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-search")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-status")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-card-selects")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-selects")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-dropdown-playground")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-dodont")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-preference-preview")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-button-playground")).toBeInTheDocument();
@@ -1042,6 +1040,16 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standard-card-card-playground")).not.toBeInTheDocument();
     await choosePlaygroundDropdown(user, "ui-standard-shadow-pg-elevation", "large");
     expect(screen.getByTestId("ui-standard-shadow-pg-plate")).toHaveAttribute("data-elevation", "large");
+    const elevationMenu = await openPlaygroundDropdown(user, "ui-standard-shadow-pg-elevation");
+    const largeOption = within(elevationMenu).getByTestId("ui-standard-shadow-pg-elevation-option-large");
+    expect(largeOption).toHaveAttribute("aria-selected", "true");
+    expect(within(largeOption).getByTestId("ui-standard-shadow-pg-elevation-selected-check")).toBeInTheDocument();
+    expect(
+      within(within(elevationMenu).getByTestId("ui-standard-shadow-pg-elevation-option-small")).queryByTestId(
+        "ui-standard-shadow-pg-elevation-selected-check",
+      ),
+    ).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext shadow large");
     await user.click(screen.getByTestId("ui-standard-shadow-pg-inset"));
     expect(screen.getByTestId("ui-standard-shadow-pg-plate")).toHaveAttribute("data-inset", "true");
@@ -1051,6 +1059,108 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-shadow-pg-plate")).toHaveAttribute("data-elevation", "medium");
     expect(screen.getByTestId("ui-standard-shadow-pg-plate")).toHaveAttribute("data-inset", "false");
     expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext shadow");
+  });
+
+  it("nests Button, Button stepper, Button group, and Button dropdown under Buttons", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const group = screen.getByTestId("ui-standards-filter-button-components");
+    expect(group).toHaveTextContent("Buttons");
+    expect(group).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("ui-standards-filter-buttons")).toHaveTextContent("Button");
+    expect(screen.getByTestId("ui-standards-filter-button-stepper")).toHaveTextContent("Button stepper");
+    expect(screen.getByTestId("ui-standards-filter-button-group")).toHaveTextContent("Button group");
+    expect(screen.getByTestId("ui-standards-filter-button-dropdown")).toHaveTextContent("Button dropdown");
+
+    await user.click(screen.getByTestId("ui-standards-filter-button-stepper"));
+    expect(screen.getByTestId("ui-standard-card-quantity-stepper")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("ui-standards-filter-button-group"));
+    expect(screen.getByTestId("ui-standard-card-button-group")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-quantity-stepper")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-button-group-solid-group")).toHaveAttribute("role", "group");
+    await user.click(screen.getByTestId("ui-standard-button-group-align-center"));
+    expect(screen.getByTestId("ui-standard-button-group-align-center")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("ui-standard-button-group-align-left")).toHaveAttribute("aria-pressed", "false");
+    await user.click(screen.getByTestId("ui-standard-button-group-mark-italic"));
+    expect(screen.getByTestId("ui-standard-button-group-mark-italic")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("ui-standard-button-group-mark-bold")).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByTestId("ui-standards-filter-button-dropdown"));
+    expect(screen.getByTestId("ui-standard-card-button-dropdown")).toBeInTheDocument();
+    const trigger = screen.getByTestId("ui-standard-button-dropdown-basic-trigger");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await user.click(await screen.findByTestId("ui-standard-button-dropdown-item-duplicate"));
+    expect(screen.getByTestId("ui-standard-button-dropdown-last")).toHaveTextContent("Last action: Duplicate");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(screen.getByTestId("ui-standard-button-dropdown-split-trigger"));
+    await user.click(await screen.findByTestId("ui-standard-button-dropdown-item-save-draft"));
+    expect(screen.getByTestId("ui-standard-button-dropdown-last")).toHaveTextContent("Last action: Save as draft");
+    await user.click(screen.getByTestId("ui-standard-button-dropdown-split-main"));
+    expect(screen.getByTestId("ui-standard-button-dropdown-last")).toHaveTextContent("Last action: Save");
+  });
+
+  it("opens Tabs select with the Quasar basic tabs and manual keyboard activation", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const item = screen.getByTestId("ui-standards-filter-tabs-select");
+    expect(item).toHaveTextContent("Tabs select");
+    expect(screen.getByRole("group", { name: "Selects" })).toContainElement(item);
+    await user.click(item);
+    const card = screen.getByTestId("ui-standard-card-tabs-select");
+    expect(card).toHaveTextContent("Tabs select");
+    expect(within(card).getAllByRole("tablist")).toHaveLength(5);
+
+    const pillXs = within(card).getByTestId("ui-standard-tabs-select-pill-single-option-XS");
+    await user.click(pillXs);
+    expect(pillXs).toHaveAttribute("aria-checked", "true");
+    expect(within(card).getByTestId("ui-standard-tabs-select-pill-single-option-XXL")).toHaveAttribute("aria-checked", "false");
+    const tileDelivery = within(card).getByTestId("ui-standard-tabs-select-tile-single-option-PayOnDelivery");
+    await user.click(tileDelivery);
+    expect(tileDelivery).toHaveAttribute("aria-checked", "true");
+    const multiM = within(card).getByTestId("ui-standard-tabs-select-pill-multi-option-M");
+    await user.click(multiM);
+    expect(multiM).toHaveAttribute("aria-pressed", "true");
+    expect(within(card).getByTestId("ui-standard-tabs-select-pill-multi-option-S")).toHaveAttribute("aria-pressed", "true");
+    await user.click(within(card).getByTestId("ui-standard-tabs-select-filter-inactive"));
+    expect(within(card).getByTestId("ui-standard-tabs-select-filter-inactive")).toHaveAttribute("aria-pressed", "true");
+    expect(within(card).getByTestId("ui-standard-tabs-select-filter-all")).toHaveAttribute("aria-pressed", "false");
+
+    const themeCards = within(card).getByTestId("ui-standard-tabs-select-cards");
+    const system = within(themeCards).getByRole("radio", { name: "Appearance: System" });
+    const dark = within(themeCards).getByRole("radio", { name: "Appearance: Dark" });
+    expect(system).toHaveAttribute("aria-checked", "true");
+    await user.click(dark);
+    expect(dark).toHaveAttribute("aria-checked", "true");
+    expect(system).toHaveAttribute("aria-checked", "false");
+    expect(within(card).getByRole("radiogroup", { name: "Density" })).toBeInTheDocument();
+
+    const teal = within(card).getByTestId("ui-standard-qtabs-teal");
+    expect(within(teal).getByRole("tab", { name: "Mails" })).toHaveAttribute("aria-selected", "true");
+    await user.click(within(teal).getByRole("tab", { name: "Alarms" }));
+    expect(within(card).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: alarms");
+    expect(within(card).getByTestId("ui-standard-qtabs-purple-alarms")).toHaveAttribute("aria-selected", "true");
+    expect(within(card).getByTestId("ui-standard-qtabs-yellow-alarms")).toHaveAccessibleName("alarms");
+
+    const alarms = within(teal).getByRole("tab", { name: "Alarms" });
+    expect(alarms).toHaveAttribute("tabindex", "0");
+    await user.keyboard("{ArrowRight}");
+    const movies = within(teal).getByRole("tab", { name: "Movies" });
+    expect(movies).toHaveFocus();
+    expect(movies).toHaveAttribute("aria-selected", "false");
+    await user.keyboard("{ArrowRight}");
+    expect(within(teal).getByRole("tab", { name: "Mails" })).toHaveFocus();
+    await user.keyboard("{End}");
+    expect(movies).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(movies).toHaveAttribute("aria-selected", "true");
+    expect(within(card).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: movies");
+
+    expect(within(card).getByTestId("ui-standard-qtabs-primary-addressbook")).toHaveTextContent("Address Book");
   });
 
   it("opens the Dialog playground and samples", async () => {
@@ -1388,11 +1498,11 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standard-catalog-table")).not.toBeInTheDocument();
 
     cleanup();
-    renderPage("/ui-standards?category=selects");
-    expect(screen.getByTestId("ui-standard-card-selects")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-select-standard")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-select-multi")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-select-switch")).toBeInTheDocument();
+    renderPage("/ui-standards?category=dropdown");
+    expect(screen.getByTestId("ui-standard-card-dropdown-playground")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-dropdown")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-select-api")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-selects")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-card-forms")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-catalog-row-exits-select")).not.toBeInTheDocument();
 
@@ -1631,9 +1741,11 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-view-switcher")).not.toBeInTheDocument();
   });
 
-  it("opens Forms filter with Form Controls and QuantityStepper variant card", () => {
-    renderPage("/ui-standards?category=forms");
-    expect(screen.getByTestId("ui-standard-card-forms")).toBeInTheDocument();
+  it("opens Button stepper filter with the QuantityStepper variant card", () => {
+    renderPage("/ui-standards?category=button-stepper");
+    expect(screen.getByTestId("ui-standards-filter-button-stepper")).toHaveAttribute("data-selected", "true");
+    expect(screen.queryByTestId("ui-standards-filter-forms")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-forms")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-quantity-stepper")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-quantity-stepper")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-qty-outline").closest("[data-testid='quantity-stepper']")?.className).toContain(
@@ -1745,7 +1857,23 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-filter-radio")).toHaveTextContent("Radio");
     expect(screen.getByTestId("ui-standards-filter-checkbox")).toHaveTextContent("Checkbox");
     expect(screen.getByTestId("ui-standards-filter-toggle")).toHaveTextContent("Toggle");
+    const selects = screen.getByTestId("ui-standards-filter-select-components");
+    expect(selects).toHaveTextContent("Selects");
+    expect(selects).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByTestId("ui-standards-filter-dropdown")).toHaveTextContent("Select");
+    expect(screen.getByTestId("ui-standards-filter-tabs-select")).toHaveTextContent("Tabs select");
+    expect(screen.queryByTestId("ui-standards-filter-selects")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standards-filter-filter-select")).not.toBeInTheDocument();
+    const formGroup = screen.getByRole("group", { name: "Form Components" });
+    const selectsGroup = screen.getByRole("group", { name: "Selects" });
+    expect(formGroup).toContainElement(selectsGroup);
+    expect(selectsGroup).toContainElement(screen.getByTestId("ui-standards-filter-dropdown"));
+    expect(selectsGroup).toContainElement(screen.getByTestId("ui-standards-filter-tabs-select"));
+    await user.click(selects);
+    expect(selects).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("ui-standards-filter-tabs-select")).not.toBeInTheDocument();
+    await user.click(selects);
+    expect(screen.getByTestId("ui-standards-filter-tabs-select")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-filter-slider")).toHaveTextContent("Slider");
     expect(screen.getByTestId("ui-standards-filter-range")).toHaveTextContent("Range");
     expect(screen.getByTestId("ui-standards-filter-date")).toHaveTextContent("Date picker");

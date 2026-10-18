@@ -39,7 +39,14 @@ export const INPUT_SAMPLES: readonly InputSample[] = [
   { id: "black", label: "Black", bg: INTENT_GLOBAL_BLACK, fg: "#ffffff" },
 ];
 
-export type InputAppearance = "standard" | "soft" | "soft-outline" | "filled" | "outlined" | "standout";
+export type InputAppearance =
+  | "standard"
+  | "soft"
+  | "soft-outline"
+  | "filled"
+  | "outlined"
+  | "standout"
+  | "stacked";
 export type InputShape = "square" | "standard" | "soft" | "pill";
 
 export function inputAccent(sample: Pick<InputSample, "bg">): string {
@@ -405,6 +412,7 @@ export function UiStandardsInputGallery(): ReactNode {
       <InputExampleCard title="Filled" testId="ui-standard-input-filled" appearance="filled" />
       <InputExampleCard title="Outlined" testId="ui-standard-input-outlined" appearance="outlined" />
       <InputExampleCard title="Standout" testId="ui-standard-input-standout" appearance="standout" />
+      <InputExampleCard title="Label above" testId="ui-standard-input-stacked" appearance="stacked" />
       <InputExampleCard
         title="Pill"
         testId="ui-standard-input-pill"

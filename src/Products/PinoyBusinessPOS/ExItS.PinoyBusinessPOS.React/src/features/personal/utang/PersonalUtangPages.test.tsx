@@ -642,22 +642,38 @@ describe("Personal Utang shared-ledger UI", () => {
 
     await chooseEntryType(user, "Adjustment");
     expect(screen.queryByTestId("utang-entry-amount")).not.toBeInTheDocument();
-    const delta = screen.getByTestId("utang-entry-delta");
-    expect(screen.getByLabelText("Adjustment (+/-)")).toBe(delta);
+    expect(screen.queryByTestId("utang-entry-delta")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Adjustment (+/-)" })).toBeInTheDocument();
+    expect(screen.getByTestId("utang-entry-delta-add")).toHaveTextContent("Add");
+    expect(screen.getByTestId("utang-entry-delta-minus")).toHaveTextContent("Minus");
 
     await user.type(screen.getByTestId("utang-entry-notes"), "Fix double entry");
     await user.click(screen.getByTestId("utang-entry-submit"));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Enter an adjustment other than zero");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Choose Add or Minus");
     expect(recordPersonalUtangEntry).not.toHaveBeenCalled();
+
+    await user.click(screen.getByTestId("utang-entry-delta-add"));
+    expect(screen.queryByTestId("utang-entry-delta-add")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("utang-entry-delta-minus")).not.toBeInTheDocument();
+    expect(screen.getByTestId("utang-entry-delta-sign")).toHaveTextContent("+");
+    await waitFor(() => expect(screen.getByTestId("utang-entry-delta")).toHaveFocus());
+    await user.click(screen.getByTestId("utang-entry-delta-sign"));
+    expect(screen.queryByTestId("utang-entry-delta")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("utang-entry-delta-minus"));
+    const delta = screen.getByTestId("utang-entry-delta");
+    expect(screen.getByLabelText("Adjustment (+/-)")).toBe(delta);
+    expect(screen.getByTestId("utang-entry-delta-sign")).toHaveTextContent("−");
 
     const headBalance = screen.getByTestId("utang-entry-dialog-balance");
     const before = headBalance.textContent;
-    await user.type(delta, "-500");
+    await user.type(delta, "500");
+    expect(delta).toHaveValue("500");
     expect(headBalance.textContent).not.toBe(before);
     expect(headBalance).toHaveClass("utang-entry-dialog__amount--changed");
     await user.clear(delta);
     expect(headBalance.textContent).toBe(before);
-    await user.type(delta, "-500");
+    await user.type(delta, "500");
     await user.click(screen.getByTestId("utang-entry-submit"));
     await waitFor(() => expect(recordPersonalUtangEntry).toHaveBeenCalledTimes(1));
     expect(vi.mocked(recordPersonalUtangEntry).mock.calls[0]![1]).toMatchObject({
@@ -666,6 +682,50 @@ describe("Personal Utang shared-ledger UI", () => {
       adjustmentDelta: -500,
       notes: "Fix double entry",
     });
+  });
+
+  function expectEntryFormReset() {
+    expect(screen.getByTestId("utang-entry-type")).toHaveTextContent("Record payment");
+    expect(screen.getByTestId("utang-entry-amount")).toHaveValue("0.00");
+    expect(screen.getByTestId("utang-entry-notes")).toHaveValue("");
+    expect(screen.queryByTestId("utang-entry-delta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("utang-entry-error")).not.toBeInTheDocument();
+  }
+
+  it("resets the whole entry form when the entry type changes or the dialog closes", async () => {
+    const user = userEvent.setup();
+    renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
+    await openEntryDialog(user);
+
+    await chooseEntryType(user, "Adjustment");
+    await user.click(screen.getByTestId("utang-entry-delta-add"));
+    expect(screen.getByTestId("utang-entry-delta-sign")).toHaveTextContent("+");
+    await chooseEntryType(user, "Loan");
+    await chooseEntryType(user, "Adjustment");
+    expect(screen.queryByTestId("utang-entry-delta")).not.toBeInTheDocument();
+    expect(screen.getByTestId("utang-entry-delta-add")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-entry-delta-minus")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("utang-entry-delta-minus"));
+    await user.type(screen.getByTestId("utang-entry-delta"), "200");
+    await user.type(screen.getByTestId("utang-entry-notes"), "Draft note");
+    await user.click(screen.getByTestId("utang-entry-cancel"));
+    await openEntryDialog(user);
+    expectEntryFormReset();
+
+    await chooseEntryType(user, "Adjustment");
+    expect(screen.getByTestId("utang-entry-delta-add")).toBeInTheDocument();
+    await user.click(screen.getByTestId("utang-entry-delta-add"));
+    await user.keyboard("{Escape}");
+    await openEntryDialog(user);
+    expectEntryFormReset();
+
+    const amount = screen.getByTestId("utang-entry-amount");
+    await user.clear(amount);
+    await user.type(amount, "75");
+    await user.click(screen.getByTestId("utang-entry-dialog-close"));
+    await openEntryDialog(user);
+    expectEntryFormReset();
   });
 
   it("maps pending-limit errorCode to friendly copy on record", async () => {

@@ -45,17 +45,15 @@ describe("ui-standard-catalog filters", () => {
     expect(danger.some((r) => r.id === "confirm")).toBe(true);
   });
 
-  it("Selects category isolates select standards", () => {
-    const cards = filterLiveCards("selects", "");
-    expect(cards.map((c) => c.id)).toEqual(["selects"]);
-    const rows = filterCatalogRows("selects", "");
-    expect(rows.map((r) => r.id)).toEqual([
-      "exits-select",
-      "exits-multi-select",
+  it("Select and Tabs select own the select standards", () => {
+    expect(filterCatalogRows("dropdown", "").map((r) => r.id)).toEqual(
+      expect.arrayContaining(["exits-select", "exits-multi-select", "creatable-combobox"]),
+    );
+    expect(filterCatalogRows("tabs-select", "").map((r) => r.id)).toEqual([
       "exits-pill-select",
-      "creatable-combobox",
       "settings-select",
     ]);
+    expect(filterLiveCards("tabs-select", "").map((c) => c.id)).toEqual(["tabsSelect"]);
   });
 
   it("Radio and Checkbox categories isolate their cards", () => {
@@ -85,11 +83,9 @@ describe("ui-standard-catalog filters", () => {
     expect(rows[0]?.status).toBe("Locked");
   });
 
-  it("Forms category includes Form Controls and QuantityStepper cards", () => {
-    expect(filterLiveCards("forms", "").map((c) => c.id)).toEqual(["forms", "quantityStepper"]);
-    expect(filterCatalogRows("forms", "").map((r) => r.id)).toEqual(
-      expect.arrayContaining(["input", "quantity-stepper"]),
-    );
+  it("Button stepper category shows the QuantityStepper standard", () => {
+    expect(filterLiveCards("button-stepper", "").map((c) => c.id)).toEqual(["quantityStepper"]);
+    expect(filterCatalogRows("button-stepper", "").map((r) => r.id)).toEqual(["quantity-stepper"]);
   });
 
   it("Upload category isolates upload standards", () => {
@@ -100,7 +96,7 @@ describe("ui-standard-catalog filters", () => {
 
   it("maps playground / auto / primary search to builder cards", () => {
     expect(filterLiveCards("all", "playground").map((c) => c.id)).toEqual(
-      expect.arrayContaining(["buttons", "status", "selects", "dodont"]),
+      expect.arrayContaining(["buttons", "status", "dodont"]),
     );
     expect(filterLiveCards("all", "auto").map((c) => c.id)).toEqual(
       expect.arrayContaining(["buttons", "status"]),

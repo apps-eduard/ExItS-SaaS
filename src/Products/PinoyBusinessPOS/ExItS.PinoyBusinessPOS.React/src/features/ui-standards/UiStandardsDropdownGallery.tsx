@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { INPUT_SAMPLES, type InputSample } from "@/features/ui-standards/UiStandardsInputGallery";
 import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 
@@ -9,7 +9,14 @@ import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
  */
 export const DROPDOWN_OPTIONS = ["Option 1", "Option 2", "Option 3"] as const;
 
-export type DropdownAppearance = "standard" | "soft" | "soft-outline" | "filled" | "outlined" | "standout";
+export type DropdownAppearance =
+  | "standard"
+  | "soft"
+  | "soft-outline"
+  | "filled"
+  | "outlined"
+  | "standout"
+  | "stacked";
 export type DropdownTransition = "flip-up" | "flip-down" | "scale" | "jump-up";
 export type DropdownValueDisplay = "standard" | "short" | "chips";
 
@@ -346,6 +353,18 @@ export function UiStandardsQdropdown({
                 </span>
               ) : null}
               <span className="ui-standards-qdropdown__option-label">{option}</span>
+              {!multiple ? (
+                selected.includes(option) ? (
+                  <Check
+                    className="ui-standards-qdropdown__selected-check"
+                    strokeWidth={2.5}
+                    aria-hidden
+                    data-testid={testId ? `${testId}-selected-check` : undefined}
+                  />
+                ) : (
+                  <span className="ui-standards-qdropdown__selected-check" aria-hidden />
+                )
+              ) : null}
             </button>
             );
           })}
@@ -425,6 +444,7 @@ export function UiStandardsDropdownGallery(): ReactNode {
       <DropdownRow title="Filled" testId="ui-standard-dropdown-filled" appearance="filled" />
       <DropdownRow title="Outlined" testId="ui-standard-dropdown-outlined" appearance="outlined" />
       <DropdownRow title="Standout" testId="ui-standard-dropdown-standout" appearance="standout" />
+      <DropdownRow title="Label above" testId="ui-standard-dropdown-stacked" appearance="stacked" />
     </div>
   );
 }

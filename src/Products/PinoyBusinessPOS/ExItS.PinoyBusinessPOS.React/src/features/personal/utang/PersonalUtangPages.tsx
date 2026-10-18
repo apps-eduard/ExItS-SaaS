@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BellRing, Check, CheckCircle2, ChevronRight, CircleAlert, HandCoins, Handshake, History, List, Loader2, PenLine, Plus, Share2, SlidersHorizontal, UserPlus, Users, Wallet, Zap, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BellRing, Check, CheckCircle2, ChevronRight, CircleAlert, HandCoins, Handshake, History, List, Loader2, Minus, PenLine, Plus, Share2, SlidersHorizontal, UserPlus, Users, Wallet, Zap, type LucideIcon } from "lucide-react";
 import {
   cancelPersonalUtangEntry,
   closePersonalDebtRelationship,
@@ -33,7 +33,6 @@ import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { MoneyInput } from "@/components/exits/MoneyQuantityInputs";
 import { Notice } from "@/components/exits/Notice";
-import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -1211,6 +1210,7 @@ export function PersonalRelationshipDetailPage() {
   const [entryType, setEntryType] = useState<"Payment" | "Loan" | "Adjustment">("Payment");
   const [amount, setAmount] = useState(() => formatMoneyAmountInput(0));
   const [adjustmentDelta, setAdjustmentDelta] = useState("");
+  const adjustmentInputRef = useRef<HTMLInputElement | null>(null);
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [statusLocked, setStatusLocked] = useState(false);
@@ -1387,6 +1387,7 @@ export function PersonalRelationshipDetailPage() {
     onSuccess: async () => {
       pendingEntryIdRef.current = null;
       setStatusLocked(false);
+      setEntryType("Payment");
       setAmount(formatMoneyAmountInput(0));
       setAdjustmentDelta("");
       setNotes("");
@@ -1634,6 +1635,15 @@ export function PersonalRelationshipDetailPage() {
   const adjustmentBlocked = !online && entryType === "Adjustment";
   const projectedBalance = projectUtangBalance(currentBalance, entryType, amount, adjustmentDelta);
   const SaveIcon = getActionIcon("save");
+  const resetEntryForm = () => {
+    setEntryType("Payment");
+    setAmount(formatMoneyAmountInput(0));
+    setAdjustmentDelta("");
+    setNotes("");
+    setFormError(null);
+  };
+  const adjustmentSign: "+" | "-" | null =
+    adjustmentDelta.startsWith("+") ? "+" : adjustmentDelta.startsWith("-") ? "-" : null;
   // Owner-model: unresolved-pending limit does not apply to new Confirmed writes.
   const loanBlockedByPendingLimit = false;
   const submitLabel = t("personal.utang.saveEntry");
@@ -1821,7 +1831,7 @@ export function PersonalRelationshipDetailPage() {
                 data-testid="utang-qa-update-balance"
                 aria-haspopup="dialog"
                 onClick={() => {
-                  setFormError(null);
+                  resetEntryForm();
                   setEntryOpen(true);
                 }}
               >
@@ -1915,7 +1925,10 @@ export function PersonalRelationshipDetailPage() {
       {canMutateFinances && !relationshipClosed ? (
       <ExitsModal
         open={entryOpen}
-        onOpenChange={setEntryOpen}
+        onOpenChange={(next) => {
+          setEntryOpen(next);
+          if (!next) resetEntryForm();
+        }}
         title={t("personal.utang.qaUpdateBalance")}
         description={
           <span className="utang-entry-dialog__head" data-testid="utang-entry-dialog-head">
@@ -1990,25 +2003,93 @@ export function PersonalRelationshipDetailPage() {
                 { value: "Loan", label: t("personal.utang.addAmount") },
                 { value: "Adjustment", label: t("personal.utang.adjustBalance") },
               ]}
-              onChange={setEntryType}
+              onChange={(next) => {
+                setEntryType(next);
+                setAdjustmentDelta("");
+              }}
               aria-labelledby="utang-entry-type-label"
               menuLabel={t("personal.utang.entryType")}
               testId="utang-entry-type"
             />
           </div>
           {entryType === "Adjustment" ? (
-            <Input
-              id="utang-entry-delta"
-              label={t("personal.utang.adjustmentDelta")}
-              data-exits-modal-autofocus="true"
-              data-testid="utang-entry-delta"
-              inputMode="decimal"
-              autoComplete="off"
-              placeholder={t("personal.utang.adjustmentDeltaPlaceholder")}
-              value={adjustmentDelta}
-              onChange={(e) => setAdjustmentDelta(e.target.value)}
-              required
-            />
+            <div className="flex min-w-0 flex-col gap-1.5">
+              {adjustmentSign ? (
+                <>
+                  <label htmlFor="utang-entry-delta" className="exits-type-label">
+                    {t("personal.utang.adjustmentDelta")}
+                  </label>
+                  <div className="exits-currency-field utang-adjust-field" data-sign={adjustmentSign}>
+                    <button
+                      type="button"
+                      className="exits-currency-field__prefix utang-adjust-field__sign"
+                      aria-label={t("personal.utang.adjustmentChangeDirection")}
+                      title={t("personal.utang.adjustmentChangeDirection")}
+                      data-testid="utang-entry-delta-sign"
+                      onClick={() => setAdjustmentDelta("")}
+                    >
+                      {adjustmentSign === "+" ? "+" : "−"}
+                    </button>
+                    <input
+                      ref={adjustmentInputRef}
+                      id="utang-entry-delta"
+                      data-testid="utang-entry-delta"
+                      className="exits-currency-field__input"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      placeholder="0.00"
+                      value={adjustmentDelta.slice(1)}
+                      onChange={(e) =>
+                        setAdjustmentDelta(
+                          adjustmentSign + normalizeMoneyAmountTyping(e.target.value.replace(/[+-]/g, "")),
+                        )
+                      }
+                      onBlur={() => {
+                        const parsed = parseMoneyAmountInput(adjustmentDelta.slice(1));
+                        if (parsed != null && parsed > 0) {
+                          setAdjustmentDelta(adjustmentSign + formatMoneyAmountInput(parsed));
+                        }
+                      }}
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span id="utang-entry-delta-label" className="exits-type-label">
+                    {t("personal.utang.adjustmentDelta")}
+                  </span>
+                  <div
+                    className="grid grid-cols-2 gap-2"
+                    role="group"
+                    aria-labelledby="utang-entry-delta-label"
+                  >
+                    {(["+", "-"] as const).map((sign) => (
+                      <Button
+                        key={sign}
+                        type="button"
+                        intent={sign === "+" ? "success" : "danger"}
+                        appearance="outline"
+                        className="w-full"
+                        data-exits-modal-autofocus={sign === "+" ? "true" : undefined}
+                        data-testid={sign === "+" ? "utang-entry-delta-add" : "utang-entry-delta-minus"}
+                        onClick={() => {
+                          setAdjustmentDelta(sign);
+                          requestAnimationFrame(() => adjustmentInputRef.current?.focus());
+                        }}
+                      >
+                        {sign === "+" ? (
+                          <Plus className="size-4 shrink-0" aria-hidden />
+                        ) : (
+                          <Minus className="size-4 shrink-0" aria-hidden />
+                        )}
+                        {t(sign === "+" ? "personal.utang.adjustmentAdd" : "personal.utang.adjustmentMinus")}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
             <MoneyInput
               id="utang-entry-amount"
@@ -2075,7 +2156,10 @@ export function PersonalRelationshipDetailPage() {
             appearance="elevated"
             emphasis="strong"
             disabled={recordMutation.isPending}
-            onClick={() => setEntryOpen(false)}
+            onClick={() => {
+              setEntryOpen(false);
+              resetEntryForm();
+            }}
             data-testid="utang-entry-cancel"
           >
             {t("personal.utang.cancelEdit")}

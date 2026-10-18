@@ -226,7 +226,7 @@ describe("BranchProductPricingPanel / Selling price card", () => {
 
   it("keeps price inputs on field radius under Pill control shape", () => {
     expect(globalsCss).toMatch(
-      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,
+      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-control\)/,
     );
     expect(globalsCss).toContain(".selling-price-card__columns");
   });

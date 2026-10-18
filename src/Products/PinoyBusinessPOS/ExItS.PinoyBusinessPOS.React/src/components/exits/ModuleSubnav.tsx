@@ -12,6 +12,7 @@ import {
 } from "@/components/exits/module-subnav-variants";
 import { cn } from "@/lib/cn";
 import { prefersReducedMotion } from "@/lib/motion";
+import { scrollWithinContainer } from "@/lib/scroll-within";
 
 export type ModuleSubnavCountTone = Extract<ChipTone, "neutral" | "primary" | "danger" | "warning">;
 
@@ -128,14 +129,11 @@ export function ModuleSubnav({
   const controlled = value !== undefined;
 
   useEffect(() => {
-    if (!scrollable || !listRef.current) return;
-    const current = listRef.current.querySelector<HTMLElement>('[aria-current="page"]');
-    if (!current || typeof current.scrollIntoView !== "function") return;
-    current.scrollIntoView({
-      inline: "nearest",
-      block: "nearest",
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-    });
+    const list = listRef.current;
+    if (!scrollable || !list) return;
+    const current = list.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!current) return;
+    scrollWithinContainer(list, current, prefersReducedMotion() ? "auto" : "smooth");
   }, [scrollable, items, value]);
 
   return (

@@ -2,6 +2,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -89,10 +90,40 @@ export function ExitsModal({
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const backdropRef = useRef<HTMLDivElement | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const CloseIcon = getActionIcon("close");
+  const [mounted, setMounted] = useState(open);
+  if (open && !mounted) {
+    setMounted(true);
+  }
+  const closing = mounted && !open;
 
   useBodyScrollLock(open);
+
+  // Stay mounted until the exit animation ends; unmount at once when nothing animates
+  // (reduced motion, or environments without the Web Animations API).
+  useEffect(() => {
+    if (!closing) {
+      return;
+    }
+    const animations = [backdropRef.current, panelRef.current].flatMap((node) =>
+      node && typeof node.getAnimations === "function" ? node.getAnimations() : [],
+    );
+    if (animations.length === 0) {
+      setMounted(false);
+      return;
+    }
+    let cancelled = false;
+    void Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
+      if (!cancelled) {
+        setMounted(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [closing]);
 
   useEffect(() => {
     if (!open) {
@@ -161,9 +192,10 @@ export function ExitsModal({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, busy, closeOnEscape, onOpenChange]);
 
-  if (!open || typeof document === "undefined") {
+  if (!mounted || typeof document === "undefined") {
     return null;
   }
+  const motionState = closing ? "closed" : "open";
 
   const body = (
     <>
@@ -223,21 +255,24 @@ export function ExitsModal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-[70] flex justify-center bg-black/40",
+        "exits-modal-backdrop fixed inset-0 z-[70] flex justify-center bg-black/40",
         fullHeightOnCompact
           ? "items-stretch p-0 lg:items-center lg:p-4"
           : "items-end p-4 sm:items-center",
       )}
+      ref={backdropRef}
       role="presentation"
+      data-state={motionState}
       data-testid={`${testId}-backdrop`}
       onClick={() => {
-        if (!busy && closeOnOutsideClick) {
+        if (!closing && !busy && closeOnOutsideClick) {
           onOpenChange(false);
         }
       }}
     >
       <div
         ref={panelRef}
+        data-state={motionState}
         id={id}
         role="dialog"
         aria-modal="true"
@@ -249,7 +284,7 @@ export function ExitsModal({
         className={cn(
           "flex w-full flex-col gap-3 border border-border bg-surface p-4 shadow-[var(--exits-shadow-lg)]",
           ribbon ? "exits-modal--ribbon relative overflow-visible" : "overflow-hidden",
-          "exits-motion-dialog motion-reduce:transition-none",
+          "exits-modal-panel",
           fullHeightOnCompact
             ? cn(
                 "h-[100dvh] max-h-[100dvh] max-w-none rounded-none",

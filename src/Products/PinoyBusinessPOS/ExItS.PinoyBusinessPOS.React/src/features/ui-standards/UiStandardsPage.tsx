@@ -12,6 +12,7 @@ import { useUiStandardsDisclosure } from "@/features/ui-standards/useUiStandards
 import {
   filterLiveCards,
   isUiStandardNavGroup,
+  isUiStandardNavSubgroup,
   parseUiStandardCategoryParam,
   UI_STANDARD_NAV,
   type UiStandardFilterCategory,
@@ -125,6 +126,33 @@ export function UiStandardsPage() {
 
   function renderNavItem(item: UiStandardNavChild, child: boolean) {
     const className = "ui-standards-sidenav__item" + (child ? " ui-standards-sidenav__item--child" : "");
+    if (isUiStandardNavSubgroup(item)) {
+      const expanded = groupOpen[item.id] ?? true;
+      return (
+        <div key={item.id} className="ui-standards-sidenav__group">
+          <button
+            type="button"
+            className={className}
+            aria-expanded={expanded}
+            data-testid={`ui-standards-filter-${item.id}`}
+            onClick={() =>
+              setGroupOpen((current) => ({
+                ...current,
+                [item.id]: !(current[item.id] ?? true),
+              }))
+            }
+          >
+            {item.label}
+            <ChevronRight className="ui-standards-sidenav__chevron" aria-hidden />
+          </button>
+          {expanded ? (
+            <div className="ui-standards-sidenav__sublist" role="group" aria-label={item.label}>
+              {item.children.map((grandchild) => renderNavItem(grandchild, true))}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
     if ("href" in item) {
       return (
         <a

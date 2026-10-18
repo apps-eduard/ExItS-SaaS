@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { scrollWithinContainer } from "@/lib/scroll-within";
 import { CountBadge } from "@/components/exits/CountChip";
 import type { ChipTone } from "@/components/exits/chip-variants";
 import {
@@ -95,10 +96,11 @@ export function ExitsTabs({
   }, []);
 
   useEffect(() => {
-    if (!scrollable || !listRef.current) return;
-    const selected = listRef.current.querySelector<HTMLElement>('[data-selected="true"]');
-    if (selected && typeof selected.scrollIntoView === "function") {
-      selected.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+    const list = listRef.current;
+    if (!scrollable || !list) return;
+    const selected = list.querySelector<HTMLElement>('[data-selected="true"]');
+    if (selected) {
+      scrollWithinContainer(list, selected, "smooth");
     }
   }, [value, scrollable]);
 

@@ -74,7 +74,7 @@ describe("Form Field Focus Standard", () => {
     expect(globalsCss).toMatch(
       /\.exits-currency-field__input:focus-visible[\s\S]*?outline:\s*none/,
     );
-    expect(globalsCss).toMatch(/--exits-field-radius:\s*var\(--exits-radius-md\)/);
+    expect(globalsCss).toMatch(/--exits-field-radius:\s*var\(--exits-radius-control\)/);
     expect(globalsCss).not.toMatch(/\.exits-currency-field\[data-shape="pill"\]/);
   });
 
@@ -91,6 +91,6 @@ describe("Form Field Focus Standard", () => {
   });
 
   it("keeps form fields on field radius (Control Shape independence)", () => {
-    expect(globalsCss).toMatch(/--exits-field-radius:\s*var\(--exits-radius-md\)/);
+    expect(globalsCss).toMatch(/--exits-field-radius:\s*var\(--exits-radius-control\)/);
   });
 });

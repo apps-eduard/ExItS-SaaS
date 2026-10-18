@@ -111,7 +111,7 @@ describe("SearchField standard foundation", () => {
   });
 
   it("keeps form fields on --exits-field-radius under Pill Control Shape", () => {
-    expect(globalsCss).toMatch(/--exits-field-radius:\s*var\(--exits-radius-md\)/);
+    expect(globalsCss).toMatch(/--exits-field-radius:\s*var\(--exits-radius-control\)/);
     expect(globalsCss).toMatch(
       /\.exits-input\s*\{[^}]*border-radius:\s*var\(--exits-field-radius/,
     );
@@ -122,7 +122,7 @@ describe("SearchField standard foundation", () => {
       /\[data-control-shape="pill"\][\s\S]*?--exits-control-radius:\s*9999px/,
     );
     expect(globalsCss).toMatch(
-      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,
+      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-control\)/,
     );
 
     writeUiPreferences({ ...defaultUiPreferences, controlShape: "pill" });

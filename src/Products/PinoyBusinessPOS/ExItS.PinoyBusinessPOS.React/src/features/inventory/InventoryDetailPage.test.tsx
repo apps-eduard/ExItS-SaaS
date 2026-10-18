@@ -775,11 +775,11 @@ describe("InventoryDetailPage expiration UX", () => {
     const link = await screen.findByTestId("inventory-view-stock-details");
     expect(link).toHaveAttribute("href", `/inventory/stock-status?productId=${productId}`);
     expect(link).toHaveAttribute("data-appearance", "outline");
-    expect(link.className).toContain("rounded-[var(--exits-radius-md)]");
+    expect(link.className).toContain("rounded-[var(--exits-radius-control)]");
     const reservations = screen.getByTestId("inventory-view-reservations");
     expect(reservations).toHaveAttribute("data-appearance", "outline");
     expect(reservations).toHaveAttribute("data-intent", "info");
-    expect(reservations.className).toContain("rounded-[var(--exits-radius-md)]");
+    expect(reservations.className).toContain("rounded-[var(--exits-radius-control)]");
   });
 
   it("branch breakdown uses server rollup available and appends non-zero exceptions", async () => {
