@@ -3,6 +3,7 @@ import {
   useId,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -12,6 +13,7 @@ import { getActionIcon } from "@/components/exits/action-semantics";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
+import { INTENT_GLOBAL_SECONDARY } from "@/features/ui-standards/intent-color-global-default";
 
 export type ExitsModalSize = "sm" | "md" | "lg";
 
@@ -56,11 +58,15 @@ export type ExitsModalProps = {
   id?: string;
   /** Optional form submit handler — wraps body+footer in <form>. */
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
+  /** Skip browser field checks so the caller can show its own messages. */
+  noValidate?: boolean;
   className?: string;
-  /** Render the title as a primary card ribbon overhanging the top-left corner. */
+  /** Render the title as a card ribbon overhanging the top-left corner. */
   ribbon?: boolean;
   /** Icon shown in the ribbon pennant (ribbon titles only). */
   ribbonIcon?: LucideIcon;
+  /** Ribbon fill. Primary keeps the brand color. Secondary uses the locked secondary intent. */
+  ribbonTone?: "primary" | "secondary";
 };
 
 /**
@@ -83,9 +89,11 @@ export function ExitsModal({
   closeLabel = "Close",
   id,
   onSubmit,
+  noValidate = false,
   className,
   ribbon = false,
   ribbonIcon: RibbonIcon,
+  ribbonTone = "primary",
 }: ExitsModalProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -202,7 +210,20 @@ export function ExitsModal({
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border pb-3">
         <div className={cn("min-w-0", ribbon && "exits-modal__ribbon-head")}>
           {ribbon ? (
-            <h2 id={titleId} className="exits-modal__ribbon" data-testid={`${testId}-ribbon`}>
+            <h2
+              id={titleId}
+              className="exits-modal__ribbon"
+              data-testid={`${testId}-ribbon`}
+              data-tone={ribbonTone}
+              style={
+                ribbonTone === "secondary"
+                  ? ({
+                      "--exits-modal-ribbon": INTENT_GLOBAL_SECONDARY,
+                      "--exits-modal-ribbon-ink": "#ffffff",
+                    } as CSSProperties)
+                  : undefined
+              }
+            >
               {RibbonIcon ? (
                 <span className="exits-modal__pennant" aria-hidden>
                   <RibbonIcon className="size-[0.95rem] shrink-0" />
@@ -258,7 +279,7 @@ export function ExitsModal({
         "exits-modal-backdrop fixed inset-0 z-[70] flex justify-center bg-black/40",
         fullHeightOnCompact
           ? "items-stretch p-0 lg:items-center lg:p-4"
-          : "items-end p-4 sm:items-center",
+          : "items-center p-4",
       )}
       ref={backdropRef}
       role="presentation"
@@ -301,6 +322,7 @@ export function ExitsModal({
         {onSubmit ? (
           <form
             className="flex min-h-0 flex-1 flex-col gap-3"
+            noValidate={noValidate}
             onSubmit={(event) => {
               event.preventDefault();
               if (!busy) {

@@ -10,7 +10,10 @@ import {
   SELECT_GLOBAL_BAR_THICKNESS,
 } from "@/features/ui-standards/field-typography-global-default";
 
-const uiStandardsCss = readFileSync(resolve(__dirname, "ui-standards.css"), "utf8");
+const uiStandardsCss = [
+  readFileSync(resolve(__dirname, "ui-standards.css"), "utf8"),
+  readFileSync(resolve(__dirname, "exits-qfield.css"), "utf8"),
+].join("\n");
 
 function rule(selector: string): string {
   const start = uiStandardsCss.indexOf(`\n${selector} {`);

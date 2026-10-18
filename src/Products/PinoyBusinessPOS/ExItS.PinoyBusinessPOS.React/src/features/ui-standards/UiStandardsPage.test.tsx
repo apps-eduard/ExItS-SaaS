@@ -691,6 +691,16 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-step-rail-warn")).toHaveTextContent("Step 01");
     expect(screen.getByTestId("ui-standard-card-step-title-warn")).toHaveTextContent("Your title here");
     expect(screen.getByTestId("ui-standard-card-step-body-warn")).toHaveTextContent("Lorem ipsum");
+    expect(screen.getByTestId("ui-standard-card-process-heading")).toHaveTextContent("Card process");
+    expect(screen.getByTestId("ui-standard-card-process-amber")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-process-icon-info")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-process-title-coral")).toHaveTextContent("Sample Text");
+    expect(screen.getByTestId("ui-standard-card-process-body-lime")).toHaveTextContent("Lorem ipsum");
+    expect(screen.getByTestId("ui-standard-card-arrow-heading")).toHaveTextContent("Card arrow");
+    expect(screen.getByTestId("ui-standard-card-arrow-violet")).toHaveTextContent("01");
+    expect(screen.getByTestId("ui-standard-card-arrow-icon-green")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-arrow-title-coral")).toHaveTextContent("Sample Text");
+    expect(screen.getByTestId("ui-standard-card-arrow-body-amber")).toHaveTextContent("Lorem ipsum");
     expect(screen.getByTestId("ui-standard-card-ribbon-pendant-heading")).toHaveTextContent(
       "Card ribbon pendant",
     );

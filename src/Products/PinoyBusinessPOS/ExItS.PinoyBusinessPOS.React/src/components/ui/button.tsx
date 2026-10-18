@@ -29,7 +29,8 @@ export type ButtonAppearance =
   | "outline"
   | "ghost"
   | "elevated"
-  | "gradient";
+  | "gradient"
+  | "glossy";
 
 /** @deprecated Prefer `ButtonIntentTone`. Legacy CVA `variant` values. */
 export type ButtonLegacyVariant =
@@ -80,6 +81,7 @@ export const buttonVariantsCva = cva(
         ghost: "",
         elevated: ELEVATION,
         gradient: GRADIENT_MOTION,
+        glossy: `${ELEVATION} exits-btn--glossy`,
       },
       size: {
         sm: "h-8 min-h-8 gap-1.5 px-2.5 text-[length:var(--exits-text-xs)]",
@@ -114,7 +116,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "primary",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         class: "bg-primary text-primary-foreground hover:bg-[var(--exits-primary-hover)]",
       },
       {
@@ -143,7 +145,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "neutral",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         class:
           "border border-border bg-[var(--exits-surface-muted)] text-foreground hover:border-[var(--exits-border-strong)]",
       },
@@ -173,7 +175,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "success",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "soft",
         class:
           "border border-border bg-[var(--exits-success-soft)] text-[var(--exits-success)] hover:border-[var(--exits-success)]",
@@ -187,7 +189,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "success",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "strong",
         class:
           "border border-transparent bg-[var(--exits-success)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-success)]",
@@ -227,7 +229,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "info",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "soft",
         class:
           "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
@@ -241,7 +243,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "info",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "strong",
         class:
           "border border-transparent bg-[var(--exits-info)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-info)]",
@@ -281,7 +283,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "warning",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "soft",
         class:
           "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
@@ -295,7 +297,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "warning",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "strong",
         class:
           "border border-transparent bg-[var(--exits-warning)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-warning)]",
@@ -335,7 +337,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "danger",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "soft",
         class:
           "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
@@ -366,7 +368,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "danger",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "strong",
         class: "bg-[var(--exits-danger)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-danger)]",
       },
@@ -386,7 +388,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "help",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "soft",
         class:
           "border border-border bg-[color-mix(in_srgb,var(--exits-severity-help)_12%,var(--exits-surface))] text-[var(--exits-severity-help)] hover:border-[var(--exits-severity-help)]",
@@ -400,7 +402,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "help",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "strong",
         class:
           "border border-transparent bg-[var(--exits-severity-help)] text-[var(--exits-severity-help-foreground)] hover:bg-[var(--exits-severity-help-hover)] focus-visible:ring-[var(--exits-severity-help)]",
@@ -440,7 +442,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "contrast",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "soft",
         class:
           "border border-border bg-[color-mix(in_srgb,var(--exits-severity-contrast)_8%,var(--exits-surface))] text-foreground hover:border-[var(--exits-severity-contrast)]",
@@ -454,7 +456,7 @@ export const buttonVariantsCva = cva(
       },
       {
         intent: "contrast",
-        appearance: "elevated",
+        appearance: ["elevated", "glossy"],
         emphasis: "strong",
         class:
           "border border-transparent bg-[var(--exits-severity-contrast)] text-[var(--exits-severity-contrast-foreground)] hover:bg-[var(--exits-severity-contrast-hover)] focus-visible:ring-[var(--exits-severity-contrast)]",

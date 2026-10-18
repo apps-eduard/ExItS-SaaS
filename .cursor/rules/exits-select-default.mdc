@@ -7,7 +7,7 @@ alwaysApply: true
 
 When creating a select, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/select-global-default.ts`.
 
-The locked command is `ext dropdown primary outlined`: intent `SELECT_GLOBAL_DEFAULT_INTENT` and appearance `SELECT_GLOBAL_DEFAULT_APPEARANCE`. Shape and density stay Standard unless the user names them.
+The locked command is `ext dropdown primary outlined`. Intent is primary (`SELECT_GLOBAL_DEFAULT_INTENT`). Appearance is outlined (`SELECT_GLOBAL_DEFAULT_APPEARANCE`). Shape and density stay Standard unless the user names them.
 
 The Form Components submenu **Select** playground has a lock labeled **default global**. That lock is what a new select is expected to use.
 

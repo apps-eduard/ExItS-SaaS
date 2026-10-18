@@ -21,7 +21,7 @@ Search `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/component
 | Status | `StatusChip` |
 | Confirm | `ConfirmActionDialog` |
 | Create or edit | `FormDrawer` |
-| Short dialog | `ExitsModal` |
+| Short dialog | `ExitsModal` (footer lock: `exits-modal-default.mdc`) |
 
 A table filter is `ExitsMultiSelect`. Empty selection means all rows.
 

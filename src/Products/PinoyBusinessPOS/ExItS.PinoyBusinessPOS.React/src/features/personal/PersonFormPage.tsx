@@ -1,9 +1,9 @@
-import { useCallback, useState } from "react";
-import { IdCard, Loader2, Save, UserRound } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { IdCard, Loader2, UserPlus, UserRound } from "lucide-react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/exits/Notice";
 import { PersonalIdentityResolvePanel } from "@/features/personal/PersonalIdentityResolvePanel";
 import {
@@ -20,6 +20,29 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import type { PersonalContactDto, ResolvedPublicUserDto } from "@/api/platform/personal-types";
 
+function SavePlusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      data-testid="people-add-save-icon"
+    >
+      <path d="M12.5 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V12" />
+      <path d="M16 13H8a1 1 0 0 0-1 1v7" />
+      <path d="M19 22v-6" />
+      <path d="M22 19h-6" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+    </svg>
+  );
+}
+
 export type PersonCreateKind = "walkin" | "exits";
 
 export function parsePersonCreateKind(value: string | null): PersonCreateKind | null {
@@ -34,6 +57,9 @@ type PersonCreateFormProps = {
   initialKind?: PersonCreateKind | null;
   linkPublicId?: string | null;
   onCancel?: () => void;
+  lockKind?: boolean;
+  onSwitchToExits?: () => void;
+  onSwitchToLocal?: () => void;
 };
 
 export function PersonCreateForm({
@@ -41,6 +67,9 @@ export function PersonCreateForm({
   initialKind = null,
   linkPublicId = null,
   onCancel,
+  lockKind = false,
+  onSwitchToExits,
+  onSwitchToLocal,
 }: PersonCreateFormProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -56,6 +85,18 @@ export function PersonCreateForm({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [resolving, setResolving] = useState(false);
+
+  useEffect(() => {
+    if (!embedded || createKind !== "walkin") {
+      return;
+    }
+    const outer = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.getElementById("person-display-name")?.focus();
+      });
+    });
+    return () => window.cancelAnimationFrame(outer);
+  }, [embedded, createKind]);
 
   const contactsQuery = usePersonalContactsQuery();
   const resolveMutation = useResolvePublicUserMutation();
@@ -204,6 +245,32 @@ export function PersonCreateForm({
     >
       {!embedded ? (
         <PageHeader title={t("people.newTitle")} description={formLede} />
+      ) : createKind === "walkin" && onSwitchToExits ? (
+        <Notice tone="info" testId="people-add-local-hint">
+          {t("people.formLedeWalkIn")}{" "}
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 align-baseline font-bold text-primary"
+            data-testid="people-add-switch-exits"
+            onClick={onSwitchToExits}
+          >
+            <IdCard className="size-4 shrink-0" aria-hidden="true" />
+            {t("people.addExits")}
+          </button>
+        </Notice>
+      ) : createKind === "exits" && onSwitchToLocal ? (
+        <Notice tone="info" testId="people-add-exits-hint">
+          {t("people.formLedeExits")}{" "}
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 align-baseline font-bold text-primary"
+            data-testid="people-add-switch-local"
+            onClick={onSwitchToLocal}
+          >
+            <UserPlus className="size-4 shrink-0" aria-hidden="true" />
+            {t("people.addLocal")}
+          </button>
+        </Notice>
       ) : createKind === null ? null : (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{formLede}</p>
       )}
@@ -277,6 +344,7 @@ export function PersonCreateForm({
 
       {createKind !== null ? (
         <>
+          {lockKind ? null : (
           <div className="customer-create-kind__chosen exits-animate-toolbar">
             <p className="m-0 min-w-0 text-[length:var(--exits-text-sm)]">
               <span className="font-semibold">
@@ -302,6 +370,7 @@ export function PersonCreateForm({
               {t("people.createKindChange")}
             </Button>
           </div>
+          )}
 
           {createKind === "exits" ? (
             <PersonalIdentityResolvePanel
@@ -316,62 +385,109 @@ export function PersonCreateForm({
           ) : null}
 
           {(createKind === "walkin" || (createKind === "exits" && resolved && !existingContact)) ? (
-            <>
-              <section className="catalog-form-section exits-animate-panel">
-                <h2 className="catalog-form-section__title">{t("people.sectionBasics")}</h2>
-                <div className="catalog-form-section__grid">
-                  <Input
-                    label={t("people.displayName")}
-                    id="person-display-name"
-                    name="personDisplayName"
-                    data-testid="person-display-name"
-                    autoComplete="name"
-                    value={displayName}
-                    disabled={saving}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                  />
-                </div>
-              </section>
-
-              <section className="catalog-form-section exits-animate-panel">
-                <h2 className="catalog-form-section__title">{t("people.sectionDetails")}</h2>
-                <div className="catalog-form-section__grid">
-                  <Input
-                    label={t("people.localAdd.phone")}
-                    id="person-phone"
-                    name="personPhone"
-                    data-testid="person-phone"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={phone}
-                    disabled={saving}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
-                  <Input
-                    label={t("people.localAdd.email")}
-                    id="person-email"
-                    name="personEmail"
-                    data-testid="person-email"
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    value={email}
-                    disabled={saving}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </div>
-              </section>
-            </>
+            createKind === "walkin" ? (
+              <div className="flex min-w-0 flex-col gap-3">
+                <ExitsOutlineInput
+                  label={t("people.displayName")}
+                  id="person-display-name"
+                  name="personDisplayName"
+                  testId="person-display-name"
+                  autoComplete="name"
+                  value={displayName}
+                  disabled={saving}
+                  required
+                  data-exits-modal-autofocus="true"
+                  onChange={setDisplayName}
+                />
+                <ExitsOutlineInput
+                  label={t("people.localAdd.phone")}
+                  id="person-phone"
+                  name="personPhone"
+                  testId="person-phone"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={phone}
+                  disabled={saving}
+                  onChange={setPhone}
+                />
+                <ExitsOutlineInput
+                  label={t("people.localAdd.email")}
+                  id="person-email"
+                  name="personEmail"
+                  testId="person-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={email}
+                  disabled={saving}
+                  onChange={setEmail}
+                />
+              </div>
+            ) : (
+              <>
+                <section className="catalog-form-section exits-animate-panel">
+                  <h2 className="catalog-form-section__title">{t("people.sectionBasics")}</h2>
+                  <div className="catalog-form-section__grid">
+                    <ExitsOutlineInput
+                      label={t("people.displayName")}
+                      id="person-display-name"
+                      name="personDisplayName"
+                      testId="person-display-name"
+                      autoComplete="name"
+                      value={displayName}
+                      disabled={saving}
+                      required
+                      onChange={setDisplayName}
+                    />
+                  </div>
+                </section>
+                <section className="catalog-form-section exits-animate-panel">
+                  <h2 className="catalog-form-section__title">{t("people.sectionDetails")}</h2>
+                  <div className="catalog-form-section__grid">
+                    <ExitsOutlineInput
+                      label={t("people.localAdd.phone")}
+                      id="person-phone"
+                      name="personPhone"
+                      testId="person-phone"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={phone}
+                      disabled={saving}
+                      onChange={setPhone}
+                    />
+                    <ExitsOutlineInput
+                      label={t("people.localAdd.email")}
+                      id="person-email"
+                      name="personEmail"
+                      testId="person-email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      value={email}
+                      disabled={saving}
+                      onChange={setEmail}
+                    />
+                  </div>
+                </section>
+              </>
+            )
           ) : null}
 
           {!existingContact ? (
-            <div className={cn("catalog-form-actions", embedded && "person-form-actions--embedded")}>
-              <div className="catalog-form-actions__primary flex flex-wrap gap-2">
+            <div
+              className={cn(
+                "catalog-form-actions",
+                embedded &&
+                  "person-form-actions--embedded sticky bottom-0 z-10 -mx-1 border-t border-border bg-surface px-1 pt-3",
+              )}
+            >
+              <div className="catalog-form-actions__primary flex flex-wrap items-center justify-end gap-2">
                 {embedded && onCancel ? (
                   <Button
                     type="button"
-                    variant="outline"
-                    className="flex-1 sm:flex-none"
+                    intent="danger"
+                    appearance="glossy"
+                    emphasis="strong"
                     data-testid="person-add-cancel"
                     disabled={saving || resolving}
                     onClick={() => {
@@ -384,7 +500,12 @@ export function PersonCreateForm({
                 ) : null}
                 <Button
                   type="submit"
-                  className={cn("catalog-form-actions__save", embedded && "flex-1 sm:min-w-[12rem]")}
+                  intent={embedded ? "primary" : undefined}
+                  appearance={embedded ? "glossy" : undefined}
+                  className={cn(
+                    embedded && createKind === "walkin" ? "min-w-[8rem]" : "catalog-form-actions__save",
+                    embedded && createKind !== "walkin" && "min-w-[8rem]",
+                  )}
                   data-testid="person-save"
                   disabled={saving || resolving || (createKind === "exits" && !resolved)}
                 >
@@ -395,8 +516,16 @@ export function PersonCreateForm({
                     </>
                   ) : (
                     <>
-                      <Save className="size-4 shrink-0" aria-hidden />
-                      {t("people.save")}
+                      {createKind === "walkin" ? (
+                        <UserPlus className="size-4 shrink-0" aria-hidden="true" />
+                      ) : (
+                        <SavePlusIcon className="size-4 shrink-0" />
+                      )}
+                      {createKind === "exits"
+                        ? t("people.addExits")
+                        : createKind === "walkin"
+                          ? t("people.addLocal")
+                          : t("people.save")}
                     </>
                   )}
                 </Button>

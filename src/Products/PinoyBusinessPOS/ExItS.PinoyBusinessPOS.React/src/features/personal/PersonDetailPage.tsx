@@ -3,8 +3,6 @@ import {
   Check,
   ChevronDown,
   HandCoins,
-  Pencil,
-  Settings2,
   ShieldCheck,
   SlidersHorizontal,
   Users,
@@ -12,7 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import { PlatformApiError } from "@/api/platform/platform-http";
 import {
@@ -23,8 +21,6 @@ import {
 import { EmptyState } from "@/components/exits/EmptyState";
 
 import { ErrorState } from "@/components/exits/ErrorState";
-
-import { ExitsCheckbox } from "@/components/exits/ExitsCheckbox";
 
 import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 
@@ -39,8 +35,7 @@ import { StatusChip as ExitsStatusChip } from "@/components/exits/StatusChip";
 import { StatusChip } from "@/components/ui/badge";
 
 import { Button } from "@/components/ui/button";
-
-import { Input } from "@/components/ui/input";
+import { EditLocalContactDialog } from "@/features/personal/EditLocalContactDialog";
 
 import { Card } from "@/components/ui/card";
 
@@ -52,8 +47,6 @@ import { cn } from "@/lib/cn";
 
 import {
 
-  useBlockContactMutation,
-
   useCreateUtangMutation,
 
   useInvalidatePersonalPeople,
@@ -61,8 +54,6 @@ import {
   usePersonalConnectionRequestsQuery,
 
   usePersonalContactsQuery,
-
-  usePersonalSharedUtangPreferenceQuery,
 
   usePersonalUtangSummariesQuery,
 
@@ -72,15 +63,10 @@ import {
 
   useUnblockContactMutation,
 
-  useUnlinkContactMutation,
-
-  useUpdatePersonalContactMutation,
-
-  useUpdatePersonalSharedUtangPreferenceMutation,
-
 } from "@/features/personal/people-queries";
 
 import { deriveConnectionStatus, formatShortDate } from "@/features/personal/people-status";
+import { SharedUtangSettingPanel } from "@/features/personal/SharedUtangSettingPanel";
 import { isSharedRelationship } from "@/features/personal/utang/utang-workspace";
 
 import { useI18n } from "@/i18n/I18nProvider";
@@ -99,88 +85,6 @@ function RibbonPennant({ icon: Icon }: { icon: LucideIcon }) {
     <span className="personal-tracker-card__pennant" aria-hidden>
       <Icon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
     </span>
-  );
-}
-
-function LocalContactEditForm({
-  contact,
-  onClose,
-}: {
-  contact: { id: string; displayName: string; phone?: string | null; email?: string | null };
-  onClose: () => void;
-}) {
-  const { t } = useI18n();
-  const updateContact = useUpdatePersonalContactMutation();
-  const [name, setName] = useState(contact.displayName);
-  const [phone, setPhone] = useState(contact.phone ?? "");
-  const [email, setEmail] = useState(contact.email ?? "");
-  const [error, setError] = useState<string | null>(null);
-
-  return (
-    <form
-      className="catalog-form-section personal-section person-ribbon-card flex flex-col gap-3"
-      data-testid="person-local-edit"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!name.trim()) {
-          setError(t("people.localAdd.nameRequired"));
-          return;
-        }
-        setError(null);
-        updateContact.mutate(
-          {
-            contactId: contact.id,
-            body: {
-              displayName: name.trim(),
-              phone: phone.trim() || null,
-              email: email.trim() || null,
-            },
-          },
-          {
-            onSuccess: onClose,
-            onError: (err) =>
-              setError(err instanceof PlatformApiError ? err.message : t("people.loadError")),
-          },
-        );
-      }}
-    >
-      <h2 className="personal-tracker-card__ribbon">
-        <RibbonPennant icon={Pencil} />
-        {t("people.edit.title")}
-      </h2>
-      <Input
-        label={t("people.displayName")}
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        data-testid="person-edit-name"
-      />
-      <Input
-        label={t("people.column.contact")}
-        value={phone}
-        onChange={(event) => setPhone(event.target.value)}
-        data-testid="person-edit-phone"
-      />
-      <Input
-        label={t("people.column.email")}
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        data-testid="person-edit-email"
-      />
-      {error ? (
-        <p role="alert" className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
-          {error}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" className="w-auto" disabled={updateContact.isPending}>
-          {t("people.edit.save")}
-        </Button>
-        <Button type="button" variant="ghost" className="w-auto" onClick={onClose}>
-          {t("people.add.cancel")}
-        </Button>
-      </div>
-    </form>
   );
 }
 
@@ -220,8 +124,6 @@ export function PersonDetailPage() {
 
   const { contactId = "" } = useParams();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const { t } = useI18n();
 
   const contactsQuery = usePersonalContactsQuery();
@@ -236,10 +138,6 @@ export function PersonDetailPage() {
 
   const revokeConnection = useRevokeConnectionMutation();
 
-  const unlinkContact = useUnlinkContactMutation();
-
-  const blockContact = useBlockContactMutation();
-
   const unblockContact = useUnblockContactMutation();
 
   const createUtang = useCreateUtangMutation();
@@ -253,10 +151,7 @@ export function PersonDetailPage() {
   const [mode, setMode] = useState<"lent" | "borrowed">("lent");
 
   const [connectionCardOpen, setConnectionCardOpen] = useState(false);
-
-  const [confirmUnlink, setConfirmUnlink] = useState(false);
-
-  const [confirmBlock, setConfirmBlock] = useState(false);
+  const [editContactOpen, setEditContactOpen] = useState(false);
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -272,12 +167,6 @@ export function PersonDetailPage() {
 
   const linkedCounterpartyId = contact?.linkedUserIdentityId ?? null;
   const isConnected = connection?.status === "connected" && Boolean(linkedCounterpartyId);
-  const sharedPrefsQuery = usePersonalSharedUtangPreferenceQuery(
-    isConnected ? linkedCounterpartyId : null,
-  );
-  const updateSharedPrefs = useUpdatePersonalSharedUtangPreferenceMutation(
-    linkedCounterpartyId ?? "",
-  );
 
 
 
@@ -508,115 +397,6 @@ export function PersonDetailPage() {
     connection.status !== "request_received" &&
     connection.status !== "blocked";
 
-  const connectedSafetyContent = connected ? (
-    <>
-      <p className="m-0 text-muted">
-        {t("people.detail.connectedSince").replace(
-          "{date}",
-          formatShortDate(contact.connectedAtUtc ?? contact.createdAtUtc),
-        )}
-      </p>
-
-      {!confirmUnlink && !confirmBlock ? (
-        <div className="flex min-w-0 flex-row flex-wrap gap-2">
-          <Button
-            type="button"
-            intent="primary"
-            appearance="solid"
-            emphasis="soft"
-            className="min-w-0 flex-1"
-            data-testid="person-detail-unlink"
-            onClick={() => {
-              setConfirmBlock(false);
-              setConfirmUnlink(true);
-            }}
-          >
-            {t("people.detail.unlink")}
-          </Button>
-          <Button
-            type="button"
-            intent="danger"
-            appearance="solid"
-            emphasis="soft"
-            className="min-w-0 flex-1"
-            data-testid="person-detail-block"
-            onClick={() => {
-              setConfirmUnlink(false);
-              setConfirmBlock(true);
-            }}
-          >
-            {t("people.detail.block")}
-          </Button>
-        </div>
-      ) : null}
-
-      {confirmUnlink ? (
-        <div className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3">
-          <p className="m-0 font-semibold">
-            {t("people.detail.unlinkConfirmTitle").replace("{name}", contact.displayName)}
-          </p>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("people.detail.unlinkConfirmBody")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={() => setConfirmUnlink(false)}>
-              {t("people.add.cancel")}
-            </Button>
-            <Button
-              type="button"
-              intent="primary"
-              appearance="solid"
-              emphasis="soft"
-              disabled={unlinkContact.isPending}
-              onClick={() => {
-                setActionError(null);
-                void unlinkContact
-                  .mutateAsync(contact.id)
-                  .then(() => setConfirmUnlink(false))
-                  .catch((err) => {
-                    setActionError(err instanceof Error ? err.message : t("error.body"));
-                  });
-              }}
-            >
-              {t("people.detail.unlinkConfirmAction")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {confirmBlock ? (
-        <div className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("people.detail.blockConfirmBody")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={() => setConfirmBlock(false)}>
-              {t("people.add.cancel")}
-            </Button>
-            <Button
-              type="button"
-              intent="danger"
-              appearance="solid"
-              emphasis="soft"
-              disabled={blockContact.isPending}
-              onClick={() => {
-                setActionError(null);
-                void blockContact
-                  .mutateAsync(contact.id)
-                  .then(() => setConfirmBlock(false))
-                  .catch((err) => {
-                    setActionError(err instanceof Error ? err.message : t("error.body"));
-                  });
-              }}
-            >
-              {t("people.detail.block")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-    </>
-  ) : null;
-
   return (
 
     <section className="personal-page exits-page flex w-full min-w-0 flex-col gap-4">
@@ -639,7 +419,19 @@ export function PersonDetailPage() {
         subtitle={connected && publicUserId ? publicUserId : undefined}
         subtitleClassName="truncate max-lg:hidden"
         titleTrailing={
-          connected ? (
+          connection.status === "local" ? (
+            <Button
+              type="button"
+              intent="primary"
+              appearance="outline"
+              shape="standard"
+              className="w-auto"
+              data-testid="person-detail-edit"
+              onClick={() => setEditContactOpen(true)}
+            >
+              {t("people.action.edit")}
+            </Button>
+          ) : connected ? (
             <StatusChip tone={statusTone(connection.status)} className="max-lg:hidden" data-testid="person-detail-header-status">
               {statusLabel(connection.status)}
             </StatusChip>
@@ -661,14 +453,11 @@ export function PersonDetailPage() {
         </div>
       </div>
 
-      {connection.status === "local" && searchParams.get("edit") === "1" ? (
-        <LocalContactEditForm
+      {connection.status === "local" ? (
+        <EditLocalContactDialog
+          open={editContactOpen}
           contact={contact}
-          onClose={() => {
-            const next = new URLSearchParams(searchParams);
-            next.delete("edit");
-            setSearchParams(next, { replace: true });
-          }}
+          onOpenChange={setEditContactOpen}
         />
       ) : null}
 
@@ -896,61 +685,13 @@ export function PersonDetailPage() {
               contact?.displayName ?? t("personal.utang.person"),
             )}
           </h2>
-          <div className="person-shared-card__columns">
-          <div className="person-shared-card__col">
-          <h3 className="person-ribbon-card__section-title" data-testid="person-detail-shared-settings-heading">
-            <Settings2 className="size-4 shrink-0 text-primary" aria-hidden />
-            {t("personal.utang.prefsSectionTitle")}
-          </h3>
-          {sharedPrefsQuery.isLoading ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("loading.label")}</p>
-          ) : sharedPrefsQuery.isError ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("personal.utang.prefsRequiresOnline")}
-            </p>
-          ) : (
-            <div className="person-ribbon-card__checks">
-              <ExitsCheckbox
-                label={t("personal.utang.prefsReceive")}
-                testId="person-detail-prefs-receive"
-                checked={sharedPrefsQuery.data?.receiveSharedUtang ?? true}
-                disabled={updateSharedPrefs.isPending}
-                onCheckedChange={(receive) => {
-                  void updateSharedPrefs.mutateAsync({
-                    receiveSharedUtang: receive,
-                    autoAcceptSharedUtang: false,
-                    sharedUtangNotifications:
-                      sharedPrefsQuery.data?.sharedUtangNotifications ?? true,
-                    expectedVersion: sharedPrefsQuery.data?.version,
-                  });
-                }}
-              />
-              <ExitsCheckbox
-                label={t("personal.utang.prefsNotifications")}
-                testId="person-detail-prefs-notifications"
-                checked={sharedPrefsQuery.data?.sharedUtangNotifications ?? true}
-                disabled={updateSharedPrefs.isPending}
-                onCheckedChange={(notify) => {
-                  void updateSharedPrefs.mutateAsync({
-                    receiveSharedUtang: sharedPrefsQuery.data?.receiveSharedUtang ?? true,
-                    autoAcceptSharedUtang: false,
-                    sharedUtangNotifications: notify,
-                    expectedVersion: sharedPrefsQuery.data?.version,
-                  });
-                }}
-              />
-            </div>
-          )}
-          </div>
-          <div className="person-shared-card__divider" role="separator" aria-orientation="vertical" />
-          <div className="person-shared-card__col">
-          <h3 className="person-ribbon-card__section-title" data-testid="person-detail-connection-heading">
-            <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden />
-            {t("people.detail.connectionAndSafety")}
-          </h3>
-          {connectedSafetyContent}
-          </div>
-          </div>
+          <SharedUtangSettingPanel
+            contactId={contact.id}
+            displayName={contact.displayName}
+            connectedAtUtc={contact.connectedAtUtc}
+            createdAtUtc={contact.createdAtUtc}
+            counterpartyUserIdentityId={linkedCounterpartyId}
+          />
         </Card>
       ) : null}
 

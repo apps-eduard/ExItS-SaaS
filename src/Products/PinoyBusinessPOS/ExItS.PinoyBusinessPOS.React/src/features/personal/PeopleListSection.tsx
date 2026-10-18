@@ -24,6 +24,7 @@ import {
 } from "@/features/personal/people-status";
 import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
+import { EditLocalContactDialog } from "@/features/personal/EditLocalContactDialog";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -196,6 +197,7 @@ function PeopleTable({
   statusLabel: (status: PeopleConnectionStatus) => string;
 }) {
   const { t } = useI18n();
+  const [editingContact, setEditingContact] = useState<PeopleRowModel["contact"] | null>(null);
 
   return (
     <ExitsTableContainer className="people-list-table" data-testid="people-table">
@@ -243,13 +245,14 @@ function PeopleTable({
                 <ExitsTableCell className="people-table-actions">
                   <span className="inline-flex flex-wrap justify-end gap-2">
                     {row.connectionStatus === "local" ? (
-                      <Button asChild variant="outline" className="w-auto">
-                        <Link
-                          to={`/personal/people/${row.contact.id}?edit=1`}
-                          data-testid={`people-edit-${row.contact.id}`}
-                        >
-                          {t("people.action.edit")}
-                        </Link>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-auto"
+                        data-testid={`people-edit-${row.contact.id}`}
+                        onClick={() => setEditingContact(row.contact)}
+                      >
+                        {t("people.action.edit")}
                       </Button>
                     ) : null}
                     <Button asChild variant="outline" className="w-auto">
@@ -275,6 +278,17 @@ function PeopleTable({
           })}
         </ExitsTableBody>
       </ExitsTable>
+      {editingContact ? (
+        <EditLocalContactDialog
+          open
+          contact={editingContact}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingContact(null);
+            }
+          }}
+        />
+      ) : null}
     </ExitsTableContainer>
   );
 }

@@ -29,6 +29,8 @@ A few showcase classes are rendered by product components. Their rules stay in `
 - `ui-standards-qbtn--raised` — Personal businesses actions
 - `ui-standards-qcard`, `ui-standards-qcard--settings-card`, `ui-standards-qcard__settings-*` — Personal utang settings card
 
+The locked Primary Outlined input and dropdown (`ext input primary outlined`, `ext dropdown primary outlined`) are used by the Update Balance dialog. Those rules live in `src/features/ui-standards/exits-qfield.css`. The playground stylesheet imports that file, and `ExitsOutlineField` imports it too, so the dialog keeps the lock in production. The rest of the showcase stays out of production.
+
 Every other `ui-standards-*` rule belongs in `ui-standards.css`.
 
 ## Rules for contributors

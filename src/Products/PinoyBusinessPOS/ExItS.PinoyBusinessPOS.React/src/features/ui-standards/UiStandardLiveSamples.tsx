@@ -56,7 +56,9 @@ import {
   UiStandardsCardNotchSample,
   UiStandardsCardPennantSample,
   UiStandardsCardIndexSample,
+  UiStandardsCardArrowSample,
   UiStandardsCardPinSample,
+  UiStandardsCardProcessSample,
   UiStandardsCardStepSample,
   UiStandardsCardPageHeaderSample,
   UiStandardsCardPlayground,
@@ -1819,6 +1821,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             <UiStandardsCardPinSample />
             <UiStandardsCardIndexSample />
             <UiStandardsCardStepSample />
+            <UiStandardsCardProcessSample />
+            <UiStandardsCardArrowSample />
             <div className="ui-standards-qcard-samples" data-testid="ui-standard-card-samples-grid">
               <UiStandardsCardRibbonSample />
               <UiStandardsCardRibbonPendantSample />

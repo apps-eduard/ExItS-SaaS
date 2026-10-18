@@ -1,17 +1,14 @@
-import { ArrowLeft, ChevronDown, Info, Plus } from "lucide-react";
+import { ArrowLeft, IdCard, Info, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
+import { AddPersonDialog } from "@/features/personal/AddPersonDialog";
 import { PeopleInfoPopover } from "@/features/personal/PeopleInfoDialog";
-import {
-  parsePersonCreateKind,
-  PersonCreateForm,
-} from "@/features/personal/PersonFormPage";
+import { parsePersonCreateKind, type PersonCreateKind } from "@/features/personal/PersonFormPage";
 import {
   usePersonalConnectionRequestsQuery,
   usePersonalContactsQuery,
@@ -72,14 +69,14 @@ export function PeoplePage() {
     setSearchParams(next, { replace: true });
   }
 
-  function toggleAddPanel() {
-    if (addOpen) {
-      closeAddPanel();
-      return;
-    }
+  function openAddPanel(kind: PersonCreateKind) {
     setAddOpen(true);
     const next = new URLSearchParams(searchParams);
     next.set("add", "1");
+    next.set("kind", kind);
+    if (kind !== "exits") {
+      next.delete("linkPublicId");
+    }
     setSearchParams(next, { replace: true });
   }
   const contactsQuery = usePersonalContactsQuery();
@@ -172,52 +169,47 @@ export function PeoplePage() {
       {isInitialLoading ? <PageSkeleton label={t("loading.label")} /> : null}
       {!isInitialLoading ? (
         <>
-      <Card className="people-add-card flex flex-col gap-3" data-testid="people-add-panel">
-        <button
+      <div className="flex flex-wrap gap-2">
+        <Button
           type="button"
-          className={cn(
-            "flex w-full items-center gap-3 rounded-[var(--exits-radius-md)] border-0 bg-transparent p-0 text-left text-inherit",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          )}
+          intent="primary"
+          appearance="glossy"
           data-testid="people-add-toggle"
-          aria-label={t("people.add.toggle")}
-          aria-expanded={addOpen}
-          aria-controls="people-add-form"
-          onClick={toggleAddPanel}
+          aria-label={t("people.addLocal")}
+          aria-expanded={addOpen && urlKind === "walkin"}
+          aria-controls="people-add-dialog"
+          onClick={() => openAddPanel("walkin")}
         >
-          <span
-            className={cn(
-              "inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-primary transition-transform",
-              addOpen && "rotate-45",
-            )}
-            aria-hidden
-          >
-            <Plus className="size-5" />
-          </span>
-          <span className="min-w-0 flex-1 text-[length:var(--exits-text-lg)] font-semibold">
-            {t("people.newTitle")}
-          </span>
-          <ChevronDown
-            className={cn(
-              "size-4 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-              addOpen && "rotate-180",
-            )}
-            aria-hidden="true"
-          />
-        </button>
-
-        {addOpen ? (
-          <div id="people-add-form" className="border-t border-border pt-3">
-            <PersonCreateForm
-              key={`${urlKind ?? "pick"}-${linkPublicId ?? ""}`}
-              embedded
-              initialKind={urlKind}
-              linkPublicId={linkPublicId}
-              onCancel={closeAddPanel}
-            />
-          </div>
-        ) : null}
-      </Card>
+          <Plus className="size-4 shrink-0" aria-hidden="true" />
+          {t("people.addLocal")}
+        </Button>
+        <Button
+          type="button"
+          intent="info"
+          appearance="glossy"
+          emphasis="strong"
+          data-testid="people-add-exits"
+          aria-label={t("people.addExits")}
+          aria-expanded={addOpen && urlKind === "exits"}
+          aria-controls="people-add-dialog"
+          onClick={() => openAddPanel("exits")}
+        >
+          <IdCard className="size-4 shrink-0" aria-hidden="true" />
+          {t("people.addExits")}
+        </Button>
+      </div>
+      <AddPersonDialog
+        open={addOpen}
+        initialKind={urlKind}
+        linkPublicId={linkPublicId}
+        onOpenChange={(next) => {
+          if (!next) {
+            closeAddPanel();
+          }
+        }}
+        onSwitchToExits={() => openAddPanel("exits")}
+        onSwitchToLocal={() => openAddPanel("walkin")}
+      />
 
       <PeopleListSection rows={rows} summary={summary} />
         </>

@@ -41,7 +41,8 @@ Button
 │  ├─ Outline
 │  ├─ Ghost
 │  ├─ Elevated
-│  └─ Gradient
+│  ├─ Gradient
+│  └─ Glossy
 │
 ├─ Shape                  (geometry)
 │  ├─ Auto
@@ -61,7 +62,7 @@ Button
 | Axis | Meaning | Values |
 |------|---------|--------|
 | **Intent** | Why the button looks that way | `primary` · `neutral` · `success` · `info` · `warning` · `help` · `danger` · `contrast` |
-| **Appearance** | How it is drawn | `solid` · `outline` · `ghost` · `elevated` · `gradient` |
+| **Appearance** | How it is drawn | `solid` · `outline` · `ghost` · `elevated` · `gradient` · `glossy` |
 | **Emphasis** | Fill strength (solid/elevated/gradient) | `soft` (default) · `strong` (Severities / filled) |
 | **Shape** | Geometry | `auto` · `standard` · `soft` · `pill` · `round` |
 | **State** | Interaction | normal / hover / focus / disabled / loading |

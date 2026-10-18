@@ -136,6 +136,16 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
       },
     ]),
     getPersonalMe: vi.fn(async () => ({ userIdentityId: meId })),
+    getPersonalSharedUtangPreference: vi.fn(async () => ({
+      id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      ownerUserIdentityId: meId,
+      counterpartyUserIdentityId: otherId,
+      receiveSharedUtang: true,
+      autoAcceptSharedUtang: false,
+      sharedUtangNotifications: true,
+      version: 1,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+    })),
     listLentRelationships: vi.fn(async () => [
       {
         id: relationshipId,
@@ -354,6 +364,11 @@ async function openUtangRecordForm(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByTestId("utang-rel-contact");
 }
 
+async function chooseRecordContact(user: ReturnType<typeof userEvent.setup>, id: string) {
+  await user.click(screen.getByTestId("utang-rel-contact"));
+  await user.click(await screen.findByTestId(`utang-rel-contact-option-${id}`));
+}
+
 describe("Personal Utang shared-ledger UI", () => {
   beforeEach(() => {
     onlineMock.current = true;
@@ -538,7 +553,7 @@ describe("Personal Utang shared-ledger UI", () => {
     const user = userEvent.setup();
     renderPath("/personal/utang/lent");
     await openUtangRecordForm(user);
-    await user.selectOptions(screen.getByTestId("utang-rel-contact"), linkedContactId);
+    await chooseRecordContact(user, linkedContactId);
     expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Save privately");
     expect(screen.getByTestId("utang-rel-share-toggle")).toBeInTheDocument();
     expect(screen.getByTestId("utang-rel-share-checkbox")).not.toBeChecked();
@@ -550,7 +565,7 @@ describe("Personal Utang shared-ledger UI", () => {
     const user = userEvent.setup();
     renderPath("/personal/utang/lent");
     await openUtangRecordForm(user);
-    await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
+    await chooseRecordContact(user, contactId);
     await user.type(screen.getByTestId("utang-rel-amount"), "100");
     await user.click(screen.getByTestId("utang-rel-submit"));
     expect(await screen.findByRole("alert")).toHaveTextContent(/purpose \/ note/i);
@@ -561,7 +576,7 @@ describe("Personal Utang shared-ledger UI", () => {
     const user = userEvent.setup();
     renderPath("/personal/utang/lent");
     await openUtangRecordForm(user);
-    await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
+    await chooseRecordContact(user, contactId);
     expect(screen.getByTestId("utang-rel-private-hint")).toBeInTheDocument();
   });
 
@@ -569,7 +584,7 @@ describe("Personal Utang shared-ledger UI", () => {
     const user = userEvent.setup();
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
 
-    expect(await screen.findByTestId("utang-detail-ledger")).toHaveTextContent("Shared with Me");
+    expect(await screen.findByTestId("utang-detail-ledger")).toHaveTextContent("My Record");
     expect(screen.queryByTestId("utang-entry-submit")).not.toBeInTheDocument();
     await openEntryDialog(user);
     expect(screen.getByTestId("utang-entry-submit")).toHaveTextContent("Save");
@@ -620,7 +635,37 @@ describe("Personal Utang shared-ledger UI", () => {
 
     const quickActions = await screen.findByTestId("utang-detail-quick-actions");
     expect(within(quickActions).getByText("Quick actions")).toBeInTheDocument();
-    expect(within(quickActions).getByTestId("utang-qa-reminders")).toHaveTextContent("Reminders");
+    expect(within(quickActions).getByTestId("utang-qa-reminders")).toHaveTextContent("Create reminders");
+
+    await user.click(within(quickActions).getByTestId("utang-qa-shared-setting"));
+    const sharedSetting = await screen.findByTestId("utang-shared-setting-dialog");
+    expect(within(sharedSetting).getByTestId("utang-shared-setting-dialog-ribbon")).toHaveTextContent(
+      "Shared setting from Linked Ben",
+    );
+    expect(await within(sharedSetting).findByTestId("person-detail-shared-settings-heading")).toHaveTextContent(
+      "Shared settings",
+    );
+    expect(within(sharedSetting).getByTestId("person-detail-connection-heading")).toHaveTextContent(
+      "Connection & safety",
+    );
+    expect(within(sharedSetting).getByTestId("person-detail-prefs-receive")).toBeInTheDocument();
+    expect(within(sharedSetting).getByTestId("person-detail-unlink")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByTestId("utang-shared-setting-dialog")).not.toBeInTheDocument();
+
+    await user.click(within(quickActions).getByTestId("utang-qa-view-contact"));
+    const viewContact = await screen.findByTestId("utang-view-contact-dialog");
+    expect(within(viewContact).getByTestId("utang-view-contact-status")).toHaveTextContent("Connected");
+    expect(within(viewContact).getByTestId("utang-view-contact-name")).toHaveTextContent("Linked Ben");
+    expect(within(viewContact).getByTestId("utang-view-contact-id")).toHaveTextContent("EX-1111-2222");
+    expect(within(viewContact).getByTestId("utang-view-contact-email")).toHaveTextContent("b***@example.com");
+    await user.keyboard("{Escape}");
+
+    await user.click(within(quickActions).getByTestId("utang-qa-reminders"));
+    const reminders = await screen.findByTestId("utang-reminders-dialog");
+    expect(within(reminders).getByTestId("utang-reminders-dialog-ribbon")).toHaveTextContent("Reminders");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByTestId("utang-reminders-dialog")).not.toBeInTheDocument();
 
     const dialog = await openEntryDialog(user);
     expect(dialog).toHaveAttribute("role", "dialog");
@@ -628,7 +673,32 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(dialog).toHaveAccessibleName("Update Balance");
     const head = within(dialog).getByTestId("utang-entry-dialog-head");
     expect(within(head).getByTestId("utang-entry-dialog-balance")).toHaveTextContent("₱");
-    await waitFor(() => expect(screen.getByTestId("utang-entry-amount")).toHaveFocus());
+    const amount = screen.getByTestId("utang-entry-amount");
+    await waitFor(() => expect(amount).toHaveFocus());
+    expect(amount).toHaveValue("");
+    expect(amount.closest(".ui-standards-qinput")).toHaveClass("ui-standards-qinput--outlined");
+    expect(screen.getByTestId("utang-entry-cancel")).toHaveAttribute("data-appearance", "glossy");
+    expect(screen.getByTestId("utang-entry-submit")).toHaveAttribute("data-appearance", "glossy");
+    expect(screen.getByTestId("utang-entry-submit")).toHaveClass("exits-btn--glossy");
+    expect(within(head).getByText("Name")).toBeInTheDocument();
+    expect(within(head).getByText("You lent")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-entry-save-icon")).toBeInTheDocument();
+    await user.type(amount, "100");
+    expect(amount).toHaveValue("100");
+    expect(screen.getByTestId("utang-entry-amount-clear")).toBeInTheDocument();
+    await user.type(amount, "1");
+    expect(amount).toHaveValue("100");
+    expect(screen.getByRole("alert")).toHaveTextContent("Amount cannot be more than what is lent or owed.");
+    await user.click(screen.getByTestId("utang-entry-amount-clear"));
+    expect(amount).toHaveValue("");
+    expect(screen.getByTestId("utang-entry-type").closest(".ui-standards-qdropdown")).toHaveClass(
+      "ui-standards-qdropdown--outlined",
+    );
+    await user.click(screen.getByTestId("utang-entry-notes"));
+    expect(amount).toHaveValue("0.00");
+    await user.click(amount);
+    expect(amount).toHaveFocus();
+    expect(amount).toHaveValue("");
     await user.keyboard("{Escape}");
     expect(screen.queryByTestId("utang-entry-dialog")).not.toBeInTheDocument();
   });
@@ -686,7 +756,7 @@ describe("Personal Utang shared-ledger UI", () => {
 
   function expectEntryFormReset() {
     expect(screen.getByTestId("utang-entry-type")).toHaveTextContent("Record payment");
-    expect(screen.getByTestId("utang-entry-amount")).toHaveValue("0.00");
+    expect(screen.getByTestId("utang-entry-amount")).toHaveValue("");
     expect(screen.getByTestId("utang-entry-notes")).toHaveValue("");
     expect(screen.queryByTestId("utang-entry-delta")).not.toBeInTheDocument();
     expect(screen.queryByTestId("utang-entry-error")).not.toBeInTheDocument();
@@ -862,6 +932,7 @@ describe("Personal Utang settlement UI", () => {
   });
 
   it("shows Settle when Active with balance greater than zero", async () => {
+    const user = userEvent.setup();
     vi.mocked(getPersonalDebtRelationship).mockResolvedValue({
       id: relationshipId,
       perspective: "Lent",
@@ -891,6 +962,24 @@ describe("Personal Utang settlement UI", () => {
     vi.mocked(listPersonalUtangHistory).mockResolvedValue([]);
 
     renderPath(`/personal/utang/relationships/${relationshipId}`);
+    expect(await screen.findByTestId("utang-qa-view-contact")).toHaveTextContent("View contact details");
+    await user.click(screen.getByTestId("utang-qa-view-contact"));
+    const viewContact = await screen.findByTestId("utang-view-contact-dialog");
+    expect(within(viewContact).getByTestId("utang-view-contact-dialog-ribbon")).toHaveTextContent(
+      "View contact details",
+    );
+    expect(within(viewContact).getByTestId("utang-view-contact-status")).toHaveTextContent("Local contact");
+    expect(within(viewContact).getByTestId("utang-view-contact-name")).toHaveTextContent("Walk-in Ana");
+    expect(within(viewContact).queryByTestId("utang-view-contact-id")).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(await screen.findByTestId("utang-qa-edit-contact")).toHaveTextContent("Edit contact details");
+    await user.click(screen.getByTestId("utang-qa-edit-contact"));
+    const editContact = await screen.findByTestId("utang-edit-contact-dialog");
+    expect(within(editContact).getByTestId("utang-edit-contact-dialog-ribbon")).toHaveTextContent(
+      "Edit contact details",
+    );
+    expect(within(editContact).getByTestId("utang-edit-contact-name")).toHaveValue("Walk-in Ana");
+    await user.keyboard("{Escape}");
     expect(await screen.findByTestId("utang-settle")).toBeInTheDocument();
     expect(screen.getByTestId("utang-detail-status")).toHaveTextContent("Active");
     expect(screen.queryByTestId("utang-mark-settled")).not.toBeInTheDocument();
@@ -1202,6 +1291,7 @@ describe("Personal Utang settlement UI", () => {
 
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
     await user.click(await screen.findByTestId("utang-settle"));
+    await user.type(screen.getByTestId("utang-settle-note"), "Paid in full");
     await user.click(screen.getByTestId("utang-settle-confirm"));
     expect(await screen.findByTestId("utang-settle-awaiting")).toBeInTheDocument();
     expect(settlePersonalDebtRelationship).toHaveBeenCalled();

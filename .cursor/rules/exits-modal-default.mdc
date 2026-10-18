@@ -1,0 +1,19 @@
+---
+description: Default modal Cancel and Save buttons
+alwaysApply: true
+---
+
+# Modal actions (LOCKED)
+
+When a modal has Cancel and Save, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/modal-action-global-default.ts`.
+
+- Cancel: `intent="danger"` `appearance="glossy"` `emphasis="strong"`.
+- Save: `intent="primary"` `appearance="glossy"`.
+- Save icon is a Lucide floppy-disk mark, chosen by the action:
+  - Save or record: `save-check`
+  - Edit: `save-pen`
+  - Add: `save-plus`
+
+`lucide-react` 0.541.0 does not export these names. Draw the inline SVG from the Lucide `save-check`, `save-pen`, and `save-plus` icons (24 view box, stroke 2, round caps). Do not substitute `CircleCheck`, `Pencil`, `Plus`, or `Save`.
+
+Change this lock only when the user asks. Update `modal-action-global-default.ts` and `modal-action-global-default.test.ts` together.

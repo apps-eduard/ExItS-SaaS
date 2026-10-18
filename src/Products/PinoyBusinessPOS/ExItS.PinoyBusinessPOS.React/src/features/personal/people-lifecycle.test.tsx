@@ -170,8 +170,9 @@ describe("People lifecycle UX", () => {
     );
 
     renderPeopleApp("/personal/people");
-    expect(await screen.findByTestId("people-add-panel")).toBeInTheDocument();
-    expect(await screen.findByTestId("people-add-toggle")).toBeInTheDocument();
+    expect(await screen.findByTestId("people-add-toggle")).toHaveTextContent("Add local person");
+    expect(screen.getByTestId("people-add-exits")).toHaveTextContent("Add ExItS person");
+    expect(screen.queryByTestId("people-add-dialog")).not.toBeInTheDocument();
     expect(screen.queryByTestId("person-form-page")).not.toBeInTheDocument();
     expect(screen.getByText(/0 with ExItS ID · 0 local only/)).toBeInTheDocument();
     const searchRow = screen.getByTestId("people-search-row");
@@ -245,6 +246,13 @@ describe("People lifecycle UX", () => {
     const user = userEvent.setup();
     renderPeopleApp("/personal/people?add=1&kind=walkin");
     await screen.findByTestId("person-form-page");
+    expect(screen.getByTestId("people-add-local-hint")).toHaveTextContent(
+      "Keep someone in People without linking an ExItS account.",
+    );
+    await user.click(screen.getByTestId("people-add-switch-exits"));
+    expect(await screen.findByTestId("qr-manual-id")).toBeInTheDocument();
+    await user.click(screen.getByTestId("people-add-dialog-close"));
+    await user.click(screen.getByTestId("people-add-toggle"));
     await user.type(screen.getByLabelText(/^Name/i), "Pedro Cruz");
     await user.click(screen.getByTestId("person-save"));
     await waitFor(() => {
@@ -346,8 +354,14 @@ describe("People lifecycle UX", () => {
     renderPeopleApp("/personal/people?add=1&kind=exits");
 
     await screen.findByTestId("person-form-page");
+    expect(screen.getByTestId("people-add-exits-hint")).toHaveTextContent(
+      "Find someone with their exact ExItS ID or QR payload.",
+    );
+    await user.click(screen.getByTestId("people-add-switch-local"));
+    expect(await screen.findByLabelText(/^Name/i)).toBeInTheDocument();
+    await user.click(screen.getByTestId("people-add-switch-exits"));
 
-    await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
+    await user.type(await screen.findByTestId("qr-manual-id"), "EX-1234-5678");
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     const confirmation = await screen.findByTestId("identity-confirmation");

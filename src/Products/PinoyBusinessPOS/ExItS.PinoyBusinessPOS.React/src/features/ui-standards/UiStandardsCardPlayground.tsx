@@ -11,6 +11,7 @@ import {
   CalendarX,
   Check,
   ChevronRight,
+  ClipboardList,
   Cog,
   FileText,
   Heart,
@@ -20,6 +21,7 @@ import {
   Search,
   Share2,
   Star,
+  Target,
   TriangleAlert,
   UserPlus,
 } from "lucide-react";
@@ -1406,6 +1408,141 @@ export function UiStandardsCardStepSample() {
                   {sample.title}
                 </h3>
                 <p className="ui-standards-qcard__step-note m-0">{CARD_LOREM}</p>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const PROCESS_CARD_SAMPLES = [
+  { id: "amber", step: "01", color: "#f6c31a", Icon: Lightbulb },
+  { id: "info", step: "02", color: "#2b9ff0", Icon: Search },
+  { id: "coral", step: "03", color: "#ff6678", Icon: ClipboardList },
+  { id: "lime", step: "04", color: "#73d63a", Icon: Target },
+] as const;
+
+const PROCESS_CARD_COPY =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat.";
+
+/**
+ * Showcase sample: numbered pill header, round icon, and a curved color panel.
+ * Named "Card process".
+ */
+export function UiStandardsCardProcessSample() {
+  return (
+    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-process-sample">
+      <CardSampleHeading testId="ui-standard-card-process-heading">Card process</CardSampleHeading>
+      <div className="ui-standards-qcard-row ui-standards-qcard-row--process">
+        {PROCESS_CARD_SAMPLES.map((sample) => {
+          const Icon = sample.Icon;
+          return (
+            <article
+              key={sample.id}
+              className="ui-standards-qcard ui-standards-qcard--process"
+              data-intent={sample.id}
+              data-testid={`ui-standard-card-process-${sample.id}`}
+              style={{ "--qcard-process": sample.color } as CSSProperties}
+            >
+              <div className="ui-standards-qcard__process-plate">
+                <header className="ui-standards-qcard__process-cap">
+                  <span className="ui-standards-qcard__process-num">{sample.step}</span>
+                  <span className="ui-standards-qcard__process-kicker">
+                    <span>Lorem</span>
+                    <span>Ipsum</span>
+                  </span>
+                </header>
+                <div className="ui-standards-qcard__process-fill">
+                  <h3
+                    className="ui-standards-qcard__process-title"
+                    data-testid={`ui-standard-card-process-title-${sample.id}`}
+                  >
+                    Sample Text
+                  </h3>
+                  <p
+                    className="ui-standards-qcard__process-note m-0"
+                    data-testid={`ui-standard-card-process-body-${sample.id}`}
+                  >
+                    {PROCESS_CARD_COPY}
+                  </p>
+                </div>
+                <span
+                  className="ui-standards-qcard__process-badge"
+                  aria-hidden
+                  data-testid={`ui-standard-card-process-icon-${sample.id}`}
+                >
+                  <Icon className="ui-standards-qcard__process-icon" strokeWidth={2} />
+                </span>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const ARROW_CARD_SAMPLES = [
+  { id: "violet", step: "01", color: "#7b61ff", lite: "#c4b6ff", deep: "#5b45e0", Icon: Lightbulb },
+  { id: "green", step: "02", color: "#2fce62", lite: "#9ae6b0", deep: "#1fa84a", Icon: Search },
+  { id: "coral", step: "03", color: "#ff5a67", lite: "#ffb3ba", deep: "#e23b4a", Icon: ClipboardList },
+  { id: "amber", step: "04", color: "#f5c400", lite: "#ffe56a", deep: "#e0ad00", Icon: Target },
+] as const;
+
+/**
+ * Showcase sample: stacked arrow header, round icon, and a curved color panel.
+ * Named "Card arrow".
+ */
+export function UiStandardsCardArrowSample() {
+  return (
+    <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-arrow-sample">
+      <CardSampleHeading testId="ui-standard-card-arrow-heading">Card arrow</CardSampleHeading>
+      <div className="ui-standards-qcard-row ui-standards-qcard-row--arrow">
+        {ARROW_CARD_SAMPLES.map((sample) => {
+          const Icon = sample.Icon;
+          return (
+            <article
+              key={sample.id}
+              className="ui-standards-qcard ui-standards-qcard--arrow"
+              data-intent={sample.id}
+              data-testid={`ui-standard-card-arrow-${sample.id}`}
+              style={
+                {
+                  "--qcard-arrow": sample.color,
+                  "--qcard-arrow-lite": sample.lite,
+                  "--qcard-arrow-deep": sample.deep,
+                } as CSSProperties
+              }
+            >
+              <header className="ui-standards-qcard__arrow-head" aria-hidden>
+                <span className="ui-standards-qcard__arrow-layer ui-standards-qcard__arrow-layer--back" />
+                <span className="ui-standards-qcard__arrow-layer ui-standards-qcard__arrow-layer--mid" />
+                <span className="ui-standards-qcard__arrow-face">{sample.step}</span>
+              </header>
+              <div className="ui-standards-qcard__arrow-plate">
+                <div className="ui-standards-qcard__arrow-fill">
+                  <h3
+                    className="ui-standards-qcard__arrow-title"
+                    data-testid={`ui-standard-card-arrow-title-${sample.id}`}
+                  >
+                    Sample Text
+                  </h3>
+                  <p
+                    className="ui-standards-qcard__arrow-note m-0"
+                    data-testid={`ui-standard-card-arrow-body-${sample.id}`}
+                  >
+                    {PROCESS_CARD_COPY}
+                  </p>
+                </div>
+                <span
+                  className="ui-standards-qcard__arrow-badge"
+                  aria-hidden
+                  data-testid={`ui-standard-card-arrow-icon-${sample.id}`}
+                >
+                  <Icon className="ui-standards-qcard__arrow-icon" strokeWidth={2} />
+                </span>
               </div>
             </article>
           );

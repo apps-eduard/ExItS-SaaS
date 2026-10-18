@@ -74,7 +74,7 @@ The Input playground **default global** lock is `ext input primary outlined`. A 
 |------------|------|
 | **Standard** | Underline. The line grows from the center on focus or when the field has text. |
 | **Filled** | Accent wash. The floated label sits just inside the top of the fill. Typed text is centered between that label and the bottom edge. The clear control lines up with the text. |
-| **Outlined** | Border. On focus or with text, the label sits on the top edge so the border cuts through the middle of the word. |
+| **Outlined** | Border. On focus or with text, the label sits on the top edge so the border cuts through the middle of the word. On focus, a 3px bottom edge grows from the center, the same bar as the dropdown. |
 | **Standout** | Solid fill and contrasting ink. Same inner layout as Filled. No underline. |
 | **Soft** / **Soft outline** | Same inner layout as Filled. Soft outline adds an accent border. |
 | **Pill** | Outlined pill. Shape token `pill`. Same radius as the button Pill shape. |

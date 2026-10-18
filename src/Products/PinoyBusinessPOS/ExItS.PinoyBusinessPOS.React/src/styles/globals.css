@@ -27408,13 +27408,6 @@ button.personal-home-index-card {
   box-shadow: var(--exits-shadow-md);
 }
 
-.utang-record-form {
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  padding: 0.875rem;
-}
-
 .utang-record-card [data-testid="utang-rel-add-person"] {
   color: var(--exits-primary);
 }
@@ -27422,11 +27415,6 @@ button.personal-home-index-card {
 .utang-back-link {
   color: var(--exits-primary);
   font-weight: 700;
-}
-
-.utang-record-fields {
-  border-top: 1px solid var(--exits-border);
-  padding-top: 0.75rem;
 }
 
 .personal-page .catalog-form-section .exits-list {
@@ -31082,6 +31070,22 @@ html[data-motion="reduced"] .exits-tooltip {
   transform: translateY(0);
 }
 
+/* Glossy — sheen over the filled button, same split as the Button standard. */
+.exits-btn--glossy {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.32),
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(0, 0, 0, 0.08) 52%,
+    rgba(0, 0, 0, 0.04)
+  );
+}
+
+.exits-btn--glossy:disabled {
+  background-image: none;
+}
+
 /* Button group — joined ExItS buttons (UI standards Button group / split dropdown). */
 .exits-btn-group {
   display: inline-flex;
@@ -31162,11 +31166,11 @@ html[data-motion="reduced"] .exits-tooltip {
 }
 
 .exits-modal-panel[data-state="open"] {
-  animation: exits-modal-panel-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: exits-modal-panel-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .exits-modal-panel[data-state="closed"] {
-  animation: exits-modal-panel-out 160ms ease-in forwards;
+  animation: exits-modal-panel-out 180ms ease-in forwards;
 }
 
 @keyframes exits-modal-fade-in {
@@ -31190,22 +31194,22 @@ html[data-motion="reduced"] .exits-tooltip {
 @keyframes exits-modal-panel-in {
   from {
     opacity: 0;
-    transform: translateY(0.75rem) scale(0.97);
+    transform: scale(0.92);
   }
   to {
     opacity: 1;
-    transform: none;
+    transform: scale(1);
   }
 }
 
 @keyframes exits-modal-panel-out {
   from {
     opacity: 1;
-    transform: none;
+    transform: scale(1);
   }
   to {
     opacity: 0;
-    transform: translateY(0.5rem) scale(0.98);
+    transform: scale(0.92);
   }
 }
 
@@ -31227,8 +31231,8 @@ html[data-motion="reduced"] .exits-tooltip {
   margin: -0.45rem 0 0 -1.7rem;
   padding: 0.35rem 0.85rem;
   border-radius: 0.2rem 0.2rem 0.2rem 0;
-  background-color: var(--exits-primary);
-  color: var(--exits-primary-foreground, #fff);
+  background-color: var(--exits-modal-ribbon, var(--exits-primary));
+  color: var(--exits-modal-ribbon-ink, var(--exits-primary-foreground, #fff));
   font-size: 0.9375rem;
   font-weight: 550;
   line-height: 1.3;
@@ -31246,7 +31250,7 @@ html[data-motion="reduced"] .exits-tooltip {
   left: 0;
   width: 0;
   height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-primary));
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-modal-ribbon, var(--exits-primary)));
   border-left: 0.7rem solid transparent;
 }
 
@@ -31257,17 +31261,17 @@ html[data-motion="reduced"] .exits-tooltip {
   height: 1.65rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  color: var(--exits-primary-foreground, #fff);
+  color: var(--exits-modal-ribbon-ink, var(--exits-primary-foreground, #fff));
   background:
     radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
     linear-gradient(
       145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-primary)),
-      var(--exits-primary) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-primary))
+      color-mix(in srgb, #fff 22%, var(--exits-modal-ribbon, var(--exits-primary))),
+      var(--exits-modal-ribbon, var(--exits-primary)) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-modal-ribbon, var(--exits-primary)))
     );
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-primary) 18%, #fff),
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-modal-ribbon, var(--exits-primary)) 18%, #fff),
     0 5px 5px -3px rgba(0, 0, 0, 0.28),
     0 8px 10px 1px rgba(0, 0, 0, 0.18),
     0 3px 14px 2px rgba(0, 0, 0, 0.14);
@@ -31281,17 +31285,107 @@ html[data-motion="reduced"] .exits-tooltip {
   margin-top: 0.85rem;
 }
 
-.utang-entry-dialog__head {
-  display: grid;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr) 1px minmax(max-content, 1fr);
-  align-items: center;
-  column-gap: 0.85rem;
+.utang-settle-dialog__line {
+  margin: 0;
+  color: var(--exits-text);
+  font-size: 1.125rem;
+  line-height: 1.35;
 }
 
-.utang-entry-dialog__head > .utang-entry-dialog__amount:only-child {
+.utang-settle-dialog .utang-settle-dialog__amount {
+  color: var(--exits-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.utang-balance-card .utang-balance-card__amount {
+  color: var(--exits-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.utang-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.utang-reminders-dialog__name {
+  color: var(--exits-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.utang-entry-dialog.exits-modal-panel {
+  gap: 0.4rem;
+}
+
+.utang-entry-dialog > .border-b {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr);
+  column-gap: 0.85rem;
+  align-items: start;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--exits-primary);
+}
+
+.utang-entry-dialog > .border-b > .exits-modal__ribbon-head,
+.utang-entry-dialog .exits-modal__ribbon-head > p,
+.utang-entry-dialog__head {
+  display: contents;
+}
+
+.utang-entry-dialog .exits-modal__ribbon {
   grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.utang-entry-dialog > .border-b > button {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.utang-entry-dialog__head {
+  width: 100%;
+  min-width: 0;
+}
+
+.utang-entry-dialog__head > .utang-entry-dialog__balance:only-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+  align-items: center;
+}
+
+.utang-entry-dialog__party,
+.utang-entry-dialog__balance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  margin-top: 0.2rem;
+}
+
+.utang-entry-dialog__party {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.utang-entry-dialog__balance {
+  grid-column: 3;
+  grid-row: 2;
+  align-items: flex-end;
+}
+
+.utang-entry-dialog__label {
+  color: var(--exits-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 .utang-entry-dialog__name {
@@ -31304,14 +31398,16 @@ html[data-motion="reduced"] .exits-tooltip {
 }
 
 .utang-entry-dialog__divider {
+  grid-column: 2;
+  grid-row: 2;
   align-self: stretch;
-  width: 1px;
+  width: 2px;
   min-height: 1.25rem;
-  background: var(--exits-border-strong, var(--exits-border));
+  margin-top: 0.2rem;
+  background: var(--exits-primary);
 }
 
 .utang-entry-dialog__head .utang-entry-dialog__amount {
-  justify-self: end;
   color: var(--exits-text);
   font-size: var(--exits-text-lg, 1.125rem);
   font-weight: 600;
