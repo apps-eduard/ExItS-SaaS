@@ -18,6 +18,7 @@ import {
   type UiStandardFilterCategory,
   type UiStandardNavChild,
 } from "@/features/ui-standards/ui-standard-catalog";
+import "@/features/ui-standards/ui-standards.css";
 
 /**
  * Canonical ExItS UI Standard page — live samples and the locked ExitsTable reference.

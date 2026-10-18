@@ -19,7 +19,7 @@ export function ShellUiStandardsButton({
   testId = "shell-ui-standards-button",
   className,
 }: ShellUiStandardsButtonProps) {
-  if (!isFrontendLocalValidationMode()) {
+  if (!import.meta.env.DEV || !isFrontendLocalValidationMode()) {
     return null;
   }
 

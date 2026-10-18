@@ -42,7 +42,6 @@ export function WorkspaceTransitionOverlay({
       style={active ? undefined : { pointerEvents: "none" }}
       {...(!active ? { inert: true } : {})}
     >
-      <div className="exits-workspace-transition__backdrop" aria-hidden="true" />
       <div className="exits-workspace-transition__panel">
         <ExitsLoaderMark size="md" />
         <p className="exits-workspace-transition__label m-0 text-center text-[length:var(--exits-text-md)] font-semibold text-foreground">

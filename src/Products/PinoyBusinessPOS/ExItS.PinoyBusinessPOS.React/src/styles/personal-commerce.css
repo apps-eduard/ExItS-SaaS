@@ -708,9 +708,8 @@
   padding: 0.75rem 0.85rem;
   border: 1px solid color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
   border-radius: var(--exits-radius-lg);
-  background: color-mix(in srgb, var(--exits-surface) 92%, transparent);
+  background: var(--exits-surface);
   box-shadow: 0 8px 28px color-mix(in srgb, var(--exits-text) 14%, transparent);
-  backdrop-filter: blur(12px);
 }
 
 .pc-cart-dock__summary {

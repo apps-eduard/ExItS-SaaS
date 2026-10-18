@@ -1,4 +1,5 @@
-﻿import { createBrowserRouter, Navigate, Outlet, useParams } from "react-router-dom";
+﻿import { lazy, Suspense } from "react";
+import { createBrowserRouter, Navigate, Outlet, useParams } from "react-router-dom";
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
 import { ExternalLoginCallbackPage } from "@/features/auth/ExternalLoginCallbackPage";
@@ -87,7 +88,6 @@ import { AppearancePreferences } from "@/features/preferences/AppearancePreferen
 import { LanguageRegionPreferences } from "@/features/preferences/LanguageRegionPreferences";
 import { NavigationPreferences } from "@/features/preferences/NavigationPreferences";
 import { AccessibilityPreferences } from "@/features/preferences/AccessibilityPreferences";
-import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
 import { PaymentMethodsSettingsPage } from "@/features/settings/PaymentMethodsSettingsPage";
 import { ConnectedCommerceSettingsPage } from "@/features/connected-commerce/ConnectedCommerceSettingsPage";
@@ -271,6 +271,33 @@ import {
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
 import { RouteErrorPage } from "@/diagnostics/RouteErrorPage";
+
+/**
+ * UI Standards is a development-only reference page. Vite replaces `import.meta.env.DEV`
+ * with `false` in every `vite build`, so production and preview builds drop these routes,
+ * the page chunk, and its stylesheet. See Docs/UI/ui-standards-development-only.md.
+ */
+const UiStandardsPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("@/features/ui-standards/UiStandardsPage").then((module) => ({
+        default: module.UiStandardsPage,
+      })),
+    )
+  : null;
+
+const uiStandardsDevRoutes = UiStandardsPage
+  ? [
+      {
+        path: "ui-standards",
+        element: (
+          <Suspense fallback={null}>
+            <UiStandardsPage />
+          </Suspense>
+        ),
+      },
+      { path: "ui-standard", element: <Navigate to="/ui-standards?category=buttons" replace /> },
+    ]
+  : [];
 
 function LegacyUtangPersonRedirect() {
   const { contactId = "" } = useParams();
@@ -526,8 +553,7 @@ export const appRoutes = [
               { path: "accessibility", element: <AccessibilityPreferences /> },
             ],
           },
-          { path: "ui-standards", element: <UiStandardsPage /> },
-          { path: "ui-standard", element: <Navigate to="/ui-standards?category=buttons" replace /> },
+          ...uiStandardsDevRoutes,
           {
             path: "more",
             element: (
