@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import {
   requestWorkplacePasswordReset,
   type PersonalWorkplaceWire,
 } from "@/api/platform/personal-workplaces-client";
+import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
+import { ExitsModal } from "@/components/exits/ExitsModal";
+import { Notice } from "@/components/exits/Notice";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { BottomSheet } from "@/components/exits/SheetDialog";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { resolveAuthLoginFailurePresentation, isHandledSignInFailure } from "@/diagnostics/auth-login-failure";
 import { ACCOUNT_CONTEXT_SWITCH_PATH } from "@/features/account/account-context-switch-route";
@@ -98,66 +99,67 @@ export function WorkplaceSignInDialog({
   }
 
   return (
-    <BottomSheet
+    <ExitsModal
       open={open}
-      onClose={onClose}
+      onOpenChange={(next) => {
+        if (!next) {
+          onClose();
+        }
+      }}
       title={workplace.organizationDisplayName}
-      panelId="workplace-sign-in-dialog"
+      ribbon
+      ribbonIcon={LogIn}
+      id="workplace-sign-in-dialog"
       testId="workplace-sign-in-dialog"
       closeLabel={t("personal.install.close")}
-      presentation="sheet-mobile-dialog-desktop"
+      busy={signingIn}
+      onSubmit={() => {
+        void onLogin();
+      }}
+      footer={
+        <Button
+          type="submit"
+          intent="primary"
+          appearance="glossy"
+          className="min-w-[8rem]"
+          disabled={signingIn || !online || !username.trim() || !password.trim()}
+          data-testid="workplace-sign-in-submit"
+        >
+          {signingIn ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <LogIn className="size-4 shrink-0" aria-hidden />}
+          {t("personal.workplaces.login")}
+        </Button>
+      }
     >
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void onLogin();
-        }}
-      >
-        <Input
+      <div className="flex flex-col gap-3">
+        <ExitsOutlineInput
           id="workplace-sign-in-username"
           label={t("personal.workplaces.username")}
           autoComplete="username"
           value={username}
-          onChange={(event) => setUsername(event.target.value)}
-          data-testid="workplace-sign-in-username"
+          onChange={setUsername}
+          testId="workplace-sign-in-username"
         />
-        <Input
+        <ExitsOutlineInput
           id="workplace-sign-in-password"
           label={t("personal.workplaces.passwordLabel")}
           type="password"
           autoComplete="current-password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          data-testid="workplace-sign-in-password"
+          onChange={setPassword}
+          testId="workplace-sign-in-password"
         />
         {resetPending ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.workplaces.resetRequested")}
           </p>
         ) : null}
-        {notice ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)]" role="status">
-            {notice}
-          </p>
-        ) : null}
-        {error ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
-            {error}
-          </p>
-        ) : null}
-        <Button
-          type="submit"
-          disabled={signingIn || !online || !username.trim() || !password.trim()}
-          data-testid="workplace-sign-in-submit"
-        >
-          {signingIn ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-          {t("personal.workplaces.login")}
-        </Button>
+        {notice ? <Notice tone="success">{notice}</Notice> : null}
+        {error ? <Notice tone="danger">{error}</Notice> : null}
         {resetPending ? null : (
           <Button
             type="button"
-            variant="ghost"
+            intent="neutral"
+            appearance="ghost"
             disabled={resetting || !online}
             data-testid="workplace-sign-in-forgot"
             onClick={() => void onForgot()}
@@ -165,7 +167,7 @@ export function WorkplaceSignInDialog({
             {t("personal.workplaces.forgotPassword")}
           </Button>
         )}
-      </form>
-    </BottomSheet>
+      </div>
+    </ExitsModal>
   );
 }
