@@ -27,6 +27,10 @@ export type PeopleRowModel = {
   publicUserId?: string;
   pendingConnectionRequest?: PersonalConnectionRequestDto;
   utang?: PeopleUtangSnapshot;
+  lentTotal: number;
+  lentCount: number;
+  oweTotal: number;
+  oweCount: number;
 };
 
 export function isPendingConnectionRequest(request: PersonalConnectionRequestDto): boolean {
@@ -114,7 +118,21 @@ export function buildPeopleRows(input: {
           (rel.creditorUserIdentityId === contact.linkedUserIdentityId ||
             rel.debtorUserIdentityId === contact.linkedUserIdentityId)),
     );
-    const open = related.find((rel) => rel.status.toLowerCase() === "active");
+    const activeRelated = related.filter((rel) => rel.status.toLowerCase() === "active");
+    let lentTotal = 0;
+    let lentCount = 0;
+    let oweTotal = 0;
+    let oweCount = 0;
+    for (const rel of activeRelated) {
+      if (rel.perspective.toLowerCase().includes("borrow")) {
+        oweTotal += rel.currentBalance;
+        oweCount += 1;
+      } else {
+        lentTotal += rel.currentBalance;
+        lentCount += 1;
+      }
+    }
+    const open = activeRelated[0];
     const utang: PeopleUtangSnapshot | undefined =
       open && open.currentBalance !== 0
         ? {
@@ -133,6 +151,10 @@ export function buildPeopleRows(input: {
       publicUserId,
       pendingConnectionRequest,
       utang,
+      lentTotal,
+      lentCount,
+      oweTotal,
+      oweCount,
     };
   });
 

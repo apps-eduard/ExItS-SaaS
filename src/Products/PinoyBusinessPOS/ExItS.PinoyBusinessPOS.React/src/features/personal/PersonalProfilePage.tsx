@@ -1,3 +1,4 @@
+import { MapPin, Shield, User } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -11,14 +12,14 @@ import {
 import { PersonalAddressesSection } from "@/features/personal/PersonalAddressesSection";
 import { initialsFor } from "@/features/personal/people-status";
 import { PlatformApiError } from "@/api/platform/platform-http";
-import { ExitsSelect } from "@/components/exits/ExitsSelect";
+import { ExitsOutlineInput, ExitsOutlineSelect } from "@/components/exits/ExitsOutlineField";
 import { ExitsUpload } from "@/components/exits/ExitsUpload";
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { Notice } from "@/components/exits/Notice";
+import { useExitsToast } from "@/components/exits/ToastProvider";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -50,9 +51,7 @@ type Draft = {
   profilePhotoUrl: string;
   dateOfBirth: string;
   gender: string;
-  nationality: string;
   phone: string;
-  alternativeMobile: string;
   showProfilePhoto: string;
   showDisplayName: string;
   showCity: string;
@@ -69,9 +68,7 @@ function draftFrom(profile: PersonalProfileDto): Draft {
     profilePhotoUrl: profile.profilePhotoUrl ?? "",
     dateOfBirth: profile.dateOfBirth ?? "",
     gender: profile.gender ?? "",
-    nationality: profile.nationality ?? "",
     phone: profile.phone ?? "",
-    alternativeMobile: profile.alternativeMobile ?? "",
     showProfilePhoto: profile.showProfilePhoto,
     showDisplayName: profile.showDisplayName,
     showCity: profile.showCity,
@@ -82,6 +79,7 @@ function draftFrom(profile: PersonalProfileDto): Draft {
 
 export function PersonalProfilePage() {
   const { t } = useI18n();
+  const toast = useExitsToast();
   const navigate = useNavigate();
   const { refreshSession } = useSession();
   const queryClient = useQueryClient();
@@ -139,12 +137,23 @@ export function PersonalProfilePage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (request: UpdatePersonalProfileRequest) => updatePersonalProfile(request),
-    onSuccess: async (data) => {
+    mutationFn: (input: { request: UpdatePersonalProfileRequest; privacySummary: string | null }) =>
+      updatePersonalProfile(input.request),
+    onSuccess: async (data, input) => {
       queryClient.setQueryData(["personal", "profile"], data);
       setDraft(draftFrom(data));
       setFormError(null);
-      setSuccessMessage(t("personal.profile.updated"));
+      if (input.privacySummary !== null) {
+        setSuccessMessage(null);
+        toast.show({
+          title: t("personal.profile.privacyUpdated"),
+          description: input.privacySummary,
+          tone: "info",
+          placement: "top",
+        });
+      } else {
+        setSuccessMessage(t("personal.profile.updated"));
+      }
       await refreshSession();
       if (returnTo) {
         navigate(returnTo);
@@ -171,23 +180,25 @@ export function PersonalProfilePage() {
       return;
     }
     setFormError(null);
+    const profile = profileQuery.data;
     saveMutation.mutate({
+      privacySummary: tab === "privacy" && profile ? privacyChangeSummary(profile, draft, t) : null,
+      request: {
       displayName: draft.displayName,
       firstName: draft.firstName,
       middleName: draft.middleName,
       lastName: draft.lastName,
       phone: draft.phone,
-      alternativeMobile: draft.alternativeMobile,
       dateOfBirth: draft.dateOfBirth || null,
       clearDateOfBirth: !draft.dateOfBirth,
       gender: draft.gender,
-      nationality: draft.nationality,
       profilePhotoUrl: draft.profilePhotoUrl || livePhotoUrl || null,
       showProfilePhoto: draft.showProfilePhoto,
       showDisplayName: draft.showDisplayName,
       showCity: draft.showCity,
       showMobile: draft.showMobile,
       showEmail: draft.showEmail,
+      },
     });
   }
 
@@ -219,19 +230,32 @@ export function PersonalProfilePage() {
 
   return (
     <div className="personal-profile-page personal-page exits-page flex w-full min-w-0 flex-col gap-4" data-testid="personal-profile-card">
-      <div className="personal-profile-header">
-        <ProfilePhotoPreview url={photoUrl} name={draft.displayName} />
-        <PageHeader
+      <PageHeader
         title={t("personal.profile.title")}
         description={t("personal.profile.lede")}
         backTo={personalPageBackNav.more.to}
         backLabel={t(personalPageBackNav.more.labelKey)}
         backTestId="page-header-back-profile"
-        />
+        circleContent={<ProfilePhotoPreview url={photoUrl} name={draft.displayName} inHeader />}
+      />
+      <div className="personal-profile-completeness" data-testid="personal-profile-completeness">
+        <p className="m-0 text-[length:var(--exits-text-sm)]">
+          {t("personal.profile.percent").replace("{percent}", String(profile.completionPercent))}
+        </p>
+        <div
+          className="personal-profile-completeness__track"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.min(100, Math.max(0, profile.completionPercent))}
+          aria-label={t("personal.profile.percent").replace("{percent}", String(profile.completionPercent))}
+        >
+          <span
+            className="personal-profile-completeness__fill"
+            style={{ width: `${Math.min(100, Math.max(0, profile.completionPercent))}%` }}
+          />
+        </div>
       </div>
-      <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="personal-profile-completeness">
-        {t("personal.profile.percent").replace("{percent}", String(profile.completionPercent))}
-      </p>
       {purpose && missing.length > 0 ? (
         <Notice tone="warning" testId="personal-profile-missing">
           <p className="m-0 font-semibold">{t("personal.profile.completeBefore")}</p>
@@ -267,13 +291,11 @@ export function PersonalProfilePage() {
                 <ReadOnlyField label={t("personal.profile.displayName")} value={draft.displayName} />
                 <ReadOnlyField label={t("personal.profile.birthDate")} value={draft.dateOfBirth} />
                 <ReadOnlyField label={t("personal.profile.gender")} value={genderLabel(draft.gender, t)} />
-                <ReadOnlyField label={t("personal.profile.nationality")} value={draft.nationality} />
                 <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
                   <span className="font-semibold">{t("personal.profile.photo")}</span>
                   <ProfilePhotoPreview url={photoUrl} name={draft.displayName} compact />
                 </div>
                 <ReadOnlyField label={t("personal.profile.mobile")} value={draft.phone} />
-                <ReadOnlyField label={t("personal.profile.altMobile")} value={draft.alternativeMobile} />
                 <ReadOnlyField label={t("personal.profile.email")} value={profile.email} />
               </ProfileSection>
               <ProfileSection title={t("personal.profile.sectionAddress")} tone="address" wide>
@@ -291,24 +313,22 @@ export function PersonalProfilePage() {
           personal: (
             <div className="flex flex-col gap-4">
               <ProfileSection title={t("personal.profile.sectionPersonal")} tone="personal" wide>
-                <Input label={`${t("personal.profile.firstName")} · ${t("personal.profile.required")}`} value={draft.firstName} onChange={(event) => set("firstName", event.target.value)} data-testid="personal-profile-first-name" />
-                <Input label={`${t("personal.profile.middleName")} · ${t("personal.profile.optional")}`} value={draft.middleName} onChange={(event) => set("middleName", event.target.value)} />
-                <Input label={`${t("personal.profile.lastName")} · ${t("personal.profile.required")}`} value={draft.lastName} onChange={(event) => set("lastName", event.target.value)} data-testid="personal-profile-last-name" />
-                <Input label={`${t("personal.profile.displayName")} · ${t("personal.profile.required")}`} value={draft.displayName} onChange={(event) => set("displayName", event.target.value)} data-testid="personal-profile-name-value" />
-                <Input label={`${t("personal.profile.birthDate")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`} type="date" value={draft.dateOfBirth} onChange={(event) => set("dateOfBirth", event.target.value)} />
-                <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                  <span className="font-semibold">{t("personal.profile.gender")} · {t("personal.profile.optional")} · {t("personal.profile.private")}</span>
-                  <ExitsSelect
-                    value={draft.gender}
-                    options={genderOptions(draft.gender, t)}
-                    placeholder={t("personal.profile.selectPlaceholder")}
-                    onChange={(gender) => set("gender", gender)}
-                    testId="personal-profile-gender"
-                  />
-                </label>
-                <Input label={`${t("personal.profile.nationality")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`} value={draft.nationality} onChange={(event) => set("nationality", event.target.value)} />
+                <ExitsOutlineInput label={t("personal.profile.firstName")} value={draft.firstName} onChange={(value) => set("firstName", value)} required testId="personal-profile-first-name" />
+                <ExitsOutlineInput label={t("personal.profile.middleName")} value={draft.middleName} onChange={(value) => set("middleName", value)} />
+                <ExitsOutlineInput label={t("personal.profile.lastName")} value={draft.lastName} onChange={(value) => set("lastName", value)} required testId="personal-profile-last-name" />
+                <ExitsOutlineInput label={t("personal.profile.displayName")} value={draft.displayName} onChange={(value) => set("displayName", value)} required testId="personal-profile-name-value" />
+                <ExitsOutlineInput label={`${t("personal.profile.birthDate")} · ${t("personal.profile.private")}`} type="date" value={draft.dateOfBirth} onChange={(value) => set("dateOfBirth", value)} />
+                <ExitsOutlineSelect
+                  label={`${t("personal.profile.gender")} · ${t("personal.profile.private")}`}
+                  value={draft.gender}
+                  options={genderOptions(draft.gender, t)}
+                  onChange={(gender) => set("gender", gender)}
+                  testId="personal-profile-gender"
+                />
+                <ExitsOutlineInput label={t("personal.profile.mobile")} value={draft.phone} onChange={(value) => set("phone", value)} required testId="personal-profile-mobile" />
+                <ExitsOutlineInput label={t("personal.profile.email")} value={profile.email} onChange={() => undefined} readOnly required />
                 <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                  <span className="font-semibold">{`${t("personal.profile.photoUpload")} · ${t("personal.profile.optional")} · ${t("personal.profile.private")}`}</span>
+                  <span className="font-semibold">{`${t("personal.profile.photoUpload")} · ${t("personal.profile.private")}`}</span>
                   <ExitsUpload
                     variant="button"
                     uploadLabel={uploadMutation.isPending ? t("personal.profile.photoUploading") : t("personal.profile.photoUpload")}
@@ -318,9 +338,6 @@ export function PersonalProfilePage() {
                     onSelectFiles={(files) => onPhotoSelected(files[0])}
                   />
                 </div>
-                <Input label={`${t("personal.profile.mobile")} · ${t("personal.profile.required")}`} value={draft.phone} onChange={(event) => set("phone", event.target.value)} data-testid="personal-profile-mobile" />
-                <Input label={`${t("personal.profile.altMobile")} · ${t("personal.profile.optional")}`} value={draft.alternativeMobile} onChange={(event) => set("alternativeMobile", event.target.value)} />
-                <Input label={`${t("personal.profile.email")} · ${t("personal.profile.required")}`} value={profile.email} readOnly />
               </ProfileSection>
               <SaveButton pending={saveMutation.isPending} onClick={save} label={saveMutation.isPending ? t("personal.profile.saving") : t("personal.profile.save")} />
             </div>
@@ -349,6 +366,24 @@ export function PersonalProfilePage() {
       />
     </div>
   );
+}
+
+function privacyChangeSummary(
+  profile: PersonalProfileDto,
+  draft: Draft,
+  t: (key: MessageKey) => string,
+) {
+  const rows: Array<[MessageKey, string, string]> = [
+    ["personal.profile.showPhoto", profile.showProfilePhoto, draft.showProfilePhoto],
+    ["personal.profile.showName", profile.showDisplayName, draft.showDisplayName],
+    ["personal.profile.showCity", profile.showCity, draft.showCity],
+    ["personal.profile.showMobile", profile.showMobile, draft.showMobile],
+    ["personal.profile.showEmail", profile.showEmail, draft.showEmail],
+  ];
+  const lines = rows
+    .filter(([, before, after]) => before !== after)
+    .map(([label, before, after]) => `${t(label)}: ${visibilityLabel(before, t)} → ${visibilityLabel(after, t)}`);
+  return lines.length > 0 ? lines.join("\n") : t("personal.profile.privacyNoChanges");
 }
 
 function genderOptions(current: string, t: (key: MessageKey) => string) {
@@ -390,16 +425,22 @@ function ProfilePhotoPreview({
   url,
   name,
   compact = false,
+  inHeader = false,
 }: {
   url: string;
   name: string;
   compact?: boolean;
+  inHeader?: boolean;
 }) {
   const src = profilePhotoSrc(url);
   const initials = initialsFor(name);
   return (
     <span
-      className={compact ? "personal-profile-header__photo personal-profile-header__photo--compact" : "personal-profile-header__photo"}
+      className={cn(
+        "personal-profile-header__photo",
+        compact && "personal-profile-header__photo--compact",
+        inHeader && "page-header-capsule__avatar",
+      )}
       data-testid={compact ? "personal-profile-photo-preview" : "personal-profile-header-photo"}
     >
       {src ? <img src={src} alt="" /> : initials === "?" ? "—" : initials}
@@ -407,10 +448,39 @@ function ProfilePhotoPreview({
   );
 }
 
+function SavePenIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M13.33 13H8a1 1 0 0 0-1 1v7" />
+      <path d="M14.363 17.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 1 0-3.004-3.004z" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4v.3" />
+    </svg>
+  );
+}
+
 function SaveButton({ pending, onClick, label }: { pending: boolean; onClick: () => void; label: string }) {
   return (
     <div className="personal-profile-actions">
-      <Button type="button" onClick={onClick} disabled={pending} data-testid="personal-profile-save">
+      <Button
+        type="button"
+        intent="primary"
+        appearance="glossy"
+        onClick={onClick}
+        disabled={pending}
+        data-testid="personal-profile-save"
+      >
+        <SavePenIcon className="size-4 shrink-0" />
         {label}
       </Button>
     </div>
@@ -428,17 +498,28 @@ function ProfileSection({
   tone?: "personal" | "address" | "privacy";
   wide?: boolean;
 }) {
+  const ribbon = tone === "personal" || tone === "address" || tone === "privacy";
+  const RibbonIcon = tone === "address" ? MapPin : tone === "privacy" ? Shield : User;
   return (
     <section
       className={cn(
         "catalog-form-section personal-profile-section flex flex-col gap-3",
-        tone === "personal" && "personal-profile-section--personal",
-        tone === "address" && "personal-profile-section--address",
-        tone === "privacy" && "personal-profile-section--privacy",
+        tone === "personal" && "personal-profile-section--personal person-ribbon-card",
+        tone === "address" && "personal-profile-section--address person-ribbon-card",
+        tone === "privacy" && "personal-profile-section--privacy person-ribbon-card",
         wide && "personal-profile-section--wide",
       )}
     >
-      <h2 className="catalog-form-section__title">{title}</h2>
+      {ribbon ? (
+        <h2 className="personal-tracker-card__ribbon">
+          <span className="personal-tracker-card__pennant" aria-hidden>
+            <RibbonIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+          </span>
+          {title}
+        </h2>
+      ) : (
+        <h2 className="catalog-form-section__title">{title}</h2>
+      )}
       <div className="personal-profile-fields">{children}</div>
     </section>
   );

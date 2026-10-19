@@ -55,6 +55,7 @@ describe("PersonalMyQrPage", () => {
     expect(payload).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
     expect(screen.getByTestId("personal-my-qr-page").textContent).not.toMatch(/@/);
     await waitFor(() => expect(screen.getByTestId("personal-qr-copy")).toBeVisible());
+    expect(screen.getByTestId("personal-qr-download")).toHaveTextContent("Download QR");
   });
 
   it("copies the public ID and shares the same connect URL", async () => {

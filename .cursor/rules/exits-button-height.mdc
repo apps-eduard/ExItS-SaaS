@@ -1,0 +1,16 @@
+---
+description: Standard ExItS button height matches Cancel
+alwaysApply: true
+---
+
+# Button height (LOCKED)
+
+The standard button height is `--exits-control-height`.
+
+- Compact: **2rem**
+- Standard (balance): **2.25rem**
+- Comfort: **2.75rem**
+
+The shared `Button` default size already uses that token. A button in the same row as Cancel, including Add local person and Add ExItS person, must stay at that height.
+
+Do not add `catalog-form-actions__save` to a dialog action. That class sets `min-height: 2.5rem` and makes the action taller than Cancel. Use `min-w-[8rem]` when the action needs a minimum width, and leave the height to `Button`.

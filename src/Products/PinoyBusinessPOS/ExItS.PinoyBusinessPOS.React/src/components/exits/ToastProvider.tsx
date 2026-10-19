@@ -18,7 +18,7 @@ export type ToastAction = {
   href: string;
 };
 
-export type ToastPlacement = "corner" | "center";
+export type ToastPlacement = "corner" | "top" | "center";
 
 export type ToastPayload = {
   title: string;
@@ -160,7 +160,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ showToast, toast: toastApi }), [showToast, toastApi]);
 
-  const cornerToasts = toasts.filter((toast) => toast.placement !== "center");
+  const cornerToasts = toasts.filter((toast) => toast.placement === "corner");
+  const topToasts = toasts.filter((toast) => toast.placement === "top");
   const centerToasts = toasts.filter((toast) => toast.placement === "center");
 
   return (
@@ -168,6 +169,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="exits-toast-region" aria-live="polite" aria-relevant="additions" data-testid="exits-toast-region">
         {cornerToasts.map((toast) => (
+          <ToastCard key={toast.id} toast={toast} onDismiss={dismissToast} />
+        ))}
+      </div>
+      <div
+        className="exits-toast-region exits-toast-region--top"
+        aria-live="polite"
+        aria-relevant="additions"
+        data-testid="exits-toast-region-top"
+      >
+        {topToasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} onDismiss={dismissToast} />
         ))}
       </div>

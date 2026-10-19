@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AUTH_ORGANIZATION_CONTEXT_PATH,
   AUTH_TOKEN_PATH,
@@ -221,6 +221,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { status: sessionStatus, session, refreshSession, coldStartGrant } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const autoDestinationAttempted = useRef(false);
 
   const [status, setStatus] = useState<WorkspaceStatus>("idle");
@@ -1015,6 +1016,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (sessionAccountClass(session) === "Personal") {
       return;
     }
+    if (location.pathname === "/" && !isOrganizationContextLocked(session)) {
+      return;
+    }
     try {
       if (hasPendingPostSubscriptionOnboarding()) {
         return;
@@ -1056,6 +1060,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     boundWorkspace,
     grantByOrganizationId,
     navigate,
+    location.pathname,
     session,
     sessionStatus,
     status,

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { UserRoundCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -40,25 +39,11 @@ export function PersonalIdentityResolvePanel({
   }, [initialSubject, onResolve, seeded]);
 
   return (
-    <section
-      className="catalog-form-section exits-animate-panel"
-      data-testid="personal-identity-resolve-panel"
-    >
-      <div className="flex items-start gap-2">
-        <span className="customer-personal-link__icon" aria-hidden>
-          <UserRoundCheck />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="catalog-form-section__title">{t("people.identityPanel.title")}</h2>
-          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-            {t("people.identityPanel.lede")}
-          </p>
-        </div>
-      </div>
-
+    <section className="flex min-w-0 flex-col gap-3" data-testid="personal-identity-resolve-panel">
       {!resolved ? (
         <QrScanOrEnter
           expectedPurpose="personal"
+          entryChooser="cards"
           disabled={disabled || busy}
           onResolvedPayload={(value) => onResolve(value)}
         />

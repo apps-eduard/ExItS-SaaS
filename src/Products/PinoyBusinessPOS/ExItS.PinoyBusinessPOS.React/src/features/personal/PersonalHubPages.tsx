@@ -35,6 +35,7 @@ import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { PersonalInstallMoreEntry } from "@/features/personal/PersonalInstallOffer";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
@@ -348,21 +349,18 @@ export function PersonalUtangHubPage() {
             />
 
             {showSearch ? (
-              <label className="utang-search relative block">
-                <span className="sr-only">{t("personal.utang.searchLabel")}</span>
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
-                  aria-hidden
-                />
-                <input
+              <div className="utang-search">
+                <ExitsOutlineInput
+                  label={t("personal.utang.searchLabel")}
+                  placeholder={t("personal.utang.searchPlaceholder")}
+                  placeholderOnly
+                  icon={Search}
                   type="search"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t("personal.utang.searchPlaceholder")}
-                  className="w-full rounded-[var(--exits-radius-md)] border border-border bg-surface pl-10 pr-3 text-[length:var(--exits-text-sm)]"
-                  data-testid="utang-hub-search"
+                  onChange={setSearch}
+                  testId="utang-hub-search"
                 />
-              </label>
+              </div>
             ) : null}
 
             {accountsLoading ? (

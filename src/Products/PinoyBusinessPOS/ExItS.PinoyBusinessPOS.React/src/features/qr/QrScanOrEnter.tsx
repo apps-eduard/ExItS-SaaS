@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
-import { Camera, Keyboard, Search, Upload, X } from "lucide-react";
+import { Camera, CircleX, Keyboard, Search, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { ExitsModal } from "@/components/exits/ExitsModal";
+import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
+import { openPreferredCamera, stopMediaStream } from "@/lib/qr/camera-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   assertExItsQrPurpose,
@@ -12,7 +15,7 @@ import { decodeQrFromImageFile } from "@/features/qr/decode-qr-from-image";
 import { LiveQrCameraScanner } from "@/features/qr/LiveQrCameraScanner";
 import { qrPurposeMismatchMessageKey } from "@/features/qr/qr-purpose-error";
 
-type EntryMode = "manual" | "qr";
+type EntryMode = "manual" | "qr" | "upload";
 
 type Props = {
   expectedPurpose: ExItsQrPurpose;
@@ -21,6 +24,8 @@ type Props = {
   onManualCleared?: () => void;
   /** Optional override for connect flows that also accept storefront acquisition URLs. */
   parseRawPayload?: (raw: string) => string;
+  /** People add uses three cards. Other flows keep the chip bar. */
+  entryChooser?: "chips" | "cards";
 };
 
 export function QrScanOrEnter({
@@ -29,6 +34,7 @@ export function QrScanOrEnter({
   disabled,
   onManualCleared,
   parseRawPayload,
+  entryChooser = "chips",
 }: Props) {
   const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -38,17 +44,45 @@ export function QrScanOrEnter({
   const [error, setError] = useState<string | null>(null);
   const [scanningFile, setScanningFile] = useState(false);
   const [liveOpen, setLiveOpen] = useState(false);
+  const [cameraMissing, setCameraMissing] = useState(false);
+
+  async function beginCardScan() {
+    setError(null);
+    const result = await openPreferredCamera();
+    if (!result.ok) {
+      setCameraMissing(true);
+      return;
+    }
+    stopMediaStream(result.stream);
+    setMode("qr");
+    setManual("");
+    setLiveOpen(true);
+  }
 
   function switchMode(next: EntryMode) {
-    if (next === mode) return;
+    if (next === "qr" && entryChooser === "cards") {
+      void beginCardScan();
+      return;
+    }
+    if (next === mode && entryChooser !== "cards") return;
     setMode(next);
     setError(null);
     if (next === "manual") {
       setLiveOpen(false);
-      window.setTimeout(() => manualInputRef.current?.focus(), 0);
-    } else {
-      setManual("");
+      setCameraMissing(false);
+      window.setTimeout(() => {
+        if (entryChooser === "cards") {
+          document.getElementById("qr-manual-exits-id")?.focus();
+          return;
+        }
+        manualInputRef.current?.focus();
+      }, 0);
+      return;
     }
+    setManual("");
+    if (entryChooser !== "cards") return;
+    setLiveOpen(false);
+    window.setTimeout(() => fileRef.current?.click(), 0);
   }
 
   function mapSubject(parsedSubject: string, rawPayload: string): string {
@@ -105,12 +139,66 @@ export function QrScanOrEnter({
         ref={fileRef}
         type="file"
         accept="image/*"
-        className="sr-only"
+        className="qr-file-input"
         data-testid="qr-file-input"
         disabled={disabled || scanningFile}
         onChange={(event) => void onFileChange(event.target.files?.[0] ?? null)}
       />
 
+      {entryChooser === "cards" ? (
+        <div
+          className="people-add-id-chooser customer-create-kind"
+          data-testid="qr-entry-mode"
+        >
+          <div className="customer-create-kind__grid" role="group" aria-label={t("qr.modeToggleAria")}>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="qr-mode-manual"
+              aria-pressed={mode === "manual"}
+              disabled={disabled}
+              onClick={() => switchMode("manual")}
+            >
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon" aria-hidden>
+                  <Keyboard className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("qr.modeManual")}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="qr-mode-scan"
+              aria-pressed={mode === "qr"}
+              disabled={disabled}
+              onClick={() => switchMode("qr")}
+            >
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon" aria-hidden>
+                  <Camera className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("qr.modeScan")}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="qr-mode-upload"
+              aria-pressed={mode === "upload"}
+              disabled={disabled || scanningFile}
+              onClick={() => switchMode("upload")}
+            >
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon" aria-hidden>
+                  <Upload className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("qr.modeUpload")}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      ) : (
       <ExitsChipBar
         variant="filter"
         className="exits-chip-bar--equal"
@@ -137,8 +225,45 @@ export function QrScanOrEnter({
           },
         ]}
       />
+      )}
 
-      {mode === "manual" ? (
+      {mode === "manual" && entryChooser === "cards" ? (
+        <div className="flex min-w-0 items-end gap-2" data-testid="qr-manual-panel">
+          <div className="min-w-0 flex-1">
+            <ExitsOutlineInput
+              id="qr-manual-exits-id"
+              label={t("qr.modeManual")}
+              value={manual}
+              onChange={setManual}
+              testId="qr-manual-id"
+              disabled={disabled}
+              clearable
+              autoComplete="off"
+              placeholder={expectedPurpose === "personal" ? "EX-4827-1936" : "ORG000001"}
+              style={{ textTransform: "uppercase" }}
+              data-exits-modal-autofocus="true"
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  applyRaw(manual);
+                }
+              }}
+            />
+          </div>
+          <Button
+            type="button"
+            intent="primary"
+            appearance="glossy"
+            className="shrink-0"
+            data-testid="qr-manual-submit"
+            disabled={Boolean(disabled) || !manual.trim()}
+            onClick={() => applyRaw(manual)}
+          >
+            <Search className="size-4 shrink-0" aria-hidden />
+            {t("qr.resolve")}
+          </Button>
+        </div>
+      ) : mode === "manual" ? (
         <div className="flex min-w-0 flex-col gap-2" data-testid="qr-manual-panel">
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.manualHint")}</p>
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
@@ -195,7 +320,22 @@ export function QrScanOrEnter({
             </div>
           </label>
         </div>
-      ) : (
+      ) : mode === "upload" && entryChooser === "cards" ? null : mode === "upload" ? (
+        <div className="flex min-w-0 flex-col gap-2" data-testid="qr-upload-panel">
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.uploadHint")}</p>
+          <Button
+            type="button"
+            intent="primary"
+            appearance="outline"
+            data-testid="qr-upload-button"
+            disabled={disabled || scanningFile}
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload className="size-4 shrink-0" aria-hidden />
+            {scanningFile ? t("qr.scanning") : t("qr.modeUpload")}
+          </Button>
+        </div>
+      ) : entryChooser === "cards" ? null : (
         <div className="flex min-w-0 flex-col gap-2" data-testid="qr-scan-panel">
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.scanHint")}</p>
           <ExitsChipBar
@@ -235,6 +375,68 @@ export function QrScanOrEnter({
           {error}
         </p>
       ) : null}
+
+      <ExitsModal
+        open={cameraMissing}
+        onOpenChange={(next) => {
+          if (!next) setCameraMissing(false);
+        }}
+        title={t("qr.cameraMissingTitle")}
+        description={t("qr.cameraMissingBody")}
+        testId="qr-camera-missing"
+        closeLabel={t("qr.cameraMissingCancel")}
+        size="sm"
+      >
+        <div className="people-add-id-chooser customer-create-kind" data-testid="qr-camera-missing-choices">
+          <div className="customer-create-kind__grid" role="group" aria-label={t("qr.cameraMissingTitle")}>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="qr-camera-missing-manual"
+              onClick={() => {
+                setCameraMissing(false);
+                switchMode("manual");
+              }}
+            >
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon" aria-hidden>
+                  <Keyboard className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("qr.modeManual")}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="qr-camera-missing-upload"
+              onClick={() => {
+                setCameraMissing(false);
+                switchMode("upload");
+              }}
+            >
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon" aria-hidden>
+                  <Upload className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("qr.modeUpload")}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="qr-camera-missing-cancel"
+              onClick={() => setCameraMissing(false)}
+            >
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon customer-create-kind__icon--danger" aria-hidden>
+                  <CircleX className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("qr.cameraMissingCancel")}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </ExitsModal>
 
       <LiveQrCameraScanner
         open={liveOpen}

@@ -1,5 +1,5 @@
-import { useEffect, useId, useState, type CSSProperties, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
-import { Check, ChevronDown, X } from "lucide-react";
+import { useEffect, useId, useMemo, useState, type CSSProperties, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { Check, ChevronDown, X, type LucideIcon } from "lucide-react";
 import { INPUT_GLOBAL_DEFAULT_APPEARANCE } from "@/features/ui-standards/input-global-default";
 import { SELECT_GLOBAL_DEFAULT_APPEARANCE } from "@/features/ui-standards/select-global-default";
 import "@/features/ui-standards/exits-qfield.css";
@@ -18,6 +18,11 @@ export function ExitsOutlineSelect<T extends string>({
   options,
   onChange,
   disabled = false,
+  searchable = false,
+  searchPlaceholder = "Search…",
+  emptyLabel = "No matches",
+  placeholder = "",
+  required = false,
   testId,
 }: {
   label: string;
@@ -25,18 +30,32 @@ export function ExitsOutlineSelect<T extends string>({
   options: ReadonlyArray<OutlineOption<T>>;
   onChange: (value: T) => void;
   disabled?: boolean;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyLabel?: string;
+  placeholder?: string;
+  required?: boolean;
   testId?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const rootId = useId();
   const menuId = `${rootId}-menu`;
   const selected = options.find((option) => option.value === value);
+  const visible = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase();
+    if (!searchable || !needle) return options;
+    return options.filter((option) => option.label.toLocaleLowerCase().includes(needle));
+  }, [options, query, searchable]);
   const appearance: string = SELECT_GLOBAL_DEFAULT_APPEARANCE;
   const style = { "--qdropdown-color": FIELD_ACCENT } as CSSProperties;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setQuery("");
+      return;
+    }
     function onPointerDown(event: PointerEvent) {
       const root = document.getElementById(rootId);
       if (!root?.contains(event.target as Node)) setOpen(false);
@@ -90,14 +109,22 @@ export function ExitsOutlineSelect<T extends string>({
         aria-expanded={open}
         aria-controls={menuId}
         aria-label={label}
+        aria-required={required || undefined}
         disabled={disabled}
         data-testid={testId}
         onClick={() => {
           if (!disabled) setOpen((current) => !current);
         }}
       >
-        <span className="ui-standards-qdropdown__label">{label}</span>
-        <span className="ui-standards-qdropdown__value">{selected?.label ?? ""}</span>
+        <span className="ui-standards-qdropdown__label">
+          {label}
+          {required ? (
+            <span className="ui-standards-qinput__required" aria-hidden>
+              *
+            </span>
+          ) : null}
+        </span>
+        <span className="ui-standards-qdropdown__value">{selected?.label || placeholder}</span>
         <ChevronDown className="ui-standards-qdropdown__chevron" aria-hidden />
       </button>
       {mounted ? (
@@ -109,7 +136,23 @@ export function ExitsOutlineSelect<T extends string>({
           data-state={open ? "open" : "closed"}
           data-testid={testId ? `${testId}-menu` : undefined}
         >
-          {options.map((option) => {
+          {searchable ? (
+            <div className="ui-standards-qdropdown__search">
+              <input
+                type="search"
+                className="ui-standards-qdropdown__search-input"
+                value={query}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                data-testid={testId ? `${testId}-search` : undefined}
+                onChange={(event) => setQuery(event.target.value)}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+              />
+            </div>
+          ) : null}
+          {visible.length === 0 ? <p className="ui-standards-qdropdown__empty">{emptyLabel}</p> : null}
+          {visible.map((option) => {
             const chosen = option.value === value;
             return (
               <button
@@ -157,6 +200,9 @@ export function ExitsOutlineInput({
   testId,
   autoFocus,
   prefix,
+  icon: Icon,
+  placeholderOnly = false,
+  placeholder,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> & {
   label: string;
@@ -166,6 +212,10 @@ export function ExitsOutlineInput({
   clearable?: boolean;
   /** Shown inside the field, before the typed value. */
   prefix?: string;
+  /** Leading icon, such as search on the locked input. */
+  icon?: LucideIcon;
+  /** Show the placeholder in the field and keep the label for assistive tech only. */
+  placeholderOnly?: boolean;
 }) {
   const appearance = INPUT_GLOBAL_DEFAULT_APPEARANCE;
   const style = {
@@ -179,8 +229,10 @@ export function ExitsOutlineInput({
         "ui-standards-qinput exits-locked-field" +
         ` ui-standards-qinput--${appearance}` +
         (prefix ? " ui-standards-qinput--prefix" : "") +
+        (Icon ? " ui-standards-qinput--has-icon" : "") +
         (required ? " ui-standards-qinput--required" : "") +
         (clearable ? " ui-standards-qinput--clearable" : "") +
+        (placeholderOnly ? " ui-standards-qinput--placeholder" : "") +
         (disabled ? " ui-standards-qinput--disabled" : "")
       }
       style={style}
@@ -188,6 +240,7 @@ export function ExitsOutlineInput({
       data-shape="standard"
     >
       <span className="ui-standards-qinput__box">
+        {Icon ? <Icon className="ui-standards-qinput__icon" aria-hidden strokeWidth={2} /> : null}
         {prefix ? (
           <span className="ui-standards-qinput__prefix" aria-hidden>
             {prefix}
@@ -198,7 +251,7 @@ export function ExitsOutlineInput({
           id={id}
           className="ui-standards-qinput__control"
           value={value}
-          placeholder=" "
+          placeholder={placeholderOnly ? (placeholder ?? "") : " "}
           disabled={disabled}
           required={required}
           aria-required={required || undefined}
@@ -209,14 +262,16 @@ export function ExitsOutlineInput({
           onFocus={onFocus}
           onBlur={onBlur}
         />
-        <span className="ui-standards-qinput__label">
-          {label}
-          {required ? (
-            <span className="ui-standards-qinput__required" aria-hidden>
-              *
-            </span>
-          ) : null}
-        </span>
+        {placeholderOnly ? null : (
+          <span className="ui-standards-qinput__label">
+            {label}
+            {required ? (
+              <span className="ui-standards-qinput__required" aria-hidden>
+                *
+              </span>
+            ) : null}
+          </span>
+        )}
         {clearable && value.trim() && !disabled ? (
           <button
             type="button"

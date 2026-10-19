@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
-import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
 import type { UtangAccountRow } from "@/features/personal/utang/utang-workspace";
@@ -25,17 +24,12 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
     <Link
       to={`/personal/utang/relationships/${row.relationshipId}`}
       className={cn(
-        "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-settings-card text-foreground no-underline",
+        "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card text-foreground no-underline",
         lent ? "utang-settings-card--lent" : "utang-settings-card--owe",
         row.isLedgerOwner ? "utang-account-card--mine" : "utang-account-card--shared",
       )}
       data-testid={`utang-account-${row.relationshipId}`}
     >
-      <span className="ui-standards-qcard__settings-circle" aria-hidden="true">
-        <span className="ui-standards-qcard__settings-circle-core">
-          <PersonAvatar name={row.displayName} size="sm" className="utang-settings-card__avatar" />
-        </span>
-      </span>
       <div className="ui-standards-qcard__settings-ribbon">
         <div
           className="ui-standards-qcard__settings-tab utang-settings-card__tab"
@@ -65,7 +59,6 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
               <p className="utang-settings-card__name m-0 truncate">{row.displayName}</p>
               <span className="utang-settings-card__amount">
                 <MoneyDisplay amount={row.currentBalance} testId={`utang-account-balance-${row.relationshipId}`} />
-                <ChevronRight className="size-5 shrink-0" aria-hidden />
               </span>
             </div>
             <span className="utang-settings-card__tags">
@@ -94,6 +87,9 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
             </span>
           </div>
         </div>
+        <span className="utang-account-card__caret" aria-hidden>
+          <ChevronRight className="size-5" />
+        </span>
       </div>
     </Link>
   );

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { ExitsOutlineSelect } from "@/components/exits/ExitsOutlineField";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { useCountries } from "@/platform/geography/useGeography";
 
@@ -19,6 +20,9 @@ export type CountrySelectProps = {
   placeholder?: string;
   searchPlaceholder?: string;
   emptyLabel?: string;
+  /** When set, renders the outlined select with this label. */
+  outlineLabel?: string;
+  outlineRequired?: boolean;
 };
 
 function flagPrefix(code: string) {
@@ -40,6 +44,8 @@ export function CountrySelect({
   placeholder = "Select",
   searchPlaceholder = "Search country",
   emptyLabel = "No matches",
+  outlineLabel,
+  outlineRequired = false,
 }: CountrySelectProps) {
   const countries = useCountries();
   const options = useMemo(() => {
@@ -58,6 +64,27 @@ export function CountrySelect({
       label: `${showFlag ? flagPrefix(country.code) : ""}${country.name}`,
     }));
   }, [countries.data, preferredCountryCodes, showFlag]);
+
+  if (outlineLabel) {
+    return (
+      <ExitsOutlineSelect
+        label={outlineLabel}
+        required={outlineRequired}
+        value={value}
+        options={options}
+        disabled={disabled}
+        searchable={searchable}
+        searchPlaceholder={searchPlaceholder}
+        emptyLabel={emptyLabel}
+        placeholder={placeholder}
+        testId={testId}
+        onChange={(countryCode) => {
+          const country = countries.data?.find((item) => item.code === countryCode);
+          onChange(countryCode, country?.name ?? countryCode);
+        }}
+      />
+    );
+  }
 
   return (
     <ExitsSelect

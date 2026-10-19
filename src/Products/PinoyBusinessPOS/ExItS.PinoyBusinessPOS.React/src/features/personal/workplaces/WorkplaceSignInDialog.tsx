@@ -117,17 +117,31 @@ export function WorkplaceSignInDialog({
         void onLogin();
       }}
       footer={
-        <Button
-          type="submit"
-          intent="primary"
-          appearance="glossy"
-          className="min-w-[8rem]"
-          disabled={signingIn || !online || !username.trim() || !password.trim()}
-          data-testid="workplace-sign-in-submit"
-        >
-          {signingIn ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <LogIn className="size-4 shrink-0" aria-hidden />}
-          {t("personal.workplaces.login")}
-        </Button>
+        <div className="flex w-full flex-nowrap items-center justify-end gap-2">
+          <Button
+            type="submit"
+            intent="primary"
+            appearance="glossy"
+            className="min-w-[8rem]"
+            disabled={signingIn || !online || !username.trim() || !password.trim()}
+            data-testid="workplace-sign-in-submit"
+          >
+            {signingIn ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <LogIn className="size-4 shrink-0" aria-hidden />}
+            {t("personal.workplaces.login")}
+          </Button>
+          {resetPending ? null : (
+            <Button
+              type="button"
+              intent="neutral"
+              appearance="glossy"
+              disabled={resetting || !online}
+              data-testid="workplace-sign-in-forgot"
+              onClick={() => void onForgot()}
+            >
+              {t("personal.workplaces.forgotPassword")}
+            </Button>
+          )}
+        </div>
       }
     >
       <div className="flex flex-col gap-3">
@@ -137,6 +151,7 @@ export function WorkplaceSignInDialog({
           autoComplete="username"
           value={username}
           onChange={setUsername}
+          readOnly
           testId="workplace-sign-in-username"
         />
         <ExitsOutlineInput
@@ -147,6 +162,7 @@ export function WorkplaceSignInDialog({
           value={password}
           onChange={setPassword}
           testId="workplace-sign-in-password"
+          data-exits-modal-autofocus="true"
         />
         {resetPending ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -155,18 +171,6 @@ export function WorkplaceSignInDialog({
         ) : null}
         {notice ? <Notice tone="success">{notice}</Notice> : null}
         {error ? <Notice tone="danger">{error}</Notice> : null}
-        {resetPending ? null : (
-          <Button
-            type="button"
-            intent="neutral"
-            appearance="ghost"
-            disabled={resetting || !online}
-            data-testid="workplace-sign-in-forgot"
-            onClick={() => void onForgot()}
-          >
-            {t("personal.workplaces.forgotPassword")}
-          </Button>
-        )}
       </div>
     </ExitsModal>
   );

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Check, Copy, Share2 } from "lucide-react";
+import { useState, type CSSProperties } from "react";
+import { Check, Copy, Download, Share2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyPublicIdentity } from "@/api/platform/public-identity-client";
 import { Button } from "@/components/ui/button";
@@ -7,14 +7,26 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { downloadQrPng } from "@/features/qr/download-qr-png";
 import { QrCodeImage } from "@/features/qr/QrCodeImage";
+import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 import { buildCanonicalPersonalConnectUrl } from "@/lib/personal-connect-url";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
+/** Locked `ext btn`: standard intent, standard appearance, control height. */
+const EXT_BTN_CLASS =
+  "rounded-[6px] border shadow-[0_1px_5px_rgba(0,0,0,0.2),0_2px_2px_rgba(0,0,0,0.14),0_3px_1px_-2px_rgba(0,0,0,0.12)]";
+const EXT_BTN_STYLE: CSSProperties = {
+  backgroundColor: INTENT_GLOBAL_STANDARD,
+  color: "#000000",
+  borderColor: "rgba(0, 0, 0, 0.2)",
+};
+
 export function PersonalMyQrPage() {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
   const query = useQuery({
     queryKey: ["personal", "public-identity"],
     queryFn: ({ signal }) => getMyPublicIdentity(signal),
@@ -28,6 +40,19 @@ export function PersonalMyQrPage() {
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       /* clipboard may be unavailable */
+    }
+  }
+
+  async function downloadQr() {
+    if (!query.data) return;
+    setDownloadError(false);
+    try {
+      await downloadQrPng({
+        payload: buildCanonicalPersonalConnectUrl(query.data.publicUserId),
+        filename: `ExItS-${query.data.publicUserId}`,
+      });
+    } catch {
+      setDownloadError(true);
     }
   }
 
@@ -94,16 +119,35 @@ export function PersonalMyQrPage() {
         <div className="flex flex-wrap justify-center gap-2">
           <Button
             type="button"
+            intent="neutral"
+            appearance="elevated"
+            className={EXT_BTN_CLASS}
+            style={EXT_BTN_STYLE}
             data-testid="personal-qr-copy"
             onClick={() => void copyId()}
           >
             <Copy className="size-4" aria-hidden />
             {copied ? t("qr.copied") : t("qr.copyId")}
           </Button>
+          <Button
+            type="button"
+            intent="neutral"
+            appearance="elevated"
+            className={EXT_BTN_CLASS}
+            style={EXT_BTN_STYLE}
+            data-testid="personal-qr-download"
+            onClick={() => void downloadQr()}
+          >
+            <Download className="size-4" aria-hidden />
+            {t("qr.download")}
+          </Button>
           {shareAvailable ? (
             <Button
               type="button"
-              variant="ghost"
+              intent="neutral"
+              appearance="elevated"
+              className={EXT_BTN_CLASS}
+              style={EXT_BTN_STYLE}
               data-testid="personal-qr-share"
               onClick={() => void share()}
             >
@@ -112,6 +156,11 @@ export function PersonalMyQrPage() {
             </Button>
           ) : null}
         </div>
+        {downloadError ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
+            {t("branches.storefrontQr.downloadFailed")}
+          </p>
+        ) : null}
         {copied ? (
           <p className="m-0 inline-flex items-center gap-1 text-[length:var(--exits-text-xs)] text-muted">
             <Check className="size-3.5" aria-hidden />

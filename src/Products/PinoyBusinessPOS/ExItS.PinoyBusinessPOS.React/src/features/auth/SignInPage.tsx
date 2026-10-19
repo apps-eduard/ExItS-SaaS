@@ -243,7 +243,7 @@ export function SignInPage() {
       if (continueTarget?.startsWith("/connect/")) {
         clearPersonalConnectIntent();
       }
-      navigate(continueTarget ?? "/", { replace: true });
+      navigate(continueTarget ?? (staffLoginHint ? "/" : "/personal"), { replace: true });
     } catch (caught) {
       const failure = buildAuthLoginFailure(caught);
       const presentation = resolveAuthLoginFailurePresentation(failure, t);

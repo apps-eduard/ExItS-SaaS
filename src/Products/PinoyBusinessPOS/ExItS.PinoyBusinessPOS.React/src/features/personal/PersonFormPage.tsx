@@ -502,10 +502,7 @@ export function PersonCreateForm({
                   type="submit"
                   intent={embedded ? "primary" : undefined}
                   appearance={embedded ? "glossy" : undefined}
-                  className={cn(
-                    embedded && createKind === "walkin" ? "min-w-[8rem]" : "catalog-form-actions__save",
-                    embedded && createKind !== "walkin" && "min-w-[8rem]",
-                  )}
+                  className={cn(embedded ? "min-w-[8rem]" : "catalog-form-actions__save")}
                   data-testid="person-save"
                   disabled={saving || resolving || (createKind === "exits" && !resolved)}
                 >
@@ -516,7 +513,7 @@ export function PersonCreateForm({
                     </>
                   ) : (
                     <>
-                      {createKind === "walkin" ? (
+                      {embedded ? (
                         <UserPlus className="size-4 shrink-0" aria-hidden="true" />
                       ) : (
                         <SavePlusIcon className="size-4 shrink-0" />

@@ -57,6 +57,7 @@ function renderSignInPage(initialEntry = "/sign-in") {
                   <Route path="/sign-in" element={<SignInPage />} />
                   <Route path="/connect/:publicUserId" element={<div data-testid="connect-resumed" />} />
                   <Route path="/" element={<div data-testid="home-landed" />} />
+                  <Route path="/personal" element={<div data-testid="personal-landed" />} />
                 </Routes>
               </MemoryRouter>
             </SessionProvider>
@@ -333,7 +334,7 @@ describe("SignInPage LOGIN-UX-01", () => {
     await user.type(screen.getByLabelText("Email or staff login"), "owner@example.com");
     await user.type(screen.getByLabelText("Password"), "secret123");
     await user.click(screen.getByTestId("sign-in-submit"));
-    expect(await screen.findByTestId("home-landed")).toBeInTheDocument();
+    expect(await screen.findByTestId("personal-landed")).toBeInTheDocument();
     expect(screen.queryByTestId("connect-resumed")).not.toBeInTheDocument();
   });
 

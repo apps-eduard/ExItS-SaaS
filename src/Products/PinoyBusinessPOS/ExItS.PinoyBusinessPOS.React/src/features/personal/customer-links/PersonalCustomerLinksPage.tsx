@@ -346,24 +346,12 @@ function PendingTabContent({
 }) {
   if (groupedItems.length === 0) {
     return (
-      <div className="exits-animate-panel flex flex-col gap-3">
+      <div className="exits-animate-panel">
         <EmptyState
               align="center"
               icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.customerLinks.emptyTitle")}
           detail={t("personal.customerLinks.emptyDetail")}
-        />
-        <ActionTileGrid
-          tiles={[
-            {
-              key: "stores-empty",
-              label: t("personal.merchantsTitle"),
-              icon: Store,
-              to: "/personal/linked-merchants",
-              testId: "open-stores-empty",
-              primary: true,
-            },
-          ]}
         />
       </div>
     );

@@ -1531,6 +1531,10 @@ input.ui-standards-qdropdown__query {
   flex: none;
 }
 
+.ui-standards-qinput--placeholder {
+  padding-top: 0;
+}
+
 .exits-modal--ribbon:has(.exits-locked-field) > .min-h-0 {
   overflow: visible;
 }

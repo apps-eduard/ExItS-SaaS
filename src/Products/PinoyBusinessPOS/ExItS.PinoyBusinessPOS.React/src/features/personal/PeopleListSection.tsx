@@ -1,5 +1,5 @@
-import { ChevronRight, UserPlus, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronRight, Search, UserPlus, Users } from "lucide-react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -14,8 +14,8 @@ import {
   ExitsTableRow,
 } from "@/components/exits/ExitsTable";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
-import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,8 +25,18 @@ import {
 import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import { EditLocalContactDialog } from "@/features/personal/EditLocalContactDialog";
+import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+
+/** Locked `ext btn glossy`: standard fill, glossy sheen, control height. */
+const EXT_BTN_GLOSSY_CLASS =
+  "shrink-0 rounded-[6px] border shadow-[0_1px_5px_rgba(0,0,0,0.2),0_2px_2px_rgba(0,0,0,0.14),0_3px_1px_-2px_rgba(0,0,0,0.12)]";
+const EXT_BTN_GLOSSY_STYLE: CSSProperties = {
+  backgroundColor: INTENT_GLOBAL_STANDARD,
+  color: "#000000",
+  borderColor: "rgba(0, 0, 0, 0.2)",
+};
 
 export type PeopleListFilter = "all" | "connected" | "pending" | "local" | "not_connected";
 
@@ -189,6 +199,32 @@ function PeopleListRow({
   );
 }
 
+function PeopleUtangTotal({
+  total,
+  count,
+  testId,
+  owe = false,
+}: {
+  total: number;
+  count: number;
+  testId: string;
+  owe?: boolean;
+}) {
+  if (count === 0) {
+    return <span className="text-muted">—</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-2">
+      <MoneyDisplay
+        amount={total}
+        testId={testId}
+        className={owe && total > 0 ? "text-[var(--exits-warning)]" : undefined}
+      />
+      <CountBadge count={count} tone={owe ? "warning" : "neutral"} />
+    </span>
+  );
+}
+
 function PeopleTable({
   rows,
   statusLabel,
@@ -208,6 +244,8 @@ function PeopleTable({
             <ExitsTableHead>{t("people.column.contact")}</ExitsTableHead>
             <ExitsTableHead>{t("people.column.email")}</ExitsTableHead>
             <ExitsTableHead>{t("people.column.status")}</ExitsTableHead>
+            <ExitsTableHead>{t("people.detail.iLentAction")}</ExitsTableHead>
+            <ExitsTableHead>{t("people.detail.iOweAction")}</ExitsTableHead>
             <ExitsTableHead className="people-table-actions">{t("people.column.actions")}</ExitsTableHead>
           </ExitsTableRow>
         </ExitsTableHeader>
@@ -219,12 +257,8 @@ function PeopleTable({
             return (
               <ExitsTableRow key={row.contact.id} data-testid={`people-table-row-${row.contact.id}`}>
                 <ExitsTableCell emphasis="semibold" truncate title={row.contact.displayName}>
-                  <Link
-                    to={href}
-                    className="inline-flex min-w-0 items-center gap-2 text-foreground no-underline"
-                  >
-                    <PersonAvatar name={row.contact.displayName} size="sm" />
-                    <span className="truncate">{row.contact.displayName}</span>
+                  <Link to={href} className="truncate text-foreground no-underline">
+                    {row.contact.displayName}
                   </Link>
                 </ExitsTableCell>
                 <ExitsTableCell truncate title={phone === "—" ? undefined : phone}>
@@ -241,6 +275,21 @@ function PeopleTable({
                   >
                     {statusLabel(row.connectionStatus)}
                   </StatusChip>
+                </ExitsTableCell>
+                <ExitsTableCell>
+                  <PeopleUtangTotal
+                    total={row.lentTotal}
+                    count={row.lentCount}
+                    testId={`people-table-lent-${row.contact.id}`}
+                  />
+                </ExitsTableCell>
+                <ExitsTableCell>
+                  <PeopleUtangTotal
+                    total={row.oweTotal}
+                    count={row.oweCount}
+                    testId={`people-table-owe-${row.contact.id}`}
+                    owe
+                  />
                 </ExitsTableCell>
                 <ExitsTableCell className="people-table-actions">
                   <span className="inline-flex flex-wrap justify-end gap-2">
@@ -296,9 +345,11 @@ function PeopleTable({
 export function PeopleListSection({
   rows,
   summary,
+  toolbarStart,
 }: {
   rows: PeopleRowModel[];
   summary: { identified: number; local: number; total: number };
+  toolbarStart?: ReactNode;
 }) {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
@@ -356,14 +407,13 @@ export function PeopleListSection({
 
   return (
     <section
-      className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
+      className="flex flex-col gap-3"
       data-testid="people-list-section"
       aria-label={t("people.listTitle")}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="catalog-form-section__title m-0">{t("people.listTitle")}</h2>
-          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("people.summary")
               .replace("{identified}", String(summary.identified))
               .replace("{local}", String(summary.local))}
@@ -374,22 +424,30 @@ export function PeopleListSection({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 items-center gap-2" data-testid="people-search-row">
-        <SearchField
-          label={t("people.search")}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onClear={() => setSearch("")}
-          placeholder={t("people.searchPlaceholder")}
-          data-testid="people-search"
-          containerClassName="people-page__search exits-page__search min-w-0 flex-1"
-        />
-        <Button asChild variant="outline" className="shrink-0">
+      <div className="people-search-row flex min-w-0 flex-wrap items-end gap-2" data-testid="people-search-row">
+        {toolbarStart}
+        <Button
+          asChild
+          intent="neutral"
+          appearance="glossy"
+          className={EXT_BTN_GLOSSY_CLASS}
+          style={EXT_BTN_GLOSSY_STYLE}
+        >
           <Link to="/personal/invitations" data-testid="people-connection-requests">
-            <UserPlus className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            <UserPlus className="size-4 shrink-0" aria-hidden="true" />
             {t("people.connectionInbox")}
           </Link>
         </Button>
+        <div className="ui-standards-playground-search min-w-[12rem] flex-1">
+          <ExitsOutlineInput
+            label={t("people.search")}
+            value={search}
+            onChange={setSearch}
+            clearable
+            icon={Search}
+            testId="people-search"
+          />
+        </div>
       </div>
 
       <ExitsChipBar

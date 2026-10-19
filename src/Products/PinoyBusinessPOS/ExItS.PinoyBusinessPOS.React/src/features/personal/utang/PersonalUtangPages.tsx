@@ -37,7 +37,6 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
@@ -1065,7 +1064,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           }
         />
       ) : (
-        <ul className="utang-settings-list m-0 grid list-none gap-4 p-0">
+        <ul className="utang-settings-list utang-relationship-list m-0 grid list-none gap-4 p-0">
           {visibleRows.map((row) => {
             const name = contactLabel(contacts, row);
             const shared = isSharedRelationship(row);
@@ -1078,17 +1077,12 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                 <Link
                   to={`/personal/utang/relationships/${row.id}`}
                   className={cn(
-                    "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-settings-card text-foreground no-underline",
+                    "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card text-foreground no-underline",
                     mode === "lent" ? "utang-settings-card--lent" : "utang-settings-card--owe",
-                    !owned && "utang-account-card--shared",
+                    owned ? "utang-account-card--mine" : "utang-account-card--shared",
                   )}
                   data-testid={`utang-rel-row-${row.id}`}
                 >
-                  <span className="ui-standards-qcard__settings-circle" aria-hidden="true">
-                    <span className="ui-standards-qcard__settings-circle-core">
-                      <PersonAvatar name={name} size="sm" className="utang-settings-card__avatar" />
-                    </span>
-                  </span>
                   <div className="ui-standards-qcard__settings-ribbon">
                     <div
                       className="ui-standards-qcard__settings-tab utang-settings-card__tab"
@@ -1116,7 +1110,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                           <p className="utang-settings-card__name m-0 truncate">{name}</p>
                           <span className="utang-settings-card__amount">
                             <MoneyDisplay amount={row.currentBalance} />
-                            <ChevronRight className="size-5 shrink-0" aria-hidden />
                           </span>
                         </div>
                         <span className="utang-settings-card__tags">
@@ -1155,6 +1148,9 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                         <WaitingChip origin={rowOrigin(row)} />
                       </div>
                     </div>
+                    <span className="utang-account-card__caret" aria-hidden>
+                      <ChevronRight className="size-5" />
+                    </span>
                   </div>
                 </Link>
               </li>

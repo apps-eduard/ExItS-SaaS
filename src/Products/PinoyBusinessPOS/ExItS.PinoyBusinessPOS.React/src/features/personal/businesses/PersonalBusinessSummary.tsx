@@ -12,10 +12,7 @@ import {
   listPersonalProductAffiliations,
   type PersonalProductAffiliationDto,
 } from "@/api/platform/product-affiliations-client";
-import {
-  listPersonalWorkplaces,
-  type PersonalWorkplaceWire,
-} from "@/api/platform/personal-workplaces-client";
+import { type PersonalWorkplaceWire } from "@/api/platform/personal-workplaces-client";
 import { Button } from "@/components/ui/button";
 import {
   affiliatedBusinesses,
@@ -28,7 +25,11 @@ import {
 } from "@/features/ui-standards/intent-color-global-default";
 import "./PersonalOwnedBusinesses.css";
 import { PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
-import { PERSONAL_WORKPLACES_QUERY_KEY } from "@/features/personal/workplaces/PersonalWorkplacesPage";
+import {
+  PERSONAL_WORKPLACES_QUERY_KEY,
+  queryPersonalWorkplaces,
+  workplacesFromQueryData,
+} from "@/features/personal/workplaces/PersonalWorkplacesPage";
 import { WorkplaceSignInDialog } from "@/features/personal/workplaces/WorkplaceSignInDialog";
 import { useI18n } from "@/i18n/I18nProvider";
 import { PERSONAL_BUSINESSES_PATH, useEnterBusiness } from "@/workspace/use-switch-to-business";
@@ -326,7 +327,7 @@ export function PersonalBusinessSummary() {
   });
   const workplacesQuery = useQuery({
     queryKey: PERSONAL_WORKPLACES_QUERY_KEY,
-    queryFn: ({ signal }) => listPersonalWorkplaces(signal),
+    queryFn: ({ signal }) => queryPersonalWorkplaces(signal),
     meta: { suppressGlobalError: true, operation: "list personal workplaces" },
   });
 
@@ -353,7 +354,7 @@ export function PersonalBusinessSummary() {
   const ownedOrganizationIds = new Set(
     owned.map((row) => row.organizationId).filter((id): id is string => Boolean(id)),
   );
-  const staffWorkplaces = (workplacesQuery.data?.ok ? workplacesQuery.data.workplaces : []).filter(
+  const staffWorkplaces = workplacesFromQueryData(workplacesQuery.data).filter(
     (workplace) =>
       isActiveWorkplace(workplace) &&
       Boolean(workplace.organizationId) &&

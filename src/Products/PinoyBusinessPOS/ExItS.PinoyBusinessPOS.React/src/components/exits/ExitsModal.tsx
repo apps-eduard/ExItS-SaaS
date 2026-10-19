@@ -35,7 +35,7 @@ function getFocusable(container: HTMLElement): HTMLElement[] {
 export type ExitsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
+  title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
   /** Sticky footer actions (Cancel | Continue pattern). */

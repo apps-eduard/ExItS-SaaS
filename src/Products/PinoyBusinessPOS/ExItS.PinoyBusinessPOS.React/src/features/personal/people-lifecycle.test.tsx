@@ -179,7 +179,16 @@ describe("People lifecycle UX", () => {
     const requests = screen.getByTestId("people-connection-requests");
     expect(searchRow).toContainElement(requests);
     expect(requests).toHaveAttribute("href", "/personal/invitations");
-    expect(searchRow.lastElementChild).toBe(requests);
+    expect(requests).toHaveAttribute("data-appearance", "glossy");
+    const order = [...searchRow.querySelectorAll("[data-testid]")].map((node) =>
+      node.getAttribute("data-testid"),
+    );
+    expect(order.slice(0, 4)).toEqual([
+      "people-add-toggle",
+      "people-add-exits",
+      "people-connection-requests",
+      "people-search",
+    ]);
   });
 
   it("opens people info popover beside the title", async () => {

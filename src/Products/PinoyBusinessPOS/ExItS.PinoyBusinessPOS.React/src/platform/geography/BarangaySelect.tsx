@@ -1,3 +1,4 @@
+import { ExitsOutlineInput, ExitsOutlineSelect } from "@/components/exits/ExitsOutlineField";
 import { Input } from "@/components/ui/input";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { useBarangays } from "@/platform/geography/useGeography";
@@ -13,6 +14,7 @@ export function BarangaySelect({
   placeholder = "Select",
   searchPlaceholder = "Search barangay",
   emptyLabel = "No matches",
+  outline = false,
 }: {
   cityCode: string;
   barangay: string;
@@ -24,12 +26,22 @@ export function BarangaySelect({
   placeholder?: string;
   searchPlaceholder?: string;
   emptyLabel?: string;
+  outline?: boolean;
 }) {
   const barangays = useBarangays(cityCode);
   const rows = barangays.data ?? [];
   const textMode = barangays.isSuccess && rows.length === 0 && cityCode.trim().length > 0;
   if (textMode) {
-    return (
+    return outline ? (
+      <ExitsOutlineInput
+        label={label}
+        value={barangay}
+        required
+        disabled={disabled || cityCode.trim().length === 0}
+        onChange={onChange}
+        testId={testId}
+      />
+    ) : (
       <Input
         label={`${label} · ${requiredLabel}`}
         value={barangay}
@@ -44,6 +56,27 @@ export function BarangaySelect({
   const selected = options.find((option) => option.label.localeCompare(barangay, undefined, { sensitivity: "accent" }) === 0);
   if (barangay.trim() && !selected) {
     options.unshift({ value: barangay, label: barangay });
+  }
+
+  if (outline) {
+    return (
+      <ExitsOutlineSelect
+        label={label}
+        required
+        value={selected?.value ?? (barangay.trim() && !selected ? barangay : "")}
+        options={options}
+        disabled={disabled || cityCode.trim().length === 0}
+        searchable
+        searchPlaceholder={searchPlaceholder}
+        emptyLabel={emptyLabel}
+        placeholder={placeholder}
+        testId={testId}
+        onChange={(next) => {
+          const match = rows.find((row) => row.code === next);
+          onChange(match?.name ?? next);
+        }}
+      />
+    );
   }
 
   return (

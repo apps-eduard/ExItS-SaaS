@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BriefcaseBusiness, Building2, Loader2, Users } from "lucide-react";
+import { BriefcaseBusiness, Building2, Loader2, LogIn, Mail, Users } from "lucide-react";
 import {
   acceptStaffInvitationById,
   declineStaffInvitationById,
@@ -29,6 +29,33 @@ import { WorkplaceSignInDialog } from "@/features/personal/workplaces/WorkplaceS
 import { useSession } from "@/session/SessionProvider";
 
 export const PERSONAL_WORKPLACES_QUERY_KEY = ["personal", "workplaces"] as const;
+
+/** Shared cache shape for the workplaces query: a list, including an older wrapped result. */
+export function workplacesFromQueryData(data: unknown): PersonalWorkplaceWire[] {
+  if (Array.isArray(data)) {
+    return data as PersonalWorkplaceWire[];
+  }
+  if (
+    data &&
+    typeof data === "object" &&
+    "workplaces" in data &&
+    Array.isArray((data as { workplaces: unknown }).workplaces)
+  ) {
+    return (data as { workplaces: PersonalWorkplaceWire[] }).workplaces;
+  }
+  return [];
+}
+
+export async function queryPersonalWorkplaces(
+  signal?: AbortSignal,
+  loadError = "Unable to load workplaces.",
+): Promise<PersonalWorkplaceWire[]> {
+  const result = await listPersonalWorkplaces(signal);
+  if (!result.ok) {
+    throw new Error(result.body?.detail ?? loadError);
+  }
+  return workplacesFromQueryData(result.workplaces);
+}
 
 function isActiveMembershipStatus(status: string): boolean {
   return status.trim().localeCompare("Active", undefined, { sensitivity: "accent" }) === 0;
@@ -102,13 +129,8 @@ export function PersonalWorkplacesPage() {
 
   const workplacesQuery = useQuery({
     queryKey: PERSONAL_WORKPLACES_QUERY_KEY,
-    queryFn: async ({ signal }) => {
-      const result = await listPersonalWorkplaces(signal);
-      if (!result.ok) {
-        throw new Error(result.body?.detail ?? t("personal.workplaces.loadError"));
-      }
-      return result.workplaces;
-    },
+    queryFn: ({ signal }) =>
+      queryPersonalWorkplaces(signal, t("personal.workplaces.loadError")),
     meta: { suppressGlobalError: true, operation: "list personal workplaces" },
   });
 
@@ -127,7 +149,7 @@ export function PersonalWorkplacesPage() {
     mutationFn: (invitationId: string) => declineStaffInvitationById(invitationId),
   });
 
-  const workplaces = workplacesQuery.data ?? [];
+  const workplaces = workplacesFromQueryData(workplacesQuery.data);
   const pending = pendingQuery.data ?? [];
 
   const acceptedWorkplace = useMemo(() => {
@@ -253,6 +275,8 @@ export function PersonalWorkplacesPage() {
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               type="button"
+              intent="primary"
+              appearance="glossy"
               className="w-full"
               disabled={!online}
               data-testid="personal-workplaces-accepted-open"
@@ -275,6 +299,7 @@ export function PersonalWorkplacesPage() {
                 })
               }
             >
+              <LogIn className="size-4 shrink-0" aria-hidden />
               {t("personal.workplaces.login")}
             </Button>
             <Button
@@ -310,16 +335,6 @@ export function PersonalWorkplacesPage() {
         backLabel={t(personalPageBackNav.more.labelKey)}
       />
 
-      {personalEmail ? (
-        <p
-          className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-sm)]"
-          data-testid="personal-workplaces-personal-email"
-        >
-          <span className="text-muted">{t("personal.workplaces.personalAccount")}: </span>
-          <span className="font-semibold">{personalEmail}</span>
-        </p>
-      ) : null}
-
       {visibleActionError ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
           {visibleActionError}
@@ -332,11 +347,107 @@ export function PersonalWorkplacesPage() {
       ) : null}
 
       <section
-        className="catalog-form-section exits-animate-panel flex flex-col gap-2"
+        className="catalog-form-section personal-workplaces-list person-ribbon-card exits-animate-panel flex flex-col gap-2"
+        data-testid="personal-workplaces-list"
+        aria-labelledby="personal-workplaces-list-heading"
+      >
+        <h2 id="personal-workplaces-list-heading" className="personal-tracker-card__ribbon">
+          <span className="personal-tracker-card__pennant" aria-hidden>
+            <BriefcaseBusiness className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+          </span>
+          {t("personal.workplaces.mineSection")}
+        </h2>
+        {workplacesQuery.isLoading ? <LoadingSkeleton count={2} label={t("loading.label")} /> : null}
+        {workplacesQuery.isError ? (
+          <ErrorState
+            title={t("error.title")}
+            detail={
+              workplacesQuery.error instanceof Error
+                ? workplacesQuery.error.message
+                : t("personal.workplaces.loadError")
+            }
+          />
+        ) : null}
+        {workplacesQuery.isSuccess && workplaces.length === 0 ? (
+          <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
+            title={t("personal.workplaces.emptyTitle")}
+            detail={t("personal.workplaces.emptyDetail")}
+          />
+        ) : null}
+        {workplaces.map((workplace) => (
+          <article
+            key={workplace.membershipId}
+            className="personal-workplace-pin"
+            data-testid={`personal-workplace-${workplace.membershipId}`}
+          >
+            <span className="personal-workplace-pin__medallion" aria-hidden>
+              <BriefcaseBusiness strokeWidth={2} />
+            </span>
+            <div className="personal-workplace-pin__shell">
+              <div className="personal-workplace-pin__ribbon">
+                <span className="personal-workplace-pin__fold personal-workplace-pin__fold--left" aria-hidden />
+                <span className="personal-workplace-pin__fold personal-workplace-pin__fold--right" aria-hidden />
+                {workplace.organizationDisplayName}
+              </div>
+              <div className="personal-workplace-pin__body">
+                <StatusChip tone={membershipStatusTone(workplace.membershipStatus)}>
+                  {membershipStatusLabel(workplace.membershipStatus, t)}
+                </StatusChip>
+                <p className="m-0 text-[length:var(--exits-text-sm)]">
+                  {t("personal.workplaces.role")}: {roleLabel(workplace, t)}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)]">
+                  {t("personal.workplaces.branch")}: {branchLabel(workplace, t)}
+                </p>
+                <div
+                  className="personal-workplace-pin__login rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface-muted)_70%,transparent)] px-3 py-2"
+                  data-testid={`personal-workplace-login-${workplace.membershipId}`}
+                >
+                  <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+                    {t("personal.workplaces.workLogin")}
+                  </p>
+                  <p className="m-0 mt-1 font-semibold">{workplace.staffLogin}</p>
+                  {personalEmail ? (
+                    <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("personal.workplaces.personalAccount")}: {personalEmail}
+                    </p>
+                  ) : null}
+                </div>
+                {isActiveMembershipStatus(workplace.membershipStatus) ? (
+                  <WorkplaceAccess
+                    workplace={workplace}
+                    online={online}
+                    resetting={resettingId === workplace.membershipId}
+                    newPassword={newPassword[workplace.membershipId] ?? ""}
+                    confirmPassword={confirmPassword[workplace.membershipId] ?? ""}
+                    onNewPassword={(value) =>
+                      setNewPassword((current) => ({ ...current, [workplace.membershipId]: value }))
+                    }
+                    onConfirmPassword={(value) =>
+                      setConfirmPassword((current) => ({ ...current, [workplace.membershipId]: value }))
+                    }
+                    onLogin={() => setSignInWorkplace(workplace)}
+                    onSavePassword={() => void saveResetPassword(workplace)}
+                  />
+                ) : null}
+              </div>
+            </div>
+            <span className="personal-workplace-pin__ground" aria-hidden />
+          </article>
+        ))}
+      </section>
+
+      <section
+        className="catalog-form-section person-ribbon-card exits-animate-panel flex flex-col gap-2"
         data-testid="personal-workplaces-pending"
         aria-labelledby="personal-workplaces-pending-heading"
       >
-        <h2 id="personal-workplaces-pending-heading" className="catalog-form-section__title">
+        <h2 id="personal-workplaces-pending-heading" className="personal-tracker-card__ribbon">
+          <span className="personal-tracker-card__pennant" aria-hidden>
+            <Mail className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+          </span>
           {t("personal.workplaces.pendingSection")}
         </h2>
         {pendingQuery.isLoading ? <LoadingSkeleton count={1} label={t("loading.label")} /> : null}
@@ -351,9 +462,12 @@ export function PersonalWorkplacesPage() {
           />
         ) : null}
         {pendingQuery.isSuccess && pending.length === 0 ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("personal.workplaces.pendingEmpty")}
-          </p>
+          <EmptyState
+            align="center"
+            icon={<Mail className="size-5" strokeWidth={1.75} />}
+            title={t("personal.workplaces.pendingEmpty")}
+            testId="personal-workplaces-pending-empty"
+          />
         ) : null}
         {pending.map((invitation) => {
           const orgName =
@@ -446,93 +560,6 @@ export function PersonalWorkplacesPage() {
           </Link>
         </p>
       </section>
-
-      <section
-        className="catalog-form-section exits-animate-panel flex flex-col gap-2"
-        data-testid="personal-workplaces-list"
-        aria-labelledby="personal-workplaces-list-heading"
-      >
-        <h2 id="personal-workplaces-list-heading" className="catalog-form-section__title">
-          {t("personal.workplaces.mineSection")}
-        </h2>
-        {workplacesQuery.isLoading ? <LoadingSkeleton count={2} label={t("loading.label")} /> : null}
-        {workplacesQuery.isError ? (
-          <ErrorState
-            title={t("error.title")}
-            detail={
-              workplacesQuery.error instanceof Error
-                ? workplacesQuery.error.message
-                : t("personal.workplaces.loadError")
-            }
-          />
-        ) : null}
-        {workplacesQuery.isSuccess && workplaces.length === 0 ? (
-          <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
-            title={t("personal.workplaces.emptyTitle")}
-            detail={t("personal.workplaces.emptyDetail")}
-          />
-        ) : null}
-        {workplaces.map((workplace) => (
-          <article
-            key={workplace.membershipId}
-            className="exits-list__card flex flex-col gap-3"
-            data-testid={`personal-workplace-${workplace.membershipId}`}
-          >
-            <div className="flex items-start gap-2">
-              <BriefcaseBusiness className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="m-0 font-semibold">{workplace.organizationDisplayName}</p>
-                  <StatusChip tone={membershipStatusTone(workplace.membershipStatus)}>
-                    {membershipStatusLabel(workplace.membershipStatus, t)}
-                  </StatusChip>
-                </div>
-                <p className="m-0 mt-1 text-[length:var(--exits-text-sm)]">
-                  {t("personal.workplaces.role")}: {roleLabel(workplace, t)}
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)]">
-                  {t("personal.workplaces.branch")}: {branchLabel(workplace, t)}
-                </p>
-              </div>
-            </div>
-
-            <div
-              className="rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface-muted)_70%,transparent)] px-3 py-2"
-              data-testid={`personal-workplace-login-${workplace.membershipId}`}
-            >
-              <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-                {t("personal.workplaces.workLogin")}
-              </p>
-              <p className="m-0 mt-1 font-semibold">{workplace.staffLogin}</p>
-              {personalEmail ? (
-                <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("personal.workplaces.personalAccount")}: {personalEmail}
-                </p>
-              ) : null}
-            </div>
-
-            {isActiveMembershipStatus(workplace.membershipStatus) ? (
-              <WorkplaceAccess
-                workplace={workplace}
-                online={online}
-                resetting={resettingId === workplace.membershipId}
-                newPassword={newPassword[workplace.membershipId] ?? ""}
-                confirmPassword={confirmPassword[workplace.membershipId] ?? ""}
-                onNewPassword={(value) =>
-                  setNewPassword((current) => ({ ...current, [workplace.membershipId]: value }))
-                }
-                onConfirmPassword={(value) =>
-                  setConfirmPassword((current) => ({ ...current, [workplace.membershipId]: value }))
-                }
-                onLogin={() => setSignInWorkplace(workplace)}
-                onSavePassword={() => void saveResetPassword(workplace)}
-              />
-            ) : null}
-          </article>
-        ))}
-      </section>
       <WorkplaceSignInDialog
         workplace={signInWorkplace}
         open={signInWorkplace !== null}
@@ -570,7 +597,7 @@ function WorkplaceAccess({
   const pending = resetStatus === "Pending";
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex w-full flex-col items-stretch gap-2">
       {pending ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("personal.workplaces.resetRequested")}
@@ -607,11 +634,14 @@ function WorkplaceAccess({
       ) : (
         <Button
           type="button"
-          className="w-fit"
+          intent="primary"
+          appearance="glossy"
+          className="w-fit self-center"
           disabled={!online}
           data-testid={`personal-workplace-sign-in-${workplace.membershipId}`}
           onClick={onLogin}
         >
+          <LogIn className="size-4 shrink-0" aria-hidden />
           {t("personal.workplaces.login")}
         </Button>
       )}

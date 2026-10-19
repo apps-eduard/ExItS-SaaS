@@ -1,3 +1,4 @@
+import { ExitsOutlineInput, ExitsOutlineSelect } from "@/components/exits/ExitsOutlineField";
 import { Input } from "@/components/ui/input";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { useAdministrativeAreas } from "@/platform/geography/useGeography";
@@ -14,6 +15,7 @@ export function AdministrativeAreaSelect({
   placeholder = "Select",
   searchPlaceholder = "Search",
   emptyLabel = "No matches",
+  outline = false,
 }: {
   countryCode: string;
   areaCode: string;
@@ -26,17 +28,48 @@ export function AdministrativeAreaSelect({
   placeholder?: string;
   searchPlaceholder?: string;
   emptyLabel?: string;
+  outline?: boolean;
 }) {
   const areas = useAdministrativeAreas(countryCode);
   const textMode = areas.isSuccess && areas.data.length === 0;
   if (textMode) {
-    return (
+    return outline ? (
+      <ExitsOutlineInput
+        label={label}
+        value={areaName}
+        required
+        disabled={disabled}
+        onChange={(next) => onChange("", next)}
+        testId={testId}
+      />
+    ) : (
       <Input
         label={`${label} · ${requiredLabel}`}
         value={areaName}
         disabled={disabled}
         onChange={(event) => onChange("", event.target.value)}
         data-testid={testId}
+      />
+    );
+  }
+
+  if (outline) {
+    return (
+      <ExitsOutlineSelect
+        label={label}
+        required
+        value={areaCode}
+        options={(areas.data ?? []).map((area) => ({ value: area.id, label: area.name }))}
+        disabled={disabled || countryCode.trim().length === 0}
+        searchable
+        searchPlaceholder={searchPlaceholder}
+        emptyLabel={emptyLabel}
+        placeholder={placeholder}
+        testId={testId}
+        onChange={(nextCode) => {
+          const area = areas.data?.find((item) => item.id === nextCode);
+          onChange(nextCode, area?.name ?? "");
+        }}
       />
     );
   }

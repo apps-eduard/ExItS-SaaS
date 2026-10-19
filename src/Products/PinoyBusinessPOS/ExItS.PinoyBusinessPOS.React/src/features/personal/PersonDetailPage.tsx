@@ -1,14 +1,16 @@
 import {
   ArrowLeft,
-  Check,
   ChevronDown,
+  Contact,
   HandCoins,
+  Pencil,
   ShieldCheck,
   SlidersHorizontal,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Link, useParams } from "react-router-dom";
 
@@ -22,7 +24,9 @@ import { EmptyState } from "@/components/exits/EmptyState";
 
 import { ErrorState } from "@/components/exits/ErrorState";
 
-import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
+import { ExitsCheckbox } from "@/components/exits/ExitsCheckbox";
+import { ExitsModal } from "@/components/exits/ExitsModal";
+import { ExitsOutlineInput, ExitsOutlineTextarea } from "@/components/exits/ExitsOutlineField";
 
 import { Notice } from "@/components/exits/Notice";
 
@@ -69,6 +73,7 @@ import { deriveConnectionStatus, formatShortDate } from "@/features/personal/peo
 import { SharedUtangSettingPanel } from "@/features/personal/SharedUtangSettingPanel";
 import { isSharedRelationship } from "@/features/personal/utang/utang-workspace";
 
+import { INTENT_GLOBAL_SECONDARY } from "@/features/ui-standards/intent-color-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 
 import { formatPeso } from "@/lib/format-money";
@@ -80,11 +85,68 @@ import {
 
 const UTANG_NOTES_MAX_LENGTH = 512;
 
+function SaveCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12.5 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4v4.35" />
+      <path d="m16 19 2 2 4-4" />
+      <path d="M17 15.13V14a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+    </svg>
+  );
+}
+
 function RibbonPennant({ icon: Icon }: { icon: LucideIcon }) {
   return (
     <span className="personal-tracker-card__pennant" aria-hidden>
       <Icon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
     </span>
+  );
+}
+
+function ContactDetailFields({
+  displayName,
+  phone,
+  email,
+  publicUserId,
+}: {
+  displayName: string;
+  phone?: string | null;
+  email?: string | null;
+  publicUserId?: string | null;
+}) {
+  const { t } = useI18n();
+  return (
+    <dl className="m-0 grid min-w-0 grid-cols-2 gap-x-4 gap-y-3">
+      <div data-testid="person-detail-contact-name">
+        <dt className="m-0 text-[13px] font-medium text-[var(--exits-primary)]">{t("people.displayName")}</dt>
+        <dd className="m-0 text-[length:var(--exits-text-sm)]">{displayName}</dd>
+      </div>
+      {publicUserId ? (
+        <div data-testid="person-detail-contact-id">
+          <dt className="m-0 text-[13px] font-medium text-[var(--exits-primary)]">{t("people.add.exitsId")}</dt>
+          <dd className="m-0 text-[length:var(--exits-text-sm)]">{publicUserId}</dd>
+        </div>
+      ) : null}
+      <div data-testid="person-detail-contact-phone">
+        <dt className="m-0 text-[13px] font-medium text-[var(--exits-primary)]">{t("people.column.contact")}</dt>
+        <dd className="m-0 text-[length:var(--exits-text-sm)]">{phone?.trim() || "—"}</dd>
+      </div>
+      <div data-testid="person-detail-contact-email">
+        <dt className="m-0 text-[13px] font-medium text-[var(--exits-primary)]">{t("people.column.email")}</dt>
+        <dd className="m-0 break-all text-[length:var(--exits-text-sm)]">{email?.trim() || "—"}</dd>
+      </div>
+    </dl>
   );
 }
 
@@ -143,12 +205,12 @@ export function PersonDetailPage() {
   const createUtang = useCreateUtangMutation();
 
   const [amount, setAmount] = useState(() => formatMoneyAmountInput(0));
-  const amountInputRef = useRef<HTMLInputElement>(null);
   const [notes, setNotes] = useState("");
   const [savingUtang, setSavingUtang] = useState(false);
   const [shareWithCounterparty, setShareWithCounterparty] = useState(false);
 
   const [mode, setMode] = useState<"lent" | "borrowed">("lent");
+  const [recordOpen, setRecordOpen] = useState(false);
 
   const [connectionCardOpen, setConnectionCardOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
@@ -281,11 +343,18 @@ export function PersonDetailPage() {
       setAmount(formatMoneyAmountInput(0));
       setNotes("");
       setShareWithCounterparty(false);
+      setRecordOpen(false);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : t("error.body"));
     } finally {
       setSavingUtang(false);
     }
+  }
+
+  function openRecord(kind: "lent" | "borrowed") {
+    setMode(kind);
+    setActionError(null);
+    setRecordOpen(true);
   }
 
 
@@ -407,31 +476,12 @@ export function PersonDetailPage() {
         backLabel={t("people.backToFriends")}
         backTestId="person-detail-back"
         circleContent={
-          connected ? (
-            <>
-              <ArrowLeft className="size-7 shrink-0 lg:hidden rtl:rotate-180" aria-hidden />
-              <span className="hidden size-full lg:contents">
-                <PersonAvatar name={contact.displayName} size="lg" className="page-header-capsule__avatar" />
-              </span>
-            </>
-          ) : undefined
+          <PersonAvatar name={contact.displayName} size="lg" className="page-header-capsule__avatar" />
         }
         subtitle={connected && publicUserId ? publicUserId : undefined}
         subtitleClassName="truncate max-lg:hidden"
         titleTrailing={
-          connection.status === "local" ? (
-            <Button
-              type="button"
-              intent="primary"
-              appearance="outline"
-              shape="standard"
-              className="w-auto"
-              data-testid="person-detail-edit"
-              onClick={() => setEditContactOpen(true)}
-            >
-              {t("people.action.edit")}
-            </Button>
-          ) : connected ? (
+          connected ? (
             <StatusChip tone={statusTone(connection.status)} className="max-lg:hidden" data-testid="person-detail-header-status">
               {statusLabel(connection.status)}
             </StatusChip>
@@ -439,9 +489,8 @@ export function PersonDetailPage() {
         }
       />
 
+      {connection.status === "local" ? null : (
       <div className={cn("flex items-start gap-3", connected && "lg:hidden")}>
-        <PersonAvatar name={contact.displayName} size="lg" />
-
         <div className="min-w-0 flex-1">
           <p className="m-0 text-muted">
             {publicUserId ? publicUserId : t("people.localContact")}
@@ -452,6 +501,7 @@ export function PersonDetailPage() {
           </div>
         </div>
       </div>
+      )}
 
       {connection.status === "local" ? (
         <EditLocalContactDialog
@@ -466,20 +516,47 @@ export function PersonDetailPage() {
         <Card className="person-ribbon-card flex flex-col gap-3" data-testid="person-detail-utang-card">
           <h2 className="personal-tracker-card__ribbon">
             <RibbonPennant icon={HandCoins} />
-            {t("people.detail.utang")}
+            {t("people.detail.transactionDetails")}
           </h2>
+          {showUtangForm ? (
+            <div className="person-detail-utang-actions">
+              <Button
+                type="button"
+                intent="success"
+                appearance="glossy"
+                emphasis="strong"
+                data-testid="person-detail-utang-lent"
+                onClick={() => openRecord("lent")}
+              >
+                <HandCoins className="size-4 shrink-0" aria-hidden />
+                {t("people.detail.iLentAction")}
+              </Button>
+              <Button
+                type="button"
+                intent="primary"
+                appearance="glossy"
+                style={{ backgroundColor: INTENT_GLOBAL_SECONDARY, color: "#ffffff" }}
+                data-testid="person-detail-utang-owe"
+                onClick={() => openRecord("borrowed")}
+              >
+                <Wallet className="size-4 shrink-0" aria-hidden />
+                {t("people.detail.iOweAction")}
+              </Button>
+            </div>
+          ) : null}
       {activeRelated.length > 0 ? (
           <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="person-detail-utang-records">
             {activeRelated.map((rel) => {
               const owned = rel.isLedgerOwner !== false;
               return (
                 <li key={rel.id}>
+                  <Card
+                    padding="compact"
+                    className={cn("min-w-0", !owned && "utang-account-card--shared")}
+                  >
                   <Link
                     to={`/personal/utang/relationships/${rel.id}`}
-                    className={cn(
-                      "flex items-center justify-between gap-3 rounded-[var(--exits-radius-md)] border border-transparent px-2 py-1.5 text-foreground no-underline",
-                      !owned && "utang-account-card--shared",
-                    )}
+                    className="flex items-center justify-between gap-3 text-foreground no-underline"
                     data-testid={`person-detail-utang-row-${rel.id}`}
                   >
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -491,7 +568,11 @@ export function PersonDetailPage() {
                           ? t("personal.utang.ownershipMine")
                           : t("personal.utang.ownershipSharedWithMe")}
                       </span>
-                      <span className="font-medium">{rel.perspective}</span>
+                      <span className="font-medium">
+                        {rel.perspective.toLowerCase() === "borrowed"
+                          ? t("people.detail.iOweAction")
+                          : t("people.detail.iLentAction")}
+                      </span>
                       <span className="text-[length:var(--exits-text-xs)] text-muted">
                         {owned
                           ? t("personal.utang.managedByMe")
@@ -501,100 +582,126 @@ export function PersonDetailPage() {
                             )}
                       </span>
                     </span>
-                    <span className="grid shrink-0 justify-items-start self-stretch font-medium">
+                    <span className="flex shrink-0 flex-col items-end gap-0.5 self-center text-end">
                       {!owned ? (
                         <ExitsStatusChip
                           tone={UTANG_READ_ONLY_CHIP.tone}
                           appearance={UTANG_READ_ONLY_CHIP.appearance}
                           shape={UTANG_READ_ONLY_CHIP.shape}
-                          className="col-start-1 row-start-1 self-start max-md:hidden"
+                          className="max-md:hidden"
                           data-testid={`person-detail-utang-readonly-${rel.id}`}
                         >
                           {t("personal.utang.readOnly")}
                         </ExitsStatusChip>
                       ) : null}
-                      <span className="col-start-1 row-start-1 self-center">
+                      <span
+                        className="text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid={`person-detail-utang-date-${rel.id}`}
+                      >
+                        {formatShortDate(rel.updatedAtUtc)}
+                      </span>
+                      <span className="font-[550]">
                         {formatMoney(rel.currentBalance, rel.currencyCode)}
                       </span>
                     </span>
                   </Link>
+                  </Card>
                 </li>
               );
             })}
           </ul>
       ) : null}
 
-      {activeRelated.length > 0 && showUtangForm ? (
-          <div className="person-ribbon-card__rule" role="separator" />
-      ) : null}
-
       {showUtangForm ? (
-        <>
-          <ExitsPillSelect
-            appearance="tile"
-            value={mode}
-            options={[
-              { value: "lent", label: t("people.detail.iLent") },
-              { value: "borrowed", label: t("people.detail.iBorrowed") },
-            ]}
-            onChange={(next) => {
-              setMode(next);
-              requestAnimationFrame(() => {
-                const input = amountInputRef.current;
-                if (!input) {
-                  return;
-                }
-                input.focus();
-                input.select();
-              });
+        <ExitsModal
+          open={recordOpen}
+          onOpenChange={setRecordOpen}
+          title={
+            <>
+              {mode === "lent" ? t("people.detail.iLentAction") : t("people.detail.iOweAction")}
+              {" - "}
+              <span className="person-detail-record-name">{contact.displayName}</span>
+            </>
+          }
+          testId="person-detail-record-dialog"
+          closeLabel={t("people.add.cancel")}
+          size="sm"
+          closeOnOutsideClick={false}
+          busy={savingUtang || createUtang.isPending}
+          ribbon
+          ribbonIcon={mode === "lent" ? HandCoins : Wallet}
+          footer={
+            <>
+              <Button
+                type="button"
+                intent="danger"
+                appearance="glossy"
+                emphasis="strong"
+                disabled={savingUtang || createUtang.isPending}
+                data-testid="person-detail-record-cancel"
+                onClick={() => setRecordOpen(false)}
+              >
+                {t("people.add.cancel")}
+              </Button>
+              <Button
+                type="button"
+                intent="primary"
+                appearance="glossy"
+                className="min-w-[8rem]"
+                disabled={savingUtang || createUtang.isPending}
+                onClick={() => void submitUtang(mode)}
+                data-testid="person-detail-utang-save"
+              >
+                <SaveCheckIcon className="size-4 shrink-0" />
+                {savingUtang || createUtang.isPending
+                  ? t("loading.label")
+                  : isConnected && shareWithCounterparty && !ownedActiveForMode
+                    ? t("personal.utang.shareWithPerson").replace(
+                        "{name}",
+                        contact?.displayName ?? t("personal.utang.person"),
+                      )
+                    : mode === "lent"
+                      ? t("people.detail.saveILent")
+                      : t("people.detail.saveIBorrowed")}
+              </Button>
+            </>
+          }
+        >
+          <div className="flex min-w-0 flex-col gap-3">
+          {actionError ? (
+            <Notice tone="danger" testId="person-detail-record-error">
+              {actionError}
+            </Notice>
+          ) : null}
+          <ExitsOutlineInput
+            id="person-detail-amount"
+            label={t("personal.utang.amount")}
+            value={amount}
+            prefix="₱"
+            onChange={(next) => setAmount(normalizeMoneyAmountTyping(next))}
+            onFocus={() => {
+              if ((parseMoneyAmountInput(amount) ?? 0) === 0) {
+                setAmount("");
+              }
             }}
-            className="grid-cols-2"
-            testId="person-detail-mode-select"
-            aria-label={t("people.detail.relationship")}
+            onBlur={() => {
+              setAmount(formatMoneyAmountInput(parseMoneyAmountInput(amount) ?? 0));
+            }}
+            testId="person-detail-amount"
+            inputMode="decimal"
+            autoComplete="off"
+            required
+            data-exits-modal-autofocus="true"
           />
-
-          <label className="flex min-w-0 flex-col gap-1">
-            <span className="sr-only">{t("people.detail.amount")}</span>
-            <div className="exits-currency-field exits-currency-field--emphasis">
-              <span className="exits-currency-field__prefix" aria-hidden>
-                ₱
-              </span>
-              <input
-                ref={amountInputRef}
-                type="text"
-                inputMode="decimal"
-                value={amount}
-                onChange={(event) => setAmount(normalizeMoneyAmountTyping(event.target.value))}
-                onBlur={() => {
-                  const parsed = parseMoneyAmountInput(amount);
-                  setAmount(formatMoneyAmountInput(parsed ?? 0));
-                }}
-                className="exits-currency-field__input"
-                data-testid="person-detail-amount"
-                aria-label={t("people.detail.amount")}
-                autoComplete="off"
-              />
-            </div>
-          </label>
-
-          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span className="font-medium">
-              {t("personal.utang.purpose")}
-              <span className="text-destructive" aria-hidden>
-                {" "}
-                *
-              </span>
-            </span>
-            <textarea
-              data-testid="person-detail-utang-notes"
-              className="min-h-20 w-full min-w-0 resize-y rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-              value={notes}
-              maxLength={UTANG_NOTES_MAX_LENGTH}
-              required
-              aria-required="true"
-              onChange={(event) => setNotes(event.target.value)}
-            />
-          </label>
+          <ExitsOutlineTextarea
+            id="person-detail-utang-notes"
+            label={t("personal.utang.purpose")}
+            value={notes}
+            onChange={setNotes}
+            maxLength={UTANG_NOTES_MAX_LENGTH}
+            required
+            testId="person-detail-utang-notes"
+          />
 
           {sharedWithMeForMode && !ownedActiveForMode ? (
             <Notice
@@ -618,57 +725,29 @@ export function PersonDetailPage() {
           ) : null}
 
           {isConnected && !ownedActiveForMode ? (
-            <label
-              className="flex min-w-0 cursor-pointer items-start gap-2 text-[length:var(--exits-text-sm)]"
-              data-testid="person-detail-share-toggle"
-            >
-              <input
-                type="checkbox"
-                className="mt-0.5"
+            <div className="flex min-w-0 flex-col gap-1" data-testid="person-detail-share-toggle">
+              <ExitsCheckbox
+                label={t("personal.utang.shareWithPerson").replace(
+                  "{name}",
+                  contact?.displayName ?? t("personal.utang.person"),
+                )}
                 checked={shareWithCounterparty}
-                onChange={(event) => setShareWithCounterparty(event.target.checked)}
-                data-testid="person-detail-share-checkbox"
+                onCheckedChange={setShareWithCounterparty}
+                testId="person-detail-share-checkbox"
               />
-              <span>
-                <span className="font-medium">
-                  {t("personal.utang.shareWithPerson").replace(
-                    "{name}",
-                    contact?.displayName ?? t("personal.utang.person"),
-                  )}
-                </span>
-                <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
-                  {shareWithCounterparty
-                    ? t("personal.utang.shareOnHint").replace(
-                        "{name}",
-                        contact?.displayName ?? t("personal.utang.person"),
-                      )
-                    : t("personal.utang.shareOffHint")}
-                </span>
-              </span>
-            </label>
-          ) : null}
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              disabled={savingUtang || createUtang.isPending}
-              onClick={() => void submitUtang(mode)}
-              data-testid="person-detail-utang-save"
-            >
-              <Check className="size-4 shrink-0" aria-hidden />
-              {savingUtang || createUtang.isPending
-                ? t("loading.label")
-                : isConnected && shareWithCounterparty && !ownedActiveForMode
-                  ? t("personal.utang.shareWithPerson").replace(
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {shareWithCounterparty
+                  ? t("personal.utang.shareOnHint").replace(
                       "{name}",
                       contact?.displayName ?? t("personal.utang.person"),
                     )
-                  : mode === "lent"
-                    ? t("people.detail.saveILent")
-                    : t("people.detail.saveIBorrowed")}
-            </Button>
+                  : t("personal.utang.shareOffHint")}
+              </p>
+            </div>
+          ) : null}
+
           </div>
-        </>
+        </ExitsModal>
       ) : null}
         </Card>
       ) : null}
@@ -685,6 +764,13 @@ export function PersonDetailPage() {
               contact?.displayName ?? t("personal.utang.person"),
             )}
           </h2>
+          <ContactDetailFields
+            displayName={contact.displayName}
+            phone={contact.phone}
+            email={contact.email}
+            publicUserId={publicUserId}
+          />
+          <div className="person-ribbon-card__rule" role="separator" />
           <SharedUtangSettingPanel
             contactId={contact.id}
             displayName={contact.displayName}
@@ -695,7 +781,32 @@ export function PersonDetailPage() {
         </Card>
       ) : null}
 
-      {isConnected ? null : (
+      {connection.status === "local" ? (
+        <Card className="person-ribbon-card flex flex-col gap-3" data-testid="person-detail-contact-card">
+          <h2 className="personal-tracker-card__ribbon">
+            <RibbonPennant icon={Contact} />
+            {t("people.detail.contactDetail")}
+          </h2>
+          <Button
+            type="button"
+            intent="primary"
+            appearance="glossy"
+            size="icon"
+            shape="round"
+            className="person-detail-contact-edit"
+            aria-label={t("people.action.edit")}
+            data-testid="person-detail-edit"
+            onClick={() => setEditContactOpen(true)}
+          >
+            <Pencil className="size-4" aria-hidden />
+          </Button>
+          <ContactDetailFields
+            displayName={contact.displayName}
+            phone={contact.phone}
+            email={contact.email}
+          />
+        </Card>
+      ) : isConnected ? null : (
       <Card className="person-ribbon-card flex flex-col gap-3" data-testid="person-detail-connection-card">
         <button
           type="button"

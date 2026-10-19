@@ -1,3 +1,4 @@
+import { ExitsOutlineInput, ExitsOutlineSelect } from "@/components/exits/ExitsOutlineField";
 import { Input } from "@/components/ui/input";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { useAdministrativeAreas, useCities } from "@/platform/geography/useGeography";
@@ -15,6 +16,7 @@ export function CitySelect({
   placeholder = "Select",
   searchPlaceholder = "Search",
   emptyLabel = "No matches",
+  outline = false,
 }: {
   countryCode: string;
   areaCode: string;
@@ -28,18 +30,49 @@ export function CitySelect({
   placeholder?: string;
   searchPlaceholder?: string;
   emptyLabel?: string;
+  outline?: boolean;
 }) {
   const areas = useAdministrativeAreas(countryCode);
   const cities = useCities(areaCode);
   const textMode = areas.isSuccess && areas.data.length === 0;
   if (textMode) {
-    return (
+    return outline ? (
+      <ExitsOutlineInput
+        label={label}
+        value={cityName}
+        required
+        disabled={disabled}
+        onChange={(next) => onChange("", next)}
+        testId={testId}
+      />
+    ) : (
       <Input
         label={`${label} · ${requiredLabel}`}
         value={cityName}
         disabled={disabled}
         onChange={(event) => onChange("", event.target.value)}
         data-testid={testId}
+      />
+    );
+  }
+
+  if (outline) {
+    return (
+      <ExitsOutlineSelect
+        label={label}
+        required
+        value={cityCode}
+        options={(cities.data ?? []).map((city) => ({ value: city.id, label: city.name }))}
+        disabled={disabled || areaCode.trim().length === 0}
+        searchable
+        searchPlaceholder={searchPlaceholder}
+        emptyLabel={emptyLabel}
+        placeholder={placeholder}
+        testId={testId}
+        onChange={(nextCode) => {
+          const city = cities.data?.find((item) => item.id === nextCode);
+          onChange(nextCode, city?.name ?? "");
+        }}
       />
     );
   }

@@ -6834,6 +6834,31 @@ button.exits-card {
   }
 }
 
+/* Add person with ExItS ID: Enter ID, Scan QR, Upload QR */
+.people-add-id-chooser .customer-create-kind__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0;
+}
+
+.people-add-id-chooser .customer-create-kind__card {
+  align-items: center;
+  text-align: center;
+  padding: 0.75rem 0.4rem;
+}
+
+.people-add-id-chooser .customer-create-kind__header {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.people-add-id-chooser .customer-create-kind__label {
+  flex: none;
+  width: 100%;
+  text-align: center;
+}
+
 /* Utang People: always two-up with centered icon + copy */
 .utang-contact-add-kind .customer-create-kind__grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6917,6 +6942,11 @@ button.exits-card {
   border-radius: var(--exits-radius-md);
   background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface-muted));
   color: var(--exits-primary);
+}
+
+.customer-create-kind__icon--danger {
+  background: color-mix(in srgb, var(--exits-danger) 14%, var(--exits-surface-muted));
+  color: var(--exits-danger);
 }
 
 .customer-create-kind__label {
@@ -15808,6 +15838,24 @@ a.dashboard-metric-card:focus-visible {
   }
 }
 
+.exits-toast-region.exits-toast-region--top {
+  top: 0.75rem;
+  right: 0.75rem;
+  bottom: auto;
+  left: auto;
+  width: min(24rem, calc(100vw - 1.5rem));
+}
+
+@media (min-width: 768px) {
+  .exits-toast-region.exits-toast-region--top {
+    top: 1rem;
+    right: 1rem;
+    bottom: auto;
+    left: auto;
+    width: min(24rem, calc(100vw - 2rem));
+  }
+}
+
 .exits-toast-region.exits-toast-region--center {
   top: 50%;
   bottom: auto;
@@ -15877,6 +15925,7 @@ a.dashboard-metric-card:focus-visible {
 .exits-toast__description {
   margin-top: 0.25rem;
   color: var(--exits-muted, var(--muted-foreground));
+  white-space: pre-line;
 }
 
 .exits-toast__action {
@@ -15886,6 +15935,11 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.exits-toast--info {
+  border-color: color-mix(in srgb, var(--exits-info) 45%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 12%, var(--exits-surface));
 }
 
 .exits-toast--success {
@@ -19426,6 +19480,25 @@ select.catalog-form-select--readonly,
   white-space: nowrap;
 }
 
+[data-testid="qr-camera-missing"] h2 {
+  color: var(--exits-warning);
+}
+
+.qr-file-input {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+}
+
 .qr-manual-entry__field {
   position: relative;
   display: flex;
@@ -21943,6 +22016,33 @@ a.exits-chip--primary:hover {
   grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   min-width: 0;
+}
+
+.personal-profile-section--personal .ui-standards-qinput,
+.personal-profile-section--personal .ui-standards-qdropdown {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.personal-profile-completeness {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.personal-profile-completeness__track {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--exits-surface-muted);
+}
+
+.personal-profile-completeness__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--exits-primary);
 }
 
 .personal-address-saved {
@@ -24917,6 +25017,59 @@ a.exits-chip--primary:hover {
   box-shadow: none;
 }
 
+.personal-profile-page .personal-profile-section--personal.person-ribbon-card.catalog-form-section,
+.personal-profile-page .personal-profile-section--address.person-ribbon-card.catalog-form-section,
+.personal-profile-page .personal-profile-section--privacy.person-ribbon-card.catalog-form-section {
+  position: relative;
+  overflow: visible;
+  padding-top: 3.6rem;
+}
+
+.personal-address-dialog.exits-modal-panel {
+  max-width: min(48rem, calc(100vw - 2rem));
+}
+
+.personal-address-dialog-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 1rem;
+  row-gap: 0.75rem;
+  align-items: end;
+}
+
+.personal-address-slot--type { grid-area: 1 / 1; }
+.personal-address-slot--country { grid-area: 1 / 2; }
+.personal-address-slot--province { grid-area: 1 / 3; }
+.personal-address-slot--city { grid-area: 2 / 1; }
+.personal-address-slot--barangay { grid-area: 2 / 2; }
+.personal-address-slot--line1 { grid-area: 2 / 3; }
+.personal-address-slot--line2 { grid-area: 3 / 1; }
+.personal-address-slot--postal { grid-area: 3 / 2; }
+.personal-address-slot--primary { grid-area: 3 / 3; }
+
+.personal-address-slot > .ui-standards-qinput,
+.personal-address-slot > .ui-standards-qdropdown {
+  width: 100%;
+}
+
+.personal-profile-page .personal-address-add,
+.personal-profile-page .personal-address-show-all {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.75rem;
+  z-index: 3;
+  width: auto;
+}
+
+.personal-address-show-all__chevron {
+  transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0.9s !important;
+}
+
+.personal-address-show-all__chevron--open {
+  transform: rotate(180deg);
+}
+
 [data-theme="dark"] .personal-home-page .tracker-summary,
 [data-theme="dark"] .personal-profile-page .personal-profile-section.catalog-form-section {
   border-color: var(--exits-border);
@@ -25545,6 +25698,23 @@ a.exits-chip--primary:hover {
     margin-inline: auto;
     padding: 0;
   }
+}
+
+/* People search shares the button row. The outlined field keeps label space above the box. */
+.people-search-row .ui-standards-qinput {
+  width: 100%;
+  max-width: none;
+}
+
+.people-search-row .ui-standards-qinput__box {
+  box-sizing: border-box;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+}
+
+.people-search-row .ui-standards-qinput__control {
+  height: 100%;
+  min-height: 0;
 }
 
 /* People and Utang filters: horizontal scroll on small screens (do not wrap). */
@@ -26695,6 +26865,10 @@ a.exits-chip--primary:hover {
   padding-top: 3.1rem;
 }
 
+.people-list-card.person-ribbon-card {
+  padding-top: 4.25rem;
+}
+
 .personal-page .personal-section.personal-quick-actions.utang-quick-actions.catalog-form-section {
   position: relative;
   overflow: visible;
@@ -26719,6 +26893,27 @@ button.personal-home-index-card {
 .utang-detail-top .utang-ribbon-card,
 .utang-activity-card.utang-ribbon-card {
   margin-left: 0.7rem;
+}
+
+.exits-modal__ribbon .person-detail-record-name {
+  color: var(--exits-warning);
+}
+
+.person-detail-utang-actions {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.75rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.person-detail-contact-edit {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.75rem;
+  z-index: 3;
 }
 
 .person-ribbon-card > .person-ribbon-card__toggle {
@@ -26838,6 +27033,139 @@ button.personal-home-index-card {
   color: var(--exits-primary-foreground, #fff);
 }
 
+/* Workplace membership cards reuse the Card pin shape. */
+.personal-workplace-pin {
+  --qcard-pin-from: var(--exits-primary);
+  --qcard-pin-to: color-mix(in srgb, var(--exits-primary) 58%, #fff);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
+  width: 50%;
+  margin-top: -0.9rem;
+  padding: 1.35rem 0 0.85rem;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.personal-workplace-pin__shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.15rem 1.05rem 2.65rem;
+  overflow: visible;
+  background: transparent;
+  color: var(--exits-text);
+}
+
+.personal-workplace-pin__shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--exits-surface);
+  pointer-events: none;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 1.85rem),
+    50% 100%,
+    0 calc(100% - 1.85rem)
+  );
+  filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.14));
+}
+
+.personal-workplace-pin__medallion {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 3.65rem;
+  height: 3.65rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  color: var(--exits-primary-foreground, #fff);
+  background: linear-gradient(to bottom, var(--qcard-pin-from) 0%, var(--qcard-pin-to) 100%);
+  box-shadow:
+    0 0 0 0.28rem var(--exits-surface),
+    0 8px 18px color-mix(in srgb, var(--qcard-pin-from) 40%, transparent);
+}
+
+.personal-workplace-pin__medallion svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.personal-workplace-pin__ribbon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% + 3.7rem);
+  margin: 0.55rem 0 0.85rem;
+  padding: 0.45rem 1rem;
+  color: var(--exits-primary-foreground, #fff);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  background: linear-gradient(to right, var(--qcard-pin-from) 0%, var(--qcard-pin-to) 100%);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--qcard-pin-from) 32%, transparent);
+}
+
+.personal-workplace-pin__fold {
+  position: absolute;
+  top: 100%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.personal-workplace-pin__fold--left {
+  left: 0;
+  border-top: 0.45rem solid color-mix(in srgb, #000 35%, var(--qcard-pin-from));
+  border-left: 0.7rem solid transparent;
+}
+
+.personal-workplace-pin__fold--right {
+  right: 0;
+  border-top: 0.45rem solid color-mix(in srgb, #000 35%, var(--qcard-pin-to));
+  border-right: 0.7rem solid transparent;
+}
+
+.personal-workplace-pin__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 80%;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: center;
+}
+
+.personal-workplace-pin__login {
+  width: 72%;
+}
+
+.personal-workplaces-list.person-ribbon-card.catalog-form-section {
+  background: var(--exits-bg);
+  overflow: visible;
+  padding-bottom: 1.35rem;
+}
+
 /* Search sits on the ribbon row (top right of Active accounts). */
 .utang-hub-accounts .utang-search {
   position: absolute;
@@ -26845,6 +27173,12 @@ button.personal-home-index-card {
   right: 1.05rem;
   z-index: 2;
   width: min(16rem, 45%);
+}
+
+@media (max-width: 639px) {
+  .utang-hub-accounts .utang-search {
+    right: 0.4rem;
+  }
 }
 
 .utang-hub-accounts .utang-search input {
@@ -26939,6 +27273,16 @@ button.personal-home-index-card {
   background: transparent;
 }
 
+.ui-standards-qcard.ui-standards-qcard--settings-card.utang-settings-card.utang-account-card--standard {
+  margin-top: 0;
+  padding-top: 0.5rem;
+  padding-bottom: 0;
+  padding-left: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
 .utang-settings-card .ui-standards-qcard__settings-ribbon {
   z-index: auto;
   clip-path: none;
@@ -26955,6 +27299,98 @@ button.personal-home-index-card {
 .utang-settings-card:focus-visible .ui-standards-qcard__settings-ribbon {
   box-shadow:
     0 3px 8px color-mix(in srgb, var(--qcard-settings) 36%, transparent);
+}
+
+.utang-account-card--standard .ui-standards-qcard__settings-ribbon {
+  position: relative;
+  overflow: visible;
+  padding: 0.85rem 1.35rem 0.75rem 0.95rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  background-image: none;
+  color: var(--exits-text);
+  clip-path: none;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2), 0 2px 2px rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12);
+}
+
+.utang-account-card--standard .utang-account-card__caret {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid var(--exits-border);
+  border-radius: 999px;
+  background: var(--exits-surface);
+  color: var(--exits-primary);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+  transform: translate(53%, -50%);
+  pointer-events: none;
+}
+
+.utang-account-card--standard.utang-account-card--mine .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+}
+
+.utang-account-card--standard.utang-account-card--shared .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--exits-info) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 7%, var(--exits-surface));
+}
+
+.utang-account-card--standard:hover .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard:focus-visible .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: var(--exits-primary-soft);
+  box-shadow: var(--exits-shadow-md);
+}
+
+.utang-account-card--standard.utang-settings-card--lent .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--exits-severity-success) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-severity-success) 8%, var(--exits-surface));
+}
+
+.utang-account-card--standard.utang-settings-card--lent .utang-account-card__caret {
+  border-color: color-mix(in srgb, var(--exits-severity-success) 40%, var(--exits-border));
+  color: var(--exits-severity-success);
+}
+
+.utang-account-card--standard.utang-settings-card--lent:hover .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--lent:focus-visible .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--exits-severity-success) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-severity-success) 14%, var(--exits-surface));
+}
+
+.utang-account-card--standard.utang-settings-card--owe .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--exits-warning) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-warning) 8%, var(--exits-surface));
+}
+
+.utang-account-card--standard.utang-settings-card--owe .utang-account-card__caret {
+  border-color: color-mix(in srgb, var(--exits-warning) 40%, var(--exits-border));
+  color: var(--exits-warning);
+}
+
+.utang-account-card--standard.utang-settings-card--owe:hover .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--owe:focus-visible .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--exits-warning) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-warning) 14%, var(--exits-surface));
+}
+
+.utang-account-card--standard .utang-settings-card__name,
+.utang-account-card--standard .utang-settings-card__amount,
+.utang-account-card--standard .utang-settings-card__balance,
+.utang-account-card--standard .utang-settings-card__meta,
+.utang-account-card--standard .utang-settings-card__meta .text-muted {
+  color: var(--exits-text);
+}
+
+.utang-account-card--standard .utang-settings-card__amount > svg {
+  color: var(--exits-muted, #64748b);
 }
 
 .utang-settings-card .ui-standards-qcard__settings-circle {
@@ -27007,6 +27443,17 @@ button.personal-home-index-card {
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
   clip-path: none;
+}
+
+.utang-account-card .utang-settings-card__tab,
+.utang-account-card .utang-settings-card__tab[data-utang-ownership] {
+  margin-left: -0.95rem;
+}
+
+.utang-account-card--standard .utang-settings-card__tab,
+.utang-account-card--standard .utang-settings-card__tab[data-utang-ownership] {
+  margin-top: -1.2rem;
+  margin-left: -1.7rem;
 }
 
 .utang-settings-card .utang-settings-card__tab .ui-standards-qcard__settings-fold {
@@ -27147,6 +27594,25 @@ button.personal-home-index-card {
   letter-spacing: 0.02em;
   line-height: inherit;
   white-space: nowrap;
+}
+
+.utang-hub-accounts .utang-settings-list,
+.utang-relationship-list {
+  margin-top: 0;
+  row-gap: 0.3rem;
+  padding-left: 0.9rem;
+  /* Caret hangs past the card. Keep a small gap before the panel edge. */
+  padding-right: 0.45rem;
+  overflow: visible;
+}
+
+@media (max-width: 639px) {
+  .utang-hub-accounts .utang-settings-list,
+  .utang-relationship-list {
+    /* Very small clearance so the ownership ribbon clears the panel edge. */
+    padding-left: 0.5rem;
+    padding-right: 0.75rem;
+  }
 }
 
 .utang-hub-accounts__panel {

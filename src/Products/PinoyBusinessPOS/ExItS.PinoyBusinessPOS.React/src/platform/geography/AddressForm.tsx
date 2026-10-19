@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { ExitsCheckbox } from "@/components/exits/ExitsCheckbox";
+import { ExitsOutlineInput, ExitsOutlineSelect } from "@/components/exits/ExitsOutlineField";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { BarangaySelect } from "@/platform/geography/BarangaySelect";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ export function AddressForm({
   showPrimary = true,
   allowMultiple = false,
   requireAddress = false,
+  lockedFields = false,
   testIdPrefix = "address",
 }: {
   value: SharedAddressValue;
@@ -30,6 +33,8 @@ export function AddressForm({
   showPrimary?: boolean;
   allowMultiple?: boolean;
   requireAddress?: boolean;
+  /** Outlined ExItS fields for the personal address dialog. */
+  lockedFields?: boolean;
   testIdPrefix?: string;
 }) {
   const { t } = useI18n();
@@ -82,15 +87,151 @@ export function AddressForm({
 
   return (
     <div
-      className="geography-address-form"
+      className={lockedFields ? "personal-address-dialog-fields" : "geography-address-form"}
       data-testid={`${testIdPrefix}-form`}
       data-allow-multiple={allowMultiple ? "true" : "false"}
       data-require-address={requireAddress ? "true" : "false"}
     >
-      {showAddressType ? (
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          <span className="font-semibold">{t("personal.profile.addressType")}</span>
-          <ExitsSelect
+      {lockedFields ? (
+        <>
+          {showAddressType ? (
+            <div className="personal-address-slot personal-address-slot--type">
+              <ExitsOutlineSelect<string>
+                label={t("personal.profile.addressType")}
+                value={value.addressType}
+                options={[
+                  { value: "Home", label: t("personal.profile.typeHome") },
+                  { value: "Office", label: t("personal.profile.typeOffice") },
+                  { value: "Other", label: t("personal.profile.typeOther") },
+                ]}
+                onChange={(addressType) => onChange({ ...value, addressType })}
+                testId={`${testIdPrefix}-type`}
+              />
+            </div>
+          ) : null}
+          <div className="personal-address-slot personal-address-slot--country">
+            <CountrySelect
+              value={value.countryCode}
+              searchable
+              outlineLabel={t("personal.profile.country")}
+              outlineRequired
+              searchPlaceholder={t("personal.profile.searchCountry")}
+              emptyLabel={t("personal.profile.noMatches")}
+              placeholder={t("personal.profile.selectPlaceholder")}
+              testId={`${testIdPrefix}-country`}
+              onChange={(countryCode, countryName) => onChange({
+                ...value,
+                countryCode,
+                countryName,
+                administrativeAreaCode: "",
+                administrativeAreaName: "",
+                cityCode: "",
+                cityName: "",
+                barangay: "",
+              })}
+            />
+          </div>
+          <div className="personal-address-slot personal-address-slot--province">
+            <AdministrativeAreaSelect
+              countryCode={value.countryCode}
+              areaCode={value.administrativeAreaCode}
+              areaName={value.administrativeAreaName}
+              label={areaLabel}
+              requiredLabel={required}
+              placeholder={t("personal.profile.selectPlaceholder")}
+              searchPlaceholder={t("personal.profile.searchProvince")}
+              emptyLabel={t("personal.profile.noMatches")}
+              testId={`${testIdPrefix}-province`}
+              outline
+              onChange={(administrativeAreaCode, administrativeAreaName) => onChange({
+                ...value,
+                administrativeAreaCode,
+                administrativeAreaName,
+                cityCode: "",
+                cityName: "",
+                barangay: "",
+              })}
+            />
+          </div>
+          <div className="personal-address-slot personal-address-slot--city">
+            <CitySelect
+              countryCode={value.countryCode}
+              areaCode={value.administrativeAreaCode}
+              cityCode={value.cityCode}
+              cityName={value.cityName}
+              label={cityLabel}
+              requiredLabel={required}
+              placeholder={t("personal.profile.selectPlaceholder")}
+              searchPlaceholder={t("personal.profile.searchCity")}
+              emptyLabel={t("personal.profile.noMatches")}
+              testId={`${testIdPrefix}-city`}
+              outline
+              onChange={(cityCode, cityName) => onChange({
+                ...value,
+                cityCode,
+                cityName,
+                barangay: "",
+              })}
+            />
+          </div>
+          {config?.supportsBarangay ? (
+            <div className="personal-address-slot personal-address-slot--barangay">
+              <BarangaySelect
+                cityCode={value.cityCode}
+                barangay={value.barangay}
+                label={t("personal.profile.barangay")}
+                requiredLabel={required}
+                placeholder={t("personal.profile.selectPlaceholder")}
+                searchPlaceholder={t("personal.profile.searchBarangay")}
+                emptyLabel={t("personal.profile.noMatches")}
+                testId={`${testIdPrefix}-barangay`}
+                outline
+                onChange={(barangay) => onChange({ ...value, barangay })}
+              />
+            </div>
+          ) : null}
+          <div className="personal-address-slot personal-address-slot--line1">
+            <ExitsOutlineInput
+              label={t("personal.profile.address1")}
+              value={value.addressLine1}
+              required
+              onChange={(addressLine1) => onChange({ ...value, addressLine1 })}
+              testId={`${testIdPrefix}-line1`}
+            />
+          </div>
+          <div className="personal-address-slot personal-address-slot--line2">
+            <ExitsOutlineInput
+              label={t("personal.profile.address2")}
+              value={value.addressLine2}
+              onChange={(addressLine2) => onChange({ ...value, addressLine2 })}
+              testId={`${testIdPrefix}-line2`}
+            />
+          </div>
+          <div className="personal-address-slot personal-address-slot--postal">
+            <ExitsOutlineInput
+              label={postalLabel}
+              value={value.postalCode}
+              required={Boolean(config?.requiresPostalCode)}
+              onChange={(postalCode) => onChange({ ...value, postalCode })}
+              testId={`${testIdPrefix}-postal`}
+            />
+          </div>
+          {showPrimary ? (
+            <div className="personal-address-slot personal-address-slot--primary">
+              <ExitsCheckbox
+                label={t("personal.profile.setPrimary")}
+                checked={value.isPrimary}
+                onCheckedChange={(isPrimary) => onChange({ ...value, isPrimary })}
+                testId={`${testIdPrefix}-primary`}
+              />
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      {lockedFields ? null : showAddressType ? (
+        lockedFields ? (
+          <ExitsOutlineSelect<string>
+            label={t("personal.profile.addressType")}
             value={value.addressType}
             options={[
               { value: "Home", label: t("personal.profile.typeHome") },
@@ -100,8 +241,24 @@ export function AddressForm({
             onChange={(addressType) => onChange({ ...value, addressType })}
             testId={`${testIdPrefix}-type`}
           />
-        </label>
+        ) : (
+          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span className="font-semibold">{t("personal.profile.addressType")}</span>
+            <ExitsSelect
+              value={value.addressType}
+              options={[
+                { value: "Home", label: t("personal.profile.typeHome") },
+                { value: "Office", label: t("personal.profile.typeOffice") },
+                { value: "Other", label: t("personal.profile.typeOther") },
+              ]}
+              onChange={(addressType) => onChange({ ...value, addressType })}
+              testId={`${testIdPrefix}-type`}
+            />
+          </label>
+        )
       ) : null}
+      {lockedFields ? null : (
+        <>
       <div className="geography-address-form__place">
       <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
         <span className="font-semibold">{t("personal.profile.country")} · {required}</span>
@@ -208,6 +365,8 @@ export function AddressForm({
           <span>{t("personal.profile.setPrimary")}</span>
         </label>
       ) : null}
+        </>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as workplacesClient from "@/api/platform/personal-workplaces-client";
@@ -123,17 +123,43 @@ describe("PersonalWorkplacesPage", () => {
     renderPage();
 
     const workplace = await screen.findByTestId(`personal-workplace-${membershipId}`);
-    expect(within(workplace).getByText("Mica Store")).toBeInTheDocument();
+    expect(workplace).toHaveClass("personal-workplace-pin");
+    expect(workplace.querySelector(".personal-workplace-pin__medallion")).toBeTruthy();
+    expect(workplace.querySelector(".personal-workplace-pin__ribbon")).toHaveTextContent("Mica Store");
+    expect(workplace.querySelector(".personal-workplace-pin__shell")).toBeTruthy();
     expect(within(workplace).getByText("Active staff")).toBeInTheDocument();
     expect(within(workplace).getByText(/Role:\s*Cashier/)).toBeInTheDocument();
     expect(within(workplace).getByText(/Branch:\s*Kalibo Branch/)).toBeInTheDocument();
     expect(within(workplace).getByText("kizy@ORG012345")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-workplaces-personal-email")).toHaveTextContent(
-      "kizy@gmail.com",
-    );
+    expect(screen.queryByTestId("personal-workplaces-personal-email")).not.toBeInTheDocument();
+    const pending = screen.getByTestId("personal-workplaces-pending");
+    const mine = screen.getByTestId("personal-workplaces-list");
+    expect(mine.compareDocumentPosition(pending) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(pending).toHaveClass("person-ribbon-card");
+    expect(pending.querySelector("h2")).toHaveClass("personal-tracker-card__ribbon");
+    expect(pending.querySelector(".lucide-mail")).toBeTruthy();
+    expect(mine).toHaveClass("person-ribbon-card");
+    expect(mine.querySelector("h2")).toHaveClass("personal-tracker-card__ribbon");
+    expect(mine.querySelector(".lucide-briefcase-business")).toBeTruthy();
+    const signIn = within(workplace).getByTestId(`personal-workplace-sign-in-${membershipId}`);
+    expect(signIn).toHaveClass("exits-btn--glossy");
+    expect(signIn.querySelector(".lucide-log-in")).toBeTruthy();
     expect(screen.getByTestId(`personal-workplaces-pending-${pendingId}`)).toHaveTextContent(
       "North Shop",
     );
+  });
+
+  it("centers the pending invitations empty state with an icon", async () => {
+    vi.mocked(inviteClient.listMyPendingStaffInvitations).mockResolvedValue([]);
+    renderPage();
+
+    const empty = await screen.findByTestId("personal-workplaces-pending-empty");
+    expect(empty).toHaveAttribute("data-align", "center");
+    expect(empty).toHaveTextContent("No pending staff invitations.");
+    expect(empty.querySelector(".lucide-mail")).toBeTruthy();
+    const icon = empty.querySelector(".lucide-mail")?.parentElement;
+    const title = empty.querySelector("p");
+    expect(icon && title && icon.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("signs in with the workplace password on this page", async () => {
@@ -142,9 +168,19 @@ describe("PersonalWorkplacesPage", () => {
 
     await screen.findByTestId(`personal-workplace-${membershipId}`);
     await user.click(screen.getByTestId(`personal-workplace-sign-in-${membershipId}`));
-    expect(screen.getByTestId("workplace-sign-in-username")).toHaveValue("kizy@ORG012345");
-    await user.type(screen.getByTestId("workplace-sign-in-password"), "workplace-secret");
-    await user.click(screen.getByTestId("workplace-sign-in-submit"));
+    const username = screen.getByTestId("workplace-sign-in-username");
+    const password = screen.getByTestId("workplace-sign-in-password");
+    expect(username).toHaveValue("kizy@ORG012345");
+    expect(username).toHaveAttribute("readonly");
+    await waitFor(() => expect(password).toHaveFocus());
+    const login = screen.getByTestId("workplace-sign-in-submit");
+    const forgot = screen.getByTestId("workplace-sign-in-forgot");
+    expect(login).toHaveClass("exits-btn--glossy");
+    expect(forgot).toHaveClass("exits-btn--glossy");
+    expect(login.parentElement).toBe(forgot.parentElement);
+    expect(login.compareDocumentPosition(forgot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await user.type(password, "workplace-secret");
+    await user.click(login);
     expect(signIn).toHaveBeenCalledWith("kizy@ORG012345", "workplace-secret");
     expect(await screen.findByTestId("post-login-home")).toBeInTheDocument();
     expect(screen.queryByTestId(`personal-workplace-copy-${membershipId}`)).not.toBeInTheDocument();

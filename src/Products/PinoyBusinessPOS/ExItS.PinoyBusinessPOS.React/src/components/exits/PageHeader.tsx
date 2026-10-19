@@ -34,6 +34,8 @@ export type PageHeaderProps = {
   descriptionCollapsible?: boolean;
   /** Accessible name for the info icon control. */
   infoToggleLabel?: string;
+  /** Popover heading. Defaults to the page title. */
+  infoTitle?: string;
   /** Optional id for the title element. */
   titleTestId?: string;
   /**
@@ -76,6 +78,7 @@ export function PageHeader({
   subtitleClassName,
   description,
   infoToggleLabel,
+  infoTitle,
   titleTestId,
   actions,
   trailing,
@@ -276,7 +279,7 @@ export function PageHeader({
         <InfoPopover
           id={descriptionId}
           titleId={popoverTitleId}
-          title={title}
+          title={infoTitle ?? title}
           anchorRef={infoButtonRef}
         >
           <p data-testid="page-header-description" className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">

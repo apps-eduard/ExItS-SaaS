@@ -1,13 +1,14 @@
-import { ArrowLeft, IdCard, Info, Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { IdCard, Plus, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { PageHeader } from "@/components/exits/PageHeader";
 import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { AddPersonDialog } from "@/features/personal/AddPersonDialog";
-import { PeopleInfoPopover } from "@/features/personal/PeopleInfoDialog";
 import { parsePersonCreateKind, type PersonCreateKind } from "@/features/personal/PersonFormPage";
 import {
   usePersonalConnectionRequestsQuery,
@@ -20,7 +21,7 @@ import {
   summarizePeopleContacts,
 } from "@/features/personal/people-status";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 export function PeoplePage() {
   const { t } = useI18n();
@@ -29,32 +30,7 @@ export function PeoplePage() {
   const urlKind = parsePersonCreateKind(searchParams.get("kind"));
   const linkPublicId = searchParams.get("linkPublicId");
 
-  const [infoOpen, setInfoOpen] = useState(false);
-  const infoRootRef = useRef<HTMLDivElement>(null);
-  const infoButtonRef = useRef<HTMLElement | null>(null);
   const [addOpen, setAddOpen] = useState(addFromUrl);
-
-  useEffect(() => {
-    if (!infoOpen) {
-      return;
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setInfoOpen(false);
-      }
-    }
-    function onPointerDown(event: PointerEvent) {
-      if (!infoRootRef.current?.contains(event.target as Node)) {
-        setInfoOpen(false);
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [infoOpen]);
 
   useEffect(() => {
     setAddOpen(addFromUrl);
@@ -133,71 +109,26 @@ export function PeoplePage() {
 
   return (
     <section className="personal-page people-page exits-page flex w-full min-w-0 flex-col gap-4">
-      <header
-        ref={infoRootRef}
-        className={cn("relative flex items-center gap-2", infoOpen && "z-30")}
-      >
-        <Button asChild variant="ghost" size="icon" className="shrink-0" aria-label={t("shell.back")}>
-          <Link to="/personal">
-            <ArrowLeft className="size-5" aria-hidden="true" />
-          </Link>
-        </Button>
-        <div className="flex min-w-0 items-center gap-1">
-          <h1 className="m-0 min-w-0 text-[length:var(--exits-text-2xl)] font-bold tracking-tight">
-            {t("people.title")}
-          </h1>
-          <span ref={infoButtonRef} className="inline-flex shrink-0">
-            <Button
-              type="button"
-              intent="info"
-              appearance="ghost"
-              size="icon"
-              className="shrink-0"
-              aria-label={t("people.info.open")}
-              aria-expanded={infoOpen}
-              aria-controls="people-info-popover"
-              onClick={() => setInfoOpen((open) => !open)}
-            >
-              <Info className="size-5" aria-hidden="true" />
-            </Button>
-          </span>
-        </div>
-        {infoOpen ? <PeopleInfoPopover anchorRef={infoButtonRef} /> : null}
-      </header>
+      <PageHeader
+        title={t("people.title")}
+        description={`${t("people.info.body1")} ${t("people.info.body2")} ${t("people.info.body3")}`}
+        infoToggleLabel={t("people.info.open")}
+        infoTitle={t("people.info.title")}
+        backTo={personalPageBackNav.home.to}
+        backLabel={t(personalPageBackNav.home.labelKey)}
+        backTestId="page-header-back-people"
+      />
 
       {isRefreshing ? <BackgroundRefreshIndicator active label={t("loading.updating")} /> : null}
       {isInitialLoading ? <PageSkeleton label={t("loading.label")} /> : null}
       {!isInitialLoading ? (
-        <>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          intent="primary"
-          appearance="glossy"
-          data-testid="people-add-toggle"
-          aria-label={t("people.addLocal")}
-          aria-expanded={addOpen && urlKind === "walkin"}
-          aria-controls="people-add-dialog"
-          onClick={() => openAddPanel("walkin")}
-        >
-          <Plus className="size-4 shrink-0" aria-hidden="true" />
-          {t("people.addLocal")}
-        </Button>
-        <Button
-          type="button"
-          intent="info"
-          appearance="glossy"
-          emphasis="strong"
-          data-testid="people-add-exits"
-          aria-label={t("people.addExits")}
-          aria-expanded={addOpen && urlKind === "exits"}
-          aria-controls="people-add-dialog"
-          onClick={() => openAddPanel("exits")}
-        >
-          <IdCard className="size-4 shrink-0" aria-hidden="true" />
-          {t("people.addExits")}
-        </Button>
-      </div>
+        <Card className="person-ribbon-card people-list-card flex flex-col gap-3" data-testid="people-list-card">
+          <h2 className="personal-tracker-card__ribbon" data-testid="people-list-ribbon">
+            <span className="personal-tracker-card__pennant" aria-hidden>
+              <Users className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+            </span>
+            {t("people.listTitle")}
+          </h2>
       <AddPersonDialog
         open={addOpen}
         initialKind={urlKind}
@@ -211,8 +142,44 @@ export function PeoplePage() {
         onSwitchToLocal={() => openAddPanel("walkin")}
       />
 
-      <PeopleListSection rows={rows} summary={summary} />
-        </>
+      <PeopleListSection
+        rows={rows}
+        summary={summary}
+        toolbarStart={
+          <>
+            <Button
+              type="button"
+              intent="primary"
+              appearance="glossy"
+              className="shrink-0"
+              data-testid="people-add-toggle"
+              aria-label={t("people.addLocal")}
+              aria-expanded={addOpen && urlKind === "walkin"}
+              aria-controls="people-add-dialog"
+              onClick={() => openAddPanel("walkin")}
+            >
+              <Plus className="size-4 shrink-0" aria-hidden="true" />
+              {t("people.addLocal")}
+            </Button>
+            <Button
+              type="button"
+              intent="info"
+              appearance="glossy"
+              emphasis="strong"
+              className="shrink-0"
+              data-testid="people-add-exits"
+              aria-label={t("people.addExits")}
+              aria-expanded={addOpen && urlKind === "exits"}
+              aria-controls="people-add-dialog"
+              onClick={() => openAddPanel("exits")}
+            >
+              <IdCard className="size-4 shrink-0" aria-hidden="true" />
+              {t("people.addExits")}
+            </Button>
+          </>
+        }
+      />
+        </Card>
       ) : null}
     </section>
   );
