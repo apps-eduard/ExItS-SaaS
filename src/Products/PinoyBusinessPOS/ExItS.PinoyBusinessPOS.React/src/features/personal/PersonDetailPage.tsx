@@ -34,8 +34,6 @@ import { PageHeader } from "@/components/exits/PageHeader";
 
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 
-import { StatusChip as ExitsStatusChip } from "@/components/exits/StatusChip";
-
 import { StatusChip } from "@/components/ui/badge";
 
 import { Button } from "@/components/ui/button";
@@ -44,8 +42,6 @@ import { EditLocalContactDialog } from "@/features/personal/EditLocalContactDial
 import { Card } from "@/components/ui/card";
 
 import { LoadingState } from "@/components/ui/skeleton";
-
-import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 
 import { cn } from "@/lib/cn";
 
@@ -71,12 +67,12 @@ import {
 
 import { deriveConnectionStatus, formatShortDate } from "@/features/personal/people-status";
 import { SharedUtangSettingPanel } from "@/features/personal/SharedUtangSettingPanel";
-import { isSharedRelationship } from "@/features/personal/utang/utang-workspace";
+import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
+import { isSharedRelationship, toUtangAccountRow } from "@/features/personal/utang/utang-workspace";
 
 import { INTENT_GLOBAL_SECONDARY } from "@/features/ui-standards/intent-color-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 
-import { formatPeso } from "@/lib/format-money";
 import {
   formatMoneyAmountInput,
   normalizeMoneyAmountTyping,
@@ -149,37 +145,6 @@ function ContactDetailFields({
     </dl>
   );
 }
-
-function formatMoney(amount: number, currencyCode: string): string {
-
-  const code = (currencyCode || "PHP").trim().toUpperCase();
-
-  if (code === "PHP") {
-
-    return formatPeso(amount);
-
-  }
-
-  try {
-
-    return new Intl.NumberFormat(undefined, {
-
-      style: "currency",
-
-      currency: code,
-
-      maximumFractionDigits: 2,
-
-    }).format(amount);
-
-  } catch {
-
-    return `${code} ${amount.toFixed(2)}`;
-
-  }
-
-}
-
 
 
 export function PersonDetailPage() {
@@ -545,70 +510,12 @@ export function PersonDetailPage() {
             </div>
           ) : null}
       {activeRelated.length > 0 ? (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="person-detail-utang-records">
-            {activeRelated.map((rel) => {
-              const owned = rel.isLedgerOwner !== false;
-              return (
-                <li key={rel.id}>
-                  <Card
-                    padding="compact"
-                    className={cn("min-w-0", !owned && "utang-account-card--shared")}
-                  >
-                  <Link
-                    to={`/personal/utang/relationships/${rel.id}`}
-                    className="flex items-center justify-between gap-3 text-foreground no-underline"
-                    data-testid={`person-detail-utang-row-${rel.id}`}
-                  >
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span
-                        className="truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
-                        data-utang-ownership=""
-                      >
-                        {owned
-                          ? t("personal.utang.ownershipMine")
-                          : t("personal.utang.ownershipSharedWithMe")}
-                      </span>
-                      <span className="font-medium">
-                        {rel.perspective.toLowerCase() === "borrowed"
-                          ? t("people.detail.iOweAction")
-                          : t("people.detail.iLentAction")}
-                      </span>
-                      <span className="text-[length:var(--exits-text-xs)] text-muted">
-                        {owned
-                          ? t("personal.utang.managedByMe")
-                          : t("personal.utang.managedByOther").replace(
-                              "{name}",
-                              contact.displayName,
-                            )}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 flex-col items-end gap-0.5 self-center text-end">
-                      {!owned ? (
-                        <ExitsStatusChip
-                          tone={UTANG_READ_ONLY_CHIP.tone}
-                          appearance={UTANG_READ_ONLY_CHIP.appearance}
-                          shape={UTANG_READ_ONLY_CHIP.shape}
-                          className="max-md:hidden"
-                          data-testid={`person-detail-utang-readonly-${rel.id}`}
-                        >
-                          {t("personal.utang.readOnly")}
-                        </ExitsStatusChip>
-                      ) : null}
-                      <span
-                        className="text-[length:var(--exits-text-xs)] text-muted"
-                        data-testid={`person-detail-utang-date-${rel.id}`}
-                      >
-                        {formatShortDate(rel.updatedAtUtc)}
-                      </span>
-                      <span className="font-[550]">
-                        {formatMoney(rel.currentBalance, rel.currencyCode)}
-                      </span>
-                    </span>
-                  </Link>
-                  </Card>
-                </li>
-              );
-            })}
+          <ul className="utang-relationship-list m-0 flex list-none flex-col p-0" data-testid="person-detail-utang-records">
+            {activeRelated.map((rel) => (
+              <li key={rel.id}>
+                <UtangAccountCard row={toUtangAccountRow(rel, contact ? [contact] : [])} />
+              </li>
+            ))}
           </ul>
       ) : null}
 

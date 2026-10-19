@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings2, ShieldCheck } from "lucide-react";
+import { Ban, Settings2, ShieldCheck, Unlink } from "lucide-react";
 import { ExitsCheckbox } from "@/components/exits/ExitsCheckbox";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/exits/Notice";
@@ -100,8 +100,7 @@ export function SharedUtangSettingPanel({
             <Button
               type="button"
               intent="primary"
-              appearance="solid"
-              emphasis="soft"
+              appearance="glossy"
               className="min-w-0 flex-1"
               data-testid="person-detail-unlink"
               onClick={() => {
@@ -109,13 +108,13 @@ export function SharedUtangSettingPanel({
                 setConfirmUnlink(true);
               }}
             >
+              <Unlink className="size-4 shrink-0" aria-hidden />
               {t("people.detail.unlink")}
             </Button>
             <Button
               type="button"
               intent="danger"
-              appearance="solid"
-              emphasis="soft"
+              appearance="glossy"
               className="min-w-0 flex-1"
               data-testid="person-detail-block"
               onClick={() => {
@@ -123,6 +122,7 @@ export function SharedUtangSettingPanel({
                 setConfirmBlock(true);
               }}
             >
+              <Ban className="size-4 shrink-0" aria-hidden />
               {t("people.detail.block")}
             </Button>
           </div>

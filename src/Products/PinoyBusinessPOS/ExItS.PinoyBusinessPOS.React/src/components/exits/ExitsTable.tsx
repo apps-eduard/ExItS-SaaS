@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator, useDismissibleOpen } from "@/components/ui/dropdown-menu";
+import { TABLE_EXPORT_GLOBAL_COLOR } from "@/features/ui-standards/table-export-global-default";
 import { cn } from "@/lib/cn";
 
 /** Semantic cell alignment for ExitsTable (pages should prefer this over raw Tailwind). */
@@ -249,6 +250,7 @@ export function ExitsTableOutputActions({
               activeBusy === action.id && "exits-table-output__btn--busy",
             )}
             data-format={action.id}
+            style={{ color: TABLE_EXPORT_GLOBAL_COLOR[action.id] }}
             title={action.label}
             aria-label={action.label}
             disabled={disabled || Boolean(activeBusy) || !action.onClick}
@@ -296,7 +298,13 @@ export function ExitsTableOutputActions({
                 void run(action.id, action.onClick);
               }}
             >
-              <span className="exits-table-output__menu-icon">{action.icon}</span>
+              <span
+                className="exits-table-output__menu-icon"
+                data-format={action.id}
+                style={{ color: TABLE_EXPORT_GLOBAL_COLOR[action.id] }}
+              >
+                {action.icon}
+              </span>
               {action.label}
             </MenuItem>
           ))}

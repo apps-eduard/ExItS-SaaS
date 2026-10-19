@@ -619,7 +619,10 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(within(confirmed).getByTestId(`utang-entry-status-${confirmedId}`)).toHaveTextContent(
       "Confirmed",
     );
-    expect(confirmed.textContent).toMatch(/Balance after/);
+    expect(within(confirmed).getByTestId(`utang-entry-action-${confirmedId}`)).toHaveTextContent(
+      "Starting balance",
+    );
+    expect(confirmed.textContent).not.toMatch(/Balance after/);
 
     expect(screen.getByTestId("personal-utang-detail").textContent).not.toMatch(
       /[0-9a-f]{8}-[0-9a-f]{4}-/i,

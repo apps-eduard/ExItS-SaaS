@@ -1109,6 +1109,13 @@ input.ui-standards-qdropdown__query {
   cursor: pointer;
 }
 
+.ui-standards-qinput__control[type="search"]::-webkit-search-decoration,
+.ui-standards-qinput__control[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 .ui-standards-qinput--standard .ui-standards-qinput__box {
   --qinput-field-height: 36px;
   border-width: 0 0 1px;

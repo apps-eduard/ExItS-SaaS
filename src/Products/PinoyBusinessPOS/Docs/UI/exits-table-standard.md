@@ -633,6 +633,15 @@ Canonical inline-edit revert terminology (`RotateCcw`). Do **not** substitute Ca
 Canonical component: **`ExitsTableOutputActions`**
 Formats: **CSV / XLSX / PDF / Print**
 
+Icons are the locked outlined document or printer with a format badge on a white tile (`table-export-global-default.ts`):
+
+| Format | Intent | Color | Badge |
+|--------|--------|-------|-------|
+| CSV | primary | Preferences `--exits-primary` | CSV |
+| Excel | secondary | `#26a69a` | XLS |
+| PDF | success | `#22c55e` | PDF |
+| Print | info | `#0ea5e9` | PRT |
+
 | Selection | Scope |
 |-----------|--------|
 | **None** | Full matching filtered/sorted result set — **not** only the current page |

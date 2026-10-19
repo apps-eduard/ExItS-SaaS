@@ -16,10 +16,7 @@ import {
   usePersonalUtangSummariesQuery,
 } from "@/features/personal/people-queries";
 import { PeopleListSection } from "@/features/personal/PeopleListSection";
-import {
-  buildPeopleRows,
-  summarizePeopleContacts,
-} from "@/features/personal/people-status";
+import { buildPeopleRows } from "@/features/personal/people-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
@@ -66,11 +63,6 @@ export function PeoplePage() {
     (contactsQuery.isFetching || connectionsQuery.isFetching || utangQuery.isFetching) &&
     Boolean(contactsQuery.data);
   const error = contactsQuery.error ?? connectionsQuery.error ?? utangQuery.error;
-
-  const summary = useMemo(
-    () => summarizePeopleContacts(contactsQuery.data ?? []),
-    [contactsQuery.data],
-  );
 
   const rows = useMemo(() => {
     if (!contactsQuery.data || !connectionsQuery.data || !utangQuery.data) {
@@ -144,7 +136,6 @@ export function PeoplePage() {
 
       <PeopleListSection
         rows={rows}
-        summary={summary}
         toolbarStart={
           <>
             <Button

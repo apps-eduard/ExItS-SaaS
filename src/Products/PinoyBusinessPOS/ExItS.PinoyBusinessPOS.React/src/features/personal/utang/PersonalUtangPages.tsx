@@ -122,25 +122,9 @@ function contactLabel(
   return resolveRelationshipContactName(contacts, relationship);
 }
 
-function loanActivityLabel(
-  perspective: string,
-  personName: string,
-  pendingIncoming: boolean,
-  t: (key: MessageKey) => string,
-): string {
-  if (pendingIncoming) {
-    return perspective === "Borrowed"
-      ? t("personal.utang.activityTheyLentYou").replace("{name}", personName)
-      : t("personal.utang.activityTheyBorrowed").replace("{name}", personName);
-  }
-  return perspective === "Borrowed"
-    ? t("personal.utang.activityYouBorrowed").replace("{name}", personName)
-    : t("personal.utang.activityYouLent").replace("{name}", personName);
-}
-
 function entryActionLabel(
   entryType: string,
-  options: { isSettlement?: boolean },
+  options: { isSettlement?: boolean; isOpening?: boolean },
   t: (key: MessageKey) => string,
 ): string {
   if (options.isSettlement) {
@@ -151,6 +135,9 @@ function entryActionLabel(
   }
   if (entryType === "Adjustment") {
     return t("personal.utang.adjustBalance");
+  }
+  if (options.isOpening) {
+    return t("personal.utang.startingBalance");
   }
   return t("personal.utang.addAmount");
 }
@@ -1449,6 +1436,23 @@ export function PersonalRelationshipDetailPage() {
       return b.id.localeCompare(a.id);
     });
   }, [usingCache, historyQuery.data, cachedHistory]);
+  const openingLoanEntryId = useMemo(() => {
+    let oldest: { id: string; createdAtUtc: string } | null = null;
+    for (const entry of history) {
+      const settlement = "isSettlement" in entry && Boolean(entry.isSettlement);
+      if (entry.entryType !== "Loan" || settlement) {
+        continue;
+      }
+      if (
+        !oldest ||
+        entry.createdAtUtc < oldest.createdAtUtc ||
+        (entry.createdAtUtc === oldest.createdAtUtc && entry.id < oldest.id)
+      ) {
+        oldest = entry;
+      }
+    }
+    return oldest?.id ?? null;
+  }, [history]);
   const relationshipIsLocal = cachedDetail?.origin === "Local";
   const pendingOutgoingCount = useMemo(
     () =>
@@ -2509,7 +2513,7 @@ export function PersonalRelationshipDetailPage() {
             detail={t("personal.utang.historyEmptyDetail")}
           />
         ) : (
-          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="utang-history">
+          <ul className="utang-relationship-list utang-activity-list m-0 flex list-none flex-col p-0" data-testid="utang-history">
             {history.map((entry) => {
               const status = "status" in entry ? entry.status : "Confirmed";
               const canConfirm = "canConfirm" in entry ? Boolean(entry.canConfirm) : false;
@@ -2530,43 +2534,92 @@ export function PersonalRelationshipDetailPage() {
                   ? t("personal.utang.confirmReceived")
                   : t("personal.utang.confirm");
               const isDisputing = disputeEntryId === entry.id;
+              const lent = detail.perspective !== "Borrowed";
+              const isOpening = entry.id === openingLoanEntryId;
               const entryTitle = entryActionLabel(
                 entry.entryType,
-                { isSettlement },
+                { isSettlement, isOpening },
                 t,
               );
-              const loanPerspectiveHint =
-                !isSettlement && entry.entryType === "Loan"
-                  ? loanActivityLabel(
-                      detail.perspective,
-                      personName,
-                      pendingIncoming,
-                      t,
-                    )
-                  : null;
+              const statusText = entryStatusLabel(
+                {
+                  status,
+                  isSharedLedger: shared,
+                  wasAutoSynced: "wasAutoSynced" in entry ? Boolean(entry.wasAutoSynced) : false,
+                },
+                {
+                  pendingIncoming,
+                  reporterName: personName === EM_DASH ? undefined : personName,
+                },
+                t,
+              );
+              const entryDue =
+                "dueDateUtc" in entry && entry.dueDateUtc ? String(entry.dueDateUtc) : null;
 
               return (
                 <li key={entry.id}>
                   <div
-                    className="exits-list__card flex min-w-0 flex-col gap-2"
+                    className={cn(
+                      "utang-activity-entry ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card min-w-0 text-foreground",
+                      lent ? "utang-settings-card--lent" : "utang-settings-card--owe",
+                      isLedgerOwner ? "utang-account-card--mine" : "utang-account-card--shared",
+                    )}
                     data-testid={`utang-history-entry-${entry.id}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p
-                          className="exits-list__name m-0 font-medium"
-                          data-testid={`utang-entry-action-${entry.id}`}
-                        >
-                          {entryTitle}
-                        </p>
-                        {loanPerspectiveHint ? (
-                          <p
-                            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                            data-testid={`utang-entry-perspective-${entry.id}`}
-                          >
-                            {loanPerspectiveHint}
-                          </p>
+                    <div className="ui-standards-qcard__settings-ribbon">
+                      <div
+                        className="ui-standards-qcard__settings-tab utang-settings-card__tab"
+                        data-utang-ownership=""
+                      >
+                        <span className="truncate">
+                          {isLedgerOwner
+                            ? t("personal.utang.ownershipMine")
+                            : t("personal.utang.ownershipSharedWithMe")}
+                        </span>
+                        {entryDue && formatDueLabel(entryDue).kind !== "none" ? (
+                          <>
+                            <span className="utang-settings-card__tab-divider" aria-hidden />
+                            <UtangDueCaption
+                              dueDateUtc={entryDue}
+                              className={cn(
+                                "utang-settings-card__tab-text",
+                                formatDueLabel(entryDue).kind === "overdue" &&
+                                  "utang-settings-card__tab-text--danger",
+                              )}
+                            />
+                          </>
                         ) : null}
+                        <span className="ui-standards-qcard__settings-fold" aria-hidden />
+                      </div>
+                      <div className="utang-settings-card__content">
+                        <div className="utang-settings-card__meta flex min-w-0 flex-1 flex-col gap-2">
+                          <div className="utang-settings-card__headline">
+                            <p
+                              className="utang-settings-card__name m-0 truncate"
+                              data-testid={`utang-entry-action-${entry.id}`}
+                            >
+                              {entryTitle}
+                            </p>
+                            <span className="utang-activity-amount">
+                              <span className="utang-settings-card__amount">
+                                <MoneyDisplay amount={entry.signedDelta} />
+                              </span>
+                              {!isOpening && affectsBalance ? (
+                                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                                  {t("personal.utang.balanceAfter")}:{" "}
+                                  <MoneyDisplay amount={entry.balanceAfter} />
+                                </p>
+                              ) : null}
+                              {!isOpening && !affectsBalance ? (
+                                <p
+                                  className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                                  data-testid={`utang-no-balance-${entry.id}`}
+                                >
+                                  {t("personal.utang.noBalanceChange")}
+                                </p>
+                              ) : null}
+                            </span>
+                          </div>
                         {pendingIncoming ? (
                           <p
                             className="m-0 text-[length:var(--exits-text-sm)] font-medium"
@@ -2580,41 +2633,55 @@ export function PersonalRelationshipDetailPage() {
                             {t("personal.utang.waitingForYou")}
                           </p>
                         ) : null}
-                        {entry.notes ? (
+                        <div className="utang-activity-facts">
+                          <span className="utang-activity-facts__chips">
+                            <StatusChip
+                              tone={lent ? "success" : "warning"}
+                              appearance="emphasis"
+                              shape="square"
+                            >
+                              {lent ? t("personal.utang.owesYou") : t("personal.utang.youOwe")}
+                            </StatusChip>
+                            <StatusChip
+                              tone={shared ? "success" : "info"}
+                              appearance="emphasis"
+                              shape="square"
+                            >
+                              {shared ? t("people.status.connected") : t("people.localContact")}
+                            </StatusChip>
+                            {!isLedgerOwner ? (
+                              <StatusChip
+                                tone={UTANG_READ_ONLY_CHIP.tone}
+                                appearance={UTANG_READ_ONLY_CHIP.appearance}
+                                shape={UTANG_READ_ONLY_CHIP.shape}
+                                className="max-md:hidden"
+                              >
+                                {t("personal.utang.readOnly")}
+                              </StatusChip>
+                            ) : null}
+                          </span>
+                          <p className="text-[length:var(--exits-text-sm)]">
+                            <span className="text-muted">{t("personal.utang.created")}: </span>
+                            {new Date(entry.createdAtUtc).toLocaleString()}
+                          </p>
+                          {entry.notes ? (
+                            <p
+                              className="text-[length:var(--exits-text-sm)]"
+                              data-testid={`utang-entry-purpose-${entry.id}`}
+                            >
+                              <span className="text-muted">{t("personal.utang.purpose")}: </span>
+                              {entry.notes}
+                            </p>
+                          ) : null}
+                        </div>
+                        {statusText !== t("personal.utang.statusPrivate") ? (
                           <p
                             className="m-0 text-[length:var(--exits-text-sm)]"
-                            data-testid={`utang-entry-purpose-${entry.id}`}
+                            data-testid={`utang-entry-status-${entry.id}`}
                           >
-                            <span className="text-muted">{t("personal.utang.purpose")}: </span>
-                            {entry.notes}
+                            {statusText}
                           </p>
                         ) : null}
-                        {"dueDateUtc" in entry && entry.dueDateUtc ? (
-                          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                            {t("personal.utang.dueDate")}:{" "}
-                            {new Date(String(entry.dueDateUtc)).toLocaleDateString()}
-                          </p>
-                        ) : null}
-                        <p
-                          className="m-0 text-[length:var(--exits-text-sm)]"
-                          data-testid={`utang-entry-status-${entry.id}`}
-                        >
-                          {entryStatusLabel(
-                            {
-                              status,
-                              isSharedLedger: shared,
-                              wasAutoSynced:
-                                "wasAutoSynced" in entry
-                                  ? Boolean(entry.wasAutoSynced)
-                                  : false,
-                            },
-                            {
-                              pendingIncoming,
-                              reporterName: personName === EM_DASH ? undefined : personName,
-                            },
-                            t,
-                          )}
-                        </p>
                         {pendingOutgoing ? (
                           <p
                             className="m-0 text-[length:var(--exits-text-sm)] font-medium"
@@ -2623,33 +2690,12 @@ export function PersonalRelationshipDetailPage() {
                             {t("personal.utang.waitingForName").replace("{name}", personName)}
                           </p>
                         ) : null}
-                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                          {new Date(entry.createdAtUtc).toLocaleString()}
-                        </p>
                         {disputeReason ? (
                           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                             {disputeReason}
                           </p>
                         ) : null}
                         <WaitingChip origin={rowOrigin(entry)} />
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <MoneyDisplay amount={entry.signedDelta} />
-                        {affectsBalance ? (
-                          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                            {t("personal.utang.balanceAfter")}:{" "}
-                            <MoneyDisplay amount={entry.balanceAfter} />
-                          </p>
-                        ) : (
-                          <p
-                            className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-                            data-testid={`utang-no-balance-${entry.id}`}
-                          >
-                            {t("personal.utang.noBalanceChange")}
-                          </p>
-                        )}
-                      </div>
-                    </div>
 
                     {pendingIncoming && online ? (
                       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -2759,6 +2805,9 @@ export function PersonalRelationshipDetailPage() {
                         </div>
                       </div>
                     ) : null}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </li>
               );

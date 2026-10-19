@@ -193,6 +193,14 @@ describe("ExitsTable foundation", () => {
     );
     expect(screen.getByTestId("exits-table-output-pdf")).toHaveAttribute("aria-label", "Export PDF");
     expect(screen.getByTestId("exits-table-output-print")).toHaveAttribute("aria-label", "Print");
+    expect(screen.getByTestId("exits-table-output-csv")).toHaveStyle({ color: "var(--exits-primary)" });
+    expect(screen.getByTestId("exits-table-output-xlsx")).toHaveStyle({ color: "#26a69a" });
+    expect(screen.getByTestId("exits-table-output-pdf")).toHaveStyle({ color: "#22c55e" });
+    expect(screen.getByTestId("exits-table-output-print")).toHaveStyle({ color: "#0ea5e9" });
+    expect(screen.getByTestId("exits-table-output-csv").querySelector(".exits-file-format-icon__badge")).toHaveTextContent("CSV");
+    expect(screen.getByTestId("exits-table-output-xlsx").querySelector(".exits-file-format-icon__badge")).toHaveTextContent("XLS");
+    expect(screen.getByTestId("exits-table-output-pdf").querySelector(".exits-file-format-icon__badge")).toHaveTextContent("PDF");
+    expect(screen.getByTestId("exits-table-output-print").querySelector(".exits-file-format-icon__badge")).toHaveTextContent("PRT");
     expect(screen.getByTestId("exits-table-output-menu")).toHaveAttribute(
       "aria-label",
       "Export & Print",

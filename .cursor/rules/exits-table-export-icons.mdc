@@ -1,0 +1,19 @@
+---
+description: Locked table export icons for CSV, Excel, PDF, and Print
+alwaysApply: true
+---
+
+# Table export icons (LOCKED)
+
+Table export actions use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/table-export-global-default.ts`.
+
+The mark is the outlined document or printer with a format badge (`ExitsFileFormatIcon` / `ExitsPrintFormatIcon`), on a white tile with a thin ring in the icon color.
+
+- CSV: primary. Color follows Preferences (`var(--exits-primary)`). Badge `CSV`.
+- Excel: secondary `#26a69a`. Badge `XLS`.
+- PDF: success `#22c55e`. Badge `PDF`.
+- Print: info `#0ea5e9`. Badge `PRT`.
+
+Use `ExitsTableOutputActions` for CSV, Excel, PDF, and Print. Do not swap in muted grey documents, a red PDF mark, or a different badge color.
+
+Change this lock only when the user asks. Update `table-export-global-default.ts` and `table-export-global-default.test.ts` together.

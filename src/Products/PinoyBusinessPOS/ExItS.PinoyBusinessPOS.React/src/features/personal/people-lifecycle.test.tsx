@@ -174,7 +174,7 @@ describe("People lifecycle UX", () => {
     expect(screen.getByTestId("people-add-exits")).toHaveTextContent("Add ExItS person");
     expect(screen.queryByTestId("people-add-dialog")).not.toBeInTheDocument();
     expect(screen.queryByTestId("person-form-page")).not.toBeInTheDocument();
-    expect(screen.getByText(/0 with ExItS ID · 0 local only/)).toBeInTheDocument();
+    expect(screen.queryByText(/with ExItS ID/)).not.toBeInTheDocument();
     const searchRow = screen.getByTestId("people-search-row");
     const requests = screen.getByTestId("people-connection-requests");
     expect(searchRow).toContainElement(requests);
@@ -305,6 +305,16 @@ describe("People lifecycle UX", () => {
     expect(within(anaRow).getByText("Connected")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /block/i })).not.toBeInTheDocument();
+    const table = screen.getByTestId("people-table");
+    expect(table.querySelector("thead")).toHaveAttribute("data-appearance", "glossy");
+    expect(screen.getByTestId("people-table-footer")).toHaveAttribute("data-appearance", "glossy");
+    expect(screen.getByTestId("people-table-search")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-output-csv")).toBeEnabled();
+    expect(screen.getByTestId("exits-table-output-xlsx")).toBeEnabled();
+    expect(screen.getByTestId("exits-table-output-pdf")).toBeEnabled();
+    expect(screen.getByTestId("exits-table-output-print")).toBeEnabled();
+    expect(screen.getByTestId("people-table-row-c1")).toBeInTheDocument();
+    expect(screen.getByTestId("people-table-row-c2")).toBeInTheDocument();
   });
 
   it("persists resolved identity on add without a separate client connection-request call", async () => {

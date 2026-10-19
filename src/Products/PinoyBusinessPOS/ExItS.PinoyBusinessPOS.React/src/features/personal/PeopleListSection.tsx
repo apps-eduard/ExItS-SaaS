@@ -1,5 +1,5 @@
-import { ChevronRight, Search, UserPlus, Users } from "lucide-react";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { ChevronRight, Pencil, Search, UserPlus, Users } from "lucide-react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -11,20 +11,32 @@ import {
   ExitsTableContainer,
   ExitsTableHead,
   ExitsTableHeader,
+  ExitsTableOutputActions,
+  ExitsTablePagination,
   ExitsTableRow,
+  ExitsTableToolbar,
 } from "@/components/exits/ExitsTable";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
-import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Button } from "@/components/ui/button";
 import {
   type PeopleConnectionStatus,
   type PeopleRowModel,
 } from "@/features/personal/people-status";
-import { UtangDueCaption, UtangDirectionTags } from "@/features/personal/utang/UtangListMeta";
+import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import { EditLocalContactDialog } from "@/features/personal/EditLocalContactDialog";
+import { formatDueLabel } from "@/api/platform/personal-utang-client";
+import { useMediaMin } from "@/hooks/useMediaQuery";
+import {
+  buildPeopleTableExportModel,
+  downloadPeopleTableCsv,
+  downloadPeopleTablePdf,
+  downloadPeopleTableXlsx,
+  printPeopleTable,
+  type PeopleTableExportLabels,
+} from "@/features/personal/people-table-output";
 import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -126,74 +138,98 @@ function PeopleListRow({
       <Link
         to={`/personal/people/${row.contact.id}`}
         className={cn(
-          "exits-list__card people-row utang-account-card flex min-w-0 items-center justify-between gap-3 text-foreground no-underline",
+          "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card text-foreground no-underline",
+          utang && (utang.direction === "lent" ? "utang-settings-card--lent" : "utang-settings-card--owe"),
           utang && (owned ? "utang-account-card--mine" : "utang-account-card--shared"),
         )}
         data-testid={`people-row-${row.contact.id}`}
       >
-        <PersonAvatar name={row.contact.displayName} size="sm" className="people-row__avatar" />
-        <span className="min-w-0 flex-1">
+        <div className="ui-standards-qcard__settings-ribbon">
           {utang ? (
-            <span
-              className="block truncate text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
-              data-utang-ownership=""
-            >
-              {owned
-                ? t("personal.utang.ownershipMine")
-                : t("personal.utang.ownershipSharedWithMe")}
-            </span>
+            <div className="ui-standards-qcard__settings-tab utang-settings-card__tab" data-utang-ownership="">
+              <span className="truncate">
+                {owned
+                  ? t("personal.utang.ownershipMine")
+                  : t("personal.utang.ownershipSharedWithMe")}
+              </span>
+              {formatDueLabel(utang.dueDateUtc).kind !== "none" ? (
+                <>
+                  <span className="utang-settings-card__tab-divider" aria-hidden />
+                  <UtangDueCaption
+                    dueDateUtc={utang.dueDateUtc}
+                    className={cn(
+                      "utang-settings-card__tab-text",
+                      formatDueLabel(utang.dueDateUtc).kind === "overdue" &&
+                        "utang-settings-card__tab-text--danger",
+                    )}
+                    testId={`people-row-due-${row.contact.id}`}
+                  />
+                </>
+              ) : null}
+              <span className="ui-standards-qcard__settings-fold" aria-hidden />
+            </div>
           ) : null}
-          <span className="exits-list__name block truncate font-semibold">
-            {row.contact.displayName}
-          </span>
-          {utang ? (
-            <UtangDirectionTags
-              direction={utang.direction}
-              shared={utang.isSharedLedger}
-              linkTestId={`people-row-linked-${row.contact.id}`}
-            />
-          ) : (
-            <StatusChip
-              tone={statusTone(row.connectionStatus)}
-              appearance="emphasis"
-              shape="square"
-            >
-              {statusLabel}
-            </StatusChip>
-          )}
-          {utang ? (
-            <UtangDueCaption
-              dueDateUtc={utang.dueDateUtc}
-              testId={`people-row-due-${row.contact.id}`}
-            />
-          ) : null}
-        </span>
-        <span className="grid shrink-0 justify-items-start self-stretch">
-          {utang && !owned ? (
-            <StatusChip
-              tone={UTANG_READ_ONLY_CHIP.tone}
-              appearance={UTANG_READ_ONLY_CHIP.appearance}
-              shape={UTANG_READ_ONLY_CHIP.shape}
-              className="col-start-1 row-start-1 self-start max-md:hidden"
-              data-testid={`people-row-readonly-${row.contact.id}`}
-            >
-              {t("personal.utang.readOnly")}
-            </StatusChip>
-          ) : null}
-          <span className="col-start-1 row-start-1 flex items-center gap-1 self-center">
-            {utang ? (
-              <MoneyDisplay
-                amount={utang.balance}
-                className={cn(
-                  "text-[length:var(--exits-text-base)] leading-tight",
-                  utang.direction === "owe" && utang.balance > 0 && "text-[var(--exits-warning)]",
+          <div className="utang-settings-card__content">
+            <div className="utang-settings-card__meta min-w-0 flex-1">
+              <div className="utang-settings-card__headline">
+                <p className="utang-settings-card__name m-0 truncate">{row.contact.displayName}</p>
+                {utang ? (
+                  <span className="utang-settings-card__amount">
+                    <MoneyDisplay
+                      amount={utang.balance}
+                      testId={`people-row-balance-${row.contact.id}`}
+                    />
+                  </span>
+                ) : null}
+              </div>
+              <span className="utang-settings-card__tags">
+                {utang ? (
+                  <>
+                    <StatusChip
+                      tone={utang.direction === "lent" ? "success" : "warning"}
+                      appearance="emphasis"
+                      shape="square"
+                    >
+                      {utang.direction === "lent"
+                        ? t("personal.utang.owesYou")
+                        : t("personal.utang.youOwe")}
+                    </StatusChip>
+                    <StatusChip
+                      tone={utang.isSharedLedger ? "success" : "info"}
+                      appearance="emphasis"
+                      shape="square"
+                      data-testid={`people-row-linked-${row.contact.id}`}
+                    >
+                      {utang.isSharedLedger ? t("people.status.connected") : t("people.localContact")}
+                    </StatusChip>
+                  </>
+                ) : (
+                  <StatusChip
+                    tone={statusTone(row.connectionStatus)}
+                    appearance="emphasis"
+                    shape="square"
+                  >
+                    {statusLabel}
+                  </StatusChip>
                 )}
-                testId={`people-row-balance-${row.contact.id}`}
-              />
-            ) : null}
-            <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+                {utang && !owned ? (
+                  <StatusChip
+                    tone={UTANG_READ_ONLY_CHIP.tone}
+                    appearance={UTANG_READ_ONLY_CHIP.appearance}
+                    shape={UTANG_READ_ONLY_CHIP.shape}
+                    className="max-md:hidden"
+                    data-testid={`people-row-readonly-${row.contact.id}`}
+                  >
+                    {t("personal.utang.readOnly")}
+                  </StatusChip>
+                ) : null}
+              </span>
+            </div>
+          </div>
+          <span className="utang-account-card__caret" aria-hidden>
+            <ChevronRight className="size-5" />
           </span>
-        </span>
+        </div>
       </Link>
     </li>
   );
@@ -225,20 +261,87 @@ function PeopleUtangTotal({
   );
 }
 
+const PEOPLE_PAGE_SIZES = [10, 25, 50, 100] as const;
+
 function PeopleTable({
   rows,
   statusLabel,
+  search,
+  onSearch,
+  empty,
 }: {
   rows: PeopleRowModel[];
   statusLabel: (status: PeopleConnectionStatus) => string;
+  search: string;
+  onSearch: (value: string) => void;
+  empty: { title: string; detail: string; variant: "default" | "filtered" } | null;
 }) {
   const { t } = useI18n();
   const [editingContact, setEditingContact] = useState<PeopleRowModel["contact"] | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PEOPLE_PAGE_SIZES)[number]>(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [rows]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize) || 1);
+  const safePage = Math.min(page, pageCount);
+  const pageRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const exportLabels: PeopleTableExportLabels = {
+    name: t("people.displayName"),
+    contact: t("people.column.contact"),
+    email: t("people.column.email"),
+    status: t("people.column.status"),
+    lent: t("people.detail.iLentAction"),
+    owe: t("people.detail.iOweAction"),
+  };
+
+  function exportModel() {
+    return buildPeopleTableExportModel(rows, statusLabel);
+  }
 
   return (
     <ExitsTableContainer className="people-list-table" data-testid="people-table">
+      <ExitsTableToolbar
+        search={
+          <ExitsOutlineInput
+            label={t("people.search")}
+            placeholder={t("people.search")}
+            placeholderOnly
+            icon={Search}
+            type="search"
+            value={search}
+            onChange={onSearch}
+            clearable
+            testId="people-table-search"
+          />
+        }
+        output={
+          <ExitsTableOutputActions
+            csvLabel={t("exitsTable.exportCsv")}
+            xlsxLabel={t("exitsTable.exportExcel")}
+            pdfLabel={t("exitsTable.exportPdf")}
+            printLabel={t("exitsTable.print")}
+            menuLabel={t("exitsTable.exportPrintMenu")}
+            onCsv={() => downloadPeopleTableCsv(exportModel(), exportLabels)}
+            onXlsx={() => downloadPeopleTableXlsx(exportModel(), exportLabels)}
+            onPdf={() => downloadPeopleTablePdf(exportModel(), exportLabels)}
+            onPrint={printPeopleTable}
+          />
+        }
+      />
       <ExitsTable>
-        <ExitsTableHeader>
+        <ExitsTableHeader
+          data-appearance="glossy"
+          data-intent="standard"
+          style={
+            {
+              "--qheader-bg": INTENT_GLOBAL_STANDARD,
+              "--qheader-ink": "#000000",
+            } as CSSProperties
+          }
+        >
           <ExitsTableRow>
             <ExitsTableHead colSize="flex">{t("people.displayName")}</ExitsTableHead>
             <ExitsTableHead>{t("people.column.contact")}</ExitsTableHead>
@@ -250,7 +353,23 @@ function PeopleTable({
           </ExitsTableRow>
         </ExitsTableHeader>
         <ExitsTableBody>
-          {rows.map((row) => {
+          {pageRows.length === 0 && empty ? (
+            <ExitsTableRow>
+              <ExitsTableCell colSpan={7}>
+                <EmptyState
+                  align="center"
+                  size="compact"
+                  variant={empty.variant}
+                  icon={<Users className="size-5" strokeWidth={1.75} />}
+                  title={empty.title}
+                  detail={empty.detail}
+                  className="people-table-empty border-0 bg-transparent shadow-none"
+                  testId="people-table-empty"
+                />
+              </ExitsTableCell>
+            </ExitsTableRow>
+          ) : (
+            pageRows.map((row) => {
             const href = `/personal/people/${row.contact.id}`;
             const phone = row.contact.phone?.trim() || "—";
             const email = row.contact.email?.trim() || "—";
@@ -292,17 +411,18 @@ function PeopleTable({
                   />
                 </ExitsTableCell>
                 <ExitsTableCell className="people-table-actions">
-                  <span className="inline-flex flex-wrap justify-end gap-2">
+                  <span className="inline-flex flex-wrap items-center justify-end gap-2">
                     {row.connectionStatus === "local" ? (
-                      <Button
+                      <button
                         type="button"
-                        variant="outline"
-                        className="w-auto"
+                        className="people-table-edit"
+                        data-shape="round"
                         data-testid={`people-edit-${row.contact.id}`}
+                        aria-label={`${t("people.action.edit")} ${row.contact.displayName}`}
                         onClick={() => setEditingContact(row.contact)}
                       >
-                        {t("people.action.edit")}
-                      </Button>
+                        <Pencil className="size-4" aria-hidden />
+                      </button>
                     ) : null}
                     <Button asChild variant="outline" className="w-auto">
                       <Link
@@ -324,9 +444,39 @@ function PeopleTable({
                 </ExitsTableCell>
               </ExitsTableRow>
             );
-          })}
+            })
+          )}
         </ExitsTableBody>
       </ExitsTable>
+      <div
+        className="people-table-footer"
+        data-testid="people-table-footer"
+        data-appearance="glossy"
+        data-intent="standard"
+        style={
+          {
+            "--qfooter-bg": INTENT_GLOBAL_STANDARD,
+            "--qfooter-ink": "#000000",
+          } as CSSProperties
+        }
+      >
+        <ExitsTablePagination
+          page={safePage}
+          pageSize={pageSize}
+          total={rows.length}
+          pageSizeOptions={[...PEOPLE_PAGE_SIZES]}
+          onPageChange={setPage}
+          onPageSizeChange={(next) => {
+            const size = PEOPLE_PAGE_SIZES.find((item) => item === next) ?? 10;
+            setPageSize(size);
+            setPage(1);
+          }}
+          rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+          previousLabel={t("exitsTable.previous")}
+          nextLabel={t("exitsTable.next")}
+          rangeLabel={t("exitsTable.range")}
+        />
+      </div>
       {editingContact ? (
         <EditLocalContactDialog
           open
@@ -344,14 +494,13 @@ function PeopleTable({
 
 export function PeopleListSection({
   rows,
-  summary,
   toolbarStart,
 }: {
   rows: PeopleRowModel[];
-  summary: { identified: number; local: number; total: number };
   toolbarStart?: ReactNode;
 }) {
   const { t } = useI18n();
+  const compactSearch = !useMediaMin(640);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PeopleListFilter>("all");
 
@@ -407,23 +556,10 @@ export function PeopleListSection({
 
   return (
     <section
-      className="flex flex-col gap-3"
+      className="people-list-section flex flex-col gap-2"
       data-testid="people-list-section"
       aria-label={t("people.listTitle")}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("people.summary")
-              .replace("{identified}", String(summary.identified))
-              .replace("{local}", String(summary.local))}
-          </p>
-        </div>
-        {summary.total > 0 ? (
-          <CountBadge count={summary.total} tone="neutral" />
-        ) : null}
-      </div>
-
       <div className="people-search-row flex min-w-0 flex-wrap items-end gap-2" data-testid="people-search-row">
         {toolbarStart}
         <Button
@@ -441,10 +577,13 @@ export function PeopleListSection({
         <div className="ui-standards-playground-search min-w-[12rem] flex-1">
           <ExitsOutlineInput
             label={t("people.search")}
+            placeholder={t("people.searchPlaceholder")}
+            placeholderOnly={compactSearch}
             value={search}
             onChange={setSearch}
             clearable
             icon={Search}
+            type="search"
             testId="people-search"
           />
         </div>
@@ -467,27 +606,49 @@ export function PeopleListSection({
 
       {rows.length === 0 ? (
         <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.emptyTitle")} detail={t("people.emptyBody")} />
+          align="center"
+          icon={<Users className="size-5" strokeWidth={1.75} />}
+          title={t("people.emptyTitle")}
+          detail={t("people.emptyBody")}
+          className="people-list-empty"
+        />
       ) : filteredRows.length === 0 ? (
         <EmptyState
-              variant="filtered"
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.noResultsTitle")} detail={t("people.noResultsBody")} />
+          variant="filtered"
+          align="center"
+          icon={<Users className="size-5" strokeWidth={1.75} />}
+          title={t("people.noResultsTitle")}
+          detail={t("people.noResultsBody")}
+          className="people-list-empty"
+        />
       ) : (
-        <>
-          <ul className="exits-list people-list-cards m-0 grid list-none gap-2 p-0" data-testid="people-list">
-            {filteredRows.map((row) => (
-              <PeopleListRow
-                key={row.contact.id}
-                row={row}
-                statusLabel={statusLabel(row.connectionStatus)}
-              />
-            ))}
-          </ul>
-          <PeopleTable rows={filteredRows} statusLabel={statusLabel} />
-        </>
+        <ul className="exits-list people-list-cards utang-relationship-list m-0 grid list-none gap-4 p-0" data-testid="people-list">
+          {filteredRows.map((row) => (
+            <PeopleListRow
+              key={row.contact.id}
+              row={row}
+              statusLabel={statusLabel(row.connectionStatus)}
+            />
+          ))}
+        </ul>
       )}
+      <PeopleTable
+        rows={filteredRows}
+        statusLabel={statusLabel}
+        search={search}
+        onSearch={setSearch}
+        empty={
+          rows.length === 0
+            ? { title: t("people.emptyTitle"), detail: t("people.emptyBody"), variant: "default" }
+            : filteredRows.length === 0
+              ? {
+                  title: t("people.noResultsTitle"),
+                  detail: t("people.noResultsBody"),
+                  variant: "filtered",
+                }
+              : null
+        }
+      />
     </section>
   );
 }

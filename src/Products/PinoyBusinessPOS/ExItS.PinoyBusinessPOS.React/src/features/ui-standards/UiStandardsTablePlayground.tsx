@@ -3,6 +3,13 @@ import { usePreferences } from "@/hooks/usePreferences";
 import { ensurePersonalSymbols } from "@/components/icons/MaterialSymbol";
 import { CompactSelect, PlaygroundPreviewCard, PlaygroundSearchField, playgroundIntentColor } from "@/features/ui-standards/UiStandardsPlaygrounds";
 import { ExitsFileFormatIcon, ExitsPrintFormatIcon, type ExitsFileFormat } from "@/components/exits/ExitsTable";
+import {
+  TABLE_EXPORT_GLOBAL_COLOR,
+  TABLE_EXPORT_GLOBAL_CSV_INTENT,
+  TABLE_EXPORT_GLOBAL_EXCEL_INTENT,
+  TABLE_EXPORT_GLOBAL_PDF_INTENT,
+  TABLE_EXPORT_GLOBAL_PRINT_INTENT,
+} from "@/features/ui-standards/table-export-global-default";
 import { RADIO_STANDARD_COLOR } from "@/features/ui-standards/UiStandardsRadioGallery";
 import { UiStandardsQslider } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { SettingsSelect } from "@/components/ui/settings-select";
@@ -116,11 +123,12 @@ const EXPORT_OPTIONS: ReadonlyArray<{
   value: ExportId;
   format?: ExitsFileFormat;
   intent: "primary" | "secondary" | "success" | "info";
+  color: string;
 }> = [
-  { label: "CSV", value: "csv", format: "csv", intent: "primary" },
-  { label: "Excel", value: "excel", format: "xlsx", intent: "secondary" },
-  { label: "PDF", value: "pdf", format: "pdf", intent: "success" },
-  { label: "Print", value: "print", intent: "info" },
+  { label: "CSV", value: "csv", format: "csv", intent: TABLE_EXPORT_GLOBAL_CSV_INTENT, color: TABLE_EXPORT_GLOBAL_COLOR.csv },
+  { label: "Excel", value: "excel", format: "xlsx", intent: TABLE_EXPORT_GLOBAL_EXCEL_INTENT, color: TABLE_EXPORT_GLOBAL_COLOR.xlsx },
+  { label: "PDF", value: "pdf", format: "pdf", intent: TABLE_EXPORT_GLOBAL_PDF_INTENT, color: TABLE_EXPORT_GLOBAL_COLOR.pdf },
+  { label: "Print", value: "print", intent: TABLE_EXPORT_GLOBAL_PRINT_INTENT, color: TABLE_EXPORT_GLOBAL_COLOR.print },
 ];
 
 const EDIT_KIND_OPTIONS: ReadonlyArray<{ label: string; value: EditKind }> = [
@@ -163,9 +171,8 @@ const ROWS = [
   { dessert: "Churro", calories: "385", fat: "19.0", carbs: "48", protein: "4.1" },
 ] as const;
 
-function exportIntentColor(intent: (typeof EXPORT_OPTIONS)[number]["intent"]) {
-  const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
-  return playgroundIntentColor(sample.id, sample.bg);
+function exportIntentColor(option: (typeof EXPORT_OPTIONS)[number]) {
+  return option.color;
 }
 
 function rowSelectId(dessert: string) {
@@ -883,7 +890,7 @@ export function UiStandardsTablePlayground() {
                         data-export={option.value}
                         data-intent={option.intent}
                         data-testid={`ui-standard-table-pg-export-${option.value}`}
-                        style={{ color: exportIntentColor(option.intent) }}
+                        style={{ color: exportIntentColor(option) }}
                       >
                         {option.format ? (
                           <ExitsFileFormatIcon format={option.format} />
