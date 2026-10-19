@@ -26,6 +26,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { WorkplaceSignInDialog } from "@/features/personal/workplaces/WorkplaceSignInDialog";
+import "@/features/personal/businesses/PersonalOwnedBusinesses.css";
 import { useSession } from "@/session/SessionProvider";
 
 export const PERSONAL_WORKPLACES_QUERY_KEY = ["personal", "workplaces"] as const;
@@ -59,6 +60,16 @@ export async function queryPersonalWorkplaces(
 
 function isActiveMembershipStatus(status: string): boolean {
   return status.trim().localeCompare("Active", undefined, { sensitivity: "accent" }) === 0;
+}
+
+function workplaceStepTone(status: string): string {
+  if (isActiveMembershipStatus(status)) {
+    return "personal-home-step-card--primary";
+  }
+  if (status.trim().localeCompare("Suspended", undefined, { sensitivity: "accent" }) === 0) {
+    return "personal-home-step-card--warning";
+  }
+  return "personal-home-step-card--info";
 }
 
 function membershipStatusTone(status: string): "success" | "warning" | "danger" | "info" {
@@ -346,6 +357,7 @@ export function PersonalWorkplacesPage() {
         </p>
       ) : null}
 
+      <div className="invitations-top invitations-top--pair">
       <section
         className="catalog-form-section personal-workplaces-list person-ribbon-card exits-animate-panel flex flex-col gap-2"
         data-testid="personal-workplaces-list"
@@ -379,19 +391,17 @@ export function PersonalWorkplacesPage() {
         {workplaces.map((workplace) => (
           <article
             key={workplace.membershipId}
-            className="personal-workplace-pin"
+            className={`personal-home-step-card ${workplaceStepTone(workplace.membershipStatus)}`}
             data-testid={`personal-workplace-${workplace.membershipId}`}
           >
-            <span className="personal-workplace-pin__medallion" aria-hidden>
-              <BriefcaseBusiness strokeWidth={2} />
-            </span>
-            <div className="personal-workplace-pin__shell">
-              <div className="personal-workplace-pin__ribbon">
-                <span className="personal-workplace-pin__fold personal-workplace-pin__fold--left" aria-hidden />
-                <span className="personal-workplace-pin__fold personal-workplace-pin__fold--right" aria-hidden />
-                {workplace.organizationDisplayName}
-              </div>
-              <div className="personal-workplace-pin__body">
+            <div className="personal-home-step-card__rail" aria-hidden="true">
+              <span className="personal-home-step-card__icon-wrap">
+                <BriefcaseBusiness className="personal-home-step-card__icon" strokeWidth={2} />
+              </span>
+              <div className="personal-home-step-card__label">{roleLabel(workplace, t)}</div>
+            </div>
+            <div className="personal-home-step-card__panel">
+              <p className="personal-home-step-card__title">{workplace.organizationDisplayName}</p>
                 <StatusChip tone={membershipStatusTone(workplace.membershipStatus)}>
                   {membershipStatusLabel(workplace.membershipStatus, t)}
                 </StatusChip>
@@ -401,20 +411,6 @@ export function PersonalWorkplacesPage() {
                 <p className="m-0 text-[length:var(--exits-text-sm)]">
                   {t("personal.workplaces.branch")}: {branchLabel(workplace, t)}
                 </p>
-                <div
-                  className="personal-workplace-pin__login rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface-muted)_70%,transparent)] px-3 py-2"
-                  data-testid={`personal-workplace-login-${workplace.membershipId}`}
-                >
-                  <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-                    {t("personal.workplaces.workLogin")}
-                  </p>
-                  <p className="m-0 mt-1 font-semibold">{workplace.staffLogin}</p>
-                  {personalEmail ? (
-                    <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                      {t("personal.workplaces.personalAccount")}: {personalEmail}
-                    </p>
-                  ) : null}
-                </div>
                 {isActiveMembershipStatus(workplace.membershipStatus) ? (
                   <WorkplaceAccess
                     workplace={workplace}
@@ -432,9 +428,7 @@ export function PersonalWorkplacesPage() {
                     onSavePassword={() => void saveResetPassword(workplace)}
                   />
                 ) : null}
-              </div>
             </div>
-            <span className="personal-workplace-pin__ground" aria-hidden />
           </article>
         ))}
       </section>
@@ -560,6 +554,7 @@ export function PersonalWorkplacesPage() {
           </Link>
         </p>
       </section>
+      </div>
       <WorkplaceSignInDialog
         workplace={signInWorkplace}
         open={signInWorkplace !== null}

@@ -123,14 +123,15 @@ describe("PersonalWorkplacesPage", () => {
     renderPage();
 
     const workplace = await screen.findByTestId(`personal-workplace-${membershipId}`);
-    expect(workplace).toHaveClass("personal-workplace-pin");
-    expect(workplace.querySelector(".personal-workplace-pin__medallion")).toBeTruthy();
-    expect(workplace.querySelector(".personal-workplace-pin__ribbon")).toHaveTextContent("Mica Store");
-    expect(workplace.querySelector(".personal-workplace-pin__shell")).toBeTruthy();
+    expect(workplace).toHaveClass("personal-home-step-card");
+    expect(workplace.querySelector(".personal-home-step-card__rail")).toBeTruthy();
+    expect(workplace.querySelector(".personal-home-step-card__title")).toHaveTextContent("Mica Store");
+    expect(workplace.querySelector(".personal-home-step-card__panel")).toBeTruthy();
     expect(within(workplace).getByText("Active staff")).toBeInTheDocument();
     expect(within(workplace).getByText(/Role:\s*Cashier/)).toBeInTheDocument();
     expect(within(workplace).getByText(/Branch:\s*Kalibo Branch/)).toBeInTheDocument();
-    expect(within(workplace).getByText("kizy@ORG012345")).toBeInTheDocument();
+    expect(within(workplace).queryByText("kizy@ORG012345")).not.toBeInTheDocument();
+    expect(within(workplace).queryByText("Work login")).not.toBeInTheDocument();
     expect(screen.queryByTestId("personal-workplaces-personal-email")).not.toBeInTheDocument();
     const pending = screen.getByTestId("personal-workplaces-pending");
     const mine = screen.getByTestId("personal-workplaces-list");

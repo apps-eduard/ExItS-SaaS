@@ -1,12 +1,15 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
   Check,
   CheckCheck,
+  ChevronDown,
+  CircleX,
   ClipboardList,
   Clock3,
+  Ellipsis,
   ListTodo,
   Loader2,
   Pencil,
@@ -23,9 +26,17 @@ import {
   type TodoAgendaTab,
 } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
+
+function capitalFirst(value: string): string {
+  if (!value) {
+    return value;
+  }
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1);
+}
 
 export type PersonalTodoExpandAllCommand = {
   expanded: boolean;
@@ -115,7 +126,7 @@ function formatTaskDate(iso: string | null | undefined): string | null {
   }
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${day}-${month}-${date.getFullYear()}`;
+  return `${day}.${month}.${date.getFullYear()}`;
 }
 
 function priorityLabelKey(priority: string): MessageKey {
@@ -129,6 +140,31 @@ function priorityLabelKey(priority: string): MessageKey {
     default:
       return "personal.todo.priorityNone";
   }
+}
+
+function relatedLabelKey(type: string): MessageKey {
+  switch (type) {
+    case "PersonalContact":
+      return "personal.todo.relatedContact";
+    case "PersonalUtangRelationship":
+      return "personal.todo.relatedUtang";
+    case "CustomerOrder":
+      return "personal.todo.relatedOrder";
+    case "Organization":
+      return "personal.todo.relatedOrg";
+    default:
+      return "personal.todo.relatedLinkLabel";
+  }
+}
+
+function relatedHref(type: string, id: string): string | null {
+  if (type === "PersonalContact") {
+    return `/personal/people/${id}`;
+  }
+  if (type === "PersonalUtangRelationship") {
+    return `/personal/utang/relationships/${id}`;
+  }
+  return null;
 }
 
 function todoCardTone(item: PersonalTodoDto): TodoCardTone {
@@ -167,34 +203,57 @@ const TODO_BOARD_GROUPS: {
 
 export function PersonalTodoBoard({
   items,
+  grouped = false,
   renderItem,
 }: {
   items: PersonalTodoDto[];
+  grouped?: boolean;
   renderItem: (item: PersonalTodoDto) => ReactNode;
 }) {
   const { t } = useI18n();
+  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  if (!grouped) {
+    return (
+      <div className="personal-todo-board personal-todo-board--flat" data-testid="todo-list">
+        <ul className="personal-todo-board__list m-0 list-none p-0">{items.map(renderItem)}</ul>
+      </div>
+    );
+  }
+
   const groups = TODO_BOARD_GROUPS.map((group) => ({
     ...group,
     items: items.filter(group.match),
   })).filter((group) => group.items.length > 0);
 
   return (
-    <div className="personal-todo-board" data-testid="todo-list">
-      {groups.map((group) => (
-        <section
-          key={group.id}
-          className={cn("personal-todo-board__column", `personal-todo-board__column--${group.id}`)}
-        >
-          <h3 className="personal-todo-board__header">
-            {t(group.labelKey)}
-            <span className="personal-todo-board__count">
-              {" "}
-              ({String(group.items.length).padStart(2, "0")})
-            </span>
-          </h3>
-          <ul className="personal-todo-board__list m-0 list-none p-0">{group.items.map(renderItem)}</ul>
-        </section>
-      ))}
+    <div className="personal-todo-board personal-todo-board--grouped" data-testid="todo-list">
+      {groups.map((group) => {
+        const open = !closed[group.id];
+        return (
+          <section key={group.id} className="personal-todo-tasklist-group">
+            <button
+              type="button"
+              className="personal-todo-tasklist-group__toggle"
+              aria-expanded={open}
+              onClick={() => setClosed((current) => ({ ...current, [group.id]: open }))}
+            >
+              <span className="personal-todo-tasklist-group__title">
+                {String(group.items.length)} {t(group.labelKey)}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "personal-todo-tasklist-group__chevron size-4 shrink-0",
+                  open && "personal-todo-tasklist-group__chevron--open",
+                )}
+                aria-hidden
+              />
+            </button>
+            {open ? (
+              <ul className="personal-todo-board__list m-0 list-none p-0">{group.items.map(renderItem)}</ul>
+            ) : null}
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -231,10 +290,17 @@ export function PersonalTodoTaskRow({
   onDelete: () => void;
 }) {
   const { t } = useI18n();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
   const completed = item.status === "Completed";
   const cancelled = item.status === "Cancelled";
   const open = item.status === "Open";
   const dueLabel = formatTaskDate(item.dueAtUtc);
+  const createdLabel = formatTaskDate(item.createdAtUtc);
+  const hasReminder = Boolean(item.reminderAtUtc);
+  const hasRelated = Boolean(item.relatedEntityType && item.relatedEntityId);
+  const hasExtra = hasReminder || hasRelated;
+  const linkedHref = hasRelated ? relatedHref(item.relatedEntityType ?? "", item.relatedEntityId ?? "") : null;
   void expandAllCommand;
   void onExpandedChange;
 
@@ -245,9 +311,14 @@ export function PersonalTodoTaskRow({
         (completed || cancelled) && "personal-todo-tasklist-row__title--done",
       )}
     >
-      {item.title}
+      {capitalFirst(item.title)}
     </span>
   );
+  const statusLabel = completed
+    ? t("personal.todo.reopen")
+    : cancelled
+      ? t("personal.todo.reactivate")
+      : t("personal.todo.complete");
 
   return (
     <li
@@ -257,149 +328,184 @@ export function PersonalTodoTaskRow({
       <article
         className={cn(
           "personal-todo-tasklist-row",
-          `personal-todo-tasklist-row--${todoCardTone(item)}`,
           selected && "personal-todo-tasklist-row--selected",
           isExiting && "personal-todo-row--exit",
         )}
       >
-        <div className="personal-todo-tasklist-row__main">
-          <div className="personal-todo-tasklist-row__content min-w-0 flex-1">
-            <div className="personal-todo-tasklist-row__heading">
-              {peekMode ? (
-                <button
-                  type="button"
-                  className="personal-todo-tasklist-row__title-button"
-                  onClick={onSelect}
-                  data-testid={`todo-select-${item.id}`}
-                >
-                  {titleText}
-                </button>
-              ) : (
-                <Link
-                  to={`/personal/todo/${item.id}`}
-                  className="personal-todo-tasklist-row__title-link text-foreground no-underline"
-                >
-                  {titleText}
-                </Link>
-              )}
-            </div>
-            <div className="personal-todo-tasklist-row__facts">
+        <div className="personal-todo-tasklist-row__line">
+          <button
+            type="button"
+            className={cn(
+              "personal-todo-tasklist-row__check",
+              completed && "personal-todo-tasklist-row__check--completed",
+              cancelled && "personal-todo-tasklist-row__check--cancelled",
+            )}
+            aria-pressed={completed}
+            aria-label={statusLabel}
+            data-testid={
+              completed
+                ? `todo-reopen-${item.id}`
+                : cancelled
+                  ? `todo-reactivate-${item.id}`
+                  : `todo-check-${item.id}`
+            }
+            disabled={isActing || offlineBlocked}
+            onClick={open ? onComplete : onReopen}
+          >
+            {isActing ? (
+              <Loader2 className="size-3.5 shrink-0 animate-spin" aria-hidden />
+            ) : cancelled ? (
+              <CircleX className="size-4 shrink-0" aria-hidden />
+            ) : completed ? (
+              <Check className="size-3 shrink-0" aria-hidden />
+            ) : (
+              <span className="personal-todo-tasklist-row__check-box" />
+            )}
+          </button>
+          <div className="personal-todo-tasklist-row__body min-w-0">
+            {peekMode ? (
+              <button
+                type="button"
+                className="personal-todo-tasklist-row__title-button"
+                onClick={onSelect}
+                data-testid={`todo-select-${item.id}`}
+              >
+                {titleText}
+              </button>
+            ) : (
+              <Link
+                to={`/personal/todo/${item.id}`}
+                className="personal-todo-tasklist-row__title-link text-foreground no-underline"
+              >
+                {titleText}
+              </Link>
+            )}
+            {item.notes ? (
+              <p className="personal-todo-tasklist-row__notes" data-testid={`todo-notes-${item.id}`}>
+                {item.notes}
+              </p>
+            ) : null}
+            <div className="personal-todo-tasklist-row__dates">
+              <span className="personal-todo-tasklist-row__date">
+                {t("personal.todo.startLabel")}
+                <span className="personal-todo-tasklist-row__date-value">{createdLabel}</span>
+              </span>
+              <span className="personal-todo-tasklist-row__date">
+                {t("personal.todo.dueLabel")}
+                <span className="personal-todo-tasklist-row__date-value">
+                  {dueLabel ?? t("personal.todo.noDue")}
+                </span>
+              </span>
               <span className={cn("personal-todo-tasklist-row__priority", priorityTextToneClass(item.priority))}>
                 {t(priorityLabelKey(item.priority))}
               </span>
-              <span className="personal-todo-tasklist-row__due">
-                {dueLabel
-                  ? `${t("personal.todo.dueDateBadge")}: ${dueLabel}`
-                  : t("personal.todo.noDue")}
-              </span>
+              {hasExtra ? (
+                <div className="personal-todo-tasklist-row__more">
+                  <Button
+                    type="button"
+                    intent="info"
+                    appearance="solid"
+                    emphasis="soft"
+                    size="sm"
+                    aria-label={moreOpen ? t("personal.todo.hideMoreOptions") : t("personal.todo.moreOptions")}
+                    aria-expanded={moreOpen}
+                    aria-controls={`todo-more-panel-${item.id}`}
+                    data-testid={`todo-more-${item.id}`}
+                    onClick={() => setMoreOpen((open) => !open)}
+                  >
+                    <Ellipsis className="size-4 shrink-0" aria-hidden />
+                  </Button>
+                  {moreOpen ? (
+                    <div
+                      id={`todo-more-panel-${item.id}`}
+                      className="personal-todo-tasklist-row__more-panel"
+                      data-testid={`todo-more-panel-${item.id}`}
+                    >
+                      {hasReminder && item.reminderAtUtc ? (
+                        <p className="personal-todo-tasklist-row__more-line">
+                          {t("personal.todo.reminderAt")}: {new Date(item.reminderAtUtc).toLocaleString()}
+                          {" · "}
+                          {item.reminderNotifiedAtUtc
+                            ? t("personal.todo.reminderDelivered")
+                            : t("personal.todo.reminderPending")}
+                        </p>
+                      ) : null}
+                      {hasRelated ? (
+                        <p className="personal-todo-tasklist-row__more-line">
+                          {t("personal.todo.relatedLinkLabel")}:{" "}
+                          {linkedHref ? (
+                            <Link className="font-semibold text-primary no-underline" to={linkedHref}>
+                              {t(relatedLabelKey(item.relatedEntityType ?? ""))}
+                            </Link>
+                          ) : (
+                            <span>{t(relatedLabelKey(item.relatedEntityType ?? ""))}</span>
+                          )}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
-        </div>
-        {item.notes ? <p className="personal-todo-tasklist-row__notes m-0">{item.notes}</p> : null}
-        <div className="personal-todo-tasklist-row__actions">
-          {open ? (
-            <>
-              <Button asChild intent="primary" appearance="solid" emphasis="soft" size="sm">
-                <Link
-                  to={`/personal/todo/${item.id}?edit=1`}
-                  data-testid={`todo-edit-${item.id}`}
-                >
-                  <Pencil className="size-3.5 shrink-0" aria-hidden />
-                  {t("personal.todo.edit")}
-                </Link>
-              </Button>
-              <Button
-                type="button"
-                intent="success"
-                appearance="solid"
-                emphasis="soft"
-                size="sm"
-                data-testid={`todo-check-${item.id}`}
-                disabled={isActing || offlineBlocked}
-                onClick={onComplete}
-              >
-                {isActing ? (
-                  <Loader2 className="size-3.5 shrink-0 animate-spin" aria-hidden />
-                ) : (
-                  <Check className="size-3.5 shrink-0" aria-hidden />
-                )}
-                {t("personal.todo.complete")}
-              </Button>
-              <Button
-                type="button"
-                intent="warning"
-                appearance="solid"
-                emphasis="soft"
-                size="sm"
-                data-testid={`todo-cancel-${item.id}`}
-                disabled={isActing || offlineBlocked}
-                onClick={onCancel}
-              >
-                <Trash2 className="size-3.5 shrink-0" aria-hidden />
-                {t("personal.todo.cancel")}
-              </Button>
-            </>
-          ) : null}
-          {completed ? (
-            <>
+          <div className="personal-todo-tasklist-row__tools">
+            <Button
+              asChild
+              intent="primary"
+              appearance="ghost"
+              size="sm"
+              className="personal-todo-tasklist-row__icon-btn personal-todo-tasklist-row__icon-btn--edit"
+              aria-label={t("personal.todo.edit")}
+            >
+              <Link to={`/personal/todo/${item.id}?edit=1`} data-testid={`todo-edit-${item.id}`}>
+                <Pencil className="size-4 shrink-0" aria-hidden />
+              </Link>
+            </Button>
+            {cancelled ? (
               <Button
                 type="button"
                 intent="info"
-                appearance="solid"
-                emphasis="soft"
+                appearance="ghost"
                 size="sm"
-                data-testid={`todo-reopen-${item.id}`}
+                className="personal-todo-tasklist-row__icon-btn personal-todo-tasklist-row__icon-btn--reset"
+                aria-label={t("personal.todo.reactivate")}
+                data-testid={`todo-reset-${item.id}`}
                 disabled={isActing || offlineBlocked}
-                onClick={onReopen}
+                onClick={() => setResetConfirm(true)}
               >
-                <RotateCcw className="size-3.5 shrink-0" aria-hidden />
-                {t("personal.todo.reopen")}
+                <RotateCcw className="size-4 shrink-0" aria-hidden />
               </Button>
-              <Button
-                type="button"
-                intent="warning"
-                appearance="solid"
-                emphasis="soft"
-                size="sm"
-                data-testid={`todo-cancel-${item.id}`}
-                disabled={isActing || offlineBlocked}
-                onClick={onCancel}
-              >
-                <Trash2 className="size-3.5 shrink-0" aria-hidden />
-                {t("personal.todo.cancel")}
-              </Button>
-            </>
-          ) : null}
-          {cancelled ? (
-            <>
-              <Button
-                type="button"
-                intent="info"
-                appearance="solid"
-                emphasis="soft"
-                size="sm"
-                data-testid={`todo-reactivate-${item.id}`}
-                disabled={isActing || offlineBlocked}
-                onClick={onReopen}
-              >
-                <RotateCcw className="size-3.5 shrink-0" aria-hidden />
-                {t("personal.todo.reactivate")}
-              </Button>
+            ) : null}
+            {cancelled ? (
               <Button
                 type="button"
                 intent="danger"
-                appearance="solid"
-                emphasis="soft"
+                appearance="ghost"
                 size="sm"
+                className="personal-todo-tasklist-row__icon-btn personal-todo-tasklist-row__icon-btn--delete"
+                aria-label={t("personal.todo.delete")}
                 data-testid={`todo-delete-${item.id}`}
                 disabled={isActing || offlineBlocked}
                 onClick={onDelete}
               >
-                <Trash2 className="size-3.5 shrink-0" aria-hidden />
-                {t("personal.todo.delete")}
+                <Trash2 className="size-4 shrink-0" aria-hidden />
               </Button>
-            </>
-          ) : null}
+            ) : (
+              <Button
+                type="button"
+                intent="danger"
+                appearance="ghost"
+                size="sm"
+                className="personal-todo-tasklist-row__icon-btn personal-todo-tasklist-row__icon-btn--delete"
+                aria-label={t("personal.todo.cancel")}
+                data-testid={`todo-cancel-${item.id}`}
+                disabled={isActing || offlineBlocked}
+                onClick={onCancel}
+              >
+                <Trash2 className="size-4 shrink-0" aria-hidden />
+              </Button>
+            )}
+          </div>
         </div>
         {pendingLocal ? (
           <span
@@ -410,6 +516,24 @@ export function PersonalTodoTaskRow({
           </span>
         ) : null}
       </article>
+      <ConfirmationDialog
+        open={resetConfirm}
+        title={t("personal.todo.resetConfirmTitle")}
+        detail={t("personal.todo.resetConfirmDetail")}
+        confirmLabel={t("personal.todo.reactivate")}
+        cancelLabel={t("personal.todo.cancel")}
+        busy={isActing}
+        onCancel={() => {
+          if (!isActing) {
+            setResetConfirm(false);
+          }
+        }}
+        onConfirm={() => {
+          onReopen();
+          setResetConfirm(false);
+        }}
+        testId={`todo-reset-confirm-${item.id}`}
+      />
     </li>
   );
 }

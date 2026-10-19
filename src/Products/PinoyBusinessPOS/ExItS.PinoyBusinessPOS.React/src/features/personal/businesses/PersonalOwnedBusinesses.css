@@ -122,6 +122,10 @@
   --personal-step: color-mix(in srgb, var(--exits-text-muted) 70%, var(--exits-surface));
 }
 
+.personal-home-step-card--warning {
+  --personal-step: var(--exits-warning);
+}
+
 .personal-home-step-card__rail {
   display: flex;
   flex: 0 0 6.5rem;
@@ -139,6 +143,11 @@
   display: grid;
   place-items: center;
   color: #fff;
+}
+
+.personal-home-step-card__icon-wrap svg.personal-home-step-card__icon {
+  width: 1.85rem;
+  height: 1.85rem;
 }
 
 .personal-shell .personal-home-step-card__icon.material-symbols-outlined {

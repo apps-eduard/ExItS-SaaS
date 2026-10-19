@@ -1805,6 +1805,11 @@ export function PersonalRelationshipDetailPage() {
   const viewPendingTo = `/personal/utang/relationships/${relationshipId}`;
   const settleBlockedOffline = !online;
   const canMutateFinances = isLedgerOwner;
+  const showSettleAction =
+    canMutateFinances &&
+    relationshipActive &&
+    currentBalance > 0 &&
+    unresolvedPendingCount === 0;
 
   const disputeReasonText = (): string | null => {
     if (disputeReasonKey === "amount") return t("personal.utang.disputeReasonAmount");
@@ -1889,32 +1894,50 @@ export function PersonalRelationshipDetailPage() {
           </p>
         ) : null}
 
-        {canMutateFinances &&
-        relationshipActive &&
-        currentBalance > 0 &&
-        unresolvedPendingCount === 0 ? (
+        {showSettleAction || showUpdateBalanceAction ? (
           <div className="flex min-w-0 flex-col gap-2">
-            {settleBlockedOffline ? (
+            {showSettleAction && settleBlockedOffline ? (
               <OfflineNotice
                 message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangSettle))}
               />
             ) : null}
-            <Button
-              type="button"
-              intent="primary"
-              appearance="glossy"
-              className="w-auto self-start"
-              disabled={settleBlockedOffline || settleMutation.isPending}
-              data-testid="utang-settle"
-              onClick={() => {
-                setSettleNote("");
-                setSettleError(null);
-                setSettleOpen(true);
-              }}
-            >
-              <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
-              {t("personal.utang.settle")}
-            </Button>
+            <div className="flex w-full flex-wrap items-center justify-end gap-2">
+              {showSettleAction ? (
+                <Button
+                  type="button"
+                  intent="primary"
+                  appearance="glossy"
+                  className="w-auto"
+                  disabled={settleBlockedOffline || settleMutation.isPending}
+                  data-testid="utang-settle"
+                  onClick={() => {
+                    setSettleNote("");
+                    setSettleError(null);
+                    setSettleOpen(true);
+                  }}
+                >
+                  <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+                  {t("personal.utang.settle")}
+                </Button>
+              ) : null}
+              {showUpdateBalanceAction ? (
+                <Button
+                  type="button"
+                  intent="info"
+                  appearance="glossy"
+                  className="w-auto"
+                  data-testid="utang-qa-update-balance"
+                  onClick={() => {
+                    resetEntryForm();
+                    setEntryOpen(true);
+                  }}
+                >
+                  <PenLine className="size-4 shrink-0" aria-hidden="true" />
+                  {t("personal.utang.qaUpdateBalance")}
+                </Button>
+              ) : null}
+            </div>
+            {showSettleAction ? (
             <ExitsModal
               open={settleOpen}
               onOpenChange={(next) => {
@@ -1987,12 +2010,13 @@ export function PersonalRelationshipDetailPage() {
                 {settleError ? <Notice tone="danger">{settleError}</Notice> : null}
               </div>
             </ExitsModal>
+            ) : null}
           </div>
         ) : null}
         </div>
       </div>
 
-      {showViewContactAction || showSharedSettingAction || showEditContactAction || showRemindersAction || showUpdateBalanceAction || newRecordHref ? (
+      {showViewContactAction || showSharedSettingAction || showEditContactAction || showRemindersAction || newRecordHref ? (
         <section
           className="catalog-form-section exits-animate-panel personal-section personal-quick-actions utang-quick-actions gap-3"
           aria-label={t("personal.home.quickActions")}
@@ -2047,20 +2071,6 @@ export function PersonalRelationshipDetailPage() {
                 onClick={() => setRemindersOpen(true)}
               >
                 <QuickActionIndexContent icon={BellRing} label={t("personal.utang.qaCreateReminders")} />
-              </button>
-            ) : null}
-            {showUpdateBalanceAction ? (
-              <button
-                type="button"
-                className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
-                data-testid="utang-qa-update-balance"
-                aria-haspopup="dialog"
-                onClick={() => {
-                  resetEntryForm();
-                  setEntryOpen(true);
-                }}
-              >
-                <QuickActionIndexContent icon={PenLine} label={t("personal.utang.qaUpdateBalance")} />
               </button>
             ) : null}
             {newRecordHref ? (

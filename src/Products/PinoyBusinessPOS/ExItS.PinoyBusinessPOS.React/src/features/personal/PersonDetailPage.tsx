@@ -513,7 +513,20 @@ export function PersonDetailPage() {
           <ul className="utang-relationship-list m-0 flex list-none flex-col p-0" data-testid="person-detail-utang-records">
             {activeRelated.map((rel) => (
               <li key={rel.id}>
-                <UtangAccountCard row={toUtangAccountRow(rel, contact ? [contact] : [])} />
+                <UtangAccountCard
+                  row={toUtangAccountRow(
+                    rel,
+                    contact
+                      ? [
+                          {
+                            id: contact.id,
+                            displayName: contact.displayName,
+                            linkedUserIdentityId: contact.linkedUserIdentityId ?? null,
+                          },
+                        ]
+                      : [],
+                  )}
+                />
               </li>
             ))}
           </ul>

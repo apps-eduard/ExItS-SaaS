@@ -3,7 +3,10 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  CalendarArrowDown,
+  CalendarArrowUp,
   Check,
+  Group,
   Loader2,
   Pencil,
   Plus,
@@ -12,6 +15,7 @@ import {
   Save,
   Search,
   Trash2,
+  Ungroup,
   Users,
   X,
 } from "lucide-react";
@@ -175,6 +179,8 @@ export function PersonalTodoHubPage() {
   const [tab, setTab] = useState<TodoAgendaTab>(() => parseTodoAgendaTab(searchParams.get("tab")));
   const [createFormOpen, setCreateFormOpen] = useState(() => searchParams.get("add") === "1");
   const [searchQuery, setSearchQuery] = useState("");
+  const [grouped, setGrouped] = useState(true);
+  const [createdNewestFirst, setCreatedNewestFirst] = useState(true);
   const [conflictBanner, setConflictBanner] = useState(false);
   const [form, setForm] = useState<TodoFormState>(emptyTodoForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -224,6 +230,8 @@ export function PersonalTodoHubPage() {
 
   function changeTab(next: TodoAgendaTab) {
     setTab(next);
+    setGrouped(true);
+    setCreatedNewestFirst(true);
     setSearchParams(
       (prev) => {
         const nextParams = new URLSearchParams(prev);
@@ -425,6 +433,17 @@ export function PersonalTodoHubPage() {
     () => filterAndSortTodosForTab([...todos], tab, { search: searchQuery }),
     [todos, tab, searchQuery],
   );
+  const canSort = tab === "all" || tab === "open";
+  const listed = useMemo(() => {
+    if (!canSort) {
+      return filtered;
+    }
+    return [...filtered].sort((left, right) => {
+      const newestFirst =
+        new Date(right.createdAtUtc).getTime() - new Date(left.createdAtUtc).getTime();
+      return createdNewestFirst ? newestFirst : -newestFirst;
+    });
+  }, [filtered, canSort, createdNewestFirst]);
   const emptyState = todoEmptyStateKeys(tab, searchQuery.trim().length > 0);
   const counts = useMemo(() => summarizeTodoCounts([...todos]), [todos]);
   const pendingById = useMemo(
@@ -547,6 +566,47 @@ export function PersonalTodoHubPage() {
           aria-label={t("personal.todo.cardTitle")}
         >
           <div className="personal-todo-tasklist-card__search-row">
+            {tab === "all" || tab === "open" ? (
+              <>
+                <Button
+                  type="button"
+                  intent="primary"
+                  appearance="glossy"
+                  className={cn("shrink-0", grouped && "personal-todo-tasklist-card__sort--on")}
+                  data-testid="todo-group"
+                  aria-pressed={grouped}
+                  onClick={() => setGrouped((current) => !current)}
+                >
+                  {grouped ? (
+                    <Ungroup className="size-4 shrink-0" aria-hidden />
+                  ) : (
+                    <Group className="size-4 shrink-0" aria-hidden />
+                  )}
+                  {grouped ? t("personal.todo.ungroupButton") : t("personal.todo.groupButton")}
+                </Button>
+                <Button
+                  type="button"
+                  intent="primary"
+                  appearance="glossy"
+                  className="shrink-0"
+                  data-testid="todo-sort-created"
+                  aria-pressed={createdNewestFirst}
+                  aria-label={
+                    createdNewestFirst
+                      ? t("personal.todo.dateCreatedNew")
+                      : t("personal.todo.dateCreatedOld")
+                  }
+                  onClick={() => setCreatedNewestFirst((newest) => !newest)}
+                >
+                  {createdNewestFirst ? (
+                    <CalendarArrowDown className="size-4 shrink-0" aria-hidden />
+                  ) : (
+                    <CalendarArrowUp className="size-4 shrink-0" aria-hidden />
+                  )}
+                  {t("personal.todo.dateCreated")}
+                </Button>
+              </>
+            ) : null}
             <label className="personal-todo-search personal-todo-tasklist-card__search min-w-0 flex-1">
               <span className="sr-only">{t("personal.todo.searchLabel")}</span>
               <span className="personal-todo-search__field personal-todo-tasklist-card__search-field">
@@ -571,7 +631,11 @@ export function PersonalTodoHubPage() {
               detail={t(emptyState.detailKey)}
             />
           ) : (
-            <PersonalTodoBoard items={filtered} renderItem={renderTodoRow} />
+            <PersonalTodoBoard
+              items={listed}
+              grouped={canSort && grouped}
+              renderItem={renderTodoRow}
+            />
           )}
         </section>
       </div>

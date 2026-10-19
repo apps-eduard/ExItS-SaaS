@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarClock, Check, ChevronRight, HandCoins, Hourglass, Loader2, UserRound, Users, X } from "lucide-react";
+import { CalendarClock, Check, HandCoins, Hourglass, Loader2, UserRound, Users, X, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import type { PersonalConnectionRequestDto } from "@/api/platform/personal-types";
@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,6 +31,14 @@ import { useConsentActionGuard } from "@/features/personal/useConsentActionGuard
 import { useI18n } from "@/i18n/I18nProvider";
 
 type RequestGroup = ConsentRequestGroup<PersonalConnectionRequestDto>;
+
+function RibbonPennant({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span className="personal-tracker-card__pennant" aria-hidden>
+      <Icon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+    </span>
+  );
+}
 
 function ConnectionRequestCard({
   request,
@@ -65,56 +72,47 @@ function ConnectionRequestCard({
   const { t } = useI18n();
 
   return (
-    <article
-      className="exits-list__card customer-link-card"
+    <Card
+      className="person-ribbon-card flex flex-col gap-3"
       data-testid={`connection-request-${request.id}`}
       data-busy={isAccepting || isDeclining || isRevoking ? "true" : "false"}
     >
-      <div className="customer-link-card__header">
-        <PersonAvatar name={displayName} className="size-10 shrink-0" />
-        <div className="customer-link-card__heading min-w-0 flex-1">
-          <div className="customer-link-card__title-row">
-            {personHref ? (
-              <Link
-                to={personHref}
-                className="exits-list__name m-0 min-w-0 flex-1 truncate font-semibold text-inherit no-underline hover:text-primary"
-              >
-                {displayName}
-              </Link>
-            ) : (
-              <p className="exits-list__name m-0 min-w-0 flex-1 truncate font-semibold">
-                {displayName}
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-1">
-              <StatusChip tone="neutral">{t("invitations.connectionRequests")}</StatusChip>
-            <StatusChip tone={variant === "received" ? "warning" : "info"}>
-                {variant === "received"
-                  ? t("people.status.requestReceived")
-                  : t("people.status.requestSent")}
-              </StatusChip>
-              {group.duplicateCount > 1 ? (
-                <StatusChip tone="neutral">
-                  {(variant === "received"
-                    ? t("invitations.duplicateCount")
-                    : t("invitations.duplicateCountSent")
-                  ).replace("{count}", String(group.duplicateCount))}
-                </StatusChip>
-              ) : null}
-            </div>
-          </div>
-          <p className="customer-link-card__prompt m-0">
-            {variant === "received"
-              ? t("invitations.connectionRequestBody")
-              : t("invitations.waitingResponse")}
-          </p>
-          {publicUserId ? (
-            <p className="m-0 mt-1 truncate text-[length:var(--exits-text-xs)] text-muted">
-              {publicUserId}
-            </p>
-          ) : null}
-        </div>
+      <h3 className="personal-tracker-card__ribbon">
+        <RibbonPennant icon={UserRound} />
+        {personHref ? (
+          <Link to={personHref} className="min-w-0 truncate text-inherit no-underline">
+            {displayName}
+          </Link>
+        ) : (
+          <span className="min-w-0 truncate">{displayName}</span>
+        )}
+      </h3>
+      <div className="flex flex-wrap items-center gap-1">
+        <StatusChip tone="neutral">{t("invitations.connectionRequests")}</StatusChip>
+        <StatusChip tone={variant === "received" ? "warning" : "info"}>
+          {variant === "received"
+            ? t("people.status.requestReceived")
+            : t("people.status.requestSent")}
+        </StatusChip>
+        {group.duplicateCount > 1 ? (
+          <StatusChip tone="neutral">
+            {(variant === "received"
+              ? t("invitations.duplicateCount")
+              : t("invitations.duplicateCountSent")
+            ).replace("{count}", String(group.duplicateCount))}
+          </StatusChip>
+        ) : null}
       </div>
+      <p className="m-0 text-[length:var(--exits-text-sm)]">
+        {variant === "received"
+          ? t("invitations.connectionRequestBody")
+          : t("invitations.waitingResponse")}
+      </p>
+      {publicUserId ? (
+        <p className="m-0 truncate text-[length:var(--exits-text-xs)] text-muted">
+          {publicUserId}
+        </p>
+      ) : null}
 
       <div className="customer-link-card__meta">
         <span className="customer-link-card__meta-item">
@@ -179,7 +177,7 @@ function ConnectionRequestCard({
           </Button>
         </div>
       )}
-    </article>
+    </Card>
   );
 }
 
@@ -331,34 +329,48 @@ export function InvitationsPage() {
         <BackgroundRefreshIndicator active label={t("loading.updating")} />
       ) : null}
 
-      <div className="flex flex-wrap gap-2" data-testid="invitations-summary">
-        <StatusChip tone={receivedGroups.length > 0 ? "warning" : "neutral"}>
-          {t("invitations.receivedCount").replace("{count}", String(receivedGroups.length))}
-        </StatusChip>
-        <StatusChip tone={sentGroups.length > 0 ? "info" : "neutral"}>
-          {t("invitations.sentCount").replace("{count}", String(sentGroups.length))}
-        </StatusChip>
-      </div>
-
-      <Card className="flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("invitations.utangCardTitle")}
-            </h2>
-            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-              {t("invitations.utangCardHelp")}
-            </p>
+      <div
+        className={pendingTotal === 0 ? "invitations-top invitations-top--pair" : "invitations-top"}
+        data-testid="invitations-top"
+      >
+        <Card className="person-ribbon-card flex flex-col gap-3" data-testid="invitations-utang-card">
+          <h2 className="personal-tracker-card__ribbon">
+            <RibbonPennant icon={HandCoins} />
+            {t("invitations.utangCardTitle")}
+          </h2>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("invitations.utangCardHelp")}
+          </p>
+          <div className="flex justify-end">
+            <Button asChild intent="primary" appearance="glossy" className="w-full sm:w-auto">
+              <Link to="/personal/utang/invitations" data-testid="invitations-open-utang">
+                <HandCoins className="size-4 shrink-0" aria-hidden />
+                {t("invitations.openUtangInvites")}
+              </Link>
+            </Button>
           </div>
-          <HandCoins className="size-6 shrink-0 text-primary" aria-hidden="true" />
-        </div>
-        <Button asChild variant="outline" className="justify-between">
-          <Link to="/personal/utang/invitations" data-testid="invitations-open-utang">
-            <span>{t("invitations.openUtangInvites")}</span>
-            <ChevronRight className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
-      </Card>
+        </Card>
+
+        {pendingTotal === 0 ? (
+          <Card className="person-ribbon-card flex flex-col gap-3" data-testid="invitations-empty-hub">
+            <h2 className="personal-tracker-card__ribbon">
+              <RibbonPennant icon={UserRound} />
+              {t("invitations.emptyHubTitle")}
+            </h2>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("invitations.emptyHubBody")}
+            </p>
+            <div className="flex justify-end">
+              <Button asChild intent="primary" appearance="glossy" className="w-full sm:w-auto">
+                <Link to="/personal/people" data-testid="invitations-open-people">
+                  <Users className="size-4 shrink-0" aria-hidden />
+                  {t("invitations.openPeople")}
+                </Link>
+              </Button>
+            </div>
+          </Card>
+        ) : null}
+      </div>
 
       {!cooledDown ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" role="status">
@@ -370,23 +382,22 @@ export function InvitationsPage() {
         <Notice tone="danger">{actionError}</Notice>
       ) : null}
 
+      <div className="invitations-top invitations-top--pair">
       <section
-        className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
+        className="person-ribbon-card catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
         aria-label={t("invitations.received")}
       >
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="catalog-form-section__title m-0">{t("invitations.received")}</h2>
-          {receivedGroups.length > 0 ? (
-            <StatusChip tone="warning">{String(receivedGroups.length)}</StatusChip>
-          ) : null}
-        </div>
+        <h2 className="personal-tracker-card__ribbon">
+          <RibbonPennant icon={Users} />
+          {t("invitations.received")}
+        </h2>
 
         {receivedGroups.length === 0 ? (
           <EmptyState
               align="center"
               icon={<Users className="size-5" strokeWidth={1.75} />} title={t("invitations.emptyTitle")} detail={t("invitations.emptyBody")} />
         ) : (
-          <ul className="exits-list m-0 grid list-none gap-2 p-0">
+          <ul className="exits-list m-0 grid list-none gap-4 p-0">
             {receivedGroups.map((group) => {
               const request = group.primary;
               const isAccepting = group.items.some((item) => acceptingId === item.id);
@@ -419,22 +430,20 @@ export function InvitationsPage() {
       </section>
 
       <section
-        className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
+        className="person-ribbon-card catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
         aria-label={t("invitations.sent")}
       >
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="catalog-form-section__title m-0">{t("invitations.sent")}</h2>
-          {sentGroups.length > 0 ? (
-            <StatusChip tone="info">{String(sentGroups.length)}</StatusChip>
-          ) : null}
-        </div>
+        <h2 className="personal-tracker-card__ribbon">
+          <RibbonPennant icon={Hourglass} />
+          {t("invitations.sent")}
+        </h2>
 
         {sentGroups.length === 0 ? (
           <EmptyState
               align="center"
               icon={<Users className="size-5" strokeWidth={1.75} />} title={t("invitations.sentEmptyTitle")} detail={t("invitations.sentEmpty")} />
         ) : (
-          <ul className="exits-list m-0 grid list-none gap-2 p-0">
+          <ul className="exits-list m-0 grid list-none gap-4 p-0">
             {sentGroups.map((group) => {
               const request = group.primary;
               const targetContact = contactsByIdentity.get(request.targetUserIdentityId);
@@ -466,25 +475,7 @@ export function InvitationsPage() {
           </ul>
         )}
       </section>
-
-      {pendingTotal === 0 ? (
-        <Card className="flex flex-col gap-3 border-dashed bg-[var(--exits-surface-muted)]/40">
-          <div className="flex items-start gap-3">
-            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-primary">
-              <UserRound className="size-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="m-0 font-semibold">{t("invitations.emptyHubTitle")}</p>
-              <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                {t("invitations.emptyHubBody")}
-              </p>
-            </div>
-          </div>
-          <Button asChild className="w-full sm:w-auto">
-            <Link to="/personal/people">{t("invitations.openPeople")}</Link>
-          </Button>
-        </Card>
-      ) : null}
+      </div>
     </section>
   );
 }
