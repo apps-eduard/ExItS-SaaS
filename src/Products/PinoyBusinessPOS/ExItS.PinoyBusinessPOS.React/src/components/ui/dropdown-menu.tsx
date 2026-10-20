@@ -12,7 +12,7 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 
-type MenuAlign = "start" | "end";
+type MenuAlign = "start" | "end" | "center";
 
 const DEFAULT_COLLISION_PADDING = 10;
 /** Below dialogs (z-80); above sticky table chrome (z-2) and elevated surfaces. */
@@ -49,6 +49,11 @@ type DropdownMenuProps = {
   collisionPadding?: number;
   /** Stretch portaled menu to the trigger’s width (form selects). */
   matchTriggerWidth?: boolean;
+  /**
+   * Vertically center the selected item on the trigger (Quasar page-size style).
+   * Menu opens “between” — options above and below the current value.
+   */
+  coverSelected?: boolean;
   /** Override default menu z-index (70). Use above modals when needed. */
   menuZIndex?: number;
 };
@@ -57,7 +62,7 @@ type MenuCoords = {
   top: number;
   left: number;
   maxHeight: number;
-  placement: "below" | "above";
+  placement: "below" | "above" | "cover";
   width?: number;
 };
 
@@ -75,8 +80,9 @@ function computeMenuPosition(options: {
   align: MenuAlign;
   collisionPadding: number;
   matchTriggerWidth: boolean;
+  coverSelected: boolean;
 }): MenuCoords {
-  const { trigger, menu, align, collisionPadding: pad, matchTriggerWidth } = options;
+  const { trigger, menu, align, collisionPadding: pad, matchTriggerWidth, coverSelected } = options;
   const rect = trigger.getBoundingClientRect();
   const width = matchTriggerWidth ? Math.max(rect.width, 1) : undefined;
   const menuWidth = width ?? menu.offsetWidth;
@@ -85,23 +91,40 @@ function computeMenuPosition(options: {
   const viewportH = window.innerHeight;
   const gap = 6;
 
-  const spaceBelow = viewportH - rect.bottom - pad;
-  const spaceAbove = rect.top - pad;
-  const preferAbove = spaceBelow < menuHeight + gap && spaceAbove > spaceBelow;
-  const placement: "below" | "above" = preferAbove ? "above" : "below";
-
-  const maxHeight = Math.max(
-    8 * 16,
-    Math.floor((preferAbove ? spaceAbove : spaceBelow) - gap),
+  const selected = menu.querySelector<HTMLElement>(
+    '[data-selected="true"], [aria-checked="true"], [aria-current="true"]',
   );
 
-  let top =
-    placement === "above" ? rect.top - Math.min(menuHeight, maxHeight) - gap : rect.bottom + gap;
-  top = Math.max(pad, Math.min(top, viewportH - Math.min(menuHeight, maxHeight) - pad));
+  let top: number;
+  let placement: MenuCoords["placement"];
+  let maxHeight: number;
+
+  if (coverSelected && selected) {
+    placement = "cover";
+    const triggerMidY = rect.top + rect.height / 2;
+    const selectedMidY = selected.offsetTop + selected.offsetHeight / 2;
+    top = triggerMidY - selectedMidY;
+    maxHeight = Math.max(8 * 16, viewportH - pad * 2);
+    top = Math.max(pad, Math.min(top, viewportH - Math.min(menuHeight, maxHeight) - pad));
+  } else {
+    const spaceBelow = viewportH - rect.bottom - pad;
+    const spaceAbove = rect.top - pad;
+    const preferAbove = spaceBelow < menuHeight + gap && spaceAbove > spaceBelow;
+    placement = preferAbove ? "above" : "below";
+    maxHeight = Math.max(
+      8 * 16,
+      Math.floor((preferAbove ? spaceAbove : spaceBelow) - gap),
+    );
+    top =
+      placement === "above" ? rect.top - Math.min(menuHeight, maxHeight) - gap : rect.bottom + gap;
+    top = Math.max(pad, Math.min(top, viewportH - Math.min(menuHeight, maxHeight) - pad));
+  }
 
   const isRtl = getComputedStyle(trigger).direction === "rtl";
   let left: number;
-  if (align === "end") {
+  if (align === "center") {
+    left = rect.left + rect.width / 2 - menuWidth / 2;
+  } else if (align === "end") {
     left = isRtl ? rect.left : rect.right - menuWidth;
   } else {
     left = isRtl ? rect.right - menuWidth : rect.left;
@@ -138,6 +161,7 @@ export function DropdownMenu({
   portal = true,
   collisionPadding = DEFAULT_COLLISION_PADDING,
   matchTriggerWidth = false,
+  coverSelected = false,
   menuZIndex = DROPDOWN_Z_INDEX,
 }: DropdownMenuProps) {
   const triggerId = useId();
@@ -172,6 +196,7 @@ export function DropdownMenu({
         align,
         collisionPadding,
         matchTriggerWidth,
+        coverSelected,
       }),
     );
   }
@@ -185,7 +210,7 @@ export function DropdownMenu({
     reposition();
     // Position after open/align change; content height changes are handled on scroll/resize.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-running on new children identity each render
-  }, [open, align, collisionPadding, matchTriggerWidth]);
+  }, [open, align, collisionPadding, matchTriggerWidth, coverSelected]);
 
   useEffect(() => {
     if (!open) {
@@ -256,14 +281,14 @@ export function DropdownMenu({
       window.removeEventListener("resize", onRepositionEvent);
       window.removeEventListener("scroll", onRepositionEvent, true);
     };
-  }, [onOpenChange, open, align, collisionPadding, matchTriggerWidth]);
+  }, [onOpenChange, open, align, collisionPadding, matchTriggerWidth, coverSelected]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
     const selectedItem = menuRef.current?.querySelector<HTMLElement>(
-      '[role="menuitem"][aria-checked="true"]:not([disabled]), [role="option"][aria-selected="true"]:not([aria-disabled="true"])',
+      '[role="menuitem"][data-selected="true"]:not([disabled]), [role="menuitem"][aria-checked="true"]:not([disabled]), [role="option"][aria-selected="true"]:not([aria-disabled="true"])',
     );
     const firstItem = menuRef.current?.querySelector<HTMLElement>(
       '[role="menuitem"]:not([disabled]), [role="option"]:not([aria-disabled="true"])',
@@ -342,6 +367,7 @@ export function MenuItem({
   onSelect,
   destructive = false,
   disabled = false,
+  className,
   ...rest
 }: {
   children: ReactNode;
@@ -361,6 +387,7 @@ export function MenuItem({
           ? "text-destructive hover:bg-[var(--exits-surface-muted)]"
           : "text-foreground",
         disabled && "opacity-50",
+        className,
       )}
       onClick={() => {
         if (!disabled) {

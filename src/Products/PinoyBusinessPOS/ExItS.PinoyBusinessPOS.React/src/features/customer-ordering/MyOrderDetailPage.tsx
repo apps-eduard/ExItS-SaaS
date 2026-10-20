@@ -1,7 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, CreditCard, Info, Loader2, MapPin, Package, Truck, Users, Wallet } from "lucide-react";
+import {
+  Ban,
+  Banknote,
+  CheckCircle2,
+  CircleAlert,
+  Clock3,
+  HandCoins,
+  Info,
+  Loader2,
+  Package,
+  ShoppingBag,
+  Smartphone,
+  Truck,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
   cancelMyCustomerOrder,
@@ -15,15 +30,18 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import {
-  displayOrderStatusKey,
-  orderStatusChipTone,
-} from "@/features/customer-ordering/seller-order-actions";
+import { orderStatusChipTone } from "@/features/customer-ordering/seller-order-actions";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { cn } from "@/lib/cn";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
+
+function orderCardToneClass(tone: ReturnType<typeof orderStatusChipTone>): string {
+  if (tone === "success") return "pc-order-card--success";
+  if (tone === "danger" || tone === "warning") return "pc-order-card--warn";
+  return "pc-order-card--primary";
+}
 
 function fulfillmentLabel(type: string, t: (key: MessageKey) => string): string {
   if (type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0) {
@@ -45,10 +63,24 @@ function paymentMethodLabel(code: string, t: (key: MessageKey) => string): strin
   return t("orders.paymentUtang");
 }
 
+function PaymentMethodIcon({ code }: { code: string }) {
+  let Icon: LucideIcon = Banknote;
+  if (code === "ManualGCash") Icon = Smartphone;
+  else if (code === "Utang") Icon = HandCoins;
+  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
+}
+
 function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
   if (status === "Paid") return t("orders.paymentPaid");
   if (status === "Pending") return t("orders.paymentAwaitingVerification");
   return t("orders.paymentUnpaid");
+}
+
+function PaymentStatusIcon({ status }: { status: string }) {
+  let Icon: LucideIcon = CircleAlert;
+  if (status === "Paid") Icon = CheckCircle2;
+  else if (status === "Pending") Icon = Clock3;
+  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
 }
 
 export function MyOrderDetailPage() {
@@ -154,6 +186,7 @@ export function MyOrderDetailPage() {
   const canCancel =
     order.status.localeCompare("Submitted", undefined, { sensitivity: "accent" }) === 0;
   const FulfillmentIcon = isDelivery(order.fulfillmentType) ? Truck : Package;
+  const tone = orderStatusChipTone(order);
 
   return (
     <div className={pageShell} data-testid="my-order-detail-page">
@@ -164,64 +197,57 @@ export function MyOrderDetailPage() {
         backTestId="page-header-back-order-detail"
       />
 
-      <header className="pc-order-summary-hero exits-animate-panel">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="pc-order-summary-hero__store">{order.branchNameSnapshot}</p>
-            <p className="pc-order-summary-hero__meta">
-              {fulfillmentLabel(order.fulfillmentType, t)} ·{" "}
-              {new Date(order.createdAtUtc).toLocaleString()}
-            </p>
-          </div>
-          <StatusChip tone={orderStatusChipTone(order)}>
-            {t(displayOrderStatusKey(order) as MessageKey)}
-          </StatusChip>
-        </div>
-      </header>
-
       {actionError ? <ErrorState title={t("orders.error")} detail={actionError} /> : null}
 
-      <section className="pc-checkout-section exits-animate-panel" data-testid="order-facts">
-        <h2 className="pc-checkout-section__title">{t("orders.fulfillmentType")}</h2>
-        <div className="pc-facts-grid">
-          <div className="pc-fact-tile">
-            <span className="pc-fact-tile__label">{t("orders.branch")}</span>
-            <span className="pc-fact-tile__value">{order.branchNameSnapshot}</span>
-          </div>
-          <div className="pc-fact-tile">
-            <span className="pc-fact-tile__label">{t("orders.fulfillmentType")}</span>
-            <span className="pc-fact-tile__value inline-flex items-center gap-1">
-              <FulfillmentIcon className="size-3.5 shrink-0" aria-hidden />
-              {fulfillmentLabel(order.fulfillmentType, t)}
+      <section
+        className={cn("pc-order-card exits-animate-panel", orderCardToneClass(tone))}
+        data-testid="order-facts"
+      >
+        <div className="pc-order-card__body min-w-0 flex-1">
+          <p className="pc-order-card__title m-0 truncate">{order.branchNameSnapshot}</p>
+          <div className="pc-order-card__meta-row" data-testid="my-order-card-facts">
+            <span className="pc-order-card__fact" data-testid="order-payment-status">
+              <PaymentStatusIcon status={order.paymentStatus} />
+              <span className="pc-order-card__fact-text truncate">
+                {paymentStatusLabel(order.paymentStatus, t)}
+              </span>
+            </span>
+            <span className="pc-order-card__fact" data-testid="order-payment-method">
+              <PaymentMethodIcon code={order.paymentMethod} />
+              <span className="pc-order-card__fact-text truncate">
+                {paymentMethodLabel(order.paymentMethod, t)}
+              </span>
+            </span>
+            <span className="pc-order-card__fact">
+              <ShoppingBag className="pc-order-card__fact-icon" aria-hidden />
+              <span className="pc-order-card__fact-text truncate">
+                {order.lines.length} {t("orders.items")}
+              </span>
             </span>
           </div>
-          <div className="pc-fact-tile">
-            <span className="pc-fact-tile__label">{t("orders.paymentMethod")}</span>
-            <span className="pc-fact-tile__value inline-flex items-center gap-1" data-testid="order-payment-method">
-              <Wallet className="size-3.5 shrink-0" aria-hidden />
-              {paymentMethodLabel(order.paymentMethod, t)}
+          <div className="pc-order-card__fulfill">
+            <span className="pc-order-card__fact">
+              <FulfillmentIcon className="pc-order-card__fact-icon" aria-hidden />
+              <span className="pc-order-card__fact-text truncate">
+                {fulfillmentLabel(order.fulfillmentType, t)}
+              </span>
+            </span>
+            <span className="pc-order-card__when truncate">
+              {new Date(order.createdAtUtc).toLocaleString()}
             </span>
           </div>
-          {order.requestedPickupLocal ? (
-            <div className="pc-fact-tile" data-testid="order-requested-pickup">
-              <span className="pc-fact-tile__label">{t("orders.requestedPickupTime")}</span>
-              <span className="pc-fact-tile__value">{order.requestedPickupLocal}</span>
-              <span className="pc-fact-tile__value text-muted">{t("orders.requestedPickupNotGuaranteed")}</span>
-            </div>
-          ) : null}
           {order.paymentReference ? (
-            <div className="pc-fact-tile" data-testid="order-payment-reference">
-              <span className="pc-fact-tile__label">{t("checkout.paymentReference")}</span>
-              <span className="pc-fact-tile__value">{order.paymentReference}</span>
+            <div className="pc-order-kv" data-testid="order-payment-reference">
+              <span className="pc-order-kv__label">{t("orders.paymentRefShort")}</span>
+              <span className="pc-order-kv__value">{order.paymentReference}</span>
             </div>
           ) : null}
-          <div className="pc-fact-tile">
-            <span className="pc-fact-tile__label">{t("orders.paymentStatus")}</span>
-            <span className="pc-fact-tile__value inline-flex items-center gap-1" data-testid="order-payment-status">
-              <CreditCard className="size-3.5 shrink-0" aria-hidden />
-              {paymentStatusLabel(order.paymentStatus, t)}
-            </span>
-          </div>
+          {order.requestedPickupLocal ? (
+            <div className="pc-order-kv" data-testid="order-requested-pickup">
+              <span className="pc-order-kv__label">{t("orders.requestedPickupTime")}</span>
+              <span className="pc-order-kv__value">{order.requestedPickupLocal}</span>
+            </div>
+          ) : null}
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode, type Ref, type TransitionEvent } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { prefersReducedMotion } from "@/lib/motion";
@@ -20,6 +20,9 @@ export function SideDrawer({
   side = "right",
   panelClassName,
   panelRef,
+  ribbon = false,
+  ribbonIcon: RibbonIcon,
+  centerOnLarge = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -35,6 +38,11 @@ export function SideDrawer({
   side?: "right" | "left";
   panelClassName?: string;
   panelRef?: Ref<HTMLDivElement>;
+  /** Card ribbon title (same mark as ExitsModal). */
+  ribbon?: boolean;
+  ribbonIcon?: LucideIcon;
+  /** Large screens: centered dialog. Small screens: side drawer. */
+  centerOnLarge?: boolean;
 }) {
   const autoId = useId();
   const resolvedPanelId = panelId ?? `${testId}-panel`;
@@ -145,11 +153,12 @@ export function SideDrawer({
 
   return createPortal(
     <div
-      className="exits-side-drawer"
+      className={cn("exits-side-drawer", centerOnLarge && "exits-side-drawer--center-lg")}
       data-testid={testId}
       data-side={side}
       data-open={entered}
       data-interactive={interactive ? "true" : "false"}
+      data-center-lg={centerOnLarge ? "true" : "false"}
       // inert removes the whole exiting portal from hit-testing (stronger than CSS alone).
       {...(!interactive ? { inert: true } : {})}
     >
@@ -164,7 +173,11 @@ export function SideDrawer({
       <div
         ref={panelRef}
         id={resolvedPanelId}
-        className={cn("exits-side-drawer__panel", panelClassName)}
+        className={cn(
+          "exits-side-drawer__panel",
+          ribbon && "exits-side-drawer__panel--ribbon",
+          panelClassName,
+        )}
         data-open={entered}
         data-interactive={interactive ? "true" : "false"}
         data-side={side}
@@ -175,11 +188,32 @@ export function SideDrawer({
         tabIndex={-1}
         onTransitionEnd={onPanelTransitionEnd}
       >
-        <div className="exits-side-drawer__header">
-          <div className="exits-side-drawer__heading min-w-0 flex-1">
-            <h2 id={titleId} className="exits-side-drawer__title">
-              {title}
-            </h2>
+        <div className={cn("exits-side-drawer__header", ribbon && "exits-side-drawer__header--ribbon")}>
+          <div
+            className={cn(
+              "exits-side-drawer__heading min-w-0 flex-1",
+              ribbon && "exits-modal__ribbon-head",
+            )}
+          >
+            {ribbon ? (
+              <h2
+                id={titleId}
+                className="exits-modal__ribbon exits-side-drawer__ribbon"
+                data-testid={`${testId}-ribbon`}
+                tabIndex={-1}
+              >
+                {RibbonIcon ? (
+                  <span className="exits-modal__pennant" aria-hidden>
+                    <RibbonIcon className="size-[0.95rem] shrink-0" />
+                  </span>
+                ) : null}
+                {title}
+              </h2>
+            ) : (
+              <h2 id={titleId} className="exits-side-drawer__title" tabIndex={-1}>
+                {title}
+              </h2>
+            )}
             {description ? (
               <p id={descriptionId} className="exits-side-drawer__description">
                 {description}
@@ -190,7 +224,7 @@ export function SideDrawer({
             type="button"
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className={cn("exits-side-drawer__close shrink-0", ribbon && "exits-side-drawer__close--ribbon")}
             data-testid={closeTestId ?? `${testId}-close`}
             aria-label={closeLabel}
             onClick={onClose}

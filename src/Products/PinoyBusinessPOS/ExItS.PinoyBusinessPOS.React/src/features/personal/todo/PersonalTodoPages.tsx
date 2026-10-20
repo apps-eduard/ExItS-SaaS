@@ -52,6 +52,7 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { FormDrawer } from "@/components/exits/FormDrawer";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { Notice } from "@/components/exits/Notice";
@@ -512,7 +513,7 @@ export function PersonalTodoHubPage() {
 
   return (
     <div
-      className="personal-page personal-todo-hub exits-page flex min-w-0 flex-col gap-3"
+      className="personal-page personal-todo-hub exits-page flex min-h-0 min-w-0 flex-1 flex-col"
       data-testid="personal-todo-hub"
     >
       <PageHeader
@@ -548,8 +549,7 @@ export function PersonalTodoHubPage() {
           <Button
             type="button"
             intent="primary"
-            appearance="solid"
-            emphasis="soft"
+            appearance="glossy"
             className="personal-todo-tasklist-rail__new w-full"
             data-testid="todo-new-todo"
             onClick={() => setCreateFormOpen(true)}
@@ -566,13 +566,29 @@ export function PersonalTodoHubPage() {
           aria-label={t("personal.todo.cardTitle")}
         >
           <div className="personal-todo-tasklist-card__search-row">
+            <div className="personal-todo-tasklist-card__search min-w-0">
+              <ExitsOutlineInput
+                label={t("personal.todo.searchLabel")}
+                placeholder={t("personal.todo.searchPlaceholder")}
+                placeholderOnly
+                icon={Search}
+                type="search"
+                value={searchQuery}
+                onChange={setSearchQuery}
+                clearable
+                testId="todo-search"
+              />
+            </div>
             {tab === "all" || tab === "open" ? (
-              <>
+              <div className="personal-todo-tasklist-card__toolbar">
                 <Button
                   type="button"
                   intent="primary"
                   appearance="glossy"
-                  className={cn("shrink-0", grouped && "personal-todo-tasklist-card__sort--on")}
+                  className={cn(
+                    "personal-todo-tasklist-card__toolbar-btn",
+                    grouped && "personal-todo-tasklist-card__sort--on",
+                  )}
                   data-testid="todo-group"
                   aria-pressed={grouped}
                   onClick={() => setGrouped((current) => !current)}
@@ -588,7 +604,7 @@ export function PersonalTodoHubPage() {
                   type="button"
                   intent="primary"
                   appearance="glossy"
-                  className="shrink-0"
+                  className="personal-todo-tasklist-card__toolbar-btn"
                   data-testid="todo-sort-created"
                   aria-pressed={createdNewestFirst}
                   aria-label={
@@ -605,22 +621,8 @@ export function PersonalTodoHubPage() {
                   )}
                   {t("personal.todo.dateCreated")}
                 </Button>
-              </>
+              </div>
             ) : null}
-            <label className="personal-todo-search personal-todo-tasklist-card__search min-w-0 flex-1">
-              <span className="sr-only">{t("personal.todo.searchLabel")}</span>
-              <span className="personal-todo-search__field personal-todo-tasklist-card__search-field">
-                <Search className="personal-todo-search__icon size-4 shrink-0" aria-hidden />
-                <input
-                  type="search"
-                  className="personal-todo-search__input"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={t("personal.todo.searchPlaceholder")}
-                  data-testid="todo-search"
-                />
-              </span>
-            </label>
           </div>
 
           {filtered.length === 0 ? (
@@ -669,6 +671,9 @@ export function PersonalTodoHubPage() {
         size="md"
         dirty={Boolean(form.title.trim() || form.notes.trim() || form.dueAtLocal || form.reminderAtLocal)}
         confirmUnsavedOnClose
+        ribbon
+        ribbonIcon={Plus}
+        saveIcon="plus"
       >
         {formError ? (
           <Notice tone="danger" className="mb-3" testId="todo-create-error">
@@ -683,7 +688,7 @@ export function PersonalTodoHubPage() {
             ) : null}
           </div>
         ) : null}
-        <div className="personal-todo-create-form flex flex-col gap-3" data-testid="todo-create-form">
+        <div className="personal-todo-create-form flex flex-col gap-1.5" data-testid="todo-create-form">
           <TodoFormFields
             form={form}
             setForm={setForm}

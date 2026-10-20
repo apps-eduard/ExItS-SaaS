@@ -121,16 +121,22 @@ input.ui-standards-qdropdown__query {
   align-items: center;
   justify-content: center;
   flex: none;
-  border: 0;
-  background: transparent;
-  color: inherit;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
   padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--qdropdown-accent, var(--exits-primary));
   cursor: pointer;
 }
 
 .ui-standards-qdropdown__field-clear-icon {
   width: 1rem;
   height: 1rem;
+  /* Locked: search-clear-global-default SEARCH_CLEAR_GLOBAL_STROKE */
+  stroke-width: 3;
 }
 
 .ui-standards-qdropdown__chevron {
@@ -497,6 +503,18 @@ input.ui-standards-qdropdown__query {
   color: inherit;
   padding: 0;
   cursor: pointer;
+}
+
+.ui-standards-qdropdown__search-clear {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  color: var(--qdropdown-accent, var(--exits-primary));
+}
+
+.ui-standards-qdropdown__search-clear-icon {
+  /* Locked: search-clear-global-default SEARCH_CLEAR_GLOBAL_STROKE */
+  stroke-width: 3;
 }
 
 .ui-standards-qdropdown__search-toggle {
@@ -1100,13 +1118,27 @@ input.ui-standards-qdropdown__query {
 }
 
 .ui-standards-qinput__clear {
-  margin-right: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-right: 0.25rem;
+  padding: 0;
   border: 0;
+  border-radius: 999px;
   background: transparent;
-  color: inherit;
-  font-size: 1rem;
+  color: var(--qinput-accent, var(--exits-primary));
   line-height: 1;
   cursor: pointer;
+}
+
+.ui-standards-qinput__clear svg {
+  width: 1rem;
+  height: 1rem;
+  /* Locked: search-clear-global-default SEARCH_CLEAR_GLOBAL_STROKE */
+  stroke-width: 3;
 }
 
 .ui-standards-qinput__control[type="search"]::-webkit-search-decoration,
@@ -1522,12 +1554,8 @@ input.ui-standards-qdropdown__query {
 }
 
 .exits-locked-field.ui-standards-qinput--clearable .ui-standards-qinput__clear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   margin-right: 0.2rem;
-  padding: 0;
-  color: var(--qinput-accent, currentColor);
+  color: var(--qinput-accent, var(--exits-primary));
 }
 
 .exits-locked-field.ui-standards-qinput,

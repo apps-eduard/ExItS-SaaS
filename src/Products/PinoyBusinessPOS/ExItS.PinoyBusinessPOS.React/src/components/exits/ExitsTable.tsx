@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useEffect,
+  useMemo,
   useState,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
@@ -845,12 +846,116 @@ export const ExitsTableCheckbox = forwardRef<HTMLInputElement, ExitsTableCheckbo
   },
 );
 
+/** Default page-size ladder for ExitsTable (max 500). */
+export const EXITS_TABLE_PAGE_SIZES = [10, 25, 50, 100, 200, 500] as const;
+
+/** Quasar rows-per-page “All” sentinel (show every row). */
+export const EXITS_TABLE_PAGE_SIZE_ALL = 0;
+
+/** Keep only sizes the current total can use (e.g. total 24 → no 25+), then append All. */
+export function exitsTablePageSizesForTotal(
+  total: number,
+  options: ReadonlyArray<number> = EXITS_TABLE_PAGE_SIZES,
+): number[] {
+  if (total <= 0) {
+    return [];
+  }
+  const sizes = options.filter((size) => size > 0 && size <= total);
+  if (sizes.length === 0) {
+    return [];
+  }
+  return [...sizes, EXITS_TABLE_PAGE_SIZE_ALL];
+}
+
+/** Resolve All (0) to the current total for slicing / page math. */
+export function exitsTableResolvePageSize(pageSize: number, total: number): number {
+  if (pageSize === EXITS_TABLE_PAGE_SIZE_ALL) {
+    return Math.max(total, 1);
+  }
+  return Math.max(pageSize, 1);
+}
+
+export function exitsTablePageSizeLabel(size: number): string {
+  return size === EXITS_TABLE_PAGE_SIZE_ALL ? "All" : String(size);
+}
+
+/** Quasar-style page-size control: borderless trigger + solid caret + compact menu. */
+export function ExitsTablePageSizeSelect({
+  label,
+  value,
+  options,
+  onChange,
+  testId = "exits-table-page-size",
+  className,
+}: {
+  label: string;
+  value: number;
+  options: ReadonlyArray<number>;
+  onChange: (size: number) => void;
+  testId?: string;
+  className?: string;
+}) {
+  const menu = useDismissibleOpen(false);
+
+  return (
+    <div className={cn("exits-table-pagination__size", className)}>
+      <span className="exits-table-pagination__size-label">{label}</span>
+      <DropdownMenu
+        align="center"
+        open={menu.open}
+        onOpenChange={menu.setOpen}
+        menuLabel={label}
+        matchTriggerWidth={false}
+        coverSelected
+        menuClassName="exits-table-pagination__size-menu"
+        trigger={(triggerProps) => (
+          <button
+            type="button"
+            id={triggerProps.id}
+            className="exits-table-pagination__size-trigger"
+            aria-haspopup="menu"
+            aria-expanded={triggerProps.expanded}
+            aria-controls={triggerProps.controls}
+            aria-label={label}
+            data-testid={testId}
+            data-value={String(value)}
+            onClick={triggerProps.onClick}
+            onKeyDown={triggerProps.onKeyDown}
+          >
+            <span className="exits-table-pagination__size-value">{exitsTablePageSizeLabel(value)}</span>
+            <span className="exits-table-pagination__size-caret" aria-hidden />
+          </button>
+        )}
+      >
+        {options.map((size) => (
+          <MenuItem
+            key={size}
+            className={cn(
+              "exits-table-pagination__size-option",
+              size === value && "exits-table-pagination__size-option--selected",
+            )}
+            data-selected={size === value ? "true" : undefined}
+            aria-checked={size === value}
+            data-testid={`${testId}-option-${size === EXITS_TABLE_PAGE_SIZE_ALL ? "all" : size}`}
+            onSelect={() => {
+              menu.close();
+              onChange(size);
+            }}
+          >
+            {exitsTablePageSizeLabel(size)}
+          </MenuItem>
+        ))}
+      </DropdownMenu>
+    </div>
+  );
+}
+
 export type ExitsTablePaginationProps = HTMLAttributes<HTMLDivElement> & {
   page: number;
   pageSize: number;
   total: number;
   pageSizeOptions?: ReadonlyArray<number>;
-  /** When false, hide the rows-per-page control (Previous / Next + range stay). Default true. */
+  /** When false, hide the page-size control (Previous / Next + range stay). Default true. */
   showPageSize?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
@@ -866,7 +971,7 @@ export function ExitsTablePagination({
   page,
   pageSize,
   total,
-  pageSizeOptions = [10, 25, 50, 100],
+  pageSizeOptions = EXITS_TABLE_PAGE_SIZES,
   showPageSize = true,
   onPageChange,
   onPageSizeChange,
@@ -876,12 +981,28 @@ export function ExitsTablePagination({
   rangeLabel,
   ...props
 }: ExitsTablePaginationProps) {
-  const pageCount = Math.max(1, Math.ceil(total / pageSize) || 1);
+  const sizes = useMemo(
+    () => exitsTablePageSizesForTotal(total, pageSizeOptions),
+    [pageSizeOptions, total],
+  );
+  const selectedPageSize = sizes.includes(pageSize) ? pageSize : (sizes[0] ?? pageSize);
+  const rowsPerPage = exitsTableResolvePageSize(selectedPageSize, total);
+  const pageCount = Math.max(1, Math.ceil(total / rowsPerPage) || 1);
   const safePage = Math.min(Math.max(page, 1), pageCount);
-  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
-  const to = Math.min(safePage * pageSize, total);
+  const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1;
+  const to = Math.min(safePage * rowsPerPage, total);
   const canPrev = safePage > 1;
   const canNext = safePage < pageCount;
+  const showSize = showPageSize && sizes.length > 0;
+  /** Below 10 rows there is nothing useful to page through. */
+  const showNav = total >= 10;
+
+  useEffect(() => {
+    if (sizes.length === 0 || sizes.includes(pageSize)) {
+      return;
+    }
+    onPageSizeChange(sizes[0]!);
+  }, [onPageSizeChange, pageSize, sizes]);
 
   return (
     <div
@@ -889,49 +1010,45 @@ export function ExitsTablePagination({
       data-testid="exits-table-pagination"
       {...props}
     >
-      <p className="exits-table-pagination__range" data-testid="exits-table-pagination-range">
-        {rangeLabel.replace("{from}", String(from)).replace("{to}", String(to)).replace("{total}", String(total))}
-      </p>
-      {showPageSize ? (
-        <label className="exits-table-pagination__size">
-          <span>{rowsPerPageLabel}</span>
-          <select
-            className="exits-select exits-table-pagination__size-select"
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            data-testid="exits-table-page-size"
-          >
-            {pageSizeOptions.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </label>
+      {showNav ? (
+        <p className="exits-table-pagination__range" data-testid="exits-table-pagination-range">
+          {rangeLabel.replace("{from}", String(from)).replace("{to}", String(to)).replace("{total}", String(total))}
+        </p>
       ) : null}
-      <div className="exits-table-pagination__nav">
-        <PaginationNavButton
-          disabled={!canPrev}
-          aria-label={previousLabel}
-          data-testid="exits-table-prev"
-          onClick={() => onPageChange(safePage - 1)}
-        >
-          <ChevronLeft className="size-4" aria-hidden />
-          <span>{previousLabel}</span>
-        </PaginationNavButton>
-        <span className="exits-table-pagination__page" data-testid="exits-table-page">
-          {safePage} / {pageCount}
-        </span>
-        <PaginationNavButton
-          disabled={!canNext}
-          aria-label={nextLabel}
-          data-testid="exits-table-next"
-          onClick={() => onPageChange(safePage + 1)}
-        >
-          <span>{nextLabel}</span>
-          <ChevronRight className="size-4" aria-hidden />
-        </PaginationNavButton>
-      </div>
+      {showSize ? (
+        <ExitsTablePageSizeSelect
+          label={rowsPerPageLabel}
+          value={selectedPageSize}
+          options={sizes}
+          onChange={onPageSizeChange}
+          testId="exits-table-page-size"
+        />
+      ) : null}
+      {showNav ? (
+        <div className="exits-table-pagination__nav">
+          <PaginationNavButton
+            disabled={!canPrev}
+            aria-label={previousLabel}
+            data-testid="exits-table-prev"
+            onClick={() => onPageChange(safePage - 1)}
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+            <span>{previousLabel}</span>
+          </PaginationNavButton>
+          <span className="exits-table-pagination__page" data-testid="exits-table-page">
+            {safePage} / {pageCount}
+          </span>
+          <PaginationNavButton
+            disabled={!canNext}
+            aria-label={nextLabel}
+            data-testid="exits-table-next"
+            onClick={() => onPageChange(safePage + 1)}
+          >
+            <span>{nextLabel}</span>
+            <ChevronRight className="size-4" aria-hidden />
+          </PaginationNavButton>
+        </div>
+      ) : null}
     </div>
   );
 }

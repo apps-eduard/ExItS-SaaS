@@ -117,6 +117,7 @@ describe("UiStandardsCopyCommand", () => {
       ["Button", "PRIMARY + SOFT + WITH ICON"],
       ["Chip", "FILTER CHIP PRIMARY SELECTED"],
       ["Tabs", "PILL BAR TABS + EQUAL WIDTH + WITH COUNT + SOLID PRIMARY ACTIVE"],
+      ["Tabs", "BASIC TABS + ICON AND LABEL"],
       ["Card", "ENTITY CARD + WITH CHIP + WITH ACTIONS"],
     ];
     for (const [standard, command] of samples) {

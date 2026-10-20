@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState, type CSSProperties, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
-import { Check, ChevronDown, X, type LucideIcon } from "lucide-react";
+import { Check, ChevronDown, Search, X, type LucideIcon } from "lucide-react";
 import { INPUT_GLOBAL_DEFAULT_APPEARANCE } from "@/features/ui-standards/input-global-default";
+import { SEARCH_CLEAR_GLOBAL_STROKE } from "@/features/ui-standards/search-clear-global-default";
 import { SELECT_GLOBAL_DEFAULT_APPEARANCE } from "@/features/ui-standards/select-global-default";
 import "@/features/ui-standards/exits-qfield.css";
 
@@ -138,8 +139,10 @@ export function ExitsOutlineSelect<T extends string>({
         >
           {searchable ? (
             <div className="ui-standards-qdropdown__search">
+              <Search className="ui-standards-qdropdown__search-icon" aria-hidden />
               <input
-                type="search"
+                type="text"
+                inputMode="search"
                 className="ui-standards-qdropdown__search-input"
                 value={query}
                 placeholder={searchPlaceholder}
@@ -149,6 +152,25 @@ export function ExitsOutlineSelect<T extends string>({
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
               />
+              {query.trim() ? (
+                <button
+                  type="button"
+                  className="ui-standards-qdropdown__search-clear"
+                  aria-label="Clear search"
+                  data-testid={testId ? `${testId}-search-clear` : undefined}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setQuery("");
+                  }}
+                >
+                  <X
+                    className="ui-standards-qdropdown__search-clear-icon"
+                    strokeWidth={SEARCH_CLEAR_GLOBAL_STROKE}
+                    aria-hidden
+                  />
+                </button>
+              ) : null}
             </div>
           ) : null}
           {visible.length === 0 ? <p className="ui-standards-qdropdown__empty">{emptyLabel}</p> : null}
@@ -281,7 +303,7 @@ export function ExitsOutlineInput({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => onChange("")}
           >
-            <X className="size-4" aria-hidden />
+            <X className="size-4" strokeWidth={SEARCH_CLEAR_GLOBAL_STROKE} aria-hidden />
           </button>
         ) : null}
       </span>

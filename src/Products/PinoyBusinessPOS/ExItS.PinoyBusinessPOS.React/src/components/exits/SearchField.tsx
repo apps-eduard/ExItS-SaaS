@@ -1,5 +1,6 @@
 import { Loader2, Search, X } from "lucide-react";
 import { useId, type ChangeEvent, type InputHTMLAttributes, type KeyboardEvent } from "react";
+import { SEARCH_CLEAR_GLOBAL_STROKE } from "@/features/ui-standards/search-clear-global-default";
 import { cn } from "@/lib/cn";
 
 export type SearchFieldShape = "auto" | "standard" | "pill";
@@ -110,7 +111,7 @@ export function SearchField({
             onClick={handleClear}
             tabIndex={0}
           >
-            <X className="size-4" aria-hidden />
+            <X className="size-4" strokeWidth={SEARCH_CLEAR_GLOBAL_STROKE} aria-hidden />
           </button>
         ) : null}
       </div>

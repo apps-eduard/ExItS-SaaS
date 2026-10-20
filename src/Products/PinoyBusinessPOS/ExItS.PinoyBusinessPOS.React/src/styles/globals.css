@@ -3608,7 +3608,8 @@ select.exits-select.stock-status-toolbar__select {
   align-items: center;
   justify-content: space-between;
   gap: var(--exits-toolbar-gap, 0.5rem);
-  padding: var(--exits-table-cell-y) var(--exits-table-cell-x);
+  min-height: 2.75rem;
+  padding: 0.55rem var(--exits-table-cell-x);
   border-top: 1px solid var(--exits-border, #d8e0da);
   font-size: var(--exits-table-font-size);
   color: var(--exits-muted, #5b6b60);
@@ -3622,14 +3623,142 @@ select.exits-select.stock-status-toolbar__select {
 .exits-table-pagination__size {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.55rem;
   white-space: nowrap;
+  font-size: var(--exits-text-md, 0.9375rem);
 }
 
-.exits-table-pagination__size-select {
-  min-height: var(--exits-control-height);
+.exits-table-pagination__size-label {
+  color: inherit;
+  font-size: inherit;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+/* Borderless closed field: value + space + solid caret (width auto). */
+.exits-table-pagination__size-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   width: auto;
-  padding-inline: 0.5rem;
+  min-width: 0;
+  min-height: var(--exits-control-height);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.exits-table-pagination__size-trigger:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.exits-table-pagination__size-value {
+  font-size: inherit;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.exits-table-pagination__size-caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 0.32rem solid transparent;
+  border-right: 0.32rem solid transparent;
+  border-top: 0.4rem solid currentColor;
+  opacity: 0.72;
+}
+
+/* Quasar QSelect/QItem page-size menu (standard, not dense). */
+.exits-table-pagination__size-menu {
+  min-width: 0 !important;
+  width: max-content;
+  max-width: none;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+  color: rgba(0, 0, 0, 0.87);
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.2),
+    0 2px 2px rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.12);
+}
+
+/* Dense option rows: tighter vertical gap between 10 / 25 / …. */
+.exits-table-pagination__size-menu .exits-table-pagination__size-option {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0 !important;
+  box-sizing: border-box;
+  min-width: 2.5rem;
+  min-height: 32px;
+  height: auto;
+  margin: 0;
+  padding: 2px 8px !important;
+  border: 0;
+  border-radius: 0;
+  text-align: center;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  background: transparent !important;
+  transition: color 0.3s, background-color 0.3s;
+}
+
+/* Selected = primary color only (Quasar .q-item--active), not bold. */
+.exits-table-pagination__size-menu .exits-table-pagination__size-option--selected {
+  color: var(--exits-primary, #1976d2) !important;
+  background: transparent !important;
+  font-weight: 400 !important;
+}
+
+/* Hover/focus = full-width gray bar (Quasar focus helper). */
+.exits-table-pagination__size-menu .exits-table-pagination__size-option:hover,
+.exits-table-pagination__size-menu .exits-table-pagination__size-option:focus-visible {
+  background: rgba(0, 0, 0, 0.15) !important;
+}
+
+.exits-table-pagination__size-menu .exits-table-pagination__size-option--selected:hover,
+.exits-table-pagination__size-menu .exits-table-pagination__size-option--selected:focus-visible {
+  color: var(--exits-primary, #1976d2) !important;
+  background: rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="dark"] .exits-table-pagination__size-menu {
+  background: #1d1d1d;
+  color: #fff;
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.5),
+    0 2px 2px rgba(0, 0, 0, 0.36),
+    0 3px 1px -2px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .exits-table-pagination__size-menu .exits-table-pagination__size-option {
+  color: #fff;
+}
+
+[data-theme="dark"] .exits-table-pagination__size-menu .exits-table-pagination__size-option--selected {
+  color: #ffc107 !important;
+}
+
+[data-theme="dark"] .exits-table-pagination__size-menu .exits-table-pagination__size-option:hover,
+[data-theme="dark"] .exits-table-pagination__size-menu .exits-table-pagination__size-option:focus-visible,
+[data-theme="dark"] .exits-table-pagination__size-menu .exits-table-pagination__size-option--selected:hover,
+[data-theme="dark"] .exits-table-pagination__size-menu .exits-table-pagination__size-option--selected:focus-visible {
+  background: rgba(255, 255, 255, 0.15) !important;
 }
 
 .exits-table-pagination__nav {
@@ -10571,6 +10700,36 @@ button.exits-card {
   gap: 0.45rem;
 }
 
+/* Title text box: less space above (float-label reserve) and below (to next field). */
+.exits-form-drawer__body:has(.personal-todo-create-form) {
+  padding-top: 0.5rem;
+}
+
+.personal-todo-form__title-field .ui-standards-qinput {
+  padding-top: 0.65rem;
+  margin-bottom: 0;
+}
+
+.personal-todo-form__title-field {
+  margin-bottom: -0.35rem;
+}
+
+.personal-todo-form__title-field .ui-standards-qinput:focus-within .ui-standards-qinput__label,
+.personal-todo-form__title-field
+  .ui-standards-qinput:has(.ui-standards-qinput__control:not(:placeholder-shown))
+  .ui-standards-qinput__label {
+  transform: translateY(calc(-50% - 0.65rem)) scale(var(--qinput-float-scale));
+}
+
+.personal-todo-form__title-field
+  .ui-standards-qinput--outlined:focus-within
+  .ui-standards-qinput__label,
+.personal-todo-form__title-field
+  .ui-standards-qinput--outlined:has(.ui-standards-qinput__control:not(:placeholder-shown))
+  .ui-standards-qinput__label {
+  transform: translateY(calc(-50% - 3px)) scale(var(--qinput-float-scale));
+}
+
 .personal-todo-create-shell {
   gap: 0;
   padding: 0;
@@ -10884,7 +11043,7 @@ button.exits-card {
   font-weight: var(--exits-font-weight-medium);
 }
 
-/* Default / small screens: one horizontal scrolling row. */
+/* Default / small screens: scrollable tabs + vertical more (ext-tabs-basic-scrollable-more). */
 .personal-todo-tasklist-rail__section {
   display: none;
 }
@@ -10893,7 +11052,35 @@ button.exits-card {
   min-width: 0;
 }
 
+.personal-todo-tasklist-rail__nav--scroll-more {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.16),
+    0 2px 2px rgba(0, 0, 0, 0.1);
+}
+
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__list {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0;
+  padding: 0;
+  scrollbar-width: none;
+}
+
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__list::-webkit-scrollbar {
+  display: none;
+}
+
 .personal-todo-tasklist-rail__list {
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   gap: 0.35rem;
@@ -10903,6 +11090,112 @@ button.exits-card {
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
   padding-bottom: 0.1rem;
+}
+
+/* Solid bar tabs — one fill color for the whole strip (incl. more). */
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item {
+  position: relative;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.88;
+}
+
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item:hover,
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item:focus-visible {
+  background: color-mix(in srgb, #fff 12%, transparent);
+  outline: none;
+  opacity: 1;
+}
+
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item--active {
+  background: transparent;
+  color: inherit;
+  opacity: 1;
+}
+
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item--active::after {
+  content: "";
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0;
+  left: 0.55rem;
+  height: 2px;
+  background: currentColor;
+}
+
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__icon {
+  color: inherit;
+}
+
+.personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__count {
+  background: color-mix(in srgb, #fff 22%, transparent);
+  color: inherit;
+}
+
+.personal-todo-tasklist-rail__more {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-inline-start: 1px solid color-mix(in srgb, #fff 28%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.personal-todo-tasklist-rail__more:hover,
+.personal-todo-tasklist-rail__more:focus-visible {
+  background: color-mix(in srgb, #fff 12%, transparent);
+  color: inherit;
+  outline: none;
+}
+
+.personal-todo-tasklist-rail__more-icon {
+  stroke-width: 2.5;
+}
+
+.personal-todo-tasklist-rail__more-menu {
+  min-width: 12.5rem;
+  max-height: min(18rem, 70vh);
+  overflow-y: auto;
+}
+
+.personal-todo-tasklist-rail__more-item--active {
+  font-weight: 700;
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+}
+
+.personal-todo-tasklist-rail__more-item--active:hover,
+.personal-todo-tasklist-rail__more-item--active:focus-visible {
+  background: color-mix(in srgb, var(--exits-primary) 18%, transparent);
+  color: var(--exits-primary);
+}
+
+.personal-todo-tasklist-rail__more-item--active .personal-todo-tasklist-rail__more-count {
+  color: var(--exits-primary);
+  font-weight: 700;
+}
+
+.personal-todo-tasklist-rail__more-count {
+  margin-inline-start: auto;
+  font-size: var(--exits-text-xs);
+  color: var(--exits-text-muted);
 }
 
 .personal-todo-tasklist-rail__list > li {
@@ -10949,7 +11242,75 @@ button.exits-card {
     overflow-y: auto;
   }
 
+  .personal-todo-tasklist-rail__nav--scroll-more {
+    flex-direction: column;
+    overflow: visible;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__list {
+    gap: 0.25rem;
+    padding-bottom: 0;
+    scrollbar-width: thin;
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__list::-webkit-scrollbar {
+    display: unset;
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item {
+    gap: 0.55rem;
+    min-height: 2.55rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--exits-radius-md);
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-transform: none;
+    opacity: 1;
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item:hover,
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item:focus-visible {
+    background: color-mix(in srgb, var(--exits-primary) 10%, transparent);
+    color: var(--exits-text);
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item--active,
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item--active:hover {
+    background: var(--exits-primary);
+    color: var(--exits-primary-foreground);
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__item--active::after {
+    content: none;
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__icon {
+    color: inherit;
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more .personal-todo-tasklist-rail__count {
+    background: color-mix(in srgb, var(--exits-surface-muted) 80%, transparent);
+    color: var(--exits-text-muted);
+  }
+
+  .personal-todo-tasklist-rail__nav--scroll-more
+    .personal-todo-tasklist-rail__item--active
+    .personal-todo-tasklist-rail__count {
+    background: color-mix(in srgb, #fff 88%, transparent);
+    color: var(--exits-primary);
+  }
+
+  .personal-todo-tasklist-rail__more {
+    display: none;
+  }
+
   .personal-todo-tasklist-rail__list {
+    flex: none;
     flex-direction: column;
     flex-wrap: nowrap;
     gap: 0.25rem;
@@ -11040,19 +11401,61 @@ button.exits-card {
 .personal-todo-tasklist-card__search-row {
   display: flex;
   flex-shrink: 0;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
   min-width: 0;
 }
 
 .personal-todo-tasklist-card__search {
-  flex: 1 1 auto;
+  flex: 1 1 100%;
+  width: 100%;
   min-width: 0;
+}
+
+.personal-todo-tasklist-card__toolbar {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.personal-todo-tasklist-card__toolbar-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
 }
 
 .personal-todo-tasklist-card__search-field {
   border-radius: var(--exits-radius-md);
   background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+}
+
+@media (min-width: 640px) {
+  .personal-todo-tasklist-card__search-row {
+    flex-wrap: nowrap;
+  }
+
+  .personal-todo-tasklist-card__search {
+    order: 2;
+    flex: 0 1 14rem;
+    width: 14rem;
+    max-width: 14rem;
+  }
+
+  .personal-todo-tasklist-card__toolbar {
+    order: 1;
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .personal-todo-tasklist-card__toolbar-btn {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: auto;
+  }
 }
 
 .personal-todo-tasklist-card__sort--on {
@@ -11193,6 +11596,22 @@ button.exits-card {
 .personal-todo-tasklist-group__title {
   font-size: var(--exits-text-lg);
   font-weight: 700;
+}
+
+.personal-todo-tasklist-group--primary .personal-todo-tasklist-group__title {
+  color: var(--exits-primary);
+}
+
+.personal-todo-tasklist-group--warning .personal-todo-tasklist-group__title {
+  color: var(--exits-warning);
+}
+
+.personal-todo-tasklist-group--success .personal-todo-tasklist-group__title {
+  color: var(--exits-severity-success);
+}
+
+.personal-todo-tasklist-group--danger .personal-todo-tasklist-group__title {
+  color: var(--exits-danger);
 }
 
 .personal-todo-tasklist-group__chevron {
@@ -11976,21 +12395,7 @@ button.personal-todo-tasklist-row__icon-btn--reset {
 }
 
 .personal-todo-quick-due__chip {
-  min-height: 2rem;
-  padding: 0.2rem 0.65rem;
-  border: 1px solid var(--exits-border);
-  border-radius: 999px;
-  background: var(--exits-surface);
-  color: inherit;
-  font: inherit;
-  font-size: var(--exits-text-sm);
-  cursor: pointer;
-}
-
-.personal-todo-quick-due__chip--active {
-  border-color: color-mix(in srgb, var(--exits-primary) 55%, var(--exits-border));
-  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
-  font-weight: 600;
+  min-width: 0;
 }
 
 .personal-todo-advanced-toggle {
@@ -16866,8 +17271,7 @@ a.dashboard-metric-card:focus-visible {
   .personal-shell .app-top-bar--personal .shell-connection-trigger,
   .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
   .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
-  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
-  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] {
     color: #657792;
     background: transparent;
   }
@@ -16876,10 +17280,21 @@ a.dashboard-metric-card:focus-visible {
   .personal-shell .app-top-bar--personal .shell-connection-trigger:hover,
   .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"]:hover,
   .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"]:hover,
-  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover,
-  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"]:hover {
+  .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover {
     color: #4b5d78;
     background: color-mix(in srgb, #ffffff 62%, transparent);
+  }
+
+  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"] {
+    color: #000000;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 999px !important;
+  }
+
+  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"]:hover {
+    color: #000000;
+    background: #ffffff;
   }
 
   .personal-shell .app-top-bar--personal .app-top-bar__action svg,
@@ -16968,12 +17383,16 @@ a.dashboard-metric-card:focus-visible {
   min-width: 0;
 }
 
-.app-top-bar__sidebar-mode {
-  color: var(--exits-text-muted);
+.app-top-bar__sidebar-mode[data-intent="standard"] {
+  color: #000000;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
 }
 
-.app-top-bar__sidebar-mode:hover {
-  color: var(--exits-text);
+.app-top-bar__sidebar-mode[data-intent="standard"]:hover {
+  color: #000000;
+  background-color: #ffffff;
 }
 
 .app-top-bar__brand {
@@ -18166,16 +18585,23 @@ textarea.exits-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: max(2rem, calc(var(--exits-control-height) - 0.35rem));
-  height: max(2rem, calc(var(--exits-control-height) - 0.35rem));
+  width: max(1.75rem, calc(var(--exits-control-height) - 0.5rem));
+  height: max(1.75rem, calc(var(--exits-control-height) - 0.5rem));
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: var(--exits-radius-sm);
+  border-radius: 999px;
   background: transparent;
-  color: var(--exits-text-muted);
+  color: var(--exits-primary);
   cursor: pointer;
   animation: exits-search-clear-in var(--exits-motion-fast) var(--exits-ease-standard);
+}
+
+.exits-search-field__clear svg {
+  width: 1rem;
+  height: 1rem;
+  /* Locked: search-clear-global-default SEARCH_CLEAR_GLOBAL_STROKE */
+  stroke-width: 3;
 }
 
 @keyframes exits-search-clear-in {
@@ -18188,8 +18614,8 @@ textarea.exits-input {
 }
 
 .exits-search-field__clear:hover {
-  background: var(--exits-surface-muted);
-  color: var(--exits-text);
+  background: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+  color: var(--exits-primary);
 }
 
 .exits-search-field__clear:focus-visible {
@@ -22616,7 +23042,7 @@ a.exits-chip--primary:hover {
   pointer-events: none;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
-  border-radius: 1rem;
+  border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
   box-shadow:
     0 4px 16px color-mix(in srgb, #0f172a 10%, transparent),
@@ -22642,6 +23068,80 @@ a.exits-chip--primary:hover {
   pointer-events: auto;
 }
 
+/* Large: FormDrawer / responsive SideDrawer — centered dialog instead of side slide. */
+@media (min-width: 1024px) {
+  .exits-side-drawer--center-lg .exits-side-drawer__panel,
+  .exits-side-drawer--center-lg .exits-side-drawer__panel[data-side="right"],
+  .exits-side-drawer--center-lg .exits-side-drawer__panel[data-side="left"] {
+    /* Horizontally centered, top-anchored — not mid-viewport (keeps footer off screen middle). */
+    top: max(1.25rem, env(safe-area-inset-top, 0px), 8vh);
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: min(30rem, calc(100vw - 2.5rem));
+    max-width: min(30rem, calc(100vw - 2.5rem));
+    height: auto;
+    max-height: none;
+    opacity: 0;
+    overflow: visible;
+    transform: translate(-50%, 0.75rem) scale(0.96);
+    transition:
+      transform var(--exits-motion-slow) var(--exits-ease-emphasized),
+      opacity var(--exits-motion-normal) var(--exits-ease-standard);
+  }
+
+  .exits-side-drawer--center-lg .exits-side-drawer__panel[data-open="true"] {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  .exits-side-drawer--center-lg .exits-form-drawer__footer,
+  .exits-side-drawer--center-lg .exits-form-drawer__footer-actions {
+    justify-content: flex-end;
+  }
+
+  .exits-side-drawer--center-lg .exits-form-drawer__footer-actions > button {
+    flex: 0 0 auto;
+  }
+
+  /* Centered shell sizes to content — no inner scrollbar. */
+  .exits-side-drawer--center-lg .exits-side-drawer__body,
+  .exits-side-drawer--center-lg .exits-form-drawer__panel .exits-side-drawer__body {
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .exits-side-drawer--center-lg .exits-form-drawer {
+    flex: 0 0 auto;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .exits-side-drawer--center-lg .exits-form-drawer__body {
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+    overflow-y: visible;
+  }
+
+  .exits-side-drawer--center-lg .exits-form-drawer__panel--sm {
+    width: min(24rem, calc(100vw - 2.5rem));
+    max-width: min(24rem, calc(100vw - 2.5rem));
+  }
+
+  .exits-side-drawer--center-lg .exits-form-drawer__panel--md {
+    width: min(30rem, calc(100vw - 2.5rem));
+    max-width: min(30rem, calc(100vw - 2.5rem));
+  }
+
+  .exits-side-drawer--center-lg .exits-form-drawer__panel--lg {
+    width: min(36rem, calc(100vw - 2.5rem));
+    max-width: min(36rem, calc(100vw - 2.5rem));
+  }
+}
+
 .exits-side-drawer__header {
   display: flex;
   align-items: flex-start;
@@ -22659,6 +23159,17 @@ a.exits-chip--primary:hover {
   letter-spacing: -0.01em;
   color: var(--exits-text);
   line-height: 1.25;
+}
+
+.exits-side-drawer__title:focus,
+.exits-side-drawer__ribbon:focus {
+  outline: none;
+}
+
+.exits-side-drawer__title:focus-visible,
+.exits-side-drawer__ribbon:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
 }
 
 .exits-side-drawer__description {
@@ -24214,9 +24725,15 @@ a.exits-chip--primary:hover {
 .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
 .personal-shell .app-top-bar--personal [data-testid="personal-appearance-menu"],
 .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
-.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
-.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] {
   color: #657792;
+}
+
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"] {
+  color: #000000;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 999px !important;
 }
 
 /* Theme color and the light page wash that belongs to it. Scoped to Personal. */
@@ -24354,8 +24871,7 @@ a.exits-chip--primary:hover {
 [data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
 [data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-appearance-menu"],
 [data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
-[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
-[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] {
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] {
   color: #fff;
 }
 
@@ -24363,10 +24879,16 @@ a.exits-chip--primary:hover {
 [data-theme="dark"] .personal-shell .app-top-bar--personal .shell-connection-trigger:hover,
 [data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"]:hover,
 [data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"]:hover,
-[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover,
-[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"]:hover {
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover {
   color: #eef3fc;
   background: color-mix(in srgb, #ffffff 10%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"],
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"]:hover {
+  color: #000000;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 /* Personal shell fills the viewport — override Admin shell content caps. */
@@ -24388,7 +24910,7 @@ a.exits-chip--primary:hover {
   border: none;
   box-shadow: none;
   border-radius: 0;
-  padding-block-start: 1.25rem;
+  padding-block-start: 0.5rem;
 }
 
 .personal-shell .personal-shell__content .exits-page,
@@ -24605,7 +25127,7 @@ a.exits-chip--primary:hover {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    padding-block-start: 1.25rem;
+    padding-block-start: 0.5rem;
   }
 }
 
@@ -24620,6 +25142,74 @@ a.exits-chip--primary:hover {
 
 .personal-shell .personal-todo-hub > :not(.personal-todo-tasklist-layout) {
   flex-shrink: 0;
+}
+
+/* Small screens: stretch the task card flush to the fixed bottom menu.
+   Shell already reserves bottom-nav height via pb; do not add a second pad. */
+@media (max-width: 1023.98px) {
+  .personal-shell .admin-shell__content.personal-shell__content:has(.personal-todo-hub) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-block-end: 0;
+  }
+
+  .personal-shell .personal-todo-hub > .page-header {
+    display: none;
+  }
+
+  .personal-shell .personal-todo-hub {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-layout {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-rail {
+    flex: 0 0 auto;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+    margin-block-end: 0;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__search-row,
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__header,
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__create {
+    flex: 0 0 auto;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__groups,
+  .personal-shell .personal-todo-hub .personal-todo-board {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
 }
 
 .personal-home-page {
@@ -24668,7 +25258,18 @@ a.exits-chip--primary:hover {
 }
 
 .utang-activity-list.utang-relationship-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0.55rem;
   padding-right: 0.45rem;
+}
+
+@media (min-width: 768px) {
+  .utang-activity-list.utang-relationship-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.25rem;
+    row-gap: 0.55rem;
+  }
 }
 
 .utang-activity-facts {
@@ -24684,6 +25285,7 @@ a.exits-chip--primary:hover {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.3rem;
+  margin-left: -0.35rem;
 }
 
 .utang-activity-facts > p,
@@ -24693,6 +25295,25 @@ a.exits-chip--primary:hover {
   font-size: var(--exits-text-sm);
   font-weight: 400;
   line-height: 1.35;
+}
+
+.utang-activity-facts > p.utang-activity-facts__created,
+.utang-activity-facts > p.utang-activity-facts__created .text-muted {
+  margin: 0;
+  flex: 1 0 100%;
+  min-width: 0;
+  font-size: var(--exits-text-xs);
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--exits-muted, #64748b);
+}
+
+@media (max-width: 719px) {
+  .utang-activity-entry .utang-activity-facts > p.utang-activity-facts__created,
+  .utang-activity-entry .utang-activity-facts > p.utang-activity-facts__created .text-muted {
+    font-size: 10px !important;
+    line-height: 1.25;
+  }
 }
 
 @media (max-width: 639px) {
@@ -25189,6 +25810,13 @@ a.exits-chip--primary:hover {
 @media (max-width: 639px) {
   .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
     padding-top: 4.9rem;
+  }
+}
+
+/* Outside gap around My Record / Shared — home tracker (no utang-hub-actions). */
+@media (max-width: 719px) {
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+    padding-inline: 0.25rem;
   }
 }
 
@@ -25967,6 +26595,12 @@ a.exits-chip--primary:hover {
   [data-navigation-mode="standard"] .personal-shell > .admin-sidebar-rail {
     width: 17rem;
     flex: 0 0 17rem;
+    overflow: hidden;
+    visibility: visible;
+    transition:
+      width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      visibility 0s;
   }
 
   .personal-shell .personal-sidebar.admin-sidebar {
@@ -25979,6 +26613,25 @@ a.exits-chip--primary:hover {
   [data-navigation-mode="compact"] .personal-shell > .admin-sidebar-rail {
     width: 4.75rem;
     flex: 0 0 4.75rem;
+    overflow: hidden;
+    visibility: visible;
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      visibility 0s;
+  }
+
+  [data-navigation-mode="hidden"] .personal-shell > .admin-sidebar-rail {
+    width: 0;
+    flex: 0 0 0;
+    min-width: 0;
+    overflow: hidden;
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      visibility 0s linear var(--exits-sidebar-collapse-duration);
   }
 
   [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__nav {
@@ -26177,7 +26830,7 @@ a.exits-chip--primary:hover {
 .personal-shell .tracker-summary-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 @media (min-width: 720px) {
@@ -26185,6 +26838,82 @@ a.exits-chip--primary:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
   }
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant.tracker-amount-group {
+  gap: 0;
+}
+
+.personal-shell .tracker-summary--pendant .tracker-amount-group__title {
+  margin: 0;
+  color: var(--exits-text);
+  font-size: var(--exits-text-md, 1rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.personal-shell .tracker-summary--pendant .tracker-amount-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: -0.45rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+}
+
+/* Stacked My Record / Shared: gap only before I owed + between the two cards. */
+@media (max-width: 719px) {
+  .personal-shell .tracker-summary.tracker-summary--pendant.tracker-amount-group {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-list.utang-relationship-list,
+  .personal-shell .tracker-summary--pendant .tracker-amount-list {
+    gap: 0.55rem;
+    margin-inline: 0;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-list > li {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .personal-shell .tracker-amount-card .ui-standards-qcard__settings-ribbon {
+    margin-left: 0;
+    padding: 0.7rem 0.5rem 0.55rem 0.35rem;
+  }
+}
+
+.personal-shell .tracker-summary--pendant .tracker-amount-list > li {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+}
+
+.personal-shell .tracker-amount-card {
+  width: 100%;
+}
+
+.personal-shell .tracker-amount-card .ui-standards-qcard__settings-ribbon {
+  margin-left: 0.4rem;
+  padding: 0.75rem 1.15rem 0.6rem 0.85rem;
+}
+
+.personal-shell .tracker-amount-card .tracker-amount-card__headline {
+  justify-content: flex-start;
+  padding-top: 0.4rem;
+  padding-bottom: 0.1rem;
+}
+
+.personal-shell .tracker-amount-card .utang-settings-card__amount {
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 .personal-shell .tracker-summary {
@@ -27101,9 +27830,14 @@ a.exits-chip--primary:hover {
   padding-inline: 1.85rem;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 719px) {
   .personal-home-page .personal-section.personal-tracker-card.catalog-form-section:has(.utang-hub-actions) {
-    padding-inline: 0.85rem;
+    padding-inline: 0.25rem;
+  }
+
+  .personal-tracker-card .tracker-summary-row {
+    margin-inline: 0;
+    width: 100%;
   }
 }
 
@@ -27220,30 +27954,49 @@ a.exits-chip--primary:hover {
   padding-top: 3.55rem;
 }
 
+/*
+ * You owe / Quick actions / Activity — same outer inset + inner padding as
+ * Active accounts cards (.utang-settings-list + account ribbon body).
+ */
+.personal-page .utang-detail-top .utang-balance-card.utang-ribbon-card,
+.personal-page .utang-activity-card.utang-ribbon-card.catalog-form-section,
 .personal-page .personal-section.personal-quick-actions.utang-quick-actions.catalog-form-section {
   position: relative;
   overflow: visible;
-  margin-left: 0.7rem;
+  margin-left: 0.9rem;
+  margin-right: 0;
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
   box-shadow: none;
-  padding: 2.45rem 1.05rem 1rem;
+  /* Extra top for title ribbon; tighter left/right than Active accounts body. */
+  padding: 3.1rem 0.65rem 0.85rem 0.55rem;
+}
+
+.personal-page .personal-section.personal-quick-actions.utang-quick-actions.catalog-form-section {
+  padding-top: 2.45rem;
+}
+
+@media (max-width: 639px) {
+  .personal-page .utang-detail-top .utang-balance-card.utang-ribbon-card,
+  .personal-page .utang-activity-card.utang-ribbon-card.catalog-form-section,
+  .personal-page .personal-section.personal-quick-actions.utang-quick-actions.catalog-form-section {
+    /* Left room for ribbon fold; right flush to page gutter. */
+    margin-left: 0.5rem;
+    margin-right: 0;
+  }
 }
 
 .utang-quick-actions .personal-quick-actions__cards {
+  /* Same as .utang-hub-actions — room for row icon ribbons + folds */
   padding-left: 0.5rem;
+  gap: 0.55rem;
 }
 
 button.personal-home-index-card {
   font: inherit;
   text-align: left;
   cursor: pointer;
-}
-
-.utang-detail-top .utang-ribbon-card,
-.utang-activity-card.utang-ribbon-card {
-  margin-left: 0.7rem;
 }
 
 .exits-modal__ribbon .person-detail-record-name {
@@ -29592,6 +30345,10 @@ button.branch-mgmt-overview__item--action:focus-visible {
     text-align: end;
   }
 
+  .people-list-table .exits-table__head.people-table-actions {
+    text-align: center;
+  }
+
   .people-list-section:has(.people-list-table) .people-search-row .ui-standards-playground-search {
     display: none;
   }
@@ -29607,22 +30364,40 @@ button.branch-mgmt-overview__item--action:focus-visible {
   }
 }
 
-.people-table-edit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--exits-text, #111);
+.people-table-name {
+  color: var(--exits-text);
+  font: inherit;
   cursor: pointer;
 }
 
-.people-table-edit:hover {
-  background: color-mix(in srgb, var(--exits-primary, #1976d2) 12%, transparent);
+.people-table-name:hover {
+  color: var(--exits-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+}
+
+.people-table-amount {
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.people-table-amount:hover {
+  color: var(--exits-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+}
+
+.people-table-amount--empty:hover {
+  color: var(--exits-primary);
+}
+
+button.people-table-edit {
+  width: var(--exits-control-height);
+  min-width: var(--exits-control-height);
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  padding: 0;
 }
 
 .people-list-table .exits-table__header[data-appearance="glossy"] {
@@ -29646,6 +30421,11 @@ button.branch-mgmt-overview__item--action:focus-visible {
 .people-table-footer[data-appearance="glossy"] .exits-table-pagination {
   background: transparent;
   color: inherit;
+}
+
+.people-list-table,
+.ui-standards-qtable {
+  --exits-table-page-size-border: var(--qheader-accent, var(--exits-border, #d8e0da));
 }
 
 .people-row__main {
@@ -30079,10 +30859,22 @@ html[data-motion="reduced"] .exits-tooltip {
     align-self: stretch;
   }
 
+  /*
+   * Mode-cycle size animation (Standard ↔ Compact ↔ Hidden).
+   * Same root-cause fix as Reveal: animate explicit width/flex-basis
+   * (unregistered --exits-shell-sidebar-width does not interpolate).
+   * Destination-rule durations: expand uses reveal, shrink uses collapse.
+   */
   /* —— STANDARD: reserved + visual 15.5rem —— */
   [data-navigation-mode="standard"] .admin-sidebar-rail {
-    width: var(--exits-shell-sidebar-width);
-    flex: 0 0 var(--exits-shell-sidebar-width);
+    width: 15.5rem;
+    flex: 0 0 15.5rem;
+    overflow: hidden;
+    visibility: visible;
+    transition:
+      width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      visibility 0s;
   }
 
   [data-navigation-mode="standard"] .admin-sidebar.admin-sidebar--expanded {
@@ -30090,14 +30882,26 @@ html[data-motion="reduced"] .exits-tooltip {
     width: 100%;
   }
 
-  /* —— HIDDEN: desktop sidenav fully removed; topbar cycle restores it —— */
+  [data-navigation-mode="standard"] .admin-sidebar__brand-label,
+  [data-navigation-mode="standard"] .admin-sidebar__group-title,
+  [data-navigation-mode="standard"] .admin-sidebar__label {
+    opacity: 1;
+    transition:
+      opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard) 60ms;
+  }
+
+  /* —— HIDDEN: collapse to 0 (keep in layout so open/close can animate) —— */
   [data-navigation-mode="hidden"] .admin-sidebar-rail {
-    display: none !important;
     width: 0;
     flex: 0 0 0;
     min-width: 0;
     overflow: hidden;
     pointer-events: none;
+    visibility: hidden;
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      visibility 0s linear var(--exits-sidebar-collapse-duration);
   }
 
   [data-navigation-mode="hidden"] .admin-shell__column,
@@ -30126,9 +30930,14 @@ html[data-motion="reduced"] .exits-tooltip {
 
   /* —— COMPACT: permanent icon rail (no hover/focus expand) —— */
   [data-navigation-mode="compact"] .admin-sidebar-rail {
-    width: var(--exits-shell-sidebar-width);
-    flex: 0 0 var(--exits-shell-sidebar-width);
-    overflow: visible;
+    width: 3.75rem;
+    flex: 0 0 3.75rem;
+    overflow: hidden;
+    visibility: visible;
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      visibility 0s;
   }
 
   [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
@@ -30163,6 +30972,8 @@ html[data-motion="reduced"] .exits-tooltip {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+    opacity: 0;
+    transition: opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard);
   }
 
   [data-navigation-mode="compact"] .admin-sidebar__collapse-toggle {
@@ -30180,6 +30991,8 @@ html[data-motion="reduced"] .exits-tooltip {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+    opacity: 0;
+    transition: opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard);
   }
 
   [data-navigation-mode="compact"] .admin-sidebar__group-toggle {
@@ -30230,6 +31043,8 @@ html[data-motion="reduced"] .exits-tooltip {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+    opacity: 0;
+    transition: opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard);
   }
 
   [data-navigation-mode="compact"] .admin-sidebar__badge {
@@ -32146,6 +32961,40 @@ html[data-motion="reduced"] .exits-tooltip {
   border-left: 0.7rem solid transparent;
 }
 
+/*
+ * FormDrawer ribbon: absolute on the panel so it is not clipped by
+ * overflow-x:hidden (which also forces y-clip). After modal + form-drawer rules.
+ */
+.exits-side-drawer__panel--ribbon,
+.exits-side-drawer__panel--ribbon.exits-form-drawer__panel {
+  overflow: visible !important;
+}
+
+.exits-side-drawer__header--ribbon {
+  position: relative;
+  overflow: visible;
+  /* Clear absolute ribbon + fold under it. */
+  padding-top: 2.75rem;
+}
+
+.exits-side-drawer__ribbon.exits-modal__ribbon {
+  position: absolute;
+  /* Sit on the panel top edge; left overhang for fold tail. */
+  top: 0.35rem;
+  left: -0.7rem;
+  z-index: 4;
+  margin: 0 !important;
+  max-width: calc(100% - 2.5rem);
+}
+
+/* Keep close on the top-right with the ribbon (not pushed down by header pad). */
+.exits-side-drawer__close--ribbon {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  z-index: 5;
+}
+
 .exits-modal__pennant {
   display: grid;
   place-items: center;
@@ -32177,17 +33026,64 @@ html[data-motion="reduced"] .exits-tooltip {
   margin-top: 0.85rem;
 }
 
-.utang-settle-dialog__line {
-  margin: 0;
-  color: var(--exits-text);
-  font-size: 1.125rem;
-  line-height: 1.35;
+.utang-settle-dialog__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.utang-settle-dialog__summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+.utang-settle-dialog__summary-item {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.utang-settle-dialog__summary-item:last-child {
+  align-items: flex-end;
+  text-align: end;
+}
+
+.utang-settle-dialog__label {
+  color: var(--exits-muted, #64748b);
+  font-size: var(--exits-text-xs);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.utang-settle-dialog__arrow {
+  flex: 0 0 auto;
+  color: var(--exits-muted, #64748b);
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .utang-settle-dialog .utang-settle-dialog__amount {
   color: var(--exits-primary);
-  font-size: 1.5rem;
+  font-size: 1.05rem;
   font-weight: 700;
+  line-height: 1.2;
+}
+
+.utang-settle-dialog__hint {
+  margin: 0;
+  color: var(--exits-muted, #64748b);
+  font-size: var(--exits-text-xs);
+  line-height: 1.35;
 }
 
 .utang-balance-card .utang-balance-card__amount {
@@ -32202,6 +33098,7 @@ html[data-motion="reduced"] .exits-tooltip {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-top: 0.35rem;
+  margin-left: -0.25rem;
 }
 
 .utang-reminders-dialog__name {

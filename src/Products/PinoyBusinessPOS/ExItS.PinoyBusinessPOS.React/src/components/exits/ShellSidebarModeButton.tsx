@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { IconButton } from "@/components/ui/icon-button";
+import { Button } from "@/components/ui/button";
+import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -9,6 +10,12 @@ import {
   type NavigationModePreference,
 } from "@/lib/preferences/ui-preferences";
 import { cn } from "@/lib/cn";
+
+const STANDARD_RAISED_STYLE: CSSProperties = {
+  backgroundColor: INTENT_GLOBAL_STANDARD,
+  color: "#000000",
+  borderColor: "rgba(0, 0, 0, 0.2)",
+};
 
 function cycleLabelKey(mode: NavigationModePreference): MessageKey {
   const next = nextNavigationModeCycle(mode);
@@ -42,13 +49,25 @@ export function ShellSidebarModeButton({
   const modeIcon = icons?.[mode] ?? (mode === "reveal" ? icons?.standard : undefined);
 
   return (
-    <IconButton
-      label={label}
+    <Button
+      type="button"
+      intent="neutral"
+      appearance="solid"
+      shape="round"
+      size="icon"
+      aria-label={label}
       title={label}
       data-testid="shell-sidebar-mode-button"
+      data-intent="standard"
+      data-appearance="raised"
+      data-shape="rounded"
       data-navigation-mode={mode}
       data-next-navigation-mode={next}
-      className={cn("app-top-bar__sidebar-mode", className)}
+      className={cn(
+        "app-top-bar__sidebar-mode ui-standards-qbtn--raised ui-standards-qbtn--rounded border shadow-none",
+        className,
+      )}
+      style={STANDARD_RAISED_STYLE}
       onClick={() => setNavigationMode(next)}
     >
       {modeIcon ??
@@ -60,6 +79,6 @@ export function ShellSidebarModeButton({
         ) : (
           <PanelLeft aria-hidden="true" className="size-5" strokeWidth={2.15} />
         ))}
-    </IconButton>
+    </Button>
   );
 }

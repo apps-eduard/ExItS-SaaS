@@ -10,7 +10,12 @@ import {
 import type { QuickDuePreset } from "@/api/platform/personal-todo-client";
 import { quickDueLocalDateTime } from "@/api/platform/personal-todo-client";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { cn } from "@/lib/cn";
+import {
+  ExitsOutlineInput,
+  ExitsOutlineSelect,
+  ExitsOutlineTextarea,
+} from "@/components/exits/ExitsOutlineField";
+import { Button } from "@/components/ui/button";
 import {
   TODO_PRIORITIES,
   TODO_RELATED_TYPES,
@@ -72,13 +77,13 @@ function TodoRelatedEntityPicker({
   const pickerOptions = useMemo(() => {
     if (form.relatedEntityType === "PersonalContact") {
       return (contactsQuery.data ?? []).map((contact) => ({
-        id: contact.id,
+        value: contact.id,
         label: contact.displayName,
       }));
     }
     if (form.relatedEntityType === "PersonalUtangRelationship") {
       return (utangQuery.data ?? []).map((relationship) => ({
-        id: relationship.id,
+        value: relationship.id,
         label: `${relationship.perspective} · ${relationship.currencyCode} ${relationship.currentBalance}`,
       }));
     }
@@ -97,34 +102,27 @@ function TodoRelatedEntityPicker({
 
   if (usePicker) {
     return (
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("personal.todo.relatedPick")}
-        <select
-          data-testid={`${idPrefix}-related-pick`}
-          className="exits-select"
-          value={form.relatedEntityId}
-          onChange={(event) => setForm({ ...form, relatedEntityId: event.target.value })}
-        >
-          <option value="">{t("personal.todo.relatedPickPlaceholder")}</option>
-          {pickerOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <ExitsOutlineSelect
+        label={t("personal.todo.relatedPick")}
+        value={form.relatedEntityId}
+        options={[
+          { value: "", label: t("personal.todo.relatedPickPlaceholder") },
+          ...pickerOptions,
+        ]}
+        onChange={(relatedEntityId) => setForm({ ...form, relatedEntityId })}
+        testId={`${idPrefix}-related-pick`}
+      />
     );
   }
 
   return (
-    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-      {t("personal.todo.relatedId")}
-      <input
-        data-testid={`${idPrefix}-related-id`}
-        className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+    <div className="flex min-w-0 flex-col gap-1">
+      <ExitsOutlineInput
+        label={t("personal.todo.relatedId")}
         value={form.relatedEntityId}
-        onChange={(event) => setForm({ ...form, relatedEntityId: event.target.value })}
+        onChange={(relatedEntityId) => setForm({ ...form, relatedEntityId })}
         placeholder="00000000-0000-0000-0000-000000000000"
+        testId={`${idPrefix}-related-id`}
       />
       {!online &&
       form.relatedEntityType !== "CustomerOrder" &&
@@ -133,7 +131,7 @@ function TodoRelatedEntityPicker({
           {t("personal.todo.relatedPickerOfflineHint")}
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -156,18 +154,19 @@ export function TodoQuickDueChips({
           const value = quickDueLocalDateTime(preset.id);
           const active = preset.id === "none" ? !activeDueLocal : activeDueLocal === value;
           return (
-            <button
+            <Button
               key={preset.id}
               type="button"
-              className={cn(
-                "personal-todo-quick-due__chip",
-                active && "personal-todo-quick-due__chip--active",
-              )}
+              intent={active ? "primary" : "neutral"}
+              appearance={active ? "glossy" : "outline"}
+              shape="standard"
+              size="sm"
+              className="personal-todo-quick-due__chip"
               data-testid={`${testIdPrefix}-quick-due-${preset.id}`}
               onClick={() => onSelect(value)}
             >
               {t(preset.labelKey)}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -192,37 +191,49 @@ export function TodoFormFields({
 }) {
   const { t } = useI18n();
 
+  const priorityOptions = useMemo(
+    () =>
+      TODO_PRIORITIES.map((priority) => ({
+        value: priority,
+        label: t(priorityLabelKey(priority)),
+      })),
+    [t],
+  );
+
+  const relatedTypeOptions = useMemo(
+    () =>
+      TODO_RELATED_TYPES.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey),
+      })),
+    [t],
+  );
+
   return (
     <>
       {includeTitle ? (
-        <label
-          className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-          htmlFor={`${idPrefix}-title`}
-        >
-          {t("personal.todo.titleField")}
-          <input
+        <div className="personal-todo-form__title-field">
+          <ExitsOutlineInput
             id={`${idPrefix}-title`}
-            data-testid={`${idPrefix}-title`}
-            autoFocus={titleAutoFocus}
-            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            label={t("personal.todo.titleField")}
             value={form.title}
-            onChange={(event) => setForm({ ...form, title: event.target.value })}
+            onChange={(title) => setForm({ ...form, title })}
+            autoFocus={titleAutoFocus}
             required
+            testId={`${idPrefix}-title`}
           />
-        </label>
+        </div>
       ) : null}
 
       {showAdvanced ? (
         <>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("personal.todo.notes")}
-            <textarea
-              data-testid={`${idPrefix}-notes`}
-              className="min-h-20 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-              value={form.notes}
-              onChange={(event) => setForm({ ...form, notes: event.target.value })}
-            />
-          </label>
+          <ExitsOutlineTextarea
+            label={t("personal.todo.notes")}
+            value={form.notes}
+            onChange={(notes) => setForm({ ...form, notes })}
+            rows={3}
+            testId={`${idPrefix}-notes`}
+          />
 
           <TodoQuickDueChips
             activeDueLocal={form.dueAtLocal}
@@ -230,70 +241,50 @@ export function TodoFormFields({
             onSelect={(dueAtLocal) => setForm({ ...form, dueAtLocal })}
           />
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("personal.todo.dueAt")}
-            <input
-              data-testid={`${idPrefix}-due`}
-              type="datetime-local"
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              value={form.dueAtLocal}
-              onChange={(event) => setForm({ ...form, dueAtLocal: event.target.value })}
-            />
-          </label>
+          <ExitsOutlineInput
+            label={t("personal.todo.dueAt")}
+            type="datetime-local"
+            value={form.dueAtLocal}
+            onChange={(dueAtLocal) => setForm({ ...form, dueAtLocal })}
+            testId={`${idPrefix}-due`}
+          />
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("personal.todo.reminderAt")}
-            <input
-              data-testid={`${idPrefix}-reminder`}
+          <div className="flex min-w-0 flex-col gap-1">
+            <ExitsOutlineInput
+              label={t("personal.todo.reminderAt")}
               type="datetime-local"
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               value={form.reminderAtLocal}
-              onChange={(event) => setForm({ ...form, reminderAtLocal: event.target.value })}
+              onChange={(reminderAtLocal) => setForm({ ...form, reminderAtLocal })}
+              testId={`${idPrefix}-reminder`}
             />
             {form.reminderAtLocal ? (
               <span className="text-[length:var(--exits-text-xs)] text-muted">
                 {t("personal.todo.reminderServerHint")}
               </span>
             ) : null}
-          </label>
+          </div>
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("personal.todo.priority")}
-            <select
-              data-testid={`${idPrefix}-priority`}
-              className="exits-select"
-              value={form.priority}
-              onChange={(event) => setForm({ ...form, priority: event.target.value })}
-            >
-              {TODO_PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {t(priorityLabelKey(priority))}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ExitsOutlineSelect
+            label={t("personal.todo.priority")}
+            value={form.priority}
+            options={priorityOptions}
+            onChange={(priority) => setForm({ ...form, priority })}
+            testId={`${idPrefix}-priority`}
+          />
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("personal.todo.relatedType")}
-            <select
-              data-testid={`${idPrefix}-related-type`}
-              className="exits-select"
-              value={form.relatedEntityType}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  relatedEntityType: event.target.value,
-                  relatedEntityId: event.target.value ? form.relatedEntityId : "",
-                })
-              }
-            >
-              {TODO_RELATED_TYPES.map((option) => (
-                <option key={option.value || "none"} value={option.value}>
-                  {t(option.labelKey)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ExitsOutlineSelect
+            label={t("personal.todo.relatedType")}
+            value={form.relatedEntityType}
+            options={relatedTypeOptions}
+            onChange={(relatedEntityType) =>
+              setForm({
+                ...form,
+                relatedEntityType,
+                relatedEntityId: relatedEntityType ? form.relatedEntityId : "",
+              })
+            }
+            testId={`${idPrefix}-related-type`}
+          />
 
           <TodoRelatedEntityPicker form={form} setForm={setForm} idPrefix={idPrefix} />
         </>

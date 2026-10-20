@@ -227,28 +227,34 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-shared")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-owed-divider")).toBeInTheDocument();
+    expect(screen.queryByTestId("personal-owed-divider")).not.toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveClass("tracker-amount-card", "utang-settings-card--lent");
+    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveClass("tracker-amount-card", "utang-settings-card--owe");
     expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveTextContent("I lent");
     expect(screen.getByTestId("personal-stat-lent-mine")).toHaveTextContent("500");
     expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveTextContent("I owed");
     expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveTextContent("150");
     expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveTextContent("I lent");
     expect(screen.getByTestId("personal-stat-lent-shared")).toHaveTextContent("75");
-    expect(screen.getByTestId("personal-utang-owed-to-me").querySelector(".tracker-summary__amount")).toBeNull();
-    expect(screen.getByTestId("personal-utang-i-owe").querySelector(".tracker-summary__amount")).toBeNull();
     expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveTextContent("I owed");
     expect(screen.getByTestId("personal-stat-borrowed-shared")).toHaveTextContent("25");
-    expect(screen.getByTestId("personal-utang-owed-to-me")).toHaveClass("tracker-summary--pendant");
+    expect(screen.getByTestId("personal-utang-owed-to-me")).toHaveClass(
+      "tracker-summary--pendant",
+      "tracker-amount-group",
+    );
     expect(screen.getByTestId("personal-utang-owed-to-me-pendant")).toBeInTheDocument();
-    expect(screen.queryByTestId("personal-utang-owed-to-me-ribbon")).not.toBeInTheDocument();
-    expect(screen.getByTestId("personal-utang-i-owe")).toHaveClass("tracker-summary--pendant");
+    expect(screen.getByTestId("personal-utang-i-owe")).toHaveClass(
+      "tracker-summary--pendant",
+      "tracker-amount-group",
+    );
     expect(screen.getByTestId("personal-utang-i-owe-pendant")).toBeInTheDocument();
-    expect(screen.queryByTestId("personal-utang-i-owe-ribbon")).not.toBeInTheDocument();
     expect(screen.getAllByText("My Record")).toHaveLength(2);
     expect(screen.getByTestId("personal-home-meta").querySelector(".personal-home-metric__caret")).toBeNull();
     expect(screen.getAllByText("Shared with Me")).toHaveLength(2);
     expect(screen.getByTestId("personal-utang-owed-to-me").querySelector(".tracker-balance__rule")).toBeTruthy();
     expect(screen.getByTestId("personal-utang-i-owe").querySelector(".tracker-balance__rule")).toBeTruthy();
+    expect(screen.getByTestId("personal-stat-borrowed-mine").querySelector(".utang-account-card__caret")).toBeNull();
+    expect(screen.getByTestId("personal-stat-lent-mine").querySelector(".utang-account-card__caret")).toBeNull();
     expect(screen.getByTestId("personal-stat-active-shared")).toHaveTextContent("1");
     expect(await screen.findByTestId("personal-needs-attention")).toBeInTheDocument();
     expect(screen.getByTestId("personal-attention-pendingConfirmation")).toBeInTheDocument();

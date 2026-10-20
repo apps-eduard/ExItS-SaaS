@@ -929,70 +929,221 @@
   }
 }
 
-/* —— Orders list —— */
+/* —— Orders list — My Record card chrome (tint + shadow + round caret) —— */
 
 .pc-order-card {
+  --pc-order-accent: var(--exits-severity-success, #22c55e);
+  --pc-order-accent-deep: color-mix(in srgb, #000 28%, var(--pc-order-accent));
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-lg);
-  background: var(--exits-surface);
-  color: inherit;
+  padding: 1.15rem 1.55rem 0.9rem 1rem;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, var(--pc-order-accent) 40%, var(--exits-border));
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--pc-order-accent) 8%, var(--exits-surface));
+  color: var(--exits-text);
   text-decoration: none;
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.2),
+    0 2px 2px rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.12);
   transition:
     border-color var(--exits-motion-fast) ease,
+    background-color var(--exits-motion-fast) ease,
     box-shadow var(--exits-motion-fast) ease;
 }
 
-.pc-order-card:hover {
-  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--exits-text) 6%, transparent);
-}
-
-.pc-order-card__main {
-  min-width: 0;
-  flex: 1;
-}
-
-.pc-order-card__store {
-  margin: 0;
-  font-size: var(--exits-text-sm);
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.pc-order-card__ref {
-  margin: 0.15rem 0 0;
-  font-size: var(--exits-text-xs);
-  color: var(--exits-text-muted);
-}
-
-.pc-order-card__meta {
-  display: flex;
-  flex-wrap: wrap;
+.pc-order-card__ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  display: inline-flex;
+  max-width: calc(100% - 2.5rem);
   align-items: center;
-  gap: 0.35rem 0.55rem;
-  margin-top: 0.35rem;
-  font-size: var(--exits-text-xs);
-  color: var(--exits-text-muted);
+  margin-top: -0.55rem;
+  margin-left: -0.55rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 0.2rem 0.2rem 0.2rem 0;
+  background: #fff;
+  color: var(--pc-order-accent-deep);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
 }
 
-.pc-order-card__aside {
-  display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.pc-order-card__total {
-  font-size: var(--exits-text-md);
+.pc-order-card__ribbon-label {
+  font-size: 0.72rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.pc-order-card__ribbon-fold {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-top: 0.5rem solid #cbd5e1;
+  border-left: 0.7rem solid transparent;
+}
+
+.pc-order-card--success {
+  --pc-order-accent: var(--exits-severity-success, #22c55e);
+}
+
+.pc-order-card--primary {
+  --pc-order-accent: var(--exits-primary);
+}
+
+.pc-order-card--warn {
+  --pc-order-accent: var(--exits-warning);
+}
+
+.pc-order-card:hover,
+.pc-order-card:focus-visible {
+  border-color: color-mix(in srgb, var(--pc-order-accent) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--pc-order-accent) 14%, var(--exits-surface));
+  box-shadow: var(--exits-shadow-md);
+  outline: none;
+}
+
+.pc-order-card__body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.pc-order-card__title {
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--exits-text);
+}
+
+.pc-order-card__meta-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  column-gap: 0.75rem;
+  min-width: 0;
+}
+
+.pc-order-card__fulfill {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--exits-text);
+}
+
+.pc-order-card__fulfill > .pc-order-card__fact {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.pc-order-card__when {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-inline-start: auto;
+  text-align: end;
+  color: var(--exits-text-muted);
+  font-weight: 500;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.pc-order-card__fact {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--exits-text);
+}
+
+.pc-order-card__meta-row > .pc-order-card__fact:nth-child(2) {
+  justify-content: center;
+}
+
+.pc-order-card__meta-row > .pc-order-card__fact:nth-child(3) {
+  justify-content: flex-end;
+}
+
+.pc-order-card__fact-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  color: var(--exits-primary);
+  stroke-width: 2.25;
+}
+
+.pc-order-card__fact-text {
+  min-width: 0;
+}
+
+.pc-order-card__caret {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid color-mix(in srgb, var(--pc-order-accent) 40%, var(--exits-border));
+  border-radius: 999px;
+  background: var(--exits-surface);
+  color: var(--pc-order-accent);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+  transform: translate(53%, -50%);
+  pointer-events: none;
+}
+
+.pc-order-card__caret-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 2.25;
+}
+
+.my-orders-page .pc-orders-list.utang-relationship-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  row-gap: 1.25rem;
+  padding-top: 0.55rem;
+  padding-left: 0.65rem;
+  padding-right: 1.15rem;
+}
+
+@media (min-width: 1024px) {
+  .my-orders-page .pc-orders-list.utang-relationship-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: stretch;
+  }
+
+  .my-orders-page .pc-orders-list > li {
+    min-width: 0;
+    display: flex;
+  }
+
+  .my-orders-page .pc-orders-list .pc-order-card {
+    flex: 1 1 auto;
+    width: 100%;
+  }
 }
 
 /* —— Order detail —— */
@@ -1017,6 +1168,37 @@
   margin: 0;
   font-size: var(--exits-text-sm);
   color: var(--exits-text-muted);
+}
+
+.pc-order-facts-compact {
+  padding: 0.15rem 0;
+}
+
+.pc-order-kv {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.2rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+
+.pc-order-kv__label {
+  flex: 0 0 auto;
+  color: var(--exits-text-muted);
+  font-weight: 500;
+}
+
+.pc-order-kv__value {
+  min-width: 0;
+  text-align: end;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--exits-text);
+  word-break: break-all;
 }
 
 .pc-facts-grid {

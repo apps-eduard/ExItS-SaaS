@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { PersonalDashboardDto } from "@/api/platform/personal-dashboard-client";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { symbol, type IconComponent } from "@/components/icons/MaterialSymbol";
 import { useI18n } from "@/i18n/I18nProvider";
-import { formatPeso } from "@/lib/format-money";
+import { cn } from "@/lib/cn";
 
 const GroupIcon = symbol("group");
 const HandshakeIcon = symbol("handshake");
@@ -11,11 +12,54 @@ const MonitoringIcon = symbol("monitoring");
 const ShareIcon = symbol("share");
 const WalletIcon = symbol("account_balance_wallet");
 
-function pesoLabel(amount: number): string {
-  return formatPeso(amount).replace("₱", "₱ ");
+/** Compact utang settings card: ribbon label and amount. */
+export function TrackerAmountCard({
+  label,
+  amount,
+  to,
+  direction,
+  testId,
+  labelTestId,
+}: {
+  label: string;
+  amount: number;
+  to: string;
+  direction: "lent" | "owe";
+  testId: string;
+  labelTestId: string;
+}) {
+  const lent = direction === "lent";
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card tracker-amount-card text-foreground no-underline",
+        lent ? "utang-settings-card--lent" : "utang-settings-card--owe",
+      )}
+      data-testid={testId}
+    >
+      <div className="ui-standards-qcard__settings-ribbon">
+        <div className="ui-standards-qcard__settings-tab utang-settings-card__tab">
+          <span className="truncate" data-testid={labelTestId}>
+            {label}
+          </span>
+          <span className="ui-standards-qcard__settings-fold" aria-hidden />
+        </div>
+        <div className="utang-settings-card__content">
+          <div className="utang-settings-card__meta min-w-0 flex-1">
+            <div className="utang-settings-card__headline tracker-amount-card__headline">
+              <span className="utang-settings-card__amount">
+                <MoneyDisplay amount={amount} />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
 }
 
-function TrackerSummaryCard({
+function TrackerSummaryGroup({
   title,
   mineLabel,
   sharedLabel,
@@ -30,7 +74,6 @@ function TrackerSummaryCard({
   sharedTestId,
   mineLabelTestId,
   sharedLabelTestId,
-  showDivider,
 }: {
   title: string;
   mineLabel: string;
@@ -46,37 +89,46 @@ function TrackerSummaryCard({
   sharedTestId: string;
   mineLabelTestId: string;
   sharedLabelTestId: string;
-  showDivider?: boolean;
 }) {
   return (
-    <div className={`tracker-summary tracker-summary--${tone} tracker-summary--pendant`} data-testid={rowTestId}>
-      <span className="tracker-summary__pendant" aria-hidden data-testid={`${rowTestId}-pendant`}>
+    <div
+      className={`tracker-summary tracker-summary--${tone} tracker-summary--pendant tracker-amount-group`}
+      data-testid={rowTestId}
+    >
+      <span
+        className="tracker-summary__pendant"
+        aria-hidden
+        data-testid={`${rowTestId}-pendant`}
+      >
         <Icon className="tracker-summary__pendant-icon" />
       </span>
       <div className="tracker-summary__stage">
         <span className="tracker-summary__copy">
-          <span className="tracker-summary__title">{title}</span>
+          <h3 className="tracker-summary__title tracker-amount-group__title m-0">{title}</h3>
         </span>
         <span className="tracker-balance__rule" aria-hidden />
-        <span className="tracker-summary__foot">
-          <Link to={mineTo} className="tracker-summary__stat" data-testid={mineTestId}>
-            <span className="tracker-summary__stat-label" data-testid={mineLabelTestId}>
-              {mineLabel}
-            </span>
-            <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(mineAmount)}</span>
-          </Link>
-          <span
-            className="tracker-summary__vrule"
-            data-testid={showDivider ? "personal-owed-divider" : undefined}
-            aria-hidden
-          />
-          <Link to={sharedTo} className="tracker-summary__stat" data-testid={sharedTestId}>
-            <span className="tracker-summary__stat-label" data-testid={sharedLabelTestId}>
-              {sharedLabel}
-            </span>
-            <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(sharedAmount)}</span>
-          </Link>
-        </span>
+        <ul className="tracker-amount-list utang-relationship-list m-0 flex list-none flex-row p-0">
+          <li>
+            <TrackerAmountCard
+              label={mineLabel}
+              amount={mineAmount}
+              to={mineTo}
+              direction="owe"
+              testId={mineTestId}
+              labelTestId={mineLabelTestId}
+            />
+          </li>
+          <li>
+            <TrackerAmountCard
+              label={sharedLabel}
+              amount={sharedAmount}
+              to={sharedTo}
+              direction="lent"
+              testId={sharedTestId}
+              labelTestId={sharedLabelTestId}
+            />
+          </li>
+        </ul>
       </div>
     </div>
   );
@@ -122,17 +174,21 @@ export const PERSONAL_HOME_TRACKER_TEST_IDS: PersonalTrackerTestIds = {
   activeShared: "personal-stat-active-shared",
 };
 
-/** Personal Tracker card — ribbon, My Record / Shared with Me pendants, and people / ledger counts. */
+/** Personal Tracker — My Record / Shared with Me groups of I owed / I lent amount cards. */
 export function PersonalTrackerCard({
   dashboard,
   testIds = PERSONAL_HOME_TRACKER_TEST_IDS,
   footer,
+  metricsOutline = false,
 }: {
   dashboard: PersonalDashboardDto;
   testIds?: PersonalTrackerTestIds;
   footer?: ReactNode;
+  /** Home page uses outline index cards. */
+  metricsOutline?: boolean;
 }) {
   const { t } = useI18n();
+  const outline = metricsOutline ? " personal-home-index-card--outline" : "";
 
   return (
     <section
@@ -147,7 +203,7 @@ export function PersonalTrackerCard({
         {t("personal.home.personalTracker")}
       </h2>
       <div className="tracker-summary-row">
-        <TrackerSummaryCard
+        <TrackerSummaryGroup
           title={t("personal.home.trackerOwedTitle")}
           mineLabel={t("personal.home.myIOweRecord")}
           sharedLabel={t("personal.home.sharedOwedRecord")}
@@ -162,9 +218,8 @@ export function PersonalTrackerCard({
           sharedTestId={testIds.myLedgerLent}
           mineLabelTestId={testIds.myLedgerOweLabel}
           sharedLabelTestId={testIds.myLedgerLentLabel}
-          showDivider
         />
-        <TrackerSummaryCard
+        <TrackerSummaryGroup
           title={t("personal.home.trackerOweTitle")}
           mineLabel={t("personal.home.myIOweRecord")}
           sharedLabel={t("personal.home.sharedOwedRecord")}
@@ -184,7 +239,7 @@ export function PersonalTrackerCard({
       <div className="personal-home-metrics" data-testid={testIds.meta}>
         <Link
           to="/personal/people"
-          className="personal-home-index-card personal-home-index-card--secondary"
+          className={`personal-home-index-card personal-home-index-card--secondary${outline}`}
           data-testid={testIds.people}
         >
           <span className="personal-home-index-card__ribbon" aria-hidden="true">
@@ -192,7 +247,9 @@ export function PersonalTrackerCard({
             <GroupIcon className="personal-home-index-card__icon" />
           </span>
           <span className="personal-home-index-card__body">
-            <span className="personal-home-index-card__title">{t("personal.home.people")}</span>
+            <span className="personal-home-index-card__title">
+              {metricsOutline ? t("personal.home.friends") : t("personal.home.people")}
+            </span>
           </span>
           <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
             {dashboard.contactCount}
@@ -200,7 +257,7 @@ export function PersonalTrackerCard({
         </Link>
         <Link
           to="/personal/utang"
-          className="personal-home-index-card personal-home-index-card--success"
+          className={`personal-home-index-card personal-home-index-card--success${outline}`}
           data-testid={testIds.activeMine}
         >
           <span className="personal-home-index-card__ribbon" aria-hidden="true">
@@ -216,7 +273,7 @@ export function PersonalTrackerCard({
         </Link>
         <Link
           to="/personal/utang"
-          className="personal-home-index-card personal-home-index-card--info"
+          className={`personal-home-index-card personal-home-index-card--info${outline}`}
           data-testid={testIds.activeShared}
         >
           <span className="personal-home-index-card__ribbon" aria-hidden="true">

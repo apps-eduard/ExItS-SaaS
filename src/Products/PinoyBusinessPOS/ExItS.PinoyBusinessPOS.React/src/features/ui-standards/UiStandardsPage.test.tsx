@@ -1123,7 +1123,7 @@ describe("UiStandardsPage", () => {
     await user.click(item);
     const card = screen.getByTestId("ui-standard-card-tabs-select");
     expect(card).toHaveTextContent("Tabs select");
-    expect(within(card).getAllByRole("tablist")).toHaveLength(5);
+    expect(within(card).getAllByRole("tablist")).toHaveLength(8);
 
     const pillXs = within(card).getByTestId("ui-standard-tabs-select-pill-single-option-XS");
     await user.click(pillXs);
@@ -1149,12 +1149,42 @@ describe("UiStandardsPage", () => {
     expect(system).toHaveAttribute("aria-checked", "false");
     expect(within(card).getByRole("radiogroup", { name: "Density" })).toBeInTheDocument();
 
-    const teal = within(card).getByTestId("ui-standard-qtabs-teal");
+    const basicTabs = within(card).getByTestId("ui-standard-card-basic-tabs");
+    expect(within(basicTabs).getByTestId("ui-standard-basic-tabs-title")).toHaveTextContent("Basic tabs");
+    expect(within(basicTabs).getByTestId("ui-standard-basic-tabs-copy-command")).toHaveAttribute(
+      "data-command",
+      "BASIC TABS + ICON AND LABEL",
+    );
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-basic-command")).toHaveTextContent(
+      "cursor: ext-tabs-basic-icon-and-label",
+    );
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-inline-command")).toHaveTextContent(
+      "cursor: ext-tabs-basic-inline-label",
+    );
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-no-caps-command")).toHaveTextContent(
+      "cursor: ext-tabs-basic-no-caps",
+    );
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-icons-command")).toHaveTextContent(
+      "cursor: ext-tabs-basic-icons-only",
+    );
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-scroll-command")).toHaveTextContent(
+      "cursor: ext-tabs-basic-scrollable",
+    );
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-scroll-more-command")).toHaveTextContent(
+      "cursor: ext-tabs-basic-scrollable-more",
+    );
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-teal-more-more")).toBeInTheDocument();
+    await user.click(within(basicTabs).getByTestId("ui-standard-qtabs-teal-more-more"));
+    await user.click(await screen.findByTestId("ui-standard-qtabs-teal-more-more-item-settings"));
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: settings");
+    await user.click(within(basicTabs).getByTestId("ui-standard-qtabs-teal-mails"));
+
+    const teal = within(basicTabs).getByTestId("ui-standard-qtabs-teal");
     expect(within(teal).getByRole("tab", { name: "Mails" })).toHaveAttribute("aria-selected", "true");
     await user.click(within(teal).getByRole("tab", { name: "Alarms" }));
-    expect(within(card).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: alarms");
-    expect(within(card).getByTestId("ui-standard-qtabs-purple-alarms")).toHaveAttribute("aria-selected", "true");
-    expect(within(card).getByTestId("ui-standard-qtabs-yellow-alarms")).toHaveAccessibleName("alarms");
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: alarms");
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-purple-alarms")).toHaveAttribute("aria-selected", "true");
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-yellow-alarms")).toHaveAccessibleName("alarms");
 
     const alarms = within(teal).getByRole("tab", { name: "Alarms" });
     expect(alarms).toHaveAttribute("tabindex", "0");
@@ -1168,9 +1198,39 @@ describe("UiStandardsPage", () => {
     expect(movies).toHaveFocus();
     await user.keyboard("{Enter}");
     expect(movies).toHaveAttribute("aria-selected", "true");
-    expect(within(card).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: movies");
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: movies");
 
-    expect(within(card).getByTestId("ui-standard-qtabs-primary-addressbook")).toHaveTextContent("Address Book");
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-primary-addressbook")).toHaveTextContent("Address Book");
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-primary-caret-left")).toBeInTheDocument();
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-primary-caret-right")).toBeInTheDocument();
+
+    await user.click(within(basicTabs).getByTestId("ui-standard-qtabs-primary-mails"));
+    expect(within(basicTabs).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: mails");
+    await user.click(within(basicTabs).getByTestId("ui-standard-qtabs-primary-caret-right"));
+    await vi.waitFor(() => {
+      expect(within(basicTabs).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: alarms");
+    });
+    await user.dblClick(within(basicTabs).getByTestId("ui-standard-qtabs-primary-caret-right"));
+    await vi.waitFor(() => {
+      expect(within(basicTabs).getByTestId("ui-standard-qtabs-value")).toHaveTextContent("Selected: settings");
+    });
+
+    const tabPanels = within(card).getByTestId("ui-standard-card-tab-panels");
+    expect(within(tabPanels).getByTestId("ui-standard-tab-panels-title")).toHaveTextContent("Tab panels");
+    expect(within(tabPanels).getByTestId("ui-standard-qtabs-panels-top-command")).toHaveTextContent(
+      "cursor: ext-tabs-panels-with-tabs",
+    );
+    expect(within(tabPanels).getByTestId("ui-standard-qtabs-panels-bottom-command")).toHaveTextContent(
+      "cursor: ext-tabs-panels-tabs-below",
+    );
+    expect(within(tabPanels).getByTestId("ui-standard-qtabs-panels-panel-mails")).not.toHaveAttribute("hidden");
+    await user.click(within(tabPanels).getByTestId("ui-standard-qtabs-panels-tabs-alarms"));
+    expect(within(tabPanels).getByTestId("ui-standard-qtabs-panels-value")).toHaveTextContent("Panel: alarms");
+    expect(within(tabPanels).getByTestId("ui-standard-qtabs-panels-panel-alarms")).not.toHaveAttribute("hidden");
+    expect(within(tabPanels).getByTestId("ui-standard-qtabs-panels-panel-mails")).toHaveAttribute("hidden");
+    expect(within(tabPanels).getByTestId("ui-standard-qtabs-panels-below-panel-alarms")).not.toHaveAttribute(
+      "hidden",
+    );
   });
 
   it("opens the Dialog playground and samples", async () => {
@@ -1296,7 +1356,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-table-pg-footer-card")).toHaveTextContent("Footer");
     expect(screen.getByTestId("ui-standard-table-pg-footer-card")).toHaveTextContent("Intent");
     expect(screen.getByTestId("ui-standard-table-pg-footer-card")).toHaveTextContent("Appearance");
-    expect(screen.getByTestId("ui-standard-table-pg-footer")).toHaveTextContent("1-25 of 25");
+    expect(screen.getByTestId("ui-standard-table-pg-footer")).toHaveTextContent("1-10 of 110");
     await user.click(screen.getByTestId("ui-standard-table-pg-tab-features"));
     expect(screen.getByTestId("ui-standard-table-pg-features-card")).toHaveTextContent("Search");
     expect(screen.getByTestId("ui-standard-table-pg-features-card")).toHaveTextContent("Export");
@@ -1483,7 +1543,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-layout", "list");
     expect(screen.getByTestId("ui-standard-table-pg-mode")).toHaveTextContent("Mobile · 390px · LIST");
     expect(screen.getByTestId("ui-standard-table-pg-sample").querySelector("table")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveTextContent("Cupcake");
+    expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveTextContent("Baklava");
     expect(screen.getByTestId("ui-standard-table-pg-list-sort")).toBeInTheDocument();
     await user.click(screen.getByTestId("ui-standard-table-pg-sort-calories"));
     expect(screen.getByTestId("ui-standard-table-pg-list-sort")).toHaveTextContent("Calories");

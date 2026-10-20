@@ -356,6 +356,7 @@ export function PlaygroundSearchField({
   testId,
   inputTestId,
   className,
+  placeholderOnly = false,
 }: {
   label?: string;
   value?: string;
@@ -363,6 +364,8 @@ export function PlaygroundSearchField({
   testId?: string;
   inputTestId?: string;
   className?: string;
+  /** Hide the floating label; show `label` as the placeholder. */
+  placeholderOnly?: boolean;
 }) {
   const { preferences } = usePreferences();
   const [draft, setDraft] = useState("");
@@ -388,6 +391,7 @@ export function PlaygroundSearchField({
         shape={preferences.controlShape}
         icon={Search}
         clearable
+        placeholderOnly={placeholderOnly}
         testId={testId}
         inputTestId={inputTestId}
       />

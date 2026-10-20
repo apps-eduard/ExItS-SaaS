@@ -1847,7 +1847,7 @@ export function PersonalRelationshipDetailPage() {
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
       <div className="utang-detail-top">
       <div
-        className="utang-balance-card utang-ribbon-card flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
+        className="utang-balance-card utang-ribbon-card flex min-w-0 flex-col gap-2"
         data-testid="utang-balance-card"
       >
         <RibbonTitle icon={detail.perspective === "Borrowed" ? Wallet : HandCoins}>
@@ -1901,13 +1901,13 @@ export function PersonalRelationshipDetailPage() {
                 message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangSettle))}
               />
             ) : null}
-            <div className="flex w-full flex-wrap items-center justify-end gap-2">
+            <div className="flex w-full items-stretch gap-2">
               {showSettleAction ? (
                 <Button
                   type="button"
                   intent="primary"
                   appearance="glossy"
-                  className="w-auto"
+                  className="min-w-0 flex-1"
                   disabled={settleBlockedOffline || settleMutation.isPending}
                   data-testid="utang-settle"
                   onClick={() => {
@@ -1925,7 +1925,7 @@ export function PersonalRelationshipDetailPage() {
                   type="button"
                   intent="info"
                   appearance="glossy"
-                  className="w-auto"
+                  className="min-w-0 flex-1"
                   data-testid="utang-qa-update-balance"
                   onClick={() => {
                     resetEntryForm();
@@ -1941,11 +1941,14 @@ export function PersonalRelationshipDetailPage() {
             <ExitsModal
               open={settleOpen}
               onOpenChange={(next) => {
-                if (!settleMutation.isPending) setSettleOpen(next);
+                if (settleMutation.isPending) return;
+                setSettleOpen(next);
+                if (!next) setSettleError(null);
               }}
               title={t("personal.utang.settleTitle")}
               testId="utang-settle-dialog"
               className="utang-settle-dialog"
+              size="sm"
               closeLabel={t("personal.utang.closeRecordDialog")}
               busy={settleMutation.isPending}
               ribbon
@@ -1959,7 +1962,10 @@ export function PersonalRelationshipDetailPage() {
                     emphasis="strong"
                     disabled={settleMutation.isPending}
                     data-testid="utang-settle-cancel"
-                    onClick={() => setSettleOpen(false)}
+                    onClick={() => {
+                      setSettleOpen(false);
+                      setSettleError(null);
+                    }}
                   >
                     {t("personal.utang.cancelEdit")}
                   </Button>
@@ -1985,21 +1991,26 @@ export function PersonalRelationshipDetailPage() {
                 </>
               }
             >
-              <div className="flex min-w-0 flex-col gap-2" data-testid="utang-settle-panel">
-                <p className="utang-settle-dialog__line">
-                  {t("personal.utang.settleAmount")}:{" "}
-                  <MoneyDisplay amount={currentBalance} className="utang-settle-dialog__amount" />
-                </p>
-                <p className="utang-settle-dialog__line">
-                  {t("personal.utang.settleAfter")}:{" "}
-                  <MoneyDisplay amount={0} className="utang-settle-dialog__amount" />
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              <div className="utang-settle-dialog__body" data-testid="utang-settle-panel">
+                <div className="utang-settle-dialog__summary">
+                  <span className="utang-settle-dialog__summary-item">
+                    <span className="utang-settle-dialog__label">{t("personal.utang.settleAmount")}</span>
+                    <MoneyDisplay amount={currentBalance} className="utang-settle-dialog__amount" />
+                  </span>
+                  <span className="utang-settle-dialog__arrow" aria-hidden>
+                    →
+                  </span>
+                  <span className="utang-settle-dialog__summary-item">
+                    <span className="utang-settle-dialog__label">{t("personal.utang.settleAfter")}</span>
+                    <MoneyDisplay amount={0} className="utang-settle-dialog__amount" />
+                  </span>
+                </div>
+                <p className="utang-settle-dialog__hint">
                   {shared
                     ? t("personal.utang.settleSharedHint")
                     : t("personal.utang.settlePrivateHint")}
                 </p>
-                <ExitsOutlineTextarea
+                <ExitsOutlineInput
                   label={t("personal.utang.settleNote")}
                   value={settleNote}
                   onChange={setSettleNote}
@@ -2155,7 +2166,7 @@ export function PersonalRelationshipDetailPage() {
         </p>
       ) : null}
 
-      {settleError ? (
+      {settleError && !settleOpen ? (
         <p
           role="alert"
           className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
@@ -2523,7 +2534,7 @@ export function PersonalRelationshipDetailPage() {
             detail={t("personal.utang.historyEmptyDetail")}
           />
         ) : (
-          <ul className="utang-relationship-list utang-activity-list m-0 flex list-none flex-col p-0" data-testid="utang-history">
+          <ul className="utang-relationship-list utang-activity-list m-0 list-none p-0" data-testid="utang-history">
             {history.map((entry) => {
               const status = "status" in entry ? entry.status : "Confirmed";
               const canConfirm = "canConfirm" in entry ? Boolean(entry.canConfirm) : false;
@@ -2670,10 +2681,6 @@ export function PersonalRelationshipDetailPage() {
                               </StatusChip>
                             ) : null}
                           </span>
-                          <p className="text-[length:var(--exits-text-sm)]">
-                            <span className="text-muted">{t("personal.utang.created")}: </span>
-                            {new Date(entry.createdAtUtc).toLocaleString()}
-                          </p>
                           {entry.notes ? (
                             <p
                               className="text-[length:var(--exits-text-sm)]"
@@ -2683,6 +2690,10 @@ export function PersonalRelationshipDetailPage() {
                               {entry.notes}
                             </p>
                           ) : null}
+                          <p className="utang-activity-facts__created">
+                            <span className="text-muted">{t("personal.utang.created")}: </span>
+                            {new Date(entry.createdAtUtc).toLocaleString()}
+                          </p>
                         </div>
                         {statusText !== t("personal.utang.statusPrivate") ? (
                           <p

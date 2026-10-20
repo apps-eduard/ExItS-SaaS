@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { SideDrawer } from "@/components/exits/SideDrawer";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
-import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import {
+  MODAL_GLOBAL_CANCEL_APPEARANCE,
+  MODAL_GLOBAL_CANCEL_EMPHASIS,
+  MODAL_GLOBAL_CANCEL_INTENT,
+  MODAL_GLOBAL_SAVE_APPEARANCE,
+  MODAL_GLOBAL_SAVE_INTENT,
+} from "@/features/ui-standards/modal-action-global-default";
 
 export type FormDrawerSize = "sm" | "md" | "lg";
 
@@ -12,6 +19,49 @@ const SIZE_PANEL_CLASS: Record<FormDrawerSize, string> = {
   md: "exits-form-drawer__panel--md",
   lg: "exits-form-drawer__panel--lg",
 };
+
+function SavePlusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12.5 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V12" />
+      <path d="M16 13H8a1 1 0 0 0-1 1v7" />
+      <path d="M19 22v-6" />
+      <path d="M22 19h-6" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+    </svg>
+  );
+}
+
+function SaveCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12.5 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4v4.35" />
+      <path d="m16 19 2 2 4-4" />
+      <path d="M17 15.13V14a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+    </svg>
+  );
+}
 
 function getFocusable(container: HTMLElement): HTMLElement[] {
   const nodes = container.querySelectorAll<HTMLElement>(
@@ -49,6 +99,10 @@ export function FormDrawer({
   unsavedConfirmLabel = "Discard",
   unsavedCancelLabel = "Keep editing",
   confirmUnsavedOnClose = false,
+  ribbon = false,
+  ribbonIcon,
+  saveIcon = "plus",
+  centerOnLarge = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -74,6 +128,12 @@ export function FormDrawer({
   unsavedDetail?: string;
   unsavedConfirmLabel?: string;
   unsavedCancelLabel?: string;
+  ribbon?: boolean;
+  ribbonIcon?: LucideIcon;
+  /** Lucide save-plus (add) or save-check (record). */
+  saveIcon?: "plus" | "check" | "none";
+  /** Large screens: centered dialog. Small screens: side drawer. Default true. */
+  centerOnLarge?: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
@@ -90,8 +150,11 @@ export function FormDrawer({
       if (!panel) {
         return;
       }
-      const focusable = getFocusable(panel);
-      (focusable[0] ?? panel).focus();
+      const labelledBy = panel.getAttribute("aria-labelledby");
+      const title =
+        (labelledBy ? panel.ownerDocument.getElementById(labelledBy) : null) ??
+        panel.querySelector<HTMLElement>(".exits-side-drawer__title, .exits-side-drawer__ribbon");
+      (title ?? panel).focus();
     });
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
@@ -154,13 +217,17 @@ export function FormDrawer({
     onSave();
   }
 
+  const SaveIconMark =
+    saveIcon === "check" ? SaveCheckIcon : saveIcon === "plus" ? SavePlusIcon : null;
+
   const defaultFooter = (
     <div className="exits-form-drawer__footer-actions">
       <Button
         type="button"
-        variant="outline"
+        intent={MODAL_GLOBAL_CANCEL_INTENT}
+        appearance={MODAL_GLOBAL_CANCEL_APPEARANCE}
+        emphasis={MODAL_GLOBAL_CANCEL_EMPHASIS}
         disabled={saving}
-        className={EXITS_CANCEL_BUTTON_CLASS}
         data-testid={cancelTestId ?? `${testId}-cancel`}
         onClick={requestClose}
       >
@@ -169,9 +236,12 @@ export function FormDrawer({
       {onSave ? (
         <Button
           type="submit"
+          intent={MODAL_GLOBAL_SAVE_INTENT}
+          appearance={MODAL_GLOBAL_SAVE_APPEARANCE}
           disabled={saving || saveDisabled}
           data-testid={saveTestId ?? `${testId}-save`}
         >
+          {SaveIconMark ? <SaveIconMark className="size-4 shrink-0" /> : null}
           {saveLabel}
         </Button>
       ) : null}
@@ -189,6 +259,9 @@ export function FormDrawer({
         closeLabel={closeLabel}
         panelClassName={cn("exits-form-drawer__panel", SIZE_PANEL_CLASS[size])}
         panelRef={panelRef}
+        ribbon={ribbon}
+        ribbonIcon={ribbonIcon}
+        centerOnLarge={centerOnLarge}
       >
         <form className="exits-form-drawer" data-testid={`${testId}-form`} onSubmit={handleSubmit}>
           <div className="exits-form-drawer__body">{children}</div>

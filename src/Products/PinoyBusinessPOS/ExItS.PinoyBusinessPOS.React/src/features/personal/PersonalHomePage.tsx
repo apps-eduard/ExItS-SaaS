@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { symbol, type IconComponent } from "@/components/icons/MaterialSymbol";
+import { symbol } from "@/components/icons/MaterialSymbol";
 
 const ArrowDownwardIcon = symbol("arrow_downward");
 const ArrowForwardIcon = symbol("arrow_forward");
 const ArrowUpwardIcon = symbol("arrow_upward");
 const BusinessCenterIcon = symbol("business_center");
 const ChevronRightIcon = symbol("chevron_right");
-const HandshakeIcon = symbol("handshake");
 const InfoIcon = symbol("info");
 const PaymentsIcon = symbol("payments");
 const PlaylistAddIcon = symbol("playlist_add");
@@ -17,13 +16,10 @@ const TodayIcon = symbol("today");
 const OverdueIcon = symbol("event_busy");
 const UpcomingIcon = symbol("event_upcoming");
 const RefreshIcon = symbol("refresh");
-const ShareIcon = symbol("share");
 const StoreIcon = symbol("store");
 const PersonAddIcon = symbol("person_add");
-const GroupIcon = symbol("group");
 const WalletIcon = symbol("account_balance_wallet");
 const BoltIcon = symbol("bolt");
-const MonitoringIcon = symbol("monitoring");
 const NotificationIcon = symbol("notifications");
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 import {
@@ -40,12 +36,12 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
-import { formatPeso } from "@/lib/format-money";
 import { InfoPopover } from "@/components/exits/InfoPopover";
 import { cn } from "@/lib/cn";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { PersonalBusinessSummary } from "@/features/personal/businesses/PersonalBusinessSummary";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
+import { PersonalTrackerCard } from "@/features/personal/PersonalTrackerCard";
 import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
 import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
@@ -60,117 +56,6 @@ import { useSession } from "@/session/SessionProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import { listCachedPersonalTodos } from "@/offline/personal-todo-cache";
-
-function pesoLabel(amount: number): string {
-  return formatPeso(amount).replace("₱", "₱ ");
-}
-
-function TrackerSummaryCard({
-  title,
-  mineLabel,
-  sharedLabel,
-  mineAmount,
-  sharedAmount,
-  mineTo,
-  sharedTo,
-  icon: Icon,
-  tone,
-  rowTestId,
-  mineTestId,
-  sharedTestId,
-  mineLabelTestId,
-  sharedLabelTestId,
-  showDivider,
-  showTotal = true,
-  layout = "default",
-}: {
-  title: string;
-  mineLabel: string;
-  sharedLabel: string;
-  mineAmount: number;
-  sharedAmount: number;
-  mineTo: string;
-  sharedTo: string;
-  icon: IconComponent;
-  tone: "owed" | "owe";
-  rowTestId: string;
-  mineTestId: string;
-  sharedTestId: string;
-  mineLabelTestId: string;
-  sharedLabelTestId: string;
-  showDivider?: boolean;
-  showTotal?: boolean;
-  layout?: "default" | "pendant";
-}) {
-  const foot = (
-    <span className="tracker-summary__foot">
-      <Link to={mineTo} className="tracker-summary__stat" data-testid={mineTestId}>
-        <span className="tracker-summary__stat-label" data-testid={mineLabelTestId}>
-          {mineLabel}
-        </span>
-        <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(mineAmount)}</span>
-      </Link>
-      <span
-        className="tracker-summary__vrule"
-        data-testid={showDivider ? "personal-owed-divider" : undefined}
-        aria-hidden
-      />
-      <Link to={sharedTo} className="tracker-summary__stat" data-testid={sharedTestId}>
-        <span className="tracker-summary__stat-label" data-testid={sharedLabelTestId}>
-          {sharedLabel}
-        </span>
-        <span className="tracker-summary__stat-amount tabular-nums">{pesoLabel(sharedAmount)}</span>
-      </Link>
-    </span>
-  );
-
-  if (layout === "pendant") {
-    return (
-      <div
-        className={`tracker-summary tracker-summary--${tone} tracker-summary--pendant`}
-        data-testid={rowTestId}
-      >
-        <span
-          className="tracker-summary__pendant"
-          aria-hidden
-          data-testid={`${rowTestId}-pendant`}
-        >
-          <Icon className="tracker-summary__pendant-icon" />
-        </span>
-        <div className="tracker-summary__stage">
-          <span className="tracker-summary__copy">
-            <span className="tracker-summary__title">{title}</span>
-            {showTotal ? (
-              <span className="tracker-summary__amount tabular-nums">
-                {pesoLabel(mineAmount + sharedAmount)}
-              </span>
-            ) : null}
-          </span>
-          <span className="tracker-balance__rule" aria-hidden />
-          {foot}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`tracker-summary tracker-summary--${tone}`} data-testid={rowTestId}>
-      <span className="tracker-summary__head">
-        <span className={`tracker-summary__icon tracker-summary__icon--${tone}`} aria-hidden>
-          <Icon />
-        </span>
-        <span className="tracker-summary__copy">
-          <span className="tracker-summary__title">{title}</span>
-          {showTotal ? (
-            <span className="tracker-summary__amount tabular-nums">{pesoLabel(mineAmount + sharedAmount)}</span>
-          ) : null}
-        </span>
-      </span>
-      <span className="tracker-balance__rule" aria-hidden />
-      {foot}
-    </div>
-  );
-}
 
 export function PersonalHomePage() {
   const { t } = useI18n();
@@ -397,111 +282,7 @@ export function PersonalHomePage() {
       <div className="personal-home-layout" data-testid="personal-home-layout">
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
       <PersonalBusinessSummary />
-      <section
-        className="catalog-form-section exits-animate-panel personal-section personal-tracker-card gap-3"
-        aria-label={t("personal.home.personalTracker")}
-        data-testid="personal-utang-summary"
-      >
-        <h2 className="personal-tracker-card__ribbon" data-testid="personal-tracker-ribbon">
-          <span
-            className="personal-tracker-card__pennant"
-            aria-hidden
-            data-testid="personal-tracker-pennant"
-          >
-            <MonitoringIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
-          </span>
-          {t("personal.home.personalTracker")}
-        </h2>
-        <div className="tracker-summary-row">
-          <TrackerSummaryCard
-            title={t("personal.home.trackerOwedTitle")}
-            mineLabel={t("personal.home.myIOweRecord")}
-            sharedLabel={t("personal.home.sharedOwedRecord")}
-            mineAmount={dashboard.totalBorrowedBalance}
-            sharedAmount={dashboard.totalLentBalance}
-            mineTo="/personal/utang/owe"
-            sharedTo="/personal/utang/lent"
-            icon={HandshakeIcon}
-            tone="owed"
-            layout="pendant"
-            rowTestId="personal-utang-owed-to-me"
-            mineTestId="personal-stat-borrowed-mine"
-            sharedTestId="personal-stat-lent-mine"
-            mineLabelTestId="personal-stat-borrowed-mine-label"
-            sharedLabelTestId="personal-stat-lent-mine-label"
-            showDivider
-            showTotal={false}
-          />
-          <TrackerSummaryCard
-            title={t("personal.home.trackerOweTitle")}
-            mineLabel={t("personal.home.myIOweRecord")}
-            sharedLabel={t("personal.home.sharedOwedRecord")}
-            mineAmount={dashboard.sharedWithMeBorrowedBalance}
-            sharedAmount={dashboard.sharedWithMeLentBalance}
-            mineTo="/personal/utang/owe"
-            sharedTo="/personal/utang/lent"
-            icon={WalletIcon}
-            tone="owe"
-            layout="pendant"
-            rowTestId="personal-utang-i-owe"
-            mineTestId="personal-stat-borrowed-shared"
-            sharedTestId="personal-stat-lent-shared"
-            mineLabelTestId="personal-stat-borrowed-shared-label"
-            sharedLabelTestId="personal-stat-lent-shared-label"
-            showTotal={false}
-          />
-        </div>
-        <div className="personal-home-metrics" data-testid="personal-home-meta">
-          <Link
-            to="/personal/people"
-            className="personal-home-index-card personal-home-index-card--secondary personal-home-index-card--outline"
-            data-testid="personal-stat-people"
-          >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <GroupIcon className="personal-home-index-card__icon" />
-            </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{t("personal.home.friends")}</span>
-            </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
-              {dashboard.contactCount}
-            </strong>
-          </Link>
-          <Link
-            to="/personal/utang"
-            className="personal-home-index-card personal-home-index-card--success personal-home-index-card--outline"
-            data-testid="personal-stat-active"
-          >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <HandshakeIcon className="personal-home-index-card__icon" />
-            </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{t("personal.home.activeMine")}</span>
-            </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
-              {dashboard.activeRelationshipCount}
-            </strong>
-          </Link>
-          <Link
-            to="/personal/utang"
-            className="personal-home-index-card personal-home-index-card--info personal-home-index-card--outline"
-            data-testid="personal-stat-active-shared"
-          >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <ShareIcon className="personal-home-index-card__icon" />
-            </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{t("personal.home.sharedLedgerStat")}</span>
-            </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
-              {dashboard.sharedWithMeActiveCount ?? 0}
-            </strong>
-          </Link>
-        </div>
-      </section>
+      <PersonalTrackerCard dashboard={dashboard} metricsOutline />
 
       <section
         className="catalog-form-section exits-animate-panel personal-section personal-stores-to-pay gap-3"

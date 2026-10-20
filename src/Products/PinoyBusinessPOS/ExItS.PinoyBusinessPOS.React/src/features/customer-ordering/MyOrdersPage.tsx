@@ -1,7 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { ChevronRight, Package, RefreshCw, Store, Truck, Users } from "lucide-react";
+import {
+  Banknote,
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  Clock3,
+  HandCoins,
+  Package,
+  RefreshCw,
+  ShoppingBag,
+  Smartphone,
+  Store,
+  Truck,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listMyCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { Button } from "@/components/ui/button";
@@ -9,9 +24,7 @@ import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
@@ -21,7 +34,14 @@ import {
 } from "@/features/customer-ordering/seller-order-actions";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { cn } from "@/lib/cn";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
+
+function orderCardToneClass(tone: ReturnType<typeof orderStatusChipTone>): string {
+  if (tone === "success") return "pc-order-card--success";
+  if (tone === "danger" || tone === "warning") return "pc-order-card--warn";
+  return "pc-order-card--primary";
+}
 
 const BUYER_SCOPE_ORG = "00000000-0000-4000-8000-000000000001";
 const ORDERS_PAGE_SIZE = 40;
@@ -39,7 +59,33 @@ function fulfillmentLabel(type: string, t: (key: MessageKey) => string): string 
 function FulfillmentIcon({ type }: { type: string }) {
   const isDelivery = type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0;
   const Icon = isDelivery ? Truck : Package;
-  return <Icon className="size-3.5 shrink-0" aria-hidden />;
+  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
+}
+
+function paymentMethodLabel(code: string, t: (key: MessageKey) => string): string {
+  if (code === "Cash") return t("orders.paymentCash");
+  if (code === "ManualGCash") return t("orders.paymentGCashShort");
+  return t("orders.paymentUtang");
+}
+
+function PaymentMethodIcon({ code }: { code: string }) {
+  let Icon: LucideIcon = Banknote;
+  if (code === "ManualGCash") Icon = Smartphone;
+  else if (code === "Utang") Icon = HandCoins;
+  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
+}
+
+function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
+  if (status === "Paid") return t("orders.paymentPaid");
+  if (status === "Pending") return t("orders.paymentAwaitingVerification");
+  return t("orders.paymentUnpaid");
+}
+
+function PaymentStatusIcon({ status }: { status: string }) {
+  let Icon: LucideIcon = CircleAlert;
+  if (status === "Paid") Icon = CheckCircle2;
+  else if (status === "Pending") Icon = Clock3;
+  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
 }
 
 export function MyOrdersPage() {
@@ -97,9 +143,9 @@ export function MyOrdersPage() {
           backTestId="page-header-back-my-orders"
         />
         <EmptyState
-              variant="setup"
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
+          variant="setup"
+          align="center"
+          icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("offline.internetRequiredTitle")}
           detail={t("offline.internetRequiredDetail")}
         />
@@ -153,8 +199,11 @@ export function MyOrdersPage() {
       {items.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
           <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("orders.emptyTitle")} detail={t("orders.emptyBuyerDetail")} />
+            align="center"
+            icon={<Users className="size-5" strokeWidth={1.75} />}
+            title={t("orders.emptyTitle")}
+            detail={t("orders.emptyBuyerDetail")}
+          />
           <Button asChild className="w-full gap-2" data-testid="my-orders-open-stores-empty">
             <Link to="/personal/linked-merchants">
               <Store className="size-4 shrink-0" aria-hidden />
@@ -165,39 +214,65 @@ export function MyOrdersPage() {
       ) : (
         <section className="exits-animate-panel flex flex-col gap-3" aria-label={t("personal.myOrdersTitle")}>
           <h2 className="pc-section-heading">{t("personal.myOrdersTitle")}</h2>
-          <ul className="flex flex-col gap-2 m-0 p-0 list-none" data-testid="my-orders-list">
-            {items.map((order) => (
-              <li key={order.orderId}>
-                <Link
-                  className="pc-order-card"
-                  to={`/personal/orders/${order.orderId}`}
-                  data-testid="my-order-card"
-                >
-                  <div className="pc-order-card__main">
-                    <p className="pc-order-card__store">{order.branchNameSnapshot}</p>
-                    <p className="pc-order-card__ref">
-                      #{order.orderNumber} · {new Date(order.createdAtUtc).toLocaleString()}
-                    </p>
-                    <div className="pc-order-card__meta">
-                      <StatusChip tone={orderStatusChipTone(order)}>
-                        {t(displayOrderStatusKey(order) as MessageKey)}
-                      </StatusChip>
-                      <span className="inline-flex items-center gap-1">
-                        <FulfillmentIcon type={order.fulfillmentType} />
-                        {fulfillmentLabel(order.fulfillmentType, t)}
-                      </span>
-                      <span>
-                        {order.lineCount} {t("orders.items")}
-                      </span>
+          <ul
+            className="utang-relationship-list pc-orders-list m-0 flex list-none flex-col p-0"
+            data-testid="my-orders-list"
+          >
+            {items.map((order) => {
+              const tone = orderStatusChipTone(order);
+              const statusLabel = t(displayOrderStatusKey(order) as MessageKey);
+              return (
+                <li key={order.orderId}>
+                  <Link
+                    to={`/personal/orders/${order.orderId}`}
+                    className={cn("pc-order-card text-foreground no-underline", orderCardToneClass(tone))}
+                    data-testid="my-order-card"
+                  >
+                    <span className="pc-order-card__ribbon">
+                      <span className="pc-order-card__ribbon-label truncate uppercase">{statusLabel}</span>
+                      <span className="pc-order-card__ribbon-fold" aria-hidden />
+                    </span>
+                    <div className="pc-order-card__body min-w-0 flex-1">
+                      <p className="pc-order-card__title m-0 truncate">{order.branchNameSnapshot}</p>
+                      <div className="pc-order-card__meta-row" data-testid="my-order-card-facts">
+                        <span className="pc-order-card__fact">
+                          <PaymentStatusIcon status={order.paymentStatus} />
+                          <span className="pc-order-card__fact-text truncate">
+                            {paymentStatusLabel(order.paymentStatus, t)}
+                          </span>
+                        </span>
+                        <span className="pc-order-card__fact">
+                          <PaymentMethodIcon code={order.paymentMethod} />
+                          <span className="pc-order-card__fact-text truncate">
+                            {paymentMethodLabel(order.paymentMethod, t)}
+                          </span>
+                        </span>
+                        <span className="pc-order-card__fact">
+                          <ShoppingBag className="pc-order-card__fact-icon" aria-hidden />
+                          <span className="pc-order-card__fact-text truncate">
+                            {order.lineCount} {t("orders.items")}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="pc-order-card__fulfill">
+                        <span className="pc-order-card__fact">
+                          <FulfillmentIcon type={order.fulfillmentType} />
+                          <span className="pc-order-card__fact-text truncate">
+                            {fulfillmentLabel(order.fulfillmentType, t)}
+                          </span>
+                        </span>
+                        <span className="pc-order-card__when truncate">
+                          {new Date(order.createdAtUtc).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="pc-order-card__aside">
-                    <MoneyDisplay amount={order.total} className="pc-order-card__total" />
-                    <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
-                  </div>
-                </Link>
-              </li>
-            ))}
+                    <span className="pc-order-card__caret" aria-hidden>
+                      <ChevronRight className="pc-order-card__caret-icon" />
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
 
           {query.hasNextPage ? (

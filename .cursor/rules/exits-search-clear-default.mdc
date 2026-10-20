@@ -1,0 +1,23 @@
+---
+description: Search clear mark uses the locked primary bold X
+alwaysApply: true
+---
+
+# Search clear (LOCKED)
+
+When creating a search field with a clear action, use the lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/search-clear-global-default.ts`.
+
+- Intent / color: primary (`SEARCH_CLEAR_GLOBAL_COLOR` = `var(--exits-primary)`)
+- Mark: Lucide `X` with bold stroke `SEARCH_CLEAR_GLOBAL_STROKE` = **3**
+- Icon size: `SEARCH_CLEAR_GLOBAL_ICON_SIZE` = **1rem**
+
+Use this on:
+
+- `SearchField` / `ExitsSearchField` (`.exits-search-field__clear`)
+- Locked search input (`PlaygroundSearchField` / clearable ExItS input)
+- Dropdown panel search clear (`.ui-standards-qdropdown__search-clear`)
+
+Do not use a muted grey clear, a thin default Lucide stroke (2), or a different color unless the user names one.
+
+Change this lock only when the user asks. Update `search-clear-global-default.ts`, the matching CSS (`globals.css` / `exits-qfield.css`), and `search-clear-global-default.test.ts` together.

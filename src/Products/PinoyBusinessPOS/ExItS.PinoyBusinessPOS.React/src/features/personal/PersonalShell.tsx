@@ -86,10 +86,10 @@ export function PersonalShell() {
           "personal-shell admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
           /* Small: no horizontal shell pad so top bar can be true full-bleed; gutters live on body. */
           "px-0 pt-[env(safe-area-inset-top)]",
-          /* Reserve space for fixed bottom nav on phone/tablet; desktop float uses lg:pb inset. */
+          /* Reserve space for fixed bottom nav (pt-1 + min-h-11 + border + safe area). */
           isDesktop
             ? "pb-[env(safe-area-inset-bottom)]"
-            : "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))]",
+            : "pb-[calc(3.05rem+env(safe-area-inset-bottom))]",
           /* Desktop: sidenav and top bar sit flush on the left, right, and bottom. */
           "lg:flex-row lg:gap-0 lg:pt-[env(safe-area-inset-top)] lg:pb-[env(safe-area-inset-bottom)] lg:ps-[env(safe-area-inset-left)] lg:pe-[env(safe-area-inset-right)]",
         )}

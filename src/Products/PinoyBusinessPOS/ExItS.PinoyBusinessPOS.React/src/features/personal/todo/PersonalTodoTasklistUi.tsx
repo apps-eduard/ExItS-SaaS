@@ -12,6 +12,7 @@ import {
   Ellipsis,
   ListTodo,
   Loader2,
+  MoreVertical,
   Pencil,
   RotateCcw,
   Trash2,
@@ -27,6 +28,7 @@ import {
 } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
+import { DropdownMenu, MenuItem, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
@@ -74,9 +76,11 @@ export function PersonalTodoFilterRail({
   onChange: (tab: TodoAgendaTab) => void;
 }) {
   const { t } = useI18n();
+  const moreMenu = useDismissibleOpen(false);
+
   return (
     <nav
-      className="personal-todo-tasklist-rail__nav"
+      className="personal-todo-tasklist-rail__nav personal-todo-tasklist-rail__nav--scroll-more"
       aria-label={t("personal.todo.filters")}
       data-testid="personal-todo-filters"
     >
@@ -110,6 +114,53 @@ export function PersonalTodoFilterRail({
           );
         })}
       </ul>
+      {/* Mobile: scrollable row + vertical more (ext-tabs-basic-scrollable-more). Hidden on desktop rail. */}
+      <DropdownMenu
+        align="end"
+        open={moreMenu.open}
+        onOpenChange={moreMenu.setOpen}
+        menuLabel={t("personal.todo.filters")}
+        menuClassName="personal-todo-tasklist-rail__more-menu"
+        trigger={({ id, expanded, controls, onClick, onKeyDown }) => (
+          <button
+            id={id}
+            type="button"
+            className="personal-todo-tasklist-rail__more"
+            aria-label={t("personal.todo.filtersMore")}
+            aria-haspopup="menu"
+            aria-expanded={expanded}
+            aria-controls={controls}
+            data-testid="todo-tab-more"
+            onClick={onClick}
+            onKeyDown={onKeyDown}
+          >
+            <MoreVertical className="personal-todo-tasklist-rail__more-icon size-5" aria-hidden />
+          </button>
+        )}
+      >
+        {PERSONAL_TODO_FILTER_TABS.map((item) => {
+          const Icon = item.icon;
+          const count = countForTab(counts, item.id);
+          const active = activeTab === item.id;
+          return (
+            <MenuItem
+              key={item.id}
+              data-testid={`todo-tab-more-item-${item.id}`}
+              className={cn(active && "personal-todo-tasklist-rail__more-item--active")}
+              onSelect={() => {
+                onChange(item.id);
+                moreMenu.close();
+              }}
+            >
+              <Icon className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
+              {count != null ? (
+                <span className="personal-todo-tasklist-rail__more-count tabular-nums">{count}</span>
+              ) : null}
+            </MenuItem>
+          );
+        })}
+      </DropdownMenu>
     </nav>
   );
 }
@@ -230,7 +281,10 @@ export function PersonalTodoBoard({
       {groups.map((group) => {
         const open = !closed[group.id];
         return (
-          <section key={group.id} className="personal-todo-tasklist-group">
+          <section
+            key={group.id}
+            className={cn("personal-todo-tasklist-group", `personal-todo-tasklist-group--${group.id}`)}
+          >
             <button
               type="button"
               className="personal-todo-tasklist-group__toggle"

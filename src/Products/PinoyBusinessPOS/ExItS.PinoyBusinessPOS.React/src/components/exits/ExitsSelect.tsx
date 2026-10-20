@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import { SearchField } from "@/components/exits/SearchField";
 import { DropdownMenu, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
 
@@ -118,18 +119,18 @@ export function ExitsSelect<T extends string>({
       )}
     >
       {searchable ? (
-        <div className="border-b border-border p-1.5">
-          <input
-            type="search"
-            className="exits-input w-full"
-            style={{ paddingInlineStart: "0.75rem" }}
+        <div
+          className="border-b border-border p-1.5"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          <SearchField
+            label={searchPlaceholder}
             value={query}
             placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            data-testid={testId ? `${testId}-search` : undefined}
             onChange={(event) => setQuery(event.target.value)}
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
+            onClear={() => setQuery("")}
+            testId={testId ? `${testId}-search` : "exits-select-search"}
           />
         </div>
       ) : null}

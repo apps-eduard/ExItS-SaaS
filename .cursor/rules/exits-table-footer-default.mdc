@@ -1,0 +1,15 @@
+---
+description: Locked table footer pagination chrome (page size + carets)
+alwaysApply: true
+---
+
+# Table footer (LOCKED)
+
+Table footer pagination uses the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/table-footer-global-default.ts`.
+
+- Default footer intent / appearance: `standard` / `standard`
+- Page-size menu: Quasar cover positioning, dense options (`32px` / `2px 8px`), centered labels, selected = primary color (amber in dark), hover = full-width gray bar, always include **All** (`0`) when any ladder size applies
+- Nav carets: Material Symbols first/prev/next/last at `1.5rem`, tight gap between single and double
+- Use `ExitsTablePageSizeSelect` / `exitsTablePageSizesForTotal` — do not swap in a native bordered `<select>`
+
+Change this lock only when the user asks. Update `table-footer-global-default.ts` and `table-footer-global-default.test.ts` together.

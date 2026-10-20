@@ -112,7 +112,7 @@ describe("ExitsTable foundation", () => {
           total={2}
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
-          rowsPerPageLabel="Rows per page"
+          rowsPerPageLabel="Page size:"
           previousLabel="Previous"
           nextLabel="Next"
           rangeLabel="{from}–{to} of {total}"
@@ -123,24 +123,67 @@ describe("ExitsTable foundation", () => {
     expect(screen.getByTestId("exits-table-toolbar")).toBeInTheDocument();
     expect(screen.getByText("2 selected")).toBeInTheDocument();
     expect(screen.getByTestId("selected-row")).toHaveAttribute("data-selected", "true");
-    expect(screen.getByTestId("exits-table-pagination-range")).toHaveTextContent("1–2 of 2");
-    expect(screen.getByTestId("exits-table-prev")).toBeDisabled();
-    expect(screen.getByTestId("exits-table-next")).toBeDisabled();
+    // total < 10: no range / nav; no page-size options either
+    expect(screen.queryByTestId("exits-table-pagination-range")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("exits-table-prev")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("exits-table-next")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("exits-table-page-size")).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("sort-product-sort"));
     expect(onSort).toHaveBeenCalledTimes(1);
+  });
 
-    await user.selectOptions(screen.getByTestId("exits-table-page-size"), "10");
-    expect(onPageSizeChange).toHaveBeenCalledWith(10);
+  it("filters page-size options by total and opens a compact menu", async () => {
+    const user = userEvent.setup();
+    const onPageSizeChange = vi.fn();
+
+    const { rerender } = render(
+      <ExitsTablePagination
+        page={1}
+        pageSize={25}
+        total={100}
+        onPageChange={() => undefined}
+        onPageSizeChange={onPageSizeChange}
+        rowsPerPageLabel="Page size:"
+        previousLabel="Previous"
+        nextLabel="Next"
+        rangeLabel="{from}–{to} of {total}"
+      />,
+    );
 
     const pageSize = screen.getByTestId("exits-table-page-size");
-    expect([...pageSize.querySelectorAll("option")].map((opt) => opt.getAttribute("value"))).toEqual([
-      "10",
-      "25",
-      "50",
-      "100",
-    ]);
-    expect(pageSize).toHaveValue("25");
+    expect(screen.getByText("Page size:")).toBeInTheDocument();
+    expect(pageSize).toHaveAttribute("data-value", "25");
+
+    await user.click(pageSize);
+    expect(screen.getByTestId("exits-table-page-size-option-10")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-page-size-option-25")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-page-size-option-50")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-page-size-option-100")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-page-size-option-all")).toHaveTextContent("All");
+    expect(screen.queryByTestId("exits-table-page-size-option-200")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("exits-table-page-size-option-10"));
+    expect(onPageSizeChange).toHaveBeenCalledWith(10);
+
+    rerender(
+      <ExitsTablePagination
+        page={1}
+        pageSize={10}
+        total={24}
+        onPageChange={() => undefined}
+        onPageSizeChange={onPageSizeChange}
+        rowsPerPageLabel="Page size:"
+        previousLabel="Previous"
+        nextLabel="Next"
+        rangeLabel="{from}–{to} of {total}"
+      />,
+    );
+
+    await user.click(screen.getByTestId("exits-table-page-size"));
+    expect(screen.getByTestId("exits-table-page-size-option-10")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-page-size-option-all")).toBeInTheDocument();
+    expect(screen.queryByTestId("exits-table-page-size-option-25")).not.toBeInTheDocument();
   });
 
   it("cycles sort none → asc → desc → none", () => {

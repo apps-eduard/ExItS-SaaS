@@ -106,6 +106,8 @@ export const customerOrderListItemSchema = z.object({
   orderNumber: z.string(),
   status: z.string(),
   fulfillmentStatus: z.string(),
+  paymentStatus: z.string().optional().default("Unpaid"),
+  paymentMethod: z.string().optional().default("Cash"),
   fulfillmentType: z.string(),
   fulfillmentBranchId: guidSchema,
   branchNameSnapshot: z.string(),

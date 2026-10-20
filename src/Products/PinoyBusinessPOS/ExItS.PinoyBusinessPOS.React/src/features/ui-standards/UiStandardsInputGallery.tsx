@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Eye, EyeOff, type LucideIcon } from "lucide-react";
+import { Eye, EyeOff, X, type LucideIcon } from "lucide-react";
 import {
   INTENT_GLOBAL_AMBER,
   INTENT_GLOBAL_BLACK,
@@ -13,6 +13,7 @@ import {
   INTENT_GLOBAL_WARN,
   INTENT_GLOBAL_WARN_FOREGROUND,
 } from "@/features/ui-standards/intent-color-global-default";
+import { SEARCH_CLEAR_GLOBAL_STROKE } from "@/features/ui-standards/search-clear-global-default";
 
 /**
  * Locked ExItS Input samples. Visual authority for `ext input`.
@@ -103,6 +104,7 @@ export function UiStandardsQinput({
   onClear,
   icon,
   placeholder,
+  placeholderOnly = false,
   type = "text",
   suffix,
   hint,
@@ -126,6 +128,8 @@ export function UiStandardsQinput({
   onClear?: () => void;
   icon?: LucideIcon | null;
   placeholder?: string;
+  /** Show placeholder text; keep label for assistive tech only. */
+  placeholderOnly?: boolean;
   type?: string;
   suffix?: ReactNode;
   hint?: string;
@@ -157,6 +161,7 @@ export function UiStandardsQinput({
         (Icon ? " ui-standards-qinput--has-icon" : "") +
         (clearable ? " ui-standards-qinput--clearable" : "") +
         (required ? " ui-standards-qinput--required" : "") +
+        (placeholderOnly ? " ui-standards-qinput--placeholder" : "") +
         (picker ? " ui-standards-qinput--picker" : "") +
         (area ? " ui-standards-qinput--area" : "")
       }
@@ -164,6 +169,7 @@ export function UiStandardsQinput({
       data-testid={testId}
       data-appearance={appearance}
       data-shape={shape}
+      data-placeholder-only={placeholderOnly ? "true" : undefined}
     >
       <span className="ui-standards-qinput__box">
         {Icon ? <Icon className="ui-standards-qinput__icon" aria-hidden strokeWidth={2} /> : null}
@@ -172,7 +178,7 @@ export function UiStandardsQinput({
             className="ui-standards-qinput__control ui-standards-qinput__control--area"
             value={onChange ? shown : undefined}
             defaultValue={onChange ? undefined : ""}
-            placeholder={placeholder ?? " "}
+            placeholder={placeholderOnly ? (placeholder ?? label) : (placeholder ?? " ")}
             disabled={disabled}
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
@@ -187,7 +193,7 @@ export function UiStandardsQinput({
             type={type}
             value={onChange ? shown : undefined}
             defaultValue={onChange ? undefined : ""}
-            placeholder={placeholder ?? " "}
+            placeholder={placeholderOnly ? (placeholder ?? label) : (placeholder ?? " ")}
             disabled={disabled}
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
@@ -196,14 +202,16 @@ export function UiStandardsQinput({
             onChange={onChange ? (event) => onChange(event.target.value) : undefined}
           />
         )}
-        <span className="ui-standards-qinput__label">
-          {label}
-          {required ? (
-            <span className="ui-standards-qinput__required" aria-hidden>
-              *
-            </span>
-          ) : null}
-        </span>
+        {placeholderOnly ? null : (
+          <span className="ui-standards-qinput__label">
+            {label}
+            {required ? (
+              <span className="ui-standards-qinput__required" aria-hidden>
+                *
+              </span>
+            ) : null}
+          </span>
+        )}
         {suffix}
         {clearable && shown.trim() && !disabled ? (
           <button
@@ -216,7 +224,7 @@ export function UiStandardsQinput({
               onClear?.();
             }}
           >
-            ×
+            <X className="size-4" strokeWidth={SEARCH_CLEAR_GLOBAL_STROKE} aria-hidden />
           </button>
         ) : null}
       </span>

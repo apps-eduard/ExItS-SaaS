@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
+import { SEARCH_CLEAR_GLOBAL_STROKE } from "@/features/ui-standards/search-clear-global-default";
 import { INPUT_SAMPLES, type InputSample } from "@/features/ui-standards/UiStandardsInputGallery";
 import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 
@@ -252,7 +253,11 @@ export function UiStandardsQdropdown({
                 inputRef.current?.focus();
               }}
             >
-              <X className="ui-standards-qdropdown__field-clear-icon" aria-hidden />
+              <X
+                className="ui-standards-qdropdown__field-clear-icon"
+                strokeWidth={SEARCH_CLEAR_GLOBAL_STROKE}
+                aria-hidden
+              />
             </button>
           ) : null}
           <ChevronDown

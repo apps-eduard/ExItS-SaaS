@@ -239,29 +239,35 @@ function PeopleUtangTotal({
   total,
   count,
   testId,
+  href,
   owe = false,
 }: {
   total: number;
   count: number;
   testId: string;
+  href: string;
   owe?: boolean;
 }) {
   if (count === 0) {
-    return <span className="text-muted">—</span>;
+    return (
+      <Link to={href} className="people-table-amount people-table-amount--empty text-muted no-underline" data-testid={testId}>
+        —
+      </Link>
+    );
   }
   return (
-    <span className="inline-flex items-center gap-2">
+    <Link to={href} className="people-table-amount inline-flex items-center gap-2 no-underline" data-testid={`${testId}-link`}>
       <MoneyDisplay
         amount={total}
         testId={testId}
         className={owe && total > 0 ? "text-[var(--exits-warning)]" : undefined}
       />
       <CountBadge count={count} tone={owe ? "warning" : "neutral"} />
-    </span>
+    </Link>
   );
 }
 
-const PEOPLE_PAGE_SIZES = [10, 25, 50, 100] as const;
+const PEOPLE_PAGE_SIZES = [10, 25, 50, 100, 200, 500] as const;
 
 function PeopleTable({
   rows,
@@ -302,7 +308,16 @@ function PeopleTable({
   }
 
   return (
-    <ExitsTableContainer className="people-list-table" data-testid="people-table">
+    <ExitsTableContainer
+      className="people-list-table"
+      data-testid="people-table"
+      style={
+        {
+          "--qheader-accent": INTENT_GLOBAL_STANDARD,
+          "--exits-table-page-size-border": INTENT_GLOBAL_STANDARD,
+        } as CSSProperties
+      }
+    >
       <ExitsTableToolbar
         search={
           <ExitsOutlineInput
@@ -349,7 +364,9 @@ function PeopleTable({
             <ExitsTableHead>{t("people.column.status")}</ExitsTableHead>
             <ExitsTableHead>{t("people.detail.iLentAction")}</ExitsTableHead>
             <ExitsTableHead>{t("people.detail.iOweAction")}</ExitsTableHead>
-            <ExitsTableHead className="people-table-actions">{t("people.column.actions")}</ExitsTableHead>
+            <ExitsTableHead align="center" className="people-table-actions">
+              {t("people.column.actions")}
+            </ExitsTableHead>
           </ExitsTableRow>
         </ExitsTableHeader>
         <ExitsTableBody>
@@ -376,7 +393,7 @@ function PeopleTable({
             return (
               <ExitsTableRow key={row.contact.id} data-testid={`people-table-row-${row.contact.id}`}>
                 <ExitsTableCell emphasis="semibold" truncate title={row.contact.displayName}>
-                  <Link to={href} className="truncate text-foreground no-underline">
+                  <Link to={href} className="people-table-name truncate no-underline">
                     {row.contact.displayName}
                   </Link>
                 </ExitsTableCell>
@@ -399,6 +416,7 @@ function PeopleTable({
                   <PeopleUtangTotal
                     total={row.lentTotal}
                     count={row.lentCount}
+                    href={`/personal/utang/lent?contact=${row.contact.id}`}
                     testId={`people-table-lent-${row.contact.id}`}
                   />
                 </ExitsTableCell>
@@ -406,6 +424,7 @@ function PeopleTable({
                   <PeopleUtangTotal
                     total={row.oweTotal}
                     count={row.oweCount}
+                    href={`/personal/utang/owe?contact=${row.contact.id}`}
                     testId={`people-table-owe-${row.contact.id}`}
                     owe
                   />
@@ -413,18 +432,21 @@ function PeopleTable({
                 <ExitsTableCell className="people-table-actions">
                   <span className="inline-flex flex-wrap items-center justify-end gap-2">
                     {row.connectionStatus === "local" ? (
-                      <button
+                      <Button
                         type="button"
+                        intent="primary"
+                        appearance="glossy"
+                        shape="round"
+                        size="icon"
                         className="people-table-edit"
-                        data-shape="round"
                         data-testid={`people-edit-${row.contact.id}`}
                         aria-label={`${t("people.action.edit")} ${row.contact.displayName}`}
                         onClick={() => setEditingContact(row.contact)}
                       >
                         <Pencil className="size-4" aria-hidden />
-                      </button>
+                      </Button>
                     ) : null}
-                    <Button asChild variant="outline" className="w-auto">
+                    <Button asChild intent="success" appearance="glossy" className="w-auto">
                       <Link
                         to={`/personal/utang/lent?contact=${row.contact.id}`}
                         data-testid={`people-lent-${row.contact.id}`}
@@ -432,7 +454,7 @@ function PeopleTable({
                         {t("personal.utang.filterOwedToMe")}
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" className="w-auto">
+                    <Button asChild intent="info" appearance="glossy" className="w-auto">
                       <Link
                         to={`/personal/utang/owe?contact=${row.contact.id}`}
                         data-testid={`people-owe-${row.contact.id}`}
