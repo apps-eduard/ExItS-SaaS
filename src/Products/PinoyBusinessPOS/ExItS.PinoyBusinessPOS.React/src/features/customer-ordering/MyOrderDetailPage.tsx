@@ -10,6 +10,7 @@ import {
   HandCoins,
   Info,
   Loader2,
+  MapPin,
   Package,
   ShoppingBag,
   Smartphone,

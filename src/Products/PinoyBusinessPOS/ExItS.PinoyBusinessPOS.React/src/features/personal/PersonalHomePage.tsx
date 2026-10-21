@@ -477,80 +477,58 @@ export function PersonalHomePage() {
         <div className="personal-quick-actions__cards" data-testid="personal-quick-actions-cards">
           <Link
             to="/personal/businesses"
-            className="personal-home-infodata-card personal-home-infodata-card--info personal-home-infodata-card--compact"
+            className="personal-qa-glass personal-qa-glass--start"
             data-testid="personal-qa-start-business"
           >
-            <span className="personal-home-infodata-card__circle" aria-hidden="true">
-              <BusinessCenterIcon className="personal-home-infodata-card__icon" />
+            <span className="personal-qa-glass__icon" aria-hidden="true">
+              <BusinessCenterIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
-            <span className="personal-home-infodata-card__body">
-              <span className="personal-home-infodata-card__title">{t("personal.home.actionStartBusiness")}</span>
-            </span>
-            <ChevronRightIcon className="personal-attention-row__chevron shrink-0" aria-hidden />
+            <span className="personal-qa-glass__label">{t("personal.home.actionStartBusiness")}</span>
+            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/utang/lent"
-            className="personal-home-index-card personal-home-index-card--success personal-home-index-card--solid"
+            className="personal-qa-glass personal-qa-glass--lent"
             data-testid="personal-qa-lent"
           >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <ArrowUpwardIcon className="personal-home-index-card__icon" />
+            <span className="personal-qa-glass__icon" aria-hidden="true">
+              <ArrowUpwardIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{t("personal.home.actionLent")}</span>
-            </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
-              <ChevronRightIcon className="personal-home-index-card__icon" />
-            </strong>
+            <span className="personal-qa-glass__label">{t("personal.home.actionLent")}</span>
+            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/utang/owe"
-            className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
+            className="personal-qa-glass personal-qa-glass--owe"
             data-testid="personal-qa-owe"
           >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <ArrowDownwardIcon className="personal-home-index-card__icon" />
+            <span className="personal-qa-glass__icon" aria-hidden="true">
+              <ArrowDownwardIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{t("personal.home.actionOwe")}</span>
-            </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
-              <ChevronRightIcon className="personal-home-index-card__icon" />
-            </strong>
+            <span className="personal-qa-glass__label">{t("personal.home.actionOwe")}</span>
+            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/linked-merchants"
-            className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
+            className="personal-qa-glass personal-qa-glass--stores"
             data-testid="personal-qa-stores"
           >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <PaymentsIcon className="personal-home-index-card__icon" />
+            <span className="personal-qa-glass__icon" aria-hidden="true">
+              <PaymentsIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{t("personal.home.actionStores")}</span>
-            </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
-              <ChevronRightIcon className="personal-home-index-card__icon" />
-            </strong>
+            <span className="personal-qa-glass__label">{t("personal.home.actionStores")}</span>
+            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/people"
-            className="personal-home-index-card personal-home-index-card--secondary personal-home-index-card--solid"
+            className="personal-qa-glass personal-qa-glass--people"
             data-testid="personal-qa-people"
           >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <PersonAddIcon className="personal-home-index-card__icon" />
+            <span className="personal-qa-glass__icon" aria-hidden="true">
+              <PersonAddIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{t("personal.home.actionPeople")}</span>
-            </span>
-            <strong className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost" aria-hidden="true">
-              +
-            </strong>
+            <span className="personal-qa-glass__label">{t("personal.home.actionPeople")}</span>
+            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
           </Link>
         </div>
       </section>
