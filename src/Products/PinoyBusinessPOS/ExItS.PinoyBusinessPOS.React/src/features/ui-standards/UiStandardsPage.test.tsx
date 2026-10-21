@@ -1326,20 +1326,20 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveClass("ui-standards-qtable--bordered");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-bordered", "true");
     expect(screen.queryByTestId("ui-standard-table-pg-bordered")).not.toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table");
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute("data-command", "ext table soft-glass header-glossy-raise footer-glossy-raise search");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "3");
     const elevationSlider = screen.getByTestId("ui-standard-table-pg-elevation");
     elevationSlider.focus();
     await user.keyboard("{Home}");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "1");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveStyle({ "--qtable-shadow": "none" });
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table flat");
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute("data-command", "ext table soft-glass flat header-glossy-raise footer-glossy-raise search");
     await user.keyboard("{End}");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "5");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table raised-5");
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute("data-command", "ext table soft-glass raised-5 header-glossy-raise footer-glossy-raise search");
     await user.keyboard("{ArrowLeft}{ArrowLeft}");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "3");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table");
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute("data-command", "ext table soft-glass header-glossy-raise footer-glossy-raise search");
     expect(screen.queryByTestId("ui-standard-card-table")).not.toBeInTheDocument();
     await choosePlaygroundDropdown(user, "ui-standard-table-pg-separator", "cell");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-separator", "cell");
@@ -1367,7 +1367,6 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standard-table-pg-dark")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("ui-standard-table-pg-loading"));
     await user.click(screen.getByTestId("ui-standard-table-pg-tab-features"));
-    await user.click(screen.getByTestId("ui-standard-table-pg-search-toggle"));
     await choosePlaygroundDropdown(user, "ui-standard-table-pg-export", "pdf");
     await user.click(screen.getByTestId("ui-standard-table-pg-filter-toggle"));
     await user.click(screen.getByTestId("ui-standard-table-pg-tab-table"));
@@ -1389,9 +1388,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-table-pg-row-cupcake")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-table-pg-row-frozen-yogurt")).not.toBeInTheDocument();
     await user.clear(screen.getByTestId("ui-standard-table-pg-search"));
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading search export-pdf filter",
+      "ext table soft-glass separator-cell compact loading header-glossy-raise footer-glossy-raise search export-pdf filter",
     );
     await user.click(screen.getByTestId("ui-standard-table-pg-tab-features"));
     await user.click(screen.getByTestId("ui-standard-table-pg-search-toggle"));
@@ -1401,16 +1400,16 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-density", "compact");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-loading", "true");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveTextContent("Loading...");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading",
+      "ext table soft-glass separator-cell compact loading header-glossy-raise footer-glossy-raise",
     );
     expect(screen.queryByTestId("ui-standard-table-pg-select-all")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("ui-standard-table-pg-multi-select"));
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-multi-select", "true");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading multi-select",
+      "ext table soft-glass separator-cell compact loading multi-select header-glossy-raise footer-glossy-raise",
     );
     await user.click(screen.getByTestId("ui-standard-table-pg-select-all"));
     expect(screen.getByTestId("ui-standard-table-pg-select-frozen-yogurt")).toBeChecked();
@@ -1463,15 +1462,15 @@ describe("UiStandardsPage", () => {
         name: "Preview size: Desktop",
       }),
     );
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading action-edit",
+      "ext table soft-glass separator-cell compact loading action-edit header-glossy-raise footer-glossy-raise",
     );
     await choosePlaygroundDropdown(user, "ui-standard-table-pg-icon-shape", "square");
     expect(screen.getByRole("button", { name: "Edit Frozen Yogurt" })).toHaveAttribute("data-shape", "square");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading action-edit icon-square",
+      "ext table soft-glass separator-cell compact loading action-edit icon-square header-glossy-raise footer-glossy-raise",
     );
     await choosePlaygroundDropdown(user, "ui-standard-table-pg-action", "edit");
     expect(screen.queryByTestId("ui-standard-table-pg-actions-frozen-yogurt")).not.toBeInTheDocument();
@@ -1482,41 +1481,41 @@ describe("UiStandardsPage", () => {
       "--qtable-bg": "var(--exits-primary)",
       "--qtable-ink": "#ffffff",
     });
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table primary separator-cell compact loading",
+      "ext table primary soft-glass separator-cell compact loading header-glossy-raise footer-glossy-raise",
     );
     await user.click(screen.getByTestId("ui-standard-table-pg-alternate"));
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-alternate", "true");
     expect(screen.getByTestId("ui-standard-table-pg-row-frozen-yogurt")).toHaveAttribute("data-tone", "solid");
     expect(screen.getByTestId("ui-standard-table-pg-row-ice-cream-sandwich")).toHaveAttribute("data-tone", "soft");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table primary alternate separator-cell compact loading",
+      "ext table primary soft-glass alternate separator-cell compact loading header-glossy-raise footer-glossy-raise",
     );
     await user.click(screen.getByTestId("ui-standard-table-pg-alternate"));
     await choosePlaygroundDropdown(user, "ui-standard-table-pg-intent", "standard");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading",
+      "ext table soft-glass separator-cell compact loading header-glossy-raise footer-glossy-raise",
     );
     await user.click(screen.getByTestId("ui-standard-table-pg-tab-header"));
-    expect(screen.getByTestId("ui-standard-table-pg-header")).toHaveAttribute("data-appearance", "standard");
+    expect(screen.getByTestId("ui-standard-table-pg-header")).toHaveAttribute("data-appearance", "glossy-raise");
     await choosePlaygroundDropdown(user, "ui-standard-table-pg-header-intent", "primary");
     await choosePlaygroundDropdown(user, "ui-standard-table-pg-header-appearance", "soft-outline");
     expect(screen.getByTestId("ui-standard-table-pg-header")).toHaveAttribute("data-intent", "primary");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveStyle({ "--qheader-accent": "var(--exits-primary)" });
     expect(screen.getByTestId("ui-standard-table-pg-header")).toHaveAttribute("data-appearance", "soft-outline");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading header-primary header-soft-outline",
+      "ext table soft-glass separator-cell compact loading header-primary header-soft-outline footer-glossy-raise",
     );
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-sort", "false");
     await user.click(screen.getByTestId("ui-standard-table-pg-sort"));
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-sort", "true");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute(
       "data-command",
-      "ext table separator-cell compact loading header-primary header-soft-outline sort",
+      "ext table soft-glass separator-cell compact loading header-primary header-soft-outline footer-glossy-raise sort",
     );
     await user.click(screen.getByTestId("ui-standard-table-pg-sort-dessert"));
     expect(screen.getByTestId("ui-standard-table-pg-sample").querySelector("tbody tr")).toHaveTextContent("Baklava");
@@ -1556,7 +1555,30 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-elevation", "3");
     expect(screen.getByTestId("ui-standard-table-pg-frame")).toHaveAttribute("data-preview-device", "desktop");
     expect(screen.getByTestId("ui-standard-table-pg-sample")).toHaveAttribute("data-layout", "table");
-    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute("data-command", "ext table");
+    expect(screen.getByTestId("ui-standard-table-pg-copy-command")).toHaveAttribute("data-command", "ext table soft-glass header-glossy-raise footer-glossy-raise search");
+    expect(screen.getByTestId("ui-standard-table-pg-default-standard-sample")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-default-standard-table")).toHaveAttribute(
+      "data-shell",
+      "soft-glass",
+    );
+    expect(screen.getByTestId("ui-standard-table-pg-default-standard-header")).toHaveAttribute(
+      "data-appearance",
+      "glossy-raise",
+    );
+    expect(screen.getByTestId("ui-standard-table-pg-default-standard-footer")).toHaveAttribute(
+      "data-appearance",
+      "glossy-raise",
+    );
+    expect(screen.getByTestId("ui-standard-table-pg-default-standard-search")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-table-pg-default-standard-page-size")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-table-pg-default-standard-footer")).getByLabelText("Next page"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standard-table-pg-default-standard-sample")).getByTestId(
+        "ui-standards-copy-command",
+      ),
+    ).toHaveAttribute("data-command", "ext table soft-glass header-glossy-raise footer-glossy-raise search");
   }, 20_000);
 
   it("filters live cards by category", () => {

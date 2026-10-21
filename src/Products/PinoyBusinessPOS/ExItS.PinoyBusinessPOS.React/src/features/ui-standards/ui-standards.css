@@ -6161,6 +6161,118 @@
   color: var(--qtable-ink);
 }
 
+/* Locked Soft Glass table shell — theme primary (table-global-default). */
+.ui-standards-qtable[data-shell="soft-glass"] {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --personal-qa-chip-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+  --qtable-radius: 1.1rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__toolbar {
+  border-bottom: 1px solid color-mix(in srgb, #e2e8f0 55%, var(--personal-qa-chip-soft));
+  background: transparent;
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] tbody td,
+.ui-standards-qtable[data-shell="soft-glass"] tbody tr {
+  background: transparent;
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] thead[data-appearance="glossy-raise"] th {
+  background-color: color-mix(in srgb, var(--personal-qa-chip-wash) 55%, transparent);
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__footer[data-appearance="glossy-raise"] {
+  border-top: 1px solid color-mix(in srgb, #e2e8f0 55%, var(--personal-qa-chip-soft));
+  background-color: color-mix(in srgb, var(--personal-qa-chip-wash) 55%, transparent);
+  background-image: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 40%, transparent) 100%
+  );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.78) inset;
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__box {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft)) !important;
+  border-radius: var(--exits-search-radius, var(--exits-control-radius)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput:hover .ui-standards-qinput__box,
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput:focus-within .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft)) !important;
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__control {
+  color: var(--personal-qa-chip-ink);
+}
+
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__icon,
+.ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__clear {
+  color: var(--personal-qa-chip);
+}
+
+[data-theme="dark"] .ui-standards-qtable[data-shell="soft-glass"] {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 55%, #94a3b8);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 18%, #1e293b);
+  --personal-qa-chip-ink: #e2e8f0;
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, #fff 14%, #475569) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  ) !important;
+}
+
+[data-theme="dark"] .ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__control {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__icon,
+[data-theme="dark"] .ui-standards-qtable[data-shell="soft-glass"] .ui-standards-qtable__search .ui-standards-qinput__clear {
+  color: var(--personal-qa-chip-soft);
+}
+
 .ui-standards-qtable[data-alternate="true"] tbody tr[data-tone="soft"] td,
 .ui-standards-qtable[data-alternate="true"] .ui-standards-qtable-list li[data-tone="soft"] {
   background: color-mix(in srgb, var(--qtable-accent) 14%, #fff);
@@ -6344,10 +6456,50 @@
   background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.12));
 }
 
-/* Glossy sheen + lighter raised shadow (less below). */
+/* Locked glossy-raise: soft bottom raise + column left/right edges (table-global-default). */
 .ui-standards-qtable thead[data-appearance="glossy-raise"] th {
   background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.12));
-  box-shadow: 0 2px 3px -1px rgba(0, 0, 0, 0.18), 0 3px 5px 0 rgba(0, 0, 0, 0.1), 0 1px 6px 0 rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 2px 0 3px -1px rgba(255, 255, 255, 0.7),
+    inset -2px 0 3px -1px rgba(0, 0, 0, 0.12);
+}
+
+.ui-standards-qtable thead[data-appearance="glossy-raise"] th:first-child {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset -2px 0 3px -1px rgba(0, 0, 0, 0.12);
+}
+
+.ui-standards-qtable thead[data-appearance="glossy-raise"] th:last-child {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 2px 0 3px -1px rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .ui-standards-qtable thead[data-appearance="glossy-raise"] th {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.28)
+  );
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 2px 0 3px -1px rgba(255, 255, 255, 0.12),
+    inset -2px 0 3px -1px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .ui-standards-qtable thead[data-appearance="glossy-raise"] th:first-child {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset -2px 0 3px -1px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .ui-standards-qtable thead[data-appearance="glossy-raise"] th:last-child {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 2px 0 3px -1px rgba(255, 255, 255, 0.12);
 }
 
 .ui-standards-qtable thead[data-appearance="gradient"] th {

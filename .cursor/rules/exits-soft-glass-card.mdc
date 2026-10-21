@@ -1,0 +1,44 @@
+---
+description: Soft Glass Enterprise card lock (Quick Actions light + dark)
+alwaysApply: true
+---
+
+# Soft Glass card (LOCKED)
+
+When creating or restyling a Personal / Utang **card**, use the Soft Glass Enterprise lock from Quick Actions.
+
+Lock file: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/soft-glass-card-global-default.ts`
+
+Reference CSS: `.personal-qa-glass--start|lent|owe|stores|people` in `globals.css` (light + `[data-theme="dark"]`).
+
+## Recipe
+
+- Pastel / transparent gradient wash (not flat solid fill)
+- 1px border: slate mixed with accent soft (`SOFT_GLASS_BORDER_SLATE` / `SOFT_GLASS_BORDER_SLATE_PCT`)
+- Inset top highlight + soft elevation (~`SOFT_GLASS_SHADOW_ACCENT_PCT`% accent)
+- Label: `SOFT_GLASS_LABEL_SIZE` / `SOFT_GLASS_LABEL_WEIGHT` (14px / 600), accent ink in light; `#e2e8f0` in dark
+- Hover / active: color-only, `SOFT_GLASS_TRANSITION_MS` (120ms) — **no** lift, scale, or translate
+- Focus: `SOFT_GLASS_FOCUS` (`#8b5cf6`) outline
+- Filled icon / pennant chips with soft radial highlight (not neon glow)
+
+## Identities
+
+Use `SOFT_GLASS_LIGHT` / `SOFT_GLASS_DARK`:
+
+| Job | Identity |
+| --- | --- |
+| I lent / success | `lent` (green) |
+| I owe / info money | `owe` (blue) — **not** warn orange |
+| Stores / purple | `stores` |
+| Add person | `people` (royal blue) |
+| Start / cyan | `start` |
+| Info panel | `info` |
+
+## Forbidden
+
+- `backdrop-filter` / `blur()`
+- Neon glow, purple-on-white AI defaults
+- Flat Material shadow stacks as the only surface
+- Warn / brown for owe cards
+
+Change this lock only when the user asks. Update `soft-glass-card-global-default.ts` and `soft-glass-card-global-default.test.ts` together.

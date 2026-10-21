@@ -22,6 +22,15 @@ import {
   TABLE_FOOTER_GLOBAL_DEFAULT_APPEARANCE,
   TABLE_FOOTER_GLOBAL_DEFAULT_INTENT,
 } from "@/features/ui-standards/table-footer-global-default";
+import {
+  TABLE_GLOBAL_DEFAULT_COMMAND,
+  TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE,
+  TABLE_GLOBAL_DEFAULT_FOOTER_INTENT,
+  TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE,
+  TABLE_GLOBAL_DEFAULT_HEADER_INTENT,
+  TABLE_GLOBAL_DEFAULT_SEARCH,
+  TABLE_GLOBAL_DEFAULT_SHELL,
+} from "@/features/ui-standards/table-global-default";
 import { Lock } from "lucide-react";
 import { RADIO_STANDARD_COLOR } from "@/features/ui-standards/UiStandardsRadioGallery";
 import { UiStandardsQslider } from "@/features/ui-standards/UiStandardsSliderGallery";
@@ -37,8 +46,9 @@ import {
   type UiStandardsDataPreviewDevice,
 } from "@/features/ui-standards/UiStandardsResponsiveDataDeviceFrame";
 import { INPUT_SAMPLES, inputAccent } from "@/features/ui-standards/UiStandardsInputGallery";
-import { PlaygroundSection } from "@/features/ui-standards/UiStandardsSnippetBlock";
+import { PlaygroundLabel, PlaygroundSection } from "@/features/ui-standards/UiStandardsSnippetBlock";
 import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
+import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
 
 /**
  * Quasar-style table playground. Settings adjust one preview table.
@@ -109,10 +119,37 @@ const DEFAULT_ELEVATION = 3;
 const RADIUS_SIZES = ["4px", "6px", "8px", "10px", "12px", "14px", "16px", "18px", "20px", "24px"] as const;
 const DEFAULT_RADIUS = 3;
 const RADIUS_MAX = 10;
+const HEADER_GLOBAL_STORAGE_KEY = "exits-table-header-global-default";
 const FOOTER_GLOBAL_STORAGE_KEY = "exits-table-footer-global-default";
 
 function isHeaderAppearance(value: string): value is HeaderAppearance {
   return HEADER_APPEARANCES.some((item) => item.value === value);
+}
+
+function readHeaderGlobalDefault(): { intent: string; appearance: HeaderAppearance } {
+  try {
+    const raw = localStorage.getItem(HEADER_GLOBAL_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { intent?: string; appearance?: string };
+      if (
+        typeof parsed.intent === "string" &&
+        typeof parsed.appearance === "string" &&
+        isHeaderAppearance(parsed.appearance)
+      ) {
+        return { intent: parsed.intent, appearance: parsed.appearance };
+      }
+    }
+  } catch {
+    /* Use file default. */
+  }
+  return {
+    intent: TABLE_GLOBAL_DEFAULT_HEADER_INTENT,
+    appearance: TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE,
+  };
+}
+
+function lockHeaderGlobalDefault(intent: string, appearance: HeaderAppearance) {
+  localStorage.setItem(HEADER_GLOBAL_STORAGE_KEY, JSON.stringify({ intent, appearance }));
 }
 
 function readFooterGlobalDefault(): { intent: string; appearance: HeaderAppearance } {
@@ -236,6 +273,9 @@ const ROWS = [
   { dessert: "Churro", calories: "385", fat: "19.0", carbs: "48", protein: "4.1" },
 ] as const;
 
+/** Fixed sample below the playground — locked default standard Cursor shorthand. */
+const DEFAULT_STANDARD_SAMPLE_ROWS = ROWS.slice(0, 5);
+
 function exportIntentColor(option: (typeof EXPORT_OPTIONS)[number]) {
   return option.color;
 }
@@ -266,9 +306,11 @@ function tableCursorCommand(
   search: boolean,
   filter: boolean,
   exports: readonly ExportId[],
+  shell: typeof TABLE_GLOBAL_DEFAULT_SHELL | "none" = TABLE_GLOBAL_DEFAULT_SHELL,
 ): string {
   const parts = ["ext table"];
   if (intent !== "standard") parts.push(intent);
+  if (shell === "soft-glass") parts.push("soft-glass");
   if (alternate) parts.push("alternate");
   if (separator !== "horizontal") parts.push(`separator-${separator}`);
   if (density !== "balance") parts.push(density);
@@ -433,6 +475,166 @@ function SettingCard({ title, testId, children }: { title: string; testId: strin
   );
 }
 
+function TableDefaultStandardSample() {
+  const standard = INPUT_SAMPLES.find((item) => item.id === "standard") ?? INPUT_SAMPLES[0];
+  const accent = playgroundIntentColor(standard.id, inputAccent(standard));
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [page, setPage] = useState(1);
+  const totalCount = DEFAULT_STANDARD_SAMPLE_ROWS.length;
+  const pageSizeChoices = useMemo(
+    () => exitsTablePageSizesForTotal(totalCount, PAGE_SIZES),
+    [totalCount],
+  );
+  const selectedPageSize = pageSizeChoices.includes(pageSize) ? pageSize : (pageSizeChoices[0] ?? pageSize);
+  const effectivePageSize = exitsTableResolvePageSize(selectedPageSize, totalCount);
+  const pageCount = Math.max(1, Math.ceil(totalCount / effectivePageSize) || 1);
+  const safePage = Math.min(Math.max(1, page), pageCount);
+  const pageStart = (safePage - 1) * effectivePageSize;
+  const pageRows = DEFAULT_STANDARD_SAMPLE_ROWS.slice(pageStart, pageStart + effectivePageSize);
+  const rangeFrom = totalCount === 0 ? 0 : pageStart + 1;
+  const rangeTo = Math.min(pageStart + effectivePageSize, totalCount);
+  const rangeText = totalCount === 0 ? "0-0 of 0" : `${rangeFrom}-${rangeTo} of ${totalCount}`;
+  const chromeStyle = {
+    "--qheader-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+    "--qheader-ink": "var(--exits-text, #000)",
+    "--qheader-accent": accent,
+    "--qfooter-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+    "--qfooter-ink": "var(--exits-text, #000)",
+    "--qfooter-accent": accent,
+    "--qfooter-caret-size": TABLE_FOOTER_GLOBAL_CARET_SIZE,
+  } as CSSProperties;
+
+  return (
+    <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standard-table-pg-default-standard">
+      <PlaygroundLabel>Default standard</PlaygroundLabel>
+      <UiStandardsSampleCard
+        label="DEFAULT STANDARD"
+        testId="ui-standard-table-pg-default-standard-sample"
+        standard="Table"
+        standardStatus="pilot"
+        command={TABLE_GLOBAL_DEFAULT_COMMAND}
+        commandContext="Locked default standard — Soft Glass shell, header glossy-raise, footer glossy-raise with page size and next, search."
+        bordered={false}
+        contentClassName="min-w-0"
+      >
+        <div
+          className="ui-standards-qtable ui-standards-qtable--horizontal ui-standards-qtable--bordered"
+          data-testid="ui-standard-table-pg-default-standard-table"
+          data-intent="standard"
+          data-shell={TABLE_GLOBAL_DEFAULT_SHELL}
+          data-separator="horizontal"
+          data-density="balance"
+          data-elevation={DEFAULT_ELEVATION}
+          data-radius={DEFAULT_RADIUS}
+          data-bordered="true"
+          data-search="true"
+          data-header-appearance={TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE}
+          data-footer-appearance={TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE}
+          style={chromeStyle}
+        >
+          <div className="ui-standards-qtable__middle">
+            <div className="ui-standards-qtable__toolbar" data-testid="ui-standard-table-pg-default-standard-toolbar">
+              <PlaygroundSearchField
+                label="Search"
+                className="ui-standards-qtable__search"
+                inputTestId="ui-standard-table-pg-default-standard-search"
+                placeholderOnly
+              />
+            </div>
+            <table>
+              <thead
+                data-testid="ui-standard-table-pg-default-standard-header"
+                data-intent={TABLE_GLOBAL_DEFAULT_HEADER_INTENT}
+                data-appearance={TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE}
+                style={
+                  {
+                    "--qheader-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+                    "--qheader-ink": "var(--exits-text, #000)",
+                    "--qheader-accent": accent,
+                  } as CSSProperties
+                }
+              >
+                <tr>
+                  {COLUMNS.map((column) => (
+                    <th key={column.id}>{column.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((row) => (
+                  <tr key={row.dessert} data-testid={`ui-standard-table-pg-default-standard-row-${rowSelectId(row.dessert)}`}>
+                    {COLUMNS.map((column) => (
+                      <td key={column.id}>{row[column.id]}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div
+            className="ui-standards-qtable__bottom ui-standards-qtable__footer"
+            data-testid="ui-standard-table-pg-default-standard-footer"
+            data-intent={TABLE_GLOBAL_DEFAULT_FOOTER_INTENT}
+            data-appearance={TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE}
+            style={
+              {
+                "--qfooter-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+                "--qfooter-ink": "var(--exits-text, #000)",
+                "--qfooter-accent": accent,
+                "--qfooter-caret-size": TABLE_FOOTER_GLOBAL_CARET_SIZE,
+              } as CSSProperties
+            }
+          >
+            <div className="ui-standards-qtable__footer-cluster">
+              <ExitsTablePageSizeSelect
+                className="ui-standards-qtable__footer-size"
+                label="Page size:"
+                value={selectedPageSize}
+                options={pageSizeChoices}
+                testId="ui-standard-table-pg-default-standard-page-size"
+                onChange={(next) => {
+                  setPageSize(next);
+                  setPage(1);
+                }}
+              />
+              <div className="ui-standards-qtable__footer-nav">
+                <button type="button" aria-label="First page" disabled={safePage <= 1} onClick={() => setPage(1)}>
+                  <GoogleIcon name="keyboard_double_arrow_left" />
+                </button>
+                <button type="button" aria-label="Previous page" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
+                  <GoogleIcon name="chevron_left" />
+                </button>
+                <span
+                  className="ui-standards-qtable__footer-range"
+                  data-testid="ui-standard-table-pg-default-standard-range"
+                >
+                  {rangeText}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Next page"
+                  disabled={safePage >= pageCount}
+                  onClick={() => setPage(safePage + 1)}
+                >
+                  <GoogleIcon name="chevron_right" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Last page"
+                  disabled={safePage >= pageCount}
+                  onClick={() => setPage(pageCount)}
+                >
+                  <GoogleIcon name="keyboard_double_arrow_right" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UiStandardsSampleCard>
+    </section>
+  );
+}
+
 export function UiStandardsTablePlayground() {
   const [separator, setSeparator] = useState<TableSeparator>("horizontal");
   const { preferences, setDensity } = usePreferences();
@@ -452,8 +654,9 @@ export function UiStandardsTablePlayground() {
   const [editDraft, setEditDraft] = useState<Record<ColumnId, string> | null>(null);
   const [editBaseline, setEditBaseline] = useState<Record<ColumnId, string> | null>(null);
   const sampleRef = useRef<HTMLDivElement>(null);
-  const [headerIntent, setHeaderIntent] = useState("standard");
-  const [headerAppearance, setHeaderAppearance] = useState<HeaderAppearance>("standard");
+  const [headerGlobalDefault, setHeaderGlobalDefault] = useState(readHeaderGlobalDefault);
+  const [headerIntent, setHeaderIntent] = useState(headerGlobalDefault.intent);
+  const [headerAppearance, setHeaderAppearance] = useState<HeaderAppearance>(headerGlobalDefault.appearance);
   const [footerOn, setFooterOn] = useState(true);
   const [footerGlobalDefault, setFooterGlobalDefault] = useState(readFooterGlobalDefault);
   const [footerIntent, setFooterIntent] = useState(footerGlobalDefault.intent);
@@ -461,7 +664,7 @@ export function UiStandardsTablePlayground() {
   const [sort, setSort] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [search, setSearch] = useState(false);
+  const [search, setSearch] = useState(TABLE_GLOBAL_DEFAULT_SEARCH);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(false);
   const [filterValues, setFilterValues] = useState<string[]>([]);
@@ -640,15 +843,15 @@ export function UiStandardsTablePlayground() {
     setEditDraft(null);
     setEditBaseline(null);
     setIntent("standard");
-    setHeaderIntent("standard");
-    setHeaderAppearance("standard");
+    setHeaderIntent(headerGlobalDefault.intent);
+    setHeaderAppearance(headerGlobalDefault.appearance);
     setFooterOn(true);
     setFooterIntent(footerGlobalDefault.intent);
     setFooterAppearance(footerGlobalDefault.appearance);
     setSort(false);
     setSortColumn(null);
     setSortDir("asc");
-    setSearch(false);
+    setSearch(TABLE_GLOBAL_DEFAULT_SEARCH);
     setSearchQuery("");
     setFilter(false);
     setFilterValues([]);
@@ -824,6 +1027,24 @@ export function UiStandardsTablePlayground() {
               />
               Sort
             </label>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)]"
+              aria-pressed={
+                headerGlobalDefault.intent === headerIntent &&
+                headerGlobalDefault.appearance === headerAppearance
+              }
+              data-testid="ui-standard-table-pg-header-default-global"
+              data-default-intent={headerGlobalDefault.intent}
+              data-default-appearance={headerGlobalDefault.appearance}
+              onClick={() => {
+                setHeaderGlobalDefault({ intent: headerIntent, appearance: headerAppearance });
+                lockHeaderGlobalDefault(headerIntent, headerAppearance);
+              }}
+            >
+              <Lock className="size-4" aria-hidden />
+              default global
+            </button>
           </SettingCard>
             ),
             footer: (
@@ -938,6 +1159,7 @@ export function UiStandardsTablePlayground() {
           ref={sampleRef}
           className={tableClass}
           data-testid="ui-standard-table-pg-sample"
+          data-shell={TABLE_GLOBAL_DEFAULT_SHELL}
           data-separator={separator}
           data-density={density}
           data-elevation={elevation}
@@ -1271,7 +1493,13 @@ export function UiStandardsTablePlayground() {
           </div>
         </div>
       </PlaygroundPreviewCard>
-      <UiStandardsCopyCommand standard="Table" standardStatus="pilot" command={tableCursorCommand(intent, separator, density, elevation, radius, loading, alternate, multiSelect, actions, iconShape, editKind, editable, headerIntent, headerAppearance, footerOn, footerIntent, footerAppearance, sort, search, filter, exports)} />
+      <UiStandardsCopyCommand
+        testId="ui-standard-table-pg-copy-command"
+        standard="Table"
+        standardStatus="pilot"
+        command={tableCursorCommand(intent, separator, density, elevation, radius, loading, alternate, multiSelect, actions, iconShape, editKind, editable, headerIntent, headerAppearance, footerOn, footerIntent, footerAppearance, sort, search, filter, exports)}
+      />
+      <TableDefaultStandardSample />
     </PlaygroundSection>
   );
 }

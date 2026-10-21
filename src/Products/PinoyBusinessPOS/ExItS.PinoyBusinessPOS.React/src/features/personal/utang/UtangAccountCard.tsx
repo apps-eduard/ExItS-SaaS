@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
@@ -62,7 +61,7 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
               </span>
             </div>
             <span className="utang-settings-card__tags">
-              <StatusChip tone={lent ? "success" : "warning"} appearance="emphasis" shape="square">
+              <StatusChip tone={lent ? "success" : "info"} appearance="emphasis" shape="square">
                 {lent ? t("personal.utang.owesYou") : t("personal.utang.youOwe")}
               </StatusChip>
               <StatusChip
@@ -87,9 +86,6 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
             </span>
           </div>
         </div>
-        <span className="utang-account-card__caret" aria-hidden>
-          <ChevronRight className="size-5" />
-        </span>
       </div>
     </Link>
   );

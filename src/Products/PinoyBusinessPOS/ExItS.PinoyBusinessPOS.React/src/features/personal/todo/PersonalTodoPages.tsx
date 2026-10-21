@@ -154,7 +154,7 @@ function WaitingChip({ pending }: { pending: boolean }) {
   const { t } = useI18n();
   if (!pending) return null;
   return (
-    <span className="text-[length:var(--exits-text-xs)] text-muted" data-testid="todo-waiting-chip">
+    <span className="personal-todo-waiting-chip" data-testid="todo-waiting-chip">
       {t("offline.personalWaitingBadge")}
     </span>
   );
@@ -461,6 +461,7 @@ export function PersonalTodoHubPage() {
     return (
       <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-hub-error">
         <PageHeader
+          className="personal-page-header--glass"
           title={t("personal.todo.title")}
           description={t("personal.todo.lede")}
           backTo={personalPageBackNav.home.to}
@@ -517,6 +518,7 @@ export function PersonalTodoHubPage() {
       data-testid="personal-todo-hub"
     >
       <PageHeader
+        className="personal-page-header--glass"
         title={t("personal.todo.title")}
         description={t("personal.todo.lede")}
         backTo={personalPageBackNav.home.to}
@@ -947,6 +949,7 @@ export function PersonalTodoDetailPage() {
     return (
       <div className="personal-page exits-page flex flex-col gap-3">
         <PageHeader
+          className="personal-page-header--glass"
           title={t("personal.todo.detailTitle")}
           backTo={personalPageBackNav.todo.to}
           backLabel={t("personal.todo.back")}
@@ -972,6 +975,7 @@ export function PersonalTodoDetailPage() {
   return (
     <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-detail">
       <PageHeader
+        className="personal-page-header--glass"
         title={t("personal.todo.detailTitle")}
         subtitle={todo.title}
         description={t("personal.todo.lede")}
@@ -991,9 +995,13 @@ export function PersonalTodoDetailPage() {
         />
       ) : null}
 
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("personal.todo.status")}: {t(statusLabelKey(todo.status))} ·{" "}
-        <span className={cn("font-semibold", priorityTextToneClass(todo.priority))}>
+      <p className="m-0 flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)] text-muted">
+        <span className="personal-todo-tasklist-row__date">
+          {t("personal.todo.status")}: {t(statusLabelKey(todo.status))}
+        </span>
+        <span
+          className={cn("personal-todo-tasklist-row__priority", priorityTextToneClass(todo.priority))}
+        >
           {t(priorityLabelKey(todo.priority))}
         </span>
       </p>

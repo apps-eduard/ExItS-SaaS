@@ -562,10 +562,7 @@ export function PersonalTodoTaskRow({
           </div>
         </div>
         {pendingLocal ? (
-          <span
-            className="personal-todo-tasklist-row__waiting text-[length:var(--exits-text-xs)] text-muted"
-            data-testid="todo-waiting-chip"
-          >
+          <span className="personal-todo-waiting-chip" data-testid="todo-waiting-chip">
             {t("offline.personalWaitingBadge")}
           </span>
         ) : null}

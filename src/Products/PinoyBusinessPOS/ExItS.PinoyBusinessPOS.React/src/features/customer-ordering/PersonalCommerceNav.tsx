@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link2, Receipt, Store } from "lucide-react";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
@@ -11,12 +12,15 @@ type PersonalCommerceNavProps = {
   /** Section card with heading (More page). Toolbar = chip tabs (child pages). */
   variant?: "section" | "toolbar";
   className?: string;
+  /** Page body nested inside the Stores & orders Soft Glass card. */
+  children?: ReactNode;
 };
 
 export function PersonalCommerceNav({
   active,
   variant = "toolbar",
   className,
+  children,
 }: PersonalCommerceNavProps) {
   const { t } = useI18n();
 
@@ -92,22 +96,23 @@ export function PersonalCommerceNav({
     return (
       <section
         className={cn(
-          "catalog-form-section exits-animate-panel personal-section gap-3",
+          "catalog-form-section pc-commerce-nav pc-commerce-nav--glass exits-animate-panel personal-section gap-3",
           className,
         )}
         data-testid="personal-more-commerce"
       >
-        <h2 className="catalog-form-section__title text-muted">
+        <h2 className="catalog-form-section__title pc-commerce-nav__heading text-muted">
           {t("personal.more.group.commerce")}
         </h2>
         {grid}
+        {children ? <div className="pc-commerce-nav__body">{children}</div> : null}
       </section>
     );
   }
 
   return (
     <div
-      className={cn("pc-commerce-nav exits-animate-toolbar", className)}
+      className={cn("pc-commerce-nav pc-commerce-nav--glass exits-animate-toolbar", className)}
       data-testid={
         active === "stores"
           ? "linked-merchants-toolbar"
@@ -120,6 +125,7 @@ export function PersonalCommerceNav({
     >
       <h2 className="pc-commerce-nav__heading">{t("personal.more.group.commerce")}</h2>
       {chips}
+      {children ? <div className="pc-commerce-nav__body">{children}</div> : null}
     </div>
   );
 }

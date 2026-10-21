@@ -244,81 +244,81 @@ export function PersonalCustomerLinksPage() {
         backTestId="page-header-back-customer-links"
       />
 
-      <PersonalCommerceNav active="links" />
-
-      <UnderlineTabBar
-        items={[
-          {
-            key: "pending",
-            label: t("personal.customerLinks.listTitle"),
-            testId: "customer-links-tab-pending",
-          },
-          {
-            key: "history",
-            label: t("personal.customerLinks.historyTitle"),
-            testId: "customer-links-tab-history",
-          },
-        ]}
-        activeKey={tab}
-        onChange={(key) => {
-          setActionError(null);
-          setTab(key as CustomerLinksTab);
-        }}
-        ariaLabel={t("personal.customerLinks.title")}
-        testId="customer-links-tabs"
-      />
-
-      {actionError ? (
-        <p
-          className="exits-animate-toolbar m-0 text-[length:var(--exits-text-sm)] text-destructive"
-          role="alert"
-        >
-          {actionError}
-        </p>
-      ) : null}
-
-      {tab === "pending" && !cooledDown ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" role="status">
-          {t("personal.consentAction.waitCooldown")}
-        </p>
-      ) : null}
-
-      {activeQuery.isPending ? (
-        <LoadingSkeleton label={t("loading.label")} />
-      ) : activeQuery.isError ? (
-        <div className="exits-animate-panel flex flex-col gap-3">
-          <ErrorState
-            title={t("personal.customerLinks.errorTitle")}
-            detail={t("personal.customerLinks.errorDetail")}
-          />
-          <div className="exits-animate-toolbar">
-            <ActionTileGrid
-              tiles={[
-                {
-                  key: "retry",
-                  label: t("orders.retry"),
-                  icon: RefreshCw,
-                  onClick: () => void activeQuery.refetch(),
-                },
-              ]}
-            />
-          </div>
-        </div>
-      ) : tab === "pending" ? (
-        <PendingTabContent
-          groupedItems={groupedPendingItems}
-          actionsDisabled={actionsDisabled}
-          acceptingId={acceptingId}
-          decliningId={decliningId}
-          blockingId={blockingId}
-          onAcceptGroup={onAcceptGroup}
-          onDeclineGroup={onDeclineGroup}
-          onBlockGroup={onBlockGroup}
-          t={t}
+      <PersonalCommerceNav active="links">
+        <UnderlineTabBar
+          items={[
+            {
+              key: "pending",
+              label: t("personal.customerLinks.listTitle"),
+              testId: "customer-links-tab-pending",
+            },
+            {
+              key: "history",
+              label: t("personal.customerLinks.historyTitle"),
+              testId: "customer-links-tab-history",
+            },
+          ]}
+          activeKey={tab}
+          onChange={(key) => {
+            setActionError(null);
+            setTab(key as CustomerLinksTab);
+          }}
+          ariaLabel={t("personal.customerLinks.title")}
+          testId="customer-links-tabs"
         />
-      ) : (
-        <HistoryTabContent items={historyQuery.data ?? []} t={t} />
-      )}
+
+        {actionError ? (
+          <p
+            className="exits-animate-toolbar m-0 text-[length:var(--exits-text-sm)] text-destructive"
+            role="alert"
+          >
+            {actionError}
+          </p>
+        ) : null}
+
+        {tab === "pending" && !cooledDown ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" role="status">
+            {t("personal.consentAction.waitCooldown")}
+          </p>
+        ) : null}
+
+        {activeQuery.isPending ? (
+          <LoadingSkeleton label={t("loading.label")} />
+        ) : activeQuery.isError ? (
+          <div className="exits-animate-panel flex flex-col gap-3">
+            <ErrorState
+              title={t("personal.customerLinks.errorTitle")}
+              detail={t("personal.customerLinks.errorDetail")}
+            />
+            <div className="exits-animate-toolbar">
+              <ActionTileGrid
+                tiles={[
+                  {
+                    key: "retry",
+                    label: t("orders.retry"),
+                    icon: RefreshCw,
+                    onClick: () => void activeQuery.refetch(),
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        ) : tab === "pending" ? (
+          <PendingTabContent
+            groupedItems={groupedPendingItems}
+            actionsDisabled={actionsDisabled}
+            acceptingId={acceptingId}
+            decliningId={decliningId}
+            blockingId={blockingId}
+            onAcceptGroup={onAcceptGroup}
+            onDeclineGroup={onDeclineGroup}
+            onBlockGroup={onBlockGroup}
+            t={t}
+          />
+        ) : (
+          <HistoryTabContent items={historyQuery.data ?? []} t={t} />
+        )}
+      </PersonalCommerceNav>
     </div>
   );
 }

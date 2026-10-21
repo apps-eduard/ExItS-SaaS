@@ -133,8 +133,7 @@ export function LinkedMerchantsPage() {
         backTestId="page-header-back-linked-merchants"
       />
 
-      <PersonalCommerceNav active="stores" />
-
+      <PersonalCommerceNav active="stores">
       {items.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
           <EmptyState
@@ -158,6 +157,7 @@ export function LinkedMerchantsPage() {
           onLoadMore={() => void query.fetchNextPage()}
         />
       )}
+      </PersonalCommerceNav>
     </div>
   );
 }

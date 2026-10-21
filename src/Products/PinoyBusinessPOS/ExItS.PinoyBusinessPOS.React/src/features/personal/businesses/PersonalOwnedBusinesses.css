@@ -64,7 +64,7 @@
   border-top: none;
 }
 
-/* Card step — soft glass shell + filled icon chip rail. */
+/* Card step — Soft Glass shell premium + filled icon chip rail. */
 .personal-home-step-card {
   --personal-step: var(--exits-primary);
   --personal-step-soft: color-mix(in srgb, var(--personal-step) 55%, #fff);
@@ -84,30 +84,37 @@
   margin: 0;
   padding: 0.35rem;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-step-soft));
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-step-soft));
   border-radius: 1.1rem;
   color: var(--personal-step-ink);
   background:
     linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--personal-step-wash) 55%, transparent),
-      color-mix(in srgb, var(--personal-step-mid) 48%, transparent)
+      165deg,
+      color-mix(in srgb, #fff 42%, transparent) 0%,
+      color-mix(in srgb, var(--personal-step-wash) 52%, transparent) 48%,
+      color-mix(in srgb, var(--personal-step-mid) 46%, transparent) 100%
     );
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.65) inset,
-    0 12px 28px color-mix(in srgb, var(--personal-step) 14%, transparent);
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-step) 8%, transparent);
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 .personal-home-step-card:hover,
 .personal-home-step-card:focus-within {
   z-index: 2;
-  transform: translateY(-1px);
+  transform: none;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 52%, transparent) 0%,
+      color-mix(in srgb, var(--personal-step-wash) 60%, transparent) 48%,
+      color-mix(in srgb, var(--personal-step-mid) 54%, transparent) 100%
+    );
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-step-soft));
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.75) inset,
-    0 14px 30px color-mix(in srgb, var(--personal-step) 18%, transparent);
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-step) 9%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -141,27 +148,42 @@
 }
 
 [data-theme="dark"] .personal-home-step-card {
-  border-color: color-mix(in srgb, var(--personal-step-soft) 38%, #64748b);
+  border-color: color-mix(in srgb, var(--personal-step) 16%, #475569);
   background:
     linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--personal-step) 26%, #1e293b),
-      color-mix(in srgb, var(--personal-step-deep) 22%, #0f172a)
+      165deg,
+      color-mix(in srgb, #fff 5%, transparent) 0%,
+      color-mix(in srgb, var(--personal-step) 13%, #1e293b) 46%,
+      color-mix(in srgb, var(--personal-step-deep) 11%, #0f172a) 100%
     );
-  color: color-mix(in srgb, #fff 78%, var(--personal-step));
+  color: #e2e8f0;
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, var(--personal-step) 16%, transparent) inset,
-    0 12px 28px color-mix(in srgb, var(--personal-step) 22%, transparent);
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="dark"] .personal-home-step-card:hover,
+[data-theme="dark"] .personal-home-step-card:focus-within {
+  border-color: color-mix(in srgb, var(--personal-step) 28%, #64748b);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 10%, transparent) 0%,
+      color-mix(in srgb, var(--personal-step) 14%, transparent) 48%,
+      color-mix(in srgb, var(--personal-step-deep) 16%, #0f172a) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 11%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.28);
 }
 
 [data-theme="dark"] .personal-owned-businesses__title,
 [data-theme="dark"] .personal-owned-businesses__title--primary {
-  color: color-mix(in srgb, #fff 82%, var(--personal-step, var(--exits-primary)));
+  color: #f1f5f9;
 }
 
 [data-theme="dark"] .personal-owned-businesses__lede {
-  color: color-mix(in srgb, #fff 55%, var(--personal-step, var(--exits-primary)));
+  color: #94a3b8;
 }
 
 .personal-home-step-card__rail {
@@ -183,27 +205,32 @@
   width: 2.35rem;
   height: 2.35rem;
   border-radius: 0.7rem;
-  border: 1px solid color-mix(in srgb, #fff 55%, var(--personal-step-soft));
+  border: 1px solid color-mix(in srgb, #fff 52%, var(--personal-step-soft));
   color: #fff;
   background:
-    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.34), transparent 55%),
     linear-gradient(
       160deg,
-      color-mix(in srgb, #fff 22%, var(--personal-step)),
-      var(--personal-step) 55%,
+      color-mix(in srgb, #fff 18%, var(--personal-step)),
+      var(--personal-step) 56%,
       var(--personal-step-deep)
     );
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.45) inset,
-    0 4px 10px color-mix(in srgb, var(--personal-step) 28%, transparent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
 }
 
 [data-theme="dark"] .personal-home-step-card__icon-wrap {
-  border-color: color-mix(in srgb, #fff 32%, var(--personal-step));
+  border-color: color-mix(in srgb, var(--personal-step) 24%, #475569);
+  color: #f1f5f9;
+  background:
+    radial-gradient(circle at 30% 24%, color-mix(in srgb, #fff 12%, transparent), transparent 55%),
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--personal-step) 42%, #334155),
+      color-mix(in srgb, var(--personal-step-deep) 58%, #1e293b)
+    );
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, #000 22%, transparent) inset,
-    0 6px 14px color-mix(in srgb, var(--personal-step) 32%, transparent);
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 3px 8px rgba(0, 0, 0, 0.28);
 }
 
 .personal-home-step-card__icon-wrap svg.personal-home-step-card__icon {
@@ -239,21 +266,23 @@
   min-width: 0;
   margin: 0;
   padding: 0.95rem 1rem 0.75rem;
-  border: 1px solid color-mix(in srgb, #fff 55%, transparent);
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, transparent);
   border-radius: 0.9rem;
   background:
     linear-gradient(
-      165deg,
-      color-mix(in srgb, #fff 72%, transparent),
-      color-mix(in srgb, var(--personal-step-wash) 58%, transparent)
+      180deg,
+      color-mix(in srgb, #fff 88%, transparent) 0%,
+      color-mix(in srgb, #fff 70%, transparent) 42%,
+      color-mix(in srgb, var(--personal-step-wash) 52%, transparent) 100%
     );
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.78) inset;
   color: inherit;
 }
 
 [data-theme="dark"] .personal-home-step-card__panel {
   border-color: color-mix(in srgb, #64748b 42%, transparent);
-  background: color-mix(in srgb, #1e293b 55%, transparent);
+  background: color-mix(in srgb, #1e293b 72%, transparent);
+  color: #e2e8f0;
   box-shadow: 0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset;
 }
 
@@ -363,10 +392,10 @@
   height: 2.35rem;
   min-height: 2.35rem;
   padding-inline: 1rem;
-  font-weight: 550;
+  font-weight: 600;
 }
 
-/* Soft glass action pills on Your Business / Workplace cards. */
+/* Soft Glass action pills — premium polish (match Quick Actions). */
 .personal-owned-businesses .personal-owned-businesses__action--glass {
   --personal-action-chip: var(--exits-info, #0ea5e9);
   --personal-action-chip-deep: #0369a1;
@@ -374,60 +403,91 @@
   --personal-action-chip-wash: #f0f9ff;
   --personal-action-chip-mid: #e0f2fe;
   --personal-action-chip-ink: #075985;
-  border: 1px solid color-mix(in srgb, #fff 55%, var(--personal-action-chip-soft)) !important;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-action-chip-soft)) !important;
   color: var(--personal-action-chip-ink) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
   background:
     linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--personal-action-chip-wash) 70%, transparent),
-      color-mix(in srgb, var(--personal-action-chip-mid) 55%, transparent)
+      165deg,
+      color-mix(in srgb, #fff 42%, transparent) 0%,
+      color-mix(in srgb, var(--personal-action-chip-wash) 58%, transparent) 48%,
+      color-mix(in srgb, var(--personal-action-chip-mid) 50%, transparent) 100%
     ) !important;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 4px 12px color-mix(in srgb, var(--personal-action-chip) 14%, transparent) !important;
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-action-chip) 8%, transparent) !important;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .personal-owned-businesses .personal-owned-businesses__explore.personal-owned-businesses__action--glass {
-  --personal-action-chip: #a855f7;
-  --personal-action-chip-deep: #7e22ce;
-  --personal-action-chip-soft: #d8b4fe;
-  --personal-action-chip-wash: #faf5ff;
-  --personal-action-chip-mid: #f3e8ff;
-  --personal-action-chip-ink: #6b21a8;
+  --personal-action-chip: #8b5cf6;
+  --personal-action-chip-deep: #6d28d9;
+  --personal-action-chip-soft: #c4b5fd;
+  --personal-action-chip-wash: #f5f3ff;
+  --personal-action-chip-mid: #ede9fe;
+  --personal-action-chip-ink: #5b21b6;
 }
 
-.personal-owned-businesses .personal-owned-businesses__action--glass:hover,
-.personal-owned-businesses .personal-owned-businesses__action--glass:focus-visible {
+.personal-owned-businesses .personal-owned-businesses__action--glass:hover {
   color: var(--personal-action-chip-ink) !important;
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-action-chip-soft)) !important;
   background:
     linear-gradient(
-      160deg,
-      color-mix(in srgb, #fff 55%, transparent),
-      color-mix(in srgb, var(--personal-action-chip-mid) 70%, transparent)
+      165deg,
+      color-mix(in srgb, #fff 52%, transparent) 0%,
+      color-mix(in srgb, var(--personal-action-chip-wash) 64%, transparent) 48%,
+      color-mix(in srgb, var(--personal-action-chip-mid) 56%, transparent) 100%
     ) !important;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 6px 14px color-mix(in srgb, var(--personal-action-chip) 18%, transparent) !important;
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-action-chip) 9%, transparent) !important;
+}
+
+.personal-owned-businesses .personal-owned-businesses__action--glass:active {
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--personal-action-chip-wash) 48%, transparent) 0%,
+      color-mix(in srgb, var(--personal-action-chip-mid) 58%, transparent) 100%
+    ) !important;
+  border-color: color-mix(in srgb, #94a3b8 48%, var(--personal-action-chip-soft)) !important;
+}
+
+.personal-owned-businesses .personal-owned-businesses__action--glass:focus-visible {
+  outline: 2px solid #8b5cf6 !important;
+  outline-offset: 2px;
 }
 
 [data-theme="dark"] .personal-owned-businesses .personal-owned-businesses__action--glass {
-  border-color: color-mix(in srgb, var(--personal-action-chip-soft) 38%, #64748b) !important;
-  color: color-mix(in srgb, #fff 82%, var(--personal-action-chip)) !important;
+  border-color: color-mix(in srgb, var(--personal-action-chip) 16%, #475569) !important;
+  color: #e2e8f0 !important;
   background:
     linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--personal-action-chip) 26%, #1e293b),
-      color-mix(in srgb, var(--personal-action-chip-deep) 22%, #0f172a)
+      165deg,
+      color-mix(in srgb, #fff 5%, transparent) 0%,
+      color-mix(in srgb, var(--personal-action-chip) 13%, #1e293b) 46%,
+      color-mix(in srgb, var(--personal-action-chip-deep) 11%, #0f172a) 100%
     ) !important;
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, var(--personal-action-chip) 16%, transparent) inset,
-    0 6px 14px color-mix(in srgb, var(--personal-action-chip) 22%, transparent) !important;
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26) !important;
 }
 
 [data-theme="dark"] .personal-owned-businesses .personal-owned-businesses__action--glass:hover,
 [data-theme="dark"] .personal-owned-businesses .personal-owned-businesses__action--glass:focus-visible {
-  color: color-mix(in srgb, #fff 90%, var(--personal-action-chip)) !important;
+  border-color: color-mix(in srgb, var(--personal-action-chip) 28%, #64748b) !important;
+  color: #f8fafc !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 10%, transparent) 0%,
+      color-mix(in srgb, var(--personal-action-chip) 14%, transparent) 48%,
+      color-mix(in srgb, var(--personal-action-chip-deep) 16%, #0f172a) 100%
+    ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 11%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.28) !important;
 }
 
 @media (max-width: 639px) {

@@ -313,8 +313,8 @@ function PeopleTable({
       data-testid="people-table"
       style={
         {
-          "--qheader-accent": INTENT_GLOBAL_STANDARD,
-          "--exits-table-page-size-border": INTENT_GLOBAL_STANDARD,
+          "--qheader-accent": "var(--people-table-chrome-bg)",
+          "--exits-table-page-size-border": "var(--people-table-chrome-border)",
         } as CSSProperties
       }
     >
@@ -352,8 +352,8 @@ function PeopleTable({
           data-intent="standard"
           style={
             {
-              "--qheader-bg": INTENT_GLOBAL_STANDARD,
-              "--qheader-ink": "#000000",
+              "--qheader-bg": "var(--people-table-chrome-bg)",
+              "--qheader-ink": "var(--people-table-chrome-ink)",
             } as CSSProperties
           }
         >
@@ -477,8 +477,8 @@ function PeopleTable({
         data-intent="standard"
         style={
           {
-            "--qfooter-bg": INTENT_GLOBAL_STANDARD,
-            "--qfooter-ink": "#000000",
+            "--qfooter-bg": "var(--people-table-chrome-bg)",
+            "--qfooter-ink": "var(--people-table-chrome-ink)",
           } as CSSProperties
         }
       >

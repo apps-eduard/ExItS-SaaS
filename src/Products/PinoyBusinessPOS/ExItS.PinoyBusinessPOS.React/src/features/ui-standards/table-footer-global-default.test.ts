@@ -13,7 +13,7 @@ import {
 describe("Table footer global default", () => {
   it("locks footer intent and appearance", () => {
     expect(TABLE_FOOTER_GLOBAL_DEFAULT_INTENT).toBe("standard");
-    expect(TABLE_FOOTER_GLOBAL_DEFAULT_APPEARANCE).toBe("standard");
+    expect(TABLE_FOOTER_GLOBAL_DEFAULT_APPEARANCE).toBe("glossy-raise");
   });
 
   it("locks page-size option density", () => {

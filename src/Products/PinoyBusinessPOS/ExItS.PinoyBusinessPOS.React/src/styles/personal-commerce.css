@@ -46,24 +46,199 @@
   line-height: 1.2;
 }
 
-.pc-commerce-nav {
+/* Soft Glass card — Stores & orders shell (theme primary; no blur). */
+.pc-commerce-nav,
+.pc-commerce-nav--glass,
+.pc-commerce-nav.catalog-form-section {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --personal-qa-chip-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-lg);
-  background: var(--exits-surface);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--exits-text) 4%, transparent);
+  gap: 0.75rem;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+  color: var(--exits-text);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .pc-commerce-nav__heading {
   margin: 0;
-  font-size: var(--exits-text-sm);
-  font-weight: 700;
-  color: var(--exits-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--personal-qa-chip-ink);
   letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+
+.pc-commerce-nav__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.15rem;
+}
+
+.pc-commerce-nav__body-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--personal-qa-chip-ink);
+}
+
+/* Soft Glass tabs inside the shell (theme primary; no blur/lift). */
+.pc-commerce-nav .exits-chip,
+.pc-commerce-nav .role-action-tile {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  color: var(--personal-qa-chip-ink);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.pc-commerce-nav .exits-chip:hover,
+.pc-commerce-nav button.exits-chip:hover:not(:disabled),
+.pc-commerce-nav a.exits-chip:hover,
+.pc-commerce-nav .role-action-tile:hover {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft));
+  color: var(--personal-qa-chip-ink);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 58%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 52%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 10%, transparent);
+  transform: none;
+}
+
+.pc-commerce-nav button.exits-chip:active:not(:disabled),
+.pc-commerce-nav .role-action-tile:active {
+  transform: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+}
+
+.pc-commerce-nav .exits-chip:focus-visible,
+.pc-commerce-nav .role-action-tile:focus-visible {
+  outline: 2px solid var(--exits-primary);
+  outline-offset: 2px;
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+}
+
+.pc-commerce-nav .exits-chip--active,
+.pc-commerce-nav .role-action-tile--primary {
+  --tab-glass-chip: var(--exits-primary);
+  --tab-glass-soft: color-mix(in srgb, var(--exits-primary) 50%, #fff);
+  --tab-glass-wash: color-mix(in srgb, var(--exits-primary) 12%, #fff);
+  --tab-glass-mid: color-mix(in srgb, var(--exits-primary) 22%, #fff);
+  --tab-glass-ink: color-mix(in srgb, #000 22%, var(--exits-primary));
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--tab-glass-soft));
+  color: var(--tab-glass-ink);
+  font-weight: 600;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--tab-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--tab-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--tab-glass-chip) 8%, transparent);
+}
+
+.pc-commerce-nav .exits-chip--active .exits-chip__icon,
+.pc-commerce-nav .exits-chip--active .exits-chip__label {
+  color: inherit;
+}
+
+[data-theme="dark"] .pc-commerce-nav,
+[data-theme="dark"] .pc-commerce-nav--glass,
+[data-theme="dark"] .pc-commerce-nav.catalog-form-section {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 55%, #94a3b8);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 18%, #1e293b);
+  --personal-qa-chip-ink: #e2e8f0;
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .pc-commerce-nav__heading,
+[data-theme="dark"] .pc-commerce-nav__body-title {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .pc-commerce-nav .exits-chip,
+[data-theme="dark"] .pc-commerce-nav .role-action-tile {
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  color: #e2e8f0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .pc-commerce-nav .exits-chip--active,
+[data-theme="dark"] .pc-commerce-nav .role-action-tile--primary {
+  --tab-glass-chip: var(--exits-primary);
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  color: #e2e8f0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, var(--tab-glass-chip) 14%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
 }
 
 .pc-commerce-toolbar.exits-chip-bar--actions {
@@ -929,31 +1104,39 @@
   }
 }
 
-/* —— Orders list — My Record card chrome (tint + shadow + round caret) —— */
+/* —— Orders list — Soft Glass Enterprise cards —— */
 
 .pc-order-card {
   --pc-order-accent: var(--exits-severity-success, #22c55e);
   --pc-order-accent-deep: color-mix(in srgb, #000 28%, var(--pc-order-accent));
+  --pc-order-accent-soft: color-mix(in srgb, var(--pc-order-accent) 42%, #fff);
+  --pc-order-accent-wash: color-mix(in srgb, var(--pc-order-accent) 8%, #fff);
+  --pc-order-accent-mid: color-mix(in srgb, var(--pc-order-accent) 16%, #fff);
   position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 0.75rem;
-  padding: 1.15rem 1.55rem 0.9rem 1rem;
+  padding: 1.15rem 1.05rem 0.9rem 1rem;
   overflow: visible;
-  border: 1px solid color-mix(in srgb, var(--pc-order-accent) 40%, var(--exits-border));
-  border-radius: var(--exits-radius-md);
-  background: color-mix(in srgb, var(--pc-order-accent) 8%, var(--exits-surface));
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--pc-order-accent-soft));
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 88%, transparent) 0%,
+      color-mix(in srgb, #fff 70%, transparent) 42%,
+      color-mix(in srgb, var(--pc-order-accent-mid) 52%, transparent) 100%
+    );
   color: var(--exits-text);
   text-decoration: none;
   box-shadow:
-    0 1px 5px rgba(0, 0, 0, 0.2),
-    0 2px 2px rgba(0, 0, 0, 0.14),
-    0 3px 1px -2px rgba(0, 0, 0, 0.12);
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 6px 18px color-mix(in srgb, var(--pc-order-accent) 8%, transparent);
   transition:
-    border-color var(--exits-motion-fast) ease,
-    background-color var(--exits-motion-fast) ease,
-    box-shadow var(--exits-motion-fast) ease;
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
 .pc-order-card__ribbon {
@@ -967,10 +1150,19 @@
   margin-top: -0.55rem;
   margin-left: -0.55rem;
   padding: 0.28rem 0.75rem;
-  border-radius: 0.2rem 0.2rem 0.2rem 0;
-  background: #fff;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--pc-order-accent-soft));
+  border-radius: 0.55rem 0.55rem 0.55rem 0.15rem;
   color: var(--pc-order-accent-deep);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 72%, transparent) 0%,
+      color-mix(in srgb, var(--pc-order-accent-wash) 55%, transparent) 48%,
+      color-mix(in srgb, var(--pc-order-accent-mid) 48%, transparent) 100%
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 4px 12px color-mix(in srgb, var(--pc-order-accent) 8%, transparent);
 }
 
 .pc-order-card__ribbon-label {
@@ -986,8 +1178,27 @@
   left: 0;
   width: 0;
   height: 0;
-  border-top: 0.5rem solid #cbd5e1;
+  border-top: 0.5rem solid color-mix(in srgb, #e2e8f0 55%, var(--pc-order-accent-soft));
   border-left: 0.7rem solid transparent;
+}
+
+[data-theme="dark"] .pc-order-card__ribbon {
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  color: #e2e8f0;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 10%, #1e293b) 0%,
+      color-mix(in srgb, var(--pc-order-accent) 16%, #1e293b) 52%,
+      color-mix(in srgb, #0f172a 48%, #1e293b) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .pc-order-card__ribbon-fold {
+  border-top-color: color-mix(in srgb, var(--pc-order-accent) 35%, #64748b);
 }
 
 .pc-order-card--success {
@@ -1004,10 +1215,45 @@
 
 .pc-order-card:hover,
 .pc-order-card:focus-visible {
-  border-color: color-mix(in srgb, var(--pc-order-accent) 55%, var(--exits-border));
-  background: color-mix(in srgb, var(--pc-order-accent) 14%, var(--exits-surface));
-  box-shadow: var(--exits-shadow-md);
-  outline: none;
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--pc-order-accent-soft));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 92%, transparent) 0%,
+      color-mix(in srgb, #fff 74%, transparent) 42%,
+      color-mix(in srgb, var(--pc-order-accent-mid) 62%, transparent) 100%
+    );
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] .pc-order-card {
+  --pc-order-accent-soft: color-mix(in srgb, var(--pc-order-accent) 55%, #94a3b8);
+  --pc-order-accent-wash: color-mix(in srgb, var(--pc-order-accent) 14%, #1e293b);
+  --pc-order-accent-mid: color-mix(in srgb, var(--pc-order-accent) 18%, #1e293b);
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 7%, #1e293b) 0%,
+      color-mix(in srgb, #fff 3%, #1e293b) 48%,
+      color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .pc-order-card:hover,
+[data-theme="dark"] .pc-order-card:focus-visible {
+  border-color: color-mix(in srgb, #fff 22%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 10%, #1e293b) 0%,
+      color-mix(in srgb, #fff 5%, #1e293b) 48%,
+      color-mix(in srgb, var(--pc-order-accent) 14%, #1e293b) 100%
+    );
 }
 
 .pc-order-card__body {
@@ -1082,8 +1328,8 @@
 }
 
 .pc-order-card__fact-icon {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1.15rem;
+  height: 1.15rem;
   flex-shrink: 0;
   color: var(--exits-primary);
   stroke-width: 2.25;
@@ -1093,30 +1339,6 @@
   min-width: 0;
 }
 
-.pc-order-card__caret {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 2.15rem;
-  height: 2.15rem;
-  border: 1px solid color-mix(in srgb, var(--pc-order-accent) 40%, var(--exits-border));
-  border-radius: 999px;
-  background: var(--exits-surface);
-  color: var(--pc-order-accent);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
-  transform: translate(53%, -50%);
-  pointer-events: none;
-}
-
-.pc-order-card__caret-icon {
-  width: 1.15rem;
-  height: 1.15rem;
-  stroke-width: 2.25;
-}
-
 .my-orders-page .pc-orders-list.utang-relationship-list {
   display: flex;
   flex-direction: column;
@@ -1124,26 +1346,391 @@
   row-gap: 1.25rem;
   padding-top: 0.55rem;
   padding-left: 0.65rem;
-  padding-right: 1.15rem;
+  padding-right: 0.65rem;
 }
 
-@media (min-width: 1024px) {
-  .my-orders-page .pc-orders-list.utang-relationship-list {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: stretch;
-  }
+/* Large screens use ExitsTable via ExitsResponsiveDataView; list stays single-column cards. */
 
-  .my-orders-page .pc-orders-list > li {
-    min-width: 0;
-    display: flex;
-  }
+/* My Orders table layout — Soft Glass shell from data-shell="soft-glass" (table-global-default). */
+.my-orders-table.exits-table-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-  .my-orders-page .pc-orders-list .pc-order-card {
-    flex: 1 1 auto;
-    width: 100%;
-  }
+.my-orders-table .exits-table-toolbar {
+  margin: 0;
+}
+
+.my-orders-table .exits-table-toolbar__search,
+.my-orders-list-shell .exits-table-toolbar__search {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --personal-qa-chip-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+  flex: 0 1 14rem;
+  width: 14rem;
+  max-width: 14rem;
+  min-width: min(100%, 12rem);
+}
+
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput {
+  width: 100%;
+}
+
+/* Soft Glass search (theme primary; radius follows Control Shape). */
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput__box,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__box {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft)) !important;
+  border-radius: var(--exits-search-radius, var(--exits-control-radius)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease !important;
+}
+
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput:hover .ui-standards-qinput__box,
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput:focus-within .ui-standards-qinput__box,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput:hover .ui-standards-qinput__box,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput:focus-within .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 60%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 54%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 9%, transparent);
+}
+
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput__box::after,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__box::after {
+  border-bottom-color: var(--personal-qa-chip);
+}
+
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput__control,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__control {
+  color: var(--personal-qa-chip-ink);
+}
+
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput__control::placeholder,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__control::placeholder {
+  color: color-mix(in srgb, var(--personal-qa-chip-ink) 55%, transparent);
+  opacity: 1;
+}
+
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput__icon,
+.my-orders-table .exits-table-toolbar__search .ui-standards-qinput__clear,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__icon,
+.my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__clear {
+  color: var(--personal-qa-chip);
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 55%, #94a3b8);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 18%, #1e293b);
+  --personal-qa-chip-ink: #e2e8f0;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__box,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, #fff 14%, #475569) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput:hover .ui-standards-qinput__box,
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput:focus-within .ui-standards-qinput__box,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput:hover .ui-standards-qinput__box,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput:focus-within .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, var(--personal-qa-chip-soft) 28%, #64748b) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 9%, #1e293b) 0%,
+    color-mix(in srgb, var(--exits-primary) 10%, #1e293b) 50%,
+    color-mix(in srgb, #0f172a 50%, #1e293b) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 2px 8px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__box::after,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__box::after {
+  border-bottom-color: var(--exits-primary);
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__control,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__control {
+  color: #e2e8f0;
+  -webkit-text-fill-color: #e2e8f0;
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__control::placeholder,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__control::placeholder {
+  color: #94a3b8;
+  -webkit-text-fill-color: #94a3b8;
+  opacity: 1;
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__icon,
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__clear,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__icon,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__clear {
+  color: var(--personal-qa-chip-soft);
+}
+
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__control:-webkit-autofill,
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__control:-webkit-autofill:hover,
+[data-theme="dark"] .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__control:-webkit-autofill:focus,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__control:-webkit-autofill,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__control:-webkit-autofill:hover,
+[data-theme="dark"] .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__control:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e2e8f0;
+  caret-color: #e2e8f0;
+  box-shadow: 0 0 0 1000px #1e293b inset;
+  transition: background-color 99999s ease-out;
+}
+
+/* Header glossy-raise chrome comes from the global ExitsTable lock in globals.css. */
+
+/* Stores table — compact centered Actions column (⋯ only). */
+.linked-merchants-table .exits-table__col--actions,
+.linked-merchants-table .exits-table__cell--center.exits-table__col--actions,
+.linked-merchants-table .exits-table__head.exits-table__col--actions {
+  width: 4.75rem;
+  min-width: 4.25rem;
+  max-width: 5.25rem;
+  padding-inline: 0.65rem;
+}
+
+.linked-merchants-table__actions {
+  width: 100%;
+}
+
+/* Stores table — Soft Glass rounded more (⋯) trigger. */
+.linked-merchants-table__more {
+  --lm-more-chip: var(--exits-primary);
+  --lm-more-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --lm-more-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --lm-more-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --lm-more-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--exits-control-height);
+  height: var(--exits-control-height);
+  min-width: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  margin: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--lm-more-soft));
+  border-radius: 999px;
+  color: var(--lm-more-ink);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--lm-more-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--lm-more-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--lm-more-chip) 8%, transparent);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.linked-merchants-table__more:hover {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--lm-more-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--lm-more-wash) 58%, transparent) 48%,
+    color-mix(in srgb, var(--lm-more-mid) 52%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--lm-more-chip) 10%, transparent);
+}
+
+.linked-merchants-table__more:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.linked-merchants-table__more[aria-expanded="true"] {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--lm-more-soft));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--lm-more-chip) 12%, transparent);
+}
+
+[data-theme="dark"] .linked-merchants-table__more {
+  --lm-more-soft: color-mix(in srgb, var(--exits-primary) 55%, #94a3b8);
+  --lm-more-wash: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  --lm-more-mid: color-mix(in srgb, var(--exits-primary) 18%, #1e293b);
+  --lm-more-ink: #e2e8f0;
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 10%, transparent) 0%,
+    color-mix(in srgb, var(--lm-more-wash) 70%, transparent) 48%,
+    color-mix(in srgb, var(--lm-more-mid) 80%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .linked-merchants-table__more:hover,
+[data-theme="dark"] .linked-merchants-table__more[aria-expanded="true"] {
+  border-color: color-mix(in srgb, #fff 22%, transparent);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 12%, transparent) 0%,
+    color-mix(in srgb, var(--lm-more-wash) 78%, transparent) 48%,
+    color-mix(in srgb, var(--lm-more-mid) 88%, transparent) 100%
+  );
+}
+
+.linked-merchants-table__more-menu .linked-merchants-table__more-item--active,
+.linked-merchants-table__more-menu [role="menuitem"][data-selected="true"] {
+  background: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+  color: color-mix(in srgb, #000 22%, var(--exits-primary));
+  font-weight: 600;
+}
+
+.linked-merchants-table__more-menu .linked-merchants-table__more-item--active:hover,
+.linked-merchants-table__more-menu [role="menuitem"][data-selected="true"]:hover,
+.linked-merchants-table__more-menu .linked-merchants-table__more-item--active:focus-visible,
+.linked-merchants-table__more-menu [role="menuitem"][data-selected="true"]:focus-visible {
+  background: color-mix(in srgb, var(--exits-primary) 18%, transparent);
+  color: color-mix(in srgb, #000 22%, var(--exits-primary));
+}
+
+[data-theme="dark"] .linked-merchants-table__more-menu .linked-merchants-table__more-item--active,
+[data-theme="dark"] .linked-merchants-table__more-menu [role="menuitem"][data-selected="true"] {
+  background: color-mix(in srgb, var(--exits-primary) 22%, #1e293b);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .linked-merchants-table__more-menu .linked-merchants-table__more-item--active:hover,
+[data-theme="dark"] .linked-merchants-table__more-menu [role="menuitem"][data-selected="true"]:hover,
+[data-theme="dark"] .linked-merchants-table__more-menu .linked-merchants-table__more-item--active:focus-visible,
+[data-theme="dark"] .linked-merchants-table__more-menu [role="menuitem"][data-selected="true"]:focus-visible {
+  background: color-mix(in srgb, var(--exits-primary) 28%, #1e293b);
+  color: #e2e8f0;
+}
+
+.my-orders-table .my-orders-table-footer[data-appearance="glossy-raise"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid color-mix(in srgb, #e2e8f0 55%, var(--personal-qa-chip-soft));
+  border-radius: 0;
+  background-color: color-mix(in srgb, var(--personal-qa-chip-wash) 55%, transparent);
+  background-image: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 40%, transparent) 100%
+  );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.78) inset;
+  color: var(--qfooter-ink, var(--exits-text, #000));
+}
+
+.my-orders-list-shell .my-orders-table-footer[data-appearance="glossy-raise"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--exits-radius-md, 8px);
+  background-color: var(--qfooter-bg, var(--exits-surface-elevated, #fff));
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.12)
+  );
+  color: var(--qfooter-ink, var(--exits-text, #000));
+}
+
+.my-orders-table-footer__range {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .my-orders-table.exits-table-container {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 18%, #1e293b);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 55%, #94a3b8);
+  --personal-qa-chip-ink: #e2e8f0;
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .my-orders-table .exits-table__header[data-appearance="glossy-raise"] .exits-table__head,
+[data-theme="dark"] .my-orders-table .my-orders-table-footer[data-appearance="glossy-raise"] {
+  background-color: color-mix(in srgb, #fff 4%, #1e293b);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 6%, transparent) 0%,
+    color-mix(in srgb, #0f172a 40%, transparent) 100%
+  );
+}
+
+[data-theme="dark"] .my-orders-list-shell .my-orders-table-footer[data-appearance="glossy-raise"] {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.28)
+  );
 }
 
 /* —— Order detail —— */

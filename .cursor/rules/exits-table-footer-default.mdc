@@ -7,7 +7,7 @@ alwaysApply: true
 
 Table footer pagination uses the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/table-footer-global-default.ts`.
 
-- Default footer intent / appearance: `standard` / `standard`
+- Default footer intent / appearance: `standard` / `glossy-raise` (aligned with `table-global-default.ts`)
 - Page-size menu: Quasar cover positioning, dense options (`32px` / `2px 8px`), centered labels, selected = primary color (amber in dark), hover = full-width gray bar, always include **All** (`0`) when any ladder size applies
 - Nav carets: Material Symbols first/prev/next/last at `1.5rem`, tight gap between single and double
 - Use `ExitsTablePageSizeSelect` / `exitsTablePageSizesForTotal` — do not swap in a native bordered `<select>`

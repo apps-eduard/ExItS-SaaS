@@ -1,9 +1,10 @@
 /**
  * Locked table footer chrome (Quasar-style page size + nav carets).
+ * Appearance follows `table-global-default.ts` (glossy-raise).
  * Change only when the user asks. Keep CSS and this file aligned.
  */
 export const TABLE_FOOTER_GLOBAL_DEFAULT_INTENT = "standard" as const;
-export const TABLE_FOOTER_GLOBAL_DEFAULT_APPEARANCE = "standard" as const;
+export const TABLE_FOOTER_GLOBAL_DEFAULT_APPEARANCE = "glossy-raise" as const;
 
 /** Page-size option row (dense). */
 export const TABLE_FOOTER_GLOBAL_OPTION_MIN_HEIGHT = "32px" as const;

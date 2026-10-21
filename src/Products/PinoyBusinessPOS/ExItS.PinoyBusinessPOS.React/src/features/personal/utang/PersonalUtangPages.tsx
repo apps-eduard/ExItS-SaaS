@@ -1102,7 +1102,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                         </div>
                         <span className="utang-settings-card__tags">
                           <StatusChip
-                            tone={mode === "lent" ? "success" : "warning"}
+                            tone={mode === "lent" ? "success" : "info"}
                             appearance="emphasis"
                             shape="square"
                           >
@@ -1136,9 +1136,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                         <WaitingChip origin={rowOrigin(row)} />
                       </div>
                     </div>
-                    <span className="utang-account-card__caret" aria-hidden>
-                      <ChevronRight className="size-5" />
-                    </span>
                   </div>
                 </Link>
               </li>
@@ -2659,7 +2656,7 @@ export function PersonalRelationshipDetailPage() {
                         <div className="utang-activity-facts">
                           <span className="utang-activity-facts__chips">
                             <StatusChip
-                              tone={lent ? "success" : "warning"}
+                              tone={lent ? "success" : "info"}
                               appearance="emphasis"
                               shape="square"
                             >

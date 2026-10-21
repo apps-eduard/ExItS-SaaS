@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { Button } from "@/components/ui/button";
@@ -142,10 +142,6 @@ export function SellerOrdersPage() {
                       <StatusChip tone="info">
                         {t(displayOrderStatusKey(order) as MessageKey)}
                       </StatusChip>
-                      <ChevronRight
-                        className="customer-order-row__chevron size-4 shrink-0 text-muted"
-                        aria-hidden
-                      />
                     </div>
                   </Link>
                 </li>

@@ -1,5 +1,5 @@
 import { Link2, Link2Off, Clock, Ban, MinusCircle, ShieldOff, AlertCircle } from "lucide-react";
-import { StatusChip } from "@/components/exits/StatusChip";
+import { StatusChip, type StatusChipAppearance } from "@/components/exits/StatusChip";
 import {
   connectionStatusLabelKey,
   connectionStatusTone,
@@ -13,6 +13,7 @@ type ConnectionStatusChipProps = {
   audience: "personal" | "organization";
   testId?: string;
   showIcon?: boolean;
+  appearance?: StatusChipAppearance;
   className?: string;
 };
 
@@ -44,6 +45,7 @@ export function ConnectionStatusChip({
   audience,
   testId = "connection-status-chip",
   showIcon = true,
+  appearance = "soft",
   className,
 }: ConnectionStatusChipProps) {
   const { t } = useI18n();
@@ -51,7 +53,7 @@ export function ConnectionStatusChip({
 
   return (
     <span data-testid={testId} className={cn("inline-flex items-center", className)}>
-      <StatusChip tone={connectionStatusTone(state, audience)}>
+      <StatusChip tone={connectionStatusTone(state, audience)} appearance={appearance}>
         <span className="inline-flex items-center gap-1.5">
           {showIcon ? <StatusIcon state={state} /> : null}
           <span>{label}</span>
