@@ -664,7 +664,7 @@ export function UiStandardsTablePlayground() {
   const [sort, setSort] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [search, setSearch] = useState(TABLE_GLOBAL_DEFAULT_SEARCH);
+  const [search, setSearch] = useState<boolean>(TABLE_GLOBAL_DEFAULT_SEARCH);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState(false);
   const [filterValues, setFilterValues] = useState<string[]>([]);

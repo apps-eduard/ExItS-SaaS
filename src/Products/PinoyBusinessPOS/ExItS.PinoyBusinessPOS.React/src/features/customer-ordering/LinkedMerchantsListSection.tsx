@@ -664,7 +664,7 @@ export function LinkedMerchantsListSection({
                           <ExitsTableCell emphasis="semibold" truncate title={storeName}>
                             {storeName}
                           </ExitsTableCell>
-                          <ExitsTableCell truncate title={relationshipName}>
+                          <ExitsTableCell truncate title={relationshipName ?? undefined}>
                             {relationshipName}
                           </ExitsTableCell>
                           <ExitsTableCell>
