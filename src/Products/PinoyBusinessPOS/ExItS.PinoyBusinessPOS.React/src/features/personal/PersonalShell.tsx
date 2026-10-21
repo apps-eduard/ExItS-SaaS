@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { ensurePersonalSymbols, symbol } from "@/components/icons/MaterialSymbol";
 
-const FullSidebarIcon = symbol("left_panel_open");
-const IconSidebarIcon = symbol("view_sidebar");
-const HiddenSidebarIcon = symbol("left_panel_close");
+const FullSidebarIcon = symbol("keyboard_double_arrow_left");
+const IconSidebarIcon = symbol("chevron_left");
+const HiddenSidebarIcon = symbol("keyboard_double_arrow_right");
 const MenuIcon = symbol("menu");
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AccountMenu } from "@/components/exits/AccountMenu";
@@ -138,7 +138,7 @@ export function PersonalShell() {
               >
                 {isDesktop ? (
                   <ShellSidebarModeButton
-                    className="app-top-bar__action"
+                    className="app-top-bar__action personal-sidebar-mode--glass"
                     icons={{
                       standard: <FullSidebarIcon className="size-5" aria-hidden="true" />,
                       compact: <IconSidebarIcon className="size-5" aria-hidden="true" />,
@@ -161,8 +161,8 @@ export function PersonalShell() {
 
               <div className="app-top-bar__actions app-top-bar__actions--personal">
                 <PersonalThemeModeButton className="app-top-bar__action" />
-                <PersonalAppearanceMenu className="app-top-bar__action" />
-                <ShellConnectionButton className="app-top-bar__action" />
+                <PersonalAppearanceMenu className="app-top-bar__action personal-topbar-secondary" />
+                <ShellConnectionButton className="app-top-bar__action personal-topbar-secondary" />
                 <ShellNotificationButton
                   to="/personal/notifications"
                   label={t("shell.notifications.label")}
@@ -178,16 +178,16 @@ export function PersonalShell() {
                 />
                 <ShellUiStandardsButton
                   label={t("uiStandards.topbar")}
-                  className="app-top-bar__action"
+                  className="app-top-bar__action personal-topbar-secondary"
                 />
                 <ShellPreferencesButton
                   label={t("topbar.preferences")}
-                  className="app-top-bar__action"
+                  className="app-top-bar__action personal-topbar-secondary"
                 />
                 <AccountMenu
                   signingOut={signingOut}
                   onSignOut={() => void handleSignOut()}
-                  compact
+                  compact={!isDesktop}
                 />
               </div>
             </div>

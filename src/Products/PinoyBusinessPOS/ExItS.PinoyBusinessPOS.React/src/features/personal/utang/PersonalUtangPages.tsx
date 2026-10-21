@@ -723,6 +723,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       data-testid={mode === "lent" ? "personal-utang-lent" : "personal-utang-owe"}
     >
       <PageHeader
+        className="personal-page-header--glass"
         title={title}
         description={lede}
         backTo={personalPageBackNav.utang.to}
@@ -1824,6 +1825,7 @@ export function PersonalRelationshipDetailPage() {
       data-testid="personal-utang-detail"
     >
       <PageHeader
+        className="personal-page-header--glass"
         title={personName}
         description={perspectiveLabel}
         backTo={listBack.to}

@@ -9155,6 +9155,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.home.todoSoon": "Makita diri ang personal nga buhaton sa sunod nga update.",
 
   "personal.home.todoSummary": "Buhaton",
+  "personal.home.viewAllTodo": "View all",
 
   "personal.home.todoUnavailable": "Dili makita karon ang ihap sa buhaton.",
 

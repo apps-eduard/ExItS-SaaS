@@ -9155,6 +9155,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.home.todoSoon": "Ang personal nga ihimo magapakita diri sa masunod nga update.",
 
   "personal.home.todoSummary": "Ihimo",
+  "personal.home.viewAllTodo": "View all",
 
   "personal.home.todoUnavailable": "Indi magamit subong ang bilang sang ihimo.",
 

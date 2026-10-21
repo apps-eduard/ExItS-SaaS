@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronLeft, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
 import { usePreferences } from "@/hooks/usePreferences";
@@ -73,11 +73,11 @@ export function ShellSidebarModeButton({
       {modeIcon ??
         icon ??
         (mode === "compact" ? (
-          <PanelLeftClose aria-hidden="true" className="size-5" strokeWidth={2.15} />
+          <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2.25} />
         ) : mode === "hidden" ? (
-          <PanelLeftOpen aria-hidden="true" className="size-5" strokeWidth={2.15} />
+          <ChevronsRight aria-hidden="true" className="size-5" strokeWidth={2.25} />
         ) : (
-          <PanelLeft aria-hidden="true" className="size-5" strokeWidth={2.15} />
+          <ChevronsLeft aria-hidden="true" className="size-5" strokeWidth={2.25} />
         ))}
     </Button>
   );

@@ -9122,6 +9122,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.home.todoSoon": "Lilitaw dito ang personal na gawain sa susunod na update.",
 
   "personal.home.todoSummary": "Gawain",
+  "personal.home.viewAllTodo": "View all",
 
   "personal.home.todoUnavailable": "Hindi makuha ang bilang ng gawain sa ngayon.",
 

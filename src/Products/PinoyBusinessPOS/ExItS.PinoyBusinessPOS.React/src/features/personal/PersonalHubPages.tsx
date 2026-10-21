@@ -171,44 +171,41 @@ export function PersonalUtangHubPage() {
 
   const hubActions = (
     <div className="personal-home-metrics utang-hub-actions" data-testid="utang-hub-actions">
-      {(
-        [
-          { to: "/personal/utang/lent", testId: "utang-open-lent", tone: "success", label: t("personal.utang.lent"), Icon: ArrowUp },
-          { to: "/personal/utang/owe", testId: "utang-open-owe", tone: "info", label: t("personal.utang.owe"), Icon: ArrowDown },
-          {
-            to: "/personal/people/add",
-            testId: "utang-open-people",
-            tone: "secondary",
-            label: t("personal.utang.addPeople"),
-            Icon: UserPlus,
-            plus: true,
-          },
-        ] as const
-      ).map((action) => {
-        const ActionIcon = action.Icon;
-        return (
-          <Link
-            key={action.testId}
-            to={action.to}
-            className={`personal-home-index-card personal-home-index-card--${action.tone} personal-home-index-card--solid`}
-            data-testid={action.testId}
-          >
-            <span className="personal-home-index-card__ribbon" aria-hidden="true">
-              <span className="personal-home-index-card__fold" />
-              <ActionIcon className="personal-home-index-card__icon" />
-            </span>
-            <span className="personal-home-index-card__body">
-              <span className="personal-home-index-card__title">{action.label}</span>
-            </span>
-            <strong
-              className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
-              aria-hidden="true"
-            >
-              {"plus" in action ? "+" : <ChevronRight className="size-4" />}
-            </strong>
-          </Link>
-        );
-      })}
+      <Link
+        to="/personal/utang/lent"
+        className="personal-qa-glass personal-qa-glass--lent"
+        data-testid="utang-open-lent"
+      >
+        <span className="personal-qa-glass__icon" aria-hidden="true">
+          <ArrowUp className="size-[0.95rem] shrink-0" aria-hidden />
+        </span>
+        <span className="personal-qa-glass__label">{t("personal.utang.lent")}</span>
+        <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
+      </Link>
+      <Link
+        to="/personal/utang/owe"
+        className="personal-qa-glass personal-qa-glass--owe"
+        data-testid="utang-open-owe"
+      >
+        <span className="personal-qa-glass__icon" aria-hidden="true">
+          <ArrowDown className="size-[0.95rem] shrink-0" aria-hidden />
+        </span>
+        <span className="personal-qa-glass__label">{t("personal.utang.owe")}</span>
+        <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
+      </Link>
+      <Link
+        to="/personal/people/add"
+        className="personal-qa-glass personal-qa-glass--people"
+        data-testid="utang-open-people"
+      >
+        <span className="personal-qa-glass__icon" aria-hidden="true">
+          <UserPlus className="size-[0.95rem] shrink-0" aria-hidden />
+        </span>
+        <span className="personal-qa-glass__label">{t("personal.utang.addPeople")}</span>
+        <span className="personal-qa-glass__plus personal-qa-glass__plus--people" aria-hidden="true">
+          +
+        </span>
+      </Link>
     </div>
   );
 
@@ -218,6 +215,7 @@ export function PersonalUtangHubPage() {
       data-testid="personal-utang-hub"
     >
       <PageHeader
+        className="personal-page-header--glass"
         title={t("personal.utang.title")}
         description={t("personal.utang.workspaceLede")}
         backTo={personalPageBackNav.home.to}
@@ -279,12 +277,28 @@ export function PersonalUtangHubPage() {
             data-testid="utang-hub-accounts"
             aria-label={t("personal.utang.activeAccounts")}
           >
-            <h2 className="personal-tracker-card__ribbon" data-testid="utang-hub-accounts-ribbon">
-              <span className="personal-tracker-card__pennant" aria-hidden>
-                <Users className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
-              </span>
-              {t("personal.utang.activeAccounts")}
-            </h2>
+            <div className="personal-tracker-card__header">
+              <h2 className="personal-tracker-card__title" data-testid="utang-hub-accounts-ribbon">
+                <span className="personal-tracker-card__pennant" aria-hidden>
+                  <Users className="personal-tracker-card__pennant-icon size-[1.05rem] shrink-0" />
+                </span>
+                {t("personal.utang.activeAccounts")}
+              </h2>
+              {showSearch ? (
+                <div className="utang-search">
+                  <ExitsOutlineInput
+                    label={t("personal.utang.searchLabel")}
+                    placeholder={t("personal.utang.searchPlaceholder")}
+                    placeholderOnly
+                    icon={Search}
+                    type="search"
+                    value={search}
+                    onChange={setSearch}
+                    testId="utang-hub-search"
+                  />
+                </div>
+              ) : null}
+            </div>
             <div className="utang-hub-accounts__panel">
 
             <UnderlineTabBar
@@ -347,21 +361,6 @@ export function PersonalUtangHubPage() {
                 testId: `utang-segment-${item.key}`,
               }))}
             />
-
-            {showSearch ? (
-              <div className="utang-search">
-                <ExitsOutlineInput
-                  label={t("personal.utang.searchLabel")}
-                  placeholder={t("personal.utang.searchPlaceholder")}
-                  placeholderOnly
-                  icon={Search}
-                  type="search"
-                  value={search}
-                  onChange={setSearch}
-                  testId="utang-hub-search"
-                />
-              </div>
-            ) : null}
 
             {accountsLoading ? (
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">

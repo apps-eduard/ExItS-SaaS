@@ -95,17 +95,19 @@ function TrackerSummaryGroup({
       className={`tracker-summary tracker-summary--${tone} tracker-summary--pendant tracker-amount-group`}
       data-testid={rowTestId}
     >
-      <span
-        className="tracker-summary__pendant"
-        aria-hidden
-        data-testid={`${rowTestId}-pendant`}
-      >
-        <Icon className="tracker-summary__pendant-icon" />
-      </span>
       <div className="tracker-summary__stage">
-        <span className="tracker-summary__copy">
-          <h3 className="tracker-summary__title tracker-amount-group__title m-0">{title}</h3>
-        </span>
+        <div className="tracker-summary__title-row">
+          <span className="tracker-summary__copy">
+            <h3 className="tracker-summary__title tracker-amount-group__title m-0">{title}</h3>
+          </span>
+          <span
+            className="tracker-summary__pendant"
+            aria-hidden
+            data-testid={`${rowTestId}-pendant`}
+          >
+            <Icon className="tracker-summary__pendant-icon" />
+          </span>
+        </div>
         <span className="tracker-balance__rule" aria-hidden />
         <ul className="tracker-amount-list utang-relationship-list m-0 flex list-none flex-row p-0">
           <li>
@@ -188,20 +190,21 @@ export function PersonalTrackerCard({
   metricsOutline?: boolean;
 }) {
   const { t } = useI18n();
-  const outline = metricsOutline ? " personal-home-index-card--outline" : "";
 
   return (
     <section
-      className="catalog-form-section exits-animate-panel personal-section personal-tracker-card gap-3"
+      className="catalog-form-section exits-animate-panel personal-section personal-tracker-card gap-3 max-md:gap-1.5"
       aria-label={t("personal.home.personalTracker")}
       data-testid={testIds.section}
     >
-      <h2 className="personal-tracker-card__ribbon" data-testid={testIds.ribbon}>
-        <span className="personal-tracker-card__pennant" aria-hidden data-testid={testIds.pennant}>
-          <MonitoringIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
-        </span>
-        {t("personal.home.personalTracker")}
-      </h2>
+      <div className="personal-tracker-card__header">
+        <h2 className="personal-tracker-card__title" data-testid={testIds.ribbon}>
+          <span className="personal-tracker-card__pennant" aria-hidden data-testid={testIds.pennant}>
+            <MonitoringIcon className="personal-tracker-card__pennant-icon size-[1.05rem] shrink-0" />
+          </span>
+          {t("personal.home.personalTracker")}
+        </h2>
+      </div>
       <div className="tracker-summary-row">
         <TrackerSummaryGroup
           title={t("personal.home.trackerOwedTitle")}
@@ -239,51 +242,40 @@ export function PersonalTrackerCard({
       <div className="personal-home-metrics" data-testid={testIds.meta}>
         <Link
           to="/personal/people"
-          className={`personal-home-index-card personal-home-index-card--secondary${outline}`}
+          className="personal-qa-glass personal-qa-glass--people"
           data-testid={testIds.people}
         >
-          <span className="personal-home-index-card__ribbon" aria-hidden="true">
-            <span className="personal-home-index-card__fold" />
-            <GroupIcon className="personal-home-index-card__icon" />
+          <span className="personal-qa-glass__icon" aria-hidden="true">
+            <GroupIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
           </span>
-          <span className="personal-home-index-card__body">
-            <span className="personal-home-index-card__title">
-              {metricsOutline ? t("personal.home.friends") : t("personal.home.people")}
-            </span>
+          <span className="personal-qa-glass__label">
+            {metricsOutline ? t("personal.home.friends") : t("personal.home.people")}
           </span>
-          <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
-            {dashboard.contactCount}
-          </strong>
+          <strong className="personal-qa-glass__badge tabular-nums">{dashboard.contactCount}</strong>
         </Link>
         <Link
           to="/personal/utang"
-          className={`personal-home-index-card personal-home-index-card--success${outline}`}
+          className="personal-qa-glass personal-qa-glass--lent"
           data-testid={testIds.activeMine}
         >
-          <span className="personal-home-index-card__ribbon" aria-hidden="true">
-            <span className="personal-home-index-card__fold" />
-            <HandshakeIcon className="personal-home-index-card__icon" />
+          <span className="personal-qa-glass__icon" aria-hidden="true">
+            <HandshakeIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
           </span>
-          <span className="personal-home-index-card__body">
-            <span className="personal-home-index-card__title">{t("personal.home.activeMine")}</span>
-          </span>
-          <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
+          <span className="personal-qa-glass__label">{t("personal.home.activeMine")}</span>
+          <strong className="personal-qa-glass__badge tabular-nums">
             {dashboard.activeRelationshipCount}
           </strong>
         </Link>
         <Link
           to="/personal/utang"
-          className={`personal-home-index-card personal-home-index-card--info${outline}`}
+          className="personal-qa-glass personal-qa-glass--owe"
           data-testid={testIds.activeShared}
         >
-          <span className="personal-home-index-card__ribbon" aria-hidden="true">
-            <span className="personal-home-index-card__fold" />
-            <ShareIcon className="personal-home-index-card__icon" />
+          <span className="personal-qa-glass__icon" aria-hidden="true">
+            <ShareIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
           </span>
-          <span className="personal-home-index-card__body">
-            <span className="personal-home-index-card__title">{t("personal.home.sharedLedgerStat")}</span>
-          </span>
-          <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
+          <span className="personal-qa-glass__label">{t("personal.home.sharedLedgerStat")}</span>
+          <strong className="personal-qa-glass__badge tabular-nums">
             {dashboard.sharedWithMeActiveCount ?? 0}
           </strong>
         </Link>

@@ -66,6 +66,21 @@
   --exits-shadow-md: 0 4px 12px color-mix(in srgb, #0f172a 6%, transparent);
   --exits-shadow-lg: 0 10px 24px color-mix(in srgb, #0f172a 8%, transparent);
 
+  /* Unified app shell chrome (sidebar / topbar / content) — solid, no blur. */
+  --exits-shell-sidebar-bg: #ffffff;
+  --exits-shell-topbar-bg: #e8ecf2;
+  --exits-shell-content-bg: #e8ecf2;
+  --exits-shell-panel-bg: #ffffff;
+  --exits-shell-divider: #d5dbe6;
+  --exits-shell-nav-hover-bg: #eef1f6;
+  --exits-shell-nav-active-bg: var(--exits-primary-soft);
+  --exits-shell-nav-active-fg: var(--exits-primary);
+  --exits-shell-nav-active-border: var(--exits-primary);
+  --exits-shell-nav-font-size: 0.875rem;
+  --exits-shell-icon-size: 1.25rem;
+  --exits-shell-radius: 0.75rem;
+  --exits-shell-transition: 130ms;
+
   /*
    * Diamond LIGHT severity palette (UI Standards Severities showcase).
    * Separate from configurable --exits-primary brand preference.
@@ -144,6 +159,21 @@
   --exits-shadow-md: 0 4px 12px color-mix(in srgb, #000 16%, transparent);
   --exits-shadow-lg: 0 10px 24px color-mix(in srgb, #000 20%, transparent);
 
+  /* Unified app shell chrome — deep slate, purple-tinted active nav. */
+  --exits-shell-sidebar-bg: #12161e;
+  --exits-shell-topbar-bg: var(--exits-bg);
+  --exits-shell-content-bg: var(--exits-bg);
+  --exits-shell-panel-bg: var(--exits-surface-elevated);
+  --exits-shell-divider: var(--exits-border);
+  --exits-shell-nav-hover-bg: #1a1f28;
+  --exits-shell-nav-active-bg: color-mix(in srgb, #8b5cf6 16%, #171b22);
+  --exits-shell-nav-active-fg: #c4b5fd;
+  --exits-shell-nav-active-border: #8b5cf6;
+  --exits-shell-nav-font-size: 0.875rem;
+  --exits-shell-icon-size: 1.25rem;
+  --exits-shell-radius: 0.75rem;
+  --exits-shell-transition: 130ms;
+
   /* Dark severity palette (Aura-like lighter fills) — must not leak into light */
   --exits-severity-primary: #34d399;
   --exits-severity-primary-foreground: #18181b;
@@ -216,6 +246,20 @@
     --exits-shadow-sm: 0 1px 2px color-mix(in srgb, #000 12%, transparent);
     --exits-shadow-md: 0 4px 12px color-mix(in srgb, #000 16%, transparent);
     --exits-shadow-lg: 0 10px 24px color-mix(in srgb, #000 20%, transparent);
+
+    --exits-shell-sidebar-bg: #12161e;
+    --exits-shell-topbar-bg: var(--exits-bg);
+    --exits-shell-content-bg: var(--exits-bg);
+    --exits-shell-panel-bg: var(--exits-surface-elevated);
+    --exits-shell-divider: var(--exits-border);
+    --exits-shell-nav-hover-bg: #1a1f28;
+    --exits-shell-nav-active-bg: color-mix(in srgb, #8b5cf6 16%, #171b22);
+    --exits-shell-nav-active-fg: #c4b5fd;
+    --exits-shell-nav-active-border: #8b5cf6;
+    --exits-shell-nav-font-size: 0.875rem;
+    --exits-shell-icon-size: 1.25rem;
+    --exits-shell-radius: 0.75rem;
+    --exits-shell-transition: 130ms;
 
     --exits-severity-primary: #34d399;
     --exits-severity-primary-foreground: #18181b;
@@ -17168,9 +17212,13 @@ a.dashboard-metric-card:focus-visible {
   margin-right: calc(-1 * max(var(--exits-page-padding), env(safe-area-inset-right)));
   padding: 0.5rem max(var(--exits-page-padding), env(safe-area-inset-left)) 0.55rem
     max(var(--exits-page-padding), env(safe-area-inset-right));
-  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 72%, transparent);
-  background: var(--exits-surface);
-  animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
+  border-bottom: 1px solid var(--exits-shell-divider, var(--exits-border));
+  background: var(--exits-shell-topbar-bg, var(--exits-surface));
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  /* Shell chrome stays static — no entrance animation cost. */
+  animation: none;
 }
 
 .app-top-bar__row {
@@ -17236,7 +17284,7 @@ a.dashboard-metric-card:focus-visible {
     min-height: 0;
     min-width: 0;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
   }
 
   .personal-shell .app-top-bar--personal .app-top-bar__brand--personal {
@@ -17285,16 +17333,20 @@ a.dashboard-metric-card:focus-visible {
     background: color-mix(in srgb, #ffffff 62%, transparent);
   }
 
-  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"] {
-    color: #000000;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 999px !important;
-  }
-
+  .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"],
   .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"]:hover {
-    color: #000000;
-    background: #ffffff;
+    color: color-mix(in srgb, #0f172a 72%, #64748b) !important;
+    background:
+      linear-gradient(
+        160deg,
+        color-mix(in srgb, #fff 78%, transparent),
+        color-mix(in srgb, #fff 42%, transparent)
+      ) !important;
+    border: 1px solid color-mix(in srgb, #fff 72%, #94a3b8) !important;
+    border-radius: 999px !important;
+    box-shadow:
+      0 1px 0 color-mix(in srgb, #fff 80%, transparent) inset,
+      0 4px 12px color-mix(in srgb, #64748b 10%, transparent) !important;
   }
 
   .personal-shell .app-top-bar--personal .app-top-bar__action svg,
@@ -17323,8 +17375,8 @@ a.dashboard-metric-card:focus-visible {
     min-height: 4.25rem;
     max-height: 4.25rem;
     border-bottom: 0;
-    background: var(--exits-surface);
-    box-shadow: 0 1px 3px color-mix(in srgb, #0f172a 6%, transparent);
+    background: transparent;
+    box-shadow: none;
   }
 
   /* Personal keeps its brand label in the top bar (not hidden like org shell-desktop). */
@@ -24680,12 +24732,36 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
-/* Personal uses the app surface tokens. Theme color stays on actions, not the page wash. */
+/*
+ * Personal uses shared shell tokens (solid chrome — no glass / blur).
+ * Paint html/body/#root too — otherwise the old --exits-bg wash hides shell changes.
+ */
+html:has(.personal-shell),
+html:has(.personal-shell) body,
+html:has(.personal-shell) #root,
 .personal-shell,
 [data-background] .personal-shell {
-  background: var(--exits-bg);
-  background-image: none;
+  background: var(--exits-shell-content-bg, #e8ecf2) !important;
+  background-image: none !important;
   color: var(--exits-text);
+}
+
+html:has(.admin-shell):not(:has(.personal-shell)),
+html:has(.admin-shell):not(:has(.personal-shell)) body,
+html:has(.admin-shell):not(:has(.personal-shell)) #root,
+html:has(.operations-shell),
+html:has(.operations-shell) body,
+html:has(.operations-shell) #root,
+.admin-shell,
+.operations-shell {
+  background: var(--exits-shell-content-bg, #e8ecf2) !important;
+  background-image: none !important;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__brand {
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 1px solid var(--exits-shell-divider, var(--exits-border));
 }
 
 /* Personal low-cost effects: shadows change instantly on hover. Only transform and colors animate. */
@@ -24715,9 +24791,53 @@ a.exits-chip--primary:hover {
 
 .personal-shell .app-top-bar--personal {
   z-index: 30;
-  border-bottom-color: transparent;
-  background: var(--exits-surface);
-  box-shadow: 0 1px 3px color-mix(in srgb, #0f172a 6%, transparent);
+  /* Blend into page content — no separate chrome strip. */
+  border-bottom: 0 !important;
+  background: var(--exits-shell-content-bg, #e8ecf2) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  animation: none !important;
+}
+
+.personal-shell .personal-sidebar.admin-sidebar {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 94%, transparent),
+      color-mix(in srgb, #fff 82%, var(--exits-shell-content-bg, #e8ecf2))
+    ) !important;
+  border: 0 !important;
+  border-inline-end: 0 !important;
+  border-start-end-radius: 1.1rem;
+  border-end-end-radius: 1.1rem;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Soft glass edge facing the content column. */
+.personal-shell .personal-sidebar.admin-sidebar::after {
+  content: "";
+  position: absolute;
+  inset-block: 0.55rem;
+  inset-inline-end: 0;
+  z-index: 4;
+  width: 1.1rem;
+  pointer-events: none;
+  border-radius: 0 0.95rem 0.95rem 0;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-inline-end: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, #fff 85%, transparent),
+    8px 0 22px color-mix(in srgb, #64748b 10%, transparent);
 }
 
 .personal-shell .app-top-bar--personal .app-top-bar__action,
@@ -24726,14 +24846,26 @@ a.exits-chip--primary:hover {
 .personal-shell .app-top-bar--personal [data-testid="personal-appearance-menu"],
 .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
 .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] {
-  color: #657792;
+  color: var(--exits-text-muted);
+  transition:
+    color var(--exits-shell-transition, 130ms) ease,
+    background-color var(--exits-shell-transition, 130ms) ease;
 }
 
-.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"] {
-  color: #000000;
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"],
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"].personal-sidebar-mode--glass {
+  color: color-mix(in srgb, #0f172a 72%, #64748b) !important;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, #fff 42%, transparent)
+    ) !important;
+  border: 1px solid color-mix(in srgb, #fff 72%, #94a3b8) !important;
   border-radius: 999px !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 80%, transparent) inset,
+    0 4px 12px color-mix(in srgb, #64748b 10%, transparent) !important;
 }
 
 /* Theme color and the light page wash that belongs to it. Scoped to Personal. */
@@ -24856,14 +24988,37 @@ a.exits-chip--primary:hover {
 
 [data-theme="dark"] .personal-shell,
 [data-theme="dark"][data-background] .personal-shell {
-  background: var(--exits-bg);
+  background: var(--exits-shell-content-bg, var(--exits-bg));
   background-image: none;
   color: var(--exits-text);
 }
 
-[data-theme="dark"] .personal-shell .app-top-bar--personal,
 [data-theme="dark"] .personal-shell .personal-sidebar .admin-sidebar__brand {
-  box-shadow: 0 1px 3px color-mix(in srgb, #000 24%, transparent);
+  background: transparent;
+  box-shadow: none;
+  border-bottom-color: var(--exits-shell-divider, var(--exits-border));
+}
+
+[data-theme="dark"] .personal-shell .personal-sidebar.admin-sidebar {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 8%, var(--exits-shell-sidebar-bg, #12161e)),
+      color-mix(in srgb, #fff 3%, var(--exits-shell-sidebar-bg, #12161e))
+    ) !important;
+}
+
+[data-theme="dark"] .personal-shell .personal-sidebar.admin-sidebar::after {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-inline-end-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, #fff 10%, transparent),
+    8px 0 22px color-mix(in srgb, #000 28%, transparent);
 }
 
 [data-theme="dark"] .personal-shell .app-top-bar--personal .app-top-bar__action,
@@ -24885,10 +25040,19 @@ a.exits-chip--primary:hover {
 }
 
 [data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"],
-[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"]:hover {
-  color: #000000;
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"][data-intent="standard"]:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"].personal-sidebar-mode--glass {
+  color: color-mix(in srgb, #fff 82%, #c4b5fd) !important;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 16%, transparent),
+      color-mix(in srgb, #8b5cf6 14%, transparent)
+    ) !important;
+  border: 1px solid color-mix(in srgb, #fff 22%, transparent) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
+    0 4px 14px color-mix(in srgb, #000 28%, transparent) !important;
 }
 
 /* Personal shell fills the viewport — override Admin shell content caps. */
@@ -24941,8 +25105,8 @@ a.exits-chip--primary:hover {
   padding-inline: max(0.75rem, env(safe-area-inset-left))
     max(0.75rem, env(safe-area-inset-right));
   border-bottom: 0;
-  background: var(--exits-surface);
-  box-shadow: 0 1px 3px color-mix(in srgb, #0f172a 6%, transparent);
+  background: var(--exits-shell-content-bg, #e8ecf2);
+  box-shadow: none;
   animation: none;
 }
 
@@ -24959,7 +25123,184 @@ a.exits-chip--primary:hover {
   min-width: 0;
   min-height: 0;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.65rem;
+}
+
+.personal-shell .app-top-bar--personal .personal-topbar-secondary {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .personal-shell .app-top-bar--personal .personal-topbar-secondary {
+    display: inline-flex;
+  }
+}
+
+.personal-shell .app-top-bar--personal [data-testid="account-menu-trigger"] {
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0.15rem 0.55rem 0.15rem 0.15rem;
+  border: 0;
+  background: transparent;
+}
+
+.personal-shell .app-top-bar--personal [data-testid="account-menu-trigger"] > span:first-child {
+  background: linear-gradient(145deg, #8b5cf6, #6366f1);
+  color: #fff;
+}
+
+.personal-home-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.personal-home-hero__main {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.personal-home-hero__avatar-wrap {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #93c5fd 28%, #fff);
+  box-shadow: 0 0 0 0.35rem color-mix(in srgb, #bfdbfe 55%, transparent);
+}
+
+.personal-home-hero__avatar {
+  display: grid;
+  place-items: center;
+  width: 3.85rem;
+  height: 3.85rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #8b5cf6, #4f46e5);
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+}
+
+.personal-home-hero__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.personal-home-hero__avatar-fallback {
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  color: #fff !important;
+  font-size: 1.35rem !important;
+  box-shadow: none !important;
+}
+
+.personal-home-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.personal-home-hero__greeting {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--exits-text-muted);
+}
+
+.personal-home-hero__name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.personal-home-hero__wave {
+  font-weight: 500;
+}
+
+.personal-home-hero__subtitle {
+  max-width: 28rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--exits-text-muted);
+}
+
+.personal-home-hero__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.25rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 75%, transparent);
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 1px 3px color-mix(in srgb, #0f172a 6%, transparent);
+}
+
+.personal-home-hero__date-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, #93c5fd 22%, #eff6ff);
+  color: #2563eb;
+}
+
+.personal-home-hero__date-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.personal-home-hero__date-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.personal-home-hero__date-tail {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--exits-text-muted);
+}
+
+[data-theme="dark"] .personal-home-hero__date {
+  background: var(--exits-surface-elevated);
+  border-color: var(--exits-border);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-home-hero__avatar-wrap {
+  background: color-mix(in srgb, #6366f1 22%, transparent);
+  box-shadow: 0 0 0 0.35rem color-mix(in srgb, #6366f1 14%, transparent);
+}
+
+[data-theme="dark"] .personal-home-hero__date-icon {
+  background: color-mix(in srgb, #60a5fa 18%, transparent);
+  color: #93c5fd;
+}
+
+@media (max-width: 639.98px) {
+  .personal-home-hero__date {
+    width: 100%;
+  }
 }
 
 .personal-shell .app-top-bar--personal .app-top-bar__brand--personal {
@@ -25039,15 +25380,18 @@ a.exits-chip--primary:hover {
     height: 100dvh;
     max-height: none;
     flex: none;
-    background: var(--exits-surface);
-    box-shadow: 0 4px 12px color-mix(in srgb, #0f172a 14%, transparent);
+    background: transparent;
+    box-shadow: none;
   }
 
   .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .personal-sidebar {
     width: 100%;
     height: 100%;
-    border: 0;
-    border-radius: 0;
+    border: 1px solid var(--exits-shell-divider, var(--exits-border));
+    border-radius: 0 var(--exits-shell-radius, 0.75rem) var(--exits-shell-radius, 0.75rem) 0;
+    background: var(--exits-shell-sidebar-bg, var(--exits-surface));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     box-shadow: none;
   }
 
@@ -25074,11 +25418,10 @@ a.exits-chip--primary:hover {
 @media (min-width: 1024px) {
   .personal-shell .personal-sidebar.admin-sidebar {
     border-radius: 0;
-    border: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
-    border-block: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
-    border-inline-start: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
-    border-inline-end: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
-    box-shadow: var(--exits-shadow-sm);
+    border-start-end-radius: 1.1rem;
+    border-end-end-radius: 1.1rem;
+    border: 0;
+    border-inline-end: 0;
     height: 100%;
     max-height: none;
   }
@@ -25104,9 +25447,9 @@ a.exits-chip--primary:hover {
     padding-block: 0;
     padding-inline: 0.35rem;
     justify-content: center;
-    border-bottom: none;
-    background: var(--exits-surface);
-    box-shadow: 0 1px 3px color-mix(in srgb, #0f172a 6%, transparent);
+    border-bottom: 0;
+    background: var(--exits-shell-content-bg, #e8ecf2);
+    box-shadow: none;
   }
 
   .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
@@ -25377,104 +25720,7 @@ a.exits-chip--primary:hover {
 }
 
 .personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
-  position: relative;
-  overflow: visible;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  box-shadow: none;
-  /* Clear the overhanging ribbon so attention rows sit below it. */
-  padding: 3.85rem 1.05rem 1rem;
-}
-
-.personal-needs-attention__ribbon {
-  position: absolute;
-  top: 0.45rem;
-  left: -0.7rem;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0;
-  padding: 0.35rem 0.85rem;
-  border-radius: 0.2rem 0.2rem 0.2rem 0;
-  background-color: var(--exits-warning, #ff5722);
-  color: var(--exits-warning-foreground, #fff);
-  font-size: 0.9375rem;
-  font-weight: 550;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
-}
-
-.personal-needs-attention__ribbon::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-warning, #ff5722));
-  border-left: 0.7rem solid transparent;
-}
-
-.personal-needs-attention__view-all {
-  position: absolute;
-  top: 0.45rem;
-  right: 1.05rem;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-height: 2.35rem;
-  color: var(--exits-primary);
-  font-size: var(--exits-text-sm);
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.personal-needs-attention__view-all:hover {
-  text-decoration: underline;
-}
-
-.personal-shell .personal-needs-attention__view-all-icon.material-symbols-outlined {
-  width: 1em;
-  height: 1em;
-  font-size: 1.1rem;
-  color: inherit;
-}
-
-.personal-needs-attention__pennant {
-  display: grid;
-  place-items: center;
-  width: 1.65rem;
-  height: 1.65rem;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-warning, #ff5722)),
-      var(--exits-warning, #ff5722) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-warning, #ff5722))
-    );
-  box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-warning, #ff5722) 18%, #fff),
-    0 1px 3px color-mix(in srgb, var(--exits-warning, #ff5722) 36%, transparent);
-}
-
-.personal-shell .personal-needs-attention__pennant-icon.material-symbols-outlined {
-  width: 1em;
-  height: 1em;
-  font-size: 0.95rem;
-  color: var(--exits-primary);
-}
-
-.personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+  --personal-attention-warn: var(--exits-warning, #ff5722);
   position: relative;
   overflow: visible;
   border: 1px solid color-mix(in srgb, #fff 55%, #c7d2fe);
@@ -25488,9 +25734,146 @@ a.exits-chip--primary:hover {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.7) inset,
     0 12px 28px color-mix(in srgb, #6366f1 12%, transparent);
-  backdrop-filter: blur(14px);
-  /* Clear the overhanging ribbon so action cards sit below it. */
-  padding: 2.45rem 1.05rem 1rem;
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
+  border-color: color-mix(in srgb, #64748b 42%, transparent);
+  background: color-mix(in srgb, #1e293b 78%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.personal-needs-attention__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.personal-needs-attention__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  min-width: 0;
+  color: color-mix(in srgb, #000 28%, var(--personal-attention-warn, #ff5722));
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.personal-needs-attention__pennant {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-attention-warn, #ff5722));
+  color: var(--personal-attention-warn, #ff5722);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, var(--personal-attention-warn, #ff5722) 14%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 0 0 0.3rem color-mix(in srgb, #ff5722 12%, transparent),
+    0 4px 12px color-mix(in srgb, #ff5722 16%, transparent);
+}
+
+.personal-shell .personal-needs-attention__pennant-icon.material-symbols-outlined {
+  width: 1em;
+  height: 1em;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+.personal-needs-attention__view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  padding: 0.2rem 0.15rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--personal-attention-warn, #ff5722);
+  font-size: var(--exits-text-sm);
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.personal-needs-attention__view-all:hover {
+  text-decoration: none;
+  background: transparent;
+  color: color-mix(in srgb, #000 18%, var(--personal-attention-warn, #ff5722));
+  opacity: 0.92;
+}
+
+.personal-shell .personal-needs-attention__view-all-icon.material-symbols-outlined {
+  width: 0.95rem;
+  height: 0.95rem;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+.personal-needs-attention__list {
+  margin-top: 0;
+}
+
+[data-theme="dark"] .personal-needs-attention__title {
+  color: #ffccbc;
+}
+
+[data-theme="dark"] .personal-needs-attention__pennant {
+  border-color: color-mix(in srgb, var(--personal-attention-warn, #ff5722) 40%, #64748b);
+  background: color-mix(in srgb, var(--personal-attention-warn, #ff5722) 28%, #1e293b);
+  color: #ffab91;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 0 0 0.28rem color-mix(in srgb, #ff5722 18%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .personal-needs-attention__view-all {
+  border: none;
+  background: transparent;
+  color: #ffab91;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-needs-attention__view-all:hover {
+  background: transparent;
+  color: #ffccbc;
+}
+
+.personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+  --personal-qa-warn: var(--exits-warning, #ff5722);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #fff 55%, #c7d2fe);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #f5f3ff 58%, transparent)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 12px 28px color-mix(in srgb, #6366f1 12%, transparent);
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
 }
 
 [data-theme="dark"] .personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
@@ -25506,7 +25889,7 @@ a.exits-chip--primary:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
   align-items: stretch;
-  margin-top: 1.15rem;
+  margin-top: 0;
 }
 
 .personal-quick-actions__cards > [data-testid="personal-qa-start-business"] {
@@ -25688,76 +26071,90 @@ a.exits-chip--primary:hover {
 }
 
 .personal-home-page .personal-section.personal-todo-summary.catalog-form-section {
+  --personal-todo-info: var(--exits-severity-info, #0ea5e9);
   position: relative;
   overflow: visible;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  box-shadow: none;
-  padding: 2.45rem 1.05rem 1rem;
-}
-
-.personal-quick-actions__ribbon {
-  --personal-qa-warn: var(--exits-warning, #ff5722);
-  position: absolute;
-  top: 0.45rem;
-  left: -0.7rem;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0;
-  padding: 0.35rem 0.85rem;
-  /* Warn glass ribbon — rounded on the right. */
-  border-radius: 0.2rem 0.75rem 0.75rem 0;
-  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-warn));
+  border: 1px solid color-mix(in srgb, #fff 55%, #7dd3fc);
+  border-radius: 1.1rem;
   background:
     linear-gradient(
-      180deg,
-      color-mix(in srgb, #fff 78%, transparent),
-      color-mix(in srgb, var(--personal-qa-warn) 16%, transparent)
+      165deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #e0f2fe 58%, transparent)
     );
-  color: color-mix(in srgb, #000 28%, var(--personal-qa-warn));
-  font-size: 0.9375rem;
-  font-weight: 525;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 2px 8px color-mix(in srgb, var(--personal-qa-warn) 18%, transparent);
-  backdrop-filter: blur(12px);
+    0 12px 28px color-mix(in srgb, #0ea5e9 12%, transparent);
+  /* In-panel header retained; panel is glass again. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
 }
 
-.personal-quick-actions__ribbon::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 22%, var(--personal-qa-warn, #ff5722));
-  border-left: 0.7rem solid transparent;
+[data-theme="dark"] .personal-home-page .personal-section.personal-todo-summary.catalog-form-section {
+  --personal-todo-info: var(--exits-severity-info, #0ea5e9);
+  border-color: color-mix(in srgb, #64748b 42%, transparent);
+  background: color-mix(in srgb, #1e293b 78%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* Quick actions in-panel header (no overhanging ribbon). */
+.personal-quick-actions__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.personal-quick-actions__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  min-width: 0;
+  color: color-mix(in srgb, #000 28%, var(--personal-qa-warn, #ff5722));
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .personal-quick-actions__pennant {
-  --personal-qa-warn: var(--exits-warning, #ff5722);
   display: grid;
   place-items: center;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 2rem;
+  height: 2rem;
   flex: 0 0 auto;
-  border-radius: 0.45rem;
-  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-warn));
-  color: var(--personal-qa-warn);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-warn, #ff5722));
+  color: var(--personal-qa-warn, #ff5722);
   background:
     radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
-    color-mix(in srgb, var(--personal-qa-warn) 14%, #fff);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
+    color-mix(in srgb, var(--personal-qa-warn, #ff5722) 14%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 0 0 0.3rem color-mix(in srgb, #ff5722 12%, transparent),
+    0 4px 12px color-mix(in srgb, #ff5722 16%, transparent);
 }
 
 .personal-quick-actions__pennant-icon {
   color: inherit;
+}
+
+[data-theme="dark"] .personal-quick-actions__title {
+  color: #ffccbc;
+}
+
+[data-theme="dark"] .personal-quick-actions__pennant {
+  border-color: color-mix(in srgb, var(--personal-qa-warn, #ff5722) 40%, #64748b);
+  background: color-mix(in srgb, var(--personal-qa-warn, #ff5722) 28%, #1e293b);
+  color: #ffab91;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 0 0 0.28rem color-mix(in srgb, #ff5722 18%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 /* Quick action glass tiles (rectangular — not pill). */
@@ -25772,7 +26169,6 @@ a.exits-chip--primary:hover {
   border-radius: 1rem;
   text-decoration: none;
   transition: transform 160ms ease, box-shadow 160ms ease;
-  backdrop-filter: blur(12px);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.65) inset,
     0 8px 18px color-mix(in srgb, #10b981 12%, transparent);
@@ -25844,418 +26240,516 @@ a.exits-chip--primary:hover {
   color: inherit;
 }
 
-.personal-qa-glass--lent {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #ecfdf5 55%, transparent),
-      color-mix(in srgb, #d1fae5 48%, transparent)
-    );
-  color: #065f46;
-  border-color: color-mix(in srgb, #fff 50%, #6ee7b7);
-  backdrop-filter: blur(14px);
-}
-
-/* Lent tile icon: soft mint rounded square. */
-.personal-qa-glass--lent .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #fff 50%, #6ee7b7);
-  color: #047857;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), transparent 55%),
-    color-mix(in srgb, #10b981 18%, #ecfdf5);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 4px 10px color-mix(in srgb, #10b981 16%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--lent {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #34d399 18%, transparent),
-      color-mix(in srgb, #064e3b 28%, transparent)
-    );
-  color: #a7f3d0;
-  border-color: color-mix(in srgb, #6ee7b7 32%, transparent);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, #34d399 12%, transparent) inset,
-    0 10px 22px color-mix(in srgb, #10b981 18%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #6ee7b7 35%, transparent);
-  color: #6ee7b7;
-  background:
-    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
-    color-mix(in srgb, #10b981 22%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
-    0 4px 12px color-mix(in srgb, #10b981 22%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__icon .material-symbols-outlined {
+.personal-qa-glass__count {
+  flex: 0 0 auto;
+  min-width: 1.5rem;
+  text-align: end;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: inherit;
 }
 
-[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__chevron {
-  color: #6ee7b7;
+.personal-qa-glass__count--plus {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* To-do tiles — translucent info glass (matches Quick actions glass language). */
+.personal-todo-summary .personal-qa-glass--todo {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #f0f9ff 55%, transparent),
+      color-mix(in srgb, #e0f2fe 48%, transparent)
+    );
+  color: #075985;
+  border-color: color-mix(in srgb, #fff 50%, #7dd3fc);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 8px 18px color-mix(in srgb, #0ea5e9 12%, transparent);
+}
+
+.personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__icon {
+  border-color: color-mix(in srgb, #fff 50%, #7dd3fc);
+  color: #0284c7;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, #0ea5e9 12%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 4px 10px color-mix(in srgb, #0ea5e9 12%, transparent);
+}
+
+.personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__label {
+  color: inherit;
+  font-weight: 550;
+}
+
+.personal-todo-summary .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, #7dd3fc);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, #0ea5e9 14%, transparent)
+    );
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+.personal-qa-glass__plus {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.2rem;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: none;
   opacity: 0.85;
+}
+
+/* Overdue — warn glass (#ff5722 lock). */
+.personal-todo-summary .personal-qa-glass--todo-overdue {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff7ed 55%, transparent),
+      color-mix(in srgb, #ffedd5 48%, transparent)
+    );
+  color: #9a3412;
+  border-color: color-mix(in srgb, #fff 50%, #ff8a65);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 8px 18px color-mix(in srgb, #ff5722 12%, transparent);
+}
+
+.personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__icon {
+  border-color: color-mix(in srgb, #fff 50%, #ff8a65);
+  color: #ff5722;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, #ff5722 12%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 4px 10px color-mix(in srgb, #ff5722 12%, transparent);
+}
+
+.personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__label {
+  color: inherit;
+  font-weight: 550;
+}
+
+.personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #fff 50%, #ff8a65);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, #ff5722 14%, transparent)
+    );
+  color: #c2410c;
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #38bdf8 18%, transparent),
+      color-mix(in srgb, #0c4a6e 28%, transparent)
+    );
+  color: #bae6fd;
+  border-color: color-mix(in srgb, #7dd3fc 32%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #38bdf8 12%, transparent) inset,
+    0 10px 22px color-mix(in srgb, #0ea5e9 18%, transparent);
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__icon {
+  border-color: color-mix(in srgb, #7dd3fc 35%, transparent);
+  color: #7dd3fc;
+  background:
+    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
+    color-mix(in srgb, #0ea5e9 22%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
+    0 4px 12px color-mix(in srgb, #0ea5e9 22%, transparent);
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #7dd3fc 32%, transparent);
+  background: color-mix(in srgb, #0ea5e9 22%, transparent);
+  color: #bae6fd;
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo-overdue {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #ff5722 18%, transparent),
+      color-mix(in srgb, #7c2d12 28%, transparent)
+    );
+  color: #fdba74;
+  border-color: color-mix(in srgb, #ff8a65 32%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #ff5722 12%, transparent) inset,
+    0 10px 22px color-mix(in srgb, #ff5722 18%, transparent);
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__icon {
+  border-color: color-mix(in srgb, #ff8a65 35%, transparent);
+  color: #ff8a65;
+  background:
+    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
+    color-mix(in srgb, #ff5722 22%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
+    0 4px 12px color-mix(in srgb, #ff5722 22%, transparent);
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #ff8a65 32%, transparent);
+  background: color-mix(in srgb, #ff5722 22%, transparent);
+  color: #fdba74;
+}
+
+/* Shared soft glass card + filled icon chip for all Quick action tiles. */
+.personal-qa-glass--start,
+.personal-qa-glass--lent,
+.personal-qa-glass--owe,
+.personal-qa-glass--stores,
+.personal-qa-glass--people {
+  --personal-qa-chip: #8b5cf6;
+  --personal-qa-chip-deep: #6d28d9;
+  --personal-qa-chip-soft: #c4b5fd;
+  --personal-qa-chip-wash: #f5f3ff;
+  --personal-qa-chip-mid: #ede9fe;
+  --personal-qa-chip-ink: #5b21b6;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--personal-qa-chip-wash) 55%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip-mid) 48%, transparent)
+    );
+  color: var(--personal-qa-chip-ink);
+  border-color: color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 8px 18px color-mix(in srgb, var(--personal-qa-chip) 12%, transparent);
 }
 
 .personal-qa-glass--start {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #ecfeff 55%, transparent),
-      color-mix(in srgb, #cffafe 48%, transparent)
-    );
-  color: #0e7490;
-  border-color: color-mix(in srgb, #fff 50%, #67e8f9);
-  backdrop-filter: blur(14px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.65) inset,
-    0 8px 18px color-mix(in srgb, #06b6d4 12%, transparent);
+  --personal-qa-chip: #06b6d4;
+  --personal-qa-chip-deep: #0e7490;
+  --personal-qa-chip-soft: #67e8f9;
+  --personal-qa-chip-wash: #ecfeff;
+  --personal-qa-chip-mid: #cffafe;
+  --personal-qa-chip-ink: #0e7490;
 }
 
-.personal-qa-glass--start .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #fff 50%, #67e8f9);
-  color: #0891b2;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), transparent 55%),
-    color-mix(in srgb, #06b6d4 16%, #ecfeff);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 4px 10px color-mix(in srgb, #06b6d4 16%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--start {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #22d3ee 18%, transparent),
-      color-mix(in srgb, #155e75 28%, transparent)
-    );
-  color: #a5f3fc;
-  border-color: color-mix(in srgb, #67e8f9 32%, transparent);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, #06b6d4 12%, transparent) inset,
-    0 10px 22px color-mix(in srgb, #06b6d4 18%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #67e8f9 35%, transparent);
-  color: #67e8f9;
-  background:
-    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
-    color-mix(in srgb, #06b6d4 22%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
-    0 4px 12px color-mix(in srgb, #06b6d4 22%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__chevron {
-  color: #67e8f9;
-  opacity: 0.85;
+.personal-qa-glass--lent {
+  --personal-qa-chip: #10b981;
+  --personal-qa-chip-deep: #047857;
+  --personal-qa-chip-soft: #6ee7b7;
+  --personal-qa-chip-wash: #ecfdf5;
+  --personal-qa-chip-mid: #d1fae5;
+  --personal-qa-chip-ink: #065f46;
 }
 
 .personal-qa-glass--owe {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #eff6ff 55%, transparent),
-      color-mix(in srgb, #dbeafe 48%, transparent)
-    );
-  color: #1e40af;
-  border-color: color-mix(in srgb, #fff 50%, #93c5fd);
-  backdrop-filter: blur(14px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.65) inset,
-    0 8px 18px color-mix(in srgb, #3b82f6 12%, transparent);
-}
-
-.personal-qa-glass--owe .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #fff 50%, #93c5fd);
-  color: #1d4ed8;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), transparent 55%),
-    color-mix(in srgb, #3b82f6 16%, #eff6ff);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 4px 10px color-mix(in srgb, #3b82f6 16%, transparent);
-}
-
-.personal-qa-glass--stores {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #f5f3ff 55%, transparent),
-      color-mix(in srgb, #ede9fe 48%, transparent)
-    );
-  color: #5b21b6;
-  border-color: color-mix(in srgb, #fff 50%, #c4b5fd);
-  backdrop-filter: blur(14px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.65) inset,
-    0 8px 18px color-mix(in srgb, #8b5cf6 12%, transparent);
-}
-
-.personal-qa-glass--stores .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #fff 50%, #c4b5fd);
-  color: #6d28d9;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), transparent 55%),
-    color-mix(in srgb, #8b5cf6 16%, #f5f3ff);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 4px 10px color-mix(in srgb, #8b5cf6 16%, transparent);
+  --personal-qa-chip: #3b82f6;
+  --personal-qa-chip-deep: #1d4ed8;
+  --personal-qa-chip-soft: #93c5fd;
+  --personal-qa-chip-wash: #eff6ff;
+  --personal-qa-chip-mid: #dbeafe;
+  --personal-qa-chip-ink: #1e40af;
 }
 
 .personal-qa-glass--people {
-  --personal-qa-people: var(--exits-primary);
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #fff 55%, transparent),
-      color-mix(in srgb, var(--personal-qa-people) 12%, transparent)
-    );
-  color: color-mix(in srgb, #000 35%, var(--personal-qa-people));
-  border-color: color-mix(in srgb, #fff 50%, var(--personal-qa-people));
-  backdrop-filter: blur(14px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.65) inset,
-    0 8px 18px color-mix(in srgb, var(--personal-qa-people) 14%, transparent);
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: color-mix(in srgb, #000 12%, var(--exits-primary));
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 58%, #fff);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 10%, #fff);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --personal-qa-chip-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
 }
 
+.personal-qa-glass--start .personal-qa-glass__icon,
+.personal-qa-glass--lent .personal-qa-glass__icon,
+.personal-qa-glass--owe .personal-qa-glass__icon,
+.personal-qa-glass--stores .personal-qa-glass__icon,
 .personal-qa-glass--people .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #fff 50%, var(--personal-qa-people));
-  color: var(--personal-qa-people);
+  border-color: color-mix(in srgb, #fff 55%, var(--personal-qa-chip-soft));
+  color: #fff;
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), transparent 55%),
-    color-mix(in srgb, var(--personal-qa-people) 14%, #fff);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 4px 10px color-mix(in srgb, var(--personal-qa-people) 16%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--owe {
-  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
     linear-gradient(
       160deg,
-      color-mix(in srgb, #60a5fa 18%, transparent),
-      color-mix(in srgb, #1e3a8a 28%, transparent)
+      color-mix(in srgb, #fff 22%, var(--personal-qa-chip)),
+      var(--personal-qa-chip) 55%,
+      var(--personal-qa-chip-deep)
     );
-  color: #bfdbfe;
-  border-color: color-mix(in srgb, #93c5fd 32%, transparent);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, #3b82f6 12%, transparent) inset,
-    0 10px 22px color-mix(in srgb, #3b82f6 18%, transparent);
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 4px 10px color-mix(in srgb, var(--personal-qa-chip) 28%, transparent);
 }
 
-[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #93c5fd 35%, transparent);
-  color: #93c5fd;
-  background:
-    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
-    color-mix(in srgb, #3b82f6 22%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
-    0 4px 12px color-mix(in srgb, #3b82f6 22%, transparent);
+.personal-qa-glass--start .personal-qa-glass__chevron,
+.personal-qa-glass--lent .personal-qa-glass__chevron,
+.personal-qa-glass--owe .personal-qa-glass__chevron,
+.personal-qa-glass--stores .personal-qa-glass__chevron,
+.personal-qa-glass--people .personal-qa-glass__chevron {
+  color: inherit;
+  opacity: 0.75;
 }
 
-[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__chevron {
-  color: #93c5fd;
-  opacity: 0.85;
+/* Trailing add mark — plain +, same footprint as caret (not a rounded chip). */
+.personal-qa-glass--people .personal-qa-glass__plus--people {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.2rem;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: none;
+  opacity: 0.8;
 }
 
-[data-theme="dark"] .personal-qa-glass--stores {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, #a78bfa 18%, transparent),
-      color-mix(in srgb, #4c1d95 28%, transparent)
-    );
-  color: #ddd6fe;
-  border-color: color-mix(in srgb, #c4b5fd 32%, transparent);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, #8b5cf6 12%, transparent) inset,
-    0 10px 22px color-mix(in srgb, #8b5cf6 18%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, #c4b5fd 35%, transparent);
-  color: #c4b5fd;
-  background:
-    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
-    color-mix(in srgb, #8b5cf6 22%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
-    0 4px 12px color-mix(in srgb, #8b5cf6 22%, transparent);
-}
-
-[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__chevron {
-  color: #c4b5fd;
-  opacity: 0.85;
-}
-
+[data-theme="dark"] .personal-qa-glass--start,
+[data-theme="dark"] .personal-qa-glass--lent,
+[data-theme="dark"] .personal-qa-glass--owe,
+[data-theme="dark"] .personal-qa-glass--stores,
 [data-theme="dark"] .personal-qa-glass--people {
-  --personal-qa-people: var(--exits-primary);
   background:
     linear-gradient(
       160deg,
-      color-mix(in srgb, var(--personal-qa-people) 22%, transparent),
-      color-mix(in srgb, var(--personal-qa-people) 12%, transparent)
+      color-mix(in srgb, var(--personal-qa-chip) 26%, #1e293b),
+      color-mix(in srgb, var(--personal-qa-chip-deep) 22%, #0f172a)
     );
-  color: color-mix(in srgb, #fff 72%, var(--personal-qa-people));
-  border-color: color-mix(in srgb, var(--personal-qa-people) 35%, transparent);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  color: color-mix(in srgb, #fff 78%, var(--personal-qa-chip));
+  border-color: color-mix(in srgb, var(--personal-qa-chip-soft) 38%, #64748b);
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
-    0 0 0 1px color-mix(in srgb, var(--personal-qa-people) 14%, transparent) inset,
-    0 10px 22px color-mix(in srgb, var(--personal-qa-people) 18%, transparent);
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, var(--personal-qa-chip) 16%, transparent) inset,
+    0 10px 24px color-mix(in srgb, var(--personal-qa-chip) 22%, transparent);
 }
 
+[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__icon,
 [data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__icon {
-  border-color: color-mix(in srgb, var(--personal-qa-people) 40%, transparent);
-  color: color-mix(in srgb, #fff 55%, var(--personal-qa-people));
+  border-color: color-mix(in srgb, #fff 32%, var(--personal-qa-chip));
+  color: #fff;
   background:
-    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
-    color-mix(in srgb, var(--personal-qa-people) 24%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, #fff 32%, transparent), transparent 52%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 20%, var(--personal-qa-chip)),
+      var(--personal-qa-chip) 48%,
+      var(--personal-qa-chip-deep)
+    );
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
-    0 4px 12px color-mix(in srgb, var(--personal-qa-people) 22%, transparent);
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #000 22%, transparent) inset,
+    0 6px 14px color-mix(in srgb, var(--personal-qa-chip) 32%, transparent);
 }
 
-[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__chevron {
-  color: color-mix(in srgb, #fff 55%, var(--personal-qa-people));
-  opacity: 0.85;
+[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__plus--people {
+  color: color-mix(in srgb, #fff 82%, var(--personal-qa-chip));
+  opacity: 0.9;
 }
 
-[data-theme="dark"] .personal-quick-actions__ribbon {
-  --personal-qa-warn: var(--exits-warning, #ff5722);
-  border-color: color-mix(in srgb, var(--personal-qa-warn) 35%, #64748b);
-  background: color-mix(in srgb, var(--personal-qa-warn) 18%, #1e293b);
-  color: #ffccbc;
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
-    0 2px 8px rgba(0, 0, 0, 0.35);
+/* To-do in-panel header: check circle + title + View all. */
+.personal-todo-summary__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-[data-theme="dark"] .personal-quick-actions__ribbon::after {
-  border-top-color: color-mix(in srgb, #000 35%, var(--exits-warning, #ff5722));
-}
-
-[data-theme="dark"] .personal-quick-actions__pennant {
-  --personal-qa-warn: var(--exits-warning, #ff5722);
-  border-color: color-mix(in srgb, var(--personal-qa-warn) 40%, #64748b);
-  background: color-mix(in srgb, var(--personal-qa-warn) 28%, #1e293b);
-  color: #ffab91;
-}
-
-.personal-todo-summary__ribbon {
-  position: absolute;
-  top: 0.45rem;
-  left: -0.7rem;
-  z-index: 2;
+.personal-todo-summary__title {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.55rem;
   margin: 0;
-  padding: 0.35rem 0.85rem;
-  border-radius: 0.2rem 0.2rem 0.2rem 0;
-  /* Locked Button Standard Info (#0ea5e9). */
-  background-color: var(--exits-severity-info, #0ea5e9);
-  color: var(--exits-severity-info-foreground, #fff);
-  font-size: 0.9375rem;
-  font-weight: 550;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
-}
-
-.personal-todo-summary__ribbon::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-info, #0ea5e9));
-  border-left: 0.7rem solid transparent;
+  min-width: 0;
+  color: color-mix(in srgb, #000 28%, var(--personal-todo-info, #0ea5e9));
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .personal-todo-summary__pennant {
   display: grid;
   place-items: center;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 2rem;
+  height: 2rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  color: #fff;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-todo-info, #0ea5e9));
+  color: var(--personal-todo-info, #0ea5e9);
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-severity-info, #0ea5e9)),
-      var(--exits-severity-info, #0ea5e9) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-severity-info, #0ea5e9))
-    );
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, var(--personal-todo-info, #0ea5e9) 14%, #fff);
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-info, #0ea5e9) 18%, #fff),
-    0 2px 4px rgba(0, 0, 0, 0.22);
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 0 0 0.3rem color-mix(in srgb, #0ea5e9 12%, transparent),
+    0 4px 12px color-mix(in srgb, #0ea5e9 16%, transparent);
 }
 
 .personal-todo-summary__pennant-icon {
-  color: var(--exits-primary);
+  color: inherit;
+}
+
+.personal-todo-summary__view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  padding: 0.2rem 0.15rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--personal-todo-info, #0ea5e9);
+  font-size: var(--exits-text-sm);
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.personal-todo-summary__view-all:hover {
+  text-decoration: none;
+  background: transparent;
+  color: color-mix(in srgb, #000 18%, var(--personal-todo-info, #0ea5e9));
+  opacity: 0.92;
+}
+
+.personal-shell .personal-todo-summary__view-all-icon.material-symbols-outlined {
+  width: 0.95rem;
+  height: 0.95rem;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+[data-theme="dark"] .personal-todo-summary__title {
+  color: #7dd3fc;
+}
+
+[data-theme="dark"] .personal-todo-summary__pennant {
+  border-color: color-mix(in srgb, var(--personal-todo-info, #0ea5e9) 40%, #64748b);
+  background: color-mix(in srgb, var(--personal-todo-info, #0ea5e9) 28%, #1e293b);
+  color: #7dd3fc;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 0 0 0.28rem color-mix(in srgb, #0ea5e9 18%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .personal-todo-summary__view-all {
+  border: none;
+  background: transparent;
+  color: #7dd3fc;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-todo-summary__view-all:hover {
+  background: transparent;
+  color: #bae6fd;
 }
 
 .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+  --personal-tracker-accent: var(--exits-severity-success, #22c55e);
   position: relative;
   overflow: visible;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  box-shadow: none;
-  /* Clear the overhanging ribbon so tracker rows sit below it. */
-  padding: 2.45rem 1.05rem 1rem;
+  border: 1px solid color-mix(in srgb, #fff 55%, #86efac);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #dcfce7 58%, transparent)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 12px 28px color-mix(in srgb, #22c55e 12%, transparent);
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
 }
 
-@media (max-width: 639px) {
-  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
-    padding-top: 4.9rem;
-  }
+[data-theme="dark"] .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+  border-color: color-mix(in srgb, #64748b 42%, transparent);
+  background: color-mix(in srgb, #1e293b 78%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 12px 28px rgba(0, 0, 0, 0.35);
 }
 
 /* Outside gap around My Record / Shared — home tracker (no utang-hub-actions). */
 @media (max-width: 719px) {
-  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
-    padding-inline: 0.25rem;
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section:not(:has(.utang-hub-actions)) {
+    padding-inline: 0.85rem;
   }
 }
 
+.personal-tracker-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.personal-tracker-card__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  min-width: 0;
+  color: color-mix(in srgb, #000 28%, var(--personal-tracker-accent, #22c55e));
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .personal-tracker-card__title {
+  color: #86efac;
+}
+
+/* Legacy overhanging ribbon — still used on People / Profile / workplaces. */
 .personal-tracker-card__ribbon {
   position: absolute;
   top: 0.45rem;
@@ -26310,80 +26804,183 @@ a.exits-chip--primary:hover {
     0 2px 4px rgba(0, 0, 0, 0.22);
 }
 
+/* In-panel soft glass pennant (Personal Tracker title). */
+.personal-tracker-card__title .personal-tracker-card__pennant {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-tracker-accent, #22c55e));
+  color: var(--personal-tracker-accent, #22c55e);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, var(--personal-tracker-accent, #22c55e) 14%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 0 0 0.3rem color-mix(in srgb, #22c55e 12%, transparent),
+    0 4px 12px color-mix(in srgb, #22c55e 16%, transparent);
+}
+
+[data-theme="dark"] .personal-tracker-card__title .personal-tracker-card__pennant {
+  border-color: color-mix(in srgb, var(--personal-tracker-accent, #22c55e) 40%, #64748b);
+  background: color-mix(in srgb, var(--personal-tracker-accent, #22c55e) 28%, #1e293b);
+  color: #86efac;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 0 0 0.28rem color-mix(in srgb, #22c55e 18%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
 .personal-tracker-card__pennant-icon {
-  color: var(--exits-primary);
+  color: inherit;
+}
+
+.personal-home-metrics .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft, #93c5fd));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 14%, transparent)
+    );
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+[data-theme="dark"] .personal-home-metrics .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, var(--personal-qa-chip-soft, #93c5fd) 35%, transparent);
+  background: color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 22%, transparent);
+  color: color-mix(in srgb, #fff 82%, var(--personal-qa-chip, #3b82f6));
 }
 
 .personal-home-page .personal-section.personal-stores-to-pay.catalog-form-section {
+  --personal-stores-info: var(--exits-severity-info, #0ea5e9);
   position: relative;
   overflow: visible;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  box-shadow: none;
-  /* Clear the overhanging ribbon so store rows sit below it. */
-  padding: 3.6rem 1.05rem 1rem;
+  border: 1px solid color-mix(in srgb, #fff 55%, #7dd3fc);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #e0f2fe 58%, transparent)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 12px 28px color-mix(in srgb, #0ea5e9 12%, transparent);
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
 }
 
-.personal-stores-to-pay__ribbon {
-  position: absolute;
-  top: 0.45rem;
-  left: -0.7rem;
-  z-index: 2;
+[data-theme="dark"] .personal-home-page .personal-section.personal-stores-to-pay.catalog-form-section {
+  border-color: color-mix(in srgb, #64748b 42%, transparent);
+  background: color-mix(in srgb, #1e293b 78%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.personal-stores-to-pay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.personal-stores-to-pay__title {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.55rem;
   margin: 0;
-  padding: 0.35rem 0.85rem;
-  border-radius: 0.2rem 0.2rem 0.2rem 0;
-  /* Locked Button Standard Info (#0ea5e9). */
-  background-color: var(--exits-severity-info, #0ea5e9);
-  color: var(--exits-severity-info-foreground, #fff);
-  font-size: 0.9375rem;
-  font-weight: 550;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
-}
-
-.personal-stores-to-pay__ribbon::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-info, #0ea5e9));
-  border-left: 0.7rem solid transparent;
+  min-width: 0;
+  color: color-mix(in srgb, #000 28%, var(--personal-stores-info, #0ea5e9));
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .personal-stores-to-pay__pennant {
   display: grid;
   place-items: center;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 2rem;
+  height: 2rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  color: #fff;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-stores-info, #0ea5e9));
+  color: var(--personal-stores-info, #0ea5e9);
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-severity-info, #0ea5e9)),
-      var(--exits-severity-info, #0ea5e9) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-severity-info, #0ea5e9))
-    );
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, var(--personal-stores-info, #0ea5e9) 14%, #fff);
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-info, #0ea5e9) 18%, #fff),
-    0 2px 4px rgba(0, 0, 0, 0.22);
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 0 0 0.3rem color-mix(in srgb, #0ea5e9 12%, transparent),
+    0 4px 12px color-mix(in srgb, #0ea5e9 16%, transparent);
 }
 
 .personal-stores-to-pay__pennant-icon {
-  color: var(--exits-primary);
+  color: inherit;
 }
 
-.personal-home-page .tracker-summary {
+[data-theme="dark"] .personal-stores-to-pay__title {
+  color: #7dd3fc;
+}
+
+[data-theme="dark"] .personal-stores-to-pay__pennant {
+  border-color: color-mix(in srgb, var(--personal-stores-info, #0ea5e9) 40%, #64748b);
+  background: color-mix(in srgb, var(--personal-stores-info, #0ea5e9) 28%, #1e293b);
+  color: #7dd3fc;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 0 0 0.28rem color-mix(in srgb, #0ea5e9 18%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.personal-stores-to-pay__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.personal-stores-to-pay__metrics .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft, #93c5fd));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 14%, transparent)
+    );
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+[data-theme="dark"] .personal-stores-to-pay__metrics .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, var(--personal-qa-chip-soft, #93c5fd) 35%, transparent);
+  background: color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 22%, transparent);
+  color: color-mix(in srgb, #fff 82%, var(--personal-qa-chip, #3b82f6));
+}
+
+/* Non-pendant tracker summaries only — pendant groups use glass styles below. */
+.personal-home-page .tracker-summary:not(.tracker-summary--pendant) {
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
@@ -26463,7 +27060,7 @@ a.exits-chip--primary:hover {
   transform: rotate(180deg);
 }
 
-[data-theme="dark"] .personal-home-page .tracker-summary,
+[data-theme="dark"] .personal-home-page .tracker-summary:not(.tracker-summary--pendant),
 [data-theme="dark"] .personal-profile-page .personal-profile-section.catalog-form-section {
   border-color: var(--exits-border);
   background: var(--exits-surface);
@@ -26634,6 +27231,95 @@ a.exits-chip--primary:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.4),
     0 2px 6px color-mix(in srgb, var(--page-capsule-from) 14%, transparent);
+}
+
+/* Utang page header — ghost bar, retain glass back circle. */
+.page-header.personal-page-header--glass {
+  --page-capsule-size: 3rem;
+  --page-capsule-from: #3b82f6;
+  --page-capsule-to: #60a5fa;
+  --personal-header-glass: #3b82f6;
+  --personal-header-glass-soft: #93c5fd;
+  color: var(--exits-text);
+}
+
+.page-header.personal-page-header--glass.page-header--capsule .page-header__main {
+  border: none;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+
+.page-header.personal-page-header--glass .page-header-capsule__disc {
+  border: 1px solid color-mix(in srgb, #fff 55%, var(--personal-header-glass-soft));
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 22%, var(--personal-header-glass)),
+      var(--personal-header-glass) 55%,
+      #1d4ed8
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 4px 10px color-mix(in srgb, var(--personal-header-glass) 28%, transparent);
+}
+
+.page-header.personal-page-header--glass .page-header-capsule__disc svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.page-header.personal-page-header--glass .page-header-capsule__ring {
+  box-shadow: 0 0 0 0.28rem color-mix(in srgb, var(--exits-surface) 88%, transparent);
+}
+
+.page-header.personal-page-header--glass .page-header__title,
+.page-header.personal-page-header--glass .page-header__subtitle {
+  color: inherit;
+}
+
+.page-header.personal-page-header--glass .page-header__info {
+  border-color: transparent;
+  background: transparent;
+  color: var(--exits-text-muted);
+  box-shadow: none;
+}
+
+.page-header.personal-page-header--glass .page-header__info:hover,
+.page-header.personal-page-header--glass .page-header__info--visible {
+  background: color-mix(in srgb, var(--personal-header-glass) 10%, transparent);
+  color: var(--personal-header-glass);
+}
+
+[data-theme="dark"] .page-header.personal-page-header--glass {
+  color: var(--exits-text);
+}
+
+[data-theme="dark"] .page-header.personal-page-header--glass.page-header--capsule .page-header__main {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .page-header.personal-page-header--glass .page-header-capsule__disc {
+  border-color: color-mix(in srgb, #fff 32%, var(--personal-header-glass));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #000 22%, transparent) inset,
+    0 6px 14px color-mix(in srgb, var(--personal-header-glass) 32%, transparent);
+}
+
+[data-theme="dark"] .page-header.personal-page-header--glass .page-header-capsule__ring {
+  box-shadow: 0 0 0 0.28rem color-mix(in srgb, #1e293b 70%, transparent);
+}
+
+[data-theme="dark"] .page-header.personal-page-header--glass .page-header__info {
+  border-color: transparent;
+  background: transparent;
+  color: var(--exits-text-muted);
+  box-shadow: none;
 }
 
 .page-header-capsule__ring {
@@ -27004,10 +27690,10 @@ a.exits-chip--primary:hover {
 }
 
 .personal-shell .personal-sidebar .admin-sidebar__link--active {
-  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
-  color: var(--exits-primary);
+  background: var(--exits-shell-nav-active-bg, var(--exits-primary-soft));
+  color: var(--exits-shell-nav-active-fg, var(--exits-primary));
   font-weight: 600;
-  border-inline-start-color: transparent;
+  border-inline-start-color: var(--exits-shell-nav-active-border, var(--exits-primary));
 }
 
 .personal-shell .personal-sidebar .admin-sidebar__link:focus-visible,
@@ -27041,9 +27727,10 @@ a.exits-chip--primary:hover {
 
   .personal-shell .personal-sidebar.admin-sidebar {
     border: 0;
+    border-inline-end: 0;
     border-radius: 0;
-    box-shadow: none;
-    background: color-mix(in srgb, var(--exits-surface) 88%, var(--exits-bg));
+    border-start-end-radius: 1.1rem;
+    border-end-end-radius: 1.1rem;
   }
 
   [data-navigation-mode="compact"] .personal-shell > .admin-sidebar-rail {
@@ -27151,6 +27838,94 @@ a.exits-chip--primary:hover {
     min-width: 0;
     flex: none;
   }
+}
+
+/* Active accounts tabs — glossy chips (same sheen as Button glossy). */
+.utang-hub-filters .exits-chip {
+  border-color: color-mix(in srgb, var(--exits-primary) 22%, var(--exits-border));
+  background-color: var(--exits-surface);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0.12) 48%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(0, 0, 0, 0.06) 52%,
+    rgba(0, 0, 0, 0.03)
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 2px 6px color-mix(in srgb, #000 10%, transparent);
+}
+
+.utang-hub-filters .exits-chip:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+}
+
+.utang-hub-filters .exits-chip--active {
+  border-color: color-mix(in srgb, #000 12%, var(--exits-primary));
+  background-color: var(--exits-primary);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.32),
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(0, 0, 0, 0.08) 52%,
+    rgba(0, 0, 0, 0.04)
+  );
+  color: var(--exits-primary-contrast, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 3px 10px color-mix(in srgb, var(--exits-primary) 35%, transparent);
+}
+
+.utang-hub-filters .exits-chip--active:hover:not(:disabled) {
+  background-color: var(--exits-primary);
+  border-color: color-mix(in srgb, #000 12%, var(--exits-primary));
+  color: var(--exits-primary-contrast, #fff);
+}
+
+.utang-hub-filters .exits-chip--active .exits-chip__icon,
+.utang-hub-filters .exits-chip--active .exits-chip__label {
+  color: inherit;
+}
+
+.utang-hub-filters .exits-chip--active [data-tone="primary"] {
+  border-color: color-mix(in srgb, #fff 45%, transparent);
+  background: color-mix(in srgb, #fff 22%, transparent);
+  color: var(--exits-primary-contrast, #fff);
+}
+
+/* Underline preference: selected trigger gets glossy primary fill. */
+.utang-hub-filters.exits-tabs .exits-tabs__trigger[data-selected="true"],
+.utang-hub-filters .exits-tabs__trigger[data-selected="true"] {
+  border-radius: var(--exits-control-radius);
+  border-bottom-color: transparent;
+  background-color: var(--exits-primary);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.32),
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(0, 0, 0, 0.08) 52%,
+    rgba(0, 0, 0, 0.04)
+  );
+  color: var(--exits-primary-contrast, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 3px 10px color-mix(in srgb, var(--exits-primary) 35%, transparent);
+}
+
+[data-theme="dark"] .utang-hub-filters .exits-chip {
+  background-color: color-mix(in srgb, #1e293b 88%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .utang-hub-filters .exits-chip--active {
+  background-color: var(--exits-primary);
+  color: var(--exits-primary-contrast, #fff);
 }
 
 /* People and Utang filters: horizontal scroll on small screens (do not wrap). */
@@ -27391,26 +28166,71 @@ a.exits-chip--primary:hover {
   --tracker-pendant: var(--exits-severity-success, #22c55e);
   position: relative;
   overflow: visible;
-  border: 1px solid var(--exits-border);
+  border: 1px solid color-mix(in srgb, #fff 55%, #86efac);
   border-top: 0;
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
+  border-radius: 1rem;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #dcfce7 48%, transparent)
+    );
   padding: 2.69rem 1rem 1rem;
   box-shadow:
-    0 1px 5px rgba(0, 0, 0, 0.12),
-    0 2px 2px rgba(0, 0, 0, 0.08);
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 8px 18px color-mix(in srgb, #22c55e 12%, transparent);
 }
 
 .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owed {
-  --tracker-pendant: var(--exits-severity-success, #22c55e);
-  border-color: color-mix(in srgb, var(--tracker-pendant) 22%, var(--exits-border));
-  background: var(--exits-surface);
+  --tracker-pendant: #10b981;
+  --tracker-pendant-deep: #047857;
+  --tracker-pendant-soft: #6ee7b7;
+  border-color: color-mix(in srgb, #fff 50%, var(--tracker-pendant-soft));
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #ecfdf5 55%, transparent),
+      color-mix(in srgb, #d1fae5 48%, transparent)
+    );
+  color: #065f46;
 }
 
 .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owe {
-  --tracker-pendant: var(--exits-severity-info, #0ea5e9);
-  border-color: color-mix(in srgb, var(--tracker-pendant) 22%, var(--exits-border));
-  background: var(--exits-surface);
+  --tracker-pendant: #3b82f6;
+  --tracker-pendant-deep: #1d4ed8;
+  --tracker-pendant-soft: #93c5fd;
+  border-color: color-mix(in srgb, #fff 50%, var(--tracker-pendant-soft));
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #eff6ff 55%, transparent),
+      color-mix(in srgb, #dbeafe 48%, transparent)
+    );
+  color: #1e40af;
+}
+
+[data-theme="dark"] .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owed,
+[data-theme="dark"] .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owe {
+  border-color: color-mix(in srgb, var(--tracker-pendant-soft) 38%, #64748b);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tracker-pendant) 26%, #1e293b),
+      color-mix(in srgb, var(--tracker-pendant-deep) 22%, #0f172a)
+    );
+  color: color-mix(in srgb, #fff 78%, var(--tracker-pendant));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, var(--tracker-pendant) 16%, transparent) inset,
+    0 10px 24px color-mix(in srgb, var(--tracker-pendant) 22%, transparent);
+}
+
+.personal-shell .tracker-summary__title-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .personal-shell .tracker-summary__pendant {
@@ -27420,31 +28240,42 @@ a.exits-chip--primary:hover {
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 3.19rem;
-  height: 3.19rem;
-  transform: translate(-50%, -45%);
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, calc(-100% - 0.55rem));
   border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, #fff 55%, var(--tracker-pendant-soft, #86efac));
   color: #fff;
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
     linear-gradient(
-      145deg,
+      160deg,
       color-mix(in srgb, #fff 22%, var(--tracker-pendant)),
-      var(--tracker-pendant) 48%,
-      color-mix(in srgb, #000 18%, var(--tracker-pendant))
+      var(--tracker-pendant) 55%,
+      var(--tracker-pendant-deep, color-mix(in srgb, #000 18%, var(--tracker-pendant)))
     );
   box-shadow:
-    0 0 0 0.2rem var(--exits-surface),
-    0 2px 4px rgba(0, 0, 0, 0.22);
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 0 0 0.2rem color-mix(in srgb, #fff 55%, transparent),
+    0 4px 10px color-mix(in srgb, var(--tracker-pendant) 28%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .tracker-summary__pendant {
+  border-color: color-mix(in srgb, #fff 32%, var(--tracker-pendant));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #000 22%, transparent) inset,
+    0 0 0 0.2rem color-mix(in srgb, #1e293b 70%, transparent),
+    0 6px 14px color-mix(in srgb, var(--tracker-pendant) 32%, transparent);
 }
 
 .personal-shell .tracker-summary__pendant-icon,
 .personal-shell .tracker-summary__pendant .material-symbols-outlined,
 .personal-shell .tracker-summary__pendant svg {
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 1.5rem;
-  color: var(--exits-primary);
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 1.25rem;
+  color: #fff;
 }
 
 .personal-shell .tracker-summary__stage {
@@ -27454,12 +28285,72 @@ a.exits-chip--primary:hover {
 }
 
 .personal-shell .tracker-summary--pendant .tracker-summary__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
+/* Small devices: pendant on the left of the title line, title starts beside it. */
+@media (max-width: 719px) {
+  .personal-shell .tracker-summary.tracker-summary--pendant,
+  .personal-shell .tracker-summary.tracker-summary--pendant.tracker-amount-group {
+    padding: 0.85rem 0.75rem;
+  }
+
+  .personal-shell .tracker-summary__title-row {
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-summary__copy {
+    flex: 0 1 auto;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: start;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-group__title {
+    margin: 0;
+    text-align: start;
+  }
+
+  .personal-shell .tracker-summary__pendant {
+    position: static;
+    left: auto;
+    right: auto;
+    top: auto;
+    order: -1;
+    flex: 0 0 auto;
+    width: 2.25rem;
+    height: 2.25rem;
+    transform: none;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.45) inset,
+      0 4px 10px color-mix(in srgb, var(--tracker-pendant) 28%, transparent);
+  }
+
+  .personal-shell .tracker-summary__pendant-icon,
+  .personal-shell .tracker-summary__pendant .material-symbols-outlined,
+  .personal-shell .tracker-summary__pendant svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    font-size: 1.05rem;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-list.utang-relationship-list,
+  .personal-shell .tracker-summary--pendant .tracker-amount-list {
+    margin-top: 0.15rem;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 .personal-shell .tracker-summary--pendant .tracker-summary__title {
-  color: var(--exits-text);
+  color: inherit;
   font-weight: 700;
 }
 
@@ -27959,9 +28850,202 @@ a.exits-chip--primary:hover {
 .personal-todo-summary .personal-todo-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.75rem;
   align-items: stretch;
-  margin-top: 1.15rem;
+  margin-top: 0;
+}
+
+/* Small screens: densify Quick actions + To-do tiles; keep To-do header at normal size. */
+@media (max-width: 40rem) {
+  .personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  /* Keep Quick actions header roomy; densify tiles only — match To-do card gap. */
+  .personal-quick-actions__cards {
+    gap: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon .material-symbols-outlined,
+  .personal-quick-actions .personal-qa-glass__icon .personal-quick-actions__pennant-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-quick-actions .personal-qa-glass__chevron {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__plus {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 0.95rem;
+  }
+
+  /* Needs attention: densify on small screens; header stays roomy, view-all stays ghost. */
+  .personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  /* Stores to pay: densify on small screens; header stays roomy. */
+  .personal-home-page .personal-section.personal-stores-to-pay.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  /* Personal Tracker: densify on small screens; header stays roomy. */
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .personal-home-metrics .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-home-metrics .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-home-metrics .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-home-metrics .personal-qa-glass__badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.72rem;
+  }
+
+  .personal-stores-to-pay__metrics {
+    gap: 0.45rem;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass__badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.72rem;
+  }
+
+  .personal-stores-to-pay-list {
+    gap: 0.45rem;
+  }
+
+  .personal-stores-to-pay .personal-stores-to-pay-row,
+  .personal-stores-to-pay .personal-home-infodata-card--row {
+    min-height: 2.15rem;
+    padding-block: 0.35rem;
+    gap: 0.45rem;
+  }
+
+  .personal-needs-attention__list {
+    gap: 0.45rem;
+  }
+
+  .personal-needs-attention .personal-attention-row,
+  .personal-needs-attention .personal-home-infodata-card--row {
+    min-height: 2.15rem;
+    padding-block: 0.35rem;
+    gap: 0.45rem;
+  }
+
+  /* To-do: densify tiles only — header stays roomy. */
+  .personal-home-page .personal-section.personal-todo-summary.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .personal-todo-summary .personal-todo-cards {
+    gap: 0.45rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__icon .material-symbols-outlined,
+  .personal-todo-summary .personal-qa-glass__icon .personal-todo-summary__pennant-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-todo-summary .personal-qa-glass__badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.72rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__plus {
+    width: 1.1rem;
+    height: 1.1rem;
+    font-size: 1.05rem;
+  }
 }
 
 .personal-todo-card {
@@ -28037,9 +29121,60 @@ a.exits-chip--primary:hover {
 @media (max-width: 720px) {
   .personal-home-metrics {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+    row-gap: 0.45rem;
+    column-gap: 0.45rem;
   }
 
-  .personal-quick-actions__cards,
+  /* Quick actions: full-width dense rows on small devices. */
+  .personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .personal-quick-actions__cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon .material-symbols-outlined,
+  .personal-quick-actions .personal-qa-glass__icon .personal-quick-actions__pennant-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-quick-actions .personal-qa-glass__chevron {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__plus {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 0.95rem;
+  }
+
+  /* To-do: full-width rows on small screens. */
   .personal-todo-summary .personal-todo-cards {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -28214,67 +29349,111 @@ a.exits-chip--primary:hover {
 }
 
 .utang-hub-actions {
-  margin-left: 0.5rem;
+  margin-left: 0;
+  gap: 0.75rem;
 }
 
 .personal-tracker-card .utang-hub-actions {
-  margin-left: 0.5rem;
+  margin-left: 0;
 }
 
-.utang-hub-accounts .personal-tracker-card__ribbon {
-  background-color: var(--exits-severity-info, #0ea5e9);
-  color: var(--exits-severity-info-foreground, #fff);
+.utang-hub-actions .personal-qa-glass {
+  min-width: 0;
 }
 
-.utang-hub-accounts .personal-tracker-card__ribbon::after {
-  border-top-color: color-mix(in srgb, #000 38%, var(--exits-severity-info, #0ea5e9));
+@media (max-width: 719px) {
+  .utang-hub-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .utang-hub-actions .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .utang-hub-actions .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .utang-hub-actions .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .utang-hub-actions .personal-qa-glass__chevron {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .utang-hub-actions .personal-qa-glass__plus {
+    width: 1.1rem;
+    height: 1.1rem;
+    font-size: 1.05rem;
+  }
 }
 
-.utang-hub-accounts .personal-tracker-card__pennant {
+/* Active accounts — info glass panel + in-panel title (no overhanging ribbon). */
+.personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
+  --personal-tracker-accent: var(--exits-severity-info, #0ea5e9);
+  border-color: color-mix(in srgb, #fff 55%, #7dd3fc);
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
     linear-gradient(
-      145deg,
-      color-mix(in srgb, #fff 22%, var(--exits-severity-info, #0ea5e9)),
-      var(--exits-severity-info, #0ea5e9) 48%,
-      color-mix(in srgb, #000 18%, var(--exits-severity-info, #0ea5e9))
+      165deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #e0f2fe 58%, transparent)
     );
   box-shadow:
-    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-info, #0ea5e9) 18%, #fff),
-    0 2px 4px rgba(0, 0, 0, 0.22);
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 12px 28px color-mix(in srgb, #0ea5e9 12%, transparent);
+  padding: 1rem 1.05rem 1rem;
 }
 
-.utang-hub-accounts .personal-tracker-card__pennant-icon {
-  color: var(--exits-primary);
+[data-theme="dark"] .personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
+  --personal-tracker-accent: var(--exits-severity-info, #0ea5e9);
+  border-color: color-mix(in srgb, #64748b 42%, transparent);
+  background: color-mix(in srgb, #1e293b 78%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 12px 28px rgba(0, 0, 0, 0.35);
 }
 
-.personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
-  padding-top: 3.4rem;
+.utang-hub-accounts .personal-tracker-card__title {
+  color: color-mix(in srgb, #000 28%, var(--personal-tracker-accent, #0ea5e9));
 }
 
-@media (max-width: 639px) {
-  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
-    padding-top: 3.6rem;
-  }
+[data-theme="dark"] .utang-hub-accounts .personal-tracker-card__title {
+  color: #7dd3fc;
+}
+
+.utang-hub-accounts .personal-tracker-card__title .personal-tracker-card__pennant {
+  border-color: color-mix(in srgb, #fff 50%, var(--personal-tracker-accent, #0ea5e9));
+  color: var(--personal-tracker-accent, #0ea5e9);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, var(--personal-tracker-accent, #0ea5e9) 14%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 0 0 0.3rem color-mix(in srgb, #0ea5e9 12%, transparent),
+    0 4px 12px color-mix(in srgb, #0ea5e9 16%, transparent);
+}
+
+[data-theme="dark"] .utang-hub-accounts .personal-tracker-card__title .personal-tracker-card__pennant {
+  border-color: color-mix(in srgb, var(--personal-tracker-accent, #0ea5e9) 40%, #64748b);
+  background: color-mix(in srgb, var(--personal-tracker-accent, #0ea5e9) 28%, #1e293b);
+  color: #7dd3fc;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 0 0 0.28rem color-mix(in srgb, #0ea5e9 18%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .personal-tracker-card:has(.utang-hub-actions) {
   row-gap: 1rem;
-}
-
-.personal-home-page .personal-section.personal-tracker-card.catalog-form-section:has(.utang-hub-actions) {
-  padding-inline: 1.85rem;
-}
-
-@media (max-width: 719px) {
-  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section:has(.utang-hub-actions) {
-    padding-inline: 0.25rem;
-  }
-
-  .personal-tracker-card .tracker-summary-row {
-    margin-inline: 0;
-    width: 100%;
-  }
 }
 
 .personal-tracker-card:has(.utang-hub-actions) .personal-home-metrics,
@@ -28285,6 +29464,38 @@ a.exits-chip--primary:hover {
 
 .personal-tracker-card:has(.utang-hub-actions) .personal-home-metrics {
   margin-left: 0.5rem;
+}
+
+.personal-home-page .personal-section.personal-tracker-card.catalog-form-section:has(.utang-hub-actions) {
+  padding-inline: 1.05rem;
+}
+
+/* Must follow base hub-action gaps so small-device row-gap wins. */
+@media (max-width: 719px) {
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section:has(.utang-hub-actions) {
+    padding-inline: 0.7rem;
+  }
+
+  .personal-tracker-card .tracker-summary-row {
+    margin-inline: 0;
+    width: 100%;
+  }
+
+  .personal-tracker-card:has(.utang-hub-actions) {
+    row-gap: 0.45rem;
+  }
+
+  .personal-tracker-card:has(.utang-hub-actions) .utang-hub-actions {
+    margin-top: 0;
+  }
+
+  .personal-tracker-card:has(.utang-hub-actions) .personal-home-metrics,
+  .personal-tracker-card:has(.utang-hub-actions) .tracker-summary-row,
+  .personal-tracker-card .utang-hub-actions.personal-home-metrics {
+    gap: 0.45rem;
+    row-gap: 0.45rem;
+    column-gap: 0.45rem;
+  }
 }
 
 .utang-summary-cards__action {
@@ -28721,19 +29932,13 @@ button.personal-home-index-card {
   padding-bottom: 1.35rem;
 }
 
-/* Search sits on the ribbon row (top right of Active accounts). */
-.utang-hub-accounts .utang-search {
-  position: absolute;
-  top: 0.45rem;
-  right: 1.05rem;
-  z-index: 2;
+/* Search sits in the Active accounts header (top right). */
+.utang-hub-accounts .personal-tracker-card__header .utang-search {
+  position: static;
+  flex: 0 1 16rem;
   width: min(16rem, 45%);
-}
-
-@media (max-width: 639px) {
-  .utang-hub-accounts .utang-search {
-    right: 0.4rem;
-  }
+  min-width: 0;
+  margin-left: auto;
 }
 
 .utang-hub-accounts .utang-search input {
@@ -29290,10 +30495,6 @@ button.personal-home-index-card {
   display: inline-flex;
 }
 
-.personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
-  background: var(--exits-surface);
-}
-
 .personal-home-infodata-card--row {
   --personal-infodata-size: 3.25rem;
   --personal-infodata: var(--exits-severity-info, #0ea5e9);
@@ -29325,29 +30526,191 @@ button.personal-home-index-card {
   white-space: nowrap;
 }
 
-.personal-stores-to-pay-row__amount {
+.personal-stores-to-pay-row.personal-home-infodata-card--row {
+  --personal-infodata-size: 2.75rem;
+  --personal-infodata: var(--exits-severity-info, #0ea5e9);
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 100%;
+  min-height: 3.15rem;
+  margin: 0;
+  padding: 0.55rem 0.85rem 0.55rem 0.55rem;
+  border: 1px solid color-mix(in srgb, #fff 50%, #7dd3fc);
+  border-radius: 1rem;
+  color: #075985;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #f0f9ff 55%, transparent),
+      color-mix(in srgb, #e0f2fe 48%, transparent)
+    );
+  background-image:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #f0f9ff 55%, transparent),
+      color-mix(in srgb, #e0f2fe 48%, transparent)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 8px 18px color-mix(in srgb, #0ea5e9 12%, transparent);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.personal-stores-to-pay-row.personal-home-infodata-card--row:hover {
+  transform: translateY(-1px);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #f0f9ff 70%, transparent),
+      color-mix(in srgb, #bae6fd 48%, transparent)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 10px 22px color-mix(in srgb, #0ea5e9 16%, transparent);
+}
+
+.personal-stores-to-pay-row.personal-home-infodata-card--row .personal-home-infodata-card__body {
+  margin-left: 0;
+  color: inherit;
+}
+
+.personal-stores-to-pay-row.personal-home-infodata-card--row .personal-home-infodata-card__title {
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 550;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.personal-stores-to-pay-row.personal-home-infodata-card--row .personal-home-infodata-card__circle {
+  position: relative;
+  left: 0;
+  top: 0;
+  transform: none;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 0.6rem;
+  border: 1px solid color-mix(in srgb, #fff 55%, #7dd3fc);
   color: #fff;
-  font-size: 1.15rem;
-  font-weight: 600;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 22%, #0ea5e9),
+      #0ea5e9 55%,
+      #0369a1
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 4px 10px color-mix(in srgb, #0ea5e9 28%, transparent);
+}
+
+.personal-stores-to-pay-row.personal-home-infodata-card--row .personal-home-infodata-card__circle::before {
+  display: none;
+}
+
+/* Initials sit on the glass chip — no solid primary fill covering it. */
+.personal-stores-to-pay-row.personal-home-infodata-card--row .personal-home-infodata-card__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit;
+  background: transparent !important;
+  color: #fff !important;
+  font-size: 0.7rem !important;
+  box-shadow: none;
+}
+
+.personal-stores-to-pay-row__amount {
+  color: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+[data-theme="dark"] .personal-stores-to-pay-row.personal-home-infodata-card--row {
+  color: #bae6fd;
+  border-color: color-mix(in srgb, #7dd3fc 32%, transparent);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #38bdf8 18%, transparent),
+      color-mix(in srgb, #0c4a6e 28%, transparent)
+    );
+  background-image:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #38bdf8 18%, transparent),
+      color-mix(in srgb, #0c4a6e 28%, transparent)
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #38bdf8 12%, transparent) inset,
+    0 10px 22px color-mix(in srgb, #0ea5e9 18%, transparent);
+}
+
+[data-theme="dark"] .personal-stores-to-pay-row.personal-home-infodata-card--row .personal-home-infodata-card__circle {
+  border-color: color-mix(in srgb, #fff 32%, #0ea5e9);
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, #fff 32%, transparent), transparent 52%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 20%, #0ea5e9),
+      #0ea5e9 48%,
+      #0369a1
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #000 22%, transparent) inset,
+    0 6px 14px color-mix(in srgb, #0ea5e9 32%, transparent);
+}
+
+[data-theme="dark"] .personal-stores-to-pay-row.personal-home-infodata-card--row .personal-home-infodata-card__avatar {
+  background: transparent !important;
+  color: #fff !important;
 }
 
 .personal-attention-row.personal-home-infodata-card--row {
   --personal-infodata-size: 2.75rem;
-  --personal-infodata: var(--exits-warning, #ff5722);
-  border: 1.5px solid var(--personal-infodata);
-  color: var(--personal-infodata);
-  background-color: var(--exits-surface);
-  background-image: none;
-  box-shadow: none;
+  --personal-infodata: var(--exits-primary);
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 100%;
+  min-height: 3.15rem;
+  margin: 0;
+  padding: 0.75rem 0.85rem 0.75rem 0.65rem;
+  border: 1px solid color-mix(in srgb, #fff 55%, #c7d2fe);
+  border-radius: 1rem;
+  color: var(--exits-text);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #f5f3ff 48%, transparent)
+    );
+  background-image:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 72%, transparent),
+      color-mix(in srgb, #f5f3ff 48%, transparent)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 8px 18px color-mix(in srgb, #6366f1 10%, transparent);
 }
 
 .personal-attention-row.personal-home-infodata-card--row:hover {
-  background-color: color-mix(in srgb, var(--personal-infodata) 8%, var(--exits-surface));
-  box-shadow: none;
-}
-
-.personal-attention-row.personal-home-infodata-card--row {
-  padding-left: calc(var(--personal-infodata-size) * 0.66);
+  transform: translateY(-1px);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 80%, transparent),
+      color-mix(in srgb, #ede9fe 55%, transparent)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 10px 22px color-mix(in srgb, #6366f1 14%, transparent);
 }
 
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__body {
@@ -29356,18 +30719,32 @@ button.personal-home-index-card {
 
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__body,
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__title {
-  color: var(--personal-infodata);
+  color: inherit;
 }
 
 .personal-shell .personal-attention-row .personal-attention-row__chevron.material-symbols-outlined {
-  color: var(--personal-infodata);
+  color: inherit;
 }
 
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__circle {
-  top: -1.5px;
-  left: calc(var(--personal-infodata-size) * -0.42 - 1.5px);
-  background-image: none;
-  box-shadow: 0 0 0 1.5px var(--personal-infodata);
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #fff 55%, #c7d2fe);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), transparent 55%),
+    color-mix(in srgb, #6366f1 10%, #fff);
+  background-image:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), transparent 55%),
+    color-mix(in srgb, #6366f1 10%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 4px 10px color-mix(in srgb, #6366f1 12%, transparent);
 }
 
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__circle::before {
@@ -29375,7 +30752,11 @@ button.personal-home-index-card {
 }
 
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__avatar {
-  font-size: 0.75rem !important;
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 0.7rem !important;
+  border-radius: 999px;
+  box-shadow: none;
 }
 
 .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__title {
@@ -29386,16 +30767,42 @@ button.personal-home-index-card {
 }
 
 .personal-attention-row__name {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0;
   font-weight: 600;
 }
 
 .personal-shell .personal-attention-row__chevron.material-symbols-outlined {
   width: 1em;
   height: 1em;
-  font-size: 1.35rem;
-  color: #fff;
+  font-size: 1.15rem;
+  color: inherit;
+  opacity: 0.75;
+}
+
+[data-theme="dark"] .personal-attention-row.personal-home-infodata-card--row {
+  color: #e2e8f0;
+  border-color: color-mix(in srgb, #64748b 42%, transparent);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 10%, transparent),
+      color-mix(in srgb, #6366f1 10%, transparent)
+    );
+-webkit-backdrop-filter: none;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .personal-attention-row.personal-home-infodata-card--row .personal-home-infodata-card__circle {
+  border-color: color-mix(in srgb, #64748b 40%, transparent);
+  background:
+    radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 18%, transparent), transparent 55%),
+    color-mix(in srgb, #6366f1 16%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 4px 12px color-mix(in srgb, #6366f1 14%, transparent);
 }
 
 .personal-stores-to-pay-row__amount > span {
@@ -31141,6 +32548,68 @@ button.people-table-edit {
   overflow: hidden;
 }
 
+/*
+ * EXITS_UNIFIED_APP_SHELL — shared solid chrome for Admin / Operations / Personal.
+ * No backdrop-filter, no glassmorphism, no continuous animation.
+ */
+.admin-shell,
+.operations-shell,
+.personal-shell {
+  background: var(--exits-shell-content-bg, var(--exits-bg));
+  color: var(--exits-text);
+}
+
+.admin-shell .admin-sidebar,
+.operations-shell .admin-sidebar,
+.personal-shell .admin-sidebar {
+  background: var(--exits-shell-sidebar-bg, var(--exits-surface));
+  border-color: var(--exits-shell-divider, var(--exits-border));
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.admin-shell .app-top-bar,
+.operations-shell .app-top-bar {
+  background: var(--exits-shell-topbar-bg, var(--exits-surface));
+  border-bottom: 1px solid var(--exits-shell-divider, var(--exits-border));
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+
+.personal-shell .app-top-bar {
+  background: var(--exits-shell-content-bg, #e8ecf2);
+  border-bottom: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+
+.admin-shell .admin-shell__content,
+.operations-shell .admin-shell__content,
+.personal-shell .personal-shell__content {
+  background: transparent;
+}
+
+.admin-shell .exits-page,
+.operations-shell .exits-page,
+.personal-shell .exits-page,
+.personal-shell .personal-page {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar__link,
+  .admin-shell .app-top-bar,
+  .operations-shell .app-top-bar,
+  .personal-shell .app-top-bar {
+    transition: none;
+  }
+}
+
 .admin-shell__column,
 .operations-shell__column {
   min-width: 0;
@@ -31184,9 +32653,12 @@ button.people-table-edit {
   height: 100%;
   max-height: 100%;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
+  border: 1px solid var(--exits-shell-divider, var(--exits-border));
+  border-radius: var(--exits-shell-radius, var(--exits-radius-md));
+  background: var(--exits-shell-sidebar-bg, var(--exits-surface));
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   padding: 0;
 }
 
@@ -32094,19 +33566,25 @@ html[data-motion="reduced"] .exits-tooltip {
   min-height: 2.45rem;
   padding: 0.35rem 0.55rem;
   border-radius: var(--exits-radius-sm, 4px);
-  border-inline-start: 4px solid transparent;
+  border-inline-start: 3px solid transparent;
   color: inherit;
   text-decoration: none;
-  font-size: 0.8125rem;
+  font-size: var(--exits-shell-nav-font-size, 0.875rem);
   font-weight: var(--exits-font-weight-regular);
+  transition:
+    background-color var(--exits-shell-transition, 130ms) ease,
+    color var(--exits-shell-transition, 130ms) ease,
+    border-color var(--exits-shell-transition, 130ms) ease;
 }
 
 .admin-sidebar__link .admin-sidebar__icon {
+  width: var(--exits-shell-icon-size, 1.25rem);
+  height: var(--exits-shell-icon-size, 1.25rem);
   color: var(--exits-text-muted, #64748b);
 }
 
 .admin-sidebar__link:hover {
-  background: var(--exits-surface-muted);
+  background: var(--exits-shell-nav-hover-bg, var(--exits-surface-muted));
 }
 
 .admin-sidebar__link:hover .admin-sidebar__icon {
@@ -32114,14 +33592,14 @@ html[data-motion="reduced"] .exits-tooltip {
 }
 
 .admin-sidebar__link--active {
-  background: var(--exits-primary-soft);
-  color: var(--exits-primary);
+  background: var(--exits-shell-nav-active-bg, var(--exits-primary-soft));
+  color: var(--exits-shell-nav-active-fg, var(--exits-primary));
   font-weight: var(--exits-font-weight-medium);
-  border-inline-start-color: var(--exits-primary);
+  border-inline-start-color: var(--exits-shell-nav-active-border, var(--exits-primary));
 }
 
 .admin-sidebar__link--active .admin-sidebar__icon {
-  color: var(--exits-primary);
+  color: var(--exits-shell-nav-active-fg, var(--exits-primary));
 }
 
 .admin-sidebar__link--locked {

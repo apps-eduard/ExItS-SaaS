@@ -33,6 +33,15 @@ const REQUIRED_SEMANTIC_TOKENS = [
   "--exits-shadow-sm",
   "--exits-shadow-md",
   "--exits-shadow-lg",
+  "--exits-shell-sidebar-bg",
+  "--exits-shell-topbar-bg",
+  "--exits-shell-content-bg",
+  "--exits-shell-panel-bg",
+  "--exits-shell-divider",
+  "--exits-shell-nav-hover-bg",
+  "--exits-shell-nav-active-bg",
+  "--exits-shell-nav-active-fg",
+  "--exits-shell-nav-active-border",
   "--exits-radius-sm",
   "--exits-radius-md",
   "--exits-radius-lg",
@@ -66,6 +75,17 @@ describe("POS global surface theme tokens", () => {
     expect(globalsCss).toMatch(
       /\[data-theme="dark"\][\s\S]{0,1200}--exits-shadow-sm:\s*0 1px 2px color-mix\(in srgb, #000 12%, transparent\)/,
     );
+  });
+
+  it("defines unified app shell chrome tokens without backdrop blur", () => {
+    expect(globalsCss).toMatch(/--exits-shell-sidebar-bg:\s*#ffffff/);
+    expect(globalsCss).toMatch(/\[data-theme="dark"\][\s\S]{0,1800}--exits-shell-sidebar-bg:\s*#12161e/);
+    expect(globalsCss).toMatch(
+      /\[data-theme="dark"\][\s\S]{0,2000}--exits-shell-nav-active-bg:\s*color-mix\(in srgb, #8b5cf6/,
+    );
+    expect(globalsCss).toContain("EXITS_UNIFIED_APP_SHELL");
+    expect(globalsCss).not.toMatch(/backdrop-filter:\s*blur\(/);
+    expect(globalsCss).not.toMatch(/-webkit-backdrop-filter:\s*blur\(/);
   });
 
   it("exposes surface primitives and primary palette selectors", () => {

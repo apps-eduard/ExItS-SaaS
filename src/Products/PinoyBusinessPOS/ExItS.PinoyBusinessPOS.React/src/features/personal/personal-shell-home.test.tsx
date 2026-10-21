@@ -187,41 +187,41 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-home-welcome")).toContainElement(homeInfo);
     expect(homeInfo).toHaveAttribute("data-intent", "info");
     expect(
-      screen.queryByText("Track personal Utang, to-dos, and your connected stores."),
+      screen.queryByText("Manage your business, people, and transactions all in one place."),
     ).not.toBeInTheDocument();
     await userEvent.setup().click(homeInfo);
     const homeInfoPopover = screen.getByRole("dialog", { name: "About Personal home" });
     expect(homeInfoPopover).not.toHaveAttribute("aria-modal");
-    expect(homeInfoPopover).toHaveTextContent(
-      "Track personal Utang, to-dos, and your connected stores.",
+    expect(screen.getByTestId("personal-home-info-notice")).toHaveTextContent(
+      "Manage your business, people, and transactions all in one place.",
     );
     expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
     expect(screen.getByTestId("personal-quick-actions-ribbon")).toHaveTextContent("Quick actions");
     expect(screen.getByTestId("personal-quick-actions-pennant")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-todo-summary-ribbon")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-todo-summary-ribbon")).toHaveTextContent("To-do");
     expect(screen.getByTestId("personal-todo-summary-pennant")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-todo-view-all")).toHaveAttribute("href", "/personal/todo");
+    expect(screen.getByTestId("personal-todo-view-all")).toHaveTextContent("View all");
     expect(screen.getByTestId("personal-qa-start-business")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-owe")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-stores")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-qa-people")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-qa-people")).toHaveAttribute("href", "/personal/people?add=1");
+    expect(screen.getByTestId("personal-qa-people")).toHaveTextContent("Add person");
     expect(screen.queryByTestId("personal-qa-todo")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-people")).toHaveClass(
-      "personal-home-index-card",
-      "personal-home-index-card--secondary",
-      "personal-home-index-card--outline",
+      "personal-qa-glass",
+      "personal-qa-glass--people",
     );
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("People");
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
     expect(screen.getByTestId("personal-stat-active")).toHaveClass(
-      "personal-home-index-card",
-      "personal-home-index-card--success",
-      "personal-home-index-card--outline",
+      "personal-qa-glass",
+      "personal-qa-glass--lent",
     );
     expect(screen.getByTestId("personal-stat-active-shared")).toHaveClass(
-      "personal-home-index-card",
-      "personal-home-index-card--info",
-      "personal-home-index-card--outline",
+      "personal-qa-glass",
+      "personal-qa-glass--owe",
     );
     expect(screen.getByTestId("personal-stat-lent-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();

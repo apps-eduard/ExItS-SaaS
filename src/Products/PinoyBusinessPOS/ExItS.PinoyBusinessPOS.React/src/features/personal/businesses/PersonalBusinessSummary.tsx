@@ -1,4 +1,4 @@
-import { Fragment, useState, type CSSProperties } from "react";
+import { Fragment, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
 import { symbol } from "@/components/icons/MaterialSymbol";
@@ -19,10 +19,6 @@ import {
   ownsProductOrganization,
   resolveProductPortfolioCapability,
 } from "@/features/personal/businesses/product-portfolio-capability";
-import {
-  INTENT_GLOBAL_HELP,
-  INTENT_GLOBAL_INFO,
-} from "@/features/ui-standards/intent-color-global-default";
 import "./PersonalOwnedBusinesses.css";
 import { PERSONAL_PRODUCT_AFFILIATIONS_QUERY_KEY } from "@/features/personal/subscriptions/PersonalProductSubscriptionsPage";
 import {
@@ -175,16 +171,9 @@ function OwnedBusinessEntry({
               <Button
                 type="button"
                 intent="info"
-                appearance="elevated"
-                emphasis="strong"
+                appearance="outline"
                 shape="pill"
-                className="personal-owned-businesses__open personal-owned-businesses__login ui-standards-qbtn--raised"
-                style={
-                  {
-                    backgroundColor: INTENT_GLOBAL_INFO,
-                    color: "#fff",
-                  } as CSSProperties
-                }
+                className="personal-owned-businesses__open personal-owned-businesses__login personal-owned-businesses__action--glass"
                 disabled={entering}
                 data-testid={`personal-business-open-${row.productCode}`}
                 onClick={() => onOpen(row.organizationId!)}
@@ -197,16 +186,9 @@ function OwnedBusinessEntry({
               <Button
                 asChild
                 intent="help"
-                appearance="elevated"
-                emphasis="strong"
+                appearance="outline"
                 shape="pill"
-                className="personal-owned-businesses__explore personal-owned-businesses__login ui-standards-qbtn--raised"
-                style={
-                  {
-                    backgroundColor: INTENT_GLOBAL_HELP,
-                    color: "#fff",
-                  } as CSSProperties
-                }
+                className="personal-owned-businesses__explore personal-owned-businesses__login personal-owned-businesses__action--glass"
               >
                 <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
                   {t("personal.home.exploreProducts")}
@@ -270,16 +252,9 @@ function WorkplaceEntry({
           <Button
             type="button"
             intent="info"
-            appearance="elevated"
-            emphasis="strong"
+            appearance="outline"
             shape="pill"
-            className="personal-owned-businesses__open personal-owned-businesses__login ui-standards-qbtn--raised"
-            style={
-              {
-                backgroundColor: INTENT_GLOBAL_INFO,
-                color: "#fff",
-              } as CSSProperties
-            }
+            className="personal-owned-businesses__open personal-owned-businesses__login personal-owned-businesses__action--glass"
             data-testid={`personal-staff-login-${workplace.membershipId}`}
             onClick={onLogin}
           >
@@ -290,16 +265,9 @@ function WorkplaceEntry({
             <Button
               asChild
               intent="help"
-              appearance="elevated"
-              emphasis="strong"
+              appearance="outline"
               shape="pill"
-              className="personal-owned-businesses__explore personal-owned-businesses__login ui-standards-qbtn--raised"
-              style={
-                {
-                  backgroundColor: INTENT_GLOBAL_HELP,
-                  color: "#fff",
-                } as CSSProperties
-              }
+              className="personal-owned-businesses__explore personal-owned-businesses__login personal-owned-businesses__action--glass"
             >
               <Link to={PERSONAL_BUSINESSES_PATH} data-testid="personal-home-start-another">
                 {t("personal.home.exploreProducts")}

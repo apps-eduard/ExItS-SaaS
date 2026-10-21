@@ -9155,6 +9155,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.home.todoSoon": "Agparang ditoy dagiti personal nga aramiden iti sumaruno a panagbalbaliw.",
 
   "personal.home.todoSummary": "Aramiden",
+  "personal.home.viewAllTodo": "View all",
 
   "personal.home.todoUnavailable": "Saan a magun-od ita ti bilang dagiti aramiden.",
 
