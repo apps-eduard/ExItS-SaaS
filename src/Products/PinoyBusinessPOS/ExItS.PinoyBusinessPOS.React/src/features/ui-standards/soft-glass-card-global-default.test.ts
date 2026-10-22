@@ -3,13 +3,26 @@ import {
   SOFT_GLASS_BORDER_SLATE,
   SOFT_GLASS_BORDER_SLATE_PCT,
   SOFT_GLASS_DARK,
+  SOFT_GLASS_DARK_BORDER_CHIP_PCT,
+  SOFT_GLASS_DARK_BORDER_HOVER_CHIP_PCT,
+  SOFT_GLASS_DARK_BORDER_HOVER_SLATE,
+  SOFT_GLASS_DARK_BORDER_SLATE,
+  SOFT_GLASS_FIELD_DEFAULT_COMMAND,
+  SOFT_GLASS_FIELD_RADIUS,
   SOFT_GLASS_FOCUS,
   SOFT_GLASS_LABEL_SIZE,
   SOFT_GLASS_LABEL_WEIGHT,
   SOFT_GLASS_LIGHT,
+  SOFT_GLASS_QA_DEFAULT_COMMAND,
+  SOFT_GLASS_QA_TRAILING,
+  SOFT_GLASS_RADIUS,
+  SOFT_GLASS_RIBBON_DEFAULT_COMMAND,
+  SOFT_GLASS_RIBBON_RADIUS,
   SOFT_GLASS_SHADOW_ACCENT_PCT,
   SOFT_GLASS_TRANSITION_MS,
+  softGlassQaTrailing,
 } from "@/features/ui-standards/soft-glass-card-global-default";
+import { TABLE_GLOBAL_SOFT_GLASS_RADIUS } from "@/features/ui-standards/table-global-default";
 
 describe("Soft Glass card global default", () => {
   it("locks type, focus, and motion", () => {
@@ -20,6 +33,25 @@ describe("Soft Glass card global default", () => {
     expect(SOFT_GLASS_SHADOW_ACCENT_PCT).toBe(8);
     expect(SOFT_GLASS_BORDER_SLATE).toBe("#e2e8f0");
     expect(SOFT_GLASS_BORDER_SLATE_PCT).toBe(62);
+  });
+
+  it("locks Soft Glass shell and title ribbon radius", () => {
+    expect(SOFT_GLASS_RADIUS).toBe("1.1rem");
+    expect(SOFT_GLASS_RADIUS).toBe(TABLE_GLOBAL_SOFT_GLASS_RADIUS);
+    expect(SOFT_GLASS_RIBBON_RADIUS).toBe("1.1rem 1.1rem 1.1rem 0");
+    expect(SOFT_GLASS_RIBBON_DEFAULT_COMMAND).toBe("ext soft-glass ribbon radius");
+  });
+
+  it("locks Soft Glass input / dropdown field radius (Soft control)", () => {
+    expect(SOFT_GLASS_FIELD_RADIUS).toBe("0.6875rem");
+    expect(SOFT_GLASS_FIELD_DEFAULT_COMMAND).toBe("ext soft-glass field radius");
+  });
+
+  it("locks dark Soft Glass Quick Action border (home QA)", () => {
+    expect(SOFT_GLASS_DARK_BORDER_SLATE).toBe("#475569");
+    expect(SOFT_GLASS_DARK_BORDER_CHIP_PCT).toBe(16);
+    expect(SOFT_GLASS_DARK_BORDER_HOVER_SLATE).toBe("#64748b");
+    expect(SOFT_GLASS_DARK_BORDER_HOVER_CHIP_PCT).toBe(22);
   });
 
   it("locks light Quick Action color identities", () => {
@@ -35,5 +67,14 @@ describe("Soft Glass card global default", () => {
     expect(SOFT_GLASS_DARK.owe.chip).toBe("#1d4ed8");
     expect(SOFT_GLASS_DARK.label).toBe("#e2e8f0");
     expect(SOFT_GLASS_DARK.surfaceMid).toBe("#1e293b");
+  });
+
+  it("locks Soft Glass Quick Action trailing ends", () => {
+    expect(SOFT_GLASS_QA_TRAILING).toEqual(["count", "chevron", "add"]);
+    expect(SOFT_GLASS_QA_DEFAULT_COMMAND).toBe("ext soft-glass qa trailing-auto");
+    expect(softGlassQaTrailing({ count: 0 })).toBe("count");
+    expect(softGlassQaTrailing({ count: 3 })).toBe("count");
+    expect(softGlassQaTrailing({})).toBe("chevron");
+    expect(softGlassQaTrailing({ trailing: "add" })).toBe("add");
   });
 });

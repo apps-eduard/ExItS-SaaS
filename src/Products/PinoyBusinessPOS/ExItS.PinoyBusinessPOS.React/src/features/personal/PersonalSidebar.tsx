@@ -97,7 +97,7 @@ export function PersonalSidebar() {
     );
     return (
       <li key={item.id}>
-        <ExitsTooltip content={label} disabled={!tooltipEnabled}>
+        <ExitsTooltip content={label} placement="end" disabled={!tooltipEnabled}>
           {link}
         </ExitsTooltip>
       </li>
@@ -162,7 +162,7 @@ export function PersonalSidebar() {
 
       {canSwitch ? (
         <div className="admin-sidebar__footer">
-          <ExitsTooltip content={switchLabel} disabled={!tooltipEnabled}>
+          <ExitsTooltip content={switchLabel} placement="end" disabled={!tooltipEnabled}>
             <button
               type="button"
               className="admin-sidebar__switch w-full cursor-pointer border-0 bg-transparent text-left"

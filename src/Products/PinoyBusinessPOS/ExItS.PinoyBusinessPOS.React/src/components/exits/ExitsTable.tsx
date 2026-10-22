@@ -24,6 +24,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { TABLE_EXPORT_GLOBAL_COLOR } from "@/features/ui-standards/table-export-global-default";
+import {
+  exitsTableShouldShowPaginationFooter,
+  TABLE_FOOTER_GLOBAL_HIDE_CONTROLS_AT_OR_BELOW,
+} from "@/features/ui-standards/table-footer-global-default";
+import { TABLE_GLOBAL_DEFAULT_SORT } from "@/features/ui-standards/table-global-default";
 import { cn } from "@/lib/cn";
 
 /** Semantic cell alignment for ExitsTable (pages should prefer this over raw Tailwind). */
@@ -175,6 +180,12 @@ export type ExitsTableOutputActionsProps = {
   pdfLabel: string;
   printLabel: string;
   menuLabel: string;
+  /**
+   * `auto` — icons on wide viewports, menu on small.
+   * `icons` — always the locked format icon row (title-row / compact chrome).
+   */
+  appearance?: "auto" | "icons";
+  className?: string;
 };
 
 /** Canonical table Output Actions: CSV, XLSX, PDF, Print. */
@@ -190,6 +201,8 @@ export function ExitsTableOutputActions({
   pdfLabel,
   printLabel,
   menuLabel,
+  appearance = "auto",
+  className,
 }: ExitsTableOutputActionsProps) {
   const menu = useDismissibleOpen(false);
   const [localBusy, setLocalBusy] = useState<ExitsTableOutputAction | null>(null);
@@ -240,7 +253,15 @@ export function ExitsTableOutputActions({
   ];
 
   return (
-    <div className="exits-table-output" data-testid="exits-table-output-actions">
+    <div
+      className={cn(
+        "exits-table-output",
+        appearance === "icons" && "exits-table-output--icons",
+        className,
+      )}
+      data-appearance={appearance}
+      data-testid="exits-table-output-actions"
+    >
       <div className="exits-table-output__desktop" data-testid="exits-table-output-desktop">
         {actions.map((action) => (
           <button
@@ -263,54 +284,56 @@ export function ExitsTableOutputActions({
         ))}
       </div>
 
-      <div className="exits-table-output__mobile" data-testid="exits-table-output-mobile">
-        <DropdownMenu
-          align="end"
-          open={menu.open}
-          onOpenChange={menu.setOpen}
-          menuLabel={menuLabel}
-          trigger={(triggerProps) => (
-            <button
-              type="button"
-              id={triggerProps.id}
-              className="exits-table-output__menu-trigger"
-              aria-haspopup="menu"
-              aria-expanded={triggerProps.expanded}
-              aria-controls={triggerProps.controls}
-              aria-label={menuLabel}
-              title={menuLabel}
-              disabled={disabled || Boolean(activeBusy)}
-              data-testid="exits-table-output-menu"
-              onClick={triggerProps.onClick}
-              onKeyDown={triggerProps.onKeyDown}
-            >
-              <span>{menuLabel}</span>
-              <ChevronDown className="size-4" aria-hidden />
-            </button>
-          )}
-        >
-          {actions.map((action) => (
-            <MenuItem
-              key={action.id}
-              disabled={disabled || Boolean(activeBusy) || !action.onClick}
-              data-testid={`exits-table-output-menu-${action.id}`}
-              onSelect={() => {
-                menu.close();
-                void run(action.id, action.onClick);
-              }}
-            >
-              <span
-                className="exits-table-output__menu-icon"
-                data-format={action.id}
-                style={{ color: TABLE_EXPORT_GLOBAL_COLOR[action.id] }}
+      {appearance === "auto" ? (
+        <div className="exits-table-output__mobile" data-testid="exits-table-output-mobile">
+          <DropdownMenu
+            align="end"
+            open={menu.open}
+            onOpenChange={menu.setOpen}
+            menuLabel={menuLabel}
+            trigger={(triggerProps) => (
+              <button
+                type="button"
+                id={triggerProps.id}
+                className="exits-table-output__menu-trigger"
+                aria-haspopup="menu"
+                aria-expanded={triggerProps.expanded}
+                aria-controls={triggerProps.controls}
+                aria-label={menuLabel}
+                title={menuLabel}
+                disabled={disabled || Boolean(activeBusy)}
+                data-testid="exits-table-output-menu"
+                onClick={triggerProps.onClick}
+                onKeyDown={triggerProps.onKeyDown}
               >
-                {action.icon}
-              </span>
-              {action.label}
-            </MenuItem>
-          ))}
-        </DropdownMenu>
-      </div>
+                <span>{menuLabel}</span>
+                <ChevronDown className="size-4" aria-hidden />
+              </button>
+            )}
+          >
+            {actions.map((action) => (
+              <MenuItem
+                key={action.id}
+                disabled={disabled || Boolean(activeBusy) || !action.onClick}
+                data-testid={`exits-table-output-menu-${action.id}`}
+                onSelect={() => {
+                  menu.close();
+                  void run(action.id, action.onClick);
+                }}
+              >
+                <span
+                  className="exits-table-output__menu-icon"
+                  data-format={action.id}
+                  style={{ color: TABLE_EXPORT_GLOBAL_COLOR[action.id] }}
+                >
+                  {action.icon}
+                </span>
+                {action.label}
+              </MenuItem>
+            ))}
+          </DropdownMenu>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -414,7 +437,7 @@ export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadPro
     {
       className,
       cellAlign = "text",
-      sortable = false,
+      sortable: sortableProp,
       sortDirection = null,
       onSort,
       stickyEnd = false,
@@ -428,6 +451,11 @@ export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadPro
     },
     ref,
   ) {
+    /** LOCKED: TABLE_GLOBAL_DEFAULT_SORT — data columns on; Actions/checkbox off. */
+    const sortable =
+      sortableProp !== undefined
+        ? sortableProp
+        : TABLE_GLOBAL_DEFAULT_SORT && colSize !== "actions" && colSize !== "checkbox";
     const SortIcon =
       sortDirection === "asc" ? ArrowUp : sortDirection === "desc" ? ArrowDown : ArrowUpDown;
     const testId =
@@ -963,6 +991,12 @@ export type ExitsTablePaginationProps = HTMLAttributes<HTMLDivElement> & {
   previousLabel: string;
   nextLabel: string;
   rangeLabel: string;
+  /**
+   * Shown start-aligned when total is at or below
+   * `TABLE_FOOTER_GLOBAL_HIDE_CONTROLS_AT_OR_BELOW` (no pagination footer).
+   * Use `{total}` placeholder. Default: `"{total}"`.
+   */
+  rowCountLabel?: string;
 };
 
 /** Compact pagination footer; page is 1-based. */
@@ -979,6 +1013,7 @@ export function ExitsTablePagination({
   previousLabel,
   nextLabel,
   rangeLabel,
+  rowCountLabel = "{total}",
   ...props
 }: ExitsTablePaginationProps) {
   const sizes = useMemo(
@@ -993,21 +1028,52 @@ export function ExitsTablePagination({
   const to = Math.min(safePage * rowsPerPage, total);
   const canPrev = safePage > 1;
   const canNext = safePage < pageCount;
-  const showSize = showPageSize && sizes.length > 0;
-  /** Below 10 rows there is nothing useful to page through. */
-  const showNav = total >= 10;
+  /** ≤10 rows: no pagination footer — start-aligned row count only. */
+  const showFooterControls = exitsTableShouldShowPaginationFooter(total);
+  const showSize = showFooterControls && showPageSize && sizes.length > 0;
+  const showNav = showFooterControls;
 
   useEffect(() => {
+    if (!showFooterControls) {
+      return;
+    }
     if (sizes.length === 0 || sizes.includes(pageSize)) {
       return;
     }
     onPageSizeChange(sizes[0]!);
-  }, [onPageSizeChange, pageSize, sizes]);
+  }, [onPageSizeChange, pageSize, showFooterControls, sizes]);
+
+  if (total <= 0) {
+    return null;
+  }
+
+  if (!showFooterControls) {
+    return (
+      <div
+        className={cn(
+          "exits-table-pagination exits-table-pagination--count-only",
+          className,
+        )}
+        data-testid="exits-table-pagination"
+        data-footer-mode="count"
+        data-hide-at-or-below={TABLE_FOOTER_GLOBAL_HIDE_CONTROLS_AT_OR_BELOW}
+        {...props}
+      >
+        <p
+          className="exits-table-pagination__count"
+          data-testid="exits-table-row-count"
+        >
+          {rowCountLabel.replace("{total}", String(total))}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
       className={cn("exits-table-pagination", className)}
       data-testid="exits-table-pagination"
+      data-footer-mode="pagination"
       {...props}
     >
       {showNav ? (

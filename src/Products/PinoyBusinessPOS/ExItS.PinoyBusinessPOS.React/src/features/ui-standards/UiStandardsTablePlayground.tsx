@@ -513,7 +513,7 @@ function TableDefaultStandardSample() {
         standard="Table"
         standardStatus="pilot"
         command={TABLE_GLOBAL_DEFAULT_COMMAND}
-        commandContext="Locked default standard — Soft Glass shell, header glossy-raise, footer glossy-raise with page size and next, search."
+        commandContext="Locked default standard — Soft Glass shell, header glossy-raise, footer glossy-raise with page size and next, search, sort on."
         bordered={false}
         contentClassName="min-w-0"
       >

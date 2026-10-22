@@ -7,17 +7,21 @@ alwaysApply: true
 
 When creating a table, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/table-global-default.ts`.
 
-The locked command is `ext table soft-glass header-glossy-raise footer-glossy-raise search`.
+The locked command is `ext table soft-glass header-glossy-raise footer-glossy-raise search sort`.
 
 - Table intent: `standard` (`TABLE_GLOBAL_DEFAULT_INTENT`)
 - Shell: Soft Glass (`TABLE_GLOBAL_DEFAULT_SHELL` = `soft-glass`) — theme primary wash via `data-shell="soft-glass"` on `ExitsTableContainer` / playground qtable
+- Shell radius: `TABLE_GLOBAL_SOFT_GLASS_RADIUS` = **1.1rem**
 - Header: intent `standard`, appearance `glossy-raise` (`TABLE_GLOBAL_DEFAULT_HEADER_*`)
 - Header chrome (LOCKED): soft bottom raise (`TABLE_GLOBAL_HEADER_RAISE_SHADOW`) plus light left/right column edges (`TABLE_GLOBAL_HEADER_COL_EDGE_*`) — not the heavy raised stack
-- Footer: intent `standard`, appearance `glossy-raise` (`TABLE_GLOBAL_DEFAULT_FOOTER_*` / `table-footer-global-default.ts`) with page-size select and prev/next nav
-- Search: on (`TABLE_GLOBAL_DEFAULT_SEARCH`) — Soft Glass field inside the shell; radius follows Control Shape
+- Footer: intent `standard`, appearance `glossy-raise` (`TABLE_GLOBAL_DEFAULT_FOOTER_*` / `table-footer-global-default.ts`) with page-size select and prev/next nav — except ≤10 rows (see `exits-table-footer-default.mdc`)
+- Search: on (`TABLE_GLOBAL_DEFAULT_SEARCH`) — Soft Glass field inside the shell
+- **Sort (LOCKED — ON by default):** `TABLE_GLOBAL_DEFAULT_SORT` = **true**. New tables must enable sort on data columns (`ExitsTableHead` defaults to sortable; wire `cycleExitsTableSort` + `onSort` / `sortDirection`). Do **not** create non-sortable data columns unless the user asks. Actions (`colSize="actions"`) and checkbox columns stay non-sortable; pass `sortable={false}` only for intentional exceptions
+- **Search radius (LOCKED):** Soft Glass, not Control Shape — `TABLE_GLOBAL_SOFT_GLASS_SEARCH_RADIUS` = **0.75rem** on `.exits-table-container[data-shell="soft-glass"] …toolbar__search .ui-standards-qinput__box` (and Money Soft Glass search)
+- **Empty state (LOCKED):** Soft Glass wash inside Soft Glass table/card — `TABLE_GLOBAL_SOFT_GLASS_EMPTY_RADIUS` = **0.75rem** via `[data-shell="soft-glass"] .exits-empty-state` or `EmptyState shell="soft-glass"`
 
-On `/ui-standards` → Table playground, the fixed **DEFAULT STANDARD** sample below the interactive preview is this lock. Footer pagination chrome (page size, carets, All) stays in `exits-table-footer-default.mdc`.
+On `/ui-standards` → Table playground, the fixed **DEFAULT STANDARD** sample below the interactive preview is this lock. Footer pagination chrome (page size, carets, All, ≤10 row count) stays in `exits-table-footer-default.mdc`.
 
-Use `ExitsTable` / `ExitsResponsiveDataView` with Soft Glass shell, glossy-raise header and footer chrome, and a search field unless the user names a different recipe. Keep Soft Glass + glossy-raise CSS in `globals.css` (ExitsTable) and `ui-standards.css` (qtable playground) aligned with the lock tokens.
+Use `ExitsTable` / `ExitsResponsiveDataView` with Soft Glass shell, glossy-raise header and footer chrome, Soft Glass-radius search, Soft Glass empty states, and sortable data columns unless the user names a different recipe. Keep Soft Glass + glossy-raise CSS in `globals.css` (ExitsTable) and `ui-standards.css` (qtable playground) aligned with the lock tokens.
 
-Change this lock only when the user asks. Update `table-global-default.ts`, `table-global-default.test.ts`, `table-footer-global-default.ts` (appearance), and the Soft Glass / glossy-raise CSS together.
+Change this lock only when the user asks. Update `table-global-default.ts`, `table-global-default.test.ts`, `table-footer-global-default.ts` (appearance / row count), and the Soft Glass / glossy-raise / Soft Glass search / Soft Glass empty CSS together.

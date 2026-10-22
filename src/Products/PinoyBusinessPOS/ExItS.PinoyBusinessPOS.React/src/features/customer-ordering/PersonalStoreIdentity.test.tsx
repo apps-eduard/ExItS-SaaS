@@ -33,4 +33,26 @@ describe("PersonalStoreIdentity", () => {
     expect(screen.getByText("Linked as Ana Reyes")).toBeInTheDocument();
     expect(screen.getByText("Ordering available")).toBeInTheDocument();
   });
+
+  it("pairs Connected with Delivery, then Linked date with Ordering available", () => {
+    render(
+      <AppProviders>
+        <PersonalStoreIdentity
+          storeName="Mica store"
+          canCustomerOrder
+          emphasisBadges
+          linkedAtLabel="Linked 10/7/2026"
+          fulfillment="delivery"
+        />
+      </AppProviders>,
+    );
+
+    const badges = screen.getByTestId("personal-store-identity-badges");
+    const rows = badges.querySelectorAll(".pc-store-card__badge-row--pair");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent("Connected");
+    expect(rows[0]).toHaveTextContent("Delivery");
+    expect(rows[1]).toHaveTextContent("Linked 10/7/2026");
+    expect(rows[1]).toHaveTextContent("Ordering available");
+  });
 });

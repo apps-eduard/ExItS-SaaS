@@ -53,7 +53,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
-import { FormDrawer } from "@/components/exits/FormDrawer";
+import { ExitsModal } from "@/components/exits/ExitsModal";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -123,6 +123,29 @@ function TodoConflictBanner({
         {t("personal.todo.reloadAndRetry")}
       </Button>
     </div>
+  );
+}
+
+function SavePlusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      data-testid="todo-create-save-icon"
+    >
+      <path d="M12.5 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V12" />
+      <path d="M16 13H8a1 1 0 0 0-1 1v7" />
+      <path d="M19 22v-6" />
+      <path d="M22 19h-6" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+    </svg>
   );
 }
 
@@ -644,7 +667,7 @@ export function PersonalTodoHubPage() {
         </section>
       </div>
 
-      <FormDrawer
+      <ExitsModal
         open={createFormOpen}
         onOpenChange={(next) => {
           if (!next) {
@@ -655,42 +678,73 @@ export function PersonalTodoHubPage() {
         }}
         title={t("personal.todo.createTitle")}
         description={t("personal.todo.lede")}
-        testId="todo-create-drawer"
-        saveTestId="todo-create-submit"
-        cancelTestId="todo-create-close"
+        testId="todo-create-dialog"
+        className="todo-create-dialog todo-create-dialog--soft-glass"
         closeLabel={t("personal.todo.closeDetail")}
-        cancelLabel={t("personal.todo.closeDetail")}
-        saveLabel={t("personal.todo.add")}
-        saving={createMutation.isPending}
-        saveDisabled={offlineBlocked || !form.title.trim()}
-        onSave={() => {
+        busy={createMutation.isPending}
+        closeOnEscape={false}
+        size="lg"
+        fullHeightOnCompact
+        ribbon
+        ribbonIcon={Plus}
+        noValidate
+        onSubmit={() => {
           if (!form.title.trim()) {
             setFormError(t("personal.todo.titleRequired"));
             return;
           }
           createMutation.mutate();
         }}
-        size="md"
-        dirty={Boolean(form.title.trim() || form.notes.trim() || form.dueAtLocal || form.reminderAtLocal)}
-        confirmUnsavedOnClose
-        ribbon
-        ribbonIcon={Plus}
-        saveIcon="plus"
+        footer={
+          <>
+            <Button
+              type="button"
+              intent="danger"
+              appearance="glossy"
+              emphasis="strong"
+              className="todo-create-dialog__btn todo-create-dialog__btn--danger"
+              disabled={createMutation.isPending}
+              data-testid="todo-create-close"
+              onClick={() => closeCreateDrawer()}
+            >
+              {t("personal.todo.closeDetail")}
+            </Button>
+            <Button
+              type="submit"
+              intent="primary"
+              appearance="glossy"
+              className="todo-create-dialog__btn todo-create-dialog__btn--primary"
+              disabled={createMutation.isPending || offlineBlocked || !form.title.trim()}
+              data-testid="todo-create-submit"
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <SavePlusIcon className="size-4 shrink-0" />
+              )}
+              {t("personal.todo.add")}
+            </Button>
+          </>
+        }
       >
-        {formError ? (
-          <Notice tone="danger" className="mb-3" testId="todo-create-error">
-            {formError}
-          </Notice>
-        ) : null}
-        {!online ? (
-          <div className="mb-3 flex flex-col gap-2">
-            <OfflineNotice message={t("offline.requiredPersonalTodo")} />
-            {form.reminderAtLocal ? (
-              <OfflineNotice message={t("offline.todoNoReminders")} />
-            ) : null}
-          </div>
-        ) : null}
-        <div className="personal-todo-create-form flex flex-col gap-1.5" data-testid="todo-create-form">
+        <div
+          className="todo-create-dialog__body personal-todo-create-form flex min-w-0 flex-col gap-1.5"
+          data-shell="soft-glass"
+          data-testid="todo-create-form"
+        >
+          {formError ? (
+            <Notice tone="danger" className="mb-1" testId="todo-create-error">
+              {formError}
+            </Notice>
+          ) : null}
+          {!online ? (
+            <div className="mb-1 flex flex-col gap-2">
+              <OfflineNotice message={t("offline.requiredPersonalTodo")} />
+              {form.reminderAtLocal ? (
+                <OfflineNotice message={t("offline.todoNoReminders")} />
+              ) : null}
+            </div>
+          ) : null}
           <TodoFormFields
             form={form}
             setForm={setForm}
@@ -700,7 +754,7 @@ export function PersonalTodoHubPage() {
             includeTitle
           />
         </div>
-      </FormDrawer>
+      </ExitsModal>
 
       <ConfirmationDialog
         open={Boolean(pendingDelete)}

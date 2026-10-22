@@ -681,10 +681,14 @@ export function RelationshipInviteReminderPanel({
   }
 
   return (
-    <div className="flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
+    <div
+      className="utang-reminders-dialog__panel flex flex-col gap-3"
+      data-shell="soft-glass"
+      data-testid="utang-invite-reminder-panel"
+    >
       <div id="utang-invite-reminder-body" className="flex flex-col gap-3">
           <form
-            className="flex flex-col gap-2"
+            className="utang-reminders-dialog__form flex flex-col gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               if (!scheduledFor) {
@@ -694,14 +698,16 @@ export function RelationshipInviteReminderPanel({
               createReminder.mutate("Self");
             }}
           >
-            <div className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">{t("personal.social.reminderWhen")}</span>
+            <div className="utang-reminders-dialog__when-block flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span className="utang-reminders-dialog__label font-medium">
+                {t("personal.social.reminderWhen")}
+              </span>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <label className="min-w-0 flex-1 basis-[12rem]">
                   <span className="sr-only">{t("personal.social.reminderWhen")}</span>
                   <input
                     type="datetime-local"
-                    className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    className="utang-reminders-dialog__when w-full min-w-0 px-3"
                     value={scheduledFor}
                     onChange={(e) => setScheduledFor(e.target.value)}
                     data-testid="utang-reminder-when"
@@ -710,7 +716,7 @@ export function RelationshipInviteReminderPanel({
                 <Button
                   type="button"
                   variant="outline"
-                  className="shrink-0"
+                  className="utang-reminders-dialog__btn shrink-0"
                   data-testid="utang-reminder-preset-hour"
                   onClick={() => setPreset("hour")}
                 >
@@ -719,7 +725,7 @@ export function RelationshipInviteReminderPanel({
                 <Button
                   type="button"
                   variant="outline"
-                  className="shrink-0"
+                  className="utang-reminders-dialog__btn shrink-0"
                   data-testid="utang-reminder-preset-tomorrow"
                   onClick={() => setPreset("tomorrow")}
                 >
@@ -728,12 +734,16 @@ export function RelationshipInviteReminderPanel({
               </div>
             </div>
             {canRemindThem ? null : (
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              <p className="utang-reminders-dialog__hint m-0 text-[length:var(--exits-text-xs)] text-muted">
                 {t("personal.social.reminderHintMe")}
               </p>
             )}
             <div className="flex min-w-0 flex-wrap gap-2">
-              <Button type="submit" className="w-auto" disabled={createReminder.isPending}>
+              <Button
+                type="submit"
+                className="utang-reminders-dialog__btn utang-reminders-dialog__btn--primary w-auto"
+                disabled={createReminder.isPending}
+              >
                 <BellPlus className="size-4 shrink-0" aria-hidden="true" />
                 {t("personal.social.addReminder")}
               </Button>
@@ -741,7 +751,7 @@ export function RelationshipInviteReminderPanel({
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-auto"
+                  className="utang-reminders-dialog__btn w-auto"
                   disabled={createReminder.isPending}
                   data-testid="utang-reminder-them"
                   onClick={() => {
@@ -768,10 +778,10 @@ export function RelationshipInviteReminderPanel({
             </p>
           ) : null}
           {remindersQuery.data?.length ? (
-            <ul className="exits-list m-0 grid list-none gap-2 p-0">
+            <ul className="utang-reminders-dialog__list exits-list m-0 grid list-none gap-2 p-0">
               {remindersQuery.data.map((reminder) => (
                 <li key={reminder.id}>
-                  <div className="exits-list__card flex items-center justify-between gap-2">
+                  <div className="utang-reminders-dialog__card exits-list__card flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="exits-list__name m-0 text-[length:var(--exits-text-sm)]">
                         {reminder.audience === "Counterparty"
@@ -788,6 +798,7 @@ export function RelationshipInviteReminderPanel({
                       <Button
                         type="button"
                         variant="ghost"
+                        className="utang-reminders-dialog__btn utang-reminders-dialog__btn--danger"
                         onClick={() => cancel.mutate(reminder.id)}
                       >
                         {t("personal.social.cancelReminder")}

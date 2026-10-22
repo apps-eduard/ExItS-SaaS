@@ -73,7 +73,8 @@ function ConnectionRequestCard({
 
   return (
     <Card
-      className="person-ribbon-card flex flex-col gap-3"
+      className="person-ribbon-card invitations-glass invitations-glass--people flex flex-col gap-3"
+      data-shell="soft-glass"
       data-testid={`connection-request-${request.id}`}
       data-busy={isAccepting || isDeclining || isRevoking ? "true" : "false"}
     >
@@ -130,11 +131,13 @@ function ConnectionRequestCard({
       </div>
 
       {variant === "received" ? (
-        <div className="customer-link-card__actions grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="customer-link-card__actions invitations-glass__actions grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button
             type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
+            intent="danger"
+            appearance="glossy"
+            emphasis="strong"
+            className="invitations-glass__btn w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onDecline}
           >
@@ -146,8 +149,8 @@ function ConnectionRequestCard({
           <Button
             type="button"
             intent="primary"
-            appearance="solid"
-            className="w-full sm:w-auto"
+            appearance="glossy"
+            className="invitations-glass__btn w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onAccept}
           >
@@ -160,11 +163,13 @@ function ConnectionRequestCard({
           </Button>
         </div>
       ) : (
-        <div className="customer-link-card__actions">
+        <div className="customer-link-card__actions invitations-glass__actions">
           <Button
             type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
+            intent="danger"
+            appearance="glossy"
+            emphasis="strong"
+            className="invitations-glass__btn w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onRevoke}
           >
@@ -333,7 +338,11 @@ export function InvitationsPage() {
         className={pendingTotal === 0 ? "invitations-top invitations-top--pair" : "invitations-top"}
         data-testid="invitations-top"
       >
-        <Card className="person-ribbon-card flex flex-col gap-3" data-testid="invitations-utang-card">
+        <Card
+          className="person-ribbon-card invitations-glass invitations-glass--lent flex flex-col gap-3"
+          data-shell="soft-glass"
+          data-testid="invitations-utang-card"
+        >
           <h2 className="personal-tracker-card__ribbon">
             <RibbonPennant icon={HandCoins} />
             {t("invitations.utangCardTitle")}
@@ -341,8 +350,13 @@ export function InvitationsPage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("invitations.utangCardHelp")}
           </p>
-          <div className="flex justify-end">
-            <Button asChild intent="primary" appearance="glossy" className="w-full sm:w-auto">
+          <div className="invitations-glass__actions flex justify-end">
+            <Button
+              asChild
+              intent="success"
+              appearance="glossy"
+              className="invitations-glass__btn w-full sm:w-auto"
+            >
               <Link to="/personal/utang/invitations" data-testid="invitations-open-utang">
                 <HandCoins className="size-4 shrink-0" aria-hidden />
                 {t("invitations.openUtangInvites")}
@@ -352,7 +366,11 @@ export function InvitationsPage() {
         </Card>
 
         {pendingTotal === 0 ? (
-          <Card className="person-ribbon-card flex flex-col gap-3" data-testid="invitations-empty-hub">
+          <Card
+            className="person-ribbon-card invitations-glass invitations-glass--people flex flex-col gap-3"
+            data-shell="soft-glass"
+            data-testid="invitations-empty-hub"
+          >
             <h2 className="personal-tracker-card__ribbon">
               <RibbonPennant icon={UserRound} />
               {t("invitations.emptyHubTitle")}
@@ -360,8 +378,13 @@ export function InvitationsPage() {
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("invitations.emptyHubBody")}
             </p>
-            <div className="flex justify-end">
-              <Button asChild intent="primary" appearance="glossy" className="w-full sm:w-auto">
+            <div className="invitations-glass__actions flex justify-end">
+              <Button
+                asChild
+                intent="primary"
+                appearance="glossy"
+                className="invitations-glass__btn w-full sm:w-auto"
+              >
                 <Link to="/personal/people" data-testid="invitations-open-people">
                   <Users className="size-4 shrink-0" aria-hidden />
                   {t("invitations.openPeople")}
@@ -384,8 +407,10 @@ export function InvitationsPage() {
 
       <div className="invitations-top invitations-top--pair">
       <section
-        className="person-ribbon-card catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
+        className="person-ribbon-card invitations-glass invitations-glass--people catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
+        data-shell="soft-glass"
         aria-label={t("invitations.received")}
+        data-testid="invitations-received"
       >
         <h2 className="personal-tracker-card__ribbon">
           <RibbonPennant icon={Users} />
@@ -430,8 +455,10 @@ export function InvitationsPage() {
       </section>
 
       <section
-        className="person-ribbon-card catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
+        className="person-ribbon-card invitations-glass invitations-glass--info catalog-form-section exits-animate-panel personal-section flex flex-col gap-3"
+        data-shell="soft-glass"
         aria-label={t("invitations.sent")}
+        data-testid="invitations-sent"
       >
         <h2 className="personal-tracker-card__ribbon">
           <RibbonPennant icon={Hourglass} />

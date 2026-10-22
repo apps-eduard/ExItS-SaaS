@@ -23,6 +23,31 @@ import {
 } from "@/components/exits/ExitsTable";
 
 describe("ExitsTable foundation", () => {
+  it("defaults data-column heads to sortable (TABLE_GLOBAL_DEFAULT_SORT)", () => {
+    render(
+      <ExitsTable>
+        <ExitsTableHeader>
+          <ExitsTableRow>
+            <ExitsTableHead data-testid="head-product">Product</ExitsTableHead>
+            <ExitsTableHead colSize="actions" data-testid="head-actions">
+              Actions
+            </ExitsTableHead>
+            <ExitsTableHead sortable={false} data-testid="head-fixed">
+              Fixed
+            </ExitsTableHead>
+          </ExitsTableRow>
+        </ExitsTableHeader>
+      </ExitsTable>,
+    );
+
+    expect(screen.getByTestId("head-product")).toHaveClass("exits-table__head--sortable");
+    expect(screen.getByTestId("head-product")).toHaveAttribute("aria-sort", "none");
+    expect(screen.getByTestId("head-product-sort")).toBeInTheDocument();
+    expect(screen.getByTestId("head-actions")).not.toHaveClass("exits-table__head--sortable");
+    expect(screen.getByTestId("head-actions")).not.toHaveAttribute("aria-sort");
+    expect(screen.getByTestId("head-fixed")).not.toHaveClass("exits-table__head--sortable");
+  });
+
   it("renders header, aligned cells, footer, and mobile slot", () => {
     render(
       <ExitsTableContainer data-testid="sample-table">
@@ -123,14 +148,61 @@ describe("ExitsTable foundation", () => {
     expect(screen.getByTestId("exits-table-toolbar")).toBeInTheDocument();
     expect(screen.getByText("2 selected")).toBeInTheDocument();
     expect(screen.getByTestId("selected-row")).toHaveAttribute("data-selected", "true");
-    // total < 10: no range / nav; no page-size options either
+    // total ≤ 10: no pagination footer; start-aligned row count only
     expect(screen.queryByTestId("exits-table-pagination-range")).not.toBeInTheDocument();
     expect(screen.queryByTestId("exits-table-prev")).not.toBeInTheDocument();
     expect(screen.queryByTestId("exits-table-next")).not.toBeInTheDocument();
     expect(screen.queryByTestId("exits-table-page-size")).not.toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-row-count")).toHaveTextContent("2");
+    expect(screen.getByTestId("exits-table-pagination")).toHaveAttribute("data-footer-mode", "count");
 
     await user.click(screen.getByTestId("sort-product-sort"));
     expect(onSort).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows pagination footer only when total is above 10", () => {
+    const { rerender } = render(
+      <ExitsTablePagination
+        page={1}
+        pageSize={25}
+        total={10}
+        onPageChange={() => undefined}
+        onPageSizeChange={() => undefined}
+        rowsPerPageLabel="Page size:"
+        previousLabel="Previous"
+        nextLabel="Next"
+        rangeLabel="{from}–{to} of {total}"
+        rowCountLabel="{total} rows"
+      />,
+    );
+
+    expect(screen.getByTestId("exits-table-row-count")).toHaveTextContent("10 rows");
+    expect(screen.queryByTestId("exits-table-pagination-range")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("exits-table-page-size")).not.toBeInTheDocument();
+
+    rerender(
+      <ExitsTablePagination
+        page={1}
+        pageSize={25}
+        total={11}
+        onPageChange={() => undefined}
+        onPageSizeChange={() => undefined}
+        rowsPerPageLabel="Page size:"
+        previousLabel="Previous"
+        nextLabel="Next"
+        rangeLabel="{from}–{to} of {total}"
+        rowCountLabel="{total} rows"
+      />,
+    );
+
+    expect(screen.queryByTestId("exits-table-row-count")).not.toBeInTheDocument();
+    // pageSize 25 is not in the ladder for total 11 → effective size 10
+    expect(screen.getByTestId("exits-table-pagination-range")).toHaveTextContent("1–10 of 11");
+    expect(screen.getByTestId("exits-table-page-size")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-pagination")).toHaveAttribute(
+      "data-footer-mode",
+      "pagination",
+    );
   });
 
   it("filters page-size options by total and opens a compact menu", async () => {

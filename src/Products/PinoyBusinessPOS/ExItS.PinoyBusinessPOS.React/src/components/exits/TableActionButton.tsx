@@ -59,7 +59,6 @@ export function TableActionButton({
         appearance={variant ? undefined : resolvedAppearance}
         variant={variant}
         aria-label={label}
-        title={label}
         className={cn("shrink-0", className)}
         data-testid={testId}
         data-action={action}

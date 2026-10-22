@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, CircleX, Keyboard, Search, Upload, X } from "lucide-react";
+import { Camera, CameraOff, CircleX, Keyboard, Search, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ExitsModal } from "@/components/exits/ExitsModal";
@@ -134,13 +134,15 @@ export function QrScanOrEnter({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-3" data-testid="qr-scan-or-enter" data-mode={mode}>
+    <div className="relative flex min-w-0 flex-col gap-3 overflow-x-hidden" data-testid="qr-scan-or-enter" data-mode={mode}>
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
         className="qr-file-input"
         data-testid="qr-file-input"
+        tabIndex={-1}
+        aria-hidden
         disabled={disabled || scanningFile}
         onChange={(event) => void onFileChange(event.target.files?.[0] ?? null)}
       />
@@ -381,13 +383,25 @@ export function QrScanOrEnter({
         onOpenChange={(next) => {
           if (!next) setCameraMissing(false);
         }}
-        title={t("qr.cameraMissingTitle")}
+        title={
+          <span className="qr-camera-missing-dialog__title">
+            <span className="qr-camera-missing-dialog__title-icon" aria-hidden>
+              <CameraOff className="size-[0.95rem] shrink-0" />
+            </span>
+            {t("qr.cameraMissingTitle")}
+          </span>
+        }
         description={t("qr.cameraMissingBody")}
         testId="qr-camera-missing"
         closeLabel={t("qr.cameraMissingCancel")}
         size="sm"
+        className="qr-camera-missing-dialog qr-camera-missing-dialog--soft-glass"
       >
-        <div className="people-add-id-chooser customer-create-kind" data-testid="qr-camera-missing-choices">
+        <div
+          className="qr-camera-missing-dialog__choices customer-create-kind"
+          data-shell="soft-glass"
+          data-testid="qr-camera-missing-choices"
+        >
           <div className="customer-create-kind__grid" role="group" aria-label={t("qr.cameraMissingTitle")}>
             <button
               type="button"

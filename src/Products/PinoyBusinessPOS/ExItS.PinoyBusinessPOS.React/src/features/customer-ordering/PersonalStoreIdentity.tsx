@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Link2 } from "lucide-react";
+import { Link2, Package, Truck } from "lucide-react";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
 import {
   MerchantOrderingBadge,
@@ -18,6 +19,13 @@ export type PersonalStoreIdentityProps = {
   headingLevel?: HeadingLevel;
   headingId?: string;
   connectionTestId?: string;
+  /**
+   * Soft Glass store card badge layout:
+   * row 1 = Connected + Delivery, row 2 = Linked date + Ordering available.
+   */
+  emphasisBadges?: boolean;
+  linkedAtLabel?: string | null;
+  fulfillment?: "delivery" | "pickup" | null;
   extra?: ReactNode;
 };
 
@@ -29,6 +37,9 @@ export function PersonalStoreIdentity({
   headingLevel = "h2",
   headingId,
   connectionTestId = "personal-store-identity-connection",
+  emphasisBadges = false,
+  linkedAtLabel = null,
+  fulfillment = null,
   extra,
 }: PersonalStoreIdentityProps) {
   const { t } = useI18n();
@@ -50,15 +61,83 @@ export function PersonalStoreIdentity({
             <span>{t("personal.merchants.linkedAs").replace("{name}", relationshipLabel)}</span>
           </p>
         ) : null}
-        <div className="pc-store-card__badge-row">
-          <ConnectionStatusChip
-            state="Linked"
-            audience="personal"
-            className="pc-store-card__status"
-            testId={connectionTestId}
-          />
-          <MerchantOrderingBadge available={canCustomerOrder} pending={orderingPending} />
-        </div>
+        {emphasisBadges ? (
+          <div
+            className="pc-store-card__badge-rows"
+            data-testid="personal-store-identity-badges"
+          >
+            <div className="pc-store-card__badge-row pc-store-card__badge-row--pair">
+              <ConnectionStatusChip
+                state="Linked"
+                audience="personal"
+                appearance="emphasis"
+                className="pc-store-card__status"
+                testId={connectionTestId}
+              />
+              {fulfillment ? (
+                <StatusChip
+                  tone="secondary"
+                  appearance="emphasis"
+                  shape="pill"
+                  icon={
+                    fulfillment === "delivery" ? (
+                      <Truck className="size-3.5 shrink-0" aria-hidden />
+                    ) : (
+                      <Package className="size-3.5 shrink-0" aria-hidden />
+                    )
+                  }
+                  className="pc-store-card__status pc-store-card__meta-chip"
+                  data-testid="personal-store-fulfillment-chip"
+                >
+                  {fulfillment === "delivery" ? t("orders.delivery") : t("orders.pickup")}
+                </StatusChip>
+              ) : (
+                <span className="pc-store-card__badge-spacer" aria-hidden />
+              )}
+            </div>
+            <div className="pc-store-card__badge-row pc-store-card__badge-row--pair">
+              {linkedAtLabel ? (
+                <StatusChip
+                  tone="info"
+                  appearance="emphasis"
+                  shape="pill"
+                  className="pc-store-card__status pc-store-card__meta-chip"
+                  data-testid="personal-store-linked-chip"
+                >
+                  {linkedAtLabel}
+                </StatusChip>
+              ) : (
+                <span className="pc-store-card__badge-spacer" aria-hidden />
+              )}
+              {orderingPending ? (
+                <MerchantOrderingBadge available={canCustomerOrder} pending />
+              ) : (
+                <StatusChip
+                  tone={canCustomerOrder ? "success" : "warning"}
+                  appearance="emphasis"
+                  shape="pill"
+                  className="pc-store-card__status pc-store-card__ordering-chip"
+                  data-testid="personal-store-ordering-chip"
+                >
+                  {canCustomerOrder
+                    ? t("personal.orderingAvailable")
+                    : t("personal.orderingUnavailable")}
+                </StatusChip>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="pc-store-card__badge-row">
+            <ConnectionStatusChip
+              state="Linked"
+              audience="personal"
+              appearance="soft"
+              className="pc-store-card__status"
+              testId={connectionTestId}
+            />
+            <MerchantOrderingBadge available={canCustomerOrder} pending={orderingPending} />
+          </div>
+        )}
         {extra}
       </div>
     </div>

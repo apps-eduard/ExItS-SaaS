@@ -11,5 +11,6 @@ Table footer pagination uses the lock in `src/Products/PinoyBusinessPOS/ExItS.Pi
 - Page-size menu: Quasar cover positioning, dense options (`32px` / `2px 8px`), centered labels, selected = primary color (amber in dark), hover = full-width gray bar, always include **All** (`0`) when any ladder size applies
 - Nav carets: Material Symbols first/prev/next/last at `1.5rem`, tight gap between single and double
 - Use `ExitsTablePageSizeSelect` / `exitsTablePageSizesForTotal` — do not swap in a native bordered `<select>`
+- **Row count ≤10 (LOCKED):** when total is at or below `TABLE_FOOTER_GLOBAL_HIDE_CONTROLS_AT_OR_BELOW` (**10**), hide pagination (page size + nav). Show start-aligned bold row count via `ExitsTablePagination` (`exits-table-pagination--count-only`, `exitsTableShouldShowRowCount`, `TABLE_FOOTER_GLOBAL_ROW_COUNT_ALIGN` = `start`, `TABLE_FOOTER_GLOBAL_ROW_COUNT_WEIGHT` = **700**, label `exitsTable.rowCount`). Soft Glass tables without paging (Activity / Money) still render this count when ≤10.
 
-Change this lock only when the user asks. Update `table-footer-global-default.ts` and `table-footer-global-default.test.ts` together.
+Change this lock only when the user asks. Update `table-footer-global-default.ts`, `table-footer-global-default.test.ts`, `ExitsTablePagination`, and `.exits-table-pagination--count-only` / `__count` CSS together.

@@ -11,15 +11,50 @@ Lock file: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/featu
 
 Reference CSS: `.personal-qa-glass--start|lent|owe|stores|people` in `globals.css` (light + `[data-theme="dark"]`).
 
+Component: `SoftGlassQuickAction` for Soft Glass quick-action rows.
+
 ## Recipe
 
 - Pastel / transparent gradient wash (not flat solid fill)
+- Shell radius: `SOFT_GLASS_RADIUS` = **1.1rem** (`--soft-glass-radius`; same as `TABLE_GLOBAL_SOFT_GLASS_RADIUS`)
 - 1px border: slate mixed with accent soft (`SOFT_GLASS_BORDER_SLATE` / `SOFT_GLASS_BORDER_SLATE_PCT`)
 - Inset top highlight + soft elevation (~`SOFT_GLASS_SHADOW_ACCENT_PCT`% accent)
 - Label: `SOFT_GLASS_LABEL_SIZE` / `SOFT_GLASS_LABEL_WEIGHT` (14px / 600), accent ink in light; `#e2e8f0` in dark
 - Hover / active: color-only, `SOFT_GLASS_TRANSITION_MS` (120ms) — **no** lift, scale, or translate
 - Focus: `SOFT_GLASS_FOCUS` (`#8b5cf6`) outline
 - Filled icon / pennant chips with soft radial highlight (not neon glow)
+
+## Title ribbon (LOCKED — Soft Glass default)
+
+Command: `ext soft-glass ribbon radius` (`SOFT_GLASS_RIBBON_DEFAULT_COMMAND`).
+
+- Radius: `SOFT_GLASS_RIBBON_RADIUS` = **`1.1rem 1.1rem 1.1rem 0`** (`--soft-glass-ribbon-radius`)
+- Same Soft Glass shell radius on the three free corners; fold corner (bottom-start) stays **0** for the ribbon notch
+- Use on Soft Glass ribbon cards: Money / detail / People / invitations / workplaces Soft Glass shells and any new Soft Glass `utang-ribbon-card` / `person-ribbon-card`
+- Selector family: Soft Glass shell `.personal-tracker-card__ribbon` (see `globals.css` Soft Glass ribbon radius lock)
+- Do **not** use the legacy sharp `0.2rem` ribbon radius on Soft Glass cards
+
+## Soft Glass input / dropdown radius (LOCKED)
+
+Command: `ext soft-glass field radius` (`SOFT_GLASS_FIELD_DEFAULT_COMMAND`).
+
+- Radius: `SOFT_GLASS_FIELD_RADIUS` = **`0.6875rem`** (`--soft-glass-field-radius`)
+- Same as global Soft control shape (`--exits-radius-soft`) — **not** the Soft Glass shell `1.1rem`
+- Use on Soft Glass inputs, selects, dropdown menus, Soft Glass modal field chrome (e.g. Update Balance), and Soft Glass fact cards that wrap field-like content
+- Keep the outlined border; Soft Glass wash may sit behind it
+- Do **not** force shell `1.1rem` on Soft Glass fields unless the user asks
+
+## Quick Action trailing (LOCKED)
+
+Command: `ext soft-glass qa trailing-auto` (`SOFT_GLASS_QA_DEFAULT_COMMAND`).
+
+| Trailing | When | Mark |
+| --- | --- | --- |
+| `count` | A count is present (including `0`) | Soft Glass circular badge (`.personal-qa-glass__badge`) |
+| `chevron` | Navigate / open, no count | Caret (`.personal-qa-glass__chevron`) |
+| `add` | Create / open-add | Plain `+` (`.personal-qa-glass__plus--*`) |
+
+Use `softGlassQaTrailing({ count, trailing })`. Do not invent a different end mark.
 
 ## Identities
 
@@ -32,7 +67,17 @@ Use `SOFT_GLASS_LIGHT` / `SOFT_GLASS_DARK`:
 | Stores / purple | `stores` |
 | Add person | `people` (royal blue) |
 | Start / cyan | `start` |
-| Info panel | `info` |
+| Info panel / detail QA | `info` |
+
+Every identity (including **`info`**) uses the same Soft Glass QA shell recipe in light and dark. Do not leave `info` on the legacy light grey border.
+
+## Dark Quick Action border (LOCKED — home Quick Actions)
+
+Default dark border matches Personal home Soft Glass Quick Actions:
+
+- Rest: `1px solid color-mix(in srgb, var(--personal-qa-chip) SOFT_GLASS_DARK_BORDER_CHIP_PCT%, SOFT_GLASS_DARK_BORDER_SLATE)` → **16%** chip into **`#475569`**
+- Hover: **22%** chip into **`#64748b`** (`SOFT_GLASS_DARK_BORDER_HOVER_*`)
+- Do **not** use light-mode slate mixes (`#e2e8f0` / `#cbd5e1`) on dark Soft Glass QA — they look washed out
 
 ## Forbidden
 
@@ -40,5 +85,6 @@ Use `SOFT_GLASS_LIGHT` / `SOFT_GLASS_DARK`:
 - Neon glow, purple-on-white AI defaults
 - Flat Material shadow stacks as the only surface
 - Warn / brown for owe cards
+- Hard primary-blue outline rings that ignore Soft Glass identity borders
 
-Change this lock only when the user asks. Update `soft-glass-card-global-default.ts` and `soft-glass-card-global-default.test.ts` together.
+Change this lock only when the user asks. Update `soft-glass-card-global-default.ts`, `soft-glass-card-global-default.test.ts`, `SoftGlassQuickAction.tsx`, Soft Glass QA / ribbon / field CSS (`--soft-glass-radius`, `--soft-glass-ribbon-radius`, `--soft-glass-field-radius`, dark QA border tokens), and the `/ui-standards` Soft Glass quick action sample together.

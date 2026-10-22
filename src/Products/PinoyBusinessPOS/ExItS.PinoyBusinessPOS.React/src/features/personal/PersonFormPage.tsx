@@ -313,7 +313,10 @@ export function PersonCreateForm({
           >
             <button
               type="button"
-              className="customer-create-kind__card"
+              className={cn(
+                "customer-create-kind__card",
+                embedded && "people-add-dialog__kind-card",
+              )}
               data-testid="person-create-kind-walkin"
               onClick={() => {
                 setCreateKind("walkin");
@@ -328,7 +331,10 @@ export function PersonCreateForm({
             </button>
             <button
               type="button"
-              className="customer-create-kind__card"
+              className={cn(
+                "customer-create-kind__card",
+                embedded && "people-add-dialog__kind-card",
+              )}
               data-testid="person-create-kind-exits"
               onClick={() => setCreateKind("exits")}
             >
@@ -478,7 +484,7 @@ export function PersonCreateForm({
               className={cn(
                 "catalog-form-actions",
                 embedded &&
-                  "person-form-actions--embedded sticky bottom-0 z-10 -mx-1 border-t border-border bg-surface px-1 pt-3",
+                  "person-form-actions--embedded people-add-dialog__actions sticky bottom-0 z-10 -mx-1 border-t border-border px-1 pt-3",
               )}
             >
               <div className="catalog-form-actions__primary flex flex-wrap items-center justify-end gap-2">
@@ -488,6 +494,7 @@ export function PersonCreateForm({
                     intent="danger"
                     appearance="glossy"
                     emphasis="strong"
+                    className="people-add-dialog__btn people-add-dialog__btn--danger"
                     data-testid="person-add-cancel"
                     disabled={saving || resolving}
                     onClick={() => {
@@ -502,7 +509,11 @@ export function PersonCreateForm({
                   type="submit"
                   intent={embedded ? "primary" : undefined}
                   appearance={embedded ? "glossy" : undefined}
-                  className={cn(embedded ? "min-w-[8rem]" : "catalog-form-actions__save")}
+                  className={cn(
+                    embedded
+                      ? "people-add-dialog__btn people-add-dialog__btn--primary min-w-[8rem]"
+                      : "catalog-form-actions__save",
+                  )}
                   data-testid="person-save"
                   disabled={saving || resolving || (createKind === "exits" && !resolved)}
                 >

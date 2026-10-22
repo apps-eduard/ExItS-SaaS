@@ -29,7 +29,25 @@ describe("ExitsTooltip", () => {
     await waitFor(() => {
       expect(screen.getByTestId("exits-tooltip")).toHaveTextContent("Inventory");
     });
-    expect(screen.getByTestId("exits-tooltip").parentElement).toBe(document.body);
+    const tip = screen.getByTestId("exits-tooltip");
+    expect(tip.parentElement).toBe(document.body);
+    expect(tip).toHaveAttribute("data-shell", "soft-glass");
+    expect(tip).toHaveAttribute("data-placement", "top");
+    expect(tip.querySelector(".exits-tooltip__arrow")).not.toBeNull();
+  });
+
+  it("supports side placement for compact sidebars", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <ExitsTooltip content="Stores" placement="end">
+        <button type="button">St</button>
+      </ExitsTooltip>,
+    );
+    await user.hover(screen.getByRole("button", { name: "St" }));
+    vi.advanceTimersByTime(EXITS_TOOLTIP_HOVER_DELAY_MS);
+    await waitFor(() => {
+      expect(screen.getByTestId("exits-tooltip")).toHaveAttribute("data-placement", "end");
+    });
   });
 
   it("does not open when disabled", async () => {

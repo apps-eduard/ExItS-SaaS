@@ -1,5 +1,5 @@
-import { useState, type CSSProperties } from "react";
-import { Check, Copy, Download, Share2 } from "lucide-react";
+import { useState } from "react";
+import { Check, Copy, Download, Image, Link2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyPublicIdentity } from "@/api/platform/public-identity-client";
 import { Button } from "@/components/ui/button";
@@ -7,26 +7,17 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { downloadQrPng } from "@/features/qr/download-qr-png";
+import { buildQrPngFile, downloadQrPng } from "@/features/qr/download-qr-png";
 import { QrCodeImage } from "@/features/qr/QrCodeImage";
-import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 import { buildCanonicalPersonalConnectUrl } from "@/lib/personal-connect-url";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
-
-/** Locked `ext btn`: standard intent, standard appearance, control height. */
-const EXT_BTN_CLASS =
-  "rounded-[6px] border shadow-[0_1px_5px_rgba(0,0,0,0.2),0_2px_2px_rgba(0,0,0,0.14),0_3px_1px_-2px_rgba(0,0,0,0.12)]";
-const EXT_BTN_STYLE: CSSProperties = {
-  backgroundColor: INTENT_GLOBAL_STANDARD,
-  color: "#000000",
-  borderColor: "rgba(0, 0, 0, 0.2)",
-};
 
 export function PersonalMyQrPage() {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
+  const [shareError, setShareError] = useState(false);
   const query = useQuery({
     queryKey: ["personal", "public-identity"],
     queryFn: ({ signal }) => getMyPublicIdentity(signal),
@@ -56,8 +47,9 @@ export function PersonalMyQrPage() {
     }
   }
 
-  async function share() {
+  async function shareLink() {
     if (!query.data || typeof navigator.share !== "function") return;
+    setShareError(false);
     const url = buildCanonicalPersonalConnectUrl(query.data.publicUserId);
     try {
       await navigator.share({
@@ -65,8 +57,42 @@ export function PersonalMyQrPage() {
         text: t("personal.social.qrShareText"),
         url,
       });
-    } catch {
-      /* user cancelled */
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+      setShareError(true);
+    }
+  }
+
+  async function shareQrPicture() {
+    if (!query.data || typeof navigator.share !== "function") return;
+    setShareError(false);
+    setDownloadError(false);
+    const payload = buildCanonicalPersonalConnectUrl(query.data.publicUserId);
+    const filename = `ExItS-${query.data.publicUserId}`;
+    try {
+      const file = await buildQrPngFile({ payload, filename });
+      const shareData: ShareData = {
+        title: t("personal.social.qrShareText"),
+        text: t("personal.social.qrShareText"),
+        files: [file],
+      };
+      if (typeof navigator.canShare === "function" && !navigator.canShare(shareData)) {
+        await downloadQrPng({ payload, filename });
+        return;
+      }
+      await navigator.share(shareData);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+      try {
+        await downloadQrPng({ payload, filename });
+      } catch {
+        setShareError(true);
+        setDownloadError(true);
+      }
     }
   }
 
@@ -85,7 +111,7 @@ export function PersonalMyQrPage() {
 
   return (
     <div
-      className="personal-page exits-page flex w-full min-w-0 flex-col gap-3"
+      className="personal-page personal-my-qr-page exits-page flex w-full min-w-0 flex-col gap-3"
       data-testid="personal-my-qr-page"
     >
       <PageHeader
@@ -95,7 +121,11 @@ export function PersonalMyQrPage() {
         backLabel={t(personalPageBackNav.more.labelKey)}
         backTestId="page-header-back-my-qr"
       />
-      <Card className="catalog-form-section exits-animate-panel personal-section flex flex-col items-center gap-3 p-4 text-center">
+      <Card
+        className="catalog-form-section exits-animate-panel personal-section personal-my-qr-glass flex flex-col items-center gap-3 p-4 text-center"
+        data-shell="soft-glass"
+        data-testid="personal-my-qr-card"
+      >
         <QrCodeImage
           payload={connectUrl}
           label={t("personal.social.qrImageAlt")}
@@ -116,47 +146,57 @@ export function PersonalMyQrPage() {
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
           {t("personal.social.qrSafety")}
         </p>
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className="personal-my-qr-actions" data-testid="personal-qr-actions">
           <Button
             type="button"
-            intent="neutral"
-            appearance="elevated"
-            className={EXT_BTN_CLASS}
-            style={EXT_BTN_STYLE}
+            intent="primary"
+            appearance="glossy"
+            className="personal-my-qr-actions__btn"
             data-testid="personal-qr-copy"
             onClick={() => void copyId()}
           >
-            <Copy className="size-4" aria-hidden />
+            <Copy className="size-4 shrink-0" aria-hidden />
             {copied ? t("qr.copied") : t("qr.copyId")}
           </Button>
           <Button
             type="button"
-            intent="neutral"
-            appearance="elevated"
-            className={EXT_BTN_CLASS}
-            style={EXT_BTN_STYLE}
+            intent="primary"
+            appearance="glossy"
+            className="personal-my-qr-actions__btn"
             data-testid="personal-qr-download"
             onClick={() => void downloadQr()}
           >
-            <Download className="size-4" aria-hidden />
+            <Download className="size-4 shrink-0" aria-hidden />
             {t("qr.download")}
           </Button>
           {shareAvailable ? (
             <Button
               type="button"
-              intent="neutral"
-              appearance="elevated"
-              className={EXT_BTN_CLASS}
-              style={EXT_BTN_STYLE}
-              data-testid="personal-qr-share"
-              onClick={() => void share()}
+              intent="primary"
+              appearance="glossy"
+              className="personal-my-qr-actions__btn"
+              data-testid="personal-qr-share-link"
+              onClick={() => void shareLink()}
             >
-              <Share2 className="size-4" aria-hidden />
-              {t("qr.share")}
+              <Link2 className="size-4 shrink-0" aria-hidden />
+              {t("qr.shareLink")}
+            </Button>
+          ) : null}
+          {shareAvailable ? (
+            <Button
+              type="button"
+              intent="primary"
+              appearance="glossy"
+              className="personal-my-qr-actions__btn"
+              data-testid="personal-qr-share-picture"
+              onClick={() => void shareQrPicture()}
+            >
+              <Image className="size-4 shrink-0" aria-hidden />
+              {t("qr.sharePicture")}
             </Button>
           ) : null}
         </div>
-        {downloadError ? (
+        {downloadError || shareError ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
             {t("branches.storefrontQr.downloadFailed")}
           </p>

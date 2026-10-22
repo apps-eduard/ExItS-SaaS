@@ -23,10 +23,13 @@ Search `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/component
 | Create or edit | `FormDrawer` |
 | Short dialog | `ExitsModal` (footer lock: `exits-modal-default.mdc`) |
 | Soft Glass card | Quick Actions recipe (`exits-soft-glass-card.mdc`) |
+| Soft Glass quick action | `SoftGlassQuickAction` (count badge \| chevron \| add) |
+| Tooltip | `ExitsTooltip` (lock: `exits-tooltip-default.mdc`) |
 
 A table filter is `ExitsMultiSelect`. Empty selection means all rows.
 New Personal / Utang cards use Soft Glass (light + dark) — not flat Material cards.
 
 Inputs and selects follow the global lock in `exits-input-default.mdc` and `exits-select-default.mdc`: intent, appearance, the 13px label, and the 14px text.
+Icon-only actions use Soft Glass `ExitsTooltip` (`exits-tooltip-default.mdc`), not native `title` alone.
 
 Detail: `.cursor/rules/exits-ui-architecture.mdc`.

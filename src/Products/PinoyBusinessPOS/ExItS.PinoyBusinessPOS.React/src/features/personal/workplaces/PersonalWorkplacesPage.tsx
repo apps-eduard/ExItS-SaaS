@@ -252,7 +252,7 @@ export function PersonalWorkplacesPage() {
 
     return (
       <div
-        className="personal-page exits-page flex w-full min-w-0 flex-col gap-3"
+        className="personal-page workplaces-page exits-page flex w-full min-w-0 flex-col gap-3"
         data-testid="personal-workplaces-accept-success"
       >
         <PageHeader
@@ -263,7 +263,10 @@ export function PersonalWorkplacesPage() {
         <p className="m-0 font-semibold" data-testid="personal-workplaces-accepted-lede">
           {t("personal.workplaces.acceptedLede").replace("{org}", accepted.organizationDisplayName)}
         </p>
-        <div className="catalog-form-section flex flex-col gap-2">
+        <div
+          className="catalog-form-section workplaces-glass workplaces-glass--stores flex flex-col gap-2"
+          data-shell="soft-glass"
+        >
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.workplaces.workLogin")}
           </p>
@@ -282,13 +285,13 @@ export function PersonalWorkplacesPage() {
             </p>
           ) : null}
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="workplaces-glass__actions flex flex-col gap-2">
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               type="button"
               intent="primary"
               appearance="glossy"
-              className="w-full"
+              className="workplaces-glass__btn w-full"
               disabled={!online}
               data-testid="personal-workplaces-accepted-open"
               onClick={() =>
@@ -315,8 +318,9 @@ export function PersonalWorkplacesPage() {
             </Button>
             <Button
               type="button"
-              variant="outline"
-              className="w-full"
+              intent="neutral"
+              appearance="glossy"
+              className="workplaces-glass__btn w-full"
               data-testid="personal-workplaces-accepted-view"
               onClick={() => setAccepted(null)}
             >
@@ -336,7 +340,7 @@ export function PersonalWorkplacesPage() {
 
   return (
     <div
-      className="personal-page exits-page flex w-full min-w-0 flex-col gap-3"
+      className="personal-page workplaces-page exits-page flex w-full min-w-0 flex-col gap-3"
       data-testid="personal-workplaces-page"
     >
       <PageHeader
@@ -357,9 +361,10 @@ export function PersonalWorkplacesPage() {
         </p>
       ) : null}
 
-      <div className="invitations-top invitations-top--pair">
+      <div className="invitations-top invitations-top--pair workplaces-top">
       <section
-        className="catalog-form-section personal-workplaces-list person-ribbon-card exits-animate-panel flex flex-col gap-2"
+        className="catalog-form-section personal-workplaces-list person-ribbon-card workplaces-glass workplaces-glass--stores exits-animate-panel flex flex-col gap-2"
+        data-shell="soft-glass"
         data-testid="personal-workplaces-list"
         aria-labelledby="personal-workplaces-list-heading"
       >
@@ -391,7 +396,8 @@ export function PersonalWorkplacesPage() {
         {workplaces.map((workplace) => (
           <article
             key={workplace.membershipId}
-            className={`personal-home-step-card ${workplaceStepTone(workplace.membershipStatus)}`}
+            className={`personal-home-step-card workplaces-glass-item ${workplaceStepTone(workplace.membershipStatus)}`}
+            data-shell="soft-glass"
             data-testid={`personal-workplace-${workplace.membershipId}`}
           >
             <div className="personal-home-step-card__rail" aria-hidden="true">
@@ -434,7 +440,8 @@ export function PersonalWorkplacesPage() {
       </section>
 
       <section
-        className="catalog-form-section person-ribbon-card exits-animate-panel flex flex-col gap-2"
+        className="catalog-form-section person-ribbon-card workplaces-glass workplaces-glass--info exits-animate-panel flex flex-col gap-2"
+        data-shell="soft-glass"
         data-testid="personal-workplaces-pending"
         aria-labelledby="personal-workplaces-pending-heading"
       >
@@ -470,7 +477,8 @@ export function PersonalWorkplacesPage() {
           return (
             <article
               key={invitation.id}
-              className="exits-list__card flex flex-col gap-2"
+              className="exits-list__card workplaces-glass-item flex flex-col gap-2"
+              data-shell="soft-glass"
               data-testid={`personal-workplaces-pending-${invitation.id}`}
             >
               <div className="flex items-start gap-2">
@@ -495,10 +503,12 @@ export function PersonalWorkplacesPage() {
                     placeholder={t("staffInvite.personalPasswordLabel")}
                     data-testid={`personal-workplaces-password-${invitation.id}`}
                   />
-                  <div className="flex gap-2">
+                  <div className="workplaces-glass__actions flex gap-2">
                     <Button
                       type="button"
-                      className="flex-1"
+                      intent="primary"
+                      appearance="glossy"
+                      className="workplaces-glass__btn flex-1"
                       disabled={acceptMutation.isPending || !online}
                       data-testid={`personal-workplaces-accept-${invitation.id}`}
                       onClick={() => void onAccept(invitation)}
@@ -510,7 +520,10 @@ export function PersonalWorkplacesPage() {
                     </Button>
                     <Button
                       type="button"
-                      variant="outline"
+                      intent="danger"
+                      appearance="glossy"
+                      emphasis="strong"
+                      className="workplaces-glass__btn"
                       onClick={() => {
                         setAcceptForId(null);
                         setPassword("");
@@ -521,10 +534,12 @@ export function PersonalWorkplacesPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-2">
+                <div className="workplaces-glass__actions flex gap-2">
                   <Button
                     type="button"
-                    className="flex-1"
+                    intent="primary"
+                    appearance="glossy"
+                    className="workplaces-glass__btn flex-1"
                     disabled={!online}
                     data-testid={`personal-workplaces-start-accept-${invitation.id}`}
                     onClick={() => {
@@ -536,7 +551,10 @@ export function PersonalWorkplacesPage() {
                   </Button>
                   <Button
                     type="button"
-                    variant="outline"
+                    intent="danger"
+                    appearance="glossy"
+                    emphasis="strong"
+                    className="workplaces-glass__btn"
                     disabled={declineMutation.isPending || !online}
                     data-testid={`personal-workplaces-decline-${invitation.id}`}
                     onClick={() => void onDecline(invitation.id)}
@@ -619,6 +637,9 @@ function WorkplaceAccess({
           />
           <Button
             type="button"
+            intent="primary"
+            appearance="glossy"
+            className="workplaces-glass__btn"
             disabled={resetting || !online || !newPassword.trim()}
             data-testid={`personal-workplace-save-password-${workplace.membershipId}`}
             onClick={onSavePassword}
@@ -631,7 +652,7 @@ function WorkplaceAccess({
           type="button"
           intent="primary"
           appearance="glossy"
-          className="w-fit self-center"
+          className="workplaces-glass__btn w-fit self-center"
           disabled={!online}
           data-testid={`personal-workplace-sign-in-${workplace.membershipId}`}
           onClick={onLogin}

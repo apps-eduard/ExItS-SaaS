@@ -116,7 +116,7 @@ export function OperationsSidebar() {
     );
     return (
       <li key={item.id}>
-        <ExitsTooltip content={label} disabled={!tooltipEnabled}>
+        <ExitsTooltip content={label} placement="end" disabled={!tooltipEnabled}>
           {link}
         </ExitsTooltip>
       </li>
@@ -174,7 +174,7 @@ export function OperationsSidebar() {
       </nav>
 
       <div className="admin-sidebar__footer">
-        <ExitsTooltip content={switchLabel} disabled={!tooltipEnabled}>
+        <ExitsTooltip content={switchLabel} placement="end" disabled={!tooltipEnabled}>
           <Link
             to="/workspace"
             className="admin-sidebar__switch"

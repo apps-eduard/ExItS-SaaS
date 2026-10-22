@@ -520,7 +520,21 @@ describe("Personal Utang shared-ledger UI", () => {
 
   it("hides record form by default on Money I lent", async () => {
     renderPath("/personal/utang/lent");
+    const summary = await screen.findByTestId("utang-summary-section");
+    expect(summary).toHaveClass(
+      "utang-money-main-card",
+      "utang-money-glass",
+      "utang-money-glass--lent",
+      "utang-ribbon-card",
+    );
+    expect(summary).toHaveAttribute("data-shell", "soft-glass");
+    expect(screen.getByTestId("utang-summary-ribbon")).toHaveTextContent("Money I lent");
     expect(await screen.findByTestId("utang-summary-record")).toHaveTextContent("Record money lent");
+    expect(summary).toContainElement(screen.getByTestId("utang-summary-cards"));
+    expect(summary).toContainElement(
+      await screen.findByTestId("utang-lent-responsive"),
+    );
+    expect(screen.getByTestId("utang-lent-table-search")).toBeInTheDocument();
     expect(screen.queryByTestId("utang-record-dialog")).not.toBeInTheDocument();
     expect(screen.queryByTestId("utang-rel-contact")).not.toBeInTheDocument();
   });

@@ -28,6 +28,18 @@ describe("EmptyState", () => {
     expect(screen.queryByText("Add")).not.toBeInTheDocument();
   });
 
+  it("supports Soft Glass shell", () => {
+    render(
+      createElement(EmptyState, {
+        title: "No activity yet",
+        shell: "soft-glass",
+      }),
+    );
+    const empty = screen.getByTestId("exits-empty-state");
+    expect(empty).toHaveAttribute("data-shell", "soft-glass");
+    expect(empty.className).toMatch(/exits-empty-state--soft-glass/);
+  });
+
   it("renders primary and secondary actions", async () => {
     const user = userEvent.setup();
     const onPrimary = vi.fn();

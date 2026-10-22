@@ -3,7 +3,7 @@
  * Change only when the user asks. Keep `.cursor/rules/exits-table-default.mdc`
  * and Soft Glass + glossy-raise CSS (globals.css + ui-standards.css) aligned.
  *
- * Command: ext table soft-glass header-glossy-raise footer-glossy-raise search
+ * Command: ext table soft-glass header-glossy-raise footer-glossy-raise search sort
  */
 export const TABLE_GLOBAL_DEFAULT_INTENT = "standard" as const;
 export const TABLE_GLOBAL_DEFAULT_SHELL = "soft-glass" as const;
@@ -12,13 +12,34 @@ export const TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE = "glossy-raise" as const;
 export const TABLE_GLOBAL_DEFAULT_FOOTER_INTENT = "standard" as const;
 export const TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE = "glossy-raise" as const;
 export const TABLE_GLOBAL_DEFAULT_SEARCH = true as const;
+/**
+ * LOCKED: sort is ON by default for data columns.
+ * `ExitsTableHead` resolves sortable from this unless overridden.
+ * Actions (`colSize="actions"`) and checkbox columns stay off.
+ * Change only when the user asks. Keep `exits-table-default.mdc` aligned.
+ */
+export const TABLE_GLOBAL_DEFAULT_SORT = true as const;
 
 /** Soft Glass shell radius (theme primary wash). */
 export const TABLE_GLOBAL_SOFT_GLASS_RADIUS = "1.1rem" as const;
 
+/**
+ * Soft Glass toolbar search field radius (not Control Shape).
+ * Keep CSS aligned: `.exits-table-container[data-shell="soft-glass"] …__search .ui-standards-qinput__box`
+ * and Money Soft Glass search (`.utang-money-table …`).
+ */
+export const TABLE_GLOBAL_SOFT_GLASS_SEARCH_RADIUS = "0.75rem" as const;
+
+/**
+ * Soft Glass empty state radius (inside Soft Glass table / Soft Glass card).
+ * Keep CSS aligned: `[data-shell="soft-glass"] .exits-empty-state` and
+ * `.exits-empty-state--soft-glass`.
+ */
+export const TABLE_GLOBAL_SOFT_GLASS_EMPTY_RADIUS = "0.75rem" as const;
+
 /** Cursor shorthand for a new standard table. */
 export const TABLE_GLOBAL_DEFAULT_COMMAND =
-  "ext table soft-glass header-glossy-raise footer-glossy-raise search" as const;
+  "ext table soft-glass header-glossy-raise footer-glossy-raise search sort" as const;
 
 /**
  * Locked glossy-raise header chrome (soft bottom raise + column side edges).

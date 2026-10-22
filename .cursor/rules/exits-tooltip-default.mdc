@@ -1,0 +1,24 @@
+---
+description: Soft Glass ExitsTooltip is the locked default for tip labels
+alwaysApply: true
+---
+
+# Tooltip default (LOCKED)
+
+When creating a tooltip, use the lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/tooltip-global-default.ts`.
+
+The locked command is `ext tooltip soft-glass top`.
+
+- Component: `ExitsTooltip` (portaled Soft Glass surface + triangle caret)
+- Shell: Soft Glass (`TOOLTIP_GLOBAL_DEFAULT_SHELL` = `soft-glass`) — theme primary wash via `data-shell="soft-glass"` on `.exits-tooltip`
+- Placement: `top` (`TOOLTIP_GLOBAL_DEFAULT_PLACEMENT`) for table / toolbar / icon actions
+- Sidebars (compact icon rail): pass `placement="end"` (or `start` in RTL layouts that need it)
+- Delays: hover `TOOLTIP_GLOBAL_HOVER_DELAY_MS` (300), focus `TOOLTIP_GLOBAL_FOCUS_DELAY_MS` (40)
+- Gap / caret: `TOOLTIP_GLOBAL_GAP_PX` (10) / `TOOLTIP_GLOBAL_ARROW_PX` (8) — keep `.exits-tooltip__arrow` CSS aligned
+- Accessibility: keep `aria-label` (or visible text) on the trigger; tooltip is supplementary only
+- Do **not** rely on native `title=` alone for icon-only actions (browser tip competes with Soft Glass)
+
+Use `ExitsTooltip` / `TableActionButton` (already wraps it). Do not invent a new tip surface, flat Material tip, or blur Soft Glass unless the user names one.
+
+Change this lock only when the user asks. Update `tooltip-global-default.ts`, `tooltip-global-default.test.ts`, `ExitsTooltip.tsx`, and `.exits-tooltip` CSS in `globals.css` together.

@@ -32,15 +32,18 @@ import {
   listPersonalContacts,
 } from "@/api/platform/personal-utang-client";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
 import { PersonalInstallMoreEntry } from "@/features/personal/PersonalInstallOffer";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
+import { UtangActiveAccountsTable } from "@/features/personal/utang/UtangActiveAccountsTable";
 import { PersonalTrackerCard, type PersonalTrackerTestIds } from "@/features/personal/PersonalTrackerCard";
 
 import { usePreferencesOverlay } from "@/features/preferences/PreferencesOverlay";
@@ -96,6 +99,7 @@ const UTANG_HUB_TRACKER_TEST_IDS: PersonalTrackerTestIds = {
 export function PersonalUtangHubPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
+  const { layout, isTable } = useResponsiveDataLayout();
   const [searchParams, setSearchParams] = useSearchParams();
   const segment = parseSegment(searchParams.get("segment"));
   const [search, setSearch] = useState("");
@@ -284,7 +288,7 @@ export function PersonalUtangHubPage() {
                 </span>
                 {t("personal.utang.activeAccounts")}
               </h2>
-              {showSearch ? (
+              {showSearch && !isTable ? (
                 <div className="utang-search">
                   <ExitsOutlineInput
                     label={t("personal.utang.searchLabel")}
@@ -370,76 +374,104 @@ export function PersonalUtangHubPage() {
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="utang-hub-accounts-error">
                 {t("personal.utang.accountsUnavailable")}
               </p>
-            ) : visibleAccounts.length === 0 ? (
-              <EmptyState
-              variant="filtered"
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
-                title={t("personal.utang.accountsFilterEmptyTitle")}
-                detail={t("personal.utang.accountsFilterEmptyDetail")}
-              />
-            ) : segment === "split" || segment === "ledgers" ? (
-              <div className="utang-hub-split" data-testid={`utang-hub-split-${segment}`}>
-                {(segment === "split"
-                  ? [
-                      {
-                        key: "lent",
-                        label: t("personal.utang.filterOwedToMe"),
-                        match: (row: (typeof visibleAccounts)[number]) => row.perspective === "lent",
-                      },
-                      {
-                        key: "owe",
-                        label: t("personal.utang.filterIOwe"),
-                        match: (row: (typeof visibleAccounts)[number]) => row.perspective === "owe",
-                      },
-                    ]
-                  : [
-                      {
-                        key: "mine",
-                        label: t("personal.utang.ownershipMine"),
-                        match: (row: (typeof visibleAccounts)[number]) => row.isLedgerOwner,
-                      },
-                      {
-                        key: "shared",
-                        label: t("personal.utang.ownershipSharedWithMe"),
-                        match: (row: (typeof visibleAccounts)[number]) => !row.isLedgerOwner,
-                      },
-                    ]
-                ).map((column, index) => {
-                  const columnRows = visibleAccounts.filter(column.match);
-                  return (
-                    <Fragment key={column.key}>
-                      {index > 0 ? <span className="utang-hub-split__divider" aria-hidden /> : null}
-                      <section className="utang-hub-split__column" data-testid={`utang-hub-split-${column.key}`}>
-                        <h3 className="utang-hub-split__title">
-                          {column.label} <span className="tabular-nums">({columnRows.length})</span>
-                        </h3>
-                        {columnRows.length === 0 ? (
-                          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                            {t("personal.utang.accountsFilterEmptyTitle")}
-                          </p>
-                        ) : (
-                          <ul className="utang-settings-list utang-settings-list--single m-0 grid list-none gap-4 p-0">
-                            {columnRows.map((row) => (
-                              <li key={row.relationshipId}>
-                                <UtangAccountCard row={row} />
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </section>
-                    </Fragment>
-                  );
-                })}
-              </div>
             ) : (
-              <ul className="utang-settings-list m-0 grid list-none gap-4 p-0" data-testid="utang-hub-account-list">
-                {visibleAccounts.map((row) => (
-                  <li key={row.relationshipId}>
-                    <UtangAccountCard row={row} />
-                  </li>
-                ))}
-              </ul>
+              <ExitsResponsiveDataView
+                layout={layout}
+                testId="utang-hub-accounts-responsive"
+                className="utang-hub-accounts-responsive"
+                table={
+                  <UtangActiveAccountsTable
+                    rows={visibleAccounts}
+                    search={search}
+                    onSearch={setSearch}
+                    showSearch={showSearch}
+                  />
+                }
+                list={
+                  visibleAccounts.length === 0 ? (
+                    <EmptyState
+                      variant="filtered"
+                      align="center"
+                      icon={<Users className="size-5" strokeWidth={1.75} />}
+                      title={t("personal.utang.accountsFilterEmptyTitle")}
+                      detail={t("personal.utang.accountsFilterEmptyDetail")}
+                    />
+                  ) : segment === "split" || segment === "ledgers" ? (
+                    <div className="utang-hub-split" data-testid={`utang-hub-split-${segment}`}>
+                      {(segment === "split"
+                        ? [
+                            {
+                              key: "lent",
+                              label: t("personal.utang.filterOwedToMe"),
+                              match: (row: (typeof visibleAccounts)[number]) =>
+                                row.perspective === "lent",
+                            },
+                            {
+                              key: "owe",
+                              label: t("personal.utang.filterIOwe"),
+                              match: (row: (typeof visibleAccounts)[number]) =>
+                                row.perspective === "owe",
+                            },
+                          ]
+                        : [
+                            {
+                              key: "mine",
+                              label: t("personal.utang.ownershipMine"),
+                              match: (row: (typeof visibleAccounts)[number]) => row.isLedgerOwner,
+                            },
+                            {
+                              key: "shared",
+                              label: t("personal.utang.ownershipSharedWithMe"),
+                              match: (row: (typeof visibleAccounts)[number]) => !row.isLedgerOwner,
+                            },
+                          ]
+                      ).map((column, index) => {
+                        const columnRows = visibleAccounts.filter(column.match);
+                        return (
+                          <Fragment key={column.key}>
+                            {index > 0 ? (
+                              <span className="utang-hub-split__divider" aria-hidden />
+                            ) : null}
+                            <section
+                              className="utang-hub-split__column"
+                              data-testid={`utang-hub-split-${column.key}`}
+                            >
+                              <h3 className="utang-hub-split__title">
+                                {column.label}{" "}
+                                <span className="tabular-nums">({columnRows.length})</span>
+                              </h3>
+                              {columnRows.length === 0 ? (
+                                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                                  {t("personal.utang.accountsFilterEmptyTitle")}
+                                </p>
+                              ) : (
+                                <ul className="utang-settings-list utang-settings-list--single m-0 grid list-none gap-4 p-0">
+                                  {columnRows.map((row) => (
+                                    <li key={row.relationshipId}>
+                                      <UtangAccountCard row={row} />
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </section>
+                          </Fragment>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <ul
+                      className="utang-settings-list m-0 grid list-none gap-4 p-0"
+                      data-testid="utang-hub-account-list"
+                    >
+                      {visibleAccounts.map((row) => (
+                        <li key={row.relationshipId}>
+                          <UtangAccountCard row={row} />
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                }
+              />
             )}
             </div>
           </section>

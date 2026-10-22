@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn";
 export type EmptyStateVariant = "default" | "filtered" | "setup";
 export type EmptyStateSize = "standard" | "compact";
 export type EmptyStateAlign = "start" | "center";
+export type EmptyStateShell = "soft-glass";
 
 export type EmptyStateProps = {
   title: string;
@@ -22,6 +23,11 @@ export type EmptyStateProps = {
    */
   variant?: EmptyStateVariant;
   size?: EmptyStateSize;
+  /**
+   * Soft Glass surface (table / Soft Glass card empty). Prefer parent
+   * `[data-shell="soft-glass"] .exits-empty-state` CSS; set when not nested.
+   */
+  shell?: EmptyStateShell;
   className?: string;
   testId?: string;
 };
@@ -39,6 +45,7 @@ export function EmptyState({
   align = "start",
   variant = "default",
   size = "standard",
+  shell,
   className,
   testId,
 }: EmptyStateProps) {
@@ -46,18 +53,20 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-dashed border-border",
+        "exits-empty-state flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-dashed border-border",
         "bg-[color-mix(in_srgb,var(--exits-surface-muted)_55%,var(--exits-surface))]",
         size === "standard" && "px-4 py-8",
         size === "compact" && "px-3 py-4",
         align === "center" && "items-center justify-center text-center",
         align === "center" && size === "standard" && "min-h-[12rem]",
+        shell === "soft-glass" && "exits-empty-state--soft-glass",
         className,
       )}
       data-testid={testId ?? "exits-empty-state"}
       data-align={align}
       data-variant={variant}
       data-size={size}
+      data-shell={shell}
     >
       {icon ? (
         <span

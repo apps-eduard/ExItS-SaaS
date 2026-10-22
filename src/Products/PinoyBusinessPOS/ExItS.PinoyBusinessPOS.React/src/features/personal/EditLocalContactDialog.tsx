@@ -51,6 +51,7 @@ export function EditLocalContactDialog({
       onOpenChange={onOpenChange}
       title={t("personal.utang.qaEditContact")}
       testId="utang-edit-contact-dialog"
+      className="utang-edit-contact-dialog utang-edit-contact-dialog--soft-glass"
       closeLabel={t("personal.utang.closeRecordDialog")}
       busy={updateContact.isPending}
       ribbon
@@ -82,8 +83,9 @@ export function EditLocalContactDialog({
           <Button
             type="button"
             intent="danger"
-            appearance="gradient"
+            appearance="glossy"
             emphasis="strong"
+            className="utang-edit-contact-dialog__btn utang-edit-contact-dialog__btn--danger"
             disabled={updateContact.isPending}
             data-testid="utang-edit-contact-cancel"
             onClick={() => onOpenChange(false)}
@@ -94,6 +96,7 @@ export function EditLocalContactDialog({
             type="submit"
             intent="primary"
             appearance="glossy"
+            className="utang-edit-contact-dialog__btn utang-edit-contact-dialog__btn--primary"
             disabled={updateContact.isPending}
             data-testid="utang-edit-contact-save"
           >
@@ -103,7 +106,10 @@ export function EditLocalContactDialog({
         </>
       }
     >
-      <div className="flex min-w-0 flex-col gap-3">
+      <div
+        className="utang-edit-contact-dialog__body flex min-w-0 flex-col gap-3"
+        data-shell="soft-glass"
+      >
         <ExitsOutlineInput
           id="utang-edit-contact-name"
           label={t("people.displayName")}

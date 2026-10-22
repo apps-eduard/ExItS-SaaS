@@ -642,9 +642,17 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-card-capsule-warn")).toHaveAttribute("data-intent", "warn");
     expect(screen.getByTestId("ui-standard-card-capsule-ring-magenta")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-capsule-body-magenta")).toHaveTextContent("Lorem Ipsum");
-    expect(screen.getByTestId("ui-standard-card-quick-action-heading")).toHaveTextContent("Card quick action");
+    expect(screen.getByTestId("ui-standard-card-quick-action-heading")).toHaveTextContent(
+      "Soft Glass quick action",
+    );
     expect(screen.getByTestId("ui-standard-card-quick-action-info")).toHaveTextContent("Money I owe");
     expect(screen.getByTestId("ui-standard-card-quick-action-secondary")).toHaveTextContent("Add person");
+    expect(screen.getByTestId("ui-standard-card-quick-action-lent")).toHaveAttribute("data-trailing", "count");
+    expect(screen.getByTestId("ui-standard-card-quick-action-info")).toHaveAttribute("data-trailing", "chevron");
+    expect(screen.getByTestId("ui-standard-card-quick-action-secondary")).toHaveAttribute(
+      "data-trailing",
+      "add",
+    );
     expect(screen.getByTestId("ui-standard-card-welcome-heading")).toHaveTextContent("Card welcome");
     expect(screen.getByTestId("ui-standard-card-page-header-heading")).toHaveTextContent("Card page header");
     expect(screen.getByTestId("ui-standard-card-page-header-primary")).toHaveTextContent("Money I owe");

@@ -1,4 +1,4 @@
-import { ChevronRight, Pencil, Search, UserPlus, Users } from "lucide-react";
+import { HandCoins, Pencil, Search, UserPlus, Users, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CountBadge } from "@/components/exits/CountChip";
@@ -19,6 +19,7 @@ import {
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
 import { Button } from "@/components/ui/button";
 import {
   type PeopleConnectionStatus,
@@ -38,6 +39,12 @@ import {
   type PeopleTableExportLabels,
 } from "@/features/personal/people-table-output";
 import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
+import {
+  TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE,
+  TABLE_GLOBAL_DEFAULT_FOOTER_INTENT,
+  TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE,
+  TABLE_GLOBAL_DEFAULT_HEADER_INTENT,
+} from "@/features/ui-standards/table-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -138,8 +145,12 @@ function PeopleListRow({
       <Link
         to={`/personal/people/${row.contact.id}`}
         className={cn(
-          "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card text-foreground no-underline",
-          utang && (utang.direction === "lent" ? "utang-settings-card--lent" : "utang-settings-card--owe"),
+          "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card people-list-card text-foreground no-underline",
+          utang
+            ? utang.direction === "lent"
+              ? "utang-settings-card--lent"
+              : "utang-settings-card--owe"
+            : "utang-settings-card--people",
           utang && (owned ? "utang-account-card--mine" : "utang-account-card--shared"),
         )}
         data-testid={`people-row-${row.contact.id}`}
@@ -186,7 +197,7 @@ function PeopleListRow({
                 {utang ? (
                   <>
                     <StatusChip
-                      tone={utang.direction === "lent" ? "success" : "warning"}
+                      tone={utang.direction === "lent" ? "success" : "info"}
                       appearance="emphasis"
                       shape="square"
                     >
@@ -226,9 +237,6 @@ function PeopleListRow({
               </span>
             </div>
           </div>
-          <span className="utang-account-card__caret" aria-hidden>
-            <ChevronRight className="size-5" />
-          </span>
         </div>
       </Link>
     </li>
@@ -269,31 +277,18 @@ function PeopleUtangTotal({
 
 const PEOPLE_PAGE_SIZES = [10, 25, 50, 100, 200, 500] as const;
 
-function PeopleTable({
+function PeopleTableOutput({
   rows,
   statusLabel,
-  search,
-  onSearch,
-  empty,
+  appearance = "auto",
+  className,
 }: {
   rows: PeopleRowModel[];
   statusLabel: (status: PeopleConnectionStatus) => string;
-  search: string;
-  onSearch: (value: string) => void;
-  empty: { title: string; detail: string; variant: "default" | "filtered" } | null;
+  appearance?: "auto" | "icons";
+  className?: string;
 }) {
   const { t } = useI18n();
-  const [editingContact, setEditingContact] = useState<PeopleRowModel["contact"] | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<(typeof PEOPLE_PAGE_SIZES)[number]>(10);
-
-  useEffect(() => {
-    setPage(1);
-  }, [rows]);
-
-  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize) || 1);
-  const safePage = Math.min(page, pageCount);
-  const pageRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
   const exportLabels: PeopleTableExportLabels = {
     name: t("people.displayName"),
     contact: t("people.column.contact"),
@@ -308,15 +303,64 @@ function PeopleTable({
   }
 
   return (
+    <ExitsTableOutputActions
+      appearance={appearance}
+      className={className}
+      csvLabel={t("exitsTable.exportCsv")}
+      xlsxLabel={t("exitsTable.exportExcel")}
+      pdfLabel={t("exitsTable.exportPdf")}
+      printLabel={t("exitsTable.print")}
+      menuLabel={t("exitsTable.exportPrintMenu")}
+      disabled={rows.length === 0}
+      onCsv={() => downloadPeopleTableCsv(exportModel(), exportLabels)}
+      onXlsx={() => downloadPeopleTableXlsx(exportModel(), exportLabels)}
+      onPdf={() => downloadPeopleTablePdf(exportModel(), exportLabels)}
+      onPrint={printPeopleTable}
+    />
+  );
+}
+
+function PeopleTable({
+  rows,
+  statusLabel,
+  search,
+  onSearch,
+  empty,
+  showOutput = true,
+}: {
+  rows: PeopleRowModel[];
+  statusLabel: (status: PeopleConnectionStatus) => string;
+  search: string;
+  onSearch: (value: string) => void;
+  empty: { title: string; detail: string; variant: "default" | "filtered" } | null;
+  showOutput?: boolean;
+}) {
+  const { t } = useI18n();
+  const [editingContact, setEditingContact] = useState<PeopleRowModel["contact"] | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PEOPLE_PAGE_SIZES)[number]>(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [rows]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize) || 1);
+  const safePage = Math.min(page, pageCount);
+  const pageRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const tableChromeStyle = {
+    "--qheader-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+    "--qheader-ink": "var(--exits-text, #000)",
+    "--qfooter-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+    "--qfooter-ink": "var(--exits-text, #000)",
+  } as CSSProperties;
+
+  return (
     <ExitsTableContainer
-      className="people-list-table"
+      className="people-list-table my-orders-table"
+      data-shell="soft-glass"
       data-testid="people-table"
-      style={
-        {
-          "--qheader-accent": "var(--people-table-chrome-bg)",
-          "--exits-table-page-size-border": "var(--people-table-chrome-border)",
-        } as CSSProperties
-      }
+      style={tableChromeStyle}
     >
       <ExitsTableToolbar
         search={
@@ -333,27 +377,19 @@ function PeopleTable({
           />
         }
         output={
-          <ExitsTableOutputActions
-            csvLabel={t("exitsTable.exportCsv")}
-            xlsxLabel={t("exitsTable.exportExcel")}
-            pdfLabel={t("exitsTable.exportPdf")}
-            printLabel={t("exitsTable.print")}
-            menuLabel={t("exitsTable.exportPrintMenu")}
-            onCsv={() => downloadPeopleTableCsv(exportModel(), exportLabels)}
-            onXlsx={() => downloadPeopleTableXlsx(exportModel(), exportLabels)}
-            onPdf={() => downloadPeopleTablePdf(exportModel(), exportLabels)}
-            onPrint={printPeopleTable}
-          />
+          showOutput ? (
+            <PeopleTableOutput rows={rows} statusLabel={statusLabel} />
+          ) : undefined
         }
       />
       <ExitsTable>
         <ExitsTableHeader
-          data-appearance="glossy"
-          data-intent="standard"
+          data-appearance={TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE}
+          data-intent={TABLE_GLOBAL_DEFAULT_HEADER_INTENT}
           style={
             {
-              "--qheader-bg": "var(--people-table-chrome-bg)",
-              "--qheader-ink": "var(--people-table-chrome-ink)",
+              "--qheader-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+              "--qheader-ink": "var(--exits-text, #000)",
             } as CSSProperties
           }
         >
@@ -364,7 +400,7 @@ function PeopleTable({
             <ExitsTableHead>{t("people.column.status")}</ExitsTableHead>
             <ExitsTableHead>{t("people.detail.iLentAction")}</ExitsTableHead>
             <ExitsTableHead>{t("people.detail.iOweAction")}</ExitsTableHead>
-            <ExitsTableHead align="center" className="people-table-actions">
+            <ExitsTableHead cellAlign="center" colSize="actions" className="people-table-actions">
               {t("people.column.actions")}
             </ExitsTableHead>
           </ExitsTableRow>
@@ -429,39 +465,63 @@ function PeopleTable({
                     owe
                   />
                 </ExitsTableCell>
-                <ExitsTableCell className="people-table-actions">
-                  <span className="inline-flex flex-wrap items-center justify-end gap-2">
+                <ExitsTableCell cellAlign="center" colSize="actions" className="people-table-actions">
+                  <span className="people-table-actions__cluster inline-flex flex-nowrap items-center justify-center gap-1.5">
                     {row.connectionStatus === "local" ? (
+                      <ExitsTooltip
+                        content={`${t("people.action.edit")} ${row.contact.displayName}`}
+                      >
+                        <Button
+                          type="button"
+                          intent="primary"
+                          appearance="outline"
+                          shape="round"
+                          size="icon"
+                          className="people-table-action people-table-action--edit people-table-edit"
+                          data-testid={`people-edit-${row.contact.id}`}
+                          aria-label={`${t("people.action.edit")} ${row.contact.displayName}`}
+                          onClick={() => setEditingContact(row.contact)}
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </Button>
+                      </ExitsTooltip>
+                    ) : null}
+                    <ExitsTooltip content={t("personal.utang.filterOwedToMe")}>
                       <Button
-                        type="button"
-                        intent="primary"
-                        appearance="glossy"
+                        asChild
+                        intent="success"
+                        appearance="outline"
                         shape="round"
                         size="icon"
-                        className="people-table-edit"
-                        data-testid={`people-edit-${row.contact.id}`}
-                        aria-label={`${t("people.action.edit")} ${row.contact.displayName}`}
-                        onClick={() => setEditingContact(row.contact)}
+                        className="people-table-action people-table-action--lent"
                       >
-                        <Pencil className="size-4" aria-hidden />
+                        <Link
+                          to={`/personal/utang/lent?contact=${row.contact.id}`}
+                          data-testid={`people-lent-${row.contact.id}`}
+                          aria-label={t("personal.utang.filterOwedToMe")}
+                        >
+                          <Wallet className="size-4" aria-hidden />
+                        </Link>
                       </Button>
-                    ) : null}
-                    <Button asChild intent="success" appearance="glossy" className="w-auto">
-                      <Link
-                        to={`/personal/utang/lent?contact=${row.contact.id}`}
-                        data-testid={`people-lent-${row.contact.id}`}
+                    </ExitsTooltip>
+                    <ExitsTooltip content={t("personal.utang.filterIOwe")}>
+                      <Button
+                        asChild
+                        intent="info"
+                        appearance="outline"
+                        shape="round"
+                        size="icon"
+                        className="people-table-action people-table-action--owe"
                       >
-                        {t("personal.utang.filterOwedToMe")}
-                      </Link>
-                    </Button>
-                    <Button asChild intent="info" appearance="glossy" className="w-auto">
-                      <Link
-                        to={`/personal/utang/owe?contact=${row.contact.id}`}
-                        data-testid={`people-owe-${row.contact.id}`}
-                      >
-                        {t("personal.utang.filterIOwe")}
-                      </Link>
-                    </Button>
+                        <Link
+                          to={`/personal/utang/owe?contact=${row.contact.id}`}
+                          data-testid={`people-owe-${row.contact.id}`}
+                          aria-label={t("personal.utang.filterIOwe")}
+                        >
+                          <HandCoins className="size-4" aria-hidden />
+                        </Link>
+                      </Button>
+                    </ExitsTooltip>
                   </span>
                 </ExitsTableCell>
               </ExitsTableRow>
@@ -471,14 +531,14 @@ function PeopleTable({
         </ExitsTableBody>
       </ExitsTable>
       <div
-        className="people-table-footer"
+        className="people-table-footer my-orders-table-footer"
         data-testid="people-table-footer"
-        data-appearance="glossy"
-        data-intent="standard"
+        data-appearance={TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE}
+        data-intent={TABLE_GLOBAL_DEFAULT_FOOTER_INTENT}
         style={
           {
-            "--qfooter-bg": "var(--people-table-chrome-bg)",
-            "--qfooter-ink": "var(--people-table-chrome-ink)",
+            "--qfooter-bg": "var(--exits-surface-elevated, #fff)",
+            "--qfooter-ink": "var(--exits-text, #000)",
           } as CSSProperties
         }
       >
@@ -497,6 +557,7 @@ function PeopleTable({
           previousLabel={t("exitsTable.previous")}
           nextLabel={t("exitsTable.next")}
           rangeLabel={t("exitsTable.range")}
+          rowCountLabel={t("exitsTable.rowCount")}
         />
       </div>
       {editingContact ? (
@@ -523,6 +584,7 @@ export function PeopleListSection({
 }) {
   const { t } = useI18n();
   const compactSearch = !useMediaMin(640);
+  const tableLayout = useMediaMin(1024);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PeopleListFilter>("all");
 
@@ -582,6 +644,18 @@ export function PeopleListSection({
       data-testid="people-list-section"
       aria-label={t("people.listTitle")}
     >
+      {!tableLayout ? (
+        <div
+          className="people-list-section__export"
+          data-testid="people-list-export"
+        >
+          <PeopleTableOutput
+            rows={filteredRows}
+            statusLabel={statusLabel}
+            appearance="icons"
+          />
+        </div>
+      ) : null}
       <div className="people-search-row flex min-w-0 flex-wrap items-end gap-2" data-testid="people-search-row">
         {toolbarStart}
         <Button
@@ -654,23 +728,26 @@ export function PeopleListSection({
           ))}
         </ul>
       )}
-      <PeopleTable
-        rows={filteredRows}
-        statusLabel={statusLabel}
-        search={search}
-        onSearch={setSearch}
-        empty={
-          rows.length === 0
-            ? { title: t("people.emptyTitle"), detail: t("people.emptyBody"), variant: "default" }
-            : filteredRows.length === 0
-              ? {
-                  title: t("people.noResultsTitle"),
-                  detail: t("people.noResultsBody"),
-                  variant: "filtered",
-                }
-              : null
-        }
-      />
+      {tableLayout ? (
+        <PeopleTable
+          rows={filteredRows}
+          statusLabel={statusLabel}
+          search={search}
+          onSearch={setSearch}
+          showOutput
+          empty={
+            rows.length === 0
+              ? { title: t("people.emptyTitle"), detail: t("people.emptyBody"), variant: "default" }
+              : filteredRows.length === 0
+                ? {
+                    title: t("people.noResultsTitle"),
+                    detail: t("people.noResultsBody"),
+                    variant: "filtered",
+                  }
+                : null
+          }
+        />
+      ) : null}
     </section>
   );
 }

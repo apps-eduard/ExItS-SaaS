@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
-  CalendarClock,
   Check,
   ChevronDown,
   Link2,
@@ -259,7 +258,11 @@ function LinkedMerchantStoreCard({
       className="pc-store-directory__item"
       style={{ animationDelay: `${Math.min(index, 8) * 45 + 40}ms` }}
     >
-      <article className="pc-store-card" data-testid="linked-merchant-card">
+      <article
+        className="pc-store-card pc-store-card--soft-glass"
+        data-shell="soft-glass"
+        data-testid="linked-merchant-card"
+      >
         <PersonalStoreIdentity
           storeName={storeName}
           relationshipLabel={relationshipName}
@@ -267,28 +270,12 @@ function LinkedMerchantStoreCard({
           orderingPending={ordering.pending}
           headingLevel="h3"
           connectionTestId="linked-merchant-connection-chip"
+          emphasisBadges
+          linkedAtLabel={`${t("personal.merchants.linkedSince")} ${new Date(merchant.linkedAtUtc).toLocaleDateString()}`}
+          fulfillment={
+            canCustomerOrder ? (canCustomerDelivery ? "delivery" : "pickup") : null
+          }
         />
-
-        <div className="pc-store-card__meta">
-          <span className="pc-store-card__meta-item">
-            <CalendarClock className="size-3.5 shrink-0" aria-hidden />
-            {t("personal.merchants.linkedSince")}{" "}
-            {new Date(merchant.linkedAtUtc).toLocaleDateString()}
-          </span>
-          {canCustomerOrder ? (
-            canCustomerDelivery ? (
-              <span className="pc-store-card__meta-item">
-                <Truck className="size-3.5 shrink-0" aria-hidden />
-                {t("orders.delivery")}
-              </span>
-            ) : (
-              <span className="pc-store-card__meta-item">
-                <Package className="size-3.5 shrink-0" aria-hidden />
-                {t("orders.pickup")}
-              </span>
-            )
-          ) : null}
-        </div>
 
         <div
           className={
@@ -555,7 +542,7 @@ export function LinkedMerchantsListSection({
       <div className="pc-store-list-section__header">
         <div className="min-w-0">
           <h2 className="pc-commerce-nav__body-title m-0">{t("personal.merchants.listTitle")}</h2>
-          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+          <p className="pc-store-list-section__lede m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.merchants.listLede")}
           </p>
         </div>

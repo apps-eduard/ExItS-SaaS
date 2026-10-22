@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Cog,
   FileText,
+  Handshake,
   Heart,
   Info,
   Lightbulb,
@@ -27,6 +28,8 @@ import {
 } from "lucide-react";
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
+import { SoftGlassQuickAction } from "@/components/exits/SoftGlassQuickAction";
+import { SOFT_GLASS_QA_DEFAULT_COMMAND } from "@/features/ui-standards/soft-glass-card-global-default";
 import { INPUT_SAMPLES, inputAccent } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsQslider } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { RADIO_STANDARD_COLOR } from "@/features/ui-standards/UiStandardsRadioGallery";
@@ -2085,44 +2088,43 @@ export function UiStandardsCardCapsuleSample() {
   );
 }
 
-/** Solid pill index card with ghost badge — Personal home Quick Actions style. */
+/**
+ * Soft Glass Quick Action lock — trailing: count badge | chevron | add.
+ * Sample matches Personal Soft Glass QA (My Record count · Money I owe chevron · Add person +).
+ */
 const QUICK_ACTION_SAMPLES = [
-  { id: "info", label: "Money I owe", Icon: ArrowDown, badge: "chevron" },
-  { id: "secondary", label: "Add person", Icon: UserPlus, badge: "plus" },
-  { id: "success", label: "Money I lent", Icon: ArrowUp, badge: "chevron" },
-  { id: "warn", label: "Overdue", Icon: CalendarX, badge: "chevron" },
+  { id: "lent", identity: "lent" as const, label: "My Record", Icon: Handshake, count: 0 },
+  { id: "info", identity: "owe" as const, label: "Money I owe", Icon: ArrowDown, trailing: "chevron" as const },
+  { id: "success", identity: "lent" as const, label: "Money I lent", Icon: ArrowUp, trailing: "chevron" as const },
+  { id: "secondary", identity: "people" as const, label: "Add person", Icon: UserPlus, trailing: "add" as const },
 ] as const;
 
 export function UiStandardsCardQuickActionSample() {
   return (
     <div className="ui-standards-qcard-sample" data-testid="ui-standard-card-quick-action-sample">
-      <CardSampleHeading testId="ui-standard-card-quick-action-heading">Card quick action</CardSampleHeading>
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-        {QUICK_ACTION_SAMPLES.map((sample) => {
-          const Icon = sample.Icon;
-          return (
-            <div
-              key={sample.id}
-              className={`personal-home-index-card personal-home-index-card--${sample.id} personal-home-index-card--solid`}
-              data-intent={sample.id}
-              data-testid={`ui-standard-card-quick-action-${sample.id}`}
-            >
-              <span className="personal-home-index-card__ribbon" aria-hidden="true">
-                <span className="personal-home-index-card__fold" />
-                <Icon className="size-[1.1rem]" />
-              </span>
-              <span className="personal-home-index-card__body">
-                <span className="personal-home-index-card__title">{sample.label}</span>
-              </span>
-              <strong
-                className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
-                aria-hidden="true"
-              >
-                {sample.badge === "plus" ? "+" : <ChevronRight className="size-4" />}
-              </strong>
-            </div>
-          );
-        })}
+      <CardSampleHeading testId="ui-standard-card-quick-action-heading">
+        Soft Glass quick action
+      </CardSampleHeading>
+      <p className="m-0 mb-2 text-[length:var(--exits-text-xs)] text-muted">
+        Locked trailing: count badge when there is a count; otherwise chevron (navigate) or add (+).
+      </p>
+      <UiStandardsCopyCommand
+        standard="Card"
+        command={SOFT_GLASS_QA_DEFAULT_COMMAND}
+        testId="ui-standard-card-quick-action-command"
+      />
+      <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">
+        {QUICK_ACTION_SAMPLES.map((sample) => (
+          <SoftGlassQuickAction
+            key={sample.id}
+            identity={sample.identity}
+            label={sample.label}
+            icon={sample.Icon}
+            count={"count" in sample ? sample.count : null}
+            trailing={"trailing" in sample ? sample.trailing : undefined}
+            testId={`ui-standard-card-quick-action-${sample.id}`}
+          />
+        ))}
       </div>
     </div>
   );

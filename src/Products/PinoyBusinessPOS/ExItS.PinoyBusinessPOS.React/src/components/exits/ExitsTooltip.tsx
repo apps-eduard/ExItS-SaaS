@@ -14,20 +14,31 @@ import {
   type Ref,
 } from "react";
 import { createPortal } from "react-dom";
+import {
+  TOOLTIP_GLOBAL_DEFAULT_PLACEMENT,
+  TOOLTIP_GLOBAL_FOCUS_DELAY_MS,
+  TOOLTIP_GLOBAL_GAP_PX,
+  TOOLTIP_GLOBAL_HOVER_DELAY_MS,
+} from "@/features/ui-standards/tooltip-global-default";
 import { cn } from "@/lib/cn";
 
-const HOVER_DELAY_MS = 300;
-const FOCUS_DELAY_MS = 40;
-const GAP_PX = 8;
 const VIEWPORT_PAD = 8;
 /** Above sticky topbar (30) and reveal rail (35); below dialogs (~80+). */
 const TOOLTIP_Z_INDEX = 45;
+
+export type ExitsTooltipPlacement = "top" | "bottom" | "start" | "end";
 
 type ExitsTooltipProps = {
   content: string;
   children: ReactElement;
   /** When true, tooltip never opens (Standard / Reveal expanded labels). */
   disabled?: boolean;
+  /**
+   * Placement relative to the trigger.
+   * Default: locked Soft Glass top for icon actions (`tooltip-global-default`).
+   * Sidebars may pass `end` / `start` to keep the tip beside the rail.
+   */
+  placement?: ExitsTooltipPlacement;
   className?: string;
   contentClassName?: string;
   /** Test id on the floating surface. */
@@ -51,23 +62,44 @@ function mergeRefs<T>(...refs: Array<Ref<T> | undefined>) {
   };
 }
 
-function computePosition(trigger: HTMLElement, tip: HTMLElement): Coords {
+function computePosition(
+  trigger: HTMLElement,
+  tip: HTMLElement,
+  placement: ExitsTooltipPlacement,
+): Coords {
   const rect = trigger.getBoundingClientRect();
   const tipW = tip.offsetWidth;
   const tipH = tip.offsetHeight;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const rtl = document.documentElement.getAttribute("dir") === "rtl";
+  const gap = TOOLTIP_GLOBAL_GAP_PX;
 
-  let left = rtl ? rect.left - tipW - GAP_PX : rect.right + GAP_PX;
-  let top = rect.top + rect.height / 2 - tipH / 2;
+  let left = 0;
+  let top = 0;
 
-  if (!rtl && left + tipW > vw - VIEWPORT_PAD) {
-    left = Math.max(VIEWPORT_PAD, rect.left - tipW - GAP_PX);
+  if (placement === "top" || placement === "bottom") {
+    left = rect.left + rect.width / 2 - tipW / 2;
+    top = placement === "top" ? rect.top - tipH - gap : rect.bottom + gap;
+    if (placement === "top" && top < VIEWPORT_PAD) {
+      top = Math.min(vh - tipH - VIEWPORT_PAD, rect.bottom + gap);
+    }
+    if (placement === "bottom" && top + tipH > vh - VIEWPORT_PAD) {
+      top = Math.max(VIEWPORT_PAD, rect.top - tipH - gap);
+    }
+  } else {
+    const preferEnd = placement === "end";
+    const openEnd = rtl ? !preferEnd : preferEnd;
+    left = openEnd ? rect.right + gap : rect.left - tipW - gap;
+    top = rect.top + rect.height / 2 - tipH / 2;
+    if (openEnd && left + tipW > vw - VIEWPORT_PAD) {
+      left = Math.max(VIEWPORT_PAD, rect.left - tipW - gap);
+    }
+    if (!openEnd && left < VIEWPORT_PAD) {
+      left = Math.min(vw - tipW - VIEWPORT_PAD, rect.right + gap);
+    }
   }
-  if (rtl && left < VIEWPORT_PAD) {
-    left = Math.min(vw - tipW - VIEWPORT_PAD, rect.right + GAP_PX);
-  }
+
   top = Math.min(Math.max(VIEWPORT_PAD, top), vh - tipH - VIEWPORT_PAD);
   left = Math.min(Math.max(VIEWPORT_PAD, left), vw - tipW - VIEWPORT_PAD);
 
@@ -75,13 +107,14 @@ function computePosition(trigger: HTMLElement, tip: HTMLElement): Coords {
 }
 
 /**
- * Compact professional tooltip — portaled to escape sidebar overflow.
- * Supplementary only; triggers must keep their own accessible names.
+ * Soft Glass ExItS tooltip — portaled to escape overflow (tables, sidebars).
+ * Supplementary only; triggers must keep their own accessible names (`aria-label`).
  */
 export function ExitsTooltip({
   content,
   children,
   disabled = false,
+  placement = TOOLTIP_GLOBAL_DEFAULT_PLACEMENT,
   className,
   contentClassName,
   testId = "exits-tooltip",
@@ -131,7 +164,7 @@ export function ExitsTooltip({
     }
     const update = () => {
       if (!triggerRef.current || !tipRef.current) return;
-      setCoords(computePosition(triggerRef.current, tipRef.current));
+      setCoords(computePosition(triggerRef.current, tipRef.current, placement));
     };
     update();
     window.addEventListener("scroll", update, true);
@@ -140,7 +173,7 @@ export function ExitsTooltip({
       window.removeEventListener("scroll", update, true);
       window.removeEventListener("resize", update);
     };
-  }, [open, content]);
+  }, [open, content, placement]);
 
   if (!isValidElement(children)) {
     return children as ReactNode;
@@ -167,7 +200,7 @@ export function ExitsTooltip({
     "aria-describedby": describedBy,
     onMouseEnter: (event: MouseEvent) => {
       child.props.onMouseEnter?.(event);
-      scheduleOpen(HOVER_DELAY_MS);
+      scheduleOpen(TOOLTIP_GLOBAL_HOVER_DELAY_MS);
     },
     onMouseLeave: (event: MouseEvent) => {
       child.props.onMouseLeave?.(event);
@@ -175,7 +208,7 @@ export function ExitsTooltip({
     },
     onFocus: (event: FocusEvent) => {
       child.props.onFocus?.(event);
-      scheduleOpen(FOCUS_DELAY_MS);
+      scheduleOpen(TOOLTIP_GLOBAL_FOCUS_DELAY_MS);
     },
     onBlur: (event: FocusEvent) => {
       child.props.onBlur?.(event);
@@ -190,7 +223,6 @@ export function ExitsTooltip({
         left: 0,
         zIndex: TOOLTIP_Z_INDEX,
         visibility: "hidden",
-        // visibility:hidden can still hit-test in some engines — never block clicks pre-position.
         pointerEvents: "none",
       };
 
@@ -204,10 +236,13 @@ export function ExitsTooltip({
               id={tipId}
               role="tooltip"
               data-testid={testId}
+              data-shell="soft-glass"
+              data-placement={placement}
               className={cn("exits-tooltip", contentClassName)}
               style={style}
             >
               {content}
+              <span className="exits-tooltip__arrow" aria-hidden="true" />
             </div>,
             document.body,
           )
@@ -216,4 +251,4 @@ export function ExitsTooltip({
   );
 }
 
-export const EXITS_TOOLTIP_HOVER_DELAY_MS = HOVER_DELAY_MS;
+export const EXITS_TOOLTIP_HOVER_DELAY_MS = TOOLTIP_GLOBAL_HOVER_DELAY_MS;

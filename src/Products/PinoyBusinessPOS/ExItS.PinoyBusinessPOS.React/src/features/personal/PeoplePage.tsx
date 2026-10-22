@@ -114,7 +114,11 @@ export function PeoplePage() {
       {isRefreshing ? <BackgroundRefreshIndicator active label={t("loading.updating")} /> : null}
       {isInitialLoading ? <PageSkeleton label={t("loading.label")} /> : null}
       {!isInitialLoading ? (
-        <Card className="person-ribbon-card people-list-card flex flex-col gap-3" data-testid="people-list-card">
+        <Card
+          className="person-ribbon-card people-list-card people-list-main-glass flex flex-col gap-3"
+          data-shell="soft-glass"
+          data-testid="people-list-card"
+        >
           <h2 className="personal-tracker-card__ribbon" data-testid="people-list-ribbon">
             <span className="personal-tracker-card__pennant" aria-hidden>
               <Users className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />

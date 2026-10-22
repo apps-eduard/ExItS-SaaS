@@ -46,6 +46,14 @@
   line-height: 1.2;
 }
 
+/* Compact store list header on small devices. */
+@media (max-width: 639px) {
+  .pc-store-list-section__lede,
+  .pc-store-list-section__count {
+    display: none;
+  }
+}
+
 /* Soft Glass card — Stores & orders shell (theme primary; no blur). */
 .pc-commerce-nav,
 .pc-commerce-nav--glass,
@@ -280,6 +288,179 @@
   transform: none;
 }
 
+/*
+ * Soft Glass store card (list / small device) — stores identity.
+ * Lock: soft-glass-card-global-default. No blur, neon, or lift.
+ */
+.pc-store-card.pc-store-card--soft-glass,
+.pc-store-card--soft-glass[data-shell="soft-glass"] {
+  --pc-store-glass-chip: #8b5cf6;
+  --pc-store-glass-deep: #6d28d9;
+  --pc-store-glass-soft: #c4b5fd;
+  --pc-store-glass-wash: #f5f3ff;
+  --pc-store-glass-mid: #ede9fe;
+  --pc-store-glass-ink: #5b21b6;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--pc-store-glass-soft));
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--pc-store-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--pc-store-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--pc-store-glass-chip) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.pc-store-card--soft-glass:hover,
+.pc-store-card--soft-glass:active,
+.pc-store-card--soft-glass.pc-store-card--static:hover,
+.pc-store-card--soft-glass.pc-store-card--static:active {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--pc-store-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--pc-store-glass-wash) 58%, transparent) 48%,
+    color-mix(in srgb, var(--pc-store-glass-mid) 52%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--pc-store-glass-chip) 10%, transparent);
+  transform: none;
+}
+
+.pc-store-card--soft-glass:focus-within {
+  outline: 2px solid var(--soft-glass-focus, #8b5cf6);
+  outline-offset: 2px;
+}
+
+.pc-store-card--soft-glass .pc-store-card__avatar {
+  border-color: color-mix(in srgb, #fff 48%, var(--pc-store-glass-soft));
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.32), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--pc-store-glass-chip)),
+      var(--pc-store-glass-chip) 58%,
+      var(--pc-store-glass-deep)
+    );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+.pc-store-card--soft-glass .pc-store-card__name,
+.pc-store-card--soft-glass .pc-store-card__relationship {
+  color: var(--pc-store-glass-ink);
+}
+
+.pc-store-card--soft-glass .pc-store-card__meta,
+.pc-store-card--soft-glass .pc-store-card__manage {
+  border-top-color: color-mix(in srgb, #e2e8f0 55%, var(--pc-store-glass-soft));
+}
+
+.pc-store-card--soft-glass .pc-store-card__action {
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem)) !important;
+}
+
+.pc-store-card--soft-glass .pc-store-card__action--statement {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--pc-store-glass-soft)) !important;
+  color: var(--pc-store-glass-ink) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--pc-store-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--pc-store-glass-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--pc-store-glass-chip) 8%, transparent) !important;
+}
+
+.pc-store-card--soft-glass .pc-store-card__action--statement:hover {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--pc-store-glass-soft)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--pc-store-glass-wash) 58%, transparent) 48%,
+    color-mix(in srgb, var(--pc-store-glass-mid) 52%, transparent) 100%
+  ) !important;
+  transform: none !important;
+}
+
+[data-theme="dark"] .pc-store-card.pc-store-card--soft-glass,
+[data-theme="dark"] .pc-store-card--soft-glass[data-shell="soft-glass"] {
+  --pc-store-glass-chip: #6d28d9;
+  --pc-store-glass-deep: #4c1d95;
+  --pc-store-glass-soft: #c4b5fd;
+  --pc-store-glass-ink: #e2e8f0;
+  border-color: color-mix(in srgb, var(--pc-store-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .pc-store-card--soft-glass:hover,
+[data-theme="dark"] .pc-store-card--soft-glass:active {
+  border-color: color-mix(in srgb, var(--pc-store-glass-chip) 22%, #64748b);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 8%, #1e293b) 0%,
+    color-mix(in srgb, #fff 4%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 50%, #1e293b) 100%
+  );
+  transform: none;
+}
+
+[data-theme="dark"] .pc-store-card--soft-glass .pc-store-card__name,
+[data-theme="dark"] .pc-store-card--soft-glass .pc-store-card__relationship {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .pc-store-card--soft-glass .pc-store-card__meta,
+[data-theme="dark"] .pc-store-card--soft-glass .pc-store-card__manage {
+  border-top-color: color-mix(in srgb, #fff 14%, transparent);
+}
+
+[data-theme="dark"] .pc-store-card--soft-glass .pc-store-card__avatar {
+  border-color: color-mix(in srgb, var(--pc-store-glass-chip) 32%, #475569);
+  color: #f5f3ff;
+  background:
+    radial-gradient(circle at 30% 24%, color-mix(in srgb, #fff 14%, transparent), transparent 55%),
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--pc-store-glass-chip) 42%, #334155),
+      color-mix(in srgb, var(--pc-store-glass-deep) 58%, #1e293b)
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 3px 8px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .pc-store-card--soft-glass .pc-store-card__action--statement {
+  border-color: color-mix(in srgb, var(--pc-store-glass-chip) 16%, #475569) !important;
+  color: #e2e8f0 !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--pc-store-glass-chip) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--pc-store-glass-deep) 11%, #0f172a) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26) !important;
+}
+
 .pc-store-card__top {
   display: flex;
   min-width: 0;
@@ -329,6 +510,66 @@
   align-items: center;
   gap: 0.35rem;
   margin-top: 0.35rem;
+}
+
+/* Soft Glass store card: Connected+Delivery, then Linked+Ordering. */
+.pc-store-card__badge-rows {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  width: 100%;
+}
+
+.pc-store-card__badge-row--pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0;
+  width: 100%;
+}
+
+.pc-store-card__badge-row--pair > .pc-store-card__status,
+.pc-store-card__badge-row--pair > .pc-store-card__ordering,
+.pc-store-card__badge-row--pair > .pc-store-card__badge-spacer {
+  display: inline-flex;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  height: var(--pc-store-chip-height, 1.5rem);
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-store-card__badge-row--pair .exits-status-chip,
+.pc-store-card__badge-row--pair .pc-store-card__ordering {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--pc-store-chip-height, 1.5rem);
+  min-height: var(--pc-store-chip-height, 1.5rem);
+  max-height: var(--pc-store-chip-height, 1.5rem);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: nowrap;
+}
+
+.pc-store-card__badge-row--pair .exits-status-chip__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--exits-status-chip-icon-size, 0.75rem);
+  height: var(--exits-status-chip-icon-size, 0.75rem);
+  min-height: 0;
+}
+
+.pc-store-card__badge-spacer {
+  min-height: var(--pc-store-chip-height, 1.5rem);
 }
 
 .pc-store-card__header-row {
@@ -433,15 +674,27 @@
   padding-top: 0.35rem;
 }
 
+/* Wrapper (ConnectionStatusChip) or chip itself — always center label/icon. */
 .pc-store-card__status {
+  display: inline-flex;
   height: var(--pc-store-chip-height);
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
 }
 
-.pc-store-card__status > span {
+/*
+ * Size the nested StatusChip only when `.pc-store-card__status` is a wrapper.
+ * When StatusChip itself has `.pc-store-card__status`, do not force child
+ * icon/label spans to full chip height (that pushed Delivery/Linked up).
+ */
+.pc-store-card__status:not(.exits-status-chip) > .exits-status-chip {
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--pc-store-chip-height);
   height: var(--pc-store-chip-height);
+  max-height: var(--pc-store-chip-height);
   padding: 0 0.55rem;
   font-size: var(--exits-text-xs);
   font-weight: 600;
@@ -617,7 +870,8 @@
   }
 
   .pc-store-card__ordering,
-  .pc-store-card__status > span {
+  .pc-store-card__status:not(.exits-status-chip) > .exits-status-chip,
+  .pc-store-card__badge-row--pair .exits-status-chip {
     padding-inline: 0.45rem;
     font-size: 0.68rem;
   }
@@ -1376,16 +1630,25 @@
   min-width: min(100%, 12rem);
 }
 
+/* Soft Glass list search (SearchField) — same Soft Glass search radius as table toolbar. */
+.my-orders-list-shell .exits-search-field,
+.linked-merchants-list-shell .exits-search-field,
+.linked-merchants-page__search .exits-search-field {
+  /* LOCKED: TABLE_GLOBAL_SOFT_GLASS_SEARCH_RADIUS */
+  --exits-search-radius: 0.75rem;
+  border-radius: 0.75rem;
+}
+
 .my-orders-table .exits-table-toolbar__search .ui-standards-qinput,
 .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput {
   width: 100%;
 }
 
-/* Soft Glass search (theme primary; radius follows Control Shape). */
+/* Soft Glass search (theme primary; LOCKED: TABLE_GLOBAL_SOFT_GLASS_SEARCH_RADIUS). */
 .my-orders-table .exits-table-toolbar__search .ui-standards-qinput__box,
 .my-orders-list-shell .exits-table-toolbar__search .ui-standards-qinput__box {
   border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft)) !important;
-  border-radius: var(--exits-search-radius, var(--exits-control-radius)) !important;
+  border-radius: 0.75rem !important;
   background: linear-gradient(
     165deg,
     color-mix(in srgb, #fff 42%, transparent) 0%,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BellRing, Check, CheckCircle2, ChevronRight, CircleAlert, Contact, HandCoins, Handshake, History, List, Loader2, Minus, Pencil, PenLine, Plus, Share2, SlidersHorizontal, Users, Wallet, Zap, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BellRing, Check, CheckCircle2, CircleAlert, Contact, HandCoins, Handshake, History, List, Loader2, Minus, Pencil, PenLine, Plus, Share2, SlidersHorizontal, Users, Wallet, Zap, type LucideIcon } from "lucide-react";
 import {
   cancelPersonalUtangEntry,
   closePersonalDebtRelationship,
@@ -27,10 +27,12 @@ import {
 } from "@/api/platform/personal-utang-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { INTENT_GLOBAL_SECONDARY } from "@/features/ui-standards/intent-color-global-default";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ExitsOutlineInput, ExitsOutlineSelect, ExitsOutlineTextarea } from "@/components/exits/ExitsOutlineField";
+import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
 import { Switch } from "@/components/ui/switch";
 import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -38,7 +40,11 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { SoftGlassQuickAction } from "@/components/exits/SoftGlassQuickAction";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
+import { UtangActivityTable } from "@/features/personal/utang/UtangActivityTable";
+import { UtangRelationshipListTable } from "@/features/personal/utang/UtangRelationshipListTable";
 import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import {
   isSharedRelationship as workspaceIsSharedRelationship,
@@ -418,6 +424,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
+  const { layout } = useResponsiveDataLayout();
   const perspective = mode === "lent" ? "Lent" : "Borrowed";
   const [searchParams] = useSearchParams();
   const requestedContactId = searchParams.get("contact") ?? "";
@@ -425,6 +432,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const [recordFormOpen, setRecordFormOpen] = useState(Boolean(requestedContactId));
   const [recordMode, setRecordMode] = useState<"lent" | "owe">(mode);
   const [ledgerFilter, setLedgerFilter] = useState<"all" | "mine" | "shared">("all");
+  const [listSearch, setListSearch] = useState("");
   const [amount, setAmount] = useState("0.00");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -717,9 +725,28 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const sharePendingBlocked =
     willShare && Boolean(existingSharedOwnedByMe) && pendingAtLimit;
 
+  const listSearchNeedle = listSearch.trim().toLowerCase();
+  const tableRows = visibleRows
+    .map((row) => ({
+      id: row.id,
+      displayName: contactLabel(contacts, row),
+      balance: row.currentBalance,
+      dueDateUtc: row.dueDateUtc ?? null,
+      isShared: isSharedRelationship(row),
+      isOwner: row.isLedgerOwner !== false,
+    }))
+    .filter((row) => !listSearchNeedle || row.displayName.toLowerCase().includes(listSearchNeedle));
+  const searchedVisibleRowIds = new Set(tableRows.map((row) => row.id));
+  const searchedVisibleRows = listSearchNeedle
+    ? visibleRows.filter((row) => searchedVisibleRowIds.has(row.id))
+    : visibleRows;
+
   return (
     <div
-      className="personal-page exits-page flex min-w-0 flex-col gap-3"
+      className={cn(
+        "personal-page utang-money-page exits-page flex min-w-0 flex-col gap-3",
+        mode === "lent" ? "utang-money-page--lent" : "utang-money-page--owe",
+      )}
       data-testid={mode === "lent" ? "personal-utang-lent" : "personal-utang-owe"}
     >
       <PageHeader
@@ -733,63 +760,216 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
 
-      <div className="personal-home-metrics utang-summary-cards" data-testid="utang-summary-cards">
-        <button
-          type="button"
-          className="personal-home-index-card personal-home-index-card--secondary utang-summary-cards__action"
-          aria-controls="utang-record-panel"
-          aria-expanded={recordFormOpen}
-          data-testid="utang-summary-record"
-          onClick={() => {
-            setRecordMode(mode);
-            setRecordFormOpen(true);
-          }}
+      <Card
+        className={cn(
+          "utang-money-main-card utang-ribbon-card utang-money-glass exits-animate-panel flex min-w-0 flex-col gap-3",
+          mode === "lent" ? "utang-money-glass--lent" : "utang-money-glass--owe",
+        )}
+        data-shell="soft-glass"
+        aria-label={title}
+        data-testid="utang-summary-section"
+      >
+        <RibbonTitle icon={mode === "lent" ? HandCoins : Wallet}>
+          <span data-testid="utang-summary-ribbon">{title}</span>
+        </RibbonTitle>
+        <div
+          className="personal-home-metrics utang-summary-cards utang-money-summary"
+          data-testid="utang-summary-cards"
         >
-          <span className="personal-home-index-card__ribbon" aria-hidden="true">
-            <span className="personal-home-index-card__fold" />
-            <Plus className="personal-home-index-card__icon" />
-          </span>
-          <span className="personal-home-index-card__body">
-            <span className="personal-home-index-card__title">{recordFormLabel}</span>
-          </span>
-          <strong
-            className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
-            aria-hidden="true"
-          >
-            +
-          </strong>
-        </button>
-        {(
-          [
-            { id: "all", tone: "primary", label: t("personal.utang.filterAll"), Icon: List, count: rows.length },
-            { id: "mine", tone: "success", label: t("personal.home.activeMine"), Icon: Handshake, count: mineCount },
-            { id: "shared", tone: "info", label: t("personal.home.sharedLedgerStat"), Icon: Share2, count: sharedCount },
-          ] as const
-        ).map((filter) => {
-          const FilterIcon = filter.Icon;
-          return (
-            <button
-              key={filter.id}
-              type="button"
-              className={`personal-home-index-card personal-home-index-card--${filter.tone} utang-summary-cards__action utang-summary-cards__filter`}
-              aria-pressed={ledgerFilter === filter.id}
-              data-testid={`utang-summary-${filter.id}`}
-              onClick={() => setLedgerFilter(filter.id)}
+          <SoftGlassQuickAction
+            identity={mode === "lent" ? "lent" : "owe"}
+            label={t("personal.utang.filterAll")}
+            icon={List}
+            count={rows.length}
+            className={cn(
+              "utang-summary-cards__action utang-summary-cards__filter",
+              ledgerFilter === "all" && "utang-summary-glass--active",
+            )}
+            aria-pressed={ledgerFilter === "all"}
+            testId="utang-summary-all"
+            onClick={() => setLedgerFilter("all")}
+          />
+          <SoftGlassQuickAction
+            identity={mode === "lent" ? "lent" : "owe"}
+            label={recordFormLabel}
+            icon={Plus}
+            trailing="add"
+            className="utang-summary-cards__action"
+            aria-controls="utang-record-panel"
+            aria-expanded={recordFormOpen}
+            testId="utang-summary-record"
+            onClick={() => {
+              setRecordMode(mode);
+              setRecordFormOpen(true);
+            }}
+          />
+          <SoftGlassQuickAction
+            identity={mode === "lent" ? "lent" : "owe"}
+            label={t("personal.home.activeMine")}
+            icon={Handshake}
+            count={mineCount}
+            className={cn(
+              "utang-summary-cards__action utang-summary-cards__filter",
+              ledgerFilter === "mine" && "utang-summary-glass--active",
+            )}
+            aria-pressed={ledgerFilter === "mine"}
+            testId="utang-summary-mine"
+            onClick={() => setLedgerFilter("mine")}
+          />
+          <SoftGlassQuickAction
+            identity={mode === "lent" ? "lent" : "owe"}
+            label={t("personal.home.sharedLedgerStat")}
+            icon={Share2}
+            count={sharedCount}
+            className={cn(
+              "utang-summary-cards__action utang-summary-cards__filter",
+              ledgerFilter === "shared" && "utang-summary-glass--active",
+            )}
+            aria-pressed={ledgerFilter === "shared"}
+            testId="utang-summary-shared"
+            onClick={() => setLedgerFilter("shared")}
+          />
+        </div>
+
+      {visibleRows.length === 0 ? (
+        <EmptyState
+          align="center"
+          icon={<Users className="size-5" strokeWidth={1.75} />}
+          title={t("personal.utang.listEmptyTitle")}
+          detail={
+            mode === "lent"
+              ? t("personal.utang.listEmptyDetailLent")
+              : t("personal.utang.listEmptyDetailOwe")
+          }
+        />
+      ) : (
+        <ExitsResponsiveDataView
+          layout={layout}
+          testId={mode === "lent" ? "utang-lent-responsive" : "utang-owe-responsive"}
+          className="utang-money-responsive"
+          table={
+            <UtangRelationshipListTable
+              mode={mode}
+              rows={tableRows}
+              search={listSearch}
+              onSearch={setListSearch}
+            />
+          }
+          list={
+            searchedVisibleRows.length === 0 ? (
+              <EmptyState
+                variant="filtered"
+                align="center"
+                icon={<Users className="size-5" strokeWidth={1.75} />}
+                title={t("personal.utang.accountsFilterEmptyTitle")}
+                detail={t("personal.utang.accountsFilterEmptyDetail")}
+                testId={mode === "lent" ? "utang-lent-list-empty" : "utang-owe-list-empty"}
+              />
+            ) : (
+            <ul
+              className="utang-settings-list utang-relationship-list m-0 grid list-none gap-4 p-0"
+              data-testid={mode === "lent" ? "utang-lent-list" : "utang-owe-list"}
             >
-              <span className="personal-home-index-card__ribbon" aria-hidden="true">
-                <span className="personal-home-index-card__fold" />
-                <FilterIcon className="personal-home-index-card__icon" />
-              </span>
-              <span className="personal-home-index-card__body">
-                <span className="personal-home-index-card__title">{filter.label}</span>
-              </span>
-              <strong className="personal-home-index-card__badge personal-home-index-card__badge--ghost tabular-nums">
-                {filter.count}
-              </strong>
-            </button>
-          );
-        })}
-      </div>
+              {searchedVisibleRows.map((row) => {
+                const name = contactLabel(contacts, row);
+                const shared = isSharedRelationship(row);
+                const owned = row.isLedgerOwner !== false;
+                const ownershipLabel = owned
+                  ? t("personal.utang.ownershipMine")
+                  : t("personal.utang.ownershipSharedWithMe");
+                return (
+                  <li key={row.id}>
+                    <Link
+                      to={`/personal/utang/relationships/${row.id}`}
+                      className={cn(
+                        "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card text-foreground no-underline",
+                        mode === "lent" ? "utang-settings-card--lent" : "utang-settings-card--owe",
+                        owned ? "utang-account-card--mine" : "utang-account-card--shared",
+                      )}
+                      data-shell="soft-glass"
+                      data-testid={`utang-rel-row-${row.id}`}
+                    >
+                      <div className="ui-standards-qcard__settings-ribbon">
+                        <div
+                          className="ui-standards-qcard__settings-tab utang-settings-card__tab"
+                          data-utang-ownership=""
+                          data-testid={`utang-rel-ownership-${row.id}`}
+                        >
+                          <span className="truncate">{ownershipLabel}</span>
+                          {formatDueLabel(row.dueDateUtc).kind !== "none" ? (
+                            <>
+                              <span className="utang-settings-card__tab-divider" aria-hidden />
+                              <UtangDueCaption
+                                dueDateUtc={row.dueDateUtc}
+                                className={cn(
+                                  "utang-settings-card__tab-text",
+                                  formatDueLabel(row.dueDateUtc).kind === "overdue" &&
+                                    "utang-settings-card__tab-text--danger",
+                                )}
+                              />
+                            </>
+                          ) : null}
+                          <span className="ui-standards-qcard__settings-fold" aria-hidden />
+                        </div>
+                        <div className="utang-settings-card__content">
+                          <div className="utang-settings-card__meta min-w-0 flex-1">
+                            <div className="utang-settings-card__headline">
+                              <p className="utang-settings-card__name m-0 truncate">{name}</p>
+                              <span className="utang-settings-card__amount">
+                                <MoneyDisplay amount={row.currentBalance} />
+                              </span>
+                            </div>
+                            <span className="utang-settings-card__tags">
+                              <StatusChip
+                                tone={mode === "lent" ? "success" : "info"}
+                                appearance="emphasis"
+                                shape="square"
+                              >
+                                {mode === "lent"
+                                  ? t("personal.utang.owesYou")
+                                  : t("personal.utang.youOwe")}
+                              </StatusChip>
+                              <StatusChip
+                                tone={shared ? "success" : "info"}
+                                appearance="emphasis"
+                                shape="square"
+                                data-testid={`utang-rel-ledger-${row.id}`}
+                              >
+                                {shared
+                                  ? t("people.status.connected")
+                                  : t("people.localContact")}
+                              </StatusChip>
+                              {!owned ? (
+                                <StatusChip
+                                  tone={UTANG_READ_ONLY_CHIP.tone}
+                                  appearance={UTANG_READ_ONLY_CHIP.appearance}
+                                  shape={UTANG_READ_ONLY_CHIP.shape}
+                                  className="max-md:hidden"
+                                  data-testid={`utang-rel-readonly-${row.id}`}
+                                >
+                                  {t("personal.utang.readOnly")}
+                                </StatusChip>
+                              ) : null}
+                            </span>
+                            {!owned ? (
+                              <p className="m-0 truncate text-[length:var(--exits-text-sm)]">
+                                {t("personal.utang.managedByOther").replace("{name}", name)}
+                              </p>
+                            ) : null}
+                            <WaitingChip origin={rowOrigin(row)} />
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+            )
+          }
+        />
+      )}
+      </Card>
 
       <ExitsModal
         open={recordFormOpen}
@@ -799,6 +979,10 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         closeOnEscape={false}
         busy={createMutation.isPending}
         testId="utang-record-dialog"
+        className={cn(
+          "utang-record-dialog utang-record-dialog--soft-glass",
+          recordMode === "owe" && "utang-record-dialog--owe",
+        )}
         closeLabel={t("personal.utang.closeRecordDialog")}
         ribbon
         ribbonTone={recordMode === "lent" ? "primary" : "secondary"}
@@ -830,12 +1014,13 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           createMutation.mutate();
         }}
         footer={
-          <>
+          <div className="utang-record-dialog__actions flex min-w-0 flex-wrap justify-end gap-2">
             <Button
               type="button"
               intent="danger"
               appearance="glossy"
               emphasis="strong"
+              className="utang-record-dialog__btn utang-record-dialog__btn--danger"
               disabled={createMutation.isPending}
               data-testid="utang-rel-cancel"
               onClick={() => setRecordFormOpen(false)}
@@ -846,6 +1031,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               type="submit"
               intent="primary"
               appearance="glossy"
+              className="utang-record-dialog__btn utang-record-dialog__btn--primary"
               disabled={
                 createMutation.isPending ||
                 statusLocked ||
@@ -862,10 +1048,14 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               )}
               {submitLabel}
             </Button>
-          </>
+          </div>
         }
       >
-      <div id="utang-record-panel" className="flex min-w-0 flex-col gap-3">
+      <div
+        id="utang-record-panel"
+        className="utang-record-dialog__body flex min-w-0 flex-col gap-3"
+        data-shell="soft-glass"
+      >
             {existingSharedWithMe ? (
               <Notice tone="info" testId="utang-rel-shared-exists-hint">
                 {t("personal.utang.counterpartyAlreadyShared").replace(
@@ -947,9 +1137,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             emphasis={recordMode === "lent" ? "strong" : undefined}
             shape="standard"
             className={cn(
-              "shrink-0",
-              recordMode === "owe" &&
-                "border-transparent bg-gradient-to-b from-[var(--utang-record-accent)] to-[color-mix(in_srgb,var(--utang-record-accent)_78%,#000)] text-white hover:brightness-[1.02]",
+              "utang-record-dialog__btn utang-record-dialog__btn--mode shrink-0",
+              recordMode === "owe" && "utang-record-dialog__btn--owe",
             )}
             style={
               recordMode === "owe"
@@ -974,7 +1163,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         />
         {contactId && (parseMoneyAmountInput(amount) ?? 0) > 0 && notes.trim() ? (
           <div
-            className="rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface)_92%,var(--exits-muted)_8%)] p-3 text-[length:var(--exits-text-sm)]"
+            className="utang-record-dialog__review p-3 text-[length:var(--exits-text-sm)]"
             data-testid="utang-rel-review"
           >
             <p className="m-0 font-semibold">
@@ -1039,110 +1228,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         {formError ? <Notice tone="danger">{formError}</Notice> : null}
       </div>
       </ExitsModal>
-
-      {visibleRows.length === 0 ? (
-        <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
-          title={t("personal.utang.listEmptyTitle")}
-          detail={
-            mode === "lent"
-              ? t("personal.utang.listEmptyDetailLent")
-              : t("personal.utang.listEmptyDetailOwe")
-          }
-        />
-      ) : (
-        <ul className="utang-settings-list utang-relationship-list m-0 grid list-none gap-4 p-0">
-          {visibleRows.map((row) => {
-            const name = contactLabel(contacts, row);
-            const shared = isSharedRelationship(row);
-            const owned = row.isLedgerOwner !== false;
-            const ownershipLabel = owned
-              ? t("personal.utang.ownershipMine")
-              : t("personal.utang.ownershipSharedWithMe");
-            return (
-              <li key={row.id}>
-                <Link
-                  to={`/personal/utang/relationships/${row.id}`}
-                  className={cn(
-                    "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card text-foreground no-underline",
-                    mode === "lent" ? "utang-settings-card--lent" : "utang-settings-card--owe",
-                    owned ? "utang-account-card--mine" : "utang-account-card--shared",
-                  )}
-                  data-testid={`utang-rel-row-${row.id}`}
-                >
-                  <div className="ui-standards-qcard__settings-ribbon">
-                    <div
-                      className="ui-standards-qcard__settings-tab utang-settings-card__tab"
-                      data-utang-ownership=""
-                      data-testid={`utang-rel-ownership-${row.id}`}
-                    >
-                      <span className="truncate">{ownershipLabel}</span>
-                      {formatDueLabel(row.dueDateUtc).kind !== "none" ? (
-                        <>
-                          <span className="utang-settings-card__tab-divider" aria-hidden />
-                          <UtangDueCaption
-                            dueDateUtc={row.dueDateUtc}
-                            className={cn(
-                              "utang-settings-card__tab-text",
-                              formatDueLabel(row.dueDateUtc).kind === "overdue" && "utang-settings-card__tab-text--danger",
-                            )}
-                          />
-                        </>
-                      ) : null}
-                      <span className="ui-standards-qcard__settings-fold" aria-hidden />
-                    </div>
-                    <div className="utang-settings-card__content">
-                      <div className="utang-settings-card__meta min-w-0 flex-1">
-                        <div className="utang-settings-card__headline">
-                          <p className="utang-settings-card__name m-0 truncate">{name}</p>
-                          <span className="utang-settings-card__amount">
-                            <MoneyDisplay amount={row.currentBalance} />
-                          </span>
-                        </div>
-                        <span className="utang-settings-card__tags">
-                          <StatusChip
-                            tone={mode === "lent" ? "success" : "info"}
-                            appearance="emphasis"
-                            shape="square"
-                          >
-                            {mode === "lent" ? t("personal.utang.owesYou") : t("personal.utang.youOwe")}
-                          </StatusChip>
-                          <StatusChip
-                            tone={shared ? "success" : "info"}
-                            appearance="emphasis"
-                            shape="square"
-                            data-testid={`utang-rel-ledger-${row.id}`}
-                          >
-                            {shared ? t("people.status.connected") : t("people.localContact")}
-                          </StatusChip>
-                          {!owned ? (
-                            <StatusChip
-                              tone={UTANG_READ_ONLY_CHIP.tone}
-                              appearance={UTANG_READ_ONLY_CHIP.appearance}
-                              shape={UTANG_READ_ONLY_CHIP.shape}
-                              className="max-md:hidden"
-                              data-testid={`utang-rel-readonly-${row.id}`}
-                            >
-                              {t("personal.utang.readOnly")}
-                            </StatusChip>
-                          ) : null}
-                        </span>
-                        {!owned ? (
-                          <p className="m-0 truncate text-[length:var(--exits-text-sm)]">
-                            {t("personal.utang.managedByOther").replace("{name}", name)}
-                          </p>
-                        ) : null}
-                        <WaitingChip origin={rowOrigin(row)} />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 }
@@ -1222,26 +1307,6 @@ function SaveCheckIcon({ className }: { className?: string }) {
   );
 }
 
-function QuickActionIndexContent({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
-  return (
-    <>
-      <span className="personal-home-index-card__ribbon" aria-hidden="true">
-        <span className="personal-home-index-card__fold" />
-        <Icon className="personal-home-index-card__icon" />
-      </span>
-      <span className="personal-home-index-card__body">
-        <span className="personal-home-index-card__title">{label}</span>
-      </span>
-      <strong
-        className="personal-home-index-card__badge personal-home-index-card__badge--plus personal-home-index-card__badge--ghost"
-        aria-hidden="true"
-      >
-        <ChevronRight className="personal-home-index-card__icon" />
-      </strong>
-    </>
-  );
-}
-
 function RibbonTitle({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
     <h2 className="personal-tracker-card__ribbon">
@@ -1299,11 +1364,16 @@ function ViewContactDetailsDialog({
       onOpenChange={onOpenChange}
       title={t("personal.utang.qaViewContact")}
       testId="utang-view-contact-dialog"
+      className="utang-view-contact-dialog utang-view-contact-dialog--soft-glass"
       closeLabel={t("personal.utang.closeRecordDialog")}
       ribbon
       ribbonIcon={Contact}
     >
-      <div className="flex min-w-0 flex-col gap-3" data-testid="utang-view-contact-body">
+      <div
+        className="utang-view-contact-dialog__body flex min-w-0 flex-col gap-3"
+        data-shell="soft-glass"
+        data-testid="utang-view-contact-body"
+      >
         <StatusChip
           tone={connected ? "success" : "info"}
           appearance="emphasis"
@@ -1312,11 +1382,15 @@ function ViewContactDetailsDialog({
         >
           {connected ? t("people.status.connected") : t("people.localContact")}
         </StatusChip>
-        <dl className="m-0 flex min-w-0 flex-col gap-3">
+        <dl className="utang-view-contact-dialog__facts m-0 flex min-w-0 flex-col gap-2.5">
           {rows.map((row) => (
-            <div key={row.id} data-testid={`utang-view-contact-${row.id}`}>
-              <dt className="m-0 text-[13px] font-medium text-[var(--exits-primary)]">{row.label}</dt>
-              <dd className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-text)]">{row.value}</dd>
+            <div
+              key={row.id}
+              className="utang-view-contact-dialog__fact-card"
+              data-testid={`utang-view-contact-${row.id}`}
+            >
+              <dt className="utang-view-contact-dialog__label m-0">{row.label}</dt>
+              <dd className="utang-view-contact-dialog__value m-0">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -1327,6 +1401,8 @@ function ViewContactDetailsDialog({
 
 export function PersonalRelationshipDetailPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const { layout } = useResponsiveDataLayout();
   const { relationshipId = "" } = useParams();
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
@@ -1353,6 +1429,7 @@ export function PersonalRelationshipDetailPage() {
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [viewContactOpen, setViewContactOpen] = useState(false);
+  const [activitySearch, setActivitySearch] = useState("");
 
   const contactsQuery = useQuery({
     queryKey: ["personal", "utang", "contacts"],
@@ -1816,9 +1893,222 @@ export function PersonalRelationshipDetailPage() {
     return null;
   };
 
+  const lentPerspective = detail.perspective !== "Borrowed";
+  const activityNeedle = activitySearch.trim().toLowerCase();
+  const activityEntries = history.map((entry) => {
+    const status = "status" in entry ? entry.status : "Confirmed";
+    const canConfirm = "canConfirm" in entry ? Boolean(entry.canConfirm) : false;
+    const canDispute = "canDispute" in entry ? Boolean(entry.canDispute) : false;
+    const canCancel = "canCancel" in entry ? Boolean(entry.canCancel) : false;
+    const affectsBalance =
+      "affectsBalance" in entry ? Boolean(entry.affectsBalance) : status === "Confirmed";
+    const disputeReason =
+      "disputeReason" in entry ? (entry.disputeReason ?? null) : null;
+    const pendingIncoming = status === "Pending" && (canConfirm || canDispute);
+    const pendingOutgoing = status === "Pending" && canCancel && !canConfirm;
+    const isSettlement =
+      "isSettlement" in entry ? Boolean(entry.isSettlement) : false;
+    const confirmLabel =
+      entry.entryType === "Payment"
+        ? t("personal.utang.confirmReceived")
+        : t("personal.utang.confirm");
+    const isDisputing = disputeEntryId === entry.id;
+    const isOpening = entry.id === openingLoanEntryId;
+    const entryTitle = entryActionLabel(
+      entry.entryType,
+      { isSettlement, isOpening },
+      t,
+    );
+    const statusText = entryStatusLabel(
+      {
+        status,
+        isSharedLedger: shared,
+        wasAutoSynced: "wasAutoSynced" in entry ? Boolean(entry.wasAutoSynced) : false,
+      },
+      {
+        pendingIncoming,
+        reporterName: personName === EM_DASH ? undefined : personName,
+      },
+      t,
+    );
+    const entryDue =
+      "dueDateUtc" in entry && entry.dueDateUtc ? String(entry.dueDateUtc) : null;
+    const showStatus = statusText !== t("personal.utang.statusPrivate");
+    const notes = entry.notes?.trim() ? entry.notes : null;
+    return {
+      entry,
+      status,
+      canConfirm,
+      canDispute,
+      canCancel,
+      affectsBalance,
+      disputeReason,
+      pendingIncoming,
+      pendingOutgoing,
+      isSettlement,
+      confirmLabel,
+      isDisputing,
+      isOpening,
+      entryTitle,
+      statusText,
+      showStatus,
+      entryDue,
+      notes,
+    };
+  });
+  const searchedActivityEntries = activityNeedle
+    ? activityEntries.filter((row) =>
+        [row.entryTitle, row.statusText, row.notes ?? "", row.entry.createdAtUtc]
+          .join(" ")
+          .toLowerCase()
+          .includes(activityNeedle),
+      )
+    : activityEntries;
+
+  const renderActivityEntryActions = (
+    row: (typeof activityEntries)[number],
+    options?: { compact?: boolean; testIdPrefix?: string },
+  ): ReactNode => {
+    const { entry } = row;
+    const compact = options?.compact ?? false;
+    const idPrefix = options?.testIdPrefix ?? "utang";
+    const showIncoming = row.pendingIncoming && online;
+    const showOutgoing = row.pendingOutgoing && online && row.canCancel;
+    if (!showIncoming && !showOutgoing && !row.isDisputing) {
+      return null;
+    }
+    return (
+      <div
+        className={cn(
+          "flex min-w-0 flex-col gap-2",
+          compact && "items-stretch sm:items-end",
+        )}
+      >
+        {showIncoming ? (
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            {row.canConfirm ? (
+              <Button
+                type="button"
+                className="flex-1 sm:flex-none"
+                disabled={resolveMutation.isPending}
+                data-testid={`${idPrefix}-confirm-${entry.id}`}
+                onClick={() =>
+                  resolveMutation.mutate({ action: "confirm", entryId: entry.id })
+                }
+              >
+                <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+                {row.confirmLabel}
+              </Button>
+            ) : null}
+            {row.canDispute ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex-1 sm:flex-none"
+                disabled={resolveMutation.isPending}
+                data-testid={`${idPrefix}-dispute-${entry.id}`}
+                onClick={() => {
+                  setDisputeEntryId(entry.id);
+                  setDisputeReasonKey("");
+                }}
+              >
+                <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
+                {t("personal.utang.dispute")}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {showOutgoing ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className={cn("w-fit", compact && "sm:ms-auto")}
+            disabled={resolveMutation.isPending}
+            data-testid={`${idPrefix}-cancel-${entry.id}`}
+            onClick={() =>
+              resolveMutation.mutate({ action: "cancel", entryId: entry.id })
+            }
+          >
+            {t("personal.utang.cancelPending")}
+          </Button>
+        ) : null}
+
+        {row.isDisputing ? (
+          <div
+            className="flex min-w-0 flex-col gap-2"
+            data-testid={`${idPrefix}-dispute-form-${entry.id}`}
+          >
+            <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)] text-start">
+              {t("personal.utang.disputeReason")}
+              <select
+                className="exits-select"
+                value={disputeReasonKey}
+                data-testid={`${idPrefix}-dispute-reason-${entry.id}`}
+                onChange={(e) =>
+                  setDisputeReasonKey(e.target.value as typeof disputeReasonKey)
+                }
+              >
+                <option value="">{EM_DASH}</option>
+                <option value="amount">{t("personal.utang.disputeReasonAmount")}</option>
+                <option value="notReceived">
+                  {t("personal.utang.disputeReasonNotReceived")}
+                </option>
+                <option value="other">{t("personal.utang.disputeReasonOther")}</option>
+              </select>
+            </label>
+            <div className="flex min-w-0 flex-wrap gap-2 sm:justify-end">
+              <Button
+                type="button"
+                disabled={resolveMutation.isPending}
+                data-testid={`${idPrefix}-dispute-submit-${entry.id}`}
+                onClick={() =>
+                  resolveMutation.mutate({
+                    action: "dispute",
+                    entryId: entry.id,
+                    reason: disputeReasonText(),
+                  })
+                }
+              >
+                {t("personal.utang.disputeSubmit")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={resolveMutation.isPending}
+                onClick={() => {
+                  setDisputeEntryId(null);
+                  setDisputeReasonKey("");
+                }}
+              >
+                {t("personal.utang.disputeKeep")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
+  const activityTableRows = searchedActivityEntries.map((row) => ({
+    id: row.entry.id,
+    title: row.entryTitle,
+    amount: row.entry.signedDelta,
+    balanceAfter: row.entry.balanceAfter,
+    affectsBalance: row.affectsBalance,
+    isOpening: row.isOpening,
+    status: row.status,
+    statusText: row.statusText,
+    isShared: shared,
+    notes: row.notes,
+    createdAtUtc: row.entry.createdAtUtc,
+    dueDateUtc: row.entryDue,
+    perspectiveLent: lentPerspective,
+  }));
+
   return (
     <div
-      className="personal-page exits-page flex min-w-0 flex-col gap-3"
+      className="personal-page utang-detail-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="personal-utang-detail"
     >
       <PageHeader
@@ -1845,8 +2135,9 @@ export function PersonalRelationshipDetailPage() {
       />
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
       <div className="utang-detail-top">
-      <div
-        className="utang-balance-card utang-ribbon-card flex min-w-0 flex-col gap-2"
+      <Card
+        className="utang-balance-card utang-ribbon-card utang-detail-glass exits-animate-panel flex min-w-0 flex-col gap-2"
+        data-shell="soft-glass"
         data-testid="utang-balance-card"
       >
         <RibbonTitle icon={detail.perspective === "Borrowed" ? Wallet : HandCoins}>
@@ -1900,13 +2191,13 @@ export function PersonalRelationshipDetailPage() {
                 message={t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangSettle))}
               />
             ) : null}
-            <div className="flex w-full items-stretch gap-2">
+            <div className="utang-balance-card__actions flex w-full items-stretch gap-2">
               {showSettleAction ? (
                 <Button
                   type="button"
                   intent="primary"
-                  appearance="glossy"
-                  className="min-w-0 flex-1"
+                  appearance="outline"
+                  className="utang-balance-card__btn utang-balance-card__btn--primary min-w-0 flex-1"
                   disabled={settleBlockedOffline || settleMutation.isPending}
                   data-testid="utang-settle"
                   onClick={() => {
@@ -1923,8 +2214,8 @@ export function PersonalRelationshipDetailPage() {
                 <Button
                   type="button"
                   intent="info"
-                  appearance="glossy"
-                  className="min-w-0 flex-1"
+                  appearance="outline"
+                  className="utang-balance-card__btn utang-balance-card__btn--info min-w-0 flex-1"
                   data-testid="utang-qa-update-balance"
                   onClick={() => {
                     resetEntryForm();
@@ -2024,76 +2315,73 @@ export function PersonalRelationshipDetailPage() {
           </div>
         ) : null}
         </div>
-      </div>
+      </Card>
 
       {showViewContactAction || showSharedSettingAction || showEditContactAction || showRemindersAction || newRecordHref ? (
-        <section
-          className="catalog-form-section exits-animate-panel personal-section personal-quick-actions utang-quick-actions gap-3"
+        <Card
+          className="utang-quick-actions utang-ribbon-card utang-detail-glass exits-animate-panel flex min-w-0 flex-col gap-3"
+          data-shell="soft-glass"
           aria-label={t("personal.home.quickActions")}
           data-testid="utang-detail-quick-actions"
         >
-          <h2 className="personal-quick-actions__ribbon">
-            <span className="personal-quick-actions__pennant" aria-hidden>
-              <Zap className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
-            </span>
-            {t("personal.home.quickActions")}
-          </h2>
-          <div className="personal-quick-actions__cards">
+          <RibbonTitle icon={Zap}>{t("personal.home.quickActions")}</RibbonTitle>
+          <div className="utang-detail-qa-cards personal-quick-actions__cards">
             {showViewContactAction ? (
-              <button
-                type="button"
-                className="personal-home-index-card personal-home-index-card--info personal-home-index-card--solid"
-                data-testid="utang-qa-view-contact"
+              <SoftGlassQuickAction
+                identity="info"
+                label={t("personal.utang.qaViewContact")}
+                icon={Contact}
+                trailing="chevron"
+                testId="utang-qa-view-contact"
                 aria-haspopup="dialog"
                 onClick={() => setViewContactOpen(true)}
-              >
-                <QuickActionIndexContent icon={Contact} label={t("personal.utang.qaViewContact")} />
-              </button>
+              />
             ) : null}
             {showEditContactAction ? (
-              <button
-                type="button"
-                className="personal-home-index-card personal-home-index-card--primary personal-home-index-card--solid"
-                data-testid="utang-qa-edit-contact"
+              <SoftGlassQuickAction
+                identity="info"
+                label={t("personal.utang.qaEditContact")}
+                icon={Pencil}
+                trailing="chevron"
+                testId="utang-qa-edit-contact"
                 aria-haspopup="dialog"
                 onClick={() => setEditContactOpen(true)}
-              >
-                <QuickActionIndexContent icon={Pencil} label={t("personal.utang.qaEditContact")} />
-              </button>
+              />
             ) : null}
             {showSharedSettingAction ? (
-              <button
-                type="button"
-                className="personal-home-index-card personal-home-index-card--primary personal-home-index-card--solid"
-                data-testid="utang-qa-shared-setting"
+              <SoftGlassQuickAction
+                identity="info"
+                label={t("personal.utang.qaSharedSetting")}
+                icon={SlidersHorizontal}
+                trailing="chevron"
+                testId="utang-qa-shared-setting"
                 aria-haspopup="dialog"
                 onClick={() => setSharedSettingOpen(true)}
-              >
-                <QuickActionIndexContent icon={SlidersHorizontal} label={t("personal.utang.qaSharedSetting")} />
-              </button>
+              />
             ) : null}
             {showRemindersAction ? (
-              <button
-                type="button"
-                className="personal-home-index-card personal-home-index-card--warn personal-home-index-card--solid"
-                data-testid="utang-qa-reminders"
+              <SoftGlassQuickAction
+                identity="info"
+                label={t("personal.utang.qaCreateReminders")}
+                icon={BellRing}
+                trailing="chevron"
+                testId="utang-qa-reminders"
                 aria-haspopup="dialog"
                 onClick={() => setRemindersOpen(true)}
-              >
-                <QuickActionIndexContent icon={BellRing} label={t("personal.utang.qaCreateReminders")} />
-              </button>
+              />
             ) : null}
             {newRecordHref ? (
-              <Link
-                to={newRecordHref}
-                className="personal-home-index-card personal-home-index-card--success personal-home-index-card--solid"
-                data-testid="utang-qa-new-record"
-              >
-                <QuickActionIndexContent icon={Plus} label={t("personal.utang.qaNewRecord")} />
-              </Link>
+              <SoftGlassQuickAction
+                identity="info"
+                label={t("personal.utang.qaNewRecord")}
+                icon={Plus}
+                trailing="add"
+                testId="utang-qa-new-record"
+                onClick={() => navigate(newRecordHref)}
+              />
             ) : null}
           </div>
-        </section>
+        </Card>
       ) : null}
 
       {showViewContactAction && viewContact ? (
@@ -2124,6 +2412,7 @@ export function PersonalRelationshipDetailPage() {
             )
           }
           testId="utang-reminders-dialog"
+          className="utang-reminders-dialog utang-reminders-dialog--soft-glass"
           closeLabel={t("personal.utang.closeRecordDialog")}
           size="lg"
           ribbon
@@ -2231,15 +2520,12 @@ export function PersonalRelationshipDetailPage() {
         description={
           <span className="utang-entry-dialog__head" data-testid="utang-entry-dialog-head">
             {personName === EM_DASH ? null : (
-              <>
-                <span className="utang-entry-dialog__party">
-                  <span className="utang-entry-dialog__label">{t("personal.utang.nameLabel")}</span>
-                  <span className="utang-entry-dialog__name">{personName}</span>
-                </span>
-                <span className="utang-entry-dialog__divider" aria-hidden />
-              </>
+              <span className="utang-entry-dialog__party utang-entry-dialog__fact-card">
+                <span className="utang-entry-dialog__label">{t("personal.utang.nameLabel")}</span>
+                <span className="utang-entry-dialog__name">{personName}</span>
+              </span>
             )}
-            <span className="utang-entry-dialog__balance">
+            <span className="utang-entry-dialog__balance utang-entry-dialog__fact-card">
               <span className="utang-entry-dialog__label">
                 {detail.perspective === "Borrowed"
                   ? t("personal.utang.youOwe")
@@ -2259,7 +2545,7 @@ export function PersonalRelationshipDetailPage() {
         busy={recordMutation.isPending}
         closeLabel={t("personal.utang.closeRecordDialog")}
         testId="utang-entry-dialog"
-        className="utang-entry-dialog"
+        className="utang-entry-dialog utang-entry-dialog--soft-glass"
         ribbon
         ribbonIcon={PenLine}
       >
@@ -2377,7 +2663,12 @@ export function PersonalRelationshipDetailPage() {
                         type="button"
                         intent={sign === "+" ? "success" : "danger"}
                         appearance="outline"
-                        className="w-full"
+                        className={cn(
+                          "utang-entry-dialog__btn w-full",
+                          sign === "+"
+                            ? "utang-entry-dialog__btn--success"
+                            : "utang-entry-dialog__btn--danger",
+                        )}
                         data-exits-modal-autofocus={sign === "+" ? "true" : undefined}
                         data-testid={sign === "+" ? "utang-entry-delta-add" : "utang-entry-delta-minus"}
                         onClick={() => {
@@ -2474,12 +2765,13 @@ export function PersonalRelationshipDetailPage() {
             {formError}
           </Notice>
         ) : null}
-        <div className="flex min-w-0 flex-wrap justify-end gap-2 border-t border-border pt-3">
+        <div className="utang-entry-dialog__actions flex min-w-0 flex-wrap justify-end gap-2 border-t border-border pt-3">
           <Button
             type="button"
             intent="danger"
-            appearance="glossy"
+            appearance="outline"
             emphasis="strong"
+            className="utang-entry-dialog__btn utang-entry-dialog__btn--danger"
             disabled={recordMutation.isPending}
             onClick={() => {
               setEntryOpen(false);
@@ -2492,8 +2784,9 @@ export function PersonalRelationshipDetailPage() {
           <Button
             type="submit"
             intent="primary"
-            appearance="glossy"
+            appearance="outline"
             emphasis="strong"
+            className="utang-entry-dialog__btn utang-entry-dialog__btn--primary"
             disabled={
               recordMutation.isPending ||
               statusLocked ||
@@ -2512,9 +2805,11 @@ export function PersonalRelationshipDetailPage() {
       ) : null}
       </div>
 
-      <section
-        className="utang-activity-card utang-ribbon-card catalog-form-section exits-animate-panel personal-section min-w-0 gap-2"
+      <Card
+        className="utang-activity-card utang-ribbon-card utang-detail-glass exits-animate-panel flex min-w-0 flex-col gap-2"
+        data-shell="soft-glass"
         aria-label={t("personal.utang.activity")}
+        data-testid="utang-activity-card"
       >
         <RibbonTitle icon={History}>{t("personal.utang.activity")}</RibbonTitle>
         {actionError ? (
@@ -2527,314 +2822,212 @@ export function PersonalRelationshipDetailPage() {
         ) : null}
         {history.length === 0 ? (
           <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
+            align="center"
+            icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.utang.historyEmptyTitle")}
             detail={t("personal.utang.historyEmptyDetail")}
           />
         ) : (
-          <ul className="utang-relationship-list utang-activity-list m-0 list-none p-0" data-testid="utang-history">
-            {history.map((entry) => {
-              const status = "status" in entry ? entry.status : "Confirmed";
-              const canConfirm = "canConfirm" in entry ? Boolean(entry.canConfirm) : false;
-              const canDispute = "canDispute" in entry ? Boolean(entry.canDispute) : false;
-              const canCancel = "canCancel" in entry ? Boolean(entry.canCancel) : false;
-              const affectsBalance =
-                "affectsBalance" in entry
-                  ? Boolean(entry.affectsBalance)
-                  : status === "Confirmed";
-              const disputeReason =
-                "disputeReason" in entry ? (entry.disputeReason ?? null) : null;
-              const pendingIncoming = status === "Pending" && (canConfirm || canDispute);
-              const pendingOutgoing = status === "Pending" && canCancel && !canConfirm;
-              const isSettlement =
-                "isSettlement" in entry ? Boolean(entry.isSettlement) : false;
-              const confirmLabel =
-                entry.entryType === "Payment"
-                  ? t("personal.utang.confirmReceived")
-                  : t("personal.utang.confirm");
-              const isDisputing = disputeEntryId === entry.id;
-              const lent = detail.perspective !== "Borrowed";
-              const isOpening = entry.id === openingLoanEntryId;
-              const entryTitle = entryActionLabel(
-                entry.entryType,
-                { isSettlement, isOpening },
-                t,
-              );
-              const statusText = entryStatusLabel(
-                {
-                  status,
-                  isSharedLedger: shared,
-                  wasAutoSynced: "wasAutoSynced" in entry ? Boolean(entry.wasAutoSynced) : false,
-                },
-                {
-                  pendingIncoming,
-                  reporterName: personName === EM_DASH ? undefined : personName,
-                },
-                t,
-              );
-              const entryDue =
-                "dueDateUtc" in entry && entry.dueDateUtc ? String(entry.dueDateUtc) : null;
-
-              return (
-                <li key={entry.id}>
-                  <div
-                    className={cn(
-                      "utang-activity-entry ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card min-w-0 text-foreground",
-                      lent ? "utang-settings-card--lent" : "utang-settings-card--owe",
-                      isLedgerOwner ? "utang-account-card--mine" : "utang-account-card--shared",
-                    )}
-                    data-testid={`utang-history-entry-${entry.id}`}
-                  >
-                    <div className="ui-standards-qcard__settings-ribbon">
-                      <div
-                        className="ui-standards-qcard__settings-tab utang-settings-card__tab"
-                        data-utang-ownership=""
-                      >
-                        <span className="truncate">
-                          {isLedgerOwner
-                            ? t("personal.utang.ownershipMine")
-                            : t("personal.utang.ownershipSharedWithMe")}
-                        </span>
-                        {entryDue && formatDueLabel(entryDue).kind !== "none" ? (
-                          <>
-                            <span className="utang-settings-card__tab-divider" aria-hidden />
-                            <UtangDueCaption
-                              dueDateUtc={entryDue}
-                              className={cn(
-                                "utang-settings-card__tab-text",
-                                formatDueLabel(entryDue).kind === "overdue" &&
-                                  "utang-settings-card__tab-text--danger",
-                              )}
-                            />
-                          </>
-                        ) : null}
-                        <span className="ui-standards-qcard__settings-fold" aria-hidden />
-                      </div>
-                      <div className="utang-settings-card__content">
-                        <div className="utang-settings-card__meta flex min-w-0 flex-1 flex-col gap-2">
-                          <div className="utang-settings-card__headline">
-                            <p
-                              className="utang-settings-card__name m-0 truncate"
-                              data-testid={`utang-entry-action-${entry.id}`}
+          <ExitsResponsiveDataView
+            layout={layout}
+            testId="utang-activity-responsive"
+            className="utang-activity-responsive"
+            table={
+              <UtangActivityTable
+                rows={activityTableRows}
+                search={activitySearch}
+                onSearch={setActivitySearch}
+              />
+            }
+            list={
+              searchedActivityEntries.length === 0 ? (
+                <EmptyState
+                  variant="filtered"
+                  align="center"
+                  icon={<Users className="size-5" strokeWidth={1.75} />}
+                  title={t("personal.utang.activityFilterEmptyTitle")}
+                  detail={t("personal.utang.activityFilterEmptyDetail")}
+                  testId="utang-activity-list-empty"
+                />
+              ) : (
+                <ul
+                  className="utang-relationship-list utang-activity-list m-0 list-none p-0"
+                  data-testid="utang-history"
+                >
+                  {searchedActivityEntries.map((row) => {
+                    const { entry } = row;
+                    return (
+                      <li key={entry.id}>
+                        <div
+                          className={cn(
+                            "utang-activity-entry ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card min-w-0 text-foreground",
+                            lentPerspective
+                              ? "utang-settings-card--lent"
+                              : "utang-settings-card--owe",
+                            isLedgerOwner
+                              ? "utang-account-card--mine"
+                              : "utang-account-card--shared",
+                          )}
+                          data-testid={`utang-history-entry-${entry.id}`}
+                        >
+                          <div className="ui-standards-qcard__settings-ribbon">
+                            <div
+                              className="ui-standards-qcard__settings-tab utang-settings-card__tab"
+                              data-utang-ownership=""
                             >
-                              {entryTitle}
-                            </p>
-                            <span className="utang-activity-amount">
-                              <span className="utang-settings-card__amount">
-                                <MoneyDisplay amount={entry.signedDelta} />
+                              <span className="truncate">
+                                {isLedgerOwner
+                                  ? t("personal.utang.ownershipMine")
+                                  : t("personal.utang.ownershipSharedWithMe")}
                               </span>
-                              {!isOpening && affectsBalance ? (
-                                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                                  {t("personal.utang.balanceAfter")}:{" "}
-                                  <MoneyDisplay amount={entry.balanceAfter} />
-                                </p>
+                              {row.entryDue && formatDueLabel(row.entryDue).kind !== "none" ? (
+                                <>
+                                  <span className="utang-settings-card__tab-divider" aria-hidden />
+                                  <UtangDueCaption
+                                    dueDateUtc={row.entryDue}
+                                    className={cn(
+                                      "utang-settings-card__tab-text",
+                                      formatDueLabel(row.entryDue).kind === "overdue" &&
+                                        "utang-settings-card__tab-text--danger",
+                                    )}
+                                  />
+                                </>
                               ) : null}
-                              {!isOpening && !affectsBalance ? (
-                                <p
-                                  className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-                                  data-testid={`utang-no-balance-${entry.id}`}
-                                >
-                                  {t("personal.utang.noBalanceChange")}
-                                </p>
-                              ) : null}
-                            </span>
+                              <span className="ui-standards-qcard__settings-fold" aria-hidden />
+                            </div>
+                            <div className="utang-settings-card__content">
+                              <div className="utang-settings-card__meta flex min-w-0 flex-1 flex-col gap-2">
+                                <div className="utang-settings-card__headline">
+                                  <p
+                                    className="utang-settings-card__name m-0 truncate"
+                                    data-testid={`utang-entry-action-${entry.id}`}
+                                  >
+                                    {row.entryTitle}
+                                  </p>
+                                  <span className="utang-activity-amount">
+                                    <span className="utang-settings-card__amount">
+                                      <MoneyDisplay amount={entry.signedDelta} />
+                                    </span>
+                                    {!row.isOpening && row.affectsBalance ? (
+                                      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                                        {t("personal.utang.balanceAfter")}:{" "}
+                                        <MoneyDisplay amount={entry.balanceAfter} />
+                                      </p>
+                                    ) : null}
+                                    {!row.isOpening && !row.affectsBalance ? (
+                                      <p
+                                        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                                        data-testid={`utang-no-balance-${entry.id}`}
+                                      >
+                                        {t("personal.utang.noBalanceChange")}
+                                      </p>
+                                    ) : null}
+                                  </span>
+                                </div>
+                                {row.pendingIncoming ? (
+                                  <p
+                                    className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+                                    data-testid={`utang-waiting-you-${entry.id}`}
+                                  >
+                                    {t("personal.utang.recordedForReview").replace(
+                                      "{name}",
+                                      personName,
+                                    )}
+                                  </p>
+                                ) : null}
+                                {row.pendingIncoming ? (
+                                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                                    {t("personal.utang.waitingForYou")}
+                                  </p>
+                                ) : null}
+                                <div className="utang-activity-facts">
+                                  <span className="utang-activity-facts__chips">
+                                    <StatusChip
+                                      tone={lentPerspective ? "success" : "info"}
+                                      appearance="emphasis"
+                                      shape="square"
+                                    >
+                                      {lentPerspective
+                                        ? t("personal.utang.owesYou")
+                                        : t("personal.utang.youOwe")}
+                                    </StatusChip>
+                                    <StatusChip
+                                      tone={shared ? "success" : "info"}
+                                      appearance="emphasis"
+                                      shape="square"
+                                    >
+                                      {shared
+                                        ? t("people.status.connected")
+                                        : t("people.localContact")}
+                                    </StatusChip>
+                                    {!isLedgerOwner ? (
+                                      <StatusChip
+                                        tone={UTANG_READ_ONLY_CHIP.tone}
+                                        appearance={UTANG_READ_ONLY_CHIP.appearance}
+                                        shape={UTANG_READ_ONLY_CHIP.shape}
+                                        className="max-md:hidden"
+                                      >
+                                        {t("personal.utang.readOnly")}
+                                      </StatusChip>
+                                    ) : null}
+                                  </span>
+                                  {row.notes ? (
+                                    <p
+                                      className="text-[length:var(--exits-text-sm)]"
+                                      data-testid={`utang-entry-purpose-${entry.id}`}
+                                    >
+                                      <span className="text-muted">
+                                        {t("personal.utang.purpose")}:{" "}
+                                      </span>
+                                      {row.notes}
+                                    </p>
+                                  ) : null}
+                                  <p className="utang-activity-facts__created">
+                                    <span className="text-muted">
+                                      {t("personal.utang.created")}:{" "}
+                                    </span>
+                                    {new Date(entry.createdAtUtc).toLocaleString()}
+                                  </p>
+                                </div>
+                                {row.showStatus ? (
+                                  <p
+                                    className="m-0 text-[length:var(--exits-text-sm)]"
+                                    data-testid={`utang-entry-status-${entry.id}`}
+                                  >
+                                    {row.statusText}
+                                  </p>
+                                ) : null}
+                                {row.pendingOutgoing ? (
+                                  <p
+                                    className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+                                    data-testid={`utang-waiting-other-${entry.id}`}
+                                  >
+                                    {t("personal.utang.waitingForName").replace(
+                                      "{name}",
+                                      personName,
+                                    )}
+                                  </p>
+                                ) : null}
+                                {row.disputeReason ? (
+                                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                                    {row.disputeReason}
+                                  </p>
+                                ) : null}
+                                <WaitingChip origin={rowOrigin(entry)} />
+                                {renderActivityEntryActions(row)}
+                              </div>
+                            </div>
                           </div>
-                        {pendingIncoming ? (
-                          <p
-                            className="m-0 text-[length:var(--exits-text-sm)] font-medium"
-                            data-testid={`utang-waiting-you-${entry.id}`}
-                          >
-                            {t("personal.utang.recordedForReview").replace("{name}", personName)}
-                          </p>
-                        ) : null}
-                        {pendingIncoming ? (
-                          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                            {t("personal.utang.waitingForYou")}
-                          </p>
-                        ) : null}
-                        <div className="utang-activity-facts">
-                          <span className="utang-activity-facts__chips">
-                            <StatusChip
-                              tone={lent ? "success" : "info"}
-                              appearance="emphasis"
-                              shape="square"
-                            >
-                              {lent ? t("personal.utang.owesYou") : t("personal.utang.youOwe")}
-                            </StatusChip>
-                            <StatusChip
-                              tone={shared ? "success" : "info"}
-                              appearance="emphasis"
-                              shape="square"
-                            >
-                              {shared ? t("people.status.connected") : t("people.localContact")}
-                            </StatusChip>
-                            {!isLedgerOwner ? (
-                              <StatusChip
-                                tone={UTANG_READ_ONLY_CHIP.tone}
-                                appearance={UTANG_READ_ONLY_CHIP.appearance}
-                                shape={UTANG_READ_ONLY_CHIP.shape}
-                                className="max-md:hidden"
-                              >
-                                {t("personal.utang.readOnly")}
-                              </StatusChip>
-                            ) : null}
-                          </span>
-                          {entry.notes ? (
-                            <p
-                              className="text-[length:var(--exits-text-sm)]"
-                              data-testid={`utang-entry-purpose-${entry.id}`}
-                            >
-                              <span className="text-muted">{t("personal.utang.purpose")}: </span>
-                              {entry.notes}
-                            </p>
-                          ) : null}
-                          <p className="utang-activity-facts__created">
-                            <span className="text-muted">{t("personal.utang.created")}: </span>
-                            {new Date(entry.createdAtUtc).toLocaleString()}
-                          </p>
                         </div>
-                        {statusText !== t("personal.utang.statusPrivate") ? (
-                          <p
-                            className="m-0 text-[length:var(--exits-text-sm)]"
-                            data-testid={`utang-entry-status-${entry.id}`}
-                          >
-                            {statusText}
-                          </p>
-                        ) : null}
-                        {pendingOutgoing ? (
-                          <p
-                            className="m-0 text-[length:var(--exits-text-sm)] font-medium"
-                            data-testid={`utang-waiting-other-${entry.id}`}
-                          >
-                            {t("personal.utang.waitingForName").replace("{name}", personName)}
-                          </p>
-                        ) : null}
-                        {disputeReason ? (
-                          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                            {disputeReason}
-                          </p>
-                        ) : null}
-                        <WaitingChip origin={rowOrigin(entry)} />
-
-                    {pendingIncoming && online ? (
-                      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
-                        {canConfirm ? (
-                          <Button
-                            type="button"
-                            className="flex-1 sm:flex-none"
-                            disabled={resolveMutation.isPending}
-                            data-testid={`utang-confirm-${entry.id}`}
-                            onClick={() =>
-                              resolveMutation.mutate({ action: "confirm", entryId: entry.id })
-                            }
-                          >
-                            <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
-                            {confirmLabel}
-                          </Button>
-                        ) : null}
-                        {canDispute ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="flex-1 sm:flex-none"
-                            disabled={resolveMutation.isPending}
-                            data-testid={`utang-dispute-${entry.id}`}
-                            onClick={() => {
-                              setDisputeEntryId(entry.id);
-                              setDisputeReasonKey("");
-                            }}
-                          >
-                            <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-                            {t("personal.utang.dispute")}
-                          </Button>
-                        ) : null}
-                      </div>
-                    ) : null}
-
-                    {pendingOutgoing && online && canCancel ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="w-fit"
-                        disabled={resolveMutation.isPending}
-                        data-testid={`utang-cancel-${entry.id}`}
-                        onClick={() =>
-                          resolveMutation.mutate({ action: "cancel", entryId: entry.id })
-                        }
-                      >
-                        {t("personal.utang.cancelPending")}
-                      </Button>
-                    ) : null}
-
-                    {isDisputing ? (
-                      <div
-                        className="flex min-w-0 flex-col gap-2"
-                        data-testid={`utang-dispute-form-${entry.id}`}
-                      >
-                        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                          {t("personal.utang.disputeReason")}
-                          <select
-                            className="exits-select"
-                            value={disputeReasonKey}
-                            data-testid={`utang-dispute-reason-${entry.id}`}
-                            onChange={(e) =>
-                              setDisputeReasonKey(
-                                e.target.value as typeof disputeReasonKey,
-                              )
-                            }
-                          >
-                            <option value="">{EM_DASH}</option>
-                            <option value="amount">
-                              {t("personal.utang.disputeReasonAmount")}
-                            </option>
-                            <option value="notReceived">
-                              {t("personal.utang.disputeReasonNotReceived")}
-                            </option>
-                            <option value="other">
-                              {t("personal.utang.disputeReasonOther")}
-                            </option>
-                          </select>
-                        </label>
-                        <div className="flex min-w-0 flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            disabled={resolveMutation.isPending}
-                            data-testid={`utang-dispute-submit-${entry.id}`}
-                            onClick={() =>
-                              resolveMutation.mutate({
-                                action: "dispute",
-                                entryId: entry.id,
-                                reason: disputeReasonText(),
-                              })
-                            }
-                          >
-                            {t("personal.utang.disputeSubmit")}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            disabled={resolveMutation.isPending}
-                            onClick={() => {
-                              setDisputeEntryId(null);
-                              setDisputeReasonKey("");
-                            }}
-                          >
-                            {t("personal.utang.disputeKeep")}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            }
+          />
         )}
-      </section>
+      </Card>
 
       <Button asChild intent="primary" appearance="ghost" className="utang-back-link w-full font-bold sm:w-fit">
         <Link to="/personal/utang">
