@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type WheelEvent } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { INPUT_SAMPLES, type InputSample } from "@/features/ui-standards/UiStandardsInputGallery";
+import { SoftGlassRollCaret } from "@/features/ui-standards/soft-glass-roll-caret";
+import {
+  SOFT_GLASS_DATETIME_FORMAT_CHECKED_LABEL,
+  SOFT_GLASS_DATETIME_FORMAT_UNCHECKED_LABEL,
+} from "@/features/ui-standards/soft-glass-datetime-global-default";
+import {
+  SOFT_GLASS_SCALE_MS,
+  softGlassPrefersReducedMotion,
+} from "@/features/ui-standards/soft-glass-scale-presence";
+import { softGlassRollTouchHandlers } from "@/features/ui-standards/soft-glass-roll-touch";
 import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 import { DROPDOWN_STANDARD_COLOR, UiStandardsQdropdown } from "@/features/ui-standards/UiStandardsDropdownGallery";
 import { Switch } from "@/components/ui/switch";
@@ -12,13 +21,17 @@ import { Switch } from "@/components/ui/switch";
  */
 export const TIME_PICKER_SAMPLE = "09:30";
 
+export function nowTime(now = new Date()): string {
+  return formatTime(now.getHours(), now.getMinutes());
+}
+
 export type TimeRangeValue = { from: string; to: string };
 
 export const TIME_RANGE_SAMPLE: TimeRangeValue = { from: "09:30", to: "17:00" };
 
 export type TimePickerValue = string | TimeRangeValue;
 
-export type TimeAppearance = "standard" | "raised" | "gradient" | "flat";
+export type TimeAppearance = "standard" | "raised" | "gradient" | "flat" | "soft-glass";
 export type TimeVariety = "clock" | "roll";
 
 const DEFAULT_TIME_INTENTS = ["Standard", "Primary", "Secondary"] as const;
@@ -111,9 +124,29 @@ function TimeRoll({
 }) {
   const { hour, minute } = parseTime(iso);
   const shown = to12Hour(hour);
+  const [quick, setQuick] = useState<null | "hour" | "minute">(null);
+  const [quickOpen, setQuickOpen] = useState(false);
   const hourLabel = hour24 ? String(hour).padStart(2, "0") : String(shown.hour);
-  const prevHour = hour24 ? String(parseTime(shiftTime(iso, "hour", -1, true)).hour).padStart(2, "0") : String(to12Hour(parseTime(shiftTime(iso, "hour", -1, false)).hour).hour);
-  const nextHour = hour24 ? String(parseTime(shiftTime(iso, "hour", 1, true)).hour).padStart(2, "0") : String(to12Hour(parseTime(shiftTime(iso, "hour", 1, false)).hour).hour);
+  const prevHour = hour24
+    ? String(parseTime(shiftTime(iso, "hour", -1, true)).hour).padStart(2, "0")
+    : String(to12Hour(parseTime(shiftTime(iso, "hour", -1, false)).hour).hour);
+  const nextHour = hour24
+    ? String(parseTime(shiftTime(iso, "hour", 1, true)).hour).padStart(2, "0")
+    : String(to12Hour(parseTime(shiftTime(iso, "hour", 1, false)).hour).hour);
+  const hourChoices = hour24
+    ? Array.from({ length: 24 }, (_, value) => ({
+        label: String(value).padStart(2, "0"),
+        value,
+        selected: value === hour,
+      }))
+    : Array.from({ length: 12 }, (_, index) => {
+        const value = index + 1;
+        return {
+          label: String(value),
+          value,
+          selected: value === shown.hour,
+        };
+      });
 
   function nudge(part: "hour" | "minute" | "period", direction: -1 | 1) {
     if (!disabled) onChange(shiftTime(iso, part, direction, hour24));
@@ -124,48 +157,142 @@ function TimeRoll({
     nudge(part, event.deltaY > 0 ? 1 : -1);
   }
 
+  useEffect(() => {
+    if (quickOpen || quick == null) return;
+    if (softGlassPrefersReducedMotion()) {
+      setQuick(null);
+      return;
+    }
+    const timeout = window.setTimeout(() => setQuick(null), SOFT_GLASS_SCALE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [quickOpen, quick]);
+
+  function openQuick(next: "hour" | "minute") {
+    setQuick(next);
+    setQuickOpen(true);
+  }
+
+  function chooseHour(nextHourValue: number) {
+    if (disabled) return;
+    const next = hour24 ? formatTime(nextHourValue, minute) : formatTime(to24Hour(nextHourValue, shown.period), minute);
+    onChange(next);
+    setQuickOpen(false);
+    onCommit?.();
+  }
+
+  function chooseMinute(nextMinute: number) {
+    if (disabled) return;
+    onChange(formatTime(hour, nextMinute));
+    setQuickOpen(false);
+    onCommit?.();
+  }
+
+  const quickState = quickOpen ? "open" : "closed";
+
   return (
-    <div>
+    <div className="ui-standards-qdate__roll-group">
       {label ? <div className="ui-standards-qdate__roll-label">{label}</div> : null}
-      <div className="ui-standards-qdate__roll" data-testid={testId}>
-        <RollColumn
-          caption="Hour"
-          prev={prevHour}
-          current={hourLabel}
-          next={nextHour}
-          disabled={disabled}
-          testId={testId ? `${testId}-hour` : undefined}
-          onPrev={() => nudge("hour", -1)}
-          onNext={() => nudge("hour", 1)}
-          onWheel={(event) => onWheel("hour", event)}
-        />
-        <RollColumn
-          caption="Minute"
-          prev={String((minute + 59) % 60).padStart(2, "0")}
-          current={String(minute).padStart(2, "0")}
-          next={String((minute + 1) % 60).padStart(2, "0")}
-          disabled={disabled}
-          commit={commit}
-          testId={testId ? `${testId}-minute` : undefined}
-          onPrev={() => nudge("minute", -1)}
-          onNext={() => nudge("minute", 1)}
-          onCommit={onCommit}
-          onWheel={(event) => onWheel("minute", event)}
-        />
-        {hour24 ? null : (
+      {quick === "hour" ? (
+        <div
+          className="ui-standards-qdate__quick-panel"
+          data-transition="scale"
+          data-state={quickState}
+          data-testid={testId ? `${testId}-quick-hour` : undefined}
+        >
+          <div
+            className={"ui-standards-qdate__choices" + (hour24 ? " ui-standards-qdate__choices--hours-24" : "")}
+            role="listbox"
+            aria-label="Hour"
+          >
+            {hourChoices.map((choice) => (
+              <button
+                key={choice.label}
+                type="button"
+                className={"ui-standards-qdate__choice" + (choice.selected ? " ui-standards-qdate__choice--selected" : "")}
+                aria-pressed={choice.selected}
+                disabled={disabled}
+                data-testid={testId ? `${testId}-pick-hour-${choice.label}` : undefined}
+                onClick={() => chooseHour(choice.value)}
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {quick === "minute" ? (
+        <div
+          className="ui-standards-qdate__quick-panel"
+          data-transition="scale"
+          data-state={quickState}
+          data-testid={testId ? `${testId}-quick-minute` : undefined}
+        >
+          <div className="ui-standards-qdate__choices ui-standards-qdate__choices--minutes" role="listbox" aria-label="Minute">
+            {Array.from({ length: 60 }, (_, value) => {
+              const label = String(value).padStart(2, "0");
+              const selected = value === minute;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  className={"ui-standards-qdate__choice" + (selected ? " ui-standards-qdate__choice--selected" : "")}
+                  aria-pressed={selected}
+                  disabled={disabled}
+                  data-testid={testId ? `${testId}-pick-minute-${label}` : undefined}
+                  onClick={() => chooseMinute(value)}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+      {quick ? null : (
+        <div className="ui-standards-qdate__roll" data-testid={testId}>
           <RollColumn
-            caption="Period"
-            prev={shown.period === "AM" ? "PM" : "AM"}
-            current={shown.period}
-            next={shown.period === "AM" ? "PM" : "AM"}
+            caption="Hour"
+            prev={prevHour}
+            current={hourLabel}
+            next={nextHour}
             disabled={disabled}
-            testId={testId ? `${testId}-period` : undefined}
-            onPrev={() => nudge("period", 1)}
-            onNext={() => nudge("period", 1)}
-            onWheel={(event) => onWheel("period", event)}
+            choose
+            testId={testId ? `${testId}-hour` : undefined}
+            onPrev={() => nudge("hour", -1)}
+            onNext={() => nudge("hour", 1)}
+            onChoose={() => openQuick("hour")}
+            onWheel={(event) => onWheel("hour", event)}
           />
-        )}
-      </div>
+          <RollColumn
+            caption="Minute"
+            prev={String((minute + 59) % 60).padStart(2, "0")}
+            current={String(minute).padStart(2, "0")}
+            next={String((minute + 1) % 60).padStart(2, "0")}
+            disabled={disabled}
+            choose
+            testId={testId ? `${testId}-minute` : undefined}
+            onPrev={() => nudge("minute", -1)}
+            onNext={() => nudge("minute", 1)}
+            onChoose={() => openQuick("minute")}
+            onWheel={(event) => onWheel("minute", event)}
+          />
+          {hour24 ? null : (
+            <RollColumn
+              caption="Period"
+              prev={shown.period === "AM" ? "PM" : "AM"}
+              current={shown.period}
+              next={shown.period === "AM" ? "PM" : "AM"}
+              disabled={disabled}
+              commit={commit}
+              testId={testId ? `${testId}-period` : undefined}
+              onPrev={() => nudge("period", 1)}
+              onNext={() => nudge("period", 1)}
+              onCommit={onCommit}
+              onWheel={(event) => onWheel("period", event)}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -177,10 +304,12 @@ function RollColumn({
   next,
   disabled,
   commit = false,
+  choose = false,
   testId,
   onPrev,
   onNext,
   onCommit,
+  onChoose,
   onWheel,
 }: {
   caption: string;
@@ -189,27 +318,33 @@ function RollColumn({
   next: string;
   disabled: boolean;
   commit?: boolean;
+  choose?: boolean;
   testId?: string;
   onPrev: () => void;
   onNext: () => void;
   onCommit?: () => void;
+  onChoose?: () => void;
   onWheel: (event: WheelEvent<HTMLDivElement>) => void;
 }) {
+  const middleClick = choose ? onChoose : commit ? onCommit : undefined;
+  const startYRef = useRef<number | null>(null);
+  const touch = softGlassRollTouchHandlers(onPrev, onNext, disabled, startYRef);
   return (
-    <div className="ui-standards-qdate__roll-col" onWheel={onWheel}>
+    <div className="ui-standards-qdate__roll-col" onWheel={onWheel} {...touch}>
       <span className="ui-standards-qdate__roll-caption">{caption}</span>
       <button type="button" className="ui-standards-qdate__roll-btn" aria-label={`Previous ${caption}`} disabled={disabled} onClick={onPrev}>
-        <ChevronUp aria-hidden />
+        <SoftGlassRollCaret direction="up" />
       </button>
       <div className="ui-standards-qdate__roll-window">
         <span className="ui-standards-qdate__roll-item">{prev}</span>
-        {commit ? (
+        {middleClick ? (
           <button
             type="button"
             className="ui-standards-qdate__roll-item ui-standards-qdate__roll-item--current"
+            aria-label={`Choose ${caption}`}
             disabled={disabled}
             data-testid={testId}
-            onClick={onCommit}
+            onClick={middleClick}
           >
             {current}
           </button>
@@ -221,7 +356,7 @@ function RollColumn({
         <span className="ui-standards-qdate__roll-item">{next}</span>
       </div>
       <button type="button" className="ui-standards-qdate__roll-btn" aria-label={`Next ${caption}`} disabled={disabled} onClick={onNext}>
-        <ChevronDown aria-hidden />
+        <SoftGlassRollCaret direction="down" />
       </button>
     </div>
   );
@@ -370,16 +505,23 @@ export function UiStandardsQtime({
   range = false,
   now = TIME_PICKER_SAMPLE,
   showNow = false,
+  nowPlacement = "footer",
+  onNow,
   hour24 = false,
   onHour24Change,
   hour24TestId,
+  formatPlacement = "body",
   disabled = false,
   appearance = "standard",
   variety = "clock",
   onDark = false,
   onChange,
   onPicked,
+  showSet = false,
+  onSet,
   showValue = true,
+  /** Body-only rolls for Soft Glass date+time combined card (shared header / footer). */
+  embedded = false,
   testId,
 }: {
   color: string;
@@ -388,16 +530,25 @@ export function UiStandardsQtime({
   range?: boolean;
   now?: string;
   showNow?: boolean;
+  /** Footer is the sample row. Header matches the Today glass button. */
+  nowPlacement?: "footer" | "header";
+  onNow?: () => void;
   hour24?: boolean;
   onHour24Change?: (hour24: boolean) => void;
   hour24TestId?: string;
+  /** Body keeps the 24-hour label. Header puts the 12/24 switch at the top. */
+  formatPlacement?: "body" | "header";
   disabled?: boolean;
   appearance?: TimeAppearance;
   variety?: TimeVariety;
   onDark?: boolean;
   onChange?: (value: TimePickerValue) => void;
   onPicked?: () => void;
+  /** Soft Glass Roll date-time: Set under the roll carets. */
+  showSet?: boolean;
+  onSet?: () => void;
   showValue?: boolean;
+  embedded?: boolean;
   testId?: string;
 }) {
   const rangeValue = isTimeRangeValue(value) ? value : { from: value, to: value };
@@ -469,12 +620,43 @@ export function UiStandardsQtime({
     "ui-standards-qtime",
     appearance !== "standard" ? `ui-standards-qdate--${appearance}` : "",
     variety === "roll" ? "ui-standards-qdate--roll" : "",
-    showNow ? "ui-standards-qtime--now" : "",
+    showNow && !embedded ? "ui-standards-qtime--now" : "",
     disabled ? "ui-standards-qdate--disabled" : "",
     onDark ? "ui-standards-qdate--on-dark" : "",
+    embedded ? "ui-standards-qdate--embedded" : "",
   ]
     .filter(Boolean)
     .join(" ");
+  const formatSwitch = (
+    <Switch
+      checked={format24}
+      disabled={disabled}
+      onCheckedChange={changeHour24}
+      aria-label="Hour format"
+      checkedLabel={formatPlacement === "header" ? SOFT_GLASS_DATETIME_FORMAT_CHECKED_LABEL : "ON"}
+      uncheckedLabel={formatPlacement === "header" ? SOFT_GLASS_DATETIME_FORMAT_UNCHECKED_LABEL : "OFF"}
+      data-testid={hour24TestId}
+    />
+  );
+  const nowButton = showNow ? (
+    <button
+      type="button"
+      className={"ui-standards-qdate__today" + (nowPlacement === "header" ? " ui-standards-qdate__today--header" : "")}
+      disabled={disabled}
+      data-testid={testId ? `${testId}-now` : undefined}
+      onClick={() => {
+        commit(now, true);
+        onNow?.();
+      }}
+    >
+      Now
+    </button>
+  ) : null;
+  const timeLabel = range
+    ? `${displayTime(rangeValue.from, format24)} – ${dragging ? dragText : displayTime(rangeValue.to, format24)}`
+    : dragging
+      ? dragText
+      : displayTime(single, format24);
 
   return (
     <div
@@ -483,14 +665,22 @@ export function UiStandardsQtime({
       data-testid={testId}
       data-format={format24 ? "24" : "12"}
     >
-      <div className="ui-standards-qdate__header">
-        <span className="ui-standards-qdate__selected">{range ? `${displayTime(rangeValue.from, format24)} – ${dragging ? dragText : displayTime(rangeValue.to, format24)}` : dragging ? dragText : displayTime(single, format24)}</span>
-      </div>
+      {embedded ? null : (
+        <div className="ui-standards-qdate__header">
+          {formatPlacement === "header" ? (
+            <div className="ui-standards-qtime__format ui-standards-qtime__format--header">{formatSwitch}</div>
+          ) : null}
+          <span className="ui-standards-qdate__selected">{timeLabel}</span>
+          {nowPlacement === "header" ? nowButton : null}
+        </div>
+      )}
       <div className="ui-standards-qdate__body">
-        <label className="ui-standards-qtime__format">
-          <Switch checked={format24} disabled={disabled} onCheckedChange={changeHour24} aria-label="24-hour" data-testid={hour24TestId} />
-          24-hour
-        </label>
+        {embedded || formatPlacement === "header" ? null : (
+          <label className="ui-standards-qtime__format">
+            {formatSwitch}
+            24-hour
+          </label>
+        )}
         {variety === "roll" ? (
           range ? (
             <div className="ui-standards-qdate__roll-stack">
@@ -564,23 +754,28 @@ export function UiStandardsQtime({
             )}
           </>
         )}
-        {showNow ? (
+        {embedded ? null : showSet ? (
           <button
             type="button"
-            className="ui-standards-qdate__today"
+            className="ui-standards-qdate__set"
             disabled={disabled}
-            data-testid={testId ? `${testId}-now` : undefined}
-            onClick={() => commit(now, true)}
+            data-testid={testId ? `${testId}-set` : undefined}
+            onClick={() => {
+              if (range) onChange?.(rangeValue);
+              else onChange?.(single);
+              onSet?.();
+            }}
           >
-            Now
+            Set
           </button>
         ) : null}
-        {showValue ? (
+        {embedded || nowPlacement === "header" ? null : nowButton}
+        {embedded || !showValue ? null : (
           <div className="ui-standards-qdate__output" data-testid={testId ? `${testId}-value` : undefined}>
             <span className="ui-standards-qdate__output-label">Value</span>
             <span className="ui-standards-qdate__output-text">{output}</span>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
@@ -667,10 +862,20 @@ function TimeRow({
   );
 }
 
+/** Soft Glass Roll time samples — sits below the Time playground (not in the Time samples gallery). */
+export function UiStandardsSoftGlassRollTimeSamples(): ReactNode {
+  return (
+    <div className="flex flex-col gap-4" data-testid="ui-standard-time-soft-glass-roll-samples">
+      <TimeRow title="Soft Glass Roll" testId="ui-standard-time-soft-glass-roll" appearance="soft-glass" variety="roll" />
+    </div>
+  );
+}
+
 export function UiStandardsTimeGallery(): ReactNode {
   return (
     <div className="flex flex-col gap-4" data-testid="ui-standard-time-gallery">
       <TimeRow title="Standard" testId="ui-standard-time" />
+      <TimeRow title="Soft Glass" testId="ui-standard-time-soft-glass" appearance="soft-glass" />
       <TimeRow title="Raised" testId="ui-standard-time-raised" appearance="raised" />
       <TimeRow title="Gradient" testId="ui-standard-time-gradient" appearance="gradient" />
       <TimeRow title="Flat" testId="ui-standard-time-flat" appearance="flat" />

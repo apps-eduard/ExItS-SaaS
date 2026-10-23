@@ -1,0 +1,1104 @@
+/*
+ * Soft Glass Roll date / time layout — shared by product SoftGlassDateTimeField
+ * and the UI Standards showcase (ui-standards.css @imports this file).
+ * Lock: soft-glass-datetime-global-default.ts / exits-soft-glass-datetime.mdc
+ */
+
+.ui-standards-qdate {
+  --qdate-color: #1976d2;
+  --qdate-ink: #ffffff;
+  width: 18rem;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.ui-standards-qdate--disabled {
+  opacity: 0.55;
+}
+
+.ui-standards-qdate__header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  background: var(--qdate-color);
+  color: var(--qdate-ink);
+}
+
+.ui-standards-qdate__header:has(.ui-standards-qdate__today--header) {
+  padding-inline-end: 5.5rem;
+}
+
+.ui-standards-qdate__year {
+  width: fit-content;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.ui-standards-qdate__selected {
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.ui-standards-qdate__body {
+  padding: 0.35rem 0.5rem 0.6rem;
+}
+
+.ui-standards-qdate__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2rem;
+}
+
+.ui-standards-qdate__nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ui-standards-qdate__nav-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.ui-standards-qdate__nav-btn:disabled {
+  cursor: default;
+}
+
+.ui-standards-qdate__titles {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.ui-standards-qdate__jump,
+.ui-standards-qdate__month {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ui-standards-qdate__jump {
+  padding: 0.15rem 0.3rem;
+}
+
+.ui-standards-qdate__jump:hover:not(:disabled),
+.ui-standards-qdate__year:hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/*
+ * Soft Glass scale — same as Soft Glass dropdown
+ * (`data-transition="scale"` / ui-standards-qmenu-scale-in|out).
+ * Used by quick month/day/year/hour/minute panels and the portal dialog.
+ */
+@keyframes exits-sg-roll-quick-scale-in {
+  from {
+    opacity: 0;
+    transform: scale3d(0, 0, 1);
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes exits-sg-roll-quick-scale-out {
+  from {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+  to {
+    opacity: 0;
+    transform: scale3d(0, 0, 1);
+  }
+}
+
+.ui-standards-qdate__quick-panel,
+.exits-sg-datetime__panel--in-portal[data-transition="scale"],
+.exits-sg-datetime__combo[data-transition="scale"],
+.ui-standards-soft-glass-roll-card__pop[data-transition="scale"] {
+  transform-origin: center center;
+}
+
+.ui-standards-qdate__quick-panel[data-transition="scale"][data-state="open"],
+.exits-sg-datetime__panel--in-portal[data-transition="scale"][data-state="open"],
+.exits-sg-datetime__combo[data-transition="scale"][data-state="open"],
+.ui-standards-soft-glass-roll-card__pop[data-transition="scale"][data-state="open"] {
+  animation: exits-sg-roll-quick-scale-in 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.ui-standards-qdate__quick-panel[data-transition="scale"][data-state="closed"],
+.exits-sg-datetime__panel--in-portal[data-transition="scale"][data-state="closed"],
+.exits-sg-datetime__combo[data-transition="scale"][data-state="closed"],
+.ui-standards-soft-glass-roll-card__pop[data-transition="scale"][data-state="closed"] {
+  animation: exits-sg-roll-quick-scale-out 0.3s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+  pointer-events: none;
+}
+
+.exits-sg-datetime__portal[data-state="closed"] .exits-sg-datetime__scrim {
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.exits-sg-datetime__portal[data-state="open"] .exits-sg-datetime__scrim {
+  opacity: 1;
+  transition: opacity 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-standards-qdate__quick-panel[data-transition],
+  .exits-sg-datetime__panel--in-portal[data-transition],
+  .exits-sg-datetime__combo[data-transition],
+  .ui-standards-soft-glass-roll-card__pop[data-transition] {
+    animation: none;
+  }
+
+  .exits-sg-datetime__portal .exits-sg-datetime__scrim {
+    transition: none;
+  }
+}
+
+.ui-standards-qdate__choices {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.35rem 0.2rem;
+  align-content: center;
+  min-height: 13.5rem;
+  margin-top: 0.35rem;
+}
+
+.ui-standards-qdate__choices--hours-24 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.ui-standards-qdate__choices--minutes {
+  grid-template-columns: repeat(6, 1fr);
+  align-content: start;
+  max-height: 14.5rem;
+  overflow: auto;
+}
+
+.ui-standards-qdate__choice {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  min-height: 2rem;
+  cursor: pointer;
+}
+
+.ui-standards-qdate__choice:hover:not(:disabled):not(.ui-standards-qdate__choice--selected) {
+  background: color-mix(in srgb, var(--qdate-color) 16%, transparent);
+}
+
+.ui-standards-qdate__choice--selected {
+  background: var(--qdate-color);
+  color: var(--qdate-ink);
+}
+
+.ui-standards-qdate__choice:disabled {
+  cursor: default;
+}
+
+.ui-standards-qdate__weekdays,
+.ui-standards-qdate__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.ui-standards-qdate__weekdays {
+  margin-top: 0.2rem;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.ui-standards-qdate__day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0.1rem auto;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.ui-standards-qdate__day--outside {
+  opacity: 0.38;
+}
+
+.ui-standards-qdate__day--today:not(.ui-standards-qdate__day--selected) {
+  color: var(--qdate-color);
+  box-shadow: inset 0 0 0 1px var(--qdate-color);
+}
+
+.ui-standards-qdate__day--in-range:not(.ui-standards-qdate__day--selected) {
+  width: 100%;
+  margin-right: 0;
+  margin-left: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--qdate-color) 20%, #ffffff);
+}
+
+.ui-standards-qdate__day--selected {
+  background: var(--qdate-color);
+  color: var(--qdate-ink);
+  opacity: 1;
+}
+
+.ui-standards-qdate--today .ui-standards-qdate__day:hover:not(:disabled):not(.ui-standards-qdate__day--selected) {
+  background: color-mix(in srgb, var(--qdate-color) 18%, transparent);
+}
+
+.ui-standards-qdate--today .ui-standards-qdate__day--in-range:hover:not(:disabled):not(.ui-standards-qdate__day--selected) {
+  background: color-mix(in srgb, var(--qdate-color) 34%, #ffffff);
+}
+
+.ui-standards-qdate--today .ui-standards-qdate__nav-btn:hover:not(:disabled),
+.ui-standards-qdate--today .ui-standards-qdate__today:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--qdate-color) 14%, transparent);
+}
+
+.ui-standards-qdate__day:disabled {
+  cursor: default;
+}
+
+.ui-standards-qdate__today {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--qdate-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ui-standards-qdate__today--header {
+  --btn-glass-chip: var(--qdate-color, var(--exits-primary));
+  --btn-glass-deep: var(--exits-primary-hover, var(--btn-glass-chip));
+  --btn-glass-soft: color-mix(in srgb, var(--btn-glass-chip) 42%, #fff);
+  --btn-glass-wash: color-mix(in srgb, var(--btn-glass-chip) 8%, #fff);
+  --btn-glass-mid: color-mix(in srgb, var(--btn-glass-chip) 16%, #fff);
+  --btn-glass-ink: color-mix(in srgb, #000 28%, var(--btn-glass-chip));
+  position: absolute;
+  top: 50%;
+  right: 0.65rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 2rem;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0 0.7rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--btn-glass-soft));
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--btn-glass-chip) 8%, transparent);
+  color: var(--btn-glass-ink);
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.ui-standards-qdate--today .ui-standards-qdate__today--header:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--btn-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 60%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 54%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--btn-glass-chip) 9%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-qdate__today--header {
+  border-color: color-mix(in srgb, var(--btn-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-chip) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--btn-glass-deep) 11%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-qdate--today .ui-standards-qdate__today--header:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--btn-glass-chip) 22%, #64748b);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-chip) 18%, #1e293b) 100%
+  );
+}
+
+.ui-standards-qdate__output {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.ui-standards-qdate__output-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.ui-standards-qdate__output-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Soft Glass Roll Set — inside calendar/time, below the roll carets. */
+.ui-standards-qdate__set {
+  --btn-glass-chip: var(--qdate-color, var(--exits-primary));
+  --btn-glass-deep: var(--exits-primary-hover, var(--btn-glass-chip));
+  --btn-glass-soft: color-mix(in srgb, var(--btn-glass-chip) 42%, #fff);
+  --btn-glass-wash: color-mix(in srgb, var(--btn-glass-chip) 8%, #fff);
+  --btn-glass-mid: color-mix(in srgb, var(--btn-glass-chip) 16%, #fff);
+  --btn-glass-ink: color-mix(in srgb, #000 28%, var(--btn-glass-chip));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.25rem;
+  margin: 0.45rem 0 0;
+  padding: 0 0.85rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--btn-glass-soft));
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--btn-glass-chip) 8%, transparent);
+  color: var(--btn-glass-ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.ui-standards-qdate__set:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--btn-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 60%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 54%, transparent) 100%
+  );
+}
+
+.ui-standards-qdate__set:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+[data-theme="dark"] .ui-standards-qdate__set {
+  border-color: color-mix(in srgb, var(--btn-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-chip) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--btn-glass-deep) 11%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+  color: #e2e8f0;
+}
+
+.ui-standards-qdate__roll-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ui-standards-qdate__roll-label {
+  margin-bottom: 0.2rem;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ui-standards-qdate__roll {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.9fr;
+  gap: 0.35rem;
+}
+
+.ui-standards-qdate__roll-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  /* Soft Glass roll: vertical swipe on mobile (see soft-glass-roll-touch.ts). */
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ui-standards-qdate__roll-caption {
+  margin-bottom: 0.15rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.ui-standards-qdate__roll-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.4rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ui-standards-qdate__roll-btn .ui-standards-qdate__roll-caret {
+  width: 0.85rem;
+  height: 0.85rem;
+  display: block;
+}
+
+.ui-standards-qdate__roll-btn:disabled {
+  cursor: default;
+}
+
+/* Soft Glass roll carets — round hit target + stroke chevron (not solid triangle). */
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn {
+  width: 1.65rem;
+  height: 1.65rem;
+  margin-inline: auto;
+  border-radius: 999px;
+  color: color-mix(in srgb, #64748b 42%, var(--qdate-color, var(--exits-primary)));
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 12%, transparent);
+  color: color-mix(in srgb, #475569 28%, var(--qdate-color, var(--exits-primary)));
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn .ui-standards-qdate__roll-caret {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ui-standards-qdate__roll-window {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--qdate-color) 8%, transparent);
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-window {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ui-standards-qdate__roll-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.55rem;
+  font-size: 0.75rem;
+  opacity: 0.38;
+}
+
+.ui-standards-qdate__roll-item--current {
+  height: 2rem;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: var(--qdate-color);
+  color: var(--qdate-ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-item--current {
+  box-sizing: border-box;
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0 0.4rem;
+  border-radius: 0.65rem;
+  font-weight: 600;
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-caption {
+  opacity: 0.72;
+  color: color-mix(in srgb, #64748b 75%, var(--qdate-color, var(--exits-primary)));
+}
+
+.ui-standards-qtime__format {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0.1rem 0 0.15rem;
+  font-size: 0.75rem;
+}
+
+.ui-standards-qtime__format--header {
+  justify-content: flex-start;
+  width: fit-content;
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: var(--exits-font-weight-semibold, 600);
+}
+
+/* 12H / 24H — always solid primary track (lock); both states stay visible. */
+.ui-standards-qtime__format--header .exits-switch {
+  display: inline-flex;
+  width: 3.65rem;
+  opacity: 1;
+  visibility: visible;
+  border-color: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 55%, var(--exits-border, #cbd5e1));
+  background: var(--qdate-color, var(--exits-primary));
+}
+
+.ui-standards-qtime__format--header .exits-switch--on .exits-switch__thumb {
+  transform: translate(2.1rem, -50%);
+}
+
+.ui-standards-qtime__format--header .exits-switch__state {
+  font-size: 0.625rem;
+  font-weight: var(--exits-font-weight-semibold, 600);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--qdate-ink, var(--exits-primary-foreground, #fff));
+  opacity: 1;
+}
+
+.ui-standards-qtime__format--header .exits-switch:not(.exits-switch--on) .exits-switch__thumb {
+  background: var(--qdate-ink, var(--exits-primary-foreground, #fff));
+}
+
+.ui-standards-qtime__format--header .exits-switch:not(.exits-switch--on) .exits-switch__state {
+  color: var(--qdate-ink, var(--exits-primary-foreground, #fff));
+}
+
+.ui-standards-qtime__faces,
+.ui-standards-qtime__period {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.ui-standards-qtime__faces button,
+.ui-standards-qtime__period button {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+}
+
+.ui-standards-qtime__faces button[aria-pressed="true"],
+.ui-standards-qtime__period button[aria-pressed="true"] {
+  background: var(--qdate-color);
+  color: var(--qdate-ink);
+}
+
+/*
+ * Soft Glass Roll centered portal (product SoftGlassDateTimeField + Soft Glass Roll card).
+ * Keep in sync with globals.css. Full-viewport flex center — not left/transform.
+ */
+.exits-sg-datetime__portal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  box-sizing: border-box;
+}
+
+.exits-sg-datetime__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.exits-sg-datetime__portal-stage {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: min(18rem, 100%);
+  max-height: min(90dvh, calc(100vh - 1.5rem));
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+
+.exits-sg-datetime__portal-stage[data-panels="both"],
+.exits-sg-datetime__portal-stage[data-panels="combo"] {
+  width: min(18rem, 100%);
+}
+
+@media (min-width: 640px) {
+  .exits-sg-datetime__portal-stage[data-panels="both"] {
+    width: min(34rem, 100%);
+  }
+
+  .exits-sg-datetime__portal-stage[data-panels="combo"] {
+    width: min(20rem, 100%);
+  }
+}
+
+/* Soft Glass date+time — one card, one header, one Set footer. */
+.exits-sg-datetime__combo {
+  width: 100%;
+  max-width: 20rem;
+  overflow: hidden;
+  /* Clean uniform outer edge (no ribbon notch). */
+  border-radius: var(--soft-glass-radius, 1.1rem);
+}
+
+.exits-sg-datetime__combo.ui-standards-qdate--soft-glass {
+  border-radius: var(--soft-glass-radius, 1.1rem);
+}
+
+/* Light Soft Glass combo — icy glass, subtle blur; dark overrides below. */
+.exits-sg-datetime__combo.ui-standards-qdate.ui-standards-qdate--soft-glass,
+.exits-sg-datetime__combo.ui-standards-qdate--soft-glass {
+  border: 1px solid color-mix(in srgb, #cbd5e1 48%, var(--personal-qa-chip-soft, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 32%, #fff)));
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 58%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip-wash, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 8%, #fff)) 42%, transparent) 48%,
+      color-mix(in srgb, var(--personal-qa-chip-mid, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 14%, #fff)) 36%, transparent) 100%
+    ),
+    color-mix(in srgb, #f8fafc 88%, var(--personal-qa-chip-wash, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 8%, #fff)));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 70%, transparent) inset,
+    0 8px 22px color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 8%, transparent);
+}
+
+/* Restore Soft Glass date header: year above, full date below, 12/24 top-right. */
+.exits-sg-datetime__combo-header.ui-standards-qdate__header,
+.exits-sg-datetime__combo.ui-standards-qdate--soft-glass .exits-sg-datetime__combo-header.ui-standards-qdate__header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  /* Room for locked 12H/24H switch (always visible, same as Soft Glass Roll sample). */
+  padding-inline-end: 5.75rem;
+  /* Flush to card top — subtle divider only (no ribbon / heavy seam). */
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, #cbd5e1 38%, var(--personal-qa-chip-soft, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 28%, #fff)));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.exits-sg-datetime__combo-header .ui-standards-qdate__year {
+  cursor: default;
+}
+
+.exits-sg-datetime__combo-header .ui-standards-qdate__selected {
+  max-width: calc(100% - 0.25rem);
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* 12H/24H — always visible; sit on the date line (light + dark). */
+.exits-sg-datetime__combo-actions {
+  position: absolute;
+  top: auto;
+  right: 0.65rem;
+  bottom: 0.85rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  transform: none;
+  pointer-events: auto;
+}
+
+.exits-sg-datetime__combo-actions .ui-standards-qtime__format--header {
+  display: flex;
+  margin: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+.exits-sg-datetime__combo-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.65rem 0.65rem 0.2rem;
+}
+
+/* Nested roll shells — subtle blue-gray edge + soft wash (not a hard outline). */
+.exits-sg-datetime__combo-body > .ui-standards-qdate--embedded {
+  width: 100%;
+  max-width: none;
+  border: 1px solid color-mix(in srgb, #cbd5e1 42%, var(--personal-qa-chip-soft, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 28%, #fff)));
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: color-mix(in srgb, #fff 62%, var(--personal-qa-chip-wash, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 8%, #fff)));
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 5%, transparent);
+  overflow: hidden;
+}
+
+.ui-standards-qdate--embedded .ui-standards-qdate__body {
+  padding: 0.4rem 0.45rem 0.5rem;
+}
+
+.exits-sg-datetime__combo-body > .ui-standards-qdate--embedded .ui-standards-qdate__roll {
+  gap: 0.3rem;
+}
+
+/* Footer: all ghost, 1st-caps — Cancel (danger, start) · Now (middle) · Set (end). */
+.exits-sg-datetime__combo-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  padding: 0.35rem 0.65rem 0.75rem;
+}
+
+.exits-sg-datetime__combo-cancel,
+.exits-sg-datetime__combo-now,
+.exits-sg-datetime__combo-set,
+.exits-sg-datetime__combo-footer .ui-standards-qdate__set {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  margin: 0;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.exits-sg-datetime__combo-cancel {
+  justify-self: start;
+  color: var(--exits-danger);
+}
+
+.exits-sg-datetime__combo-cancel:hover {
+  background: color-mix(in srgb, var(--exits-danger) 12%, transparent);
+  color: var(--exits-danger);
+}
+
+.exits-sg-datetime__combo-now {
+  justify-self: center;
+  color: var(--qdate-color, var(--exits-primary));
+}
+
+.exits-sg-datetime__combo-now:hover {
+  background: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 12%, transparent);
+}
+
+.exits-sg-datetime__combo-set,
+.exits-sg-datetime__combo-footer .ui-standards-qdate__set {
+  justify-self: end;
+  width: auto;
+  min-width: 3.5rem;
+  color: var(--qdate-color, var(--exits-primary));
+}
+
+.exits-sg-datetime__combo-set:hover,
+.exits-sg-datetime__combo-footer .ui-standards-qdate__set:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 12%, transparent);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/*
+ * Soft Glass Date & Time roll — dark mode only.
+ * Unified translucent navy glass; no hard header seam; nested rollers without double edges.
+ * Does not change light-mode rules above.
+ */
+[data-theme="dark"] .exits-sg-datetime__combo.ui-standards-qdate.ui-standards-qdate--soft-glass,
+[data-theme="dark"] .exits-sg-datetime__combo.ui-standards-qdate--soft-glass {
+  --qdate-ink: #ffffff;
+  border: 1px solid color-mix(in srgb, #fff 12%, transparent);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 6%, transparent) 0%,
+      color-mix(in srgb, #1e293b 55%, transparent) 42%,
+      color-mix(in srgb, #0f172a 62%, transparent) 100%
+    ),
+    color-mix(in srgb, #1e293b 78%, #020617);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 7%, transparent) inset,
+    0 10px 28px rgba(2, 6, 23, 0.42);
+  color: #e2e8f0;
+}
+
+/* Kill competing Soft Glass header chrome + harsh divider on the combo card. */
+[data-theme="dark"] .exits-sg-datetime__combo.ui-standards-qdate--soft-glass .exits-sg-datetime__combo-header.ui-standards-qdate__header,
+[data-theme="dark"] .exits-sg-datetime__combo-header.ui-standards-qdate__header {
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #e2e8f0;
+}
+
+/* Nested date/time rollers — slightly lighter wash, no hard outline seam. */
+[data-theme="dark"] .exits-sg-datetime__combo-body > .ui-standards-qdate--embedded {
+  border: 1px solid color-mix(in srgb, #fff 7%, transparent);
+  background: color-mix(in srgb, #334155 28%, transparent);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .exits-sg-datetime__combo-body > .ui-standards-qdate--embedded .ui-standards-qdate__body {
+  background: transparent;
+}
+
+/* Soft Glass portal date-only pop — same unified glass (no ribbon / double shell). */
+[data-theme="dark"] .ui-standards-soft-glass-roll-card__pop.exits-sg-datetime__panel--in-portal > .ui-standards-qdate.ui-standards-qdate--soft-glass {
+  --qdate-ink: #ffffff;
+  border: 1px solid color-mix(in srgb, #fff 12%, transparent);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 6%, transparent) 0%,
+      color-mix(in srgb, #1e293b 55%, transparent) 42%,
+      color-mix(in srgb, #0f172a 62%, transparent) 100%
+    ),
+    color-mix(in srgb, #1e293b 78%, #020617);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 7%, transparent) inset,
+    0 10px 28px rgba(2, 6, 23, 0.42);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-roll-card__pop.exits-sg-datetime__panel--in-portal > .ui-standards-qdate--soft-glass > .ui-standards-qdate__header {
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Adjacent roll values — muted slate-blue, readable. */
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__roll-item:not(.ui-standards-qdate__roll-item--current) {
+  opacity: 1;
+  color: color-mix(in srgb, #94a3b8 72%, #60a5fa);
+}
+
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__roll-caption {
+  opacity: 0.72;
+  color: color-mix(in srgb, #94a3b8 80%, #64748b);
+}
+
+/* Selected pill — blue with white text, slightly less bright/saturated. */
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__roll-item--current {
+  border: 1px solid color-mix(in srgb, #fff 18%, transparent);
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, #fff 14%, transparent), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 8%, color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 78%, #1e3a5f)),
+      color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 72%, #1e3a5f) 58%,
+      color-mix(in srgb, var(--qdate-color, var(--exits-primary-hover, var(--exits-primary))) 68%, #0f172a)
+    );
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset;
+}
+
+/* Carets — consistent muted accent; soft circular hover only (existing Soft Glass hit target). */
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn {
+  color: color-mix(in srgb, #94a3b8 55%, var(--qdate-color, var(--exits-primary)));
+  background: transparent;
+  border: 0;
+}
+
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 12%, transparent);
+  color: color-mix(in srgb, #e2e8f0 40%, var(--qdate-color, var(--exits-primary)));
+}
+
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn .ui-standards-qdate__roll-caret {
+  width: 1rem;
+  height: 1rem;
+}
+
+[data-theme="dark"] .exits-sg-datetime__combo-footer {
+  border-top: 1px solid color-mix(in srgb, #fff 7%, transparent);
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+}
+
+[data-theme="dark"] .exits-sg-datetime__combo-cancel {
+  color: var(--exits-danger);
+}
+
+[data-theme="dark"] .exits-sg-datetime__combo-now,
+[data-theme="dark"] .exits-sg-datetime__combo-set,
+[data-theme="dark"] .exits-sg-datetime__combo-footer .ui-standards-qdate__set {
+  color: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 58%, #e2e8f0);
+}
+
+[data-theme="dark"] .exits-sg-datetime__combo-cancel:hover {
+  background: color-mix(in srgb, var(--exits-danger) 14%, transparent);
+}
+
+[data-theme="dark"] .exits-sg-datetime__combo-now:hover,
+[data-theme="dark"] .exits-sg-datetime__combo-set:hover,
+[data-theme="dark"] .exits-sg-datetime__combo-footer .ui-standards-qdate__set:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 14%, transparent);
+}
+
+.exits-sg-datetime__panel.exits-sg-datetime__panel--in-portal,
+.ui-standards-soft-glass-roll-card__pop.exits-sg-datetime__panel--in-portal {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  inset-inline-start: auto;
+  inset-inline-end: auto;
+  transform: none;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.exits-sg-datetime__panel--roll.exits-sg-datetime__panel--in-portal,
+.exits-sg-datetime__panel--roll.exits-sg-datetime__panel--in-portal[data-panels="both"],
+.ui-standards-soft-glass-roll-card__pop--datetime.exits-sg-datetime__panel--in-portal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .exits-sg-datetime__panel--roll.exits-sg-datetime__panel--in-portal[data-panels="both"],
+  .ui-standards-soft-glass-roll-card__pop--datetime.exits-sg-datetime__panel--in-portal[data-panels="both"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.exits-sg-datetime__panel--in-portal > .ui-standards-qdate,
+.exits-sg-datetime__panel--in-portal > .ui-standards-qtime,
+.ui-standards-soft-glass-roll-card__pop.exits-sg-datetime__panel--in-portal > .ui-standards-qdate {
+  width: 100%;
+  max-width: 18rem;
+  margin-inline: auto;
+}

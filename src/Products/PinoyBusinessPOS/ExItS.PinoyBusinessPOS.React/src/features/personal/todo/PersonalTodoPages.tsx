@@ -303,6 +303,20 @@ export function PersonalTodoHubPage() {
     setForm(emptyTodoForm());
   }
 
+  function resetCreateForm() {
+    setFormError(null);
+    setForm(emptyTodoForm());
+  }
+
+  const createFormDirty =
+    form.title.trim() !== "" ||
+    form.notes.trim() !== "" ||
+    form.dueAtLocal !== "" ||
+    form.reminderAtLocal !== "" ||
+    form.priority !== "Normal" ||
+    form.relatedEntityType !== "" ||
+    form.relatedEntityId !== "";
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!online) {
@@ -575,8 +589,12 @@ export function PersonalTodoHubPage() {
             type="button"
             intent="primary"
             appearance="glossy"
-            className="personal-todo-tasklist-rail__new w-full"
+            className={cn(
+              "personal-todo-tasklist-rail__new w-full",
+              createFormOpen && "personal-todo-tasklist-rail__new--active",
+            )}
             data-testid="todo-new-todo"
+            aria-pressed={createFormOpen}
             onClick={() => setCreateFormOpen(true)}
           >
             <Plus className="size-4 shrink-0" aria-hidden />
@@ -710,6 +728,18 @@ export function PersonalTodoHubPage() {
               {t("personal.todo.closeDetail")}
             </Button>
             <Button
+              type="button"
+              intent="primary"
+              appearance="glossy"
+              className="todo-create-dialog__btn todo-create-dialog__btn--reset"
+              disabled={createMutation.isPending || !createFormDirty}
+              data-testid="todo-create-reset"
+              onClick={() => resetCreateForm()}
+            >
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              {t("personal.todo.resetForm")}
+            </Button>
+            <Button
               type="submit"
               intent="primary"
               appearance="glossy"
@@ -728,7 +758,7 @@ export function PersonalTodoHubPage() {
         }
       >
         <div
-          className="todo-create-dialog__body personal-todo-create-form flex min-w-0 flex-col gap-1.5"
+          className="todo-create-dialog__body personal-todo-create-form flex min-w-0 flex-col gap-3.5"
           data-shell="soft-glass"
           data-testid="todo-create-form"
         >

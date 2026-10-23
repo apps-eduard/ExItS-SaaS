@@ -9,6 +9,10 @@ export type SwitchProps = Omit<
   onCheckedChange: (checked: boolean) => void;
   /** Visible ON/OFF caption (default true). */
   showStateLabel?: boolean;
+  /** Caption when checked. Defaults to ON. Avoid `on*` names — React treats those as DOM handlers. */
+  checkedLabel?: string;
+  /** Caption when unchecked. Defaults to OFF. */
+  uncheckedLabel?: string;
 };
 
 /**
@@ -22,6 +26,8 @@ export function Switch({
   disabled,
   id,
   showStateLabel = true,
+  checkedLabel = "ON",
+  uncheckedLabel = "OFF",
   ...props
 }: SwitchProps) {
   return (
@@ -42,7 +48,7 @@ export function Switch({
     >
       {showStateLabel ? (
         <span className="exits-switch__state" aria-hidden>
-          {checked ? "ON" : "OFF"}
+          {checked ? checkedLabel : uncheckedLabel}
         </span>
       ) : null}
       <span className="exits-switch__thumb" aria-hidden />

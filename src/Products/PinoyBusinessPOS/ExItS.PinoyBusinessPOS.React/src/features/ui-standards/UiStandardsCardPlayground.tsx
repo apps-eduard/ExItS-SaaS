@@ -8,7 +8,6 @@ import {
   Bell,
   Bookmark,
   Calendar,
-  CalendarX,
   Check,
   ChevronRight,
   ClipboardList,

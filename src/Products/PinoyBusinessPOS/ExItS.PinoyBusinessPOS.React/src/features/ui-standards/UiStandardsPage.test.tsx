@@ -5,7 +5,17 @@ import userEvent from "@testing-library/user-event";
 import { catalogs } from "@/i18n/messages";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
 import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
-import { hourFromClockDegrees, minuteFromClockDegrees } from "@/features/ui-standards/UiStandardsTimeGallery";
+import {
+  UiStandardsSidenavProvider,
+  UiStandardsSidenavToggle,
+} from "@/features/ui-standards/UiStandardsSidenav";
+import {
+  isoDateToDisplay,
+  SOFT_GLASS_DATE_INPUT_PLACEHOLDER,
+  SOFT_GLASS_DATETIME_INPUT_PLACEHOLDER,
+  todayIsoDate,
+} from "@/features/ui-standards/UiStandardsDateGallery";
+import { hourFromClockDegrees, minuteFromClockDegrees, displayTime, nowTime } from "@/features/ui-standards/UiStandardsTimeGallery";
 import { ToastProvider } from "@/components/exits/ToastProvider";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import {
@@ -31,9 +41,13 @@ function renderPage(entry = "/ui-standards") {
     <PreferencesProvider>
       <ToastProvider>
         <MemoryRouter initialEntries={[entry]}>
-          <Routes>
-            <Route path="/ui-standards" element={<UiStandardsPage />} />
-          </Routes>
+          <UiStandardsSidenavProvider>
+            {/* Topbar toggle (AppTopBar hosts this in the app shell). */}
+            <UiStandardsSidenavToggle />
+            <Routes>
+              <Route path="/ui-standards" element={<UiStandardsPage />} />
+            </Routes>
+          </UiStandardsSidenavProvider>
         </MemoryRouter>
       </ToastProvider>
     </PreferencesProvider>,
@@ -77,9 +91,32 @@ describe("ui-standards disclosure storage", () => {
   });
 });
 
+function stubMatchMedia(desktop: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => {
+      const minWidth = /min-width:\s*(\d+)px/.exec(query);
+      // Desktop stub: min-width queries at or below 720 match. Mobile: none match.
+      const resolved = Boolean(minWidth && desktop && Number(minWidth[1]) <= 720);
+      return {
+        matches: resolved,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      };
+    }),
+  });
+}
+
 describe("UiStandardsPage", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    stubMatchMedia(true);
   });
 
   it("renders the canonical consolidated page without Classic/Simple toggle", () => {
@@ -109,6 +146,8 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-simple-catalog")).not.toBeInTheDocument();
     const sidenav = screen.getByTestId("ui-standards-sidenav");
     expect(sidenav).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-layout")).toHaveAttribute("data-sidenav", "open");
+    expect(screen.getByTestId("ui-standards-sidenav-toggle")).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByTestId("ui-standards-category-filters")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-filter-all")).toHaveTextContent("Global preview");
     expect(screen.getByTestId("ui-standards-filter-all")).toHaveAttribute("data-selected", "true");
@@ -116,6 +155,31 @@ describe("UiStandardsPage", () => {
     expect(within(sidenav).queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-sticky-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ui-standards-buttons-section")).not.toBeInTheDocument();
+  });
+
+  it("toggles the sidenav from the header icon", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const toggle = screen.getByTestId("ui-standards-sidenav-toggle");
+    expect(screen.getByTestId("ui-standards-sidenav")).toBeInTheDocument();
+    await user.click(toggle);
+    expect(screen.queryByTestId("ui-standards-sidenav")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-layout")).toHaveAttribute("data-sidenav", "hidden");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-label", "Show sidenav");
+    await user.click(toggle);
+    expect(screen.getByTestId("ui-standards-sidenav")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-layout")).toHaveAttribute("data-sidenav", "open");
+  });
+
+  it("hides the sidenav by default on mobile", () => {
+    cleanup();
+    stubMatchMedia(false);
+    renderPage();
+    expect(screen.getByTestId("ui-standards-layout")).toHaveAttribute("data-sidenav", "hidden");
+    expect(screen.queryByTestId("ui-standards-sidenav")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-sidenav-toggle")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByTestId("ui-standards-sidenav-toggle")).toHaveAttribute("aria-label", "Show sidenav");
   });
 
   it("keeps the Buttons live card on the Quasar samples", () => {
@@ -2331,9 +2395,146 @@ describe("UiStandardsPage", () => {
     renderPage();
     await user.click(screen.getByTestId("ui-standards-filter-date"));
     expect(screen.getByTestId("ui-standard-card-date-playground")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-date-soft-glass-roll")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-card-date")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("ui-standard-card-date-playground").compareDocumentPosition(
+        screen.getByTestId("ui-standard-card-date-soft-glass-roll"),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("ui-standard-card-date-soft-glass-roll").compareDocumentPosition(
+        screen.getByTestId("ui-standard-card-date"),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(screen.getByTestId("ui-standard-card-date")).not.toHaveTextContent("Force dark mode");
     expect(screen.getByTestId("ui-standard-date-intents-field")).toHaveTextContent("Standard, Primary, Secondary");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-standard")).toHaveClass("ui-standards-qdate--soft-glass");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-primary")).toHaveClass("ui-standards-qdate--soft-glass");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-secondary")).toHaveClass("ui-standards-qdate--soft-glass");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-card")).toHaveTextContent(
+      "Soft Glass Roll · Primary, global default",
+    );
+    const dateInput = screen.getByTestId("ui-standard-date-soft-glass-roll-date-input");
+    const dateTimeInput = screen.getByTestId("ui-standard-date-soft-glass-roll-datetime-input");
+    const dateControl = within(dateInput).getByRole("textbox");
+    const dateTimeControl = within(dateTimeInput).getByRole("textbox");
+    expect(dateControl).toHaveValue("");
+    expect(dateTimeControl).toHaveValue("");
+    expect(dateControl).toHaveAttribute("placeholder", SOFT_GLASS_DATE_INPUT_PLACEHOLDER);
+    expect(dateTimeControl).toHaveAttribute("placeholder", SOFT_GLASS_DATETIME_INPUT_PLACEHOLDER);
+    expect(dateControl).toHaveAttribute("readonly");
+    expect(dateTimeControl).toHaveAttribute("readonly");
+    expect(dateControl).not.toHaveFocus();
+    expect(dateInput.querySelector(".ui-standards-qinput__label")).toHaveTextContent("Date");
+    expect(dateTimeInput.querySelector(".ui-standards-qinput__label")).toHaveTextContent("Date and time");
+    expect(dateInput).not.toHaveClass("ui-standards-qinput--placeholder");
+    expect(dateTimeInput).not.toHaveClass("ui-standards-qinput--placeholder");
+    const dateIcon = dateInput.querySelector(".ui-standards-qinput__picker-icon");
+    const dateTimeIcon = dateTimeInput.querySelector(".ui-standards-qinput__picker-icon");
+    expect(dateIcon).toBeTruthy();
+    expect(dateTimeIcon).toBeTruthy();
+    expect(dateControl.compareDocumentPosition(dateIcon!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dateTimeControl.compareDocumentPosition(dateTimeIcon!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dateInput.closest(".exits-sg-datetime")).toBeTruthy();
+    expect(dateTimeInput.closest(".exits-sg-datetime")).toBeTruthy();
+    const today = todayIsoDate();
+    const todayDisplay = isoDateToDisplay(today);
+    const todayDay = String(Number(today.slice(8)));
+    const todayYear = today.slice(0, 4);
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-date-input"));
+    expect(dateControl).not.toHaveFocus();
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-date-field")).toHaveAttribute("data-open", "true");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll")).toHaveClass("ui-standards-qdate--soft-glass");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll")).toHaveClass("ui-standards-qdate--roll");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-roll-day")).toHaveTextContent(todayDay);
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-roll-year")).toHaveTextContent(todayYear);
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-today")).toHaveClass("ui-standards-qdate__today--header");
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-today"));
+    expect(dateControl).toHaveValue(todayDisplay);
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll")).not.toBeInTheDocument();
+    const dateReset = screen.getByTestId("ui-standard-date-soft-glass-roll-date-input-clear");
+    expect(dateReset).toHaveClass("ui-standards-qinput__clear--reset");
+    expect(dateReset).toHaveAttribute("aria-label", "Reset Date");
+    await user.click(dateReset);
+    expect(dateControl).toHaveValue("");
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-date-input-clear")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-datetime-input"));
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-date")).toHaveClass("ui-standards-qdate--roll");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-date-roll-day")).toHaveTextContent(todayDay);
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-date-today")).toHaveClass("ui-standards-qdate__today--header");
+    const timePicker = screen.getAllByTestId("ui-standard-date-soft-glass-roll-dt-time")[0];
+    expect(timePicker).toHaveClass("ui-standards-qdate--roll");
+    const hourSwitch = within(timePicker).getByRole("switch", { name: "Hour format" });
+    expect(hourSwitch).toHaveTextContent("12");
+    expect(hourSwitch).not.toHaveTextContent("ON");
+    expect(hourSwitch.closest(".ui-standards-qdate__header")).toBeTruthy();
+    expect(timePicker).not.toHaveTextContent("24-hour");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-now")).toHaveClass("ui-standards-qdate__today--header");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-minute")).toHaveTextContent(nowTime().slice(3));
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-hour"));
+    expect(screen.getByRole("listbox", { name: "Hour" })).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-pick-hour-9"));
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-hour")).toHaveTextContent("9");
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-minute"));
+    expect(screen.getByRole("listbox", { name: "Minute" })).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-pick-minute-45"));
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-minute")).toHaveTextContent("45");
+    await user.click(hourSwitch);
+    expect(hourSwitch).toHaveTextContent("24");
+    expect(timePicker).toHaveAttribute("data-format", "24");
+    await user.click(hourSwitch);
+    expect(hourSwitch).toHaveTextContent("12");
+    expect(timePicker).toHaveAttribute("data-format", "12");
+    const dateSet = screen.getByTestId("ui-standard-date-soft-glass-roll-dt-date-set");
+    const timeSet = screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-set");
+    expect(dateSet).toHaveClass("ui-standards-qdate__set");
+    expect(timeSet).toHaveClass("ui-standards-qdate__set");
+    expect(dateSet.closest(".ui-standards-qdate__body")).toBeTruthy();
+    expect(timeSet.closest(".ui-standards-qdate__body")).toBeTruthy();
+    await user.click(dateSet);
+    expect(dateTimeControl).toHaveValue(`${todayDisplay} 9:45 AM`);
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-dt-date")).not.toBeInTheDocument();
+    const timeOnlyPop = screen.getByTestId("ui-standard-date-soft-glass-roll-datetime-pop");
+    expect(timeOnlyPop).toHaveAttribute("data-panels", "time");
+    expect(within(timeOnlyPop).getAllByTestId("ui-standard-date-soft-glass-roll-dt-time").length).toBeGreaterThan(0);
+    expect(within(timeOnlyPop).getByTestId("ui-standard-date-soft-glass-roll-dt-time-set")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-set"));
+    expect(dateTimeControl).toHaveValue(`${todayDisplay} 9:45 AM`);
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-datetime-pop")).not.toBeInTheDocument();
+    const dateTimeReset = screen.getByTestId("ui-standard-date-soft-glass-roll-datetime-input-clear");
+    expect(dateTimeReset).toHaveClass("ui-standards-qinput__clear--reset");
+    expect(dateTimeReset).toHaveAttribute("aria-label", "Reset Date and time");
+    await user.click(dateTimeReset);
+    expect(dateTimeControl).toHaveValue("");
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-datetime-input-clear")).not.toBeInTheDocument();
+    await user.click(dateTimeControl);
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-date-today"));
+    expect(dateTimeControl).toHaveValue(todayDisplay);
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-dt-date")).not.toBeInTheDocument();
+    const timeOnlyPopAfterClear = screen.getByTestId("ui-standard-date-soft-glass-roll-datetime-pop");
+    expect(timeOnlyPopAfterClear).toHaveAttribute("data-panels", "time");
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-now"));
+    expect(dateTimeControl).toHaveValue(`${todayDisplay} ${displayTime(nowTime(), false)}`);
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-datetime-pop")).not.toBeInTheDocument();
+    await user.click(dateTimeControl);
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-time-now"));
+    expect(dateTimeControl).toHaveValue(`${todayDisplay} ${displayTime(nowTime(), false)}`);
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-dt-time-now")).not.toBeInTheDocument();
+    const dateOnlyPop = screen.getByTestId("ui-standard-date-soft-glass-roll-datetime-pop");
+    expect(dateOnlyPop).toHaveAttribute("data-panels", "date");
+    expect(within(dateOnlyPop).getByTestId("ui-standard-date-soft-glass-roll-dt-date")).toBeInTheDocument();
+    expect(within(dateOnlyPop).getByTestId("ui-standard-date-soft-glass-roll-dt-date-set")).toBeInTheDocument();
+    await user.click(screen.getByTestId("ui-standard-date-soft-glass-roll-dt-date-set"));
+    expect(dateTimeControl).toHaveValue(`${todayDisplay} ${displayTime(nowTime(), false)}`);
+    expect(screen.queryByTestId("ui-standard-date-soft-glass-roll-datetime-pop")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-inline-roll-day")).toHaveTextContent("14");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-inline")).toHaveClass("ui-standards-qdate--roll");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-row-primary")).toHaveClass("ui-standards-qdate--soft-glass");
+    expect(screen.getByTestId("ui-standard-date-soft-glass-roll-row-primary")).toHaveClass("ui-standards-qdate--roll");
+    expect(screen.queryByTestId("ui-standard-date-gallery")).not.toHaveTextContent(
+      "Soft Glass Roll · Primary, global default",
+    );
     expect(screen.getByTestId("ui-standard-date-raised-standard")).toHaveClass("ui-standards-qdate--raised");
     expect(screen.getByTestId("ui-standard-date-gradient-standard")).toHaveClass("ui-standards-qdate--gradient");
     expect(screen.getByTestId("ui-standard-date-flat-standard")).toHaveClass("ui-standards-qdate--flat");
@@ -2358,6 +2559,17 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standard-date-pg-datetime-card")).toHaveTextContent("PREVIEW DATE AND TIME");
     expect(within(screen.getByTestId("ui-standard-date-pg-datetime")).getByRole("textbox")).toHaveValue("2026-10-14 9:30 AM");
     expect(screen.getByTestId("ui-standard-date-pg-datetime-command")).toHaveAttribute("data-command", "ext date time");
+    expect(screen.getByTestId("ui-standard-date-pg-datetime-soft-glass-card")).toHaveTextContent(
+      "PREVIEW SOFT GLASS DATE AND TIME",
+    );
+    expect(screen.getByTestId("ui-standard-date-pg-datetime-soft-glass")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-pg-datetime-soft-glass-command")).toHaveAttribute(
+      "data-command",
+      "ext date time soft-glass",
+    );
+    await user.click(screen.getByTestId("ui-standard-date-pg-datetime-soft-glass-trigger"));
+    expect(screen.getByTestId("ui-standard-date-pg-datetime-soft-glass-calendar")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-date-pg-datetime-soft-glass-clock")).toBeInTheDocument();
     expect(screen.queryByTestId("ui-standard-date-pg-input-calendar")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("ui-standard-date-pg-input"));
     expect(screen.getByTestId("ui-standard-date-pg-input-calendar")).toBeInTheDocument();
@@ -2502,9 +2714,28 @@ describe("UiStandardsPage", () => {
     expect(screen.queryByTestId("ui-standards-preference-preview")).not.toBeInTheDocument();
     const samples = screen.getByTestId("ui-standard-cards");
     const playgroundCard = within(samples).getByTestId("ui-standard-card-input-playground");
+    const glassCard = within(samples).getByTestId("ui-standard-card-input-soft-glass");
     const inputsCard = within(samples).getByTestId("ui-standard-card-inputs");
-    expect(playgroundCard.compareDocumentPosition(inputsCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(playgroundCard.compareDocumentPosition(glassCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(glassCard.compareDocumentPosition(inputsCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(playgroundCard).getByText("Input playground")).toBeInTheDocument();
+    expect(within(glassCard).getByText("Soft Glass · Primary, global default")).toBeInTheDocument();
+    const glassInput = within(glassCard).getByTestId("ui-standard-input-soft-glass-input").closest(".ui-standards-qinput");
+    const glassSearch = within(glassCard).getByTestId("ui-standard-input-soft-glass-search");
+    expect(glassInput).toHaveStyle({ "--qinput-accent": "var(--exits-primary)" });
+    expect(glassSearch).toHaveStyle({ "--qinput-accent": "var(--exits-primary)" });
+    expect(glassSearch.querySelector(".ui-standards-qinput__icon")).toBeInTheDocument();
+    expect(within(glassCard).getByTestId("ui-standard-input-soft-glass-select")).toHaveStyle({
+      "--qdropdown-color": "var(--exits-primary)",
+    });
+    const glassText = within(glassCard).getByLabelText("Input");
+    expect(glassText).toHaveValue("");
+    await user.type(glassText, "Ada");
+    expect(glassText).toHaveValue("Ada");
+    await user.click(within(glassCard).getByRole("button", { name: "Clear Input" }));
+    expect(glassText).toHaveValue("");
+    expect(within(glassCard).getByLabelText("Search")).toHaveValue("");
+    expect(within(glassCard).getByTestId("ui-standard-input-soft-glass-select-field")).toHaveTextContent("Select");
     expect(within(inputsCard).getByText("Input samples")).toBeInTheDocument();
     expect(within(inputsCard).getByTestId("ui-standard-input-pilot-badge")).toHaveTextContent(
       "INPUT STANDARD — APPROVED / LOCKED",

@@ -96,8 +96,14 @@ import { UiStandardsToggleGallery } from "@/features/ui-standards/UiStandardsTog
 import { UiStandardsDropdownGallery } from "@/features/ui-standards/UiStandardsDropdownGallery";
 import { UiStandardsSliderGallery } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { UiStandardsRangeGallery } from "@/features/ui-standards/UiStandardsRangeGallery";
-import { UiStandardsDateGallery } from "@/features/ui-standards/UiStandardsDateGallery";
-import { UiStandardsTimeGallery } from "@/features/ui-standards/UiStandardsTimeGallery";
+import {
+  UiStandardsDateGallery,
+  UiStandardsSoftGlassRollSamples,
+} from "@/features/ui-standards/UiStandardsDateGallery";
+import {
+  UiStandardsSoftGlassRollTimeSamples,
+  UiStandardsTimeGallery,
+} from "@/features/ui-standards/UiStandardsTimeGallery";
 import { UiStandardsBreadcrumbGallery } from "@/features/ui-standards/UiStandardsBreadcrumbGallery";
 import { UiStandardsInputGallery, UiStandardsInputTypes } from "@/features/ui-standards/UiStandardsInputGallery";
 import { UiStandardsMessageGallery } from "@/features/ui-standards/UiStandardsMessageGallery";
@@ -111,6 +117,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import {
   UiStandardsButtonPlayground,
   UiStandardsInputPlayground,
+  UiStandardsSoftGlassPrimaryFields,
   UiStandardsRadioPlayground,
   UiStandardsCheckboxPlayground,
   UiStandardsTogglePlayground,
@@ -420,6 +427,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
 
         {show("inputs") ? (
           <Card
+            className="flex min-w-0 flex-col gap-3 overflow-visible p-3 lg:col-span-2"
+            data-testid="ui-standard-card-input-soft-glass"
+          >
+            <CardTitle>{t("uiStandards.inputSoftGlassPrimaryTitle")}</CardTitle>
+            <UiStandardsSoftGlassPrimaryFields />
+          </Card>
+        ) : null}
+
+        {show("inputs") ? (
+          <Card
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
             data-testid="ui-standard-card-inputs"
           >
@@ -604,6 +621,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         ) : null}
 
         {show("date") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-date-soft-glass-roll"
+          >
+            <CardTitle>{t("uiStandards.dateSoftGlassRollTitle")}</CardTitle>
+            <UiStandardsSoftGlassRollSamples />
+          </Card>
+        ) : null}
+
+        {show("date") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2" data-testid="ui-standard-card-date">
             <CardTitle>{t("uiStandards.dateSamplesTitle")}</CardTitle>
             <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground" data-testid="ui-standard-date-pilot-badge">
@@ -623,6 +650,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           >
             <CardTitle>{t("uiStandards.timePlaygroundTitle")}</CardTitle>
             <UiStandardsTimePlayground />
+          </Card>
+        ) : null}
+
+        {show("time") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-time-soft-glass-roll"
+          >
+            <CardTitle>{t("uiStandards.timeSoftGlassRollTitle")}</CardTitle>
+            <UiStandardsSoftGlassRollTimeSamples />
           </Card>
         ) : null}
 

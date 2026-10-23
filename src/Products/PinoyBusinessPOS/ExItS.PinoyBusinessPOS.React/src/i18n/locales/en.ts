@@ -97,6 +97,7 @@ export const en = {
     "The Button playground is the locked ExItS Button standard. Request buttons with the Cursor command ext btn. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
   "uiStandards.inputPlaygroundTitle": "Input playground",
+  "uiStandards.inputSoftGlassPrimaryTitle": "Soft Glass · Primary, global default",
   "uiStandards.inputPilotBadge": "INPUT STANDARD — APPROVED / LOCKED",
   "uiStandards.inputPilotLede":
     "The Input playground is the locked ExItS Input standard. Request inputs with the Cursor command ext input. See Docs/UI/exits-input-standard.md.",
@@ -124,6 +125,7 @@ export const en = {
   "uiStandards.rangePlaygroundTitle": "Range playground",
   "uiStandards.rangeSamplesTitle": "Range samples",
   "uiStandards.datePlaygroundTitle": "Date picker playground",
+  "uiStandards.dateSoftGlassRollTitle": "Soft Glass Roll",
   "uiStandards.dateSamplesTitle": "Date picker samples",
   "uiStandards.dropdownPilotBadge": "DROPDOWN STANDARD — APPROVED / LOCKED",
   "uiStandards.dropdownPilotLede":
@@ -138,6 +140,7 @@ export const en = {
   "uiStandards.datePilotLede":
     "The Date picker playground is the locked ExItS Date picker standard. Request date pickers with the Cursor command ext date. See Docs/UI/exits-date-standard.md.",
   "uiStandards.timePlaygroundTitle": "Time picker playground",
+  "uiStandards.timeSoftGlassRollTitle": "Soft Glass Roll",
   "uiStandards.timeSamplesTitle": "Time picker samples",
   "uiStandards.cardPlaygroundTitle": "Card playground",
   "uiStandards.cardSamplesTitle": "Card samples",
@@ -2532,6 +2535,7 @@ export const en = {
   "personal.todo.relatedOrg": "Organization",
   "personal.todo.relatedId": "Related ID",
   "personal.todo.add": "Add to-do",
+  "personal.todo.resetForm": "Reset",
   "personal.todo.titleRequired": "Title is required.",
   "personal.todo.emptyTitle": "No to-dos here",
   "personal.todo.emptyDetail": "Create a to-do above or switch filters.",

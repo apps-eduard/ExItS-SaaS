@@ -9,6 +9,7 @@ import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTable
 import { UiStandardLiveSamples } from "@/features/ui-standards/UiStandardLiveSamples";
 import { UiStandardsPreferencePreview } from "@/features/ui-standards/UiStandardsPreferencePreview";
 import { useUiStandardsDisclosure } from "@/features/ui-standards/useUiStandardsDisclosure";
+import { useUiStandardsSidenav } from "@/features/ui-standards/UiStandardsSidenav";
 import {
   filterLiveCards,
   isUiStandardNavGroup,
@@ -24,6 +25,7 @@ import "@/features/ui-standards/ui-standards.css";
  * Canonical ExItS UI Standard page — live samples and the locked ExitsTable reference.
  * Route: /ui-standards ( /ui-standard aliases here ).
  * Classic / Simple modes removed (TASK-66D).
+ * Sidenav open state + topbar toggle: UiStandardsSidenavProvider.
  */
 export function UiStandardsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,6 +33,7 @@ export function UiStandardsPage() {
     parseUiStandardCategoryParam(searchParams.get("category")),
   );
   const { isOpen, setOpen } = useUiStandardsDisclosure();
+  const { open: sidenavOpen } = useUiStandardsSidenav();
   const mainRef = useRef<HTMLDivElement>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({
@@ -193,41 +196,52 @@ export function UiStandardsPage() {
       className="exits-page ui-standards-page flex min-h-0 min-w-0 flex-1 flex-col"
       data-testid="ui-standards-page"
     >
-      <div className="ui-standards-layout">
-        <nav className="ui-standards-sidenav" aria-label="UI standard categories" data-testid="ui-standards-sidenav">
-          <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
-            {UI_STANDARD_NAV.map((entry) => {
-              if (isUiStandardNavGroup(entry)) {
-                const expanded = groupOpen[entry.id] ?? true;
-                return (
-                  <div key={entry.id} className="ui-standards-sidenav__group">
-                    <button
-                      type="button"
-                      className="ui-standards-sidenav__item"
-                      aria-expanded={expanded}
-                      data-testid={`ui-standards-filter-${entry.id}`}
-                      onClick={() =>
-                        setGroupOpen((current) => ({
-                          ...current,
-                          [entry.id]: !(current[entry.id] ?? true),
-                        }))
-                      }
-                    >
-                      {entry.label}
-                      <ChevronRight className="ui-standards-sidenav__chevron" aria-hidden />
-                    </button>
-                    {expanded ? (
-                      <div className="ui-standards-sidenav__sublist" role="group" aria-label={entry.label}>
-                        {entry.children.map((child) => renderNavItem(child, true))}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              }
-              return renderNavItem(entry, false);
-            })}
-          </div>
-        </nav>
+      <div
+        className="ui-standards-layout"
+        data-sidenav={sidenavOpen ? "open" : "hidden"}
+        data-testid="ui-standards-layout"
+      >
+        {sidenavOpen ? (
+          <nav
+            id="ui-standards-sidenav"
+            className="ui-standards-sidenav"
+            aria-label="UI standard categories"
+            data-testid="ui-standards-sidenav"
+          >
+            <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
+              {UI_STANDARD_NAV.map((entry) => {
+                if (isUiStandardNavGroup(entry)) {
+                  const expanded = groupOpen[entry.id] ?? true;
+                  return (
+                    <div key={entry.id} className="ui-standards-sidenav__group">
+                      <button
+                        type="button"
+                        className="ui-standards-sidenav__item"
+                        aria-expanded={expanded}
+                        data-testid={`ui-standards-filter-${entry.id}`}
+                        onClick={() =>
+                          setGroupOpen((current) => ({
+                            ...current,
+                            [entry.id]: !(current[entry.id] ?? true),
+                          }))
+                        }
+                      >
+                        {entry.label}
+                        <ChevronRight className="ui-standards-sidenav__chevron" aria-hidden />
+                      </button>
+                      {expanded ? (
+                        <div className="ui-standards-sidenav__sublist" role="group" aria-label={entry.label}>
+                          {entry.children.map((child) => renderNavItem(child, true))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                }
+                return renderNavItem(entry, false);
+              })}
+            </div>
+          </nav>
+        ) : null}
 
         <div className="ui-standards-main-frame">
         <div

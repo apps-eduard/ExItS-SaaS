@@ -65,8 +65,11 @@ import {
 } from "@/features/ui-standards/UiStandardsDropdownGallery";
 import { UiStandardsQslider, sliderAccent } from "@/features/ui-standards/UiStandardsSliderGallery";
 import { UiStandardsQrange, type SliderRangeValue } from "@/features/ui-standards/UiStandardsRangeGallery";
+import { SoftGlassDateTimeField } from "@/components/exits/SoftGlassDateTimeField";
 import { DATE_PICKER_SAMPLE, DATE_RANGE_SAMPLE, UiStandardsQdate, isDateRangeValue, type DateAppearance, type DatePickerValue, type DateVariety } from "@/features/ui-standards/UiStandardsDateGallery";
 import { TIME_PICKER_SAMPLE, TIME_RANGE_SAMPLE, UiStandardsQtime, displayTime, isTimeRangeValue, type TimeAppearance, type TimePickerValue, type TimeVariety } from "@/features/ui-standards/UiStandardsTimeGallery";
+
+const SOFT_GLASS_DATETIME_SAMPLE = "2026-10-14T09:30";
 
 const PLAYGROUND_INTENTS = [
   { id: "standard", label: "Standard", bg: INTENT_GLOBAL_STANDARD, fg: "#000000", border: true },
@@ -404,11 +407,13 @@ export function PlaygroundTextField({
   value,
   onChange,
   testId,
+  clearable = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   testId: string;
+  clearable?: boolean;
 }) {
   const { preferences } = usePreferences();
   const sample = INPUT_SAMPLES.find((item) => item.id === INPUT_GLOBAL_DEFAULT_INTENT) ?? INPUT_SAMPLES[0];
@@ -418,11 +423,13 @@ export function PlaygroundTextField({
       label={label}
       value={value}
       onChange={onChange}
+      onClear={clearable ? () => onChange("") : undefined}
       accent={playgroundIntentColor(sample.id, inputAccent(sample))}
       fill={playgroundIntentColor(sample.id, sample.bg)}
       ink={sample.fg}
       appearance={INPUT_GLOBAL_DEFAULT_APPEARANCE}
       shape={preferences.controlShape}
+      clearable={clearable}
       inputTestId={testId}
     />
   );
@@ -732,6 +739,44 @@ export function UiStandardsButtonPlayground() {
         command={buttonCursorCommand(intent, appearance, shape, density, iconId, iconOnly || isMedallion, ripple, disabled)}
       />
     </PlaygroundSection>
+  );
+}
+
+const SOFT_GLASS_FIELD_OPTIONS: ReadonlyArray<{ label: string; value: string }> = [
+  { label: "Option 1", value: "option-1" },
+  { label: "Option 2", value: "option-2" },
+  { label: "Option 3", value: "option-3" },
+];
+
+/** Soft Glass · Primary, global default. Lock: soft-glass-primary-fields-global-default.ts */
+export function UiStandardsSoftGlassPrimaryFields(): ReactNode {
+  const [text, setText] = useState("");
+  const [choice, setChoice] = useState("");
+  const [query, setQuery] = useState("");
+  return (
+    <div className="ui-standards-soft-glass-primary-fields" data-testid="ui-standard-input-soft-glass-fields">
+      <PlaygroundTextField
+        label="Input"
+        value={text}
+        onChange={setText}
+        clearable
+        testId="ui-standard-input-soft-glass-input"
+      />
+      <CompactSelect
+        label="Select"
+        value={choice}
+        options={SOFT_GLASS_FIELD_OPTIONS}
+        onChange={setChoice}
+        emptyText="Select"
+        testId="ui-standard-input-soft-glass-select"
+      />
+      <PlaygroundSearchField
+        label="Search"
+        value={query}
+        onChange={setQuery}
+        testId="ui-standard-input-soft-glass-search"
+      />
+    </div>
   );
 }
 
@@ -2078,6 +2123,7 @@ export function UiStandardsDatePlayground() {
   const [timeValue, setTimeValue] = useState<TimePickerValue>(TIME_PICKER_SAMPLE);
   const [timeRangeValue, setTimeRangeValue] = useState<TimePickerValue>(TIME_RANGE_SAMPLE);
   const [hour24, setHour24] = useState(false);
+  const [softGlassDateTime, setSoftGlassDateTime] = useState(SOFT_GLASS_DATETIME_SAMPLE);
   const [previewKey, setPreviewKey] = useState(0);
   const sample = INPUT_SAMPLES.find((item) => item.id === intent) ?? INPUT_SAMPLES[0];
 
@@ -2132,6 +2178,7 @@ export function UiStandardsDatePlayground() {
     setTimeValue(TIME_PICKER_SAMPLE);
     setTimeRangeValue(TIME_RANGE_SAMPLE);
     setHour24(false);
+    setSoftGlassDateTime(SOFT_GLASS_DATETIME_SAMPLE);
     setPreviewKey((key) => key + 1);
   }
 
@@ -2165,6 +2212,7 @@ export function UiStandardsDatePlayground() {
           value={appearance}
           options={[
             { label: "Standard", value: "standard" },
+            { label: "Soft Glass", value: "soft-glass" },
             { label: "Raised", value: "raised" },
             { label: "Gradient", value: "gradient" },
             { label: "Flat", value: "flat" },
@@ -2371,6 +2419,23 @@ export function UiStandardsDatePlayground() {
             standard="Date"
             command={dateTimeCursorCommand(intent, inputAppearance, transition, hour24)}
             testId="ui-standard-date-pg-datetime-command"
+          />
+        </div>
+        <div
+          className="ui-standards-date-preview-card ui-standards-date-preview-card--input ui-standards-date-preview-card--datetime ui-standards-date-preview-card--soft-glass"
+          data-testid="ui-standard-date-pg-datetime-soft-glass-card"
+        >
+          <div className="ui-standards-date-preview-card__title">PREVIEW SOFT GLASS DATE AND TIME</div>
+          <SoftGlassDateTimeField
+            label="Date and time"
+            value={softGlassDateTime}
+            onChange={setSoftGlassDateTime}
+            testId="ui-standard-date-pg-datetime-soft-glass"
+          />
+          <UiStandardsCopyCommand
+            standard="Date"
+            command="ext date time soft-glass"
+            testId="ui-standard-date-pg-datetime-soft-glass-command"
           />
         </div>
       </PlaygroundPreviewCard>

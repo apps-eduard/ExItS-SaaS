@@ -15,6 +15,7 @@ import {
   ExitsOutlineSelect,
   ExitsOutlineTextarea,
 } from "@/components/exits/ExitsOutlineField";
+import { SoftGlassDateTimeField } from "@/components/exits/SoftGlassDateTimeField";
 import { Button } from "@/components/ui/button";
 import {
   TODO_PRIORITIES,
@@ -210,7 +211,7 @@ export function TodoFormFields({
   );
 
   return (
-    <>
+    <div className="personal-todo-form-fields flex min-w-0 flex-col">
       {includeTitle ? (
         <div className="personal-todo-form__title-field">
           <ExitsOutlineInput
@@ -219,6 +220,7 @@ export function TodoFormFields({
             value={form.title}
             onChange={(title) => setForm({ ...form, title })}
             autoFocus={titleAutoFocus}
+            {...(titleAutoFocus ? { "data-exits-modal-autofocus": "true" as const } : {})}
             required
             testId={`${idPrefix}-title`}
           />
@@ -241,27 +243,26 @@ export function TodoFormFields({
             onSelect={(dueAtLocal) => setForm({ ...form, dueAtLocal })}
           />
 
-          <ExitsOutlineInput
-            label={t("personal.todo.dueAt")}
-            type="datetime-local"
-            value={form.dueAtLocal}
-            onChange={(dueAtLocal) => setForm({ ...form, dueAtLocal })}
-            testId={`${idPrefix}-due`}
-          />
-
-          <div className="flex min-w-0 flex-col gap-1">
-            <ExitsOutlineInput
-              label={t("personal.todo.reminderAt")}
-              type="datetime-local"
-              value={form.reminderAtLocal}
-              onChange={(reminderAtLocal) => setForm({ ...form, reminderAtLocal })}
-              testId={`${idPrefix}-reminder`}
+          <div className="personal-todo-form__datetime-row">
+            <SoftGlassDateTimeField
+              label={t("personal.todo.dueAt")}
+              value={form.dueAtLocal}
+              onChange={(dueAtLocal) => setForm({ ...form, dueAtLocal })}
+              testId={`${idPrefix}-due`}
             />
-            {form.reminderAtLocal ? (
-              <span className="text-[length:var(--exits-text-xs)] text-muted">
-                {t("personal.todo.reminderServerHint")}
-              </span>
-            ) : null}
+            <div className="personal-todo-form__reminder">
+              <SoftGlassDateTimeField
+                label={t("personal.todo.reminderAt")}
+                value={form.reminderAtLocal}
+                onChange={(reminderAtLocal) => setForm({ ...form, reminderAtLocal })}
+                testId={`${idPrefix}-reminder`}
+              />
+              {form.reminderAtLocal ? (
+                <span className="personal-todo-form__reminder-hint text-[length:var(--exits-text-xs)] text-muted">
+                  {t("personal.todo.reminderServerHint")}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <ExitsOutlineSelect
@@ -289,7 +290,7 @@ export function TodoFormFields({
           <TodoRelatedEntityPicker form={form} setForm={setForm} idPrefix={idPrefix} />
         </>
       ) : null}
-    </>
+    </div>
   );
 }
 

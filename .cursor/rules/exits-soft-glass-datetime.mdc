@@ -1,0 +1,46 @@
+---
+description: Soft Glass date and date-time roll global default
+alwaysApply: true
+---
+
+# Soft Glass date / date-time (LOCKED)
+
+When creating a Soft Glass **date** or Soft Glass **date-time** field, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/soft-glass-datetime-global-default.ts`.
+
+Commands:
+
+- Date: `ext soft-glass date roll global-default`
+- Date-time: `ext soft-glass datetime roll global-default`
+- Both: `ext soft-glass date datetime roll global-default`
+
+The Date UI standard card titled **Soft Glass Roll · Primary, global default** is this lock. It sits under the Date playground.
+
+## Trigger field
+
+- Soft Glass glass input (`appearance` soft-glass chrome via `.exits-sg-datetime` / Soft Glass Roll card)
+- Empty by default (`SOFT_GLASS_DATETIME_DEFAULT_EMPTY`)
+- **Pick-only** (`SOFT_GLASS_DATETIME_TYPEABLE` = false): no typing, no text caret, input does not take focus — click opens the roll popup
+- Placeholder while empty (raised label when popup open): Date = `mm/dd/yyyy`; Date and time default = `mm/dd/yyyy hh:mm am` (`SOFT_GLASS_DATE_PLACEHOLDER` / `SOFT_GLASS_DATETIME_PLACEHOLDER`)
+- **Hour format default: 12-hour AM/PM** (`SOFT_GLASS_DATETIME_DEFAULT_HOUR24` = false). Header **12H / 24H** switch changes display and empty placeholder (`SOFT_GLASS_DATETIME_PLACEHOLDER_24` = `mm/dd/yyyy hh:mm` when 24)
+- Display after pick: `mm/dd/yyyy` and time as `h:mm AM` / `h:mm PM` (12) or `HH:mm` (24) — not ISO in the field
+- Trailing icon: Date = `CalendarDays`; Date and time = `CalendarClock`
+- Color: Preferences primary (`SOFT_GLASS_DATETIME_COLOR` = `var(--exits-primary)`)
+- Label motion: same as Soft Glass · Primary, global default / Add local person (`0.45s`, flush start, no surface chip, `translateY(calc(-50% - 0.85rem))`)
+- When not empty: **reset** mark (`RotateCcw`, `clearMark="reset"`) before the calendar icon — not the clear **X**. Click resets to empty and closes the popup
+
+## Popup calendar / time
+
+- Appearance: `soft-glass`. Variety: `roll`
+- Open with no value yet: show **today** / **now** in the rolls (`SOFT_GLASS_DATETIME_OPEN_SHOWS_CURRENT`)
+- **Today** (date-only Soft Glass Roll): glass button in the header (`todayPlacement="header"`)
+- Combined date+time footer: all ghost, 1st-caps — **Cancel** danger (start), **Now** (middle), **Set** (end). **Now** sets current date+time and closes. Extra top gap above the footer
+- Date-time **12H / 24H** switch: in the combined card header (`formatPlacement="header"`). Captions are **12H** / **24H**, solid primary track (not ON/OFF gray). **Default: 12H**
+- SoftGlassDateTimeField: one Soft Glass card — header (full month name + 12H·24H), nested date + time roll shells, footer Cancel / Now / Set. Always: full-viewport flex portal + scrim; vertical swipe + stroke chevron carets on rolls (not solid triangles; not capture-dismiss)
+- Middle hour / minute: quick-select grid (like year on the date roll)
+- **Set**: inside each picker body, below the roll carets (`showSet`). Applies the displayed value and hides that panel
+
+## Product use
+
+Prefer Soft Glass Roll date / date-time chrome (`SoftGlassDateTimeField` / Soft Glass Roll showcase patterns). Do not invent a flat Material date picker or a Soft Glass field that skips Today / Now / Set / reset unless the user names a different recipe.
+
+Change this lock only when the user asks. Update `soft-glass-datetime-global-default.ts`, `soft-glass-datetime-global-default.test.ts`, `exits-datetime-roll.css` (imported by SoftGlassDateTimeField + ui-standards), Soft Glass Roll card CSS / gallery, and this rule together.

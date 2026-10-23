@@ -16,6 +16,10 @@ import {
   formatUnreadNotificationBadge,
   organizationNotificationsQueryKey,
 } from "@/features/org/org-notifications";
+import {
+  UiStandardsSidenavToggle,
+  useUiStandardsSidenavOptional,
+} from "@/features/ui-standards/UiStandardsSidenav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked, sessionAccountClass } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
@@ -44,8 +48,11 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
   const location = useLocation();
   const { signOut, session } = useSession();
   const { boundWorkspace, clearBoundWorkspace, workspaces } = useWorkspace();
+  const uiStandardsSidenav = useUiStandardsSidenavOptional();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const isUiStandards =
+    location.pathname === "/ui-standards" || location.pathname.startsWith("/ui-standards/");
 
   const canSwitchWorkspace = workspaces.length > 0 && !isOrganizationContextLocked(session);
   const organizationId = boundWorkspace?.organizationId ?? null;
@@ -207,7 +214,11 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
           hideDesktopBrand && "app-top-bar__row--shell-desktop",
         )}
       >
-        {hideDesktopBrand ? (
+        {isUiStandards && uiStandardsSidenav ? (
+          <div className="app-top-bar__leading flex" data-testid="app-top-bar-leading">
+            <UiStandardsSidenavToggle className="app-top-bar__action" />
+          </div>
+        ) : hideDesktopBrand ? (
           <div className="app-top-bar__leading hidden lg:flex" data-testid="app-top-bar-leading">
             <ShellSidebarModeButton />
           </div>

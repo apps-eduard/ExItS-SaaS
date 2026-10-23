@@ -1,0 +1,39 @@
+---
+description: Soft Glass primary input, select, and search global default
+alwaysApply: true
+---
+
+# Soft Glass · Primary, global default (LOCKED)
+
+When creating a Soft Glass primary field group (glass input, glass select, and glass search), use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/soft-glass-primary-fields-global-default.ts`.
+
+The locked command is `ext soft-glass primary global-default`.
+
+The Input UI standard card titled **Soft Glass · Primary, global default** is this lock. It sits under the Input playground.
+
+## Fields
+
+- Input: locked `PlaygroundTextField` (`ext input primary outlined`), clearable. Clear mark is the locked primary **X** (`exits-search-clear-default.mdc`).
+- Select: locked `CompactSelect` (`ext dropdown primary outlined`).
+- Search: locked `PlaygroundSearchField` (search icon + clear). Search radius stays `0.75rem`.
+- All three are `SOFT_GLASS_PRIMARY_FIELDS_WIDTH` = **18rem**.
+- Color follows Preferences primary: `SOFT_GLASS_PRIMARY_FIELDS_COLOR` = `var(--exits-primary)`.
+- Field and menu radius stay `SOFT_GLASS_FIELD_RADIUS` (`0.6875rem`). Do not use the Soft Glass shell `1.1rem` on these fields.
+
+## Label
+
+Same motion as Add local person (`people-add-dialog--soft-glass`):
+
+- Duration: `SOFT_GLASS_PRIMARY_FIELDS_LABEL_DURATION` = **0.45s** on the label and the bottom bar
+- Raised label: flush start, no surface chip (`left: 0`, `padding-inline: 0`, `background: transparent`)
+- Lift: `translateY(SOFT_GLASS_PRIMARY_FIELDS_LABEL_LIFT)` = `translateY(calc(-50% - 0.85rem))`
+- Soft Glass date / date-time triggers (**Soft Glass Roll · Primary, global default**) use this same label motion — see `exits-soft-glass-datetime.mdc`
+
+## Select menu
+
+- Border: `SOFT_GLASS_PRIMARY_FIELDS_MENU_BORDER` = **2px**
+- Option radius: `SOFT_GLASS_PRIMARY_FIELDS_OPTION_RADIUS` = **3px** (hover and selected). This is the option row, not the field radius.
+- Hover: Soft Glass wash in light and dark
+- Selected: Soft Glass wash plus a thick primary start edge, `inset SOFT_GLASS_PRIMARY_FIELDS_SELECTED_EDGE` = **inset 3px 0 0**. Light selected text is primary. Dark selected text is white.
+
+Change this lock only when the user asks. Update `soft-glass-primary-fields-global-default.ts`, `soft-glass-primary-fields-global-default.test.ts`, `.ui-standards-soft-glass-primary-fields` in `ui-standards.css`, and this rule together.

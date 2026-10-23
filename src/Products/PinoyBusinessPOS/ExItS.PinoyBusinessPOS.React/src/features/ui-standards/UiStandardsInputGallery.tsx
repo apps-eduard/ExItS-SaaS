@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Eye, EyeOff, X, type LucideIcon } from "lucide-react";
+import { Eye, EyeOff, RotateCcw, X, type LucideIcon } from "lucide-react";
 import {
   INTENT_GLOBAL_AMBER,
   INTENT_GLOBAL_BLACK,
@@ -100,7 +100,9 @@ export function UiStandardsQinput({
   disabled = false,
   invalid = false,
   clearable = false,
+  clearMark = "x",
   required = false,
+  readOnly = false,
   onClear,
   icon,
   placeholder,
@@ -124,7 +126,11 @@ export function UiStandardsQinput({
   disabled?: boolean;
   invalid?: boolean;
   clearable?: boolean;
+  /** Soft Glass Roll date fields use the playground reset mark. */
+  clearMark?: "x" | "reset";
   required?: boolean;
+  /** Pick-only Soft Glass date triggers: no caret / no typing. */
+  readOnly?: boolean;
   onClear?: () => void;
   icon?: LucideIcon | null;
   placeholder?: string;
@@ -176,30 +182,40 @@ export function UiStandardsQinput({
         {type === "textarea" ? (
           <textarea
             className="ui-standards-qinput__control ui-standards-qinput__control--area"
-            value={onChange ? shown : undefined}
-            defaultValue={onChange ? undefined : ""}
+            value={onChange || readOnly ? shown : undefined}
+            defaultValue={onChange || readOnly ? undefined : ""}
             placeholder={placeholderOnly ? (placeholder ?? label) : (placeholder ?? " ")}
             disabled={disabled}
+            readOnly={readOnly || undefined}
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
             aria-label={label}
             data-testid={inputTestId}
             rows={3}
-            onChange={onChange ? (event) => onChange(event.target.value) : undefined}
+            onChange={onChange && !readOnly ? (event) => onChange(event.target.value) : undefined}
           />
         ) : (
           <input
             className="ui-standards-qinput__control"
             type={type}
-            value={onChange ? shown : undefined}
-            defaultValue={onChange ? undefined : ""}
+            value={onChange || readOnly ? shown : undefined}
+            defaultValue={onChange || readOnly ? undefined : ""}
             placeholder={placeholderOnly ? (placeholder ?? label) : (placeholder ?? " ")}
             disabled={disabled}
+            readOnly={readOnly || undefined}
+            tabIndex={readOnly ? -1 : undefined}
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
             aria-label={label}
             data-testid={inputTestId}
-            onChange={onChange ? (event) => onChange(event.target.value) : undefined}
+            onMouseDown={
+              readOnly
+                ? (event) => {
+                    event.preventDefault();
+                  }
+                : undefined
+            }
+            onChange={onChange && !readOnly ? (event) => onChange(event.target.value) : undefined}
           />
         )}
         {placeholderOnly ? null : (
@@ -212,21 +228,27 @@ export function UiStandardsQinput({
             ) : null}
           </span>
         )}
-        {suffix}
         {clearable && shown.trim() && !disabled ? (
           <button
             type="button"
-            className="ui-standards-qinput__clear"
-            aria-label={`Clear ${label}`}
+            className={
+              "ui-standards-qinput__clear" + (clearMark === "reset" ? " ui-standards-qinput__clear--reset" : "")
+            }
+            aria-label={clearMark === "reset" ? `Reset ${label}` : `Clear ${label}`}
             data-testid={testId ? `${testId}-clear` : undefined}
             onClick={(event) => {
               event.stopPropagation();
               onClear?.();
             }}
           >
-            <X className="size-4" strokeWidth={SEARCH_CLEAR_GLOBAL_STROKE} aria-hidden />
+            {clearMark === "reset" ? (
+              <RotateCcw className="size-4" strokeWidth={2} aria-hidden />
+            ) : (
+              <X className="size-4" strokeWidth={SEARCH_CLEAR_GLOBAL_STROKE} aria-hidden />
+            )}
           </button>
         ) : null}
+        {suffix}
       </span>
       {invalid ? (
         <span className="ui-standards-qinput__error">{errorMessage ?? "Enter a valid value."}</span>

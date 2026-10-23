@@ -15,6 +15,7 @@ import {
 } from "@/features/sell/sell-org-bottom-nav-chrome";
 import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
+import { UiStandardsSidenavProvider } from "@/features/ui-standards/UiStandardsSidenav";
 import { AppShell } from "@/layouts/AppShell";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
 import { WorkspaceBootNavigator } from "@/workspace/WorkspaceBootNavigator";
@@ -77,9 +78,11 @@ export function RootLayout() {
       <WorkspaceBootNavigator />
       <PersonalMerchantCartProvider>
         {isUiStandards ? (
-          <AppShell header={<AppTopBar />} fullScreen>
-            <Outlet />
-          </AppShell>
+          <UiStandardsSidenavProvider>
+            <AppShell header={<AppTopBar />} fullScreen>
+              <Outlet />
+            </AppShell>
+          </UiStandardsSidenavProvider>
         ) : useAdminShell ? (
           <AdminManagementShell header={<AppTopBar hideDesktopBrand />}>
             <Outlet />

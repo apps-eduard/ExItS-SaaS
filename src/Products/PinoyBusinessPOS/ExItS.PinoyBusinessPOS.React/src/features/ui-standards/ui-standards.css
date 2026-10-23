@@ -7,6 +7,7 @@
  */
 
 @import "./exits-qfield.css";
+@import "./exits-datetime-roll.css";
 
 .ui-standards-page {
   flex: 1 1 auto;
@@ -17,6 +18,7 @@
 }
 
 .ui-standards-layout {
+  position: relative;
   display: grid;
   grid-template-columns: 15rem minmax(0, 1fr);
   align-items: stretch;
@@ -25,6 +27,10 @@
   min-width: 0;
   min-height: 0;
   height: 100%;
+}
+
+.ui-standards-layout[data-sidenav="hidden"] {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .ui-standards-sidenav {
@@ -228,12 +234,22 @@
 }
 
 @media (max-width: 719px) {
-
-.ui-standards-layout {
-    grid-template-columns: 11.5rem minmax(0, 1fr);
+  .ui-standards-layout,
+  .ui-standards-layout[data-sidenav="open"] {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-.ui-standards-main {
+  /* Mobile: sidenav overlays content when opened from the toggle. */
+  .ui-standards-layout[data-sidenav="open"] .ui-standards-sidenav {
+    position: absolute;
+    z-index: 40;
+    inset: 0 auto 0 0;
+    width: min(15rem, 85vw);
+    height: 100%;
+    box-shadow: var(--exits-shadow-md, 0 8px 24px rgba(15, 23, 42, 0.16));
+  }
+
+  .ui-standards-main {
     padding: 1rem 0.875rem 1.5rem;
   }
 }
@@ -1863,12 +1879,17 @@
 }
 
 .ui-standards-qdate__header {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
   padding: 0.85rem 1rem;
   background: var(--qdate-color);
   color: var(--qdate-ink);
+}
+
+.ui-standards-qdate__header:has(.ui-standards-qdate__today--header) {
+  padding-inline-end: 5.5rem;
 }
 
 .ui-standards-qdate__year {
@@ -1958,6 +1979,17 @@
   align-content: center;
   min-height: 13.5rem;
   margin-top: 0.35rem;
+}
+
+.ui-standards-qdate__choices--hours-24 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.ui-standards-qdate__choices--minutes {
+  grid-template-columns: repeat(6, 1fr);
+  align-content: start;
+  max-height: 14.5rem;
+  overflow: auto;
 }
 
 .ui-standards-qdate__choice {
@@ -2068,6 +2100,82 @@
   cursor: pointer;
 }
 
+.ui-standards-qdate__today--header {
+  --btn-glass-chip: var(--qdate-color, var(--exits-primary));
+  --btn-glass-deep: var(--exits-primary-hover, var(--btn-glass-chip));
+  --btn-glass-soft: color-mix(in srgb, var(--btn-glass-chip) 42%, #fff);
+  --btn-glass-wash: color-mix(in srgb, var(--btn-glass-chip) 8%, #fff);
+  --btn-glass-mid: color-mix(in srgb, var(--btn-glass-chip) 16%, #fff);
+  --btn-glass-ink: color-mix(in srgb, #000 28%, var(--btn-glass-chip));
+  position: absolute;
+  top: 50%;
+  right: 0.65rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 2rem;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0 0.7rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--btn-glass-soft));
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--btn-glass-chip) 8%, transparent);
+  color: var(--btn-glass-ink);
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.ui-standards-qdate--today .ui-standards-qdate__today--header:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--btn-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 60%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 54%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--btn-glass-chip) 9%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-qdate__today--header {
+  border-color: color-mix(in srgb, var(--btn-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-chip) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--btn-glass-deep) 11%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-qdate--today .ui-standards-qdate__today--header:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--btn-glass-chip) 22%, #64748b);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-chip) 18%, #1e293b) 100%
+  );
+}
+
 .ui-standards-qdate__output {
   display: flex;
   flex-direction: column;
@@ -2145,9 +2253,20 @@
   letter-spacing: 0.06em;
 }
 
-.ui-standards-date-preview-card--input .ui-standards-qinput {
+.ui-standards-date-preview-card--input .ui-standards-qinput,
+.ui-standards-date-preview-card--soft-glass .exits-sg-datetime__trigger {
   width: 18rem;
   max-width: 100%;
+}
+
+.ui-standards-date-preview-card--soft-glass {
+  overflow: visible;
+}
+
+.ui-standards-date-preview-card--soft-glass .exits-sg-datetime {
+  width: 100%;
+  max-width: none;
+  overflow: visible;
 }
 
 .ui-standards-date-preview-pop {
@@ -2181,6 +2300,486 @@
   grid-column: 1 / -1;
   grid-template-columns: 18rem 18rem;
   gap: 0.75rem;
+}
+
+/* Soft Glass · Primary, global default. Lock: soft-glass-primary-fields-global-default.ts */
+.ui-standards-soft-glass-primary-fields {
+  --sg-primary: var(--exits-primary);
+  --sg-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --sg-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --sg-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  overflow: visible;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput,
+.ui-standards-soft-glass-primary-fields .ui-standards-playground-search,
+.ui-standards-soft-glass-primary-fields .ui-standards-playground-select,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown {
+  width: 18rem;
+  max-width: 18rem !important;
+  flex: 0 0 18rem;
+}
+
+/* Locked Soft Glass search radius (TABLE_GLOBAL_SOFT_GLASS_SEARCH_RADIUS). */
+.ui-standards-soft-glass-primary-fields .ui-standards-playground-search .ui-standards-qinput__box {
+  border-radius: 0.75rem !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput__box,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__field,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__menu {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--sg-soft)) !important;
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--sg-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--sg-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--sg-primary) 8%, transparent) !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput__box::after {
+  border-bottom-color: var(--sg-primary);
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput:hover .ui-standards-qinput__box,
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput:focus-within .ui-standards-qinput__box,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown--open .ui-standards-qdropdown__field,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown:focus-within .ui-standards-qdropdown__field {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--sg-soft)) !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__label,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__chevron {
+  color: var(--sg-primary);
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__menu {
+  top: calc(100% + 0.35rem);
+  padding: 0.35rem;
+  overflow: auto;
+  border-width: 2px !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option {
+  border-radius: 3px;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option:hover,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option[data-option-color]:hover {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--sg-soft)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--sg-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--sg-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.78) inset !important;
+  color: var(--sg-primary) !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option--selected,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option--selected:hover {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--sg-soft)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 28%, var(--sg-wash)) 0%,
+    color-mix(in srgb, var(--sg-mid) 70%, #fff) 100%
+  ) !important;
+  box-shadow:
+    inset 3px 0 0 var(--sg-primary),
+    0 1px 0 rgba(255, 255, 255, 0.78) inset !important;
+  color: var(--sg-primary) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qinput__box,
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__field,
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__menu {
+  border-color: color-mix(in srgb, var(--sg-primary) 16%, #475569) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, var(--sg-primary) 8%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26) !important;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qinput__control,
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__value {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__label,
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__chevron {
+  color: color-mix(in srgb, var(--sg-primary) 42%, #fff);
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option:hover,
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option[data-option-color]:hover {
+  border-color: color-mix(in srgb, var(--sg-primary) 22%, #64748b) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 9%, #1e293b) 0%,
+    color-mix(in srgb, var(--sg-primary) 14%, #1e293b) 100%
+  ) !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option--selected,
+[data-theme="dark"] .ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__option--selected:hover {
+  border-color: color-mix(in srgb, var(--sg-primary) 28%, #64748b) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 10%, #1e293b) 0%,
+    color-mix(in srgb, var(--sg-primary) 22%, #1e293b) 100%
+  ) !important;
+  box-shadow:
+    inset 3px 0 0 var(--sg-primary),
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset !important;
+  color: #fff !important;
+}
+
+/* Same raised label and bar speed as Add local person (people-add-dialog--soft-glass). */
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput__label,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__label,
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput__box::after,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__field::after {
+  transition-duration: 0.45s !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput--outlined:focus-within .ui-standards-qinput__label,
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput--outlined:has(.ui-standards-qinput__control:not(:placeholder-shown)) .ui-standards-qinput__label {
+  left: 0 !important;
+  padding-inline: 0 !important;
+  background: transparent !important;
+  transform: translateY(calc(-50% - 0.85rem)) scale(var(--qinput-float-scale, 1)) !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown--outlined .ui-standards-qdropdown__label {
+  left: 0 !important;
+  padding-inline: 0 !important;
+  background: transparent !important;
+  transform: translateY(calc(-50% - 0.85rem)) !important;
+}
+
+/* Soft Glass Roll · Primary, global default — lock: soft-glass-datetime-global-default.ts */
+.ui-standards-soft-glass-roll-card {
+  --sg-dt-chip: var(--exits-primary);
+  --sg-dt-deep: var(--exits-primary-hover, var(--exits-primary));
+  --sg-dt-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --sg-dt-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --sg-dt-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --sg-dt-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 55%, color-mix(in srgb, var(--exits-primary) 42%, #fff));
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 72%, color-mix(in srgb, var(--exits-primary) 8%, #fff)) 0%,
+    color-mix(in srgb, color-mix(in srgb, var(--exits-primary) 8%, #fff) 78%, #fff) 48%,
+    color-mix(in srgb, color-mix(in srgb, var(--exits-primary) 16%, #fff) 70%, #fff) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 6px 16px color-mix(in srgb, var(--exits-primary) 12%, transparent);
+}
+
+.ui-standards-soft-glass-roll-card__title {
+  color: color-mix(in srgb, #000 28%, var(--exits-primary));
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ui-standards-soft-glass-roll-card__inputs {
+  display: grid;
+  grid-template-columns: minmax(16rem, 18rem) minmax(16rem, 18rem);
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.ui-standards-soft-glass-roll-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.ui-standards-soft-glass-roll-card__field .exits-sg-datetime,
+.ui-standards-soft-glass-roll-card__field .exits-sg-datetime__trigger,
+.ui-standards-soft-glass-roll-card__field .ui-standards-qinput {
+  width: 100%;
+  max-width: 18rem;
+}
+
+/* Pick-only: no caret / typing; click opens roll. Placeholder shows while empty when popup is open. */
+.ui-standards-soft-glass-roll-card .exits-sg-datetime__trigger .ui-standards-qinput__control {
+  pointer-events: auto;
+  padding-inline-end: 0.35rem;
+  cursor: pointer;
+  caret-color: transparent;
+  user-select: none;
+}
+
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__control::placeholder {
+  color: transparent;
+}
+
+/*
+ * Pick-only: no focus-within. Raise label + bar from data-open the same way Soft Glass · Primary
+ * does on focus (top: 0 + translateY(calc(-50% - 0.85rem)), flush start).
+ */
+.ui-standards-soft-glass-roll-card__field[data-open] .ui-standards-qinput--outlined .ui-standards-qinput__box {
+  border-color: var(--qinput-accent, var(--exits-primary)) !important;
+}
+
+.ui-standards-soft-glass-roll-card__field[data-open] .ui-standards-qinput__box::after {
+  transform: scaleX(1);
+}
+
+.ui-standards-soft-glass-roll-card__field[data-open] .ui-standards-qinput--outlined .ui-standards-qinput__label,
+.ui-standards-soft-glass-roll-card .ui-standards-qinput--outlined:focus-within .ui-standards-qinput__label,
+.ui-standards-soft-glass-roll-card .ui-standards-qinput--outlined:has(.ui-standards-qinput__control:not(:placeholder-shown)) .ui-standards-qinput__label {
+  top: 0 !important;
+  left: 0 !important;
+  padding: 0 !important;
+  padding-inline: 0 !important;
+  background: transparent !important;
+  color: var(--qinput-accent, var(--exits-primary));
+  transform: translateY(calc(-50% - 0.85rem)) scale(var(--qinput-float-scale, 1)) !important;
+}
+
+.ui-standards-soft-glass-roll-card__field[data-open] .ui-standards-qinput__control::placeholder {
+  color: color-mix(in srgb, var(--exits-ink, #0f172a) 42%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-roll-card__field[data-open] .ui-standards-qinput__control::placeholder {
+  color: color-mix(in srgb, #e2e8f0 48%, transparent);
+}
+
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__clear {
+  margin-right: 0.1rem;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__picker-icon {
+  margin-right: 0.65rem;
+  margin-left: 0;
+  color: var(--sg-dt-chip, var(--exits-primary));
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* Same raised label and bar as Soft Glass · Primary, global default. */
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__label,
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__box::after {
+  transition-duration: 0.45s !important;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-roll-card .ui-standards-qinput__picker-icon {
+  color: var(--sg-dt-soft, color-mix(in srgb, var(--exits-primary) 42%, #fff));
+}
+
+.ui-standards-soft-glass-roll-card__pop {
+  margin-top: 0.15rem;
+}
+
+.ui-standards-soft-glass-roll-card__pop--datetime {
+  display: grid;
+  grid-template-columns: 18rem 18rem;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.ui-standards-soft-glass-roll-card__pop--datetime[data-panels="date"],
+.ui-standards-soft-glass-roll-card__pop--datetime[data-panels="time"] {
+  grid-template-columns: 18rem;
+}
+
+.ui-standards-soft-glass-roll-card__pop--datetime > .ui-standards-qdate {
+  width: 18rem;
+}
+
+/* Soft Glass Roll Set — inside calendar/time, below the roll carets. */
+.ui-standards-qdate__set {
+  --btn-glass-chip: var(--qdate-color, var(--exits-primary));
+  --btn-glass-deep: var(--exits-primary-hover, var(--btn-glass-chip));
+  --btn-glass-soft: color-mix(in srgb, var(--btn-glass-chip) 42%, #fff);
+  --btn-glass-wash: color-mix(in srgb, var(--btn-glass-chip) 8%, #fff);
+  --btn-glass-mid: color-mix(in srgb, var(--btn-glass-chip) 16%, #fff);
+  --btn-glass-ink: color-mix(in srgb, #000 28%, var(--btn-glass-chip));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.25rem;
+  margin: 0.45rem 0 0;
+  padding: 0 0.85rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--btn-glass-soft));
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--btn-glass-chip) 8%, transparent);
+  color: var(--btn-glass-ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.ui-standards-qdate__set:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--btn-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-wash) 60%, transparent) 48%,
+    color-mix(in srgb, var(--btn-glass-mid) 54%, transparent) 100%
+  );
+}
+
+.ui-standards-qdate__set:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+[data-theme="dark"] .ui-standards-qdate__set {
+  border-color: color-mix(in srgb, var(--btn-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--btn-glass-chip) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--btn-glass-deep) 11%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+  color: #e2e8f0;
+}
+
+.ui-standards-soft-glass-roll-card__grid {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(22rem, 1.4fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.ui-standards-soft-glass-roll-card__label {
+  margin-bottom: 0.45rem;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ui-standards-soft-glass-roll-card__datetime {
+  display: grid;
+  grid-template-columns: 18rem 18rem;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.ui-standards-soft-glass-roll-card__datetime > .ui-standards-qdate {
+  width: 18rem;
+}
+
+.ui-standards-soft-glass-roll-card__values {
+  margin-top: 0.75rem;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-roll-card {
+  border-color: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, var(--exits-primary) 8%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 6px 16px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-roll-card__title {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-roll-card__label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 72rem) {
+  .ui-standards-soft-glass-roll-card__inputs,
+  .ui-standards-soft-glass-roll-card__grid,
+  .ui-standards-soft-glass-roll-card__datetime,
+  .ui-standards-soft-glass-roll-card__pop--datetime {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-standards-soft-glass-roll-card__datetime > .ui-standards-qdate,
+  .ui-standards-soft-glass-roll-card__pop--datetime > .ui-standards-qdate,
+  .ui-standards-soft-glass-roll-card__values {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-standards-soft-glass-roll-card__datetime > .ui-standards-qdate,
+  .ui-standards-soft-glass-roll-card__pop--datetime > .ui-standards-qdate {
+    width: 100%;
+    max-width: 18rem;
+  }
+}
+
+/* Phone: Soft Glass Roll showcase stays single-column; field width fills card. */
+@media (max-width: 639px) {
+  .ui-standards-soft-glass-roll-card__inputs,
+  .ui-standards-soft-glass-roll-card__grid,
+  .ui-standards-soft-glass-roll-card__datetime {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-standards-soft-glass-roll-card__field .exits-sg-datetime,
+  .ui-standards-soft-glass-roll-card__field .exits-sg-datetime__trigger,
+  .ui-standards-soft-glass-roll-card__field .ui-standards-qinput,
+  .ui-standards-soft-glass-roll-card__datetime > .ui-standards-qdate,
+  .ui-standards-soft-glass-roll-card__sample > .ui-standards-qdate {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 .ui-standards-datetime-value {
@@ -2261,13 +2860,32 @@
   cursor: pointer;
 }
 
-.ui-standards-qdate__roll-btn svg {
-  width: 1rem;
-  height: 1rem;
+.ui-standards-qdate__roll-btn .ui-standards-qdate__roll-caret {
+  width: 0.85rem;
+  height: 0.85rem;
+  display: block;
 }
 
 .ui-standards-qdate__roll-btn:disabled {
   cursor: default;
+}
+
+/* Soft Glass roll carets — round hit target + filled rounded triangle mark. */
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn {
+  width: 1.65rem;
+  height: 1.65rem;
+  margin-inline: auto;
+  border-radius: 999px;
+  color: var(--qdate-color);
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--qdate-color) 14%, transparent);
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-btn .ui-standards-qdate__roll-caret {
+  width: 1rem;
+  height: 1rem;
 }
 
 .ui-standards-qdate__roll-window {
@@ -2275,8 +2893,15 @@
   flex-direction: column;
   width: 100%;
   overflow: hidden;
+  border: 0;
   border-radius: 8px;
   background: color-mix(in srgb, var(--qdate-color) 8%, transparent);
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-window {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .ui-standards-qdate__roll-item {
@@ -2302,6 +2927,10 @@
   cursor: pointer;
 }
 
+.ui-standards-qdate--soft-glass .ui-standards-qdate__roll-item--current {
+  border-radius: 0.65rem;
+}
+
 .ui-standards-qtime__clock {
   position: relative;
   width: 15.5rem;
@@ -2322,6 +2951,37 @@
   gap: 0.45rem;
   margin: 0.1rem 0 0.15rem;
   font-size: 0.75rem;
+}
+
+.ui-standards-qtime__format--header {
+  justify-content: flex-start;
+  width: fit-content;
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: var(--exits-font-weight-semibold, 600);
+}
+
+/* 12H / 24H both use the solid filled track (same as the ON look). */
+.ui-standards-qtime__format--header .exits-switch {
+  width: 3.65rem;
+  border-color: color-mix(in srgb, var(--qdate-color, var(--exits-primary)) 55%, var(--exits-border, #cbd5e1));
+  background: var(--qdate-color, var(--exits-primary));
+}
+
+.ui-standards-qtime__format--header .exits-switch--on .exits-switch__thumb {
+  transform: translate(2.1rem, -50%);
+}
+
+.ui-standards-qtime__format--header .exits-switch__state {
+  font-size: 0.625rem;
+  font-weight: var(--exits-font-weight-semibold, 600);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--qdate-ink, var(--exits-primary-foreground, #fff));
+}
+
+.ui-standards-qtime__format--header .exits-switch:not(.exits-switch--on) .exits-switch__thumb {
+  background: var(--qdate-ink, var(--exits-primary-foreground, #fff));
 }
 
 .ui-standards-qtime__hand,

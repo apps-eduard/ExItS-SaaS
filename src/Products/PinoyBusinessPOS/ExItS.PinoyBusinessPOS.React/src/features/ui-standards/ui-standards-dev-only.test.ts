@@ -26,6 +26,40 @@ const PRODUCT_SHOWCASE_CLASSES = new Set([
   "ui-standards-qcard__settings-fold",
   "ui-standards-qcard__settings-ribbon",
   "ui-standards-qcard__settings-tab",
+  // Soft Glass dialogs + SoftGlassDateTimeField (exits-sg-datetime / Soft Glass Roll)
+  "ui-standards-qinput",
+  "ui-standards-qinput--outlined",
+  "ui-standards-qinput__box",
+  "ui-standards-qinput__control",
+  "ui-standards-qinput__control--area",
+  "ui-standards-qinput__label",
+  "ui-standards-qinput__icon",
+  "ui-standards-qinput__clear",
+  "ui-standards-qinput__picker-icon",
+  "ui-standards-qdropdown",
+  "ui-standards-qdropdown--open",
+  "ui-standards-qdropdown--outlined",
+  "ui-standards-qdropdown__box",
+  "ui-standards-qdropdown__field",
+  "ui-standards-qdropdown__label",
+  "ui-standards-qdropdown__menu",
+  "ui-standards-qdropdown__option",
+  "ui-standards-qdropdown__option--selected",
+  "ui-standards-playground-search",
+  "ui-standards-qtable",
+  "ui-standards-qdate",
+  "ui-standards-qdate--soft-glass",
+  "ui-standards-qdate__header",
+  "ui-standards-qdate__day--selected",
+  "ui-standards-qdate__day--today",
+  "ui-standards-qdate__choice--selected",
+  "ui-standards-qdate__output",
+  "ui-standards-qdate__roll-window",
+  "ui-standards-qdate__roll-item--current",
+  "ui-standards-qtime__faces",
+  "ui-standards-qtime__period",
+  "ui-standards-qtime__tick",
+  "ui-standards-date-preview-card--soft-glass",
 ]);
 
 function sourceFiles(dir: string): string[] {
@@ -72,7 +106,13 @@ describe("UI Standards is development-only", () => {
     const importers = sourceFiles(srcDir)
       .map((file) => relative(srcDir, file).replace(/\\/g, "/"))
       .filter((file) => !file.startsWith("features/ui-standards/") && file !== "app/router.tsx")
-      .filter((file) => /from "@\/features\/ui-standards\/UiStandards/.test(read(file)));
-    expect(importers).toEqual([]);
+      .filter((file) => /from "@\/features\/ui-standards\/UiStandards/.test(read(file)))
+      .sort();
+    // SoftGlassDateTimeField: Soft Glass Roll host. AppTopBar + RootLayout: UI Standards sidenav topbar toggle.
+    expect(importers).toEqual([
+      "app/RootLayout.tsx",
+      "components/exits/AppTopBar.tsx",
+      "components/exits/SoftGlassDateTimeField.tsx",
+    ]);
   });
 });
