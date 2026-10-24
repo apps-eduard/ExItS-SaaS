@@ -123,7 +123,7 @@ export function SellCartPanel({
   const payEnabled = lines.length > 0 && moneyPostReady && canCreateSale && !hasStockIssues;
 
   return (
-    <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="sell-cart-panel sell-cart-panel--soft-glass flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="sell-cart-panel__header flex shrink-0 items-start justify-between gap-2" data-testid="sell-cart-header">
         <div className="sell-cart-panel__title min-w-0">
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{t("sell.cartLabel")}</h2>
@@ -231,7 +231,8 @@ export function SellCartPanel({
                     <div className="sell-cart-line__qty">
                       <QuantityStepper
                         compact
-                        variant="auto"
+                        variant="outline"
+                        className="quantity-stepper--soft-glass"
                         value={`${qtyLabel}kg`}
                         valueTestId={`sell-cart-qty-${line.lineKey}`}
                         decreaseLabel={t("sell.cartDecrease")}
@@ -246,7 +247,8 @@ export function SellCartPanel({
                     <div className="sell-cart-line__qty">
                       <QuantityStepper
                         compact
-                        variant="auto"
+                        variant="outline"
+                        className="quantity-stepper--soft-glass"
                         editOnClick
                         value={qtyLabel}
                         valueTestId={`sell-cart-qty-${line.lineKey}`}

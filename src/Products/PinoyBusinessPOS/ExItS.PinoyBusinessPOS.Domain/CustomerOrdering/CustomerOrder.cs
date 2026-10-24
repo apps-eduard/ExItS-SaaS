@@ -37,6 +37,10 @@ public sealed class CustomerOrder
     public string? RequestedPickupLocal { get; }
     public string? RequestedPickupTimeZoneId { get; }
     public DateTimeOffset? RequestedPickupAtUtc { get; }
+    /// <summary>Branch-local wall time the buyer asked for delivery. Null means deliver as soon as possible.</summary>
+    public string? RequestedDeliveryLocal { get; }
+    public string? RequestedDeliveryTimeZoneId { get; }
+    public DateTimeOffset? RequestedDeliveryAtUtc { get; }
     public CustomerOrderFulfillmentType FulfillmentType { get; }
     public Guid FulfillmentBranchId { get; }
     public string BranchNameSnapshot { get; }
@@ -123,6 +127,9 @@ public sealed class CustomerOrder
         string? requestedPickupLocal = null,
         string? requestedPickupTimeZoneId = null,
         DateTimeOffset? requestedPickupAtUtc = null,
+        string? requestedDeliveryLocal = null,
+        string? requestedDeliveryTimeZoneId = null,
+        DateTimeOffset? requestedDeliveryAtUtc = null,
         DateTimeOffset? paymentConfirmedAtUtc = null,
         Guid? paymentConfirmedBy = null,
         decimal? amountReceived = null)
@@ -172,6 +179,9 @@ public sealed class CustomerOrder
         RequestedPickupLocal = requestedPickupLocal;
         RequestedPickupTimeZoneId = requestedPickupTimeZoneId;
         RequestedPickupAtUtc = requestedPickupAtUtc;
+        RequestedDeliveryLocal = requestedDeliveryLocal;
+        RequestedDeliveryTimeZoneId = requestedDeliveryTimeZoneId;
+        RequestedDeliveryAtUtc = requestedDeliveryAtUtc;
         PaymentConfirmedAtUtc = paymentConfirmedAtUtc;
         PaymentConfirmedBy = paymentConfirmedBy;
         AmountReceived = amountReceived;
@@ -235,7 +245,10 @@ public sealed class CustomerOrder
         string? paymentReference = null,
         string? requestedPickupLocal = null,
         string? requestedPickupTimeZoneId = null,
-        DateTimeOffset? requestedPickupAtUtc = null)
+        DateTimeOffset? requestedPickupAtUtc = null,
+        string? requestedDeliveryLocal = null,
+        string? requestedDeliveryTimeZoneId = null,
+        DateTimeOffset? requestedDeliveryAtUtc = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(submittedBy);
@@ -278,6 +291,12 @@ public sealed class CustomerOrder
             ref requestedPickupLocal,
             ref requestedPickupTimeZoneId,
             ref requestedPickupAtUtc);
+        NormalizeDeliveryRequest(
+            fulfillmentType,
+            utcNow,
+            ref requestedDeliveryLocal,
+            ref requestedDeliveryTimeZoneId,
+            ref requestedDeliveryAtUtc);
 
         var orderId = id ?? CustomerOrderId.New();
         var orderLines = new List<CustomerOrderLine>(lines.Count);
@@ -366,7 +385,10 @@ public sealed class CustomerOrder
             paymentReference,
             requestedPickupLocal,
             requestedPickupTimeZoneId,
-            requestedPickupAtUtc);
+            requestedPickupAtUtc,
+            requestedDeliveryLocal,
+            requestedDeliveryTimeZoneId,
+            requestedDeliveryAtUtc);
     }
 
     public static CustomerOrder Rehydrate(
@@ -415,6 +437,9 @@ public sealed class CustomerOrder
         string? requestedPickupLocal = null,
         string? requestedPickupTimeZoneId = null,
         DateTimeOffset? requestedPickupAtUtc = null,
+        string? requestedDeliveryLocal = null,
+        string? requestedDeliveryTimeZoneId = null,
+        DateTimeOffset? requestedDeliveryAtUtc = null,
         DateTimeOffset? paymentConfirmedAtUtc = null,
         Guid? paymentConfirmedBy = null,
         decimal? amountReceived = null) =>
@@ -464,6 +489,9 @@ public sealed class CustomerOrder
             requestedPickupLocal,
             requestedPickupTimeZoneId,
             requestedPickupAtUtc,
+            requestedDeliveryLocal,
+            requestedDeliveryTimeZoneId,
+            requestedDeliveryAtUtc,
             paymentConfirmedAtUtc,
             paymentConfirmedBy,
             amountReceived);
@@ -1012,6 +1040,54 @@ public sealed class CustomerOrder
         requestedPickupLocal = local;
         requestedPickupTimeZoneId = zone;
         requestedPickupAtUtc = instant;
+    }
+
+    private static void NormalizeDeliveryRequest(
+        CustomerOrderFulfillmentType fulfillmentType,
+        DateTimeOffset utcNow,
+        ref string? requestedDeliveryLocal,
+        ref string? requestedDeliveryTimeZoneId,
+        ref DateTimeOffset? requestedDeliveryAtUtc)
+    {
+        var hasLocal = !string.IsNullOrWhiteSpace(requestedDeliveryLocal);
+        var hasZone = !string.IsNullOrWhiteSpace(requestedDeliveryTimeZoneId);
+        var hasInstant = requestedDeliveryAtUtc is not null;
+        if (!hasLocal && !hasZone && !hasInstant)
+        {
+            requestedDeliveryLocal = null;
+            requestedDeliveryTimeZoneId = null;
+            requestedDeliveryAtUtc = null;
+            return;
+        }
+
+        if (fulfillmentType != CustomerOrderFulfillmentType.Delivery || !hasLocal || !hasZone || !hasInstant)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderDeliveryRequest,
+                "Choose a delivery date and time, or leave both empty for delivery as soon as possible.");
+        }
+
+        var local = requestedDeliveryLocal!.Trim();
+        var zone = requestedDeliveryTimeZoneId!.Trim();
+        if (local.Length > 32 || zone.Length > 64)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderDeliveryRequest,
+                "The requested delivery time is not valid for this store.");
+        }
+
+        var instant = requestedDeliveryAtUtc!.Value;
+        SaleMoney.EnsureUtc(instant);
+        if (instant < utcNow)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderDeliveryRequest,
+                "Choose a delivery time that is still ahead for this store.");
+        }
+
+        requestedDeliveryLocal = local;
+        requestedDeliveryTimeZoneId = zone;
+        requestedDeliveryAtUtc = instant;
     }
 
     private static void EnsureActor(Guid actorId)

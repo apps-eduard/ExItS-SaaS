@@ -58,11 +58,38 @@ export function branchLocalClock(now: Date, timeZoneId: string | null | undefine
   }
 }
 
+/** Latest selectable schedule date (inclusive) in branch local calendar, or null when unlimited. */
+export function pickupMaxScheduleDate(input: {
+  now: Date;
+  timeZoneId?: string | null;
+  maxAdvanceScheduleDays?: number;
+}): string | null {
+  const maxDays = input.maxAdvanceScheduleDays ?? 0;
+  if (maxDays <= 0) {
+    return null;
+  }
+  const local = branchLocalClock(input.now, input.timeZoneId);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(local.date);
+  if (!match) {
+    return null;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  utc.setUTCDate(utc.getUTCDate() + maxDays);
+  const y = utc.getUTCFullYear();
+  const m = String(utc.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(utc.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function pickupTimeBounds(input: {
   date: string;
   now: Date;
   timeZoneId?: string | null;
   operatingHours?: PickupHoursDay[] | null;
+  minPreparationLeadMinutes?: number;
 }): PickupTimeBounds {
   const local = branchLocalClock(input.now, input.timeZoneId);
   const weekday = weekdayOfIsoDate(input.date);
@@ -76,7 +103,19 @@ export function pickupTimeBounds(input: {
   const close = day && !day.isOpen24Hours ? clockOrNull(day.closeTime) : null;
   const open = day && !day.isOpen24Hours ? clockOrNull(day.openTime) : null;
   const sameDayClose = close && open && close > open ? close : null;
-  const min = input.date === local.date ? local.time : null;
+
+  const leadMinutes = Math.max(0, input.minPreparationLeadMinutes ?? 0);
+  const earliestToday =
+    input.date === local.date ? addMinutes(local.time, leadMinutes) : null;
+  let min: string | null = null;
+  if (day?.isOpen24Hours) {
+    min = earliestToday;
+  } else if (open) {
+    min = earliestToday ? maxClock(earliestToday, open) : open;
+  } else {
+    min = earliestToday;
+  }
+
   if (min && sameDayClose && min > sameDayClose) {
     return { min, max: sameDayClose, closed: true };
   }
@@ -89,6 +128,10 @@ export function clampPickupTime(value: string, bounds: PickupTimeBounds): string
   if (bounds.min && clock < bounds.min) return bounds.min;
   if (bounds.max && clock > bounds.max) return bounds.max;
   return clock;
+}
+
+function maxClock(a: string, b: string): string {
+  return a >= b ? a : b;
 }
 
 function clockOrNull(value: string | null | undefined): string | null {

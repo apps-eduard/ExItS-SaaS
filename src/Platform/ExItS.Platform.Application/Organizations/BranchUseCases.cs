@@ -80,7 +80,11 @@ public sealed record OrganizationBranchDto(
     string? AreaName = null,
     /// <summary>Retail (default) or Warehouse.</summary>
     string BranchType = nameof(OrganizationBranchType.Retail),
-    IReadOnlyList<BranchOperatingHoursDayDto>? OperatingHours = null);
+    IReadOnlyList<BranchOperatingHoursDayDto>? OperatingHours = null,
+    bool AcceptScheduledOrdersWhileClosed = false,
+    int MinPreparationLeadMinutes = 0,
+    int MaxAdvanceScheduleDays = 0,
+    bool StoreIsOpenNow = false);
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
@@ -1182,7 +1186,11 @@ internal static class BranchMapper
             x.AreaId?.Value,
             areaName,
             x.BranchType.ToString(),
-            operatingHours);
+            operatingHours,
+            x.AcceptScheduledOrdersWhileClosed,
+            x.MinPreparationLeadMinutes,
+            x.MaxAdvanceScheduleDays,
+            readiness?.StoreOpenState?.IsOpenNow ?? false);
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

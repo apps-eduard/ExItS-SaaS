@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
+
 namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 
 /// <summary>
@@ -11,6 +13,7 @@ public static class CustomerStorefrontFulfillment
     public const string PickupUnavailable = "pickup-unavailable";
     public const string DeliveryUnavailable = "delivery-unavailable";
     public const string StoreClosed = "store-closed";
+    public const string ScheduleAvailable = "schedule-available";
 
     public const string PausedMessage = "Online ordering is temporarily paused.";
     public const string NoMethodMessage = "This store has not enabled pickup or delivery yet.";
@@ -43,6 +46,18 @@ public static class CustomerStorefrontFulfillment
             return NoMethod;
         }
 
+        if (open.Any(b =>
+                CustomerOrderPlaceBranchGate.IsStoreClosed(b)
+                && (CustomerOrderPlaceBranchGate.CanScheduleWhileClosed(b, CustomerOrderFulfillmentType.Pickup, canCustomerDelivery)
+                    || (canCustomerDelivery
+                        && CustomerOrderPlaceBranchGate.CanScheduleWhileClosed(
+                            b,
+                            CustomerOrderFulfillmentType.Delivery,
+                            canCustomerDelivery)))))
+        {
+            return ScheduleAvailable;
+        }
+
         if (open.All(b => !b.CustomerOrderingOperational))
         {
             return StoreClosed;
@@ -70,6 +85,12 @@ public static class CustomerStorefrontFulfillment
             && b.CustomerOrderingOperational
             && (b.PickupEnabled && b.PickupOperational
                 || (canCustomerDelivery && b.DeliveryEnabled && b.DeliveryOperational)));
+
+    public static bool CanScheduleWhileClosed(
+        CustomerOrderBranchSnapshot branch,
+        bool canCustomerDelivery,
+        CustomerOrderFulfillmentType fulfillmentType) =>
+        CustomerOrderPlaceBranchGate.CanScheduleWhileClosed(branch, fulfillmentType, canCustomerDelivery);
 
     public static bool AllEnabledBranchesPaused(IReadOnlyList<CustomerOrderBranchSnapshot> branches)
     {

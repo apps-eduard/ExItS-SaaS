@@ -641,6 +641,7 @@ public static class DomainErrorCodes
     public const string InvalidCustomerOrderPaymentReference = "pos.customer_order.payment_reference.invalid";
     public const string InvalidCustomerOrderPaymentConfirmation = "pos.customer_order.payment_confirmation.invalid";
     public const string InvalidCustomerOrderPickupRequest = "pos.customer_order.pickup_request.invalid";
+    public const string InvalidCustomerOrderDeliveryRequest = "pos.customer_order.delivery_request.invalid";
     public const string InvalidInventoryReservationQuantity = "pos.inventory.reservation.quantity.invalid";
     public const string InvalidProductImage = "pos.product.image.invalid";
     public const string ProductImageTooLarge = "pos.product.image.too_large";

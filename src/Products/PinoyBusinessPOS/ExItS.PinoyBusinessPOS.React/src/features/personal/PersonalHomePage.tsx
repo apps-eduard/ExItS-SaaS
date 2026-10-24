@@ -341,7 +341,7 @@ export function PersonalHomePage() {
             >
               <Link
                 to="/personal/linked-merchants"
-                className="personal-qa-glass personal-qa-glass--owe"
+                className="personal-qa-glass personal-qa-glass--stores"
                 data-testid="personal-stat-stores"
               >
                 <span className="personal-qa-glass__icon" aria-hidden="true">

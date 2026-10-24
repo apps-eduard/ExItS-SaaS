@@ -16,6 +16,9 @@ internal sealed class CustomerOrderRecord
     public string? RequestedPickupLocal { get; set; }
     public string? RequestedPickupTimeZoneId { get; set; }
     public DateTimeOffset? RequestedPickupAtUtc { get; set; }
+    public string? RequestedDeliveryLocal { get; set; }
+    public string? RequestedDeliveryTimeZoneId { get; set; }
+    public DateTimeOffset? RequestedDeliveryAtUtc { get; set; }
     public string FulfillmentType { get; set; } = string.Empty;
     public Guid FulfillmentBranchId { get; set; }
     public string BranchNameSnapshot { get; set; } = string.Empty;

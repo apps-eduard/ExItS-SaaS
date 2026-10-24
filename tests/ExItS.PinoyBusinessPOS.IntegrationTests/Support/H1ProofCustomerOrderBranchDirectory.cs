@@ -46,5 +46,6 @@ internal sealed class H1ProofCustomerOrderBranchDirectory : ICustomerOrderBranch
             Longitude: 120.9842m,
             DeliveryPolicy: null,
             IsPrimary: branchId == Main,
-            DeliveryServiceAreas: null);
+            DeliveryServiceAreas: null,
+            StoreIsOpenNow: true);
 }

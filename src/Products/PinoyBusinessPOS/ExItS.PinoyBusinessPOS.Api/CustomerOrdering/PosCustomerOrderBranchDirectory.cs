@@ -178,7 +178,8 @@ internal sealed class PosCustomerOrderBranchDirectory(
                     ],
                     PickupReady: true,
                     DeliveryReady: true,
-                    TimeZoneId: "Asia/Manila")
+                    TimeZoneId: "Asia/Manila",
+                    StoreIsOpenNow: true)
             ];
         }
 
@@ -353,6 +354,10 @@ internal sealed class PosCustomerOrderBranchDirectory(
                     day.IsOpen24Hours,
                     day.OpenTime,
                     day.CloseTime))
-                .ToList());
+                .ToList(),
+            branch.AcceptScheduledOrdersWhileClosed,
+            branch.MinPreparationLeadMinutes,
+            branch.MaxAdvanceScheduleDays,
+            StoreIsOpenNow: branch.StoreIsOpenNow);
     }
 }

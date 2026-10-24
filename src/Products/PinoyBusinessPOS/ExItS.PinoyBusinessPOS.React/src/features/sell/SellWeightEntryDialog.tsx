@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Scale } from "lucide-react";
 import type { PosCatalogProductDto, PosCatalogProductUnitDto } from "@/api/pos/pos-catalog-types";
 import { Button } from "@/components/ui/button";
+import { ExitsModal } from "@/components/exits/ExitsModal";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import {
   formatQuantityDisplay,
@@ -10,7 +12,6 @@ import {
   resolveSellUnitPrice,
   resolveStockHint,
   roundMoney,
-  type WeightInputUnit,
 } from "@/cart/sell-cart-helpers";
 import { resolveBranchStockGuardQuantity } from "@/features/catalog/catalog-stock-display";
 import { sellStockCaption } from "@/features/sell/sell-stock-caption";
@@ -40,8 +41,47 @@ type SellWeightEntryDialogProps = {
   onCancel: () => void;
 };
 
-function formatKgThreeDp(kilograms: number): string {
-  return kilograms.toFixed(3);
+function SavePlusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12.5 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V12" />
+      <path d="M16 13H8a1 1 0 0 0-1 1v7" />
+      <path d="M19 22v-6" />
+      <path d="M22 19h-6" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+    </svg>
+  );
+}
+
+function SavePenIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M13.33 13H8a1 1 0 0 0-1 1v7" />
+      <path d="M14.363 17.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 1 0-3.004-3.004z" />
+      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4v.3" />
+    </svg>
+  );
 }
 
 export function SellWeightEntryDialog({
@@ -60,13 +100,11 @@ export function SellWeightEntryDialog({
 }: SellWeightEntryDialogProps) {
   const { t } = useI18n();
   const [rawValue, setRawValue] = useState("");
-  const [unitCode, setUnitCode] = useState<WeightInputUnit>("kg");
   const [opened, setOpened] = useState(false);
 
   useEffect(() => {
     if (open && !opened) {
       const kg = initialKilograms != null && initialKilograms > 0 ? initialKilograms : null;
-      setUnitCode("kg");
       // Start blank for new adds; prefill only when editing an existing cart weight.
       setRawValue(kg != null ? formatQuantityDisplay(kg) : "");
       setOpened(true);
@@ -86,8 +124,8 @@ export function SellWeightEntryDialog({
     if (!Number.isFinite(raw)) {
       return null;
     }
-    return normalizeWeightToKilograms(raw, unitCode);
-  }, [rawValue, unitCode]);
+    return normalizeWeightToKilograms(raw, "kg");
+  }, [rawValue]);
 
   const kilograms = parsed && "kilograms" in parsed ? parsed.kilograms : null;
   const errorCode = parsed && "error" in parsed ? parsed.error : null;
@@ -140,7 +178,7 @@ export function SellWeightEntryDialog({
   const overStock =
     kilograms != null && stockCapKg != null && kilograms > stockCapKg + 1e-9;
 
-  if (!open || !product) {
+  if (!product) {
     return null;
   }
 
@@ -168,33 +206,80 @@ export function SellWeightEntryDialog({
   const canConfirm = kilograms != null && !overStock && errorCode == null;
 
   const enteredQtyLabel =
-    unitCode === "g" && kilograms != null
-      ? String(Math.round(kilograms * 1000))
-      : kilograms != null
-        ? formatQuantityDisplay(kilograms)
-        : rawValue;
+    kilograms != null ? formatQuantityDisplay(kilograms) : rawValue;
+
+  const confirmWeight = () => {
+    if (canConfirm && kilograms != null) {
+      onConfirm(kilograms);
+    }
+  };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-      role="presentation"
-      onClick={onCancel}
-      data-testid="sell-weight-entry-backdrop"
+    <ExitsModal
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          onCancel();
+        }
+      }}
+      title={editing ? t("sell.weightEditTitle") : t("sell.weightAddTitle")}
+      testId="sell-weight-entry"
+      id="sell-weight-entry"
+      className="sell-weight-entry-dialog sell-weight-entry-dialog--soft-glass sell-weight-entry"
+      closeLabel={t("sell.cancel")}
+      size="md"
+      ribbon
+      ribbonIcon={Scale}
+      onSubmit={() => {
+        confirmWeight();
+      }}
+      footer={
+        <>
+          {editing && onRemove ? (
+            <Button
+              type="button"
+              variant="ghost"
+              intent="danger"
+              className="sell-weight-entry-dialog__btn me-auto"
+              data-testid="sell-weight-remove"
+              onClick={onRemove}
+            >
+              {t("sell.cartRemove")}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            intent="danger"
+            appearance="glossy"
+            emphasis="strong"
+            className="sell-weight-entry-dialog__btn min-w-[8rem]"
+            data-testid="sell-weight-cancel"
+            onClick={onCancel}
+          >
+            {t("sell.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            intent="primary"
+            appearance="glossy"
+            className="sell-weight-entry-dialog__btn min-w-[8rem]"
+            data-testid="sell-weight-confirm"
+            disabled={!canConfirm}
+          >
+            {editing ? (
+              <SavePenIcon className="size-4 shrink-0" />
+            ) : (
+              <SavePlusIcon className="size-4 shrink-0" />
+            )}
+            {editing ? t("sell.weightUpdate") : (confirmAddLabel ?? t("sell.weightAdd"))}
+          </Button>
+        </>
+      }
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sell-weight-entry-title"
-        data-testid="sell-weight-entry"
-        className="sell-weight-entry flex w-full max-w-md flex-col gap-2.5 rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 shadow-lg"
-        onClick={(event) => event.stopPropagation()}
+        className="sell-weight-entry-dialog__body flex min-w-0 flex-col gap-2.5"
+        data-shell="soft-glass"
       >
-        <h2
-          id="sell-weight-entry-title"
-          className="m-0 text-[length:var(--exits-text-md)] font-semibold"
-        >
-          {editing ? t("sell.weightEditTitle") : t("sell.weightAddTitle")}
-        </h2>
         <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold">
           {product.name}
         </p>
@@ -224,53 +309,21 @@ export function SellWeightEntryDialog({
             <input
               id="sell-weight-input"
               data-testid="sell-weight-input"
+              data-exits-modal-autofocus="true"
               type="number"
               inputMode="decimal"
-              autoFocus
-              min={unitCode === "g" ? 1 : 0.001}
-              step={unitCode === "g" ? 1 : 0.001}
+              min={0.001}
+              step={0.001}
               value={rawValue}
               aria-label={t("sell.weightQuantity")}
               className="sell-weight-entry__input exits-input exits-input--no-spin tabular-nums"
               onChange={(event) => setRawValue(event.target.value)}
             />
-            <div
-              className="sell-weight-entry__units"
-              role="radiogroup"
-              aria-label={t("sell.weightUnit")}
-            >
-              {(["kg", "g"] as const).map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  role="radio"
-                  aria-checked={unitCode === code}
-                  data-testid={`sell-weight-unit-${code}`}
-                  className={
-                    unitCode === code
-                      ? "sell-weight-entry__unit sell-weight-entry__unit--active"
-                      : "sell-weight-entry__unit"
-                  }
-                  onClick={() => setUnitCode(code)}
-                >
-                  {code}
-                </button>
-              ))}
-            </div>
+            <span className="sell-weight-entry__unit-fixed" aria-hidden>
+              kg
+            </span>
           </div>
         </div>
-
-        {unitCode === "g" && kilograms != null ? (
-          <p
-            data-testid="sell-weight-conversion"
-            className="m-0 text-[length:var(--exits-text-xs)] text-muted tabular-nums"
-            aria-live="polite"
-          >
-            {t("sell.weightGramsEqualsKg")
-              .replace("{grams}", String(Math.round(kilograms * 1000)))
-              .replace("{kg}", formatKgThreeDp(kilograms))}
-          </p>
-        ) : null}
 
         {hasEntry && errorMessage ? (
           <p
@@ -307,7 +360,7 @@ export function SellWeightEntryDialog({
             <div className="sell-weight-entry__summary-row">
               <span>{t("sell.weightSummaryWeightLabel")}</span>
               <span className="tabular-nums">
-                {enteredQtyLabel} {unitCode}
+                {enteredQtyLabel} kg
               </span>
             </div>
             <div className="sell-weight-entry__summary-row sell-weight-entry__summary-row--total">
@@ -316,35 +369,7 @@ export function SellWeightEntryDialog({
             </div>
           </div>
         ) : null}
-
-        <div className="mt-1 flex flex-wrap justify-end gap-2">
-          {editing && onRemove ? (
-            <Button
-              type="button"
-              variant="ghost"
-              data-testid="sell-weight-remove"
-              onClick={onRemove}
-            >
-              {t("sell.cartRemove")}
-            </Button>
-          ) : null}
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            {t("sell.cancel")}
-          </Button>
-          <Button
-            type="button"
-            data-testid="sell-weight-confirm"
-            disabled={!canConfirm}
-            onClick={() => {
-              if (canConfirm && kilograms != null) {
-                onConfirm(kilograms);
-              }
-            }}
-          >
-            {editing ? t("sell.weightUpdate") : (confirmAddLabel ?? t("sell.weightAdd"))}
-          </Button>
-        </div>
       </div>
-    </div>
+    </ExitsModal>
   );
 }

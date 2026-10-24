@@ -115,6 +115,9 @@ export type OrganizationBranchDto = {
   canUseCustomerOrdering: boolean;
   canUseDelivery: boolean;
   storeStatusMessage: string | null;
+  acceptScheduledOrdersWhileClosed: boolean;
+  minPreparationLeadMinutes: number;
+  maxAdvanceScheduleDays: number;
   deliveryPolicy: BranchDeliveryPolicyDto | null;
   missingRequirements: string[];
 } & BranchFulfillmentSetupSummaryFields;
@@ -147,6 +150,9 @@ export type BranchFulfillmentReadinessDto = {
   storeOpenStatus: string | null;
   storeIsOpenNow: boolean;
   storeStatusMessage: string | null;
+  acceptScheduledOrdersWhileClosed: boolean;
+  minPreparationLeadMinutes: number;
+  maxAdvanceScheduleDays: number;
 } & BranchFulfillmentSetupSummaryFields;
 
 export type BranchDeliveryServiceAreaDto = {
@@ -199,6 +205,9 @@ export type UpdateBranchFulfillmentSettingsRequest = {
   customerOrderingEnabled?: boolean | null;
   pickupEnabled?: boolean | null;
   deliveryEnabled?: boolean | null;
+  acceptScheduledOrdersWhileClosed?: boolean | null;
+  minPreparationLeadMinutes?: number | null;
+  maxAdvanceScheduleDays?: number | null;
 };
 
 export type SetBranchOnlineOrdersPausedRequest = {
@@ -289,6 +298,17 @@ export function normalizeOrganizationBranch(raw: unknown): OrganizationBranchDto
     canUseCustomerOrdering: readBool(r, "canUseCustomerOrdering", "CanUseCustomerOrdering"),
     canUseDelivery: readBool(r, "canUseDelivery", "CanUseDelivery"),
     storeStatusMessage: readString(r, "storeStatusMessage", "StoreStatusMessage"),
+    acceptScheduledOrdersWhileClosed: readBool(
+      r,
+      "acceptScheduledOrdersWhileClosed",
+      "AcceptScheduledOrdersWhileClosed",
+    ),
+    minPreparationLeadMinutes: readInt(
+      r,
+      "minPreparationLeadMinutes",
+      "MinPreparationLeadMinutes",
+    ),
+    maxAdvanceScheduleDays: readInt(r, "maxAdvanceScheduleDays", "MaxAdvanceScheduleDays"),
     deliveryPolicy: normalizeDeliveryPolicy(r.deliveryPolicy ?? r.DeliveryPolicy),
     missingRequirements: readStringList(r, "missingRequirements", "MissingRequirements"),
     ...normalizeSetupSummary(r),
@@ -332,6 +352,17 @@ export function normalizeFulfillmentReadiness(raw: unknown): BranchFulfillmentRe
     storeOpenStatus: readString(r, "storeOpenStatus", "StoreOpenStatus"),
     storeIsOpenNow: readBool(r, "storeIsOpenNow", "StoreIsOpenNow"),
     storeStatusMessage: readString(r, "storeStatusMessage", "StoreStatusMessage"),
+    acceptScheduledOrdersWhileClosed: readBool(
+      r,
+      "acceptScheduledOrdersWhileClosed",
+      "AcceptScheduledOrdersWhileClosed",
+    ),
+    minPreparationLeadMinutes: readInt(
+      r,
+      "minPreparationLeadMinutes",
+      "MinPreparationLeadMinutes",
+    ),
+    maxAdvanceScheduleDays: readInt(r, "maxAdvanceScheduleDays", "MaxAdvanceScheduleDays"),
     ...normalizeSetupSummary(r),
   };
 }

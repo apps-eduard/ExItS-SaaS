@@ -6035,7 +6035,27 @@ button.exits-card {
   display: block;
 }
 
+.sell-product-card__fallback {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.sell-product-card__fallback-icon {
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  opacity: 0.22;
+  color: var(--exits-primary);
+  pointer-events: none;
+}
+
 .sell-product-card__initial {
+  position: relative;
+  z-index: 1;
   font-size: var(--exits-text-md);
   font-weight: 700;
   line-height: 1;
@@ -6180,6 +6200,26 @@ button.exits-card {
   box-shadow: inset 0 0 0 2px var(--exits-ring);
 }
 
+/* Fixed kg suffix — Soft Glass weight dialog (no g/kg switch). */
+.sell-weight-entry__unit-fixed {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  height: var(--exits-control-height);
+  padding: 0 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  color: var(--exits-text);
+  font: inherit;
+  font-size: var(--exits-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
 .sell-weight-entry__summary {
   display: flex;
   flex-direction: column;
@@ -6287,6 +6327,578 @@ button.exits-card {
   width: 0.875rem;
   height: 0.875rem;
   flex-shrink: 0;
+}
+
+/*
+ * POS Soft Glass sell floor (UI-only).
+ * Theme accent from --exits-primary. No backdrop-filter / heavy blur.
+ * Tokens map semantic POS surface language onto existing ExItS vars.
+ */
+.sell-floor-root--soft-glass {
+  --pos-surface: var(--exits-surface);
+  --pos-surface-elevated: var(--exits-surface-elevated, var(--exits-surface));
+  --pos-border: var(--exits-border);
+  --pos-text: var(--exits-text);
+  --pos-text-muted: var(--exits-text-muted, var(--muted-foreground));
+  --pos-accent: var(--exits-primary);
+  --pos-accent-soft: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  --pos-success: var(--exits-success);
+  --pos-danger: var(--exits-danger);
+  --pos-glass-wash: color-mix(in srgb, var(--exits-primary) 7%, var(--exits-surface));
+  --pos-glass-mid: color-mix(in srgb, var(--exits-primary) 11%, var(--exits-surface-muted));
+  --pos-glass-border: color-mix(in srgb, #e2e8f0 62%, color-mix(in srgb, var(--exits-primary) 28%, #cbd5e1));
+  --pos-glass-ink: var(--exits-text);
+  --pos-glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 4px 12px color-mix(in srgb, var(--exits-primary) 8%, transparent);
+  --pos-transition: 140ms ease;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface)) 0%,
+      var(--exits-surface) 42%,
+      color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface)) 100%
+    );
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass {
+  --pos-glass-wash: color-mix(in srgb, var(--exits-primary) 10%, #1e293b);
+  --pos-glass-mid: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  --pos-glass-border: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  --pos-glass-ink: #e2e8f0;
+  --pos-glass-shadow: 0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 4px 14px rgba(0, 0, 0, 0.28);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--exits-primary) 8%, #1e293b) 0%,
+      #1e293b 48%,
+      color-mix(in srgb, #0f172a 70%, #1e293b) 100%
+    );
+}
+
+.sell-floor-root--soft-glass .sell-floor-toolbar--soft-glass {
+  margin-bottom: 0.625rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  border: 1px solid var(--pos-glass-border);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--pos-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow: var(--pos-glass-shadow);
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-floor-toolbar--soft-glass {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+}
+
+.sell-floor-root--soft-glass .sell-floor-header.page-header--compact {
+  min-height: 2.5rem;
+}
+
+.sell-floor-root--soft-glass .sell-floor-toolbar__tips {
+  border-color: var(--pos-glass-border);
+  background: color-mix(in srgb, var(--pos-accent) 6%, var(--exits-surface-muted));
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+}
+
+.sell-floor-root--soft-glass .sell-floor-workspace {
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  border: 1px solid var(--pos-glass-border);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 48%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 48%, transparent) 52%,
+    color-mix(in srgb, var(--pos-glass-mid) 42%, transparent) 100%
+  );
+  box-shadow: var(--pos-glass-shadow);
+  overflow: hidden;
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-floor-workspace {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+}
+
+.sell-floor-root--soft-glass .sell-floor-workspace__search {
+  padding: 0.75rem 0.875rem 0.625rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--pos-glass-border) 85%, transparent);
+  background: transparent;
+}
+
+.sell-floor-root--soft-glass .sell-floor-workspace__search .exits-search-field {
+  border-radius: var(--soft-glass-field-radius, 0.6875rem) !important;
+  border-color: var(--pos-glass-border);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 48%, transparent) 100%
+  );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+  transition:
+    border-color var(--pos-transition),
+    box-shadow var(--pos-transition),
+    background-color var(--pos-transition);
+}
+
+.sell-floor-root--soft-glass .sell-floor-workspace__search .exits-search-field:focus-within {
+  border-color: color-mix(in srgb, var(--pos-accent) 42%, var(--pos-glass-border));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 0 0 2px color-mix(in srgb, var(--pos-accent) 28%, transparent);
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-floor-workspace__search .exits-search-field {
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 4%, #1e293b) 0%,
+    color-mix(in srgb, var(--pos-accent) 8%, #1e293b) 100%
+  );
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset;
+}
+
+.sell-floor-root--soft-glass .sell-floor-workspace__categories {
+  padding: 0.55rem 0.875rem 0.65rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--pos-glass-border) 85%, transparent);
+  background: transparent;
+}
+
+.sell-floor-root--soft-glass .sell-categories-track {
+  gap: 0.5rem;
+  scroll-snap-type: x proximity;
+  padding-bottom: 0.125rem;
+}
+
+.sell-floor-root--soft-glass .sell-category-chip {
+  min-height: 2.25rem;
+  padding-inline: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--pos-glass-border) 90%, transparent);
+  background: color-mix(in srgb, var(--exits-surface) 72%, transparent);
+  color: var(--pos-text-muted);
+  transition:
+    background-color var(--pos-transition),
+    border-color var(--pos-transition),
+    color var(--pos-transition);
+}
+
+.sell-floor-root--soft-glass .sell-category-chip:hover {
+  border-color: color-mix(in srgb, var(--pos-accent) 28%, var(--pos-glass-border));
+  color: var(--pos-glass-ink);
+}
+
+.sell-floor-root--soft-glass .sell-category-chip--active,
+.sell-floor-root--soft-glass .sell-category-chip[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--pos-accent) 42%, var(--pos-glass-border));
+  background: color-mix(in srgb, var(--pos-accent) 14%, var(--exits-surface));
+  color: var(--pos-glass-ink);
+  box-shadow: inset 3px 0 0 var(--pos-accent);
+}
+
+.sell-floor-root--soft-glass .sell-category-chip:focus-visible {
+  outline: 2px solid var(--exits-ring, var(--pos-accent));
+  outline-offset: 2px;
+}
+
+.sell-floor-root--soft-glass .sell-floor-product-pane {
+  padding: 0.625rem;
+  padding-bottom: 1.25rem;
+  background: color-mix(in srgb, var(--exits-surface-muted) 35%, transparent);
+}
+
+.sell-floor-root--soft-glass .sell-product-card {
+  border: 1px solid var(--pos-glass-border);
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--pos-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow: var(--pos-glass-shadow);
+  transition:
+    background-color var(--pos-transition),
+    border-color var(--pos-transition),
+    box-shadow var(--pos-transition);
+}
+
+.sell-floor-root--soft-glass .sell-product-card:hover:not(:disabled):not(.sell-product-card--unavailable) {
+  border-color: color-mix(in srgb, var(--pos-accent) 38%, var(--pos-glass-border));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 58%, transparent) 48%,
+    color-mix(in srgb, var(--pos-glass-mid) 52%, transparent) 100%
+  );
+  transform: none;
+}
+
+.sell-floor-root--soft-glass .sell-product-card:active:not(:disabled):not(.sell-product-card--unavailable) {
+  transform: none;
+}
+
+.sell-floor-root--soft-glass .sell-product-card--added,
+.sell-floor-root--soft-glass .sell-product-card--selected {
+  border-color: color-mix(in srgb, var(--pos-accent) 48%, var(--pos-glass-border));
+  background: color-mix(in srgb, var(--pos-accent) 12%, var(--exits-surface));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    inset 0 0 0 1px color-mix(in srgb, var(--pos-accent) 28%, transparent),
+    0 4px 12px color-mix(in srgb, var(--pos-accent) 10%, transparent);
+}
+
+.sell-floor-root--soft-glass .sell-product-card--unavailable {
+  opacity: 0.55;
+}
+
+.sell-floor-root--soft-glass .sell-product-card__media {
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+  border: 1px solid color-mix(in srgb, var(--pos-accent) 18%, var(--pos-glass-border));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--pos-accent) 16%, var(--exits-surface-muted)),
+    color-mix(in srgb, var(--pos-accent) 8%, var(--exits-surface))
+  );
+  overflow: hidden;
+}
+
+.sell-floor-root--soft-glass .sell-product-card__fallback {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, #fff 28%, transparent), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--pos-accent)),
+      var(--pos-accent) 58%,
+      color-mix(in srgb, var(--pos-accent) 72%, #0f172a)
+    );
+}
+
+.sell-floor-root--soft-glass .sell-product-card__fallback-icon {
+  position: absolute;
+  width: 1.35rem;
+  height: 1.35rem;
+  opacity: 0.28;
+  color: #fff;
+}
+
+.sell-floor-root--soft-glass .sell-product-card__initial {
+  position: relative;
+  z-index: 1;
+  font-size: var(--exits-text-md);
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 1px color-mix(in srgb, #0f172a 28%, transparent);
+}
+
+.sell-floor-root--soft-glass .sell-product-card__name {
+  color: var(--pos-glass-ink);
+  font-weight: 600;
+}
+
+.sell-floor-root--soft-glass .sell-product-card__price {
+  color: var(--pos-accent) !important;
+  font-weight: 650 !important;
+}
+
+.sell-floor-root--soft-glass .sell-product-card__hint {
+  color: color-mix(in srgb, var(--pos-accent) 72%, var(--pos-text-muted));
+}
+
+.sell-floor-root--soft-glass .sell-product-card__hint--muted {
+  color: var(--pos-text-muted);
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-product-card {
+  border-color: var(--pos-glass-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-product-card:hover:not(:disabled):not(.sell-product-card--unavailable) {
+  border-color: color-mix(in srgb, var(--pos-accent) 22%, #64748b);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 8%, #1e293b) 0%,
+    color-mix(in srgb, #fff 4%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 50%, #1e293b) 100%
+  );
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-product-card__fallback {
+  background:
+    radial-gradient(circle at 30% 24%, color-mix(in srgb, #fff 14%, transparent), transparent 55%),
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--pos-accent) 42%, #334155),
+      color-mix(in srgb, var(--pos-accent) 58%, #1e293b)
+    );
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-product-card__name,
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-product-card__price {
+  color: #e2e8f0 !important;
+}
+
+.sell-floor-root--soft-glass .sell-cart-shell {
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  /* Single rim only — no inset highlight (reads as double edge on rounded corners). */
+  border: 1px solid var(--pos-glass-border);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--pos-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--exits-primary) 8%, transparent);
+  overflow: hidden;
+  outline: none;
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-cart-shell {
+  border-color: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+
+.sell-floor-root--soft-glass .sell-cart-panel--soft-glass {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+.sell-floor-root--soft-glass .sell-cart-panel__header {
+  border-bottom-color: color-mix(in srgb, var(--pos-glass-border) 88%, transparent);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.sell-floor-root--soft-glass .sell-cart-line {
+  border-bottom-color: color-mix(in srgb, var(--pos-glass-border) 80%, transparent);
+  padding: 0.625rem 0;
+  gap: 0.625rem;
+}
+
+.sell-floor-root--soft-glass .sell-cart-line__media {
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+  border-color: color-mix(in srgb, var(--pos-accent) 18%, var(--pos-glass-border));
+  background: color-mix(in srgb, var(--pos-accent) 10%, var(--exits-surface-muted));
+}
+
+.sell-floor-root--soft-glass .sell-cart-line__name {
+  font-weight: 600;
+  color: var(--pos-glass-ink);
+}
+
+.sell-floor-root--soft-glass .sell-cart-line__amount {
+  font-weight: 650;
+}
+
+.sell-floor-root--soft-glass .sell-cart-line__remove {
+  color: var(--pos-text-muted);
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+}
+
+.sell-floor-root--soft-glass .sell-cart-line__remove:hover {
+  color: var(--pos-danger);
+  background: color-mix(in srgb, var(--pos-danger) 10%, transparent);
+}
+
+.sell-floor-root--soft-glass .sell-cart-empty {
+  gap: 0.5rem;
+  padding: 1.25rem 0.75rem;
+}
+
+.sell-floor-root--soft-glass .sell-cart-footer {
+  margin-top: auto;
+  padding: 0.75rem 0 0.125rem;
+  border-top: 1px solid color-mix(in srgb, var(--pos-glass-border) 88%, transparent);
+  background: color-mix(in srgb, var(--pos-accent) 5%, transparent);
+  gap: 0.625rem;
+}
+
+.sell-floor-root--soft-glass .sell-cart-footer__total-row {
+  padding: 0.35rem 0.15rem;
+}
+
+.sell-floor-root--soft-glass .sell-cart-footer__total-label {
+  font-size: var(--exits-text-sm);
+  font-weight: 650;
+  color: var(--pos-text-muted);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.sell-floor-root--soft-glass .sell-cart-footer__total-amount {
+  font-size: var(--exits-text-lg, 1.125rem) !important;
+  font-weight: 750 !important;
+  color: var(--pos-glass-ink) !important;
+}
+
+.sell-floor-root--soft-glass .sell-cart-pay {
+  min-height: 2.5rem;
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+  font-weight: 700;
+}
+
+.sell-floor-root--soft-glass .sell-cart-pay--ready:not(:disabled) {
+  background: var(--pos-accent);
+  border-color: color-mix(in srgb, var(--pos-accent) 80%, #0f172a);
+  color: #fff;
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset;
+}
+
+.sell-floor-root--soft-glass .sell-cart-pay--disabled:disabled,
+.sell-floor-root--soft-glass .sell-cart-pay:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.sell-floor-root--soft-glass .sell-cart-footer__hint {
+  margin-top: 0.125rem;
+  line-height: 1.35;
+  color: var(--pos-text-muted);
+}
+
+/* Soft Glass quantity stepper — theme accent (POS cart). */
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__group {
+  border: 1px solid var(--pos-glass-border) !important;
+  border-radius: var(--soft-glass-field-radius, 0.6875rem) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--pos-glass-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 2px 8px color-mix(in srgb, var(--pos-accent) 8%, transparent) !important;
+  transition:
+    border-color var(--pos-transition),
+    background-color var(--pos-transition),
+    box-shadow var(--pos-transition);
+}
+
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__group:focus-within {
+  border-color: color-mix(in srgb, var(--pos-accent) 42%, var(--pos-glass-border)) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 0 0 2px color-mix(in srgb, var(--pos-accent) 28%, transparent) !important;
+}
+
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__btn,
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__value,
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__input {
+  background: transparent !important;
+  color: var(--pos-glass-ink) !important;
+}
+
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__btn:hover:not(:disabled),
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__btn:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--pos-accent) 12%, transparent) !important;
+  color: var(--pos-glass-ink) !important;
+}
+
+.sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__unit {
+  display: none !important;
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .quantity-stepper--soft-glass .quantity-stepper__group {
+  border-color: var(--pos-glass-border) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 3%, #1e293b) 0%,
+    color-mix(in srgb, var(--pos-accent) 10%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 58%, #1e293b) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset,
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+.sell-floor-root--soft-glass .sell-cart-sheet {
+  border-color: var(--pos-glass-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 48%, var(--exits-surface)) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 55%, var(--exits-surface)) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 -8px 28px color-mix(in srgb, var(--pos-accent) 10%, transparent);
+  border-top-left-radius: var(--soft-glass-radius, 1.1rem);
+  border-top-right-radius: var(--soft-glass-radius, 1.1rem);
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-cart-sheet {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 -10px 28px rgba(0, 0, 0, 0.36);
+}
+
+.sell-floor-root--soft-glass .sell-cart-floating,
+.sell-floor-root--soft-glass .sell-cart-bar--filled {
+  border-radius: 9999px;
+  border: 1px solid var(--pos-glass-border);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--pos-glass-wash) 55%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 6px 18px color-mix(in srgb, var(--pos-accent) 12%, transparent);
+}
+
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-cart-floating,
+[data-theme="dark"] .sell-floor-root--soft-glass .sell-cart-bar--filled {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.32);
+}
+
+@media (min-width: 900px) {
+  .sell-floor-root--soft-glass .sell-floor-layout {
+    gap: 1rem;
+  }
 }
 
 /* Legacy tile styles Ã¢â‚¬â€ kept for any external references */
@@ -29953,9 +30565,32 @@ html:has(.operations-shell) #root,
   font-size: 1.1rem;
 }
 
-.personal-shell .personal-sidebar .admin-sidebar__link--active {
+/* Personal sidenav — no left rail; thick primary bar grows from center under the item (input focus recipe). */
+.personal-shell .personal-sidebar .admin-sidebar__link {
   position: relative;
   isolation: isolate;
+  border-inline-start-width: 0;
+  overflow: visible;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link::after {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  bottom: 0.15rem;
+  z-index: 1;
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--exits-shell-nav-active-border, var(--exits-primary));
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link--active {
   background: var(--exits-shell-nav-active-bg, var(--exits-primary-soft));
   color: var(--exits-shell-nav-active-fg, var(--exits-primary));
   font-weight: 600;
@@ -29963,40 +30598,22 @@ html:has(.operations-shell) #root,
   overflow: visible;
 }
 
-/* Selected menu — thick primary bar + soft glass edge (match sidenav edge). */
 .personal-shell .personal-sidebar .admin-sidebar__link--active::before {
-  content: "";
-  position: absolute;
-  inset-block: 0.3rem;
-  inset-inline-start: 0;
-  z-index: 1;
-  width: 0.9rem;
-  pointer-events: none;
-  border-radius: 0.65rem 0 0 0.65rem;
-  border: 0;
-  border-inline-start: 4px solid var(--exits-shell-nav-active-border, var(--exits-primary));
-  background: linear-gradient(
-    to left,
-    transparent 0%,
-    color-mix(in srgb, #fff 35%, transparent) 42%,
-    color-mix(in srgb, #fff 72%, transparent) 100%
-  );
-  box-shadow:
-    inset 1px 0 0 color-mix(in srgb, #fff 85%, transparent),
-    -6px 0 16px color-mix(in srgb, #64748b 10%, transparent);
+  content: none;
 }
 
-[data-theme="dark"] .personal-shell .personal-sidebar .admin-sidebar__link--active::before {
-  border-inline-start-color: var(--exits-shell-nav-active-border, var(--exits-primary));
-  background: linear-gradient(
-    to left,
-    transparent 0%,
-    color-mix(in srgb, #fff 6%, transparent) 42%,
-    color-mix(in srgb, #fff 12%, transparent) 100%
-  );
-  box-shadow:
-    inset 1px 0 0 color-mix(in srgb, #fff 12%, transparent),
-    -6px 0 16px color-mix(in srgb, #000 28%, transparent);
+.personal-shell .personal-sidebar .admin-sidebar__link--active::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-shell .personal-sidebar .admin-sidebar__link::after {
+    transition: none;
+  }
+}
+
+[data-motion="reduced"] .personal-shell .personal-sidebar .admin-sidebar__link::after {
+  transition: none;
 }
 
 .personal-shell .personal-sidebar .admin-sidebar__link:focus-visible,
@@ -30413,11 +31030,12 @@ html:has(.operations-shell) #root,
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: stretch;
-  justify-content: center;
-  gap: 2rem;
+  justify-content: stretch;
+  /* Modest middle gap; tab clearance lives in each li, not a wide empty band. */
+  gap: 0.75rem;
   margin-top: -0.45rem;
-  padding-left: 0.45rem;
-  padding-right: 0.45rem;
+  padding-left: 0;
+  padding-right: 0.25rem;
 }
 
 /* Stacked My Record / Shared: gap only before I owed + between the two cards. */
@@ -30429,20 +31047,22 @@ html:has(.operations-shell) #root,
 
   .personal-shell .tracker-summary--pendant .tracker-amount-list.utang-relationship-list,
   .personal-shell .tracker-summary--pendant .tracker-amount-list {
-    gap: 0.55rem;
+    gap: 0.65rem;
     margin-inline: 0;
-    padding-left: 0.45rem;
-    padding-right: 0.45rem;
+    padding-left: 0;
+    padding-right: 0.25rem;
   }
 
   .personal-shell .tracker-summary--pendant .tracker-amount-list > li {
     flex: 1 1 0;
     min-width: 0;
+    /* = Soft Glass tab overhang so the fold sits on the column edge. */
+    padding-left: 0.85rem;
   }
 
   .personal-shell .tracker-amount-card .ui-standards-qcard__settings-ribbon {
     margin-left: 0;
-    padding: 0.7rem 0.5rem 0.55rem 0.35rem;
+    padding: 0.7rem 0.55rem 0.5rem 0.85rem;
   }
 }
 
@@ -30450,26 +31070,61 @@ html:has(.operations-shell) #root,
   flex: 1 1 0;
   min-width: 0;
   max-width: none;
+  /*
+   * Soft Glass standard tab hangs ~0.85rem past the shell
+   * (padding-left 0.85 − margin-left −1.7). Pad the column so the
+   * fold/tail lands on the column edge without covering the sibling.
+   */
+  padding-left: 0.85rem;
+  box-sizing: border-box;
 }
 
 .personal-shell .tracker-amount-card {
   width: 100%;
+  max-width: none;
+  margin-left: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .personal-shell .tracker-amount-card .ui-standards-qcard__settings-ribbon {
-  margin-left: 0.4rem;
-  padding: 0.75rem 1.15rem 0.6rem 0.85rem;
+  margin-left: 0;
+  /* Match Soft Glass standard left inset so tab math stays edge-aligned. */
+  padding: 0.75rem 0.65rem 0.55rem 0.85rem;
+}
+
+/* Same Soft Glass tab overhang as list rows — fold sits on the shell/column edge. */
+.personal-shell
+  .tracker-amount-card.utang-account-card--standard
+  .utang-settings-card__tab,
+.personal-shell
+  .tracker-amount-card.utang-account-card--standard
+  .utang-settings-card__tab[data-utang-ownership] {
+  margin-top: -1.2rem;
+  margin-left: -1.7rem;
 }
 
 .personal-shell .tracker-amount-card .tracker-amount-card__headline {
   justify-content: flex-start;
-  padding-top: 0.4rem;
-  padding-bottom: 0.1rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.05rem;
+  min-width: 0;
 }
 
 .personal-shell .tracker-amount-card .utang-settings-card__amount {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.personal-shell .tracker-amount-card .utang-settings-card__amount > span {
+  font-size: inherit;
+  font-weight: inherit;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.15;
 }
 
 .personal-shell .tracker-summary {
@@ -30521,7 +31176,8 @@ html:has(.operations-shell) #root,
       color-mix(in srgb, #fff 70%, transparent) 42%,
       color-mix(in srgb, #dcfce7 46%, transparent) 100%
     );
-  padding: 2.69rem 1rem 1rem;
+  /* Balanced inset — room for amount digits and ribbon tab clearance. */
+  padding: 2.69rem 0.75rem 0.9rem;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.78) inset,
     0 4px 12px color-mix(in srgb, #22c55e 8%, transparent);
@@ -39333,6 +39989,7 @@ html[data-motion="reduced"] .exits-tooltip {
 .utang-edit-contact-dialog.utang-edit-contact-dialog--soft-glass.exits-modal-panel,
 .todo-create-dialog.todo-create-dialog--soft-glass.exits-modal-panel,
 .utang-entry-dialog.utang-entry-dialog--soft-glass.exits-modal-panel,
+.sell-weight-entry-dialog.sell-weight-entry-dialog--soft-glass.exits-modal-panel,
 .qr-camera-missing-dialog.qr-camera-missing-dialog--soft-glass.exits-modal-panel {
   --personal-qa-chip: var(--exits-primary);
   --personal-qa-chip-deep: var(--exits-primary-hover, var(--exits-primary));
@@ -39360,7 +40017,8 @@ html[data-motion="reduced"] .exits-tooltip {
 .utang-view-contact-dialog--soft-glass .exits-modal__ribbon,
 .utang-edit-contact-dialog--soft-glass .exits-modal__ribbon,
 .todo-create-dialog--soft-glass .exits-modal__ribbon,
-.utang-entry-dialog--soft-glass .exits-modal__ribbon {
+.utang-entry-dialog--soft-glass .exits-modal__ribbon,
+.sell-weight-entry-dialog--soft-glass .exits-modal__ribbon {
   border-radius: var(--soft-glass-ribbon-radius, 1.1rem 1.1rem 1.1rem 0);
   border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
   background: linear-gradient(
@@ -39381,7 +40039,8 @@ html[data-motion="reduced"] .exits-tooltip {
 .utang-view-contact-dialog--soft-glass .exits-modal__ribbon::after,
 .utang-edit-contact-dialog--soft-glass .exits-modal__ribbon::after,
 .todo-create-dialog--soft-glass .exits-modal__ribbon::after,
-.utang-entry-dialog--soft-glass .exits-modal__ribbon::after {
+.utang-entry-dialog--soft-glass .exits-modal__ribbon::after,
+.sell-weight-entry-dialog--soft-glass .exits-modal__ribbon::after {
   border-top-color: color-mix(in srgb, #000 38%, var(--personal-qa-chip-deep));
 }
 
@@ -39391,7 +40050,8 @@ html[data-motion="reduced"] .exits-tooltip {
 .utang-view-contact-dialog--soft-glass .exits-modal__pennant,
 .utang-edit-contact-dialog--soft-glass .exits-modal__pennant,
 .todo-create-dialog--soft-glass .exits-modal__pennant,
-.utang-entry-dialog--soft-glass .exits-modal__pennant {
+.utang-entry-dialog--soft-glass .exits-modal__pennant,
+.sell-weight-entry-dialog--soft-glass .exits-modal__pennant {
   border: 1px solid color-mix(in srgb, #fff 48%, var(--personal-qa-chip-soft));
   color: #fff;
   background:
@@ -39412,8 +40072,36 @@ html[data-motion="reduced"] .exits-tooltip {
 .utang-edit-contact-dialog--soft-glass > .border-b,
 .todo-create-dialog--soft-glass > .border-b,
 .utang-entry-dialog--soft-glass > .border-b,
+.sell-weight-entry-dialog--soft-glass > .border-b,
 .qr-camera-missing-dialog--soft-glass > .border-b {
   border-bottom-color: color-mix(in srgb, #e2e8f0 55%, var(--personal-qa-chip-soft));
+}
+
+.sell-weight-entry-dialog--soft-glass > .border-t,
+.sell-weight-entry-dialog--soft-glass > form > .border-t {
+  border-top-color: color-mix(in srgb, #e2e8f0 55%, var(--personal-qa-chip-soft));
+}
+
+.sell-weight-entry-dialog--soft-glass .sell-weight-entry__input {
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 48%, transparent) 100%
+  );
+}
+
+.sell-weight-entry-dialog--soft-glass .sell-weight-entry__unit-fixed {
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  background: color-mix(in srgb, var(--personal-qa-chip) 12%, var(--exits-surface));
+  color: var(--personal-qa-chip-ink);
+}
+
+.sell-weight-entry-dialog--soft-glass .sell-weight-entry__summary {
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  background: color-mix(in srgb, var(--personal-qa-chip) 6%, var(--exits-surface-muted));
 }
 
 .utang-edit-contact-dialog--soft-glass > .border-t {
@@ -41426,6 +42114,7 @@ html[data-motion="reduced"] .exits-tooltip {
 [data-theme="dark"] .utang-edit-contact-dialog.utang-edit-contact-dialog--soft-glass.exits-modal-panel,
 [data-theme="dark"] .todo-create-dialog.todo-create-dialog--soft-glass.exits-modal-panel,
 [data-theme="dark"] .utang-entry-dialog.utang-entry-dialog--soft-glass.exits-modal-panel,
+[data-theme="dark"] .sell-weight-entry-dialog.sell-weight-entry-dialog--soft-glass.exits-modal-panel,
 [data-theme="dark"] .qr-camera-missing-dialog.qr-camera-missing-dialog--soft-glass.exits-modal-panel {
   --personal-qa-chip: var(--exits-primary);
   --personal-qa-chip-deep: var(--exits-primary-hover, var(--exits-primary));
@@ -41451,7 +42140,8 @@ html[data-motion="reduced"] .exits-tooltip {
 [data-theme="dark"] .utang-view-contact-dialog--soft-glass .exits-modal__ribbon,
 [data-theme="dark"] .utang-edit-contact-dialog--soft-glass .exits-modal__ribbon,
 [data-theme="dark"] .todo-create-dialog--soft-glass .exits-modal__ribbon,
-[data-theme="dark"] .utang-entry-dialog--soft-glass .exits-modal__ribbon {
+[data-theme="dark"] .utang-entry-dialog--soft-glass .exits-modal__ribbon,
+[data-theme="dark"] .sell-weight-entry-dialog--soft-glass .exits-modal__ribbon {
   border-color: color-mix(in srgb, #fff 14%, transparent);
   color: #fff;
   background: linear-gradient(
@@ -41471,8 +42161,30 @@ html[data-motion="reduced"] .exits-tooltip {
 [data-theme="dark"] .utang-view-contact-dialog--soft-glass .exits-modal__ribbon::after,
 [data-theme="dark"] .utang-edit-contact-dialog--soft-glass .exits-modal__ribbon::after,
 [data-theme="dark"] .todo-create-dialog--soft-glass .exits-modal__ribbon::after,
-[data-theme="dark"] .utang-entry-dialog--soft-glass .exits-modal__ribbon::after {
+[data-theme="dark"] .utang-entry-dialog--soft-glass .exits-modal__ribbon::after,
+[data-theme="dark"] .sell-weight-entry-dialog--soft-glass .exits-modal__ribbon::after {
   border-top-color: color-mix(in srgb, #000 55%, var(--personal-qa-chip-deep));
+}
+
+[data-theme="dark"] .sell-weight-entry-dialog--soft-glass .sell-weight-entry__input {
+  border-color: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 3%, #1e293b) 0%,
+    color-mix(in srgb, var(--exits-primary) 8%, #1e293b) 100%
+  );
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .sell-weight-entry-dialog--soft-glass .sell-weight-entry__unit-fixed {
+  border-color: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  background: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .sell-weight-entry-dialog--soft-glass .sell-weight-entry__summary {
+  border-color: color-mix(in srgb, #fff 14%, transparent);
+  background: color-mix(in srgb, var(--exits-primary) 8%, #1e293b);
 }
 
 [data-theme="dark"] .utang-record-dialog.utang-record-dialog--soft-glass.utang-record-dialog--owe.exits-modal-panel {
@@ -41862,6 +42574,21 @@ html[data-motion="reduced"] .exits-tooltip {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+/*
+ * Personal Tracker I owed / I lent — full column width (not settings-card 50%),
+ * with tab clearance handled by li padding-left (not a huge middle gap).
+ */
+.personal-shell
+  .tracker-summary--pendant
+  .tracker-amount-card.ui-standards-qcard.ui-standards-qcard--settings-card {
+  flex: 1 1 0;
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  padding: 0.35rem 0 0;
+  min-height: 0;
 }
 
 .ui-standards-qcard__settings-circle {

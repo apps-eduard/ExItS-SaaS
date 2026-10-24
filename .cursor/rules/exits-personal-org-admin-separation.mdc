@@ -1,0 +1,39 @@
+---
+description: Keep Personal, Organization, and Platform Admin UI/behavior completely separate
+alwaysApply: true
+---
+
+# Personal / Organization / Admin separation (LOCKED)
+
+From now on, treat **Personal**, **Organization (POS org)**, and **Platform Admin** as completely separate surfaces.
+
+## Rule
+
+When changing anything under Personal (tracker, people, utang, personal commerce, personal Soft Glass, personal dialogs, personal CSS/tokens scoped to personal pages):
+
+- Do **not** change Organization sell / ops / catalog / inventory / shifts UI unless the user explicitly asks for that surface.
+- Do **not** change Platform Admin UI unless the user explicitly asks for that surface.
+- Do **not** “reuse by editing a shared global” in a way that silently restyles or rewires Org or Admin.
+
+## How to keep them separate
+
+1. Prefer **scoped** styles and components:
+   - Personal: `.personal-*`, `.utang-*`, `.people-*`, personal Soft Glass page/dialog classes, personal feature folders.
+   - Organization / POS: `.sell-*`, ops/catalog shells, org workspace routes.
+   - Admin: Platform Admin projects / admin routes only.
+2. If a shared primitive must change (e.g. `ExitsModal`, `Button`, Soft Glass lock tokens):
+   - Prefer **opt-in** class / prop / page scope for Personal.
+   - Do **not** alter the shared default in a way that cascades into Org or Admin.
+   - If a shared change is unavoidable, call it out and ask before applying.
+3. Do not wire Personal identity flows into Org staff or Admin auth (see `exits-identity-model.mdc`).
+4. Do not share databases, FKs, or cross-product data access (see `exits-workflow.mdc`).
+
+## Soft Glass / UI locks
+
+Personal Soft Glass recipes (cards, ribbons, fields, dialogs) stay under Personal selectors unless the user explicitly authorizes the same treatment on Organization or Admin.
+
+POS Soft Glass (sell floor, weight dialog, cart) is Organization-scoped — do not fold Personal Soft Glass changes into it by editing global unscoped selectors.
+
+## When the user asks only for Personal
+
+Change Personal files only. Leave Organization and Admin untouched. Summarize that Org/Admin were not modified.

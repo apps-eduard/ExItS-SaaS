@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { clampPickupTime, pickupTimeBounds } from "@/features/customer-ordering/pickup-time-bounds";
+import {
+  clampPickupTime,
+  pickupMaxScheduleDate,
+  pickupTimeBounds,
+} from "@/features/customer-ordering/pickup-time-bounds";
 
 const hours = [
   { dayOfWeek: "Thursday", isClosed: false, isOpen24Hours: false, openTime: "08:00", closeTime: "18:00" },
+  { dayOfWeek: "Friday", isClosed: false, isOpen24Hours: false, openTime: "09:00", closeTime: "17:00" },
   { dayOfWeek: "Sunday", isClosed: true, isOpen24Hours: false, openTime: null, closeTime: null },
 ];
 
@@ -25,7 +30,20 @@ describe("pickupTimeBounds", () => {
     expect(clampPickupTime("15:00", bounds)).toBe("15:00");
   });
 
-  it("does not apply the current time on a later date", () => {
+  it("rejects times before opening on the selected day", () => {
+    const beforeOpen = new Date("2026-10-08T23:15:00Z");
+    const bounds = pickupTimeBounds({
+      date: "2026-10-08",
+      now: beforeOpen,
+      timeZoneId: "Asia/Manila",
+      operatingHours: hours,
+    });
+
+    expect(bounds.min).toBe("08:00");
+    expect(clampPickupTime("07:30", bounds)).toBe("08:00");
+  });
+
+  it("uses opening time as the minimum on a future day with hours", () => {
     const bounds = pickupTimeBounds({
       date: "2026-10-09",
       now,
@@ -33,9 +51,21 @@ describe("pickupTimeBounds", () => {
       operatingHours: hours,
     });
 
-    expect(bounds.min).toBeNull();
-    expect(bounds.max).toBeNull();
-    expect(clampPickupTime("07:00", bounds)).toBe("07:00");
+    expect(bounds.min).toBe("09:00");
+    expect(bounds.max).toBe("17:00");
+    expect(clampPickupTime("07:00", bounds)).toBe("09:00");
+  });
+
+  it("adds preparation lead minutes to the earliest time today", () => {
+    const bounds = pickupTimeBounds({
+      date: "2026-10-08",
+      now,
+      timeZoneId: "Asia/Manila",
+      operatingHours: hours,
+      minPreparationLeadMinutes: 30,
+    });
+
+    expect(bounds.min).toBe("14:46");
   });
 
   it("treats today as closed once the current time is past closing", () => {
@@ -59,5 +89,27 @@ describe("pickupTimeBounds", () => {
 
     expect(bounds.closed).toBe(true);
     expect(clampPickupTime("15:00", bounds)).toBe("");
+  });
+});
+
+describe("pickupMaxScheduleDate", () => {
+  it("returns null when advance days is zero", () => {
+    expect(
+      pickupMaxScheduleDate({
+        now: new Date("2026-10-08T06:15:30Z"),
+        timeZoneId: "Asia/Manila",
+        maxAdvanceScheduleDays: 0,
+      }),
+    ).toBeNull();
+  });
+
+  it("caps selectable dates by advance days in branch local time", () => {
+    expect(
+      pickupMaxScheduleDate({
+        now: new Date("2026-10-08T06:15:30Z"),
+        timeZoneId: "Asia/Manila",
+        maxAdvanceScheduleDays: 3,
+      }),
+    ).toBe("2026-10-11");
   });
 });

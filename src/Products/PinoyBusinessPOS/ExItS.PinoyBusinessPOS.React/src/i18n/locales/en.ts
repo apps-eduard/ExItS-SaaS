@@ -8481,6 +8481,16 @@ export const en = {
   "branches.saved": "Branch fulfillment settings saved.",
   "branches.saveFailed": "Could not save branch settings.",
   "branches.fulfillmentFailed": "Could not update fulfillment settings.",
+  "branches.scheduledOrdersTitle": "Scheduled orders while closed",
+  "branches.scheduledOrdersLede":
+    "Let customers schedule pickup or delivery when the store is closed by hours. Manual pause always blocks new orders.",
+  "branches.acceptScheduledWhileClosed": "Accept scheduled orders while closed",
+  "branches.acceptScheduledWhileClosedHint":
+    "When off, customers cannot check out while the store is closed. Default is off for existing stores.",
+  "branches.minPreparationLeadMinutes": "Minimum preparation lead (minutes)",
+  "branches.maxAdvanceScheduleDays": "Maximum advance schedule (days)",
+  "branches.saveScheduledOrders": "Save scheduled order settings",
+  "branches.savedScheduledOrders": "Scheduled order settings saved.",
   "branches.nameRequired": "Branch name is required.",
   "branches.invalidLatitude": "Latitude must be between -90 and 90 (WGS84).",
   "branches.invalidLongitude": "Longitude must be between -180 and 180 (WGS84).",
@@ -8922,6 +8932,20 @@ export const en = {
   "orders.placePickupUnavailable": "Pickup is currently unavailable at this store.",
   "orders.placeNoFulfillmentMethod": "This store has not enabled pickup or delivery yet.",
   "orders.placeStoreClosed": "This store is temporarily closed.",
+  "orders.storeCurrentlyClosed": "Store is currently closed",
+  "orders.scheduleOrder": "Schedule order",
+  "orders.saveCartForLater": "Save cart for later",
+  "orders.saveCartForLaterConfirm":
+    "Your cart is saved on this device. Come back when the store opens or when you are ready to schedule.",
+  "orders.scheduleDateTimeRequired": "Choose a date and time for this order.",
+  "orders.scheduleRequiredHint":
+    "This store is closed right now. Pick a date and time within store hours to place your order.",
+  "orders.shopPausedTitle": "Online orders paused",
+  "orders.setDeliveryTime": "Set time for delivery",
+  "orders.deliveryDate": "Delivery date",
+  "orders.deliveryTime": "Delivery time",
+  "orders.deliveryRequestHint":
+    "Leave the time empty for delivery as soon as possible. A requested time is not guaranteed by the store.",
   "orders.checkoutMissingWorkspace": "This store checkout is not ready. Go back to the shop and try again.",
   "orders.checkoutEmptyCart": "Your cart is empty.",
   "orders.checkoutMissingBranch": "Choose a store branch before placing the order.",

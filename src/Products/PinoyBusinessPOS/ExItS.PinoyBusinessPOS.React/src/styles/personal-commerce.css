@@ -1783,17 +1783,64 @@
 
 /* Header glossy-raise chrome comes from the global ExitsTable lock in globals.css. */
 
-/* Stores table — compact centered Actions column (⋯ only). */
+/* Stores table — round shop action + ⋯ in Actions column. */
+.linked-merchants-table__store-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 18%, #e2e8f0);
+  color: #fff;
+  text-decoration: none;
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, #fff 28%, transparent), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--exits-primary)),
+      var(--exits-primary) 58%,
+      var(--exits-primary-hover, color-mix(in srgb, #000 22%, var(--exits-primary)))
+    );
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 40%, transparent) inset;
+  transition: filter 120ms ease;
+}
+
+.linked-merchants-table__store-icon:hover,
+.linked-merchants-table__store-icon:focus-visible {
+  filter: brightness(1.06);
+  outline: none;
+}
+
+.linked-merchants-table__store-icon:focus-visible {
+  outline: 2px solid var(--exits-ring, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.linked-merchants-table__store-icon svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+[data-theme="dark"] .linked-merchants-table__store-icon {
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, #475569);
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset;
+}
+
 .linked-merchants-table .exits-table__col--actions,
 .linked-merchants-table .exits-table__cell--center.exits-table__col--actions,
 .linked-merchants-table .exits-table__head.exits-table__col--actions {
-  width: 4.75rem;
-  min-width: 4.25rem;
-  max-width: 5.25rem;
-  padding-inline: 0.65rem;
+  width: 6.5rem;
+  min-width: 5.75rem;
+  max-width: 7.25rem;
+  padding-inline: 0.5rem;
 }
 
 .linked-merchants-table__actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   width: 100%;
 }
 
@@ -2769,6 +2816,597 @@
   .pc-activity-list > li {
     animation: none;
   }
+}
+
+/*
+ * Merchant shop Soft Glass — theme primary (Preferences), Soft Glass card lock.
+ * Product tiles + cart shell; no blur, neon, lift, or product photos.
+ */
+.merchant-shop-page {
+  --shop-glass-chip: var(--exits-primary);
+  --shop-glass-deep: var(--exits-primary-hover, color-mix(in srgb, #000 22%, var(--exits-primary)));
+  --shop-glass-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --shop-glass-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --shop-glass-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --shop-glass-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+}
+
+[data-theme="dark"] .merchant-shop-page {
+  --shop-glass-chip: var(--exits-primary);
+  --shop-glass-deep: var(--exits-primary-hover, color-mix(in srgb, #000 28%, var(--exits-primary)));
+  /* Deep Soft Glass dark — avoid washed slate mixes. */
+  --shop-glass-soft: color-mix(in srgb, var(--exits-primary) 32%, #334155);
+  --shop-glass-wash: color-mix(in srgb, var(--exits-primary) 10%, #0f172a);
+  --shop-glass-mid: color-mix(in srgb, var(--exits-primary) 14%, #0f172a);
+  --shop-glass-ink: #e2e8f0;
+}
+
+/* One thin Soft Glass hairline on every product tile — default / hover / added alike. */
+.merchant-shop-page .sell-product-card,
+.merchant-shop-page .sell-product-card:hover:not(:disabled):not(.sell-product-card--unavailable),
+.merchant-shop-page .sell-product-card:active:not(:disabled):not(.sell-product-card--unavailable),
+.merchant-shop-page .sell-product-card--added,
+.merchant-shop-page .sell-product-card--added:hover:not(:disabled),
+.merchant-shop-page .sell-product-card--selected {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--shop-glass-soft));
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  outline: none;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 55%, var(--shop-glass-wash)) 0%,
+    color-mix(in srgb, var(--shop-glass-wash) 72%, #fff) 48%,
+    color-mix(in srgb, var(--shop-glass-mid) 65%, #fff) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--shop-glass-chip) 8%, transparent);
+  transform: none;
+  animation: none;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.merchant-shop-page .sell-product-card:hover:not(:disabled):not(.sell-product-card--unavailable),
+.merchant-shop-page .sell-product-card:active:not(:disabled):not(.sell-product-card--unavailable),
+.merchant-shop-page .sell-product-card--added,
+.merchant-shop-page .sell-product-card--added:hover:not(:disabled) {
+  /* Color-only wash — border weight/color stays locked with rest tiles. */
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 48%, var(--shop-glass-wash)) 0%,
+    color-mix(in srgb, var(--shop-glass-wash) 78%, #fff) 48%,
+    color-mix(in srgb, var(--shop-glass-mid) 70%, #fff) 100%
+  );
+}
+
+.merchant-shop-page .sell-product-card__name {
+  color: var(--exits-text);
+}
+
+.merchant-shop-page .sell-product-card__price {
+  color: var(--shop-glass-chip) !important;
+}
+
+.merchant-shop-page .sell-product-card__media {
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  /* Same thumb chrome as cart line media. */
+  border: 1px solid color-mix(in srgb, var(--shop-glass-chip) 18%, #e2e8f0);
+  box-shadow: none;
+  overflow: hidden;
+  background: transparent;
+}
+
+.merchant-shop-page .sell-product-card:focus-visible {
+  outline: 2px solid var(--exits-ring, var(--shop-glass-chip));
+  outline-offset: 2px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--shop-glass-chip) 8%, transparent);
+}
+
+.merchant-shop-page .sell-product-card__fallback {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  /* Match cart thumb: primary Soft Glass gradient + white letter. */
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, #fff 28%, transparent), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--shop-glass-chip)),
+      var(--shop-glass-chip) 58%,
+      var(--shop-glass-deep)
+    );
+}
+
+.merchant-shop-page .sell-product-card__fallback-icon {
+  /* Cart thumbs are letter-only. */
+  display: none;
+}
+
+.merchant-shop-page .sell-product-card__initial {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #fff;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.merchant-shop-page .sell-cart-shell,
+.merchant-shop-page .sell-cart-panel,
+.merchant-shop-page .sell-cart-sheet,
+.merchant-shop-page .sell-cart-landscape > .sell-cart-panel {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--shop-glass-soft));
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--shop-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--shop-glass-mid) 46%, transparent) 100%
+  );
+  /* Single edge only. */
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--shop-glass-chip) 8%, transparent);
+  overflow: hidden;
+}
+
+.merchant-shop-page .sell-cart-landscape.sell-cart-shell > .sell-cart-panel {
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.merchant-shop-page .sell-cart-line__media--fallback,
+.merchant-shop-page .sell-cart-line__media {
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+  border: 1px solid color-mix(in srgb, var(--shop-glass-chip) 18%, #e2e8f0);
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, #fff 28%, transparent), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--shop-glass-chip)),
+      var(--shop-glass-chip) 58%,
+      var(--shop-glass-deep)
+    );
+}
+
+.merchant-shop-page .sell-cart-line__initial {
+  color: #fff;
+  font-weight: 700;
+}
+
+/*
+ * Shop cart line (sample): name → price under label → Pack · qty×₱ → pill stepper.
+ * Scoped to Personal merchant shop / checkout only.
+ */
+.merchant-shop-page .sell-cart-line,
+.pc-checkout-cart .sell-cart-line {
+  /* Keep thumb top-aligned with the name (taller body must not center / drop the pic). */
+  align-items: start;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+}
+
+/* Keep a divider under the last cart line (before total / CTA). */
+.merchant-shop-page .sell-cart-line:last-child,
+.pc-checkout-cart .sell-cart-line:last-child {
+  border-bottom: 1px solid color-mix(in srgb, #e2e8f0 55%, var(--shop-glass-soft, var(--exits-border)));
+  padding-bottom: 0.625rem;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-line:last-child,
+[data-theme="dark"] .pc-checkout-cart .sell-cart-line:last-child {
+  border-bottom-color: color-mix(in srgb, #fff 12%, transparent);
+}
+
+.merchant-shop-page .sell-cart-line__media,
+.pc-checkout-cart .sell-cart-line__media {
+  margin-top: 0.1rem;
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.merchant-shop-page .sell-cart-line__initial,
+.pc-checkout-cart .sell-cart-line__initial {
+  font-size: var(--exits-text-lg, 1.125rem);
+}
+
+.merchant-shop-page .sell-cart-line__body--shop,
+.pc-checkout-cart .sell-cart-line__body--shop {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.merchant-shop-page .sell-cart-line__copy,
+.pc-checkout-cart .sell-cart-line__copy {
+  display: flex;
+  /* Take all leftover width so "Bottled Water 500ml" stays one line. */
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: none;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.merchant-shop-page .sell-cart-line__side,
+.pc-checkout-cart .sell-cart-line__side {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  /* Narrow side so the name label gets more horizontal room. */
+  width: max-content;
+  max-width: 42%;
+  margin-top: 0;
+}
+
+.merchant-shop-page .sell-cart-line__body--shop .sell-cart-line__name,
+.pc-checkout-cart .sell-cart-line__body--shop .sell-cart-line__name {
+  flex: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  /* Prefer one line; ellipsis only if the name is truly longer than available width. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+}
+
+.merchant-shop-page .sell-cart-line__body--shop .sell-cart-line__amount,
+.pc-checkout-cart .sell-cart-line__body--shop .sell-cart-line__amount {
+  color: var(--shop-glass-chip, var(--exits-primary)) !important;
+  font-size: var(--exits-text-sm) !important;
+  font-weight: 700 !important;
+  line-height: 1.25;
+}
+
+.merchant-shop-page .sell-cart-line__body--shop .sell-cart-line__meta,
+.pc-checkout-cart .sell-cart-line__body--shop .sell-cart-line__meta {
+  white-space: normal;
+}
+
+.merchant-shop-page .sell-cart-line__body--shop .sell-cart-line__qty,
+.pc-checkout-cart .sell-cart-line__body--shop .sell-cart-line__qty {
+  flex-shrink: 0;
+}
+
+/* Cart Clear — danger, larger type + weight (shop cart header). */
+.merchant-shop-page .sell-cart-clear {
+  color: var(--exits-danger) !important;
+  font-size: var(--exits-text-md, 1rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.25;
+}
+
+.merchant-shop-page .sell-cart-footer {
+  border-top-color: color-mix(in srgb, #e2e8f0 55%, var(--shop-glass-soft));
+  background: transparent;
+}
+
+.merchant-shop-page .sell-cart-footer__total-label {
+  color: #000;
+}
+
+.merchant-shop-page .sell-cart-footer__total-amount {
+  color: var(--shop-glass-chip, var(--exits-primary)) !important;
+  font-size: var(--exits-text-lg, 1.125rem) !important;
+  font-weight: 700 !important;
+}
+
+.merchant-shop-page .sell-cart-line {
+  border-bottom-color: color-mix(in srgb, #e2e8f0 55%, var(--shop-glass-soft));
+}
+
+.merchant-shop-page .sell-floor-workspace__search .exits-search-field,
+.merchant-shop-page .sell-floor-workspace__search .ui-standards-qinput__box,
+.merchant-shop-page .pc-field__control {
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem)) !important;
+}
+
+.merchant-shop-page .pc-field__control {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--shop-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--shop-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--shop-glass-mid) 46%, transparent) 100%
+  );
+  color: var(--shop-glass-ink);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card,
+[data-theme="dark"] .merchant-shop-page .sell-product-card:hover:not(:disabled):not(.sell-product-card--unavailable),
+[data-theme="dark"] .merchant-shop-page .sell-product-card:active:not(:disabled):not(.sell-product-card--unavailable),
+[data-theme="dark"] .merchant-shop-page .sell-product-card--added,
+[data-theme="dark"] .merchant-shop-page .sell-product-card--added:hover:not(:disabled),
+[data-theme="dark"] .merchant-shop-page .sell-product-card--selected {
+  /* Soft Glass dark QA recipe — deeper navy, less wash. */
+  border: 1px solid color-mix(in srgb, var(--shop-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--shop-glass-chip) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--shop-glass-deep) 11%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+  color: #e2e8f0;
+  transform: none;
+  animation: none;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card:hover:not(:disabled):not(.sell-product-card--unavailable),
+[data-theme="dark"] .merchant-shop-page .sell-product-card:active:not(:disabled):not(.sell-product-card--unavailable),
+[data-theme="dark"] .merchant-shop-page .sell-product-card--added,
+[data-theme="dark"] .merchant-shop-page .sell-product-card--added:hover:not(:disabled) {
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 6%, transparent) 0%,
+    color-mix(in srgb, var(--shop-glass-chip) 16%, #1e293b) 46%,
+    color-mix(in srgb, var(--shop-glass-deep) 13%, #0f172a) 100%
+  );
+  border-color: color-mix(in srgb, var(--shop-glass-chip) 22%, #64748b);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card__name {
+  color: #e2e8f0;
+}
+
+/* Lighten primary + muted copy so price / Enter weight / UOM / stock stay readable on deep Soft Glass. */
+[data-theme="dark"] .merchant-shop-page .sell-product-card__price {
+  color: color-mix(in srgb, #fff 48%, var(--shop-glass-chip)) !important;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card__hint {
+  color: color-mix(in srgb, #fff 42%, var(--shop-glass-chip));
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card__hint--muted,
+[data-theme="dark"] .merchant-shop-page .sell-product-card__stock {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-grid .sell-product-card__stock {
+  border-top-color: color-mix(in srgb, #fff 14%, transparent);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card__media {
+  border-color: color-mix(in srgb, var(--shop-glass-chip) 28%, #475569);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card__fallback {
+  /* Keep cart-matching primary thumb in dark. */
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 14%, var(--shop-glass-chip)),
+      var(--shop-glass-chip) 58%,
+      var(--shop-glass-deep)
+    );
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-product-card__initial {
+  border: 0;
+  background: transparent;
+  color: #fff;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-shell,
+[data-theme="dark"] .merchant-shop-page .sell-cart-panel,
+[data-theme="dark"] .merchant-shop-page .sell-cart-sheet,
+[data-theme="dark"] .merchant-shop-page .sell-cart-landscape > .sell-cart-panel {
+  border-color: color-mix(in srgb, var(--shop-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--shop-glass-chip) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--shop-glass-deep) 11%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-line__media--fallback,
+[data-theme="dark"] .merchant-shop-page .sell-cart-line__media {
+  border-color: color-mix(in srgb, var(--shop-glass-chip) 28%, #475569);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-landscape.sell-cart-shell > .sell-cart-panel {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-footer {
+  border-top-color: color-mix(in srgb, #fff 14%, transparent);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-footer__total-label {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-footer__total-amount {
+  color: color-mix(in srgb, #fff 48%, var(--shop-glass-chip, var(--exits-primary))) !important;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-line {
+  border-bottom-color: color-mix(in srgb, #fff 12%, transparent);
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-line__body--shop .sell-cart-line__amount,
+[data-theme="dark"] .pc-checkout-cart .sell-cart-line__body--shop .sell-cart-line__amount {
+  color: color-mix(in srgb, #fff 48%, var(--shop-glass-chip, var(--exits-primary))) !important;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-line__body--shop .sell-cart-line__name,
+[data-theme="dark"] .pc-checkout-cart .sell-cart-line__body--shop .sell-cart-line__name {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .merchant-shop-page .sell-cart-line__body--shop .sell-cart-line__meta,
+[data-theme="dark"] .pc-checkout-cart .sell-cart-line__body--shop .sell-cart-line__meta {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .merchant-shop-page .pc-field__control {
+  border-color: color-mix(in srgb, var(--shop-glass-chip) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 4%, transparent) 0%,
+    color-mix(in srgb, var(--shop-glass-chip) 10%, #1e293b) 48%,
+    color-mix(in srgb, var(--shop-glass-deep) 10%, #0f172a) 100%
+  );
+  color: #e2e8f0;
+}
+
+/*
+ * Personal / merchant shop Soft Glass QuantityStepper — pill shell,
+ * circular +/- matching stepper height. Scoped: does not affect org sell floor.
+ */
+.merchant-shop-page .quantity-stepper--shop-pill,
+.pc-checkout-cart .quantity-stepper--shop-pill {
+  --quantity-stepper-height: 2rem;
+  --quantity-stepper-btn-size: 2rem;
+  /* Compact shop cart: don’t reserve a wide capsule that steals label width. */
+  --quantity-stepper-input-min-ch: 2.5ch;
+  --quantity-stepper-input-max-ch: 6ch;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+.merchant-shop-page .quantity-stepper--shop-pill.quantity-stepper--cart,
+.pc-checkout-cart .quantity-stepper--shop-pill.quantity-stepper--cart {
+  min-width: 0 !important;
+}
+
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__group,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__group {
+  height: var(--quantity-stepper-height) !important;
+  min-height: var(--quantity-stepper-height) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  align-items: center !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--shop-glass-soft, #c4b5fd)) !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--shop-glass-wash, #f5f3ff) 52%, transparent) 48%,
+    color-mix(in srgb, var(--shop-glass-mid, #ede9fe) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 2px 8px color-mix(in srgb, var(--shop-glass-chip, #8b5cf6) 8%, transparent) !important;
+  overflow: visible !important;
+}
+
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__group:focus-within,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__group:focus-within {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--shop-glass-soft, #c4b5fd)) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 0 0 2px color-mix(in srgb, var(--shop-glass-chip, #8b5cf6) 28%, transparent) !important;
+}
+
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn,
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn--minus,
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn--plus,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__btn,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__btn--minus,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__btn--plus {
+  flex: 0 0 var(--quantity-stepper-btn-size) !important;
+  width: var(--quantity-stepper-btn-size) !important;
+  min-width: var(--quantity-stepper-btn-size) !important;
+  height: var(--quantity-stepper-btn-size) !important;
+  min-height: var(--quantity-stepper-btn-size) !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  color: var(--shop-glass-ink, #5b21b6) !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn:hover:not(:disabled),
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn:focus-visible:not(:disabled),
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__btn:hover:not(:disabled),
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__btn:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--shop-glass-chip, #8b5cf6) 14%, transparent) !important;
+  color: var(--shop-glass-ink, #5b21b6) !important;
+}
+
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__middle,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__middle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+}
+
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__value,
+.merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__input,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__value,
+.pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__input {
+  background: transparent !important;
+  color: var(--shop-glass-ink, #5b21b6) !important;
+  font-weight: 700 !important;
+}
+
+/* Personal / merchant shop: never show kg/pack/can (or any UOM) inside the stepper. */
+.merchant-shop-page .quantity-stepper .quantity-stepper__unit,
+.merchant-shop-page .quantity-stepper--soft-glass .quantity-stepper__unit,
+.pc-checkout-cart .quantity-stepper .quantity-stepper__unit,
+.pc-checkout-cart .quantity-stepper--soft-glass .quantity-stepper__unit {
+  display: none !important;
+}
+
+[data-theme="dark"] .merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__group,
+[data-theme="dark"] .pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__group {
+  border-color: color-mix(in srgb, var(--shop-glass-chip, #6d28d9) 16%, #475569) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 3%, #1e293b) 0%,
+    color-mix(in srgb, var(--shop-glass-chip, #6d28d9) 10%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 58%, #1e293b) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset,
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+[data-theme="dark"] .merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn,
+[data-theme="dark"] .merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn--minus,
+[data-theme="dark"] .merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn--plus,
+[data-theme="dark"] .merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__value,
+[data-theme="dark"] .merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__input,
+[data-theme="dark"] .pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__btn,
+[data-theme="dark"] .pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__value,
+[data-theme="dark"] .pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__input {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .merchant-shop-page .quantity-stepper--shop-pill .quantity-stepper__btn:hover:not(:disabled),
+[data-theme="dark"] .pc-checkout-cart .quantity-stepper--shop-pill .quantity-stepper__btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--shop-glass-chip, #6d28d9) 18%, transparent) !important;
+  color: #f8fafc !important;
 }
 
 /* Customer shop uses the Sell floor: products beside the cart, cart sheet on a small screen. */

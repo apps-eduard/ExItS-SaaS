@@ -85,5 +85,6 @@ public sealed class CustomerStorefrontFulfillmentTests
             null,
             null,
             null,
-            null);
+            null,
+            StoreIsOpenNow: orderingOperational);
 }

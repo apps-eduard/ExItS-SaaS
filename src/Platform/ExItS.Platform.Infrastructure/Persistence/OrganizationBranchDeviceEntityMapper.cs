@@ -37,7 +37,10 @@ internal static class OrganizationBranchDeviceEntityMapper
             record.SuspendedByUserId is Guid suspendedBy ? PlatformUserId.From(suspendedBy) : null,
             record.SuspensionReason,
             record.AreaId is Guid areaId ? OrganizationAreaId.From(areaId) : null,
-            ParseBranchType(record.BranchType));
+            ParseBranchType(record.BranchType),
+            record.AcceptScheduledOrdersWhileClosed,
+            record.MinPreparationLeadMinutes,
+            record.MaxAdvanceScheduleDays);
 
     private static OrganizationBranchType ParseBranchType(string? value) =>
         string.IsNullOrWhiteSpace(value)
@@ -68,6 +71,9 @@ internal static class OrganizationBranchDeviceEntityMapper
         TimeZoneId = branch.TimeZoneId,
         OnlineOrdersPaused = branch.OnlineOrdersPaused,
         OnlineOrdersPauseReason = branch.PauseReason?.ToString(),
+        AcceptScheduledOrdersWhileClosed = branch.AcceptScheduledOrdersWhileClosed,
+        MinPreparationLeadMinutes = branch.MinPreparationLeadMinutes,
+        MaxAdvanceScheduleDays = branch.MaxAdvanceScheduleDays,
         IsPrimary = branch.IsPrimary,
         AreaId = branch.AreaId?.Value,
         Status = branch.Status.ToString(),
@@ -97,6 +103,9 @@ internal static class OrganizationBranchDeviceEntityMapper
         record.TimeZoneId = branch.TimeZoneId;
         record.OnlineOrdersPaused = branch.OnlineOrdersPaused;
         record.OnlineOrdersPauseReason = branch.PauseReason?.ToString();
+        record.AcceptScheduledOrdersWhileClosed = branch.AcceptScheduledOrdersWhileClosed;
+        record.MinPreparationLeadMinutes = branch.MinPreparationLeadMinutes;
+        record.MaxAdvanceScheduleDays = branch.MaxAdvanceScheduleDays;
         record.AreaId = branch.AreaId?.Value;
         record.Status = branch.Status.ToString();
         record.SuspendedAtUtc = branch.SuspendedAtUtc;

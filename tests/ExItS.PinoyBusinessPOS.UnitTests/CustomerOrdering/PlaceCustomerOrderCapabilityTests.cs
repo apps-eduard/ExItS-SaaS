@@ -257,7 +257,8 @@ public sealed class PlaceCustomerOrderCapabilityTests
                 DeliveryServiceAreas:
                 [
                     new CustomerOrderDeliveryServiceAreaSnapshot(ServiceArea, "Manila", "NCR")
-                ]);
+                ],
+                StoreIsOpenNow: true);
     }
 
     private sealed class FakeStock : ICustomerOrderStockService

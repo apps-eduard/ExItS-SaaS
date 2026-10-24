@@ -86,6 +86,9 @@ public sealed record CustomerOrderDto(
     string? RequestedPickupLocal = null,
     string? RequestedPickupTimeZoneId = null,
     DateTimeOffset? RequestedPickupAtUtc = null,
+    string? RequestedDeliveryLocal = null,
+    string? RequestedDeliveryTimeZoneId = null,
+    DateTimeOffset? RequestedDeliveryAtUtc = null,
     decimal? AmountReceived = null,
     decimal? ChangeAmount = null,
     DateTimeOffset? PaymentConfirmedAtUtc = null,
@@ -148,7 +151,9 @@ public sealed record PlaceCustomerOrderRequest(
     string? PaymentMethod = null,
     string? PaymentReference = null,
     string? RequestedPickupDate = null,
-    string? RequestedPickupTime = null);
+    string? RequestedPickupTime = null,
+    string? RequestedDeliveryDate = null,
+    string? RequestedDeliveryTime = null);
 
 public sealed record QuoteCustomerOrderDeliveryRequest(
     Guid FulfillmentBranchId,
@@ -258,6 +263,9 @@ public static class CustomerOrderMaps
             order.RequestedPickupLocal,
             order.RequestedPickupTimeZoneId,
             order.RequestedPickupAtUtc,
+            order.RequestedDeliveryLocal,
+            order.RequestedDeliveryTimeZoneId,
+            order.RequestedDeliveryAtUtc,
             order.AmountReceived,
             order.ChangeAmount,
             order.PaymentConfirmedAtUtc,

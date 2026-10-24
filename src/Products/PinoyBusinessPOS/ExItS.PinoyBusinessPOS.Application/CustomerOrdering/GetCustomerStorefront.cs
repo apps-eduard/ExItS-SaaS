@@ -281,7 +281,11 @@ public sealed class GetCustomerStorefront
                         day.IsOpen24Hours,
                         day.OpenTime,
                         day.CloseTime))
-                    .ToList()))
+                    .ToList(),
+                b.AcceptScheduledOrdersWhileClosed,
+                b.MinPreparationLeadMinutes,
+                b.MaxAdvanceScheduleDays,
+                b.StoreIsOpenNow))
             .ToList();
 
         var fulfillmentAvailability = CustomerStorefrontFulfillment.Classify(

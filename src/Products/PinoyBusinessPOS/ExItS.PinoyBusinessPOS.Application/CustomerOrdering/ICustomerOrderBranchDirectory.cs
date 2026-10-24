@@ -30,7 +30,11 @@ public sealed record CustomerOrderBranchSnapshot(
     /// <summary>Setup complete for delivery (independent of store open-now / pause).</summary>
     bool DeliveryReady = false,
     string? TimeZoneId = null,
-    IReadOnlyList<CustomerOrderBranchHoursDaySnapshot>? OperatingHours = null);
+    IReadOnlyList<CustomerOrderBranchHoursDaySnapshot>? OperatingHours = null,
+    bool AcceptScheduledOrdersWhileClosed = false,
+    int MinPreparationLeadMinutes = 0,
+    int MaxAdvanceScheduleDays = 0,
+    bool StoreIsOpenNow = false);
 
 public sealed record CustomerOrderBranchHoursDaySnapshot(
     string DayOfWeek,

@@ -315,6 +315,20 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("rejected_by");
 
+                    b.Property<DateTimeOffset?>("RequestedDeliveryAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_delivery_at_utc");
+
+                    b.Property<string>("RequestedDeliveryLocal")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("requested_delivery_local");
+
+                    b.Property<string>("RequestedDeliveryTimeZoneId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("requested_delivery_time_zone_id");
+
                     b.Property<DateTimeOffset?>("RequestedPickupAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("requested_pickup_at_utc");
@@ -428,7 +442,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_customer_orders_payment_status", "payment_status IN ('Unpaid', 'Pending', 'Paid')");
 
-                            t.HasCheckConstraint("ck_customer_orders_pickup_request", "(requested_pickup_local IS NULL AND requested_pickup_time_zone_id IS NULL AND requested_pickup_at_utc IS NULL) OR (fulfillment_type = 'Pickup' AND requested_pickup_local IS NOT NULL AND requested_pickup_time_zone_id IS NOT NULL AND requested_pickup_at_utc IS NOT NULL)");
+                            t.HasCheckConstraint("ck_customer_orders_pickup_request", "(requested_pickup_local IS NULL AND requested_pickup_time_zone_id IS NULL AND requested_pickup_at_utc IS NULL AND requested_delivery_local IS NULL AND requested_delivery_time_zone_id IS NULL AND requested_delivery_at_utc IS NULL) OR (fulfillment_type = 'Pickup' AND requested_pickup_local IS NOT NULL AND requested_pickup_time_zone_id IS NOT NULL AND requested_pickup_at_utc IS NOT NULL AND requested_delivery_local IS NULL AND requested_delivery_time_zone_id IS NULL AND requested_delivery_at_utc IS NULL) OR (fulfillment_type = 'Delivery' AND requested_delivery_local IS NOT NULL AND requested_delivery_time_zone_id IS NOT NULL AND requested_delivery_at_utc IS NOT NULL AND requested_pickup_local IS NULL AND requested_pickup_time_zone_id IS NULL AND requested_pickup_at_utc IS NULL)");
 
                             t.HasCheckConstraint("ck_customer_orders_status", "status IN ('Draft', 'Submitted', 'Accepted', 'Rejected', 'Cancelled', 'Completed')");
 

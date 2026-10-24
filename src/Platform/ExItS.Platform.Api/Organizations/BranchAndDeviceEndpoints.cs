@@ -563,7 +563,10 @@ internal static class BranchAndDeviceEndpoints
                 new UpdateBranchFulfillmentSettingsCommand(
                     body.CustomerOrderingEnabled,
                     body.PickupEnabled,
-                    body.DeliveryEnabled),
+                    body.DeliveryEnabled,
+                    body.AcceptScheduledOrdersWhileClosed,
+                    body.MinPreparationLeadMinutes,
+                    body.MaxAdvanceScheduleDays),
                 ct).ConfigureAwait(false);
             if (result.IsSuccess)
             {
@@ -967,7 +970,10 @@ internal sealed record UpsertBranchOperatingHoursRequest(IReadOnlyList<BranchOpe
 internal sealed record UpdateBranchFulfillmentSettingsRequest(
     bool? CustomerOrderingEnabled = null,
     bool? PickupEnabled = null,
-    bool? DeliveryEnabled = null);
+    bool? DeliveryEnabled = null,
+    bool? AcceptScheduledOrdersWhileClosed = null,
+    int? MinPreparationLeadMinutes = null,
+    int? MaxAdvanceScheduleDays = null);
 
 internal sealed record SetBranchOnlineOrdersPausedRequest(bool Paused, string? Reason = null);
 

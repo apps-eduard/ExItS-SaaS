@@ -479,7 +479,8 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                         Longitude: null,
                         DeliveryPolicy: null,
                         PickupReady: true,
-                        DeliveryReady: false)
+                        DeliveryReady: false,
+                        StoreIsOpenNow: true)
                     : null);
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
@@ -506,7 +507,8 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                     Longitude: null,
                     DeliveryPolicy: null,
                     PickupReady: true,
-                    DeliveryReady: false));
+                    DeliveryReady: false,
+                    StoreIsOpenNow: false));
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);
@@ -534,7 +536,8 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                     Longitude: 121.0m,
                     DeliveryPolicy: null,
                     PickupReady: true,
-                    DeliveryReady: true));
+                    DeliveryReady: true,
+                    StoreIsOpenNow: false));
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);
@@ -560,7 +563,8 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                     Longitude: 121.0m,
                     DeliveryPolicy: null,
                     PickupReady: false,
-                    DeliveryReady: true));
+                    DeliveryReady: true,
+                    StoreIsOpenNow: true));
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);

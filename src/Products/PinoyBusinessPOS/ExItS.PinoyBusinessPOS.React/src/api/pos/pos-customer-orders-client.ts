@@ -175,6 +175,9 @@ export const storefrontBranchSchema = z.object({
   deliveryServiceAreas: z.array(storefrontDeliveryServiceAreaSchema).nullish().default([]),
   timeZoneId: z.string().nullable().optional(),
   operatingHours: z.array(storefrontHoursDaySchema).nullish().default([]),
+  acceptScheduledOrdersWhileClosed: z.boolean().optional().default(false),
+  minPreparationLeadMinutes: z.number().optional().default(0),
+  maxAdvanceScheduleDays: z.number().optional().default(0),
 });
 
 export const customerStorefrontSchema = z.object({
@@ -247,6 +250,8 @@ export type PlaceCustomerOrderRequest = {
   paymentReference?: string | null;
   requestedPickupDate?: string | null;
   requestedPickupTime?: string | null;
+  requestedDeliveryDate?: string | null;
+  requestedDeliveryTime?: string | null;
 };
 
 export type QuoteCustomerOrderDeliveryRequest = {

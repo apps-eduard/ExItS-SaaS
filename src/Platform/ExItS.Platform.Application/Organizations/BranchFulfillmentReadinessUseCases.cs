@@ -45,14 +45,20 @@ public sealed record BranchFulfillmentReadinessDto(
     int PickupSectionsComplete = 0,
     int PickupSectionsTotal = BranchFulfillmentSetupSummary.PickupSectionCount,
     int DeliverySectionsComplete = 0,
-    int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount);
+    int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount,
+    bool AcceptScheduledOrdersWhileClosed = false,
+    int MinPreparationLeadMinutes = 0,
+    int MaxAdvanceScheduleDays = 0);
 
 public sealed record UpsertBranchOperatingHoursCommand(IReadOnlyList<BranchOperatingHoursDayDto> Days);
 
 public sealed record UpdateBranchFulfillmentSettingsCommand(
     bool? CustomerOrderingEnabled,
     bool? PickupEnabled,
-    bool? DeliveryEnabled);
+    bool? DeliveryEnabled,
+    bool? AcceptScheduledOrdersWhileClosed = null,
+    int? MinPreparationLeadMinutes = null,
+    int? MaxAdvanceScheduleDays = null);
 
 public sealed record SetBranchOnlineOrdersPausedCommand(bool Paused, string? Reason);
 
@@ -234,7 +240,10 @@ public sealed class GetBranchFulfillmentReadiness
             result.SetupSummary.PickupSectionsComplete,
             result.SetupSummary.PickupSectionsTotal,
             result.SetupSummary.DeliverySectionsComplete,
-            result.SetupSummary.DeliverySectionsTotal);
+            result.SetupSummary.DeliverySectionsTotal,
+            branch.AcceptScheduledOrdersWhileClosed,
+            branch.MinPreparationLeadMinutes,
+            branch.MaxAdvanceScheduleDays);
 
     internal static string? BuildStoreStatusMessage(BranchStoreOpenState? state)
     {
@@ -261,17 +270,20 @@ public sealed class UpsertBranchOperatingHours
     private readonly IBranchOperatingHoursRepository _hours;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly GetBranchFulfillmentReadiness _readiness;
+    private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
 
     public UpsertBranchOperatingHours(
         IOrganizationBranchRepository branches,
         IBranchOperatingHoursRepository hours,
         IPlatformUnitOfWork unitOfWork,
-        GetBranchFulfillmentReadiness readiness)
+        GetBranchFulfillmentReadiness readiness,
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier)
     {
         _branches = branches;
         _hours = hours;
         _unitOfWork = unitOfWork;
         _readiness = readiness;
+        _storefrontNotifier = storefrontNotifier;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -302,7 +314,15 @@ public sealed class UpsertBranchOperatingHours
             return ApplicationResult<BranchFulfillmentReadinessDto>.Failure(ex.ErrorCode, ex.Message);
         }
 
-        return await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        var result = await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        if (result.IsSuccess && result.Value is not null)
+        {
+            await CustomerStorefrontAvailabilityNotify
+                .PublishAsync(_storefrontNotifier, organizationId, result.Value, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return result;
     }
 
     private static BranchDayOperatingHours ParseDay(BranchOperatingHoursDayDto dto)
@@ -341,17 +361,20 @@ public sealed class UpdateBranchFulfillmentSettings
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly GetBranchFulfillmentReadiness _readiness;
+    private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
 
     public UpdateBranchFulfillmentSettings(
         IOrganizationBranchRepository branches,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        GetBranchFulfillmentReadiness readiness)
+        GetBranchFulfillmentReadiness readiness,
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier)
     {
         _branches = branches;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _readiness = readiness;
+        _storefrontNotifier = storefrontNotifier;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -445,6 +468,17 @@ public sealed class UpdateBranchFulfillmentSettings
             {
                 branch.SetCustomerOrderingEnabled(true, utcNow);
             }
+
+            if (command.AcceptScheduledOrdersWhileClosed is not null
+                || command.MinPreparationLeadMinutes is not null
+                || command.MaxAdvanceScheduleDays is not null)
+            {
+                branch.SetCustomerOrderingScheduleSettings(
+                    command.AcceptScheduledOrdersWhileClosed ?? branch.AcceptScheduledOrdersWhileClosed,
+                    command.MinPreparationLeadMinutes ?? branch.MinPreparationLeadMinutes,
+                    command.MaxAdvanceScheduleDays ?? branch.MaxAdvanceScheduleDays,
+                    utcNow);
+            }
         }
         catch (DomainException ex)
         {
@@ -453,7 +487,17 @@ public sealed class UpdateBranchFulfillmentSettings
 
         await _branches.UpdateAsync(branch, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        return await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        var fulfillmentResult = await _readiness
+            .ExecuteAsync(organizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (fulfillmentResult.IsSuccess && fulfillmentResult.Value is not null)
+        {
+            await CustomerStorefrontAvailabilityNotify
+                .PublishAsync(_storefrontNotifier, organizationId, fulfillmentResult.Value, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return fulfillmentResult;
     }
 }
 
@@ -463,17 +507,20 @@ public sealed class SetBranchOnlineOrdersPaused
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly GetBranchFulfillmentReadiness _readiness;
+    private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
 
     public SetBranchOnlineOrdersPaused(
         IOrganizationBranchRepository branches,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        GetBranchFulfillmentReadiness readiness)
+        GetBranchFulfillmentReadiness readiness,
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier)
     {
         _branches = branches;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _readiness = readiness;
+        _storefrontNotifier = storefrontNotifier;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -509,6 +556,36 @@ public sealed class SetBranchOnlineOrdersPaused
         }
         await _branches.UpdateAsync(branch, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        return await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        var pauseResult = await _readiness
+            .ExecuteAsync(organizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (pauseResult.IsSuccess && pauseResult.Value is not null)
+        {
+            await CustomerStorefrontAvailabilityNotify
+                .PublishAsync(_storefrontNotifier, organizationId, pauseResult.Value, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return pauseResult;
     }
+}
+
+internal static class CustomerStorefrontAvailabilityNotify
+{
+    public static Task PublishAsync(
+        ICustomerStorefrontAvailabilityNotifier notifier,
+        PlatformOrganizationId organizationId,
+        BranchFulfillmentReadinessDto readiness,
+        CancellationToken cancellationToken) =>
+        notifier.AvailabilityChangedAsync(
+            new CustomerStorefrontAvailabilityChanged(
+                organizationId.Value,
+                readiness.BranchId,
+                readiness.StoreStatusMessage,
+                readiness.CustomerOrderingOperational,
+                readiness.PickupOperational,
+                readiness.DeliveryOperational,
+                readiness.OnlineOrdersPaused,
+                readiness.StoreIsOpenNow),
+            cancellationToken);
 }

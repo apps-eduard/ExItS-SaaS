@@ -34,6 +34,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
+import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
 import {
   ExitsTable,
   ExitsTableBody,
@@ -359,8 +360,22 @@ function LinkedMerchantTableActions({ row }: { row: LinkedMerchantRow }) {
       ),
   });
 
+  const shopLabel = t("personal.shopLink");
+
   return (
-    <div className="linked-merchants-table__actions inline-flex flex-col items-center gap-1">
+    <div className="linked-merchants-table__actions inline-flex flex-row items-center justify-center gap-1.5">
+      {canCustomerOrder ? (
+        <ExitsTooltip content={shopLabel}>
+          <Link
+            to={shopTo}
+            className="linked-merchants-table__store-icon"
+            aria-label={shopLabel}
+            data-testid={`open-merchant-shop-${merchant.organizationId}`}
+          >
+            <ShoppingBag strokeWidth={2} aria-hidden />
+          </Link>
+        </ExitsTooltip>
+      ) : null}
       <DropdownMenu
         align="end"
         open={menu.open}
@@ -368,35 +383,24 @@ function LinkedMerchantTableActions({ row }: { row: LinkedMerchantRow }) {
         menuLabel={moreLabel}
         menuClassName="linked-merchants-table__more-menu"
         trigger={(triggerProps) => (
-          <button
-            type="button"
-            className="linked-merchants-table__more"
-            id={triggerProps.id}
-            aria-haspopup="menu"
-            aria-expanded={triggerProps.expanded}
-            aria-controls={triggerProps.controls}
-            aria-label={moreLabel}
-            title={moreLabel}
-            data-testid={`linked-merchant-more-${merchant.organizationId}`}
-            onClick={triggerProps.onClick}
-            onKeyDown={triggerProps.onKeyDown}
-          >
-            <MoreHorizontal className="size-4" aria-hidden />
-          </button>
+          <ExitsTooltip content={moreLabel}>
+            <button
+              type="button"
+              className="linked-merchants-table__more"
+              id={triggerProps.id}
+              aria-haspopup="menu"
+              aria-expanded={triggerProps.expanded}
+              aria-controls={triggerProps.controls}
+              aria-label={moreLabel}
+              data-testid={`linked-merchant-more-${merchant.organizationId}`}
+              onClick={triggerProps.onClick}
+              onKeyDown={triggerProps.onKeyDown}
+            >
+              <MoreHorizontal className="size-4" aria-hidden />
+            </button>
+          </ExitsTooltip>
         )}
       >
-        {canCustomerOrder ? (
-          <MenuItem
-            data-testid={`open-merchant-shop-${merchant.organizationId}`}
-            onSelect={() => {
-              menu.close();
-              navigate(shopTo);
-            }}
-          >
-            <ShoppingBag className="size-4 shrink-0" aria-hidden />
-            {t("personal.shopLink")}
-          </MenuItem>
-        ) : null}
         <MenuItem
           data-testid={`open-merchant-statement-${merchant.organizationId}`}
           onSelect={() => {

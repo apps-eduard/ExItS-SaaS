@@ -52,6 +52,12 @@ public sealed class OrganizationBranch
     public string? TimeZoneId { get; private set; }
     public bool OnlineOrdersPaused { get; private set; }
     public OnlineOrdersPauseReason? PauseReason { get; private set; }
+    /// <summary>When true, customers may place pickup/delivery for a future slot while closed by hours (not while manually paused).</summary>
+    public bool AcceptScheduledOrdersWhileClosed { get; private set; }
+    /// <summary>Minimum minutes between now and a scheduled fulfillment time (0 = only require future).</summary>
+    public int MinPreparationLeadMinutes { get; private set; }
+    /// <summary>Maximum days ahead a customer may schedule (0 = no max window beyond lead time).</summary>
+    public int MaxAdvanceScheduleDays { get; private set; }
     public bool IsPrimary { get; private set; }
 
     /// <summary>Optional grouping Area. Grouping only — never operational authority.</summary>
@@ -111,7 +117,10 @@ public sealed class OrganizationBranch
         PlatformUserId? suspendedByUserId,
         string? suspensionReason,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        bool acceptScheduledOrdersWhileClosed = false,
+        int minPreparationLeadMinutes = 0,
+        int maxAdvanceScheduleDays = 0)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -133,6 +142,9 @@ public sealed class OrganizationBranch
         TimeZoneId = timeZoneId;
         OnlineOrdersPaused = onlineOrdersPaused;
         PauseReason = onlineOrdersPauseReason;
+        AcceptScheduledOrdersWhileClosed = acceptScheduledOrdersWhileClosed;
+        MinPreparationLeadMinutes = minPreparationLeadMinutes;
+        MaxAdvanceScheduleDays = maxAdvanceScheduleDays;
         IsPrimary = isPrimary;
         AreaId = areaId;
         Status = status;
@@ -212,7 +224,10 @@ public sealed class OrganizationBranch
         PlatformUserId? suspendedByUserId = null,
         string? suspensionReason = null,
         OrganizationAreaId? areaId = null,
-        OrganizationBranchType branchType = OrganizationBranchType.Retail) =>
+        OrganizationBranchType branchType = OrganizationBranchType.Retail,
+        bool acceptScheduledOrdersWhileClosed = false,
+        int minPreparationLeadMinutes = 0,
+        int maxAdvanceScheduleDays = 0) =>
         new(
             id,
             organizationId,
@@ -241,7 +256,10 @@ public sealed class OrganizationBranch
             suspendedByUserId,
             NormalizeSuspensionReason(suspensionReason),
             createdAtUtc,
-            updatedAtUtc);
+            updatedAtUtc,
+            acceptScheduledOrdersWhileClosed,
+            NormalizeLeadMinutes(minPreparationLeadMinutes),
+            NormalizeAdvanceDays(maxAdvanceScheduleDays));
 
     /// <summary>True when POS retail checkout / cashier-sale operations are allowed at this location.</summary>
     public bool AllowsRetailSales => BranchType == OrganizationBranchType.Retail;
@@ -419,6 +437,19 @@ public sealed class OrganizationBranch
     {
         EnsureMutable(utcNow);
         TimeZoneId = NormalizeTimeZone(timeZoneId);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void SetCustomerOrderingScheduleSettings(
+        bool acceptScheduledOrdersWhileClosed,
+        int minPreparationLeadMinutes,
+        int maxAdvanceScheduleDays,
+        DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        AcceptScheduledOrdersWhileClosed = acceptScheduledOrdersWhileClosed;
+        MinPreparationLeadMinutes = NormalizeLeadMinutes(minPreparationLeadMinutes);
+        MaxAdvanceScheduleDays = NormalizeAdvanceDays(maxAdvanceScheduleDays);
         UpdatedAtUtc = utcNow;
     }
 
@@ -756,4 +787,18 @@ public sealed class OrganizationBranch
 
     private static decimal RoundCoordinate(decimal value) =>
         Math.Round(value, 7, MidpointRounding.AwayFromZero);
+
+    private static int NormalizeLeadMinutes(int minutes) =>
+        minutes is < 0 or > 7 * 24 * 60
+            ? throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationProfile,
+                "Minimum preparation lead time must be between 0 and 10080 minutes.")
+            : minutes;
+
+    private static int NormalizeAdvanceDays(int days) =>
+        days is < 0 or > 90
+            ? throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationProfile,
+                "Maximum advance schedule window must be between 0 and 90 days.")
+            : days;
 }

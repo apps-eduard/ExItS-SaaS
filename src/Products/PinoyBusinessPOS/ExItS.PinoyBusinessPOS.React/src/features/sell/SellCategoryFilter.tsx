@@ -81,7 +81,9 @@ function CategoryChip({
     <FilterChip
       role="listitem"
       data-testid={testId}
+      shape="pill"
       selected={pressed}
+      showCheck={pressed}
       onClick={onClick}
       className={cn("sell-category-chip shrink-0", pressed && "sell-category-chip--active")}
       icon={<Icon className="sell-category-chip__icon" aria-hidden strokeWidth={1.75} />}

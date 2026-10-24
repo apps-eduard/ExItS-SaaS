@@ -1,10 +1,11 @@
+import { Package } from "lucide-react";
 import type { CustomerStorefrontProductDto } from "@/api/pos/pos-customer-orders-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { formatQuantityDisplay, resolveSellCardStock } from "@/cart/sell-cart-helpers";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { sellAvailableCaption } from "@/features/catalog/catalog-stock-caption";
+import { formatShopCartUnitLabel } from "@/features/customer-ordering/shop-cart-line-meta";
 import { isKiloStorefrontProduct } from "@/features/customer-ordering/storefront-availability";
-import { useStorefrontProductImageUrl } from "@/features/customer-ordering/use-storefront-product-image";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
 
@@ -25,20 +26,14 @@ type StoreProductCardProps = {
 
 export function StoreProductCard({
   product,
-  workspace,
-  sellerOrganizationId,
+  workspace: _workspace,
+  sellerOrganizationId: _sellerOrganizationId,
   quantity,
   canAdd,
   onAdd,
   t,
 }: StoreProductCardProps) {
-  const imageUrl = useStorefrontProductImageUrl(
-    workspace,
-    sellerOrganizationId,
-    product.productId,
-    product.hasImage,
-    product.imageVersion,
-  );
+  // Soft Glass shop tiles: letter + package fallback only (no product photos for now).
   const kilo = isKiloStorefrontProduct(product);
   const unavailable = !canAdd && quantity <= 0;
   const remaining =
@@ -71,19 +66,10 @@ export function StoreProductCard({
       }}
     >
       <div className="sell-product-card__media">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt=""
-            className="sell-product-card__image"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <span className="sell-product-card__initial" aria-hidden>
-            {productInitial(product.name)}
-          </span>
-        )}
+        <span className="sell-product-card__fallback" aria-hidden>
+          <Package className="sell-product-card__fallback-icon" strokeWidth={1.75} />
+          <span className="sell-product-card__initial">{productInitial(product.name)}</span>
+        </span>
       </div>
       <div className="sell-product-card__body">
         <span className="sell-product-card__name">{product.name}</span>
@@ -91,12 +77,13 @@ export function StoreProductCard({
           <MoneyDisplay amount={product.unitPrice} className="sell-product-card__price" />
           {kilo ? (
             <span className="sell-product-card__hint">{t("sell.tileByWeight")}</span>
-          ) : (
-            <span className="sell-product-card__hint sell-product-card__hint--muted">
-              {product.unitOfMeasure}
-            </span>
-          )}
+          ) : null}
         </div>
+        {!kilo ? (
+          <span className="sell-product-card__hint sell-product-card__hint--muted">
+            {formatShopCartUnitLabel(product.unitOfMeasure)}
+          </span>
+        ) : null}
         <span
           className={cn(
             "sell-product-card__stock",

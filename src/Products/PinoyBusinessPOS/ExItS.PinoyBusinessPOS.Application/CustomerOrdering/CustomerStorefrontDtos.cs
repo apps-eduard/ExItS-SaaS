@@ -34,7 +34,11 @@ public sealed record CustomerStorefrontBranchDto(
     string? StoreStatusMessage,
     IReadOnlyList<CustomerStorefrontDeliveryServiceAreaDto>? DeliveryServiceAreas = null,
     string? TimeZoneId = null,
-    IReadOnlyList<CustomerStorefrontHoursDayDto>? OperatingHours = null);
+    IReadOnlyList<CustomerStorefrontHoursDayDto>? OperatingHours = null,
+    bool AcceptScheduledOrdersWhileClosed = false,
+    int MinPreparationLeadMinutes = 0,
+    int MaxAdvanceScheduleDays = 0,
+    bool StoreIsOpenNow = false);
 
 public sealed record CustomerStorefrontHoursDayDto(
     string DayOfWeek,

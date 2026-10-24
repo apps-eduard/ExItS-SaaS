@@ -7,14 +7,15 @@ import {
   nextWeightCartQuantityKg,
 } from "@/cart/sell-cart-helpers";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
+import { useToast } from "@/components/exits/ToastProvider";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Button } from "@/components/ui/button";
+import type { ShopCheckoutUiMode } from "@/features/customer-ordering/checkout-place-readiness";
 import { isKiloStorefrontProduct } from "@/features/customer-ordering/storefront-availability";
 import type { PersonalMerchantCartLine } from "@/features/customer-ordering/personal-merchant-cart";
-import { useStorefrontProductImageUrl } from "@/features/customer-ordering/use-storefront-product-image";
+import { formatShopCartQtyPriceMeta } from "@/features/customer-ordering/shop-cart-line-meta";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
-import { formatUnitOfMeasureSymbol } from "@/lib/unit-of-measure";
 
 type ShopOrderCartProps = {
   lines: PersonalMerchantCartLine[];
@@ -28,9 +29,12 @@ type ShopOrderCartProps = {
   onEditWeight: (product: CustomerStorefrontProductDto) => void;
   onClear: () => void;
   onContinue?: () => void;
+  onScheduleOrder?: () => void;
   /** Shop cart shows Continue to payment. Checkout reuses the cart without that button. */
   showPayButton?: boolean;
   continueBlockedDetail?: string | null;
+  checkoutMode?: ShopCheckoutUiMode;
+  storeStatusMessage?: string | null;
 };
 
 function lineProduct(
@@ -62,35 +66,10 @@ function cartLineInitial(name: string): string {
   return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
 }
 
-function ShopCartLineThumb({
-  workspace,
-  sellerOrganizationId,
-  productId,
-  hasImage,
-  imageVersion,
-  name,
-}: {
-  workspace: PosWorkspaceScope | null;
-  sellerOrganizationId: string;
-  productId: string;
-  hasImage: boolean;
-  imageVersion?: number | null;
-  name: string;
-}) {
-  const imageUrl = useStorefrontProductImageUrl(
-    workspace,
-    sellerOrganizationId,
-    productId,
-    hasImage,
-    imageVersion,
-  );
+function ShopCartLineThumb({ name }: { name: string }) {
   return (
-    <div className="sell-cart-line__media" aria-hidden>
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className="sell-cart-line__image" />
-      ) : (
-        <span className="sell-cart-line__initial">{cartLineInitial(name)}</span>
-      )}
+    <div className="sell-cart-line__media sell-cart-line__media--fallback" aria-hidden>
+      <span className="sell-cart-line__initial">{cartLineInitial(name)}</span>
     </div>
   );
 }
@@ -98,8 +77,8 @@ function ShopCartLineThumb({
 export function ShopOrderCart({
   lines,
   productsById,
-  workspace,
-  sellerOrganizationId,
+  workspace: _workspace,
+  sellerOrganizationId: _sellerOrganizationId,
   subtotal,
   showClose = false,
   onClose,
@@ -107,13 +86,18 @@ export function ShopOrderCart({
   onEditWeight,
   onClear,
   onContinue,
+  onScheduleOrder,
   showPayButton = true,
   continueBlockedDetail = null,
+  checkoutMode = "open",
+  storeStatusMessage = null,
 }: ShopOrderCartProps) {
   const { t } = useI18n();
+  const toast = useToast();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const lineCount = lines.length;
-  const canContinue = lineCount > 0 && !continueBlockedDetail;
+  const canContinue = lineCount > 0 && checkoutMode === "open" && !continueBlockedDetail;
+  const statusLine = storeStatusMessage?.trim() || null;
 
   return (
     <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -130,8 +114,9 @@ export function ShopOrderCart({
           {lineCount > 0 ? (
             <Button
               type="button"
-              variant="ghost"
-              className="min-h-8 px-2 text-[length:var(--exits-text-xs)] text-muted"
+              intent="danger"
+              appearance="ghost"
+              className="sell-cart-clear min-h-9 px-2.5 text-[length:var(--exits-text-md)] font-bold"
               onClick={() => setClearConfirmOpen(true)}
             >
               {t("sell.cartClear")}
@@ -162,7 +147,6 @@ export function ShopOrderCart({
             const product = lineProduct(line, productsById.get(line.productId));
             const kilo = isKiloStorefrontProduct(product);
             const qtyLabel = formatQuantityDisplay(line.quantity);
-            const unitLabel = kilo ? "kg" : formatUnitOfMeasureSymbol(line.unitOfMeasure);
             const amount = Math.round(line.unitPrice * line.quantity * 100) / 100;
             const atStockCap =
               product.tracksInventory &&
@@ -171,44 +155,38 @@ export function ShopOrderCart({
 
             return (
               <li key={line.productId} className="sell-cart-line sell-cart-line--enter">
-                <ShopCartLineThumb
-                  workspace={workspace}
-                  sellerOrganizationId={sellerOrganizationId}
-                  productId={line.productId}
-                  hasImage={product.hasImage === true}
-                  imageVersion={product.imageVersion}
-                  name={line.name}
-                />
-                <div className="sell-cart-line__body">
-                  <div className="sell-cart-line__top">
+                <ShopCartLineThumb name={line.name} />
+                <div className="sell-cart-line__body sell-cart-line__body--shop">
+                  <div className="sell-cart-line__copy">
                     <p className="sell-cart-line__name">{line.name}</p>
-                    <div className="sell-cart-line__price-actions">
-                      <MoneyDisplay amount={amount} className="sell-cart-line__amount" />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="sell-cart-line__remove"
-                        aria-label={t("sell.cartRemoveLine")}
-                        onClick={() => onChangeQuantity(product, 0)}
-                      >
-                        <Trash2 className="size-4" aria-hidden strokeWidth={2} />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="sell-cart-line__bottom">
+                    <MoneyDisplay amount={amount} className="sell-cart-line__amount" />
                     <span className="sell-cart-line__meta">
-                      {kilo ? t("sell.tileByWeight") : product.unitOfMeasure}
                       <span className="sell-cart-line__unit-price">
-                        {" "}
-                        · {qtyLabel}×₱{line.unitPrice.toFixed(2)}
+                        {formatShopCartQtyPriceMeta(
+                          line.unitOfMeasure,
+                          line.quantity,
+                          line.unitPrice,
+                        )}
                       </span>
                     </span>
+                  </div>
+                  <div className="sell-cart-line__side">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="sell-cart-line__remove"
+                      aria-label={t("sell.cartRemoveLine")}
+                      onClick={() => onChangeQuantity(product, 0)}
+                    >
+                      <Trash2 className="size-4" aria-hidden strokeWidth={2} />
+                    </Button>
                     <div className="sell-cart-line__qty">
                       {kilo ? (
                         <QuantityStepper
                           compact
-                          variant="auto"
-                          value={`${qtyLabel}kg`}
+                          variant="pill"
+                          className="quantity-stepper--soft-glass quantity-stepper--shop-pill"
+                          value={qtyLabel}
                           decreaseLabel={t("sell.cartDecrease")}
                           increaseLabel={t("sell.cartIncrease")}
                           valueClickLabel={t("sell.weightEditTitle")}
@@ -224,10 +202,10 @@ export function ShopOrderCart({
                       ) : (
                         <QuantityStepper
                           compact
-                          variant="auto"
+                          variant="pill"
+                          className="quantity-stepper--soft-glass quantity-stepper--shop-pill"
                           editOnClick
                           value={qtyLabel}
-                          unit={unitLabel}
                           decreaseLabel={t("sell.cartDecrease")}
                           increaseLabel={t("sell.cartIncrease")}
                           valueClickLabel={t("sell.quantityDirect")}
@@ -260,28 +238,83 @@ export function ShopOrderCart({
           </span>
           <MoneyDisplay
             amount={subtotal}
-            className="sell-cart-footer__total-amount text-[length:var(--exits-text-md)] font-bold"
+            className="sell-cart-footer__total-amount text-[length:var(--exits-text-lg)] font-bold"
           />
         </div>
         {showPayButton ? (
           <>
-            <Button
-              type="button"
-              data-testid="shop-review"
-              disabled={!canContinue}
-              className={cn(
-                "sell-cart-pay w-full",
-                canContinue ? "sell-cart-pay--ready" : "sell-cart-pay--disabled",
-              )}
-              onClick={() => {
-                if (canContinue) {
-                  onContinue?.();
-                }
-              }}
-            >
-              {lineCount > 0 ? t("sell.continueToPayment") : t("sell.pay")}
-            </Button>
-            {canContinue ? null : (
+            {checkoutMode === "paused" && lineCount > 0 ? (
+              <div
+                className="pc-shop-cart-notice personal-qa-glass personal-qa-glass--info flex flex-col gap-1 p-3 text-[length:var(--exits-text-sm)]"
+                data-testid="shop-checkout-paused"
+                data-shell="soft-glass"
+              >
+                <p className="m-0 font-semibold">{t("orders.shopPausedTitle")}</p>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("orders.placePaused")}
+                </p>
+              </div>
+            ) : null}
+            {(checkoutMode === "schedule" || checkoutMode === "closed") && lineCount > 0 ? (
+              <div
+                className="pc-shop-cart-notice personal-qa-glass personal-qa-glass--info flex flex-col gap-1 p-3"
+                data-testid="shop-checkout-closed"
+                data-shell="soft-glass"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("orders.storeCurrentlyClosed")}
+                </p>
+                {statusLine ? (
+                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="shop-store-status">
+                    {statusLine}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            {checkoutMode === "open" ? (
+              <Button
+                type="button"
+                data-testid="shop-review"
+                disabled={!canContinue}
+                className={cn(
+                  "sell-cart-pay w-full",
+                  canContinue ? "sell-cart-pay--ready" : "sell-cart-pay--disabled",
+                )}
+                onClick={() => {
+                  if (canContinue) {
+                    onContinue?.();
+                  }
+                }}
+              >
+                {lineCount > 0 ? t("sell.continueToPayment") : t("sell.pay")}
+              </Button>
+            ) : null}
+            {checkoutMode === "schedule" && lineCount > 0 ? (
+              <Button
+                type="button"
+                intent="primary"
+                appearance="solid"
+                className="sell-cart-pay sell-cart-pay--ready w-full"
+                data-testid="shop-schedule-order"
+                onClick={() => onScheduleOrder?.()}
+              >
+                {t("orders.scheduleOrder")}
+              </Button>
+            ) : null}
+            {(checkoutMode === "schedule" || checkoutMode === "closed" || checkoutMode === "paused")
+            && lineCount > 0 ? (
+              <Button
+                type="button"
+                intent="neutral"
+                appearance="outline"
+                className="w-full"
+                data-testid="shop-save-cart"
+                onClick={() => toast.success(t("orders.saveCartForLaterConfirm"))}
+              >
+                {t("orders.saveCartForLater")}
+              </Button>
+            ) : null}
+            {checkoutMode === "open" && !canContinue ? (
               <p
                 className="sell-cart-footer__hint m-0 text-center text-[length:var(--exits-text-xs)] text-muted"
                 data-testid="shop-checkout-blocked"
@@ -290,7 +323,15 @@ export function ShopOrderCart({
                   ? continueBlockedDetail
                   : t("sell.payAddItems")}
               </p>
-            )}
+            ) : null}
+            {checkoutMode === "blocked" && lineCount > 0 && continueBlockedDetail ? (
+              <p
+                className="sell-cart-footer__hint m-0 text-center text-[length:var(--exits-text-xs)] text-muted"
+                data-testid="shop-checkout-blocked"
+              >
+                {continueBlockedDetail}
+              </p>
+            ) : null}
           </>
         ) : null}
       </div>

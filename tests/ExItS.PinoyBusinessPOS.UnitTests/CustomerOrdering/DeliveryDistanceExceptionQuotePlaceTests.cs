@@ -369,7 +369,8 @@ public sealed class DeliveryDistanceExceptionQuotePlaceTests
                 DeliveryServiceAreas:
                 [
                     new CustomerOrderDeliveryServiceAreaSnapshot(AreaA, "Bacolod City", "Negros Occidental")
-                ]);
+                ],
+                StoreIsOpenNow: customerOrderingOperational);
     }
 
     private sealed class FakeStock : ICustomerOrderStockService

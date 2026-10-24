@@ -77,4 +77,24 @@ public sealed class RequestedPickupScheduleTests
             hours);
         Assert.True(during.IsSuccess);
     }
+
+    [Fact]
+    public void Time_before_same_day_opening_is_rejected()
+    {
+        var hours = new[]
+        {
+            new CustomerOrderBranchHoursDaySnapshot("Friday", false, false, "10:00", "18:00")
+        };
+        // 2026-10-09 is Friday; Asia/Manila = UTC+8 so Now 04:00 UTC is 12:00 local — use future day.
+        var early = RequestedPickupSchedule.Resolve(
+            CustomerOrderFulfillmentType.Pickup,
+            "2026-10-09",
+            "09:00",
+            "Asia/Manila",
+            Now,
+            hours);
+
+        Assert.False(early.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPickupRequest, early.ErrorCode);
+    }
 }

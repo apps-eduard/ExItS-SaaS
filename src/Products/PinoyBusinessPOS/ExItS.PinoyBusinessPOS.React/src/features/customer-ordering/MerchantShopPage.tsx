@@ -22,7 +22,10 @@ import { PersonalStoreIdentityCard } from "@/features/customer-ordering/Personal
 import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
-import { shopCheckoutBlocker } from "@/features/customer-ordering/checkout-place-readiness";
+import {
+  shopCheckoutBlocker,
+  shopCheckoutUiMode,
+} from "@/features/customer-ordering/checkout-place-readiness";
 import { ShopOrderCart } from "@/features/customer-ordering/ShopOrderCart";
 import { StoreProductCard } from "@/features/customer-ordering/StoreProductCard";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
@@ -37,6 +40,7 @@ import {
   personalCustomerRelationshipLabel,
   personalStoreDisplayName,
 } from "@/features/customer-ordering/format-personal-store-label";
+import { useCustomerStorefrontRealtime } from "@/features/customer-ordering/useCustomerStorefrontRealtime";
 import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
 import { useLinkedMerchantsOrderingProbes } from "@/features/customer-ordering/useLinkedMerchantsOrderingProbes";
 import { normalizePublicBranchId } from "@/features/store/business-qr-url";
@@ -76,6 +80,7 @@ export function MerchantShopPage() {
   const online = useBrowserOnline();
   const { organizationId = "" } = useParams();
   const [searchParams] = useSearchParams();
+  useCustomerStorefrontRealtime(organizationId || null);
   const { cart, merchandiseSubtotal, ensureMerchant, increment, setQuantity, clearLines, quantityOf } =
     usePersonalMerchantCart();
   const sideCartLayout = useMediaMin(1024);
@@ -373,11 +378,20 @@ export function MerchantShopPage() {
     storefront.canCustomerDelivery,
     storefront.fulfillmentAvailability,
   );
+  const checkoutMode = shopCheckoutUiMode(
+    storefront.branches,
+    storefront.canCustomerDelivery,
+    storefront.fulfillmentAvailability,
+    selectedBranch,
+  );
   const continueToCheckout = () => {
-    if (checkoutBlock) {
+    if (checkoutBlock && checkoutMode !== "schedule") {
       return;
     }
     navigate(`/personal/linked-merchants/${organizationId}/shop/checkout`);
+  };
+  const scheduleCheckout = () => {
+    navigate(`/personal/linked-merchants/${organizationId}/shop/checkout?schedule=1`);
   };
   const cartPanel = (sheet: boolean) => (
     <ShopOrderCart
@@ -392,12 +406,19 @@ export function MerchantShopPage() {
       onEditWeight={setWeightProduct}
       onClear={clearLines}
       onContinue={continueToCheckout}
+      onScheduleOrder={scheduleCheckout}
       continueBlockedDetail={checkoutBlock ? t(checkoutBlock) : null}
+      checkoutMode={checkoutMode}
+      storeStatusMessage={selectedBranch?.storeStatusMessage ?? null}
     />
   );
 
   return (
-    <div className={`${pageShell} merchant-shop-page--floor`} data-testid="merchant-shop-page">
+    <div
+      className={`${pageShell} merchant-shop-page--floor`}
+      data-shell="soft-glass"
+      data-testid="merchant-shop-page"
+    >
       <PageHeader
         variant="compact"
         title={storeName || t("personal.shopLink")}

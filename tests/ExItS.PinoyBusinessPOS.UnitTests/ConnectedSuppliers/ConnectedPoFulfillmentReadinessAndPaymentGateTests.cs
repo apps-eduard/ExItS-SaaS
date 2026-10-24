@@ -312,7 +312,8 @@ public sealed class ConnectedPoFulfillmentReadinessAndPaymentGateTests
                 Longitude: null,
                 DeliveryPolicy: null,
                 PickupReady: pickupReady,
-                DeliveryReady: deliveryReady));
+                DeliveryReady: deliveryReady,
+                StoreIsOpenNow: true));
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
             Guid sellerOrganizationId,

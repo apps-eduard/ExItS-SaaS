@@ -3,6 +3,7 @@ import {
   checkoutPlaceBlocker,
   checkoutPlaceDisabled,
   shopCheckoutBlocker,
+  shopCheckoutUiMode,
   type CheckoutPlaceState,
 } from "@/features/customer-ordering/checkout-place-readiness";
 import type { CustomerStorefrontBranchDto } from "@/api/pos/pos-customer-orders-client";
@@ -44,6 +45,9 @@ function branch(partial: Partial<CustomerStorefrontBranchDto>): CustomerStorefro
     onlineOrdersPaused: false,
     storeStatusMessage: null,
     deliveryServiceAreas: [],
+    acceptScheduledOrdersWhileClosed: false,
+    minPreparationLeadMinutes: 0,
+    maxAdvanceScheduleDays: 0,
     ...partial,
     operatingHours: partial.operatingHours === undefined ? [] : partial.operatingHours,
   };
@@ -65,7 +69,7 @@ describe("checkout place readiness", () => {
   });
 
   it("explains every invalid checkout instead of a silent return", () => {
-    const cases: Array<[Partial<CheckoutPlaceState>, string]> = [
+    const cases: Array<[Partial<CheckoutPlaceState>, string | null]> = [
       [{ workspaceMissing: true }, "orders.checkoutMissingWorkspace"],
       [{ cartEmpty: true }, "orders.checkoutEmptyCart"],
       [{ selectionMissing: true, branchId: null }, "orders.placePickupUnavailable"],
@@ -78,6 +82,24 @@ describe("checkout place readiness", () => {
       [{ canPlace: false, onlineOrdersPaused: true }, "orders.placePaused"],
       [{ canPlace: false, fulfillmentAvailability: "no-method", branchId: null }, "orders.placeNoFulfillmentMethod"],
       [{ canPlace: false, fulfillmentAvailability: "store-closed" }, "orders.placeStoreClosed"],
+      [
+        {
+          canPlace: false,
+          fulfillmentAvailability: "store-closed",
+          scheduleRequired: true,
+          scheduleComplete: false,
+        },
+        "orders.scheduleDateTimeRequired",
+      ],
+      [
+        {
+          canPlace: false,
+          fulfillmentAvailability: "store-closed",
+          scheduleRequired: true,
+          scheduleComplete: true,
+        },
+        null,
+      ],
     ];
     for (const [overrides, message] of cases) {
       expect(checkoutPlaceBlocker(ready(overrides))).toBe(message);
@@ -124,6 +146,30 @@ describe("shop checkout guard", () => {
         "pickup-unavailable",
       ),
     ).toBe("orders.placePickupUnavailable");
+  });
+
+  it("allows schedule checkout when the storefront is closed but scheduling is available", () => {
+    expect(
+      shopCheckoutBlocker(
+        [branch({ pickupOperational: false, customerOrderingOperational: false })],
+        false,
+        "schedule-available",
+      ),
+    ).toBeNull();
+    expect(
+      shopCheckoutUiMode(
+        [branch({ pickupOperational: false, customerOrderingOperational: false })],
+        false,
+        "schedule-available",
+      ),
+    ).toBe("schedule");
+  });
+
+  it("treats manual pause separately from closed-by-hours", () => {
+    const pausedBranch = branch({ onlineOrdersPaused: true, customerOrderingOperational: false });
+    expect(
+      shopCheckoutUiMode([pausedBranch], false, "store-closed", pausedBranch),
+    ).toBe("paused");
   });
 
   it("allows a valid branch among several", () => {

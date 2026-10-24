@@ -907,7 +907,8 @@ export function SellFloorPage() {
   return (
     <div
       data-testid="sell-floor"
-      className="sell-floor-root flex min-h-0 min-w-0 flex-col"
+      data-shell="soft-glass"
+      className="sell-floor-root sell-floor-root--soft-glass flex min-h-0 min-w-0 flex-col"
     >
       {!online ? (
         <OnlineRequiredPageState
@@ -916,14 +917,16 @@ export function SellFloorPage() {
           testId="sell-online-required"
         />
       ) : null}
-      <div className="sell-floor-toolbar shrink-0 flex min-w-0 flex-col gap-1.5">
+      <div className="sell-floor-toolbar sell-floor-toolbar--soft-glass shrink-0 flex min-w-0 flex-col gap-1.5">
         <PageHeader
           variant="compact"
           title={t("sell.title")}
+          className="sell-floor-header"
           actions={
             <div className="page-header__actions-cluster">
               <FilterChip
                 data-testid="sell-info-toggle"
+                shape="pill"
                 selected={infoOpen}
                 aria-label={t("sell.infoToggle")}
                 aria-expanded={infoOpen}
@@ -935,6 +938,7 @@ export function SellFloorPage() {
               </FilterChip>
               <FilterChip
                 data-testid="sell-out-of-stock-toggle"
+                shape="pill"
                 selected={showOutOfStock}
                 aria-label={showOutOfStock ? t("sell.hideOutOfStock") : t("sell.showOutOfStock")}
                 onClick={() => setShowOutOfStock((open) => !open)}

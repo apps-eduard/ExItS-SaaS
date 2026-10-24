@@ -26,7 +26,42 @@ export type CheckoutPlaceState = {
   deliveryQuoteUnavailable: boolean;
   buyerIdentityMissing: boolean;
   linkedCustomerMissing: boolean;
+  /** When true, date and time are required before place (closed store or schedule checkout). */
+  scheduleRequired?: boolean;
+  scheduleComplete?: boolean;
 };
+
+export type ShopCheckoutUiMode = "open" | "schedule" | "paused" | "closed" | "blocked";
+
+export function shopCheckoutUiMode(
+  branches: CustomerStorefrontBranchDto[],
+  canCustomerDelivery: boolean,
+  fulfillmentAvailability?: string | null,
+  selectedBranch?: CustomerStorefrontBranchDto | null,
+): ShopCheckoutUiMode {
+  const availability = fulfillmentAvailability ?? null;
+  if (selectedBranch?.onlineOrdersPaused || availability === "paused") {
+    return "paused";
+  }
+
+  const immediate = branches.some(
+    (branch) =>
+      !branch.onlineOrdersPaused
+      && branch.customerOrderingOperational
+      && ((branch.pickupEnabled && branch.pickupOperational)
+        || (canCustomerDelivery && branch.deliveryEnabled && branch.deliveryOperational)),
+  );
+  if (immediate) {
+    return "open";
+  }
+  if (availability === "schedule-available") {
+    return "schedule";
+  }
+  if (availability === "store-closed") {
+    return "closed";
+  }
+  return "blocked";
+}
 
 export function checkoutPlaceBlocker(state: CheckoutPlaceState): MessageKey | null {
   if (state.busy || state.merchantContextLoading) {
@@ -47,11 +82,21 @@ export function checkoutPlaceBlocker(state: CheckoutPlaceState): MessageKey | nu
   if (state.selectionMissing || !state.branchId) {
     return fulfillmentBlockerMessage(state.fulfillmentAvailability, state.fulfillmentType);
   }
+  if (state.onlineOrdersPaused) {
+    return "orders.placePaused";
+  }
+  if (state.scheduleRequired && !state.scheduleComplete) {
+    return "orders.scheduleDateTimeRequired";
+  }
   if (!state.canPlace) {
-    return fulfillmentBlockerMessage(
-      state.onlineOrdersPaused ? "paused" : state.fulfillmentAvailability,
-      state.fulfillmentType,
-    );
+    if (state.scheduleRequired && state.scheduleComplete) {
+      // Scheduled placement while closed — server validates; do not hard-block on operational flags.
+    } else {
+      return fulfillmentBlockerMessage(
+        state.fulfillmentAvailability,
+        state.fulfillmentType,
+      );
+    }
   }
   if (state.paymentMethod === "ManualGCash" && state.gcashReference.trim().length === 0) {
     return "checkout.gcashReferenceRequired";
@@ -87,6 +132,8 @@ export function fulfillmentBlockerMessage(
       return "orders.placeNoFulfillmentMethod";
     case "store-closed":
       return "orders.placeStoreClosed";
+    case "schedule-available":
+      return "orders.scheduleDateTimeRequired";
     case "delivery-unavailable":
       return "orders.placeDeliveryUnavailable";
     case "pickup-unavailable":
@@ -103,6 +150,11 @@ export function shopCheckoutBlocker(
   canCustomerDelivery: boolean,
   fulfillmentAvailability?: string | null,
 ): MessageKey | null {
+  const availability = fulfillmentAvailability ?? null;
+  if (availability === "schedule-available") {
+    return null;
+  }
+
   const placeable = branches.some(
     (branch) =>
       !branch.onlineOrdersPaused
@@ -113,6 +165,11 @@ export function shopCheckoutBlocker(
   if (placeable) {
     return null;
   }
+
+  if (availability === "paused") {
+    return "orders.placePaused";
+  }
+
   const selection = resolveFulfillmentSelection(
     branches,
     canCustomerDelivery,
@@ -122,7 +179,7 @@ export function shopCheckoutBlocker(
     null,
   );
   if (!pickupAvailable(branches) && !deliveryAvailable(branches, canCustomerDelivery)) {
-    return fulfillmentBlockerMessage(fulfillmentAvailability ?? "no-method", selection.fulfillmentType);
+    return fulfillmentBlockerMessage(availability ?? "no-method", selection.fulfillmentType);
   }
-  return fulfillmentBlockerMessage(fulfillmentAvailability, selection.fulfillmentType);
+  return fulfillmentBlockerMessage(availability, selection.fulfillmentType);
 }

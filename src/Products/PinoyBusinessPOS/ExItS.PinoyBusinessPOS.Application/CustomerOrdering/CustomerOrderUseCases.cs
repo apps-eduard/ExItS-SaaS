@@ -235,35 +235,14 @@ public sealed class PlaceCustomerOrder
                     "Fulfillment branch was not found for this organization.");
             }
 
-            if (fulfillmentType == CustomerOrderFulfillmentType.Pickup && !branch.PickupOperational)
+            var branchGate = CustomerOrderPlaceBranchGate.Validate(
+                branch,
+                fulfillmentType,
+                sellerCapability.CanCustomerDelivery,
+                CustomerOrderPlaceBranchGate.HasRequestedSchedule(fulfillmentType, request));
+            if (!branchGate.IsSuccess)
             {
-                return ApplicationResult<CustomerOrderDto>.Failure(
-                    ApplicationErrorCodes.CustomerOrderBranchCapability,
-                    branch.OnlineOrdersPaused
-                        ? "This store is temporarily not accepting online orders."
-                        : branch.CustomerOrderingEnabled
-                            ? "Pickup is not available at this time."
-                            : "Pickup is not enabled for this branch.");
-            }
-
-            if (fulfillmentType == CustomerOrderFulfillmentType.Delivery && !branch.DeliveryOperational)
-            {
-                return ApplicationResult<CustomerOrderDto>.Failure(
-                    ApplicationErrorCodes.CustomerOrderBranchCapability,
-                    branch.OnlineOrdersPaused
-                        ? "This store is temporarily not accepting online orders."
-                        : branch.DeliveryEnabled
-                            ? "Delivery is not available at this time."
-                            : "Delivery is not enabled for this branch.");
-            }
-
-            if (!branch.CustomerOrderingOperational)
-            {
-                return ApplicationResult<CustomerOrderDto>.Failure(
-                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
-                    branch.OnlineOrdersPaused
-                        ? "This store is temporarily not accepting online orders."
-                        : "This store is not accepting online orders right now.");
+                return ApplicationResult<CustomerOrderDto>.Failure(branchGate.ErrorCode!, branchGate.ErrorMessage!);
             }
 
             if (request.Lines is null || request.Lines.Count == 0)
@@ -391,19 +370,51 @@ public sealed class PlaceCustomerOrder
                 return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
             }
 
-            var pickup = RequestedPickupSchedule.Resolve(
-                fulfillmentType,
-                request.RequestedPickupDate,
-                request.RequestedPickupTime,
-                branch.TimeZoneId,
-                now,
-                branch.OperatingHours);
-            if (!pickup.IsSuccess)
-            {
-                return ApplicationResult<CustomerOrderDto>.Failure(pickup.ErrorCode!, pickup.ErrorMessage!);
-            }
+            string? requestedPickupLocal = null;
+            string? requestedPickupTimeZoneId = null;
+            DateTimeOffset? requestedPickupAtUtc = null;
+            string? requestedDeliveryLocal = null;
+            string? requestedDeliveryTimeZoneId = null;
+            DateTimeOffset? requestedDeliveryAtUtc = null;
 
-            var (requestedPickupLocal, requestedPickupTimeZoneId, requestedPickupAtUtc) = pickup.Value;
+            if (fulfillmentType == CustomerOrderFulfillmentType.Pickup)
+            {
+                var pickup = RequestedPickupSchedule.Resolve(
+                    fulfillmentType,
+                    request.RequestedPickupDate,
+                    request.RequestedPickupTime,
+                    branch.TimeZoneId,
+                    now,
+                    branch.OperatingHours,
+                    branch.MinPreparationLeadMinutes,
+                    branch.MaxAdvanceScheduleDays);
+                if (!pickup.IsSuccess)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(pickup.ErrorCode!, pickup.ErrorMessage!);
+                }
+
+                (requestedPickupLocal, requestedPickupTimeZoneId, requestedPickupAtUtc) = pickup.Value;
+            }
+            else
+            {
+                var deliverySchedule = RequestedFulfillmentSchedule.Resolve(
+                    CustomerOrderFulfillmentType.Delivery,
+                    request.RequestedDeliveryDate,
+                    request.RequestedDeliveryTime,
+                    branch.TimeZoneId,
+                    now,
+                    branch.OperatingHours,
+                    branch.MinPreparationLeadMinutes,
+                    branch.MaxAdvanceScheduleDays);
+                if (!deliverySchedule.IsSuccess)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        deliverySchedule.ErrorCode!,
+                        deliverySchedule.ErrorMessage!);
+                }
+
+                (requestedDeliveryLocal, requestedDeliveryTimeZoneId, requestedDeliveryAtUtc) = deliverySchedule.Value;
+            }
 
             var businessDate = CustomerOrderNumbers.BusinessDateOf(now);
 
@@ -470,7 +481,10 @@ public sealed class PlaceCustomerOrder
                                     paymentReference,
                                     requestedPickupLocal,
                                     requestedPickupTimeZoneId,
-                                    requestedPickupAtUtc),
+                                    requestedPickupAtUtc,
+                                    requestedDeliveryLocal,
+                                    requestedDeliveryTimeZoneId,
+                                    requestedDeliveryAtUtc),
                                 cancellationToken: ct)
                             .ConfigureAwait(false);
                         return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
@@ -514,7 +528,10 @@ public sealed class PlaceCustomerOrder
                             paymentReference,
                             requestedPickupLocal,
                             requestedPickupTimeZoneId,
-                            requestedPickupAtUtc),
+                            requestedPickupAtUtc,
+                            requestedDeliveryLocal,
+                            requestedDeliveryTimeZoneId,
+                            requestedDeliveryAtUtc),
                         cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }

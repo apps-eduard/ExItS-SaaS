@@ -18,6 +18,7 @@ import {
   listOrganizationBranchesForFulfillment,
   normalizeFulfillmentReadiness,
   setBranchOnlineOrdersPaused,
+  updateBranchFulfillmentSettings,
   updateOrganizationBranch,
   upsertBranchDeliveryPolicy,
   upsertBranchOperatingHours,
@@ -60,6 +61,7 @@ import { BranchDeliveryPolicyForm } from "@/features/branches/BranchDeliveryPoli
 import { BranchDetailsForm } from "@/features/branches/BranchDetailsForm";
 import { BranchHoursForm } from "@/features/branches/BranchHoursForm";
 import { BranchOverviewPanel } from "@/features/branches/BranchOverviewPanel";
+import { BranchScheduledOrdersSettingsPanel } from "@/features/branches/BranchScheduledOrdersSettingsPanel";
 import { BranchPoFulfillmentReadinessPanel } from "@/features/branches/BranchPoFulfillmentReadinessPanel";
 import { organizationOfferDeliveryQueryKey } from "@/features/branches/offer-delivery-queries";
 import { hasEnabledPoPaymentMethod, requirementIsMissing } from "@/features/shell/needs-attention";
@@ -564,6 +566,36 @@ export function BranchFulfillmentEditPage() {
     }
   }
 
+  async function saveScheduledOrderSettings(payload: {
+    acceptScheduledOrdersWhileClosed: boolean;
+    minPreparationLeadMinutes: number;
+    maxAdvanceScheduleDays: number;
+  }) {
+    if (!organizationId || busy || !canManage) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setOkMessage(null);
+    try {
+      const next = await updateBranchFulfillmentSettings(organizationId, branchId, payload);
+      setReadiness(next);
+      await queryClient.invalidateQueries({
+        queryKey: ["branch-fulfillment-list", organizationId],
+      });
+      await invalidateCommerceReadinessQueries();
+      setOkMessage(t("branches.savedScheduledOrders"));
+    } catch (err) {
+      setError(
+        err instanceof PlatformApiError
+          ? (err.problem.detail ?? t("branches.fulfillmentFailed"))
+          : t("branches.fulfillmentFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function pauseOrders(paused: boolean) {
     if (!organizationId || busy) {
       return;
@@ -677,6 +709,13 @@ export function BranchFulfillmentEditPage() {
             catalogOk={supplierSummaryQuery.data?.catalogOk ?? null}
             paymentsOk={supplierSummaryQuery.data?.paymentsOk ?? null}
             contactOk={supplierSummaryQuery.data?.contactOk ?? null}
+          />
+          <BranchScheduledOrdersSettingsPanel
+            readiness={currentReadiness}
+            busy={busy}
+            canManage={canManage}
+            t={t}
+            onSave={saveScheduledOrderSettings}
           />
           <BranchOverviewPanel
             readiness={currentReadiness}

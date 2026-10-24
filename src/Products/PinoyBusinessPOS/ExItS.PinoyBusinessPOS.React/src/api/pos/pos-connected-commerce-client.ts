@@ -237,6 +237,9 @@ export async function updateBranchFulfillmentSettingsViaPos(
     customerOrderingEnabled?: boolean | null;
     pickupEnabled?: boolean | null;
     deliveryEnabled?: boolean | null;
+    acceptScheduledOrdersWhileClosed?: boolean | null;
+    minPreparationLeadMinutes?: number | null;
+    maxAdvanceScheduleDays?: number | null;
   },
   signal?: AbortSignal,
 ): Promise<unknown> {

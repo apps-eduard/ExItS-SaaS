@@ -58,13 +58,15 @@ describe("SellWeightEntryDialog", () => {
 
     expect(screen.getByTestId("sell-weight-confirm")).toBeDisabled();
     expect(screen.getByTestId("sell-stock-hint")).toHaveTextContent("On hand: 5 kg");
+    expect(screen.queryByTestId("sell-weight-unit-g")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sell-weight-unit-kg")).not.toBeInTheDocument();
 
     await user.type(screen.getByTestId("sell-weight-input"), "1.25");
     expect(screen.getByTestId("sell-weight-confirm")).toBeEnabled();
     expect(screen.getByTestId("sell-weight-preview")).toHaveTextContent(formatPeso(275));
   });
 
-  it("converts grams and blocks over-stock entries", async () => {
+  it("blocks over-stock entries in kilograms only", async () => {
     const user = userEvent.setup();
     render(
       <AppProviders>
@@ -78,13 +80,7 @@ describe("SellWeightEntryDialog", () => {
       </AppProviders>,
     );
 
-    await user.click(screen.getByTestId("sell-weight-unit-g"));
-    await user.type(screen.getByTestId("sell-weight-input"), "250");
-    expect(screen.getByTestId("sell-weight-conversion")).toHaveTextContent("250 g = 0.250 kg");
-    expect(screen.getByTestId("sell-weight-preview")).toHaveTextContent(formatPeso(55));
-
-    await user.clear(screen.getByTestId("sell-weight-input"));
-    await user.type(screen.getByTestId("sell-weight-input"), "6000");
+    await user.type(screen.getByTestId("sell-weight-input"), "6");
     expect(screen.getByTestId("sell-weight-inline-error")).toHaveTextContent(
       "Only 5.00 kg available.",
     );

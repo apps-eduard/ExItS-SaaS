@@ -329,7 +329,8 @@ public sealed class PersonalStorefrontAuthorizationTests
                 DeliveryServiceAreas:
                 [
                     new CustomerOrderDeliveryServiceAreaSnapshot(ServiceArea, "Manila", "NCR")
-                ]);
+                ],
+                StoreIsOpenNow: true);
     }
 
     private sealed class OfflineOnlineBranches(bool enabled = false, bool paused = false)

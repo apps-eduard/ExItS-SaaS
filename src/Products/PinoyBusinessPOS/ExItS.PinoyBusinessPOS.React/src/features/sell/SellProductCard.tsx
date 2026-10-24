@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -85,8 +86,11 @@ export function SellProductCard({
             decoding="async"
           />
         ) : (
-          <span className="sell-product-card__initial" aria-hidden>
-            {productInitial(product.name)}
+          <span className="sell-product-card__fallback" aria-hidden>
+            <Package className="sell-product-card__fallback-icon" strokeWidth={1.75} />
+            <span className="sell-product-card__initial">
+              {productInitial(product.name)}
+            </span>
           </span>
         )}
       </div>

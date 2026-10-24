@@ -156,7 +156,11 @@ export function PersonalStoreIdentityCard({
 }) {
   return (
     <section
-      className={cn("pc-store-card pc-store-card--static exits-animate-panel", className)}
+      className={cn(
+        "pc-store-card pc-store-card--static pc-store-card--soft-glass exits-animate-panel",
+        className,
+      )}
+      data-shell="soft-glass"
       data-testid={testId}
     >
       <PersonalStoreIdentity {...identity} />

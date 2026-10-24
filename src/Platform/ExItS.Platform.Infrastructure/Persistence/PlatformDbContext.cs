@@ -599,6 +599,15 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.TimeZoneId).HasColumnName("time_zone_id").HasMaxLength(64);
             entity.Property(e => e.OnlineOrdersPaused).HasColumnName("online_orders_paused").HasDefaultValue(false);
             entity.Property(e => e.OnlineOrdersPauseReason).HasColumnName("online_orders_pause_reason").HasMaxLength(32);
+            entity.Property(e => e.AcceptScheduledOrdersWhileClosed)
+                .HasColumnName("accept_scheduled_orders_while_closed")
+                .HasDefaultValue(false);
+            entity.Property(e => e.MinPreparationLeadMinutes)
+                .HasColumnName("min_preparation_lead_minutes")
+                .HasDefaultValue(0);
+            entity.Property(e => e.MaxAdvanceScheduleDays)
+                .HasColumnName("max_advance_schedule_days")
+                .HasDefaultValue(0);
             entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
             entity.Property(e => e.AreaId).HasColumnName("area_id");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();

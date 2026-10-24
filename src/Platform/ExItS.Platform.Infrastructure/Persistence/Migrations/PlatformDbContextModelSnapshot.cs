@@ -3518,6 +3518,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("AcceptScheduledOrdersWhileClosed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("accept_scheduled_orders_while_closed");
+
                     b.Property<string>("AddressLine1")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -3590,6 +3596,18 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasPrecision(10, 7)
                         .HasColumnType("numeric(10,7)")
                         .HasColumnName("longitude");
+
+                    b.Property<int>("MaxAdvanceScheduleDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("max_advance_schedule_days");
+
+                    b.Property<int>("MinPreparationLeadMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("min_preparation_lead_minutes");
 
                     b.Property<string>("Name")
                         .IsRequired()
