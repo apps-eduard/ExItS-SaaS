@@ -23,7 +23,6 @@ function ready(overrides: Partial<CheckoutPlaceState> = {}): CheckoutPlaceState 
     onlineOrdersPaused: false,
     fulfillmentAvailability: "ready",
     paymentMethod: "Cash",
-    gcashReference: "",
     utangInsufficient: false,
     deliveryIncomplete: false,
     deliveryQuoteUnavailable: false,
@@ -75,7 +74,7 @@ describe("checkout place readiness", () => {
       [{ selectionMissing: true, branchId: null }, "orders.placePickupUnavailable"],
       [{ buyerIdentityMissing: true }, "orders.missingBuyerIdentity"],
       [{ linkedCustomerMissing: true }, "orders.missingLinkedCustomer"],
-      [{ paymentMethod: "ManualGCash", gcashReference: " " }, "checkout.gcashReferenceRequired"],
+      [{ paymentMethod: "ManualGCash" }, null],
       [{ paymentMethod: "Utang", utangInsufficient: true }, "orders.utangInsufficient"],
       [{ fulfillmentType: "Delivery", deliveryIncomplete: true }, "orders.deliveryFieldsRequired"],
       [{ fulfillmentType: "Delivery", deliveryQuoteUnavailable: true }, "orders.deliveryUnavailable"],
@@ -163,6 +162,16 @@ describe("shop checkout guard", () => {
         "schedule-available",
       ),
     ).toBe("schedule");
+  });
+
+  it("treats store-closed as schedule mode without AcceptScheduledOrdersWhileClosed", () => {
+    const closed = branch({
+      pickupOperational: false,
+      customerOrderingOperational: false,
+      acceptScheduledOrdersWhileClosed: false,
+    });
+    expect(shopCheckoutUiMode([closed], false, "store-closed", closed)).toBe("schedule");
+    expect(shopCheckoutBlocker([closed], false, "store-closed")).toBeNull();
   });
 
   it("treats manual pause separately from closed-by-hours", () => {

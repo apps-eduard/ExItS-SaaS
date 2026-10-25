@@ -2172,6 +2172,43 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(64);
             entity.Property(e => e.RequestedDeliveryAtUtc)
                 .HasColumnName("requested_delivery_at_utc");
+            entity.Property(e => e.PreferredFulfillmentDate)
+                .HasColumnName("preferred_fulfillment_date");
+            entity.Property(e => e.PreferredFulfillmentPeriod)
+                .HasColumnName("preferred_fulfillment_period")
+                .HasMaxLength(16);
+            entity.Property(e => e.PreferredFulfillmentTimeZoneId)
+                .HasColumnName("preferred_fulfillment_time_zone_id")
+                .HasMaxLength(64);
+            entity.Property(e => e.PreferredFulfillmentWindowStartUtc)
+                .HasColumnName("preferred_fulfillment_window_start_utc");
+            entity.Property(e => e.PreferredFulfillmentWindowEndUtc)
+                .HasColumnName("preferred_fulfillment_window_end_utc");
+            entity.Property(e => e.ConfirmedFulfillmentLocal)
+                .HasColumnName("confirmed_fulfillment_local")
+                .HasMaxLength(32);
+            entity.Property(e => e.ConfirmedFulfillmentTimeZoneId)
+                .HasColumnName("confirmed_fulfillment_time_zone_id")
+                .HasMaxLength(64);
+            entity.Property(e => e.ConfirmedFulfillmentAtUtc)
+                .HasColumnName("confirmed_fulfillment_at_utc");
+            entity.Property(e => e.PendingScheduleProposalId)
+                .HasColumnName("pending_schedule_proposal_id");
+            entity.Property(e => e.PendingScheduleProposalLocal)
+                .HasColumnName("pending_schedule_proposal_local")
+                .HasMaxLength(32);
+            entity.Property(e => e.PendingScheduleProposalTimeZoneId)
+                .HasColumnName("pending_schedule_proposal_time_zone_id")
+                .HasMaxLength(64);
+            entity.Property(e => e.PendingScheduleProposalAtUtc)
+                .HasColumnName("pending_schedule_proposal_at_utc");
+            entity.Property(e => e.PendingScheduleProposalNote)
+                .HasColumnName("pending_schedule_proposal_note")
+                .HasMaxLength(CustomerOrderScheduleProposal.NoteMaxLength);
+            entity.Property(e => e.PendingScheduleProposalBy)
+                .HasColumnName("pending_schedule_proposal_by");
+            entity.Property(e => e.PendingScheduleProposalProposedAtUtc)
+                .HasColumnName("pending_schedule_proposal_proposed_at_utc");
             entity.Property(e => e.FulfillmentType).HasColumnName("fulfillment_type").HasMaxLength(32).IsRequired();
             entity.Property(e => e.FulfillmentBranchId).HasColumnName("fulfillment_branch_id").IsRequired();
             entity.Property(e => e.BranchNameSnapshot)
@@ -2192,6 +2229,19 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.MerchandiseSubtotal).HasColumnName("merchandise_subtotal").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.DeliveryFee).HasColumnName("delivery_fee").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.Total).HasColumnName("total").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.OriginalMerchandiseSubtotal)
+                .HasColumnName("original_merchandise_subtotal")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.OriginalTotal)
+                .HasColumnName("original_total")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.CancelReason).HasColumnName("cancel_reason").HasMaxLength(64);
+            entity.Property(e => e.CancelNotes)
+                .HasColumnName("cancel_notes")
+                .HasMaxLength(CustomerOrder.RejectNotesMaxLength);
+            entity.Property(e => e.ActivityEventsJson).HasColumnName("activity_events_json");
 
             entity.Property(e => e.DeliveryRecipientName)
                 .HasColumnName("delivery_recipient_name")
@@ -2298,10 +2348,11 @@ public sealed class PosDbContext : DbContext
         {
             entity.ToTable("customer_order_lines", tb =>
             {
-                tb.HasCheckConstraint("ck_customer_order_lines_quantity_positive", "quantity > 0");
+                // Zero quantity = seller-cancelled line under partial fulfillment.
+                tb.HasCheckConstraint("ck_customer_order_lines_quantity_non_negative", "quantity >= 0");
                 tb.HasCheckConstraint(
                     "ck_customer_order_lines_amounts_non_negative",
-                    "unit_price >= 0 AND discount >= 0 AND line_total >= 0");
+                    "unit_price >= 0 AND discount >= 0 AND line_total >= 0 AND original_quantity >= 0 AND original_discount >= 0");
                 tb.HasCheckConstraint("ck_customer_order_lines_line_number_positive", "line_number > 0");
                 tb.HasCheckConstraint(
                     "ck_customer_order_lines_unit",
@@ -2326,9 +2377,17 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(UnitOfMeasures.CodeMaxLength)
                 .IsRequired();
             entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.OriginalQuantity).HasColumnName("original_quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.OriginalDiscount).HasColumnName("original_discount").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.Discount).HasColumnName("discount").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.AdjustmentReason)
+                .HasColumnName("adjustment_reason")
+                .HasMaxLength(64);
+            entity.Property(e => e.AdjustmentNote)
+                .HasColumnName("adjustment_note")
+                .HasMaxLength(CustomerOrderLine.AdjustmentNoteMaxLength);
 
             entity.HasIndex(e => new { e.OrderId, e.LineNumber })
                 .IsUnique()

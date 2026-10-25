@@ -263,15 +263,20 @@ function parseInitialDraft(
   time: DraftTime;
 } {
   const now = new Date();
+  const hour24 = now.getHours();
+  const nowTime: DraftTime = {
+    hour: String(hour24 % 12 || 12).padStart(2, "0"),
+    minute: String(now.getMinutes()).padStart(2, "0"),
+    period: hour24 >= 12 ? "PM" : "AM",
+  };
+  /** Empty open → today / now (same idea as Soft Glass Roll OPEN_SHOWS_CURRENT). */
   const fallbackDate: DraftDate = {
-    year: variant === "date" || variant === "time" ? now.getFullYear() : 2025,
-    month: variant === "date" || variant === "time" ? now.getMonth() : 1,
-    day: variant === "date" || variant === "time" ? now.getDate() : 20,
+    year: now.getFullYear(),
+    month: now.getMonth(),
+    day: now.getDate(),
   };
   const fallbackTime: DraftTime =
-    variant === "datetime"
-      ? { hour: "10", minute: "30", period: "AM" }
-      : { hour: "09", minute: "00", period: "PM" };
+    variant === "datetime" || variant === "time" ? nowTime : { hour: "09", minute: "00", period: "PM" };
 
   if (!value) {
     return { date: fallbackDate, time: fallbackTime };

@@ -57,13 +57,8 @@ internal static class CustomerOrderPlaceBranchGate
 
         if (IsStoreClosed(branch))
         {
-            if (!branch.AcceptScheduledOrdersWhileClosed)
-            {
-                return ApplicationResult.Failure(
-                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
-                    "This store is not accepting online orders right now.");
-            }
-
+            // Closed-by-hours is informational for the customer: they may still place a
+            // future scheduled order. Pause / disabled ordering remain hard blocks above.
             if (!CanScheduleWhileClosed(branch, fulfillmentType, canCustomerDelivery))
             {
                 return ApplicationResult.Failure(
@@ -76,8 +71,8 @@ internal static class CustomerOrderPlaceBranchGate
                 return ApplicationResult.Failure(
                     ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
                     fulfillmentType == CustomerOrderFulfillmentType.Delivery
-                        ? "This store is closed. Choose a delivery date and time to place your order."
-                        : "This store is closed. Choose a pickup date and time to place your order.");
+                        ? "This store is closed. Choose a preferred delivery day and period to place your order."
+                        : "This store is closed. Choose a preferred pickup day and period to place your order.");
             }
         }
 
@@ -99,9 +94,7 @@ internal static class CustomerOrderPlaceBranchGate
         CustomerOrderFulfillmentType fulfillmentType,
         bool canCustomerDelivery)
     {
-        if (!branch.CustomerOrderingEnabled
-            || branch.OnlineOrdersPaused
-            || !branch.AcceptScheduledOrdersWhileClosed)
+        if (!branch.CustomerOrderingEnabled || branch.OnlineOrdersPaused)
         {
             return false;
         }
@@ -120,17 +113,27 @@ internal static class CustomerOrderPlaceBranchGate
     private static bool MethodReadyConfigured(CustomerOrderBranchSnapshot branch) =>
         branch.PickupReady || branch.DeliveryReady;
 
+    /// <summary>
+    /// True when preferred day+period is present, or legacy exact date+time
+    /// (matches <see cref="PreferredFulfillmentSchedule.Resolve"/> / <see cref="RequestedFulfillmentSchedule.Resolve"/>).
+    /// </summary>
     internal static bool HasRequestedSchedule(
         CustomerOrderFulfillmentType fulfillmentType,
         PlaceCustomerOrderRequest request)
     {
+        if (!string.IsNullOrWhiteSpace(request.PreferredFulfillmentDate)
+            && !string.IsNullOrWhiteSpace(request.PreferredFulfillmentPeriod))
+        {
+            return true;
+        }
+
         if (fulfillmentType == CustomerOrderFulfillmentType.Pickup)
         {
             return !string.IsNullOrWhiteSpace(request.RequestedPickupDate)
-                || !string.IsNullOrWhiteSpace(request.RequestedPickupTime);
+                && !string.IsNullOrWhiteSpace(request.RequestedPickupTime);
         }
 
         return !string.IsNullOrWhiteSpace(request.RequestedDeliveryDate)
-            || !string.IsNullOrWhiteSpace(request.RequestedDeliveryTime);
+            && !string.IsNullOrWhiteSpace(request.RequestedDeliveryTime);
     }
 }

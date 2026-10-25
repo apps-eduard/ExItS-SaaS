@@ -8,7 +8,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 /// Seller-organization-owned customer order for pickup or local delivery.
 /// Distinct from purchasing <c>PurchaseOrder</c> / connected-supplier flows.
 /// </summary>
-public sealed class CustomerOrder
+public sealed partial class CustomerOrder
 {
     public const int MaxLineCount = 200;
     public const int BranchNameSnapshotMaxLength = 128;
@@ -26,7 +26,7 @@ public sealed class CustomerOrder
     public CustomerOrderFulfillmentStatus FulfillmentStatus { get; private set; }
     public CustomerOrderPaymentStatus PaymentStatus { get; private set; }
     public CustomerOrderPaymentMethod PaymentMethod { get; }
-    public string? PaymentReference { get; }
+    public string? PaymentReference { get; private set; }
     public DateTimeOffset? PaymentConfirmedAtUtc { get; private set; }
     public Guid? PaymentConfirmedBy { get; private set; }
     public decimal? AmountReceived { get; private set; }
@@ -41,6 +41,23 @@ public sealed class CustomerOrder
     public string? RequestedDeliveryLocal { get; }
     public string? RequestedDeliveryTimeZoneId { get; }
     public DateTimeOffset? RequestedDeliveryAtUtc { get; }
+    /// <summary>
+    /// Preferred fulfillment calendar day (branch-local). Null when ASAP or legacy exact-time request.
+    /// </summary>
+    public DateOnly? PreferredFulfillmentDate { get; private set; }
+    /// <summary>Preferred Morning / Afternoon / Evening. Not an exact appointment.</summary>
+    public CustomerOrderPreferredFulfillmentPeriod? PreferredFulfillmentPeriod { get; private set; }
+    public string? PreferredFulfillmentTimeZoneId { get; private set; }
+    /// <summary>Resolved usable window start (UTC) for validation; not shown as an appointment time.</summary>
+    public DateTimeOffset? PreferredFulfillmentWindowStartUtc { get; private set; }
+    /// <summary>Resolved usable window end (UTC) for validation; not shown as an appointment time.</summary>
+    public DateTimeOffset? PreferredFulfillmentWindowEndUtc { get; private set; }
+    /// <summary>Agreed schedule after customer accepts a seller proposal (null = customer request still authoritative).</summary>
+    public string? ConfirmedFulfillmentLocal { get; private set; }
+    public string? ConfirmedFulfillmentTimeZoneId { get; private set; }
+    public DateTimeOffset? ConfirmedFulfillmentAtUtc { get; private set; }
+    /// <summary>Pending seller schedule proposal; null when none.</summary>
+    public CustomerOrderScheduleProposal? PendingScheduleProposal { get; private set; }
     public CustomerOrderFulfillmentType FulfillmentType { get; }
     public Guid FulfillmentBranchId { get; }
     public string BranchNameSnapshot { get; }
@@ -51,9 +68,9 @@ public sealed class CustomerOrder
     /// </summary>
     public Guid? PlatformBusinessCustomerId { get; }
     public IReadOnlyList<CustomerOrderLine> Lines => _lines;
-    public decimal MerchandiseSubtotal { get; }
-    public decimal DeliveryFee { get; }
-    public decimal Total { get; }
+    public decimal MerchandiseSubtotal { get; private set; }
+    public decimal DeliveryFee { get; private set; }
+    public decimal Total { get; private set; }
     public CustomerOrderDeliverySnapshot? DeliverySnapshot { get; }
     public CustomerOrderStockReservationState StockReservationState { get; private set; }
     public CustomerOrderRejectReason? RejectReason { get; private set; }
@@ -132,7 +149,11 @@ public sealed class CustomerOrder
         DateTimeOffset? requestedDeliveryAtUtc = null,
         DateTimeOffset? paymentConfirmedAtUtc = null,
         Guid? paymentConfirmedBy = null,
-        decimal? amountReceived = null)
+        decimal? amountReceived = null,
+        string? confirmedFulfillmentLocal = null,
+        string? confirmedFulfillmentTimeZoneId = null,
+        DateTimeOffset? confirmedFulfillmentAtUtc = null,
+        CustomerOrderScheduleProposal? pendingScheduleProposal = null)
     {
         Id = id;
         SellerOrganizationId = sellerOrganizationId;
@@ -150,6 +171,8 @@ public sealed class CustomerOrder
         MerchandiseSubtotal = merchandiseSubtotal;
         DeliveryFee = deliveryFee;
         Total = total;
+        OriginalMerchandiseSubtotal = merchandiseSubtotal;
+        OriginalTotal = total;
         DeliverySnapshot = deliverySnapshot;
         StockReservationState = stockReservationState;
         RejectReason = rejectReason;
@@ -185,10 +208,15 @@ public sealed class CustomerOrder
         PaymentConfirmedAtUtc = paymentConfirmedAtUtc;
         PaymentConfirmedBy = paymentConfirmedBy;
         AmountReceived = amountReceived;
+        ConfirmedFulfillmentLocal = confirmedFulfillmentLocal;
+        ConfirmedFulfillmentTimeZoneId = confirmedFulfillmentTimeZoneId;
+        ConfirmedFulfillmentAtUtc = confirmedFulfillmentAtUtc;
+        PendingScheduleProposal = pendingScheduleProposal;
     }
 
     /// <summary>
-    /// Manual GCash orders require a customer-entered reference. Other methods must not carry one.
+    /// Manual GCash reference is optional at checkout (seller verifies later).
+    /// Other methods must not carry a reference.
     /// </summary>
     public static string? NormalizePaymentReference(
         CustomerOrderPaymentMethod paymentMethod,
@@ -198,9 +226,7 @@ public sealed class CustomerOrder
         {
             if (string.IsNullOrWhiteSpace(paymentReference))
             {
-                throw new DomainException(
-                    DomainErrorCodes.InvalidCustomerOrderPaymentReference,
-                    "Enter the GCash reference number.");
+                return null;
             }
 
             var trimmed = paymentReference.Trim();
@@ -222,6 +248,27 @@ public sealed class CustomerOrder
         }
 
         return null;
+    }
+
+    /// <summary>Seller-entered GCash reference required when confirming Manual GCash receipt.</summary>
+    public static string NormalizeRequiredPaymentReference(string? paymentReference)
+    {
+        if (string.IsNullOrWhiteSpace(paymentReference))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentReference,
+                "Enter the GCash reference number.");
+        }
+
+        var trimmed = paymentReference.Trim();
+        if (trimmed.Length > PaymentReferenceMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentReference,
+                $"GCash reference must be at most {PaymentReferenceMaxLength} characters.");
+        }
+
+        return trimmed;
     }
 
     /// <summary>
@@ -248,7 +295,12 @@ public sealed class CustomerOrder
         DateTimeOffset? requestedPickupAtUtc = null,
         string? requestedDeliveryLocal = null,
         string? requestedDeliveryTimeZoneId = null,
-        DateTimeOffset? requestedDeliveryAtUtc = null)
+        DateTimeOffset? requestedDeliveryAtUtc = null,
+        DateOnly? preferredFulfillmentDate = null,
+        CustomerOrderPreferredFulfillmentPeriod? preferredFulfillmentPeriod = null,
+        string? preferredFulfillmentTimeZoneId = null,
+        DateTimeOffset? preferredFulfillmentWindowStartUtc = null,
+        DateTimeOffset? preferredFulfillmentWindowEndUtc = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(submittedBy);
@@ -285,18 +337,36 @@ public sealed class CustomerOrder
         }
 
         paymentReference = NormalizePaymentReference(paymentMethod, paymentReference);
-        NormalizePickupRequest(
-            fulfillmentType,
-            utcNow,
-            ref requestedPickupLocal,
-            ref requestedPickupTimeZoneId,
-            ref requestedPickupAtUtc);
-        NormalizeDeliveryRequest(
-            fulfillmentType,
-            utcNow,
-            ref requestedDeliveryLocal,
-            ref requestedDeliveryTimeZoneId,
-            ref requestedDeliveryAtUtc);
+        var hasPreferred = preferredFulfillmentDate is not null
+            || preferredFulfillmentPeriod is not null
+            || !string.IsNullOrWhiteSpace(preferredFulfillmentTimeZoneId)
+            || preferredFulfillmentWindowStartUtc is not null
+            || preferredFulfillmentWindowEndUtc is not null;
+        if (hasPreferred)
+        {
+            // Preferred window replaces exact appointment times for new orders.
+            requestedPickupLocal = null;
+            requestedPickupTimeZoneId = null;
+            requestedPickupAtUtc = null;
+            requestedDeliveryLocal = null;
+            requestedDeliveryTimeZoneId = null;
+            requestedDeliveryAtUtc = null;
+        }
+        else
+        {
+            NormalizePickupRequest(
+                fulfillmentType,
+                utcNow,
+                ref requestedPickupLocal,
+                ref requestedPickupTimeZoneId,
+                ref requestedPickupAtUtc);
+            NormalizeDeliveryRequest(
+                fulfillmentType,
+                utcNow,
+                ref requestedDeliveryLocal,
+                ref requestedDeliveryTimeZoneId,
+                ref requestedDeliveryAtUtc);
+        }
 
         var orderId = id ?? CustomerOrderId.New();
         var orderLines = new List<CustomerOrderLine>(lines.Count);
@@ -340,7 +410,7 @@ public sealed class CustomerOrder
                 "Delivery fee must match the delivery snapshot final fee.");
         }
 
-        return new CustomerOrder(
+        var order = new CustomerOrder(
             orderId,
             sellerOrganizationId,
             CustomerOrderNumbers.Normalize(orderNumber),
@@ -389,6 +459,17 @@ public sealed class CustomerOrder
             requestedDeliveryLocal,
             requestedDeliveryTimeZoneId,
             requestedDeliveryAtUtc);
+        if (hasPreferred)
+        {
+            order.SetPreferredFulfillment(
+                preferredFulfillmentDate,
+                preferredFulfillmentPeriod,
+                preferredFulfillmentTimeZoneId,
+                preferredFulfillmentWindowStartUtc,
+                preferredFulfillmentWindowEndUtc);
+        }
+
+        return order;
     }
 
     public static CustomerOrder Rehydrate(
@@ -442,8 +523,23 @@ public sealed class CustomerOrder
         DateTimeOffset? requestedDeliveryAtUtc = null,
         DateTimeOffset? paymentConfirmedAtUtc = null,
         Guid? paymentConfirmedBy = null,
-        decimal? amountReceived = null) =>
-        new(
+        decimal? amountReceived = null,
+        string? confirmedFulfillmentLocal = null,
+        string? confirmedFulfillmentTimeZoneId = null,
+        DateTimeOffset? confirmedFulfillmentAtUtc = null,
+        CustomerOrderScheduleProposal? pendingScheduleProposal = null,
+        decimal? originalMerchandiseSubtotal = null,
+        decimal? originalTotal = null,
+        CustomerOrderCancelReason? cancelReason = null,
+        string? cancelNotes = null,
+        IReadOnlyList<CustomerOrderActivityEvent>? activityEvents = null,
+        DateOnly? preferredFulfillmentDate = null,
+        CustomerOrderPreferredFulfillmentPeriod? preferredFulfillmentPeriod = null,
+        string? preferredFulfillmentTimeZoneId = null,
+        DateTimeOffset? preferredFulfillmentWindowStartUtc = null,
+        DateTimeOffset? preferredFulfillmentWindowEndUtc = null)
+    {
+        var order = new CustomerOrder(
             id,
             sellerOrganizationId,
             orderNumber,
@@ -494,7 +590,86 @@ public sealed class CustomerOrder
             requestedDeliveryAtUtc,
             paymentConfirmedAtUtc,
             paymentConfirmedBy,
-            amountReceived);
+            amountReceived,
+            confirmedFulfillmentLocal,
+            confirmedFulfillmentTimeZoneId,
+            confirmedFulfillmentAtUtc,
+            pendingScheduleProposal);
+        order.SetOriginalTotals(
+            originalMerchandiseSubtotal ?? merchandiseSubtotal,
+            originalTotal ?? total);
+        order.CancelReason = cancelReason;
+        order.CancelNotes = cancelNotes;
+        if (activityEvents is { Count: > 0 })
+        {
+            order.ReplaceActivityEvents(activityEvents);
+        }
+
+        if (preferredFulfillmentDate is not null
+            || preferredFulfillmentPeriod is not null
+            || !string.IsNullOrWhiteSpace(preferredFulfillmentTimeZoneId)
+            || preferredFulfillmentWindowStartUtc is not null
+            || preferredFulfillmentWindowEndUtc is not null)
+        {
+            order.SetPreferredFulfillment(
+                preferredFulfillmentDate,
+                preferredFulfillmentPeriod,
+                preferredFulfillmentTimeZoneId,
+                preferredFulfillmentWindowStartUtc,
+                preferredFulfillmentWindowEndUtc);
+        }
+
+        return order;
+    }
+
+    internal void SetPreferredFulfillment(
+        DateOnly? date,
+        CustomerOrderPreferredFulfillmentPeriod? period,
+        string? timeZoneId,
+        DateTimeOffset? windowStartUtc,
+        DateTimeOffset? windowEndUtc)
+    {
+        if (date is null
+            || period is null
+            || string.IsNullOrWhiteSpace(timeZoneId)
+            || windowStartUtc is null
+            || windowEndUtc is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPickupRequest,
+                "Preferred fulfillment requires a date, period, timezone, and resolved window.");
+        }
+
+        if (!Enum.IsDefined(period.Value))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPickupRequest,
+                "Preferred fulfillment period is invalid.");
+        }
+
+        SaleMoney.EnsureUtc(windowStartUtc.Value);
+        SaleMoney.EnsureUtc(windowEndUtc.Value);
+        if (windowEndUtc.Value <= windowStartUtc.Value)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPickupRequest,
+                "Preferred fulfillment window is invalid.");
+        }
+
+        var zone = timeZoneId.Trim();
+        if (zone.Length > 64)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPickupRequest,
+                "Preferred fulfillment timezone is invalid.");
+        }
+
+        PreferredFulfillmentDate = date;
+        PreferredFulfillmentPeriod = period;
+        PreferredFulfillmentTimeZoneId = zone;
+        PreferredFulfillmentWindowStartUtc = windowStartUtc;
+        PreferredFulfillmentWindowEndUtc = windowEndUtc;
+    }
 
     public void Accept(Guid actorId, DateTimeOffset utcNow)
     {
@@ -508,6 +683,12 @@ public sealed class CustomerOrder
         }
 
         EnsureStatus(CustomerOrderStatus.Submitted, "Only submitted orders can be accepted.");
+        if (PendingScheduleProposal is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderStatusTransition,
+                "Resolve the pending schedule proposal before accepting this order.");
+        }
 
         Status = CustomerOrderStatus.Accepted;
         FulfillmentStatus = CustomerOrderFulfillmentStatus.Preparing;
@@ -544,30 +725,22 @@ public sealed class CustomerOrder
         RejectNotes = NormalizeRejectNotes(notes);
         RejectedAtUtc = utcNow;
         RejectedBy = actorId;
+        PendingScheduleProposal = null;
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>Buyer cancel with lifecycle cutoff. Prefer <see cref="CancelByBuyer"/> for Personal buyers.</summary>
     public void Cancel(Guid actorId, DateTimeOffset utcNow)
     {
-        SaleMoney.EnsureUtc(utcNow);
-        EnsureActor(actorId);
-
-        if (Status == CustomerOrderStatus.Cancelled)
+        if (Status == CustomerOrderStatus.Draft)
         {
+            SaleMoney.EnsureUtc(utcNow);
+            EnsureActor(actorId);
+            CancelInternal(CustomerOrderCancelReason.CustomerRequest, null, actorId, utcNow);
             return;
         }
 
-        if (Status is not (CustomerOrderStatus.Draft or CustomerOrderStatus.Submitted))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidCustomerOrderStatusTransition,
-                "Only draft or submitted orders can be cancelled by the customer.");
-        }
-
-        Status = CustomerOrderStatus.Cancelled;
-        CancelledAtUtc = utcNow;
-        CancelledBy = actorId;
-        UpdatedAtUtc = utcNow;
+        CancelByBuyer(actorId, utcNow);
     }
 
     public void StartPreparing(DateTimeOffset utcNow, Guid actorId)
@@ -725,10 +898,15 @@ public sealed class CustomerOrder
 
     /// <summary>
     /// Seller confirms that Cash or manual GCash was actually received.
+    /// Manual GCash requires the seller-entered transaction reference.
     /// Does not post a sale and does not change the order total.
-    /// A repeat with the same amount is a no-op.
+    /// A repeat with the same amount (and reference for GCash) is a no-op.
     /// </summary>
-    public void ConfirmPayment(decimal? amountReceived, Guid actorId, DateTimeOffset utcNow)
+    public void ConfirmPayment(
+        decimal? amountReceived,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? paymentReference = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(actorId);
@@ -741,20 +919,34 @@ public sealed class CustomerOrder
                 "Utang is not marked paid. It is settled as Business Utang when the order is completed.");
         }
 
+        string? normalizedReference = PaymentReference;
+        if (PaymentMethod == CustomerOrderPaymentMethod.ManualGCash)
+        {
+            normalizedReference = NormalizeRequiredPaymentReference(
+                string.IsNullOrWhiteSpace(paymentReference) ? PaymentReference : paymentReference);
+        }
+        else if (!string.IsNullOrWhiteSpace(paymentReference))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentReference,
+                "A payment reference can only be recorded for manual GCash.");
+        }
+
         var received = PaymentMethod == CustomerOrderPaymentMethod.ManualGCash
             ? NormalizeManualGCashReceived(amountReceived)
             : NormalizeCashReceived(amountReceived);
 
         if (PaymentStatus == CustomerOrderPaymentStatus.Paid)
         {
-            if (AmountReceived == received)
+            if (AmountReceived == received
+                && string.Equals(PaymentReference, normalizedReference, StringComparison.Ordinal))
             {
                 return;
             }
 
             throw new DomainException(
                 DomainErrorCodes.InvalidCustomerOrderPaymentConfirmation,
-                "This payment was already confirmed for a different amount.");
+                "This payment was already confirmed for a different amount or reference.");
         }
 
         if (PaymentMethod == CustomerOrderPaymentMethod.Cash
@@ -774,10 +966,19 @@ public sealed class CustomerOrder
         }
 
         PaymentStatus = CustomerOrderPaymentStatus.Paid;
+        PaymentReference = normalizedReference;
         AmountReceived = received;
         PaymentConfirmedAtUtc = utcNow;
         PaymentConfirmedBy = actorId;
         UpdatedAtUtc = utcNow;
+        _activityEvents.Add(new CustomerOrderActivityEvent(
+            Guid.NewGuid(),
+            utcNow,
+            actorId,
+            CustomerOrderActivityEvent.Actions.PaymentConfirmed,
+            summary: PaymentMethod == CustomerOrderPaymentMethod.ManualGCash
+                ? $"Manual GCash confirmed ({normalizedReference})."
+                : "Cash payment confirmed."));
     }
 
     /// <summary>
@@ -880,10 +1081,9 @@ public sealed class CustomerOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>Manual GCash starts Unpaid; seller confirms after verifying receipt.</summary>
     private static CustomerOrderPaymentStatus InitialPaymentStatus(CustomerOrderPaymentMethod paymentMethod) =>
-        paymentMethod == CustomerOrderPaymentMethod.ManualGCash
-            ? CustomerOrderPaymentStatus.Pending
-            : CustomerOrderPaymentStatus.Unpaid;
+        CustomerOrderPaymentStatus.Unpaid;
 
     private void EnsurePaymentCanChange()
     {

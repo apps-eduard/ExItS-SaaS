@@ -15,13 +15,14 @@ public sealed record CustomerOrderLineDraft(
     decimal Discount = 0m);
 
 /// <summary>
-/// One immutable line of a customer order. Catalog fields and prices are snapshotted at submit
-/// so later catalog edits never rewrite history.
+/// One line of a customer order. Catalog fields and unit price are snapshotted at submit.
+/// Quantity may be reduced by the seller under partial-fulfillment policy; original quantity is preserved.
 /// </summary>
 public sealed class CustomerOrderLine
 {
     public const int NameSnapshotMaxLength = 200;
     public const int SkuSnapshotMaxLength = 64;
+    public const int AdjustmentNoteMaxLength = 512;
     public const decimal MaxUnitPrice = 9_999_999_999.99m;
     public const decimal MaxQuantity = 999_999.999m;
     public const decimal MaxDiscount = 999_999_999.99m;
@@ -33,10 +34,20 @@ public sealed class CustomerOrderLine
     public string NameSnapshot { get; }
     public string? SkuSnapshot { get; }
     public UnitOfMeasure UnitSnapshot { get; }
-    public decimal Quantity { get; }
+    /// <summary>Quantity ordered at submit (immutable snapshot).</summary>
+    public decimal OriginalQuantity { get; }
+    /// <summary>Current fulfillable quantity (may be reduced; 0 = item cancelled).</summary>
+    public decimal Quantity { get; private set; }
+    /// <summary>OriginalQuantity − Quantity (cancelled / shortage amount).</summary>
+    public decimal CancelledQuantity => OriginalQuantity - Quantity;
+    public bool IsCancelled => Quantity <= 0m;
     public decimal UnitPrice { get; }
-    public decimal Discount { get; }
-    public decimal LineTotal { get; }
+    /// <summary>Discount at submit (immutable). Current <see cref="Discount"/> is scaled from this.</summary>
+    public decimal OriginalDiscount { get; }
+    public decimal Discount { get; private set; }
+    public decimal LineTotal { get; private set; }
+    public CustomerOrderLineAdjustmentReason? AdjustmentReason { get; private set; }
+    public string? AdjustmentNote { get; private set; }
 
     private CustomerOrderLine(
         CustomerOrderLineId id,
@@ -46,10 +57,14 @@ public sealed class CustomerOrderLine
         string nameSnapshot,
         string? skuSnapshot,
         UnitOfMeasure unitSnapshot,
+        decimal originalQuantity,
         decimal quantity,
         decimal unitPrice,
+        decimal originalDiscount,
         decimal discount,
-        decimal lineTotal)
+        decimal lineTotal,
+        CustomerOrderLineAdjustmentReason? adjustmentReason = null,
+        string? adjustmentNote = null)
     {
         Id = id;
         OrderId = orderId;
@@ -58,10 +73,14 @@ public sealed class CustomerOrderLine
         NameSnapshot = nameSnapshot;
         SkuSnapshot = skuSnapshot;
         UnitSnapshot = unitSnapshot;
+        OriginalQuantity = originalQuantity;
         Quantity = quantity;
         UnitPrice = unitPrice;
+        OriginalDiscount = originalDiscount;
         Discount = discount;
         LineTotal = lineTotal;
+        AdjustmentReason = adjustmentReason;
+        AdjustmentNote = adjustmentNote;
     }
 
     internal static CustomerOrderLine Create(
@@ -91,8 +110,10 @@ public sealed class CustomerOrderLine
             NormalizeNameSnapshot(draft.NameSnapshot),
             NormalizeOptionalSku(draft.SkuSnapshot),
             draft.UnitSnapshot,
+            originalQuantity: quantity,
             quantity,
             unitPrice,
+            originalDiscount: discount,
             discount,
             lineTotal);
     }
@@ -108,7 +129,11 @@ public sealed class CustomerOrderLine
         decimal quantity,
         decimal unitPrice,
         decimal discount,
-        decimal lineTotal) =>
+        decimal lineTotal,
+        decimal? originalQuantity = null,
+        decimal? originalDiscount = null,
+        CustomerOrderLineAdjustmentReason? adjustmentReason = null,
+        string? adjustmentNote = null) =>
         new(
             id,
             orderId,
@@ -117,10 +142,97 @@ public sealed class CustomerOrderLine
             nameSnapshot,
             skuSnapshot,
             unitSnapshot,
+            originalQuantity ?? quantity,
             quantity,
             unitPrice,
+            originalDiscount ?? discount,
             discount,
-            lineTotal);
+            lineTotal,
+            adjustmentReason,
+            adjustmentNote);
+
+    /// <summary>
+    /// Seller reduces fulfillable quantity (never increases). Zero cancels the item.
+    /// Discount is scaled proportionally from the original submit discount.
+    /// </summary>
+    internal void ApplySellerQuantityAdjustment(
+        decimal newQuantity,
+        CustomerOrderLineAdjustmentReason reason,
+        string? note)
+    {
+        if (!Enum.IsDefined(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderLineAdjustment,
+                "Adjustment reason is invalid.");
+        }
+
+        if (reason == CustomerOrderLineAdjustmentReason.Other && string.IsNullOrWhiteSpace(note))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderLineAdjustment,
+                "Enter a note when the adjustment reason is Other.");
+        }
+
+        if (newQuantity < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderLineQuantity,
+                "Quantity cannot be negative.");
+        }
+
+        if (newQuantity > Quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderLineQuantity,
+                "Sellers cannot increase line quantity through Reduce Quantity.");
+        }
+
+        if (newQuantity == Quantity)
+        {
+            return;
+        }
+
+        if (newQuantity > 0m)
+        {
+            newQuantity = NormalizeQuantity(newQuantity, UnitSnapshot);
+        }
+
+        if (newQuantity > OriginalQuantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderLineQuantity,
+                "Fulfillable quantity cannot exceed the original ordered quantity.");
+        }
+
+        var scaledDiscount = newQuantity <= 0m || OriginalQuantity <= 0m
+            ? 0m
+            : SaleMoney.RoundMoney(OriginalDiscount * (newQuantity / OriginalQuantity));
+        var gross = SaleMoney.RoundMoney(UnitPrice * newQuantity);
+        if (scaledDiscount > gross)
+        {
+            scaledDiscount = gross;
+        }
+
+        Quantity = newQuantity;
+        Discount = scaledDiscount;
+        LineTotal = SaleMoney.RoundMoney(gross - scaledDiscount);
+        AdjustmentReason = reason;
+        AdjustmentNote = NormalizeAdjustmentNote(note);
+    }
+
+    private static string? NormalizeAdjustmentNote(string? note)
+    {
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            return null;
+        }
+
+        var trimmed = note.Trim();
+        return trimmed.Length > AdjustmentNoteMaxLength
+            ? trimmed[..AdjustmentNoteMaxLength]
+            : trimmed;
+    }
 
     public static decimal NormalizeQuantity(decimal quantity, UnitOfMeasure unitOfMeasure)
     {

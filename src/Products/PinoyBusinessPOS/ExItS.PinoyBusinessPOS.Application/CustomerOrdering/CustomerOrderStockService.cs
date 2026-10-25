@@ -35,6 +35,14 @@ public interface ICustomerOrderStockService
         DateTimeOffset utcNow,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Releases reservation deltas after seller line reductions (order remains Reserved).</summary>
+    Task ReleaseReservationDeltasAsync(
+        CustomerOrder order,
+        IReadOnlyList<(CatalogProductId ProductId, decimal ReleaseQuantity)> deltas,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
     Task ConsumeOnCompleteAsync(
         CustomerOrder order,
         IReadOnlyDictionary<Guid, CatalogProduct> productsById,
@@ -198,7 +206,9 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                     var branchId = PosBranchId.From(order.FulfillmentBranchId);
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
-                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        if (line.Quantity <= 0m
+                            || !byProduct.TryGetValue(line.ProductId.Value, out var account)
+                            || !account.IsTracked)
                         {
                             continue;
                         }
@@ -254,6 +264,70 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
         order.MarkStockReserved(utcNow);
     }
 
+    public async Task ReleaseReservationDeltasAsync(
+        CustomerOrder order,
+        IReadOnlyList<(CatalogProductId ProductId, decimal ReleaseQuantity)> deltas,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        if (order.StockReservationState != CustomerOrderStockReservationState.Reserved
+            || deltas.Count == 0)
+        {
+            return;
+        }
+
+        var grouped = deltas
+            .Where(d => d.ReleaseQuantity > 0m)
+            .GroupBy(d => d.ProductId.Value)
+            .Select(g => (ProductId: CatalogProductId.From(g.Key), Quantity: g.Sum(x => x.ReleaseQuantity)))
+            .Where(g => g.Quantity > 0m)
+            .ToList();
+        if (grouped.Count == 0)
+        {
+            return;
+        }
+
+        var productIds = grouped.Select(g => g.ProductId).ToList();
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
+                order.SellerOrganizationId,
+                productIds,
+                async (accounts, ct) =>
+                {
+                    var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    var balances = await LoadBalanceListAsync(order.SellerOrganizationId, productIds, ct)
+                        .ConfigureAwait(false);
+                    var primaryId = await ResolvePrimaryAsync(order.SellerOrganizationId.Value, ct)
+                        .ConfigureAwait(false);
+                    var branchId = PosBranchId.From(order.FulfillmentBranchId);
+                    foreach (var item in grouped)
+                    {
+                        if (!byProduct.TryGetValue(item.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        account.Release(item.Quantity);
+                        account.Touch(utcNow);
+                        await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                        await ApplyBranchReservationAsync(
+                                order.SellerOrganizationId,
+                                branchId,
+                                item.ProductId,
+                                account.OnHandQuantity,
+                                primaryId,
+                                balances,
+                                item.Quantity,
+                                BranchReservationEffect.Release,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
+                    }
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task ReleaseIfReservedAsync(
         CustomerOrder order,
         DateTimeOffset utcNow,
@@ -280,6 +354,12 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        // Release current fulfillable quantity (post-adjustment).
+                        if (line.Quantity <= 0m)
                         {
                             continue;
                         }

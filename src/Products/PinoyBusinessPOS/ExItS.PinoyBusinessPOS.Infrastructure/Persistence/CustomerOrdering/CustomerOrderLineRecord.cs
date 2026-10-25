@@ -11,7 +11,11 @@ internal sealed class CustomerOrderLineRecord
     public string? SkuSnapshot { get; set; }
     public string UnitSnapshot { get; set; } = string.Empty;
     public decimal Quantity { get; set; }
+    public decimal OriginalQuantity { get; set; }
+    public decimal OriginalDiscount { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal Discount { get; set; }
     public decimal LineTotal { get; set; }
+    public string? AdjustmentReason { get; set; }
+    public string? AdjustmentNote { get; set; }
 }

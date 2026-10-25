@@ -49,7 +49,9 @@ public sealed record BranchFulfillmentReadinessDto(
     int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount,
     bool AcceptScheduledOrdersWhileClosed = false,
     int MinPreparationLeadMinutes = 0,
-    int MaxAdvanceScheduleDays = 0);
+    int MaxAdvanceScheduleDays = 0,
+    /// <summary>Branch timezone, else organization profile timezone.</summary>
+    string? TimeZoneId = null);
 
 public sealed record UpsertBranchOperatingHoursCommand(IReadOnlyList<BranchOperatingHoursDayDto> Days);
 
@@ -185,7 +187,8 @@ public sealed class GetBranchFulfillmentReadiness
             _clock.UtcNow,
             hasActiveVerifiedArea));
 
-        return ApplicationResult<BranchFulfillmentReadinessDto>.Success(Map(branch, caps, result));
+        return ApplicationResult<BranchFulfillmentReadinessDto>.Success(
+            Map(branch, caps, result, org.Profile.TimeZoneId));
     }
 
     private async Task<BranchEntitlementCapabilities> ResolveCapabilitiesAsync(
@@ -212,7 +215,8 @@ public sealed class GetBranchFulfillmentReadiness
     internal static BranchFulfillmentReadinessDto Map(
         OrganizationBranch branch,
         BranchEntitlementCapabilities caps,
-        BranchFulfillmentReadinessResult result) =>
+        BranchFulfillmentReadinessResult result,
+        string? organizationTimeZoneId = null) =>
         new(
             branch.Id.Value,
             caps.CanUseCustomerOrdering,
@@ -244,7 +248,8 @@ public sealed class GetBranchFulfillmentReadiness
             result.SetupSummary.DeliverySectionsTotal,
             branch.AcceptScheduledOrdersWhileClosed,
             branch.MinPreparationLeadMinutes,
-            branch.MaxAdvanceScheduleDays);
+            branch.MaxAdvanceScheduleDays,
+            string.IsNullOrWhiteSpace(branch.TimeZoneId) ? organizationTimeZoneId : branch.TimeZoneId);
 
     internal static string? BuildStoreStatusMessage(BranchStoreOpenState? state)
     {

@@ -4,9 +4,13 @@ import {
   ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY,
   ORG_EHG_DATE_GLASS_DEFAULT_KIND,
   ORG_EHG_DATE_GLASS_DEFAULT_SIZE,
+  ORG_EHG_DATE_GLASS_DEFAULT_SURFACE,
   ORG_EHG_DATE_GLASS_DEFAULT_VARIETY,
 } from "@/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-date-glass-global-default";
-import { OrgEhgDateGlassField } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDateGlassField";
+import {
+  OrgEhgDateGlassField,
+  type OrgEhgDateGlassIntensity,
+} from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDateGlassField";
 import "@/features/ui-standards/org-enterprise-hybrid-glass/org-enterprise-hybrid-glass.css";
 
 export type ExitsDateGlassDateTimeFieldProps = {
@@ -16,6 +20,10 @@ export type ExitsDateGlassDateTimeFieldProps = {
   onChange: (next: string) => void;
   testId?: string;
   className?: string;
+  /** Override locked medium when a product recipe names soft / strong / etc. */
+  intensity?: OrgEhgDateGlassIntensity;
+  /** Override locked popover (product modals often use dialog). */
+  surface?: "popover" | "dialog";
 };
 
 function pad2(n: number): string {
@@ -56,8 +64,8 @@ export function orgEhgDisplayToLocalDateTime(display: string): string {
 
 /**
  * Product Org EHG Date glass datetime field (locked recipe).
- * Command: ext org-ehg date-glass quasar medium datetime md popover focus-thick-below
- * Uses dialog surface so ExitsModal does not clip the picker.
+ * Default command: ext org-ehg date-glass quasar medium datetime md popover focus-thick-below
+ * Checkout pickup uses soft + popover: ext org-ehg date-glass quasar soft datetime md popover focus-thick-below
  * Value format stays datetime-local for product forms.
  */
 export function ExitsDateGlassDateTimeField({
@@ -66,27 +74,40 @@ export function ExitsDateGlassDateTimeField({
   onChange,
   testId,
   className,
+  intensity = ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY,
+  surface = ORG_EHG_DATE_GLASS_DEFAULT_SURFACE,
 }: ExitsDateGlassDateTimeFieldProps) {
   const [open, setOpen] = useState(false);
   const display = localDateTimeToOrgEhgDisplay(value);
 
   return (
-    <OrgEhgDateGlassField
-      label={label}
-      value={display}
-      open={open}
-      onOpenChange={setOpen}
-      onChange={(next) => onChange(orgEhgDisplayToLocalDateTime(next))}
-      intensity={ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY}
-      variety={ORG_EHG_DATE_GLASS_DEFAULT_VARIETY}
-      kind={ORG_EHG_DATE_GLASS_DEFAULT_KIND}
-      size={ORG_EHG_DATE_GLASS_DEFAULT_SIZE}
-      focusAnimation={ORG_EHG_DATE_GLASS_DEFAULT_FOCUS}
-      surface="dialog"
-      showPopover="datetime"
-      placeholder="Select date & time"
-      testId={testId}
-      className={className}
-    />
+    <div className={className}>
+      <OrgEhgDateGlassField
+        label={label}
+        value={display}
+        open={open}
+        onOpenChange={setOpen}
+        onChange={(next) => onChange(orgEhgDisplayToLocalDateTime(next))}
+        intensity={intensity}
+        variety={ORG_EHG_DATE_GLASS_DEFAULT_VARIETY}
+        kind={ORG_EHG_DATE_GLASS_DEFAULT_KIND}
+        size={ORG_EHG_DATE_GLASS_DEFAULT_SIZE}
+        focusAnimation={ORG_EHG_DATE_GLASS_DEFAULT_FOCUS}
+        surface={surface}
+        showPopover="datetime"
+        placeholder="Select date & time"
+        testId={testId}
+      />
+      {/* Hidden bridge for tests / automation — datetime-local. */}
+      <input
+        type="datetime-local"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        data-testid={testId ? `${testId}-value` : undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
   );
 }

@@ -25,7 +25,13 @@ internal static class CustomerOrderEntityMapper
                 l.Quantity,
                 l.UnitPrice,
                 l.Discount,
-                l.LineTotal))
+                l.LineTotal,
+                l.OriginalQuantity > 0m ? l.OriginalQuantity : l.Quantity,
+                l.OriginalDiscount > 0m || l.Discount == 0m ? l.OriginalDiscount : l.Discount,
+                string.IsNullOrWhiteSpace(l.AdjustmentReason)
+                    ? null
+                    : Enum.Parse<CustomerOrderLineAdjustmentReason>(l.AdjustmentReason, ignoreCase: true),
+                l.AdjustmentNote))
             .ToList();
 
         // Incomplete Delivery rows must not take down list/detail queries (NRE → HTTP 500).
@@ -92,7 +98,47 @@ internal static class CustomerOrderEntityMapper
             record.RequestedDeliveryAtUtc,
             record.PaymentConfirmedAtUtc,
             record.PaymentConfirmedBy,
-            record.AmountReceived);
+            record.AmountReceived,
+            record.ConfirmedFulfillmentLocal,
+            record.ConfirmedFulfillmentTimeZoneId,
+            record.ConfirmedFulfillmentAtUtc,
+            MapPendingProposal(record),
+            record.OriginalMerchandiseSubtotal > 0m ? record.OriginalMerchandiseSubtotal : record.MerchandiseSubtotal,
+            record.OriginalTotal > 0m ? record.OriginalTotal : record.Total,
+            string.IsNullOrWhiteSpace(record.CancelReason)
+                ? null
+                : Enum.Parse<CustomerOrderCancelReason>(record.CancelReason, ignoreCase: true),
+            record.CancelNotes,
+            CustomerOrderActivityJson.Deserialize(record.ActivityEventsJson),
+            record.PreferredFulfillmentDate,
+            string.IsNullOrWhiteSpace(record.PreferredFulfillmentPeriod)
+                ? null
+                : Enum.Parse<CustomerOrderPreferredFulfillmentPeriod>(record.PreferredFulfillmentPeriod, ignoreCase: true),
+            record.PreferredFulfillmentTimeZoneId,
+            record.PreferredFulfillmentWindowStartUtc,
+            record.PreferredFulfillmentWindowEndUtc);
+    }
+
+    private static CustomerOrderScheduleProposal? MapPendingProposal(CustomerOrderRecord record)
+    {
+        if (record.PendingScheduleProposalId is not Guid proposalId
+            || string.IsNullOrWhiteSpace(record.PendingScheduleProposalLocal)
+            || string.IsNullOrWhiteSpace(record.PendingScheduleProposalTimeZoneId)
+            || record.PendingScheduleProposalAtUtc is null
+            || record.PendingScheduleProposalBy is null
+            || record.PendingScheduleProposalProposedAtUtc is null)
+        {
+            return null;
+        }
+
+        return new CustomerOrderScheduleProposal(
+            proposalId,
+            record.PendingScheduleProposalLocal,
+            record.PendingScheduleProposalTimeZoneId,
+            record.PendingScheduleProposalAtUtc.Value,
+            record.PendingScheduleProposalNote,
+            record.PendingScheduleProposalBy.Value,
+            record.PendingScheduleProposalProposedAtUtc.Value);
     }
 
     public static CustomerOrderRecord ToRecord(CustomerOrder order)
@@ -116,6 +162,21 @@ internal static class CustomerOrderEntityMapper
             RequestedDeliveryLocal = order.RequestedDeliveryLocal,
             RequestedDeliveryTimeZoneId = order.RequestedDeliveryTimeZoneId,
             RequestedDeliveryAtUtc = order.RequestedDeliveryAtUtc,
+            PreferredFulfillmentDate = order.PreferredFulfillmentDate,
+            PreferredFulfillmentPeriod = order.PreferredFulfillmentPeriod?.ToString(),
+            PreferredFulfillmentTimeZoneId = order.PreferredFulfillmentTimeZoneId,
+            PreferredFulfillmentWindowStartUtc = order.PreferredFulfillmentWindowStartUtc,
+            PreferredFulfillmentWindowEndUtc = order.PreferredFulfillmentWindowEndUtc,
+            ConfirmedFulfillmentLocal = order.ConfirmedFulfillmentLocal,
+            ConfirmedFulfillmentTimeZoneId = order.ConfirmedFulfillmentTimeZoneId,
+            ConfirmedFulfillmentAtUtc = order.ConfirmedFulfillmentAtUtc,
+            PendingScheduleProposalId = order.PendingScheduleProposal?.ProposalId,
+            PendingScheduleProposalLocal = order.PendingScheduleProposal?.Local,
+            PendingScheduleProposalTimeZoneId = order.PendingScheduleProposal?.TimeZoneId,
+            PendingScheduleProposalAtUtc = order.PendingScheduleProposal?.AtUtc,
+            PendingScheduleProposalNote = order.PendingScheduleProposal?.Note,
+            PendingScheduleProposalBy = order.PendingScheduleProposal?.ProposedBy,
+            PendingScheduleProposalProposedAtUtc = order.PendingScheduleProposal?.ProposedAtUtc,
             FulfillmentType = order.FulfillmentType.ToString(),
             FulfillmentBranchId = order.FulfillmentBranchId,
             BranchNameSnapshot = order.BranchNameSnapshot,
@@ -128,6 +189,11 @@ internal static class CustomerOrderEntityMapper
             MerchandiseSubtotal = order.MerchandiseSubtotal,
             DeliveryFee = order.DeliveryFee,
             Total = order.Total,
+            OriginalMerchandiseSubtotal = order.OriginalMerchandiseSubtotal,
+            OriginalTotal = order.OriginalTotal,
+            CancelReason = order.CancelReason?.ToString(),
+            CancelNotes = order.CancelNotes,
+            ActivityEventsJson = CustomerOrderActivityJson.Serialize(order.ActivityEvents),
             StockReservationState = order.StockReservationState.ToString(),
             RejectReason = order.RejectReason?.ToString(),
             RejectNotes = order.RejectNotes,
@@ -170,22 +236,56 @@ internal static class CustomerOrderEntityMapper
             SkuSnapshot = line.SkuSnapshot,
             UnitSnapshot = UnitOfMeasures.ToCode(line.UnitSnapshot),
             Quantity = line.Quantity,
+            OriginalQuantity = line.OriginalQuantity,
+            OriginalDiscount = line.OriginalDiscount,
             UnitPrice = line.UnitPrice,
             Discount = line.Discount,
-            LineTotal = line.LineTotal
+            LineTotal = line.LineTotal,
+            AdjustmentReason = line.AdjustmentReason?.ToString(),
+            AdjustmentNote = line.AdjustmentNote
         };
+
+    public static void ApplyLineToRecord(CustomerOrderLine line, CustomerOrderLineRecord record)
+    {
+        record.Quantity = line.Quantity;
+        record.OriginalQuantity = line.OriginalQuantity;
+        record.OriginalDiscount = line.OriginalDiscount;
+        record.Discount = line.Discount;
+        record.LineTotal = line.LineTotal;
+        record.AdjustmentReason = line.AdjustmentReason?.ToString();
+        record.AdjustmentNote = line.AdjustmentNote;
+    }
 
     public static void ApplyToRecord(CustomerOrder order, CustomerOrderRecord record)
     {
         record.Status = order.Status.ToString();
         record.FulfillmentStatus = order.FulfillmentStatus.ToString();
         record.PaymentStatus = order.PaymentStatus.ToString();
+        record.PaymentReference = order.PaymentReference;
         record.AmountReceived = order.AmountReceived;
         record.PaymentConfirmedAtUtc = order.PaymentConfirmedAtUtc;
         record.PaymentConfirmedBy = order.PaymentConfirmedBy;
+        record.MerchandiseSubtotal = order.MerchandiseSubtotal;
+        record.DeliveryFee = order.DeliveryFee;
+        record.Total = order.Total;
+        record.OriginalMerchandiseSubtotal = order.OriginalMerchandiseSubtotal;
+        record.OriginalTotal = order.OriginalTotal;
+        record.CancelReason = order.CancelReason?.ToString();
+        record.CancelNotes = order.CancelNotes;
+        record.ActivityEventsJson = CustomerOrderActivityJson.Serialize(order.ActivityEvents);
         record.StockReservationState = order.StockReservationState.ToString();
         record.RejectReason = order.RejectReason?.ToString();
         record.RejectNotes = order.RejectNotes;
+        record.PendingScheduleProposalId = order.PendingScheduleProposal?.ProposalId;
+        record.PendingScheduleProposalLocal = order.PendingScheduleProposal?.Local;
+        record.PendingScheduleProposalTimeZoneId = order.PendingScheduleProposal?.TimeZoneId;
+        record.PendingScheduleProposalAtUtc = order.PendingScheduleProposal?.AtUtc;
+        record.PendingScheduleProposalNote = order.PendingScheduleProposal?.Note;
+        record.PendingScheduleProposalBy = order.PendingScheduleProposal?.ProposedBy;
+        record.PendingScheduleProposalProposedAtUtc = order.PendingScheduleProposal?.ProposedAtUtc;
+        record.ConfirmedFulfillmentLocal = order.ConfirmedFulfillmentLocal;
+        record.ConfirmedFulfillmentTimeZoneId = order.ConfirmedFulfillmentTimeZoneId;
+        record.ConfirmedFulfillmentAtUtc = order.ConfirmedFulfillmentAtUtc;
         record.AcceptedAtUtc = order.AcceptedAtUtc;
         record.AcceptedBy = order.AcceptedBy;
         record.RejectedAtUtc = order.RejectedAtUtc;

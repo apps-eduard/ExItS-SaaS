@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PosApiError } from "@/api/pos/pos-http";
+import { ToastProvider } from "@/components/exits/ToastProvider";
 import { MerchantCheckoutPage } from "@/features/customer-ordering/MerchantCheckoutPage";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -97,6 +98,29 @@ vi.mock("@/features/customer-ordering/use-storefront-product-image", () => ({
   useStorefrontProductImageUrl: () => null,
 }));
 
+vi.mock("@/components/exits/SoftGlassDateTimeField", () => ({
+  SoftGlassDateTimeField: ({
+    value,
+    onChange,
+    testId,
+    label,
+  }: {
+    value: string;
+    onChange: (next: string) => void;
+    testId?: string;
+    label: string;
+  }) => (
+    <label>
+      <span>{label}</span>
+      <input
+        data-testid={testId}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  ),
+}));
+
 function storefront(partial: Record<string, unknown> = {}) {
   return {
     organizationId: orgId,
@@ -127,7 +151,7 @@ function storefront(partial: Record<string, unknown> = {}) {
   };
 }
 
-function renderCheckout() {
+function renderCheckout(path = `/personal/linked-merchants/${orgId}/shop/checkout`) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -136,13 +160,15 @@ function renderCheckout() {
       { path: "/personal/linked-merchants/:organizationId/shop/checkout", element: <MerchantCheckoutPage /> },
       { path: "/personal/orders/:orderId", element: <div>order</div> },
     ],
-    { initialEntries: [`/personal/linked-merchants/${orgId}/shop/checkout`] },
+    { initialEntries: [path] },
   );
   render(
     <QueryClientProvider client={queryClient}>
       <PreferencesProvider>
         <I18nProvider>
-          <RouterProvider router={router} />
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
         </I18nProvider>
       </PreferencesProvider>
     </QueryClientProvider>,
@@ -247,5 +273,62 @@ describe("MerchantCheckoutPage place order", () => {
     await waitFor(() => expect(placeCustomerOrder).toHaveBeenCalledTimes(1));
     release({ orderId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd" });
     await waitFor(() => expect(navigate).toHaveBeenCalledTimes(1));
+  });
+
+  it("closed schedule-available uses Schedule & place order and requires preferred day/period", async () => {
+    const user = userEvent.setup();
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    getCustomerStorefront.mockResolvedValue(
+      storefront({
+        fulfillmentAvailability: "schedule-available",
+        branches: [
+          {
+            branchId,
+            name: "Main",
+            pickupEnabled: true,
+            deliveryEnabled: false,
+            customerOrderingOperational: false,
+            pickupOperational: false,
+            deliveryOperational: false,
+            onlineOrdersPaused: false,
+            storeStatusMessage: "Opens tomorrow 09:00",
+            acceptScheduledOrdersWhileClosed: true,
+            deliveryServiceAreas: [],
+            timeZoneId: "UTC",
+            maxAdvanceScheduleDays: 14,
+            minPreparationLeadMinutes: 0,
+            operatingHours: days.map((dayOfWeek) => ({
+              dayOfWeek,
+              isClosed: false,
+              isOpen24Hours: true,
+              openTime: null,
+              closeTime: null,
+            })),
+          },
+        ],
+      }),
+    );
+    renderCheckout(`/personal/linked-merchants/${orgId}/shop/checkout?schedule=1`);
+
+    const button = await screen.findByTestId("place-order");
+    expect(button).toHaveTextContent("Schedule & place order");
+    expect(screen.getByTestId("checkout-schedule-notice")).toBeInTheDocument();
+    expect(button).toBeDisabled();
+
+    await user.click(screen.getByTestId("checkout-pickup-preferred-day-tomorrow"));
+    await user.click(screen.getByTestId("checkout-pickup-preferred-period-morning"));
+
+    await waitFor(() => expect(button).toBeEnabled());
+    await user.click(button);
+    await waitFor(() => expect(placeCustomerOrder).toHaveBeenCalledTimes(1));
+    const request = placeCustomerOrder.mock.calls[0]?.[2] as {
+      preferredFulfillmentDate: string | null;
+      preferredFulfillmentPeriod: string | null;
+      requestedPickupTime: string | null;
+    };
+    expect(request.preferredFulfillmentPeriod).toBe("Morning");
+    expect(request.preferredFulfillmentDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(request.requestedPickupTime).toBeNull();
+    expect(clearAll).toHaveBeenCalledTimes(1);
   });
 });

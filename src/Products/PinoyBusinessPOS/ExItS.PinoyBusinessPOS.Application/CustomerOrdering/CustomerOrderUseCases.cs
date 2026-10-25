@@ -380,8 +380,41 @@ public sealed class PlaceCustomerOrder
             string? requestedDeliveryLocal = null;
             string? requestedDeliveryTimeZoneId = null;
             DateTimeOffset? requestedDeliveryAtUtc = null;
+            DateOnly? preferredFulfillmentDate = null;
+            CustomerOrderPreferredFulfillmentPeriod? preferredFulfillmentPeriod = null;
+            string? preferredFulfillmentTimeZoneId = null;
+            DateTimeOffset? preferredFulfillmentWindowStartUtc = null;
+            DateTimeOffset? preferredFulfillmentWindowEndUtc = null;
 
-            if (fulfillmentType == CustomerOrderFulfillmentType.Pickup)
+            var hasPreferred =
+                !string.IsNullOrWhiteSpace(request.PreferredFulfillmentDate)
+                || !string.IsNullOrWhiteSpace(request.PreferredFulfillmentPeriod);
+
+            if (hasPreferred)
+            {
+                var preferred = PreferredFulfillmentSchedule.Resolve(
+                    fulfillmentType,
+                    request.PreferredFulfillmentDate,
+                    request.PreferredFulfillmentPeriod,
+                    branch.TimeZoneId,
+                    now,
+                    branch.OperatingHours,
+                    branch.MinPreparationLeadMinutes,
+                    branch.MaxAdvanceScheduleDays);
+                if (!preferred.IsSuccess)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        preferred.ErrorCode!,
+                        preferred.ErrorMessage!);
+                }
+
+                preferredFulfillmentDate = preferred.Value.Date;
+                preferredFulfillmentPeriod = preferred.Value.Period;
+                preferredFulfillmentTimeZoneId = preferred.Value.TimeZoneId;
+                preferredFulfillmentWindowStartUtc = preferred.Value.WindowStartUtc;
+                preferredFulfillmentWindowEndUtc = preferred.Value.WindowEndUtc;
+            }
+            else if (fulfillmentType == CustomerOrderFulfillmentType.Pickup)
             {
                 var pickup = RequestedPickupSchedule.Resolve(
                     fulfillmentType,
@@ -418,6 +451,22 @@ public sealed class PlaceCustomerOrder
                 }
 
                 (requestedDeliveryLocal, requestedDeliveryTimeZoneId, requestedDeliveryAtUtc) = deliverySchedule.Value;
+            }
+
+            if (CustomerOrderPlaceBranchGate.IsStoreClosed(branch))
+            {
+                var hasSchedule = preferredFulfillmentWindowEndUtc is not null
+                    || (fulfillmentType == CustomerOrderFulfillmentType.Pickup
+                        ? requestedPickupAtUtc is not null
+                        : requestedDeliveryAtUtc is not null);
+                if (!hasSchedule)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                        fulfillmentType == CustomerOrderFulfillmentType.Delivery
+                            ? "This store is closed. Choose a preferred delivery day and period to place your order."
+                            : "This store is closed. Choose a preferred pickup day and period to place your order.");
+                }
             }
 
             var businessDate = CustomerOrderNumbers.BusinessDateOf(now);
@@ -488,7 +537,12 @@ public sealed class PlaceCustomerOrder
                                     requestedPickupAtUtc,
                                     requestedDeliveryLocal,
                                     requestedDeliveryTimeZoneId,
-                                    requestedDeliveryAtUtc),
+                                    requestedDeliveryAtUtc,
+                                    preferredFulfillmentDate,
+                                    preferredFulfillmentPeriod,
+                                    preferredFulfillmentTimeZoneId,
+                                    preferredFulfillmentWindowStartUtc,
+                                    preferredFulfillmentWindowEndUtc),
                                 cancellationToken: ct)
                             .ConfigureAwait(false);
                         return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
@@ -535,7 +589,12 @@ public sealed class PlaceCustomerOrder
                             requestedPickupAtUtc,
                             requestedDeliveryLocal,
                             requestedDeliveryTimeZoneId,
-                            requestedDeliveryAtUtc),
+                            requestedDeliveryAtUtc,
+                            preferredFulfillmentDate,
+                            preferredFulfillmentPeriod,
+                            preferredFulfillmentTimeZoneId,
+                            preferredFulfillmentWindowStartUtc,
+                            preferredFulfillmentWindowEndUtc),
                         cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -892,17 +951,48 @@ public sealed class QuoteCustomerOrderDelivery
                     "Fulfillment branch was not found for this organization.");
             }
 
-            if (!branch.CustomerOrderingOperational)
+            if (branch.OnlineOrdersPaused)
             {
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
                     UnavailableQuote(
-                        branch.OnlineOrdersPaused
-                            ? "This store is temporarily not accepting online orders."
-                            : "This store is not accepting online orders right now.",
+                        "This store is temporarily not accepting online orders.",
                         branch.DeliveryPolicy));
             }
 
-            if (!branch.DeliveryOperational)
+            if (!branch.CustomerOrderingEnabled)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                    UnavailableQuote(
+                        "This store is not accepting online orders right now.",
+                        branch.DeliveryPolicy));
+            }
+
+            // Closed by hours: still quote when scheduled delivery while closed is allowed
+            // (place requires a valid future schedule). Do not treat pause/disabled as open-now.
+            var closedByHours = CustomerOrderPlaceBranchGate.IsStoreClosed(branch);
+            if (closedByHours
+                && !CustomerOrderPlaceBranchGate.CanScheduleWhileClosed(
+                    branch,
+                    CustomerOrderFulfillmentType.Delivery,
+                    sellerCapability.CanCustomerDelivery))
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                    UnavailableQuote(
+                        "Scheduled delivery is not available while this store is closed.",
+                        branch.DeliveryPolicy));
+            }
+
+            if (!closedByHours && !branch.DeliveryOperational)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                    UnavailableQuote(
+                        branch.DeliveryEnabled
+                            ? "Delivery is not available at this time."
+                            : "Delivery is not enabled for this branch.",
+                        branch.DeliveryPolicy));
+            }
+
+            if (closedByHours && !CustomerOrderPlaceBranchGate.IsDeliveryCapable(branch))
             {
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
                     UnavailableQuote(
@@ -1619,7 +1709,11 @@ public sealed class ConfirmCustomerOrderPayment
         MutateAsync(
             sellerOrganizationId,
             orderId,
-            order => order.ConfirmPayment(request.AmountReceived, actorId, _clock.UtcNow),
+            order => order.ConfirmPayment(
+                request.AmountReceived,
+                actorId,
+                _clock.UtcNow,
+                request.PaymentReference),
             cancellationToken);
 
     private async Task<ApplicationResult<CustomerOrderDto>> MutateAsync(

@@ -73,7 +73,53 @@ public sealed class CustomerOrderPlaceBranchGateTests
     }
 
     [Fact]
-    public void Closed_store_rejects_when_seller_disabled_scheduling()
+    public void HasRequestedSchedule_requires_both_date_and_time()
+    {
+        var dateOnly = new PlaceCustomerOrderRequest(
+            "Pickup",
+            Guid.NewGuid(),
+            "Personal",
+            "Ana",
+            Guid.NewGuid(),
+            null,
+            null,
+            null,
+            [new PlaceCustomerOrderLineRequest(Guid.NewGuid(), 1m)],
+            RequestedPickupDate: "2026-08-18",
+            RequestedPickupTime: null);
+        var both = dateOnly with { RequestedPickupTime = "10:00" };
+
+        Assert.False(CustomerOrderPlaceBranchGate.HasRequestedSchedule(
+            CustomerOrderFulfillmentType.Pickup,
+            dateOnly));
+        Assert.True(CustomerOrderPlaceBranchGate.HasRequestedSchedule(
+            CustomerOrderFulfillmentType.Pickup,
+            both));
+    }
+
+    [Fact]
+    public void HasRequestedSchedule_accepts_preferred_day_and_period()
+    {
+        var preferred = new PlaceCustomerOrderRequest(
+            "Pickup",
+            Guid.NewGuid(),
+            "Personal",
+            "Ana",
+            Guid.NewGuid(),
+            null,
+            null,
+            null,
+            [new PlaceCustomerOrderLineRequest(Guid.NewGuid(), 1m)],
+            PreferredFulfillmentDate: "2026-08-18",
+            PreferredFulfillmentPeriod: "Morning");
+
+        Assert.True(CustomerOrderPlaceBranchGate.HasRequestedSchedule(
+            CustomerOrderFulfillmentType.Pickup,
+            preferred));
+    }
+
+    [Fact]
+    public void Closed_store_allows_schedule_without_accept_scheduled_flag()
     {
         var result = CustomerOrderPlaceBranchGate.Validate(
             Branch(operational: false, acceptScheduled: false, storeIsOpenNow: false),
@@ -81,7 +127,7 @@ public sealed class CustomerOrderPlaceBranchGateTests
             canCustomerDelivery: false,
             hasRequestedSchedule: true);
 
-        Assert.False(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
     }
 
     [Fact]

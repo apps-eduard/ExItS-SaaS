@@ -333,6 +333,20 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
         }
 
         CustomerOrderEntityMapper.ApplyToRecord(order, record);
+
+        var lineRecords = await _db.CustomerOrderLines
+            .Where(l => l.OrderId == order.Id.Value && l.SellerOrganizationId == order.SellerOrganizationId.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var byId = lineRecords.ToDictionary(l => l.Id);
+        foreach (var line in order.Lines)
+        {
+            if (byId.TryGetValue(line.Id.Value, out var lineRecord))
+            {
+                CustomerOrderEntityMapper.ApplyLineToRecord(line, lineRecord);
+            }
+        }
+
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 

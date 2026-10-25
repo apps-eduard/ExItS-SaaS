@@ -34,7 +34,17 @@ internal sealed class PosCustomerOrderBranchDirectory(
         }
 
         var branches = await ListBranchesAsync(sellerOrganizationId, cancellationToken).ConfigureAwait(false);
-        return branches.FirstOrDefault(b => b.BranchId == branchId);
+        var fromList = branches.FirstOrDefault(b => b.BranchId == branchId);
+        if (fromList is not null)
+        {
+            return fromList;
+        }
+
+        // Staff-filtered org branch lists omit branches the actor cannot operate.
+        // Customer-order place/propose/accept still need the order's fulfillment branch
+        // (org view auth — not staff assignment). Load by id via readiness + hours.
+        return await TryGetOrgBranchByIdAsync(sellerOrganizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task<CustomerOrderBranchSnapshot?> GetCommerceBranchAsync(
@@ -192,11 +202,28 @@ internal sealed class PosCustomerOrderBranchDirectory(
         // Personal linked buyers cannot call org membership branch APIs — use linked-merchant projection.
         var personalBranches = await TryListLinkedMerchantBranchesAsync(sellerOrganizationId, cancellationToken)
             .ConfigureAwait(false);
-        if (personalBranches is not null)
+        if (personalBranches is { Count: > 0 })
         {
             return personalBranches;
         }
 
+        var membershipBranches = await TryListOrganizationMembershipBranchesAsync(
+                sellerOrganizationId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (membershipBranches.Count > 0)
+        {
+            return membershipBranches;
+        }
+
+        // Linked-merchant returned 200 with zero Active rows (or Status filter emptied it).
+        return personalBranches ?? membershipBranches;
+    }
+
+    private async Task<IReadOnlyList<CustomerOrderBranchSnapshot>> TryListOrganizationMembershipBranchesAsync(
+        Guid sellerOrganizationId,
+        CancellationToken cancellationToken)
+    {
         using var platformRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"api/v1/platform/organizations/{sellerOrganizationId:D}/branches");
@@ -233,6 +260,126 @@ internal sealed class PosCustomerOrderBranchDirectory(
             return [];
         }
     }
+
+    /// <summary>
+    /// Loads one org branch for schedule/place without staff branch-assignment filtering.
+    /// Uses fulfillment-readiness + operating-hours (EnsureCanViewOrganization).
+    /// </summary>
+    private async Task<CustomerOrderBranchSnapshot?> TryGetOrgBranchByIdAsync(
+        Guid sellerOrganizationId,
+        Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        EnsureBaseAddress();
+        if (client.BaseAddress is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var readinessRequest = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"api/v1/platform/organizations/{sellerOrganizationId:D}/branches/{branchId:D}/fulfillment-readiness");
+            ForwardPlatformCredentials(readinessRequest);
+            using var readinessResponse = await client
+                .SendAsync(readinessRequest, cancellationToken)
+                .ConfigureAwait(false);
+            if (!readinessResponse.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var readiness = await readinessResponse.Content
+                .ReadFromJsonAsync<OrgBranchReadinessDto>(JsonOptions, cancellationToken)
+                .ConfigureAwait(false);
+            if (readiness is null || readiness.BranchId != branchId)
+            {
+                return null;
+            }
+
+            IReadOnlyList<CustomerOrderBranchHoursDaySnapshot>? hours = null;
+            using var hoursRequest = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"api/v1/platform/organizations/{sellerOrganizationId:D}/branches/{branchId:D}/operating-hours");
+            ForwardPlatformCredentials(hoursRequest);
+            using var hoursResponse = await client
+                .SendAsync(hoursRequest, cancellationToken)
+                .ConfigureAwait(false);
+            if (hoursResponse.IsSuccessStatusCode)
+            {
+                var days = await hoursResponse.Content
+                    .ReadFromJsonAsync<IReadOnlyList<BranchOperatingHoursDayDto>>(JsonOptions, cancellationToken)
+                    .ConfigureAwait(false);
+                if (days is { Count: > 0 })
+                {
+                    hours = days
+                        .Select(day => new CustomerOrderBranchHoursDaySnapshot(
+                            day.DayOfWeek,
+                            day.IsClosed,
+                            day.IsOpen24Hours,
+                            day.OpenTime,
+                            day.CloseTime))
+                        .ToList();
+                }
+            }
+
+            return new CustomerOrderBranchSnapshot(
+                readiness.BranchId,
+                "Branch",
+                readiness.CustomerOrderingEnabled,
+                readiness.PickupEnabled,
+                readiness.DeliveryEnabled,
+                readiness.CustomerOrderingOperational,
+                readiness.PickupOperational,
+                readiness.DeliveryOperational,
+                readiness.OnlineOrdersPaused,
+                readiness.StoreStatusMessage,
+                Latitude: null,
+                Longitude: null,
+                DeliveryPolicy: null,
+                IsPrimary: false,
+                DeliveryServiceAreas: null,
+                readiness.PickupReady,
+                readiness.DeliveryReady,
+                readiness.TimeZoneId,
+                hours,
+                readiness.AcceptScheduledOrdersWhileClosed,
+                readiness.MinPreparationLeadMinutes,
+                readiness.MaxAdvanceScheduleDays,
+                StoreIsOpenNow: readiness.StoreIsOpenNow);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private sealed record OrgBranchReadinessDto(
+        Guid BranchId,
+        bool CustomerOrderingEnabled,
+        bool PickupEnabled,
+        bool DeliveryEnabled,
+        bool OnlineOrdersPaused,
+        bool CustomerOrderingOperational,
+        bool PickupOperational,
+        bool DeliveryOperational,
+        bool PickupReady,
+        bool DeliveryReady,
+        bool StoreIsOpenNow,
+        string? StoreStatusMessage = null,
+        bool AcceptScheduledOrdersWhileClosed = false,
+        int MinPreparationLeadMinutes = 0,
+        int MaxAdvanceScheduleDays = 0,
+        string? TimeZoneId = null);
 
     private async Task<IReadOnlyList<CustomerOrderBranchSnapshot>?> TryListLinkedMerchantBranchesAsync(
         Guid sellerOrganizationId,

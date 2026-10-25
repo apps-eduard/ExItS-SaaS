@@ -75,7 +75,103 @@ Branch must belong to the seller org, be Active (not Archived), and be **operati
 | Setup | `CustomerOrderingReady` | + coordinates, policy, hours, phone |
 | Live | `PickupOperational` | `DeliveryOperational` (includes open hours, not paused) |
 
-Storefront status is advisory; quote and place revalidate operational state. Customers may browse while closed/paused but cannot place new orders. Existing Submitted/Accepted orders continue after close/pause.
+Storefront status is advisory; quote and place revalidate operational state. Existing Submitted/Accepted orders continue after close/pause.
+
+### Closed-store and scheduled orders (decision matrix)
+
+| State | Customer may place? | Primary action | Notes |
+|---|---|---|---|
+| **Open** | Yes (ASAP optional preference) | Place order | Optional preferred day/period still validated against hours / lead / max advance. |
+| **Closed by hours** | Yes, with valid preferred day+period | Schedule & checkout → Schedule & place order | Closed status is informational. Customer picks Today / Tomorrow / another open day and Morning / Afternoon / Evening. Submits a real `Submitted` order; seller still accepts. |
+| **Seller paused online orders** | No | Continue shopping | Scheduling does **not** bypass pause. |
+| **Ordering disabled / method not ready** | No | Continue shopping | Distinct from ordinary hours closure; entitlement and readiness messages apply. |
+
+### Preferred fulfillment windows (flexible scheduling)
+
+Customers no longer choose an exact pickup/delivery appointment clock time at Personal Soft Glass checkout.
+
+| Step | Choices |
+|---|---|
+| Day | **Today**, **Tomorrow**, or **Choose another day** (Soft Glass date-only picker) |
+| Period | **Morning** (before 12:00), **Afternoon** (12:00–18:00), **Evening** (after 18:00) — only periods that intersect open hours |
+
+Rules:
+
+- Branch-local timezone is authoritative (`PreferredFulfillmentTimeZoneId` / branch `TimeZoneId`).
+- Period options are the intersection of the period window with published operating hours (including overnight spill into the next morning).
+- Same-day periods respect preparation lead time; a period is offered only when at least **30 minutes** of usable intersection remains (`PreferredFulfillmentSchedule.MinUsableWindowMinutes` / frontend mirror).
+- Max advance schedule days disable out-of-window calendar days; past and closed days are not selectable.
+- Delivery uses the same preferred day/period model and still respects delivery readiness / areas / quote rules.
+- Preference copy: the selected period is a **preference**, not a guaranteed ready time. Seller notifies when Ready.
+- Persistence: `PreferredFulfillmentDate`, `PreferredFulfillmentPeriod`, timezone, and resolved usable `WindowStartUtc` / `WindowEndUtc` for validation. Do **not** invent a fake exact time such as 09:00 for Morning.
+- Legacy exact-time orders keep `RequestedPickup*` / `RequestedDelivery*` snapshots readable; new preferred orders leave those null.
+- Closed-by-hours place requires preferred day+period (or legacy exact date+time). ASAP empty schedule is rejected while closed.
+- Seller Accept still reserves stock; **Mark Ready** remains a preparation statement (does not reserve). SignalR status events unchanged (`ExitsPosRealtimeHub`).
+
+Server rules (`CustomerOrderPlaceBranchGate`, `PreferredFulfillmentSchedule`, legacy `RequestedFulfillmentSchedule`):
+
+- Closed-by-hours requires preferred day+period (or legacy exact date+time); ASAP is rejected while closed.
+- Branch timezone, published operating hours (including overnight windows), preparation lead, max advance, and min usable window are enforced on place.
+- Missing or invalid hours **block** preferred periods (no silent allow). Closed days / unavailable periods cannot be selected.
+- Delivery quote allows fee calculation when the store is closed by hours and delivery is configured; pause/disabled still fail closed.
+- Cash / ManualGCash / Utang payment status on submit is unchanged (Unpaid / Pending / Unpaid). Inventory reserve remains on Accept.
+- `AcceptScheduledOrdersWhileClosed` remains a seller preference field but does **not** block closed-hour scheduled checkout/place.
+
+Personal Soft Glass cart: store closed + weekly hours (info only) + **Schedule & checkout**. Checkout requires a preferred day+period; order is submitted now for seller confirmation. Cart clearing happens only after a successful place.
+
+### Status labels (UI — do not rename backend enums)
+
+| Backend `CustomerOrderStatus` / fulfillment | Buyer chip | Seller chip |
+|---|---|---|
+| Submitted | Pending Approval | New |
+| Accepted + Preparing | Preparing | Preparing |
+| ReadyForPickup | Ready for Pickup | Ready |
+| Ready (delivery) | Ready | Ready |
+| OutForDelivery | Out for Delivery | Out for Delivery |
+| Delivered / Collected / Completed / Rejected / Cancelled | Same wording | Same wording |
+
+Compact buyer chips must **not** show “Awaiting Seller Approval”. Prefer **Pending Approval**.
+
+### Partial fulfillment (seller line adjust — no buyer approval)
+
+Under the checkout-disclosed partial-fulfillment policy, an authorized seller may reduce line quantities or cancel individual lines **without** buyer acceptance. Do not invent an approval thread.
+
+| Action | Effect |
+|---|---|
+| Reduce quantity | `OriginalQuantity` preserved; `Quantity` lowered; shortage = cancelled qty; totals recalculated; reservation deltas released |
+| Cancel item | Quantity → 0; line marked cancelled; order continues if other lines remain |
+| All lines cancelled | Whole order → `Cancelled` (`CancelReason = AllItemsCancelled`) |
+
+Rules:
+
+- Seller cannot increase quantity, unit price, or payable total through adjust
+- Paid orders: adjustment **blocked** until a supported refund/credit workflow exists (`CustomerOrderPaidAdjustmentBlocked`)
+- Activity events record actor, timestamp, previous/new qty, reason, note, previous/new total
+- SignalR: `CustomerOrderLinesAdjusted` (plus existing cancel events when the whole order cancels)
+- Buyer Soft Glass detail shows **Order Updated**, original qty as secondary text, revised total, and a simple activity timeline
+
+Reason codes: OutOfStock, InsufficientStock, DamagedProduct, QualityIssue, Other (Other requires a note).
+
+### Seller approval and schedule proposals
+
+Customer-facing wording for `Submitted` is **Pending Approval** (seller: **New**). Payment status stays separate.
+
+Seller actions on eligible `Submitted` orders:
+
+| Action | Effect |
+|---|---|
+| **Accept** | Accepts the customer's requested (or already confirmed) schedule; existing Accept → Preparing + inventory reserve. Blocked while a schedule proposal is pending. |
+| **Reject** | Existing reject reasons/notes; clears any pending proposal; inventory release rules unchanged. |
+| **Propose new schedule** | Persists a pending proposal on the order (`PendingScheduleProposal*`). Does **not** overwrite `RequestedPickup*` / `RequestedDelivery*`. Does **not** change order status, payment, or inventory. |
+
+Customer response (Personal order detail):
+
+| Action | Effect |
+|---|---|
+| **Accept new schedule** | Writes `ConfirmedFulfillment*`; clears pending proposal; order remains `Submitted` until seller Accept. Backend re-validates the proposed time against current branch hours / lead / max advance. Stale proposal ids fail closed. |
+| **Decline** | Clears pending proposal; requested schedule remains; order stays `Submitted` for seller to propose again or reject. |
+
+`EffectiveFulfillment*` prefers confirmed over original request for display. Proposal and response mutations are idempotent for the same proposal id; concurrent stale accepts fail. Notifications / SignalR: `CustomerOrderScheduleProposed`, `CustomerOrderScheduleAccepted`, `CustomerOrderScheduleDeclined` (existing hubs; no Redis).
 
 Report: [P28-WP11](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md). Multi-branch catalog/customer/inventory isolation: [P28-WP12](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md).
 
@@ -94,16 +190,29 @@ V1 place creates **Submitted** orders (no long-lived Draft storefront cart requi
 
 ### Seller workflow
 
-Submitted → Accept or Reject  
-Accept → Preparing  
-Pickup: Preparing → ReadyForPickup → Collected → Completed  
-Delivery: Preparing → Ready → OutForDelivery → Delivered → Completed  
+Submitted (buyer: **Pending Approval**, seller: **New**) → Accept, Reject, or Propose schedule  
+Propose schedule → customer Accept/Decline proposal (order stays Submitted) → seller Accept or Reject  
+Accept → Preparing (seller may Adjust Items while unpaid and not yet out/collected)  
+Pickup: Preparing → Ready for Pickup → Collected → Completed  
+Delivery: Preparing → Ready → Out for Delivery → Delivered → Completed  
 
-### Cancellation (V1 conservative)
+Schedule proposals do not add a new `CustomerOrderStatus`. Original requested times remain for audit; confirmed times live in `ConfirmedFulfillment*`.
 
-- Draft/Submitted: customer may cancel
-- After Accept / Preparing+: customer cannot silently cancel
-- Out for Delivery: not cancellable in V1
+### Cancellation cutoffs
+
+**Buyer**
+
+| Stage | Direct cancel? |
+|---|---|
+| Submitted | Yes |
+| Accepted + fulfillment Pending | Yes (policy) |
+| Preparing / Ready / Ready for Pickup / Out for Delivery / Collected / Delivered / Completed | No — do not render a cancel-request control without a backend action |
+
+**Seller**
+
+- Reject eligible Submitted orders with reason
+- Cancel eligible active orders with reason (`CancelBySeller`), including **Cancel — Customer Refused** at pickup/delivery (mandatory note; inventory release via existing reserved-path; payment/refund obligation must remain safe — paid refusal still cancels the order lifecycle but does not invent automatic external refunds)
+- Must not cancel Collected / Completed through ordinary actions
 
 ### Rejection
 
@@ -150,21 +259,23 @@ Persisted on `customer_orders.payment_method` (`Cash` default; existing rows rea
 
 | Choice | Persist as | Meaning |
 |---|---|---|
-| Cash (default) | `Cash` | Intended/manual cash settlement |
-| GCash | `ManualGCash` | Manual/unverified; UI label is GCash |
-| Utang | `Utang` | Requested manual settlement; seller can see it before Accept |
+| Cash (default) | `Cash` | Seller enters amount received + change at confirm |
+| GCash | `ManualGCash` | Buyer selects GCash at checkout **without** entering a reference; seller verifies receipt and enters reference + amount |
+| Utang | `Utang` | Requested manual settlement; Business Utang posts on Complete for final order value |
 
 Rules:
 
 - Omitted/null request ⇒ Cash; invalid value ⇒ reject
-- Submit remains **`PaymentStatus = Unpaid`** for all three methods
-- Do **not** integrate `PaymentAttempt`, GCash/card gateway, QR/deep-link, or automatic Paid
-- Do **not** automatically post customer debt or Business Utang ledger
-- Payment method is an immutable submit-time snapshot (no payment negotiation in V1)
-- Personal review uses a Sales-style Cash / GCash / Utang toggle (not Sale Card/electronic gateway methods)
-- Personal and seller order detail show method + Unpaid; do not imply payment was collected
+- Submit remains **`PaymentStatus = Unpaid`** for all three methods (do not mark Paid because the buyer chose Manual GCash)
+- Buyer must not enter a GCash transaction reference at checkout; seller `ConfirmPayment` requires reference (+ verified amount) for ManualGCash
+- Duplicate confirmation with a different amount/reference is rejected; same values are idempotent no-ops
+- Checkout discloses that unavailable items may be reduced/cancelled and totals adjusted per merchant policy
+- Do **not** integrate `PaymentAttempt`, GCash/card gateway, QR/deep-link, or automatic Paid / automatic external refunds
+- Do **not** automatically post customer debt except the existing Complete-time Utang path (recalculated for adjusted totals)
+- Payment method is an immutable submit-time snapshot
+- Personal Soft Glass checkout/detail and Organization seller detail keep payment status separate from order/fulfillment status
 
-Automated settlement/payment rails remain a future residual.
+Automated settlement/payment rails and paid-line refund/credit workflows remain residuals.
 
 ### Connected Purchase Order (separate)
 

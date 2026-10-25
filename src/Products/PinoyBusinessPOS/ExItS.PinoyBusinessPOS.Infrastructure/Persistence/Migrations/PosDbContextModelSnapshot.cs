@@ -38,6 +38,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("accepted_by");
 
+                    b.Property<string>("ActivityEventsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("activity_events_json");
+
                     b.Property<decimal?>("AmountReceived")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -48,6 +52,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("branch_name_snapshot");
+
+                    b.Property<string>("CancelNotes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("cancel_notes");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("cancel_reason");
 
                     b.Property<DateTimeOffset?>("CancelledAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -72,6 +86,20 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CompletedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("completed_by");
+
+                    b.Property<DateTimeOffset?>("ConfirmedFulfillmentAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmed_fulfillment_at_utc");
+
+                    b.Property<string>("ConfirmedFulfillmentLocal")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("confirmed_fulfillment_local");
+
+                    b.Property<string>("ConfirmedFulfillmentTimeZoneId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("confirmed_fulfillment_time_zone_id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -250,6 +278,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(24)")
                         .HasColumnName("order_number");
 
+                    b.Property<decimal>("OriginalMerchandiseSubtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("original_merchandise_subtotal");
+
+                    b.Property<decimal>("OriginalTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("original_total");
+
                     b.Property<DateTimeOffset?>("OutForDeliveryAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("out_for_delivery_at_utc");
@@ -285,9 +323,62 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("payment_status");
 
+                    b.Property<DateTimeOffset?>("PendingScheduleProposalAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pending_schedule_proposal_at_utc");
+
+                    b.Property<Guid?>("PendingScheduleProposalBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pending_schedule_proposal_by");
+
+                    b.Property<Guid?>("PendingScheduleProposalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pending_schedule_proposal_id");
+
+                    b.Property<string>("PendingScheduleProposalLocal")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("pending_schedule_proposal_local");
+
+                    b.Property<string>("PendingScheduleProposalNote")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("pending_schedule_proposal_note");
+
+                    b.Property<DateTimeOffset?>("PendingScheduleProposalProposedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pending_schedule_proposal_proposed_at_utc");
+
+                    b.Property<string>("PendingScheduleProposalTimeZoneId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("pending_schedule_proposal_time_zone_id");
+
                     b.Property<Guid?>("PlatformBusinessCustomerId")
                         .HasColumnType("uuid")
                         .HasColumnName("platform_business_customer_id");
+
+                    b.Property<DateOnly?>("PreferredFulfillmentDate")
+                        .HasColumnType("date")
+                        .HasColumnName("preferred_fulfillment_date");
+
+                    b.Property<string>("PreferredFulfillmentPeriod")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("preferred_fulfillment_period");
+
+                    b.Property<string>("PreferredFulfillmentTimeZoneId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("preferred_fulfillment_time_zone_id");
+
+                    b.Property<DateTimeOffset?>("PreferredFulfillmentWindowEndUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("preferred_fulfillment_window_end_utc");
+
+                    b.Property<DateTimeOffset?>("PreferredFulfillmentWindowStartUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("preferred_fulfillment_window_start_utc");
 
                     b.Property<DateTimeOffset?>("ReadyAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -3616,6 +3707,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AdjustmentNote")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("adjustment_note");
+
+                    b.Property<string>("AdjustmentReason")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("adjustment_reason");
+
                     b.Property<decimal>("Discount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -3639,6 +3740,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid")
                         .HasColumnName("order_id");
+
+                    b.Property<decimal>("OriginalDiscount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("original_discount");
+
+                    b.Property<decimal>("OriginalQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("original_quantity");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid")
@@ -3684,11 +3795,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("customer_order_lines", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_customer_order_lines_amounts_non_negative", "unit_price >= 0 AND discount >= 0 AND line_total >= 0");
+                            t.HasCheckConstraint("ck_customer_order_lines_amounts_non_negative", "unit_price >= 0 AND discount >= 0 AND line_total >= 0 AND original_quantity >= 0 AND original_discount >= 0");
 
                             t.HasCheckConstraint("ck_customer_order_lines_line_number_positive", "line_number > 0");
 
-                            t.HasCheckConstraint("ck_customer_order_lines_quantity_positive", "quantity > 0");
+                            t.HasCheckConstraint("ck_customer_order_lines_quantity_non_negative", "quantity >= 0");
 
                             t.HasCheckConstraint("ck_customer_order_lines_unit", "unit_snapshot IN ('Piece', 'Pack', 'Box', 'Bottle', 'Can', 'Sachet', 'Kilogram', 'Gram', 'Liter', 'Milliliter', 'Meter')");
                         });

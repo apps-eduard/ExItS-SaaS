@@ -13,6 +13,10 @@ public static class PosRealtimeEventTypes
     public const string CustomerOrderDelivered = "CustomerOrderDelivered";
     public const string CustomerOrderCollected = "CustomerOrderCollected";
     public const string CustomerOrderCompleted = "CustomerOrderCompleted";
+    public const string CustomerOrderScheduleProposed = "CustomerOrderScheduleProposed";
+    public const string CustomerOrderScheduleAccepted = "CustomerOrderScheduleAccepted";
+    public const string CustomerOrderScheduleDeclined = "CustomerOrderScheduleDeclined";
+    public const string CustomerOrderLinesAdjusted = "CustomerOrderLinesAdjusted";
     public const string PaymentStatusChanged = "PaymentStatusChanged";
     public const string ConnectedCommerceSettingsChanged = "ConnectedCommerceSettingsChanged";
     public const string PaymentMethodSettingsChanged = "PaymentMethodSettingsChanged";

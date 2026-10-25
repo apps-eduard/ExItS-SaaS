@@ -926,6 +926,55 @@
   color: var(--exits-text);
 }
 
+/* Preferred fulfillment period chips (Personal Soft Glass checkout). */
+.personal-preferred-period {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-width: 8.5rem;
+  flex: 1 1 8.5rem;
+  max-width: 14rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--soft-glass-field-radius, 0.6875rem);
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+  color: var(--exits-text);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.personal-preferred-period:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.personal-preferred-period--selected {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-surface));
+}
+
+.personal-preferred-period__title {
+  font-size: var(--exits-text-sm);
+  font-weight: 650;
+}
+
+.personal-preferred-period__caption {
+  font-size: var(--exits-text-xs);
+  color: var(--exits-muted, var(--exits-text-muted));
+}
+
+[data-theme="dark"] .personal-preferred-period {
+  border-color: color-mix(in srgb, var(--exits-primary) 34%, #475569);
+  background: color-mix(in srgb, var(--exits-primary) 14%, #0f172a);
+}
+
+[data-theme="dark"] .personal-preferred-period--selected {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 24%, #0f172a);
+}
+
 .pc-field__control {
   min-height: 2.75rem;
   width: 100%;

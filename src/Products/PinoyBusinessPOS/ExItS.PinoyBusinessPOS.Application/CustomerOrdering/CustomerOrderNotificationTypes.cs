@@ -12,6 +12,10 @@ public static class CustomerOrderNotificationTypes
     public const string Delivered = "CustomerOrderDelivered";
     public const string Collected = "CustomerOrderCollected";
     public const string Completed = "CustomerOrderCompleted";
+    public const string ScheduleProposed = "CustomerOrderScheduleProposed";
+    public const string ScheduleAccepted = "CustomerOrderScheduleAccepted";
+    public const string ScheduleDeclined = "CustomerOrderScheduleDeclined";
+    public const string LinesAdjusted = "CustomerOrderLinesAdjusted";
 
     public static bool IsKnown(string? relatedType) =>
         string.Equals(relatedType, Submitted, StringComparison.Ordinal)
@@ -22,5 +26,9 @@ public static class CustomerOrderNotificationTypes
         || string.Equals(relatedType, OutForDelivery, StringComparison.Ordinal)
         || string.Equals(relatedType, Delivered, StringComparison.Ordinal)
         || string.Equals(relatedType, Collected, StringComparison.Ordinal)
-        || string.Equals(relatedType, Completed, StringComparison.Ordinal);
+        || string.Equals(relatedType, Completed, StringComparison.Ordinal)
+        || string.Equals(relatedType, ScheduleProposed, StringComparison.Ordinal)
+        || string.Equals(relatedType, ScheduleAccepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, ScheduleDeclined, StringComparison.Ordinal)
+        || string.Equals(relatedType, LinesAdjusted, StringComparison.Ordinal);
 }

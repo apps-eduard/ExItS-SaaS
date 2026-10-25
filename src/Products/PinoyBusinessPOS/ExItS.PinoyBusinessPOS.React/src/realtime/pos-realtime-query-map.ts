@@ -12,6 +12,10 @@ const CUSTOMER_ORDER_EVENTS = new Set<string>([
   PosRealtimeEventTypes.CustomerOrderDelivered,
   PosRealtimeEventTypes.CustomerOrderCollected,
   PosRealtimeEventTypes.CustomerOrderCompleted,
+  PosRealtimeEventTypes.CustomerOrderScheduleProposed,
+  PosRealtimeEventTypes.CustomerOrderScheduleAccepted,
+  PosRealtimeEventTypes.CustomerOrderScheduleDeclined,
+  PosRealtimeEventTypes.CustomerOrderLinesAdjusted,
   PosRealtimeEventTypes.PaymentStatusChanged,
 ]);
 

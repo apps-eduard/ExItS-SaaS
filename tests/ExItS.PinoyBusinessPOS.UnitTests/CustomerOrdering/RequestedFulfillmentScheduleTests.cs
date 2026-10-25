@@ -141,4 +141,19 @@ public sealed class RequestedFulfillmentScheduleTests
         Assert.False(result.IsSuccess);
         Assert.Contains("7 days", result.ErrorMessage, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Rejects_scheduled_time_when_operating_hours_missing()
+    {
+        var result = RequestedFulfillmentSchedule.Resolve(
+            CustomerOrderFulfillmentType.Pickup,
+            "2026-10-26",
+            "10:00",
+            "UTC",
+            new DateTimeOffset(2026, 10, 25, 12, 0, 0, TimeSpan.Zero),
+            operatingHours: null);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("operating hours", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
 }

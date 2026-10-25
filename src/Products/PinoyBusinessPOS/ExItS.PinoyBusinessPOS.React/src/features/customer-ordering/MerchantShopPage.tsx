@@ -409,7 +409,7 @@ export function MerchantShopPage() {
       onScheduleOrder={scheduleCheckout}
       continueBlockedDetail={checkoutBlock ? t(checkoutBlock) : null}
       checkoutMode={checkoutMode}
-      storeStatusMessage={selectedBranch?.storeStatusMessage ?? null}
+      operatingHours={selectedBranch?.operatingHours ?? null}
     />
   );
 

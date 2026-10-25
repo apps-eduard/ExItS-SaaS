@@ -178,6 +178,26 @@ internal static class CustomerOrderEndpoints
                 .ConfigureAwait(false);
         });
 
+        group.MapPost("/{orderId:guid}/propose-schedule", async (
+            HttpRequest request,
+            Guid organizationId,
+            Guid orderId,
+            ProposeCustomerOrderScheduleRequest body,
+            ProposeCustomerOrderSchedule useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorizeSeller(request, access, organizationId, UtangCapability.ManageCustomerOrders, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, orderId, body, actorId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
         group.MapPost("/{orderId:guid}/cancel", async (
             HttpRequest request,
             Guid organizationId,
@@ -261,6 +281,46 @@ internal static class CustomerOrderEndpoints
                     Results.Ok,
                     ct)
                 .ConfigureAwait(false);
+        });
+
+        group.MapPost("/{orderId:guid}/adjust-lines", async (
+            HttpRequest request,
+            Guid organizationId,
+            Guid orderId,
+            AdjustCustomerOrderLinesRequest body,
+            AdjustCustomerOrderLines useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorizeSeller(request, access, organizationId, UtangCapability.ManageCustomerOrders, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, orderId, body, actorId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapPost("/{orderId:guid}/cancel-by-seller", async (
+            HttpRequest request,
+            Guid organizationId,
+            Guid orderId,
+            CancelCustomerOrderBySellerRequest body,
+            CancelCustomerOrderBySeller useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorizeSeller(request, access, organizationId, UtangCapability.ManageCustomerOrders, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, orderId, body, actorId, ct).ConfigureAwait(false),
+                Results.Ok);
         });
 
         group.MapPost("/{orderId:guid}/payment-not-received", async (
@@ -513,6 +573,42 @@ internal static class CustomerOrderEndpoints
 
             return PosApiResults.FromResult(
                 await useCase.ExecuteAsync(sellerOrganizationId, orderId, actorId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapPost("/organizations/{sellerOrganizationId:guid}/{orderId:guid}/accept-schedule-proposal", async (
+            HttpRequest request,
+            Guid sellerOrganizationId,
+            Guid orderId,
+            RespondCustomerOrderScheduleProposalRequest body,
+            AcceptCustomerOrderScheduleProposal useCase,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(sellerOrganizationId, orderId, body, actorId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapPost("/organizations/{sellerOrganizationId:guid}/{orderId:guid}/decline-schedule-proposal", async (
+            HttpRequest request,
+            Guid sellerOrganizationId,
+            Guid orderId,
+            RespondCustomerOrderScheduleProposalRequest body,
+            DeclineCustomerOrderScheduleProposal useCase,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(sellerOrganizationId, orderId, body, actorId, ct).ConfigureAwait(false),
                 Results.Ok);
         });
     }

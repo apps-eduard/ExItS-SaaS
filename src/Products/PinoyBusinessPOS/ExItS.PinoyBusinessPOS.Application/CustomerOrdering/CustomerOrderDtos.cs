@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 
@@ -13,7 +14,13 @@ public sealed record CustomerOrderLineDto(
     decimal Quantity,
     decimal UnitPrice,
     decimal Discount,
-    decimal LineTotal);
+    decimal LineTotal,
+    decimal OriginalQuantity = 0m,
+    decimal CancelledQuantity = 0m,
+    decimal OriginalLineTotal = 0m,
+    bool IsCancelled = false,
+    string? AdjustmentReason = null,
+    string? AdjustmentNote = null);
 
 public sealed record CustomerOrderDeliveryDto(
     string RecipientName,
@@ -89,12 +96,78 @@ public sealed record CustomerOrderDto(
     string? RequestedDeliveryLocal = null,
     string? RequestedDeliveryTimeZoneId = null,
     DateTimeOffset? RequestedDeliveryAtUtc = null,
+    string? PreferredFulfillmentDate = null,
+    string? PreferredFulfillmentPeriod = null,
+    string? PreferredFulfillmentTimeZoneId = null,
+    DateTimeOffset? PreferredFulfillmentWindowStartUtc = null,
+    DateTimeOffset? PreferredFulfillmentWindowEndUtc = null,
     decimal? AmountReceived = null,
     decimal? ChangeAmount = null,
     DateTimeOffset? PaymentConfirmedAtUtc = null,
-    Guid? PaymentConfirmedBy = null);
+    Guid? PaymentConfirmedBy = null,
+    string? ConfirmedFulfillmentLocal = null,
+    string? ConfirmedFulfillmentTimeZoneId = null,
+    DateTimeOffset? ConfirmedFulfillmentAtUtc = null,
+    string? EffectiveFulfillmentLocal = null,
+    string? EffectiveFulfillmentTimeZoneId = null,
+    DateTimeOffset? EffectiveFulfillmentAtUtc = null,
+    CustomerOrderScheduleProposalDto? PendingScheduleProposal = null,
+    decimal OriginalMerchandiseSubtotal = 0m,
+    decimal OriginalTotal = 0m,
+    string? CancelReason = null,
+    string? CancelNotes = null,
+    IReadOnlyList<CustomerOrderActivityEventDto>? Activity = null,
+    bool HasLineAdjustments = false);
 
-public sealed record ConfirmCustomerOrderPaymentRequest(decimal? AmountReceived = null);
+public sealed record CustomerOrderScheduleProposalDto(
+    Guid ProposalId,
+    string Local,
+    string TimeZoneId,
+    DateTimeOffset AtUtc,
+    string? Note,
+    Guid ProposedBy,
+    DateTimeOffset ProposedAtUtc);
+
+public sealed record ProposeCustomerOrderScheduleRequest(
+    string Date,
+    string Time,
+    string? Note = null,
+    Guid? ClientProposalId = null);
+
+public sealed record RespondCustomerOrderScheduleProposalRequest(
+    Guid ProposalId);
+
+public sealed record ConfirmCustomerOrderPaymentRequest(
+    decimal? AmountReceived = null,
+    string? PaymentReference = null);
+
+public sealed record AdjustCustomerOrderLinesRequest(
+    IReadOnlyList<AdjustCustomerOrderLineRequest> Lines);
+
+public sealed record AdjustCustomerOrderLineRequest(
+    Guid LineId,
+    decimal NewQuantity,
+    string Reason,
+    string? Note = null);
+
+public sealed record CancelCustomerOrderBySellerRequest(
+    string Reason,
+    string? Notes = null);
+
+public sealed record CustomerOrderActivityEventDto(
+    Guid EventId,
+    DateTimeOffset AtUtc,
+    Guid? ActorId,
+    string Action,
+    Guid? LineId = null,
+    string? ProductName = null,
+    decimal? PreviousQuantity = null,
+    decimal? NewQuantity = null,
+    string? ReasonCode = null,
+    string? Note = null,
+    decimal? PreviousTotal = null,
+    decimal? NewTotal = null,
+    string? Summary = null);
 
 public sealed record CustomerOrderListItemDto(
     Guid OrderId,
@@ -153,7 +226,9 @@ public sealed record PlaceCustomerOrderRequest(
     string? RequestedPickupDate = null,
     string? RequestedPickupTime = null,
     string? RequestedDeliveryDate = null,
-    string? RequestedDeliveryTime = null);
+    string? RequestedDeliveryTime = null,
+    string? PreferredFulfillmentDate = null,
+    string? PreferredFulfillmentPeriod = null);
 
 public sealed record QuoteCustomerOrderDeliveryRequest(
     Guid FulfillmentBranchId,
@@ -229,17 +304,28 @@ public static class CustomerOrderMaps
                     order.DeliverySnapshot.FinalDeliveryFee,
                     order.DeliverySnapshot.FreeDeliveryApplied,
                     order.DeliverySnapshot.DistanceExceptionApplied),
-            order.Lines.Select(l => new CustomerOrderLineDto(
-                l.Id.Value,
-                l.ProductId.Value,
-                l.LineNumber,
-                l.NameSnapshot,
-                l.SkuSnapshot,
-                UnitOfMeasures.ToCode(l.UnitSnapshot),
-                l.Quantity,
-                l.UnitPrice,
-                l.Discount,
-                l.LineTotal)).ToList(),
+            order.Lines.Select(l =>
+            {
+                var originalGross = SaleMoney.RoundMoney(l.UnitPrice * l.OriginalQuantity);
+                var originalLineTotal = SaleMoney.RoundMoney(originalGross - l.OriginalDiscount);
+                return new CustomerOrderLineDto(
+                    l.Id.Value,
+                    l.ProductId.Value,
+                    l.LineNumber,
+                    l.NameSnapshot,
+                    l.SkuSnapshot,
+                    UnitOfMeasures.ToCode(l.UnitSnapshot),
+                    l.Quantity,
+                    l.UnitPrice,
+                    l.Discount,
+                    l.LineTotal,
+                    l.OriginalQuantity,
+                    l.CancelledQuantity,
+                    originalLineTotal,
+                    l.IsCancelled,
+                    l.AdjustmentReason?.ToString(),
+                    l.AdjustmentNote);
+            }).ToList(),
             order.CreatedAtUtc,
             order.SubmittedAtUtc,
             order.AcceptedAtUtc,
@@ -266,10 +352,50 @@ public static class CustomerOrderMaps
             order.RequestedDeliveryLocal,
             order.RequestedDeliveryTimeZoneId,
             order.RequestedDeliveryAtUtc,
+            order.PreferredFulfillmentDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            order.PreferredFulfillmentPeriod?.ToString(),
+            order.PreferredFulfillmentTimeZoneId,
+            order.PreferredFulfillmentWindowStartUtc,
+            order.PreferredFulfillmentWindowEndUtc,
             order.AmountReceived,
             order.ChangeAmount,
             order.PaymentConfirmedAtUtc,
-            order.PaymentConfirmedBy);
+            order.PaymentConfirmedBy,
+            order.ConfirmedFulfillmentLocal,
+            order.ConfirmedFulfillmentTimeZoneId,
+            order.ConfirmedFulfillmentAtUtc,
+            order.EffectiveFulfillmentLocal,
+            order.EffectiveFulfillmentTimeZoneId,
+            order.EffectiveFulfillmentAtUtc,
+            order.PendingScheduleProposal is null
+                ? null
+                : new CustomerOrderScheduleProposalDto(
+                    order.PendingScheduleProposal.ProposalId,
+                    order.PendingScheduleProposal.Local,
+                    order.PendingScheduleProposal.TimeZoneId,
+                    order.PendingScheduleProposal.AtUtc,
+                    order.PendingScheduleProposal.Note,
+                    order.PendingScheduleProposal.ProposedBy,
+                    order.PendingScheduleProposal.ProposedAtUtc),
+            order.OriginalMerchandiseSubtotal,
+            order.OriginalTotal,
+            order.CancelReason?.ToString(),
+            order.CancelNotes,
+            order.ActivityEvents.Select(e => new CustomerOrderActivityEventDto(
+                e.EventId,
+                e.AtUtc,
+                e.ActorId,
+                e.Action,
+                e.LineId,
+                e.ProductName,
+                e.PreviousQuantity,
+                e.NewQuantity,
+                e.ReasonCode,
+                e.Note,
+                e.PreviousTotal,
+                e.NewTotal,
+                e.Summary)).ToList(),
+            order.Lines.Any(l => l.Quantity < l.OriginalQuantity));
 
     public static CustomerOrderListItemDto MapListItem(CustomerOrder order) =>
         new(

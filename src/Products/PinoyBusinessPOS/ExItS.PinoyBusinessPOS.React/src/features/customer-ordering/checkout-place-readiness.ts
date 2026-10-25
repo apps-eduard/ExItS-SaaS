@@ -20,7 +20,6 @@ export type CheckoutPlaceState = {
   onlineOrdersPaused: boolean;
   fulfillmentAvailability: string | null;
   paymentMethod: string;
-  gcashReference: string;
   utangInsufficient: boolean;
   deliveryIncomplete: boolean;
   deliveryQuoteUnavailable: boolean;
@@ -54,11 +53,9 @@ export function shopCheckoutUiMode(
   if (immediate) {
     return "open";
   }
-  if (availability === "schedule-available") {
+  // Closed-by-hours is informational only — customer may still schedule & checkout.
+  if (availability === "schedule-available" || availability === "store-closed") {
     return "schedule";
-  }
-  if (availability === "store-closed") {
-    return "closed";
   }
   return "blocked";
 }
@@ -98,9 +95,7 @@ export function checkoutPlaceBlocker(state: CheckoutPlaceState): MessageKey | nu
       );
     }
   }
-  if (state.paymentMethod === "ManualGCash" && state.gcashReference.trim().length === 0) {
-    return "checkout.gcashReferenceRequired";
-  }
+  // Manual GCash: buyer does not enter a reference at checkout; seller verifies receipt later.
   if (state.paymentMethod === "Utang" && state.utangInsufficient) {
     return "orders.utangInsufficient";
   }
@@ -151,7 +146,7 @@ export function shopCheckoutBlocker(
   fulfillmentAvailability?: string | null,
 ): MessageKey | null {
   const availability = fulfillmentAvailability ?? null;
-  if (availability === "schedule-available") {
+  if (availability === "schedule-available" || availability === "store-closed") {
     return null;
   }
 

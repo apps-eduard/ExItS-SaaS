@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { ShoppingCart, Trash2 } from "lucide-react";
-import type { CustomerStorefrontProductDto } from "@/api/pos/pos-customer-orders-client";
+import type {
+  CustomerStorefrontBranchDto,
+  CustomerStorefrontProductDto,
+} from "@/api/pos/pos-customer-orders-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import {
   formatQuantityDisplay,
   nextWeightCartQuantityKg,
 } from "@/cart/sell-cart-helpers";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
-import { useToast } from "@/components/exits/ToastProvider";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Button } from "@/components/ui/button";
 import type { ShopCheckoutUiMode } from "@/features/customer-ordering/checkout-place-readiness";
 import { isKiloStorefrontProduct } from "@/features/customer-ordering/storefront-availability";
 import type { PersonalMerchantCartLine } from "@/features/customer-ordering/personal-merchant-cart";
 import { formatShopCartQtyPriceMeta } from "@/features/customer-ordering/shop-cart-line-meta";
+import { formatStoreHoursSummary } from "@/features/customer-ordering/store-hours-summary";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -34,7 +37,9 @@ type ShopOrderCartProps = {
   showPayButton?: boolean;
   continueBlockedDetail?: string | null;
   checkoutMode?: ShopCheckoutUiMode;
+  /** @deprecated Prefer operatingHours — next-open status is not shown on the cart. */
   storeStatusMessage?: string | null;
+  operatingHours?: CustomerStorefrontBranchDto["operatingHours"] | null;
 };
 
 function lineProduct(
@@ -90,14 +95,14 @@ export function ShopOrderCart({
   showPayButton = true,
   continueBlockedDetail = null,
   checkoutMode = "open",
-  storeStatusMessage = null,
+  storeStatusMessage: _storeStatusMessage = null,
+  operatingHours = null,
 }: ShopOrderCartProps) {
   const { t } = useI18n();
-  const { toast } = useToast();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const lineCount = lines.length;
   const canContinue = lineCount > 0 && checkoutMode === "open" && !continueBlockedDetail;
-  const statusLine = storeStatusMessage?.trim() || null;
+  const hoursLine = formatStoreHoursSummary(operatingHours) ?? t("orders.storeHoursUnknown");
 
   return (
     <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -255,7 +260,7 @@ export function ShopOrderCart({
                 </p>
               </div>
             ) : null}
-            {(checkoutMode === "schedule" || checkoutMode === "closed") && lineCount > 0 ? (
+            {checkoutMode === "schedule" && lineCount > 0 ? (
               <div
                 className="pc-shop-cart-notice personal-qa-glass personal-qa-glass--info flex flex-col gap-1 p-3"
                 data-testid="shop-checkout-closed"
@@ -264,11 +269,32 @@ export function ShopOrderCart({
                 <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
                   {t("orders.storeCurrentlyClosed")}
                 </p>
-                {statusLine ? (
-                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="shop-store-status">
-                    {statusLine}
-                  </p>
-                ) : null}
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="shop-store-hours">
+                  {hoursLine}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("orders.closedStillAccepting")}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("orders.closedScheduleOpenSlotsOnly")}
+                </p>
+              </div>
+            ) : null}
+            {checkoutMode === "closed" && lineCount > 0 ? (
+              <div
+                className="pc-shop-cart-notice personal-qa-glass personal-qa-glass--info flex flex-col gap-1 p-3"
+                data-testid="shop-checkout-closed-no-schedule"
+                data-shell="soft-glass"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("orders.storeCurrentlyClosed")}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="shop-store-hours">
+                  {hoursLine}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("orders.closedNoScheduling")}
+                </p>
               </div>
             ) : null}
             {checkoutMode === "open" ? (
@@ -298,20 +324,21 @@ export function ShopOrderCart({
                 data-testid="shop-schedule-order"
                 onClick={() => onScheduleOrder?.()}
               >
-                {t("orders.scheduleOrder")}
+                {t("orders.scheduleAndCheckout")}
               </Button>
             ) : null}
-            {(checkoutMode === "schedule" || checkoutMode === "closed" || checkoutMode === "paused")
-            && lineCount > 0 ? (
+            {(checkoutMode === "closed" || checkoutMode === "paused" || checkoutMode === "blocked")
+            && lineCount > 0
+            && onClose ? (
               <Button
                 type="button"
                 intent="neutral"
                 appearance="outline"
                 className="w-full"
-                data-testid="shop-save-cart"
-                onClick={() => toast.success(t("orders.saveCartForLaterConfirm"))}
+                data-testid="shop-continue-shopping"
+                onClick={() => onClose()}
               >
-                {t("orders.saveCartForLater")}
+                {t("orders.continueShopping")}
               </Button>
             ) : null}
             {checkoutMode === "open" && !canContinue ? (

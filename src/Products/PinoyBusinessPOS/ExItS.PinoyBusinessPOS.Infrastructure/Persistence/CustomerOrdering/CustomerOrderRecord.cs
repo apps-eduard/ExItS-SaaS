@@ -19,6 +19,21 @@ internal sealed class CustomerOrderRecord
     public string? RequestedDeliveryLocal { get; set; }
     public string? RequestedDeliveryTimeZoneId { get; set; }
     public DateTimeOffset? RequestedDeliveryAtUtc { get; set; }
+    public DateOnly? PreferredFulfillmentDate { get; set; }
+    public string? PreferredFulfillmentPeriod { get; set; }
+    public string? PreferredFulfillmentTimeZoneId { get; set; }
+    public DateTimeOffset? PreferredFulfillmentWindowStartUtc { get; set; }
+    public DateTimeOffset? PreferredFulfillmentWindowEndUtc { get; set; }
+    public string? ConfirmedFulfillmentLocal { get; set; }
+    public string? ConfirmedFulfillmentTimeZoneId { get; set; }
+    public DateTimeOffset? ConfirmedFulfillmentAtUtc { get; set; }
+    public Guid? PendingScheduleProposalId { get; set; }
+    public string? PendingScheduleProposalLocal { get; set; }
+    public string? PendingScheduleProposalTimeZoneId { get; set; }
+    public DateTimeOffset? PendingScheduleProposalAtUtc { get; set; }
+    public string? PendingScheduleProposalNote { get; set; }
+    public Guid? PendingScheduleProposalBy { get; set; }
+    public DateTimeOffset? PendingScheduleProposalProposedAtUtc { get; set; }
     public string FulfillmentType { get; set; } = string.Empty;
     public Guid FulfillmentBranchId { get; set; }
     public string BranchNameSnapshot { get; set; } = string.Empty;
@@ -33,6 +48,11 @@ internal sealed class CustomerOrderRecord
     public decimal MerchandiseSubtotal { get; set; }
     public decimal DeliveryFee { get; set; }
     public decimal Total { get; set; }
+    public decimal OriginalMerchandiseSubtotal { get; set; }
+    public decimal OriginalTotal { get; set; }
+    public string? CancelReason { get; set; }
+    public string? CancelNotes { get; set; }
+    public string? ActivityEventsJson { get; set; }
 
     public string? DeliveryRecipientName { get; set; }
     public string? DeliveryRecipientPhone { get; set; }

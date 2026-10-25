@@ -20,7 +20,9 @@ import {
 } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
+  acceptMyCustomerOrderScheduleProposal,
   cancelMyCustomerOrder,
+  declineMyCustomerOrderScheduleProposal,
   getMyCustomerOrder,
   sellerWorkspace,
 } from "@/api/pos/pos-customer-orders-client";
@@ -31,8 +33,13 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { orderStatusChipTone } from "@/features/customer-ordering/seller-order-actions";
+import { formatPreferredFulfillmentLabel } from "@/features/customer-ordering/preferred-fulfillment-display";
+import {
+  displayOrderStatusKey,
+  orderStatusChipTone,
+} from "@/features/customer-ordering/seller-order-actions";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
@@ -135,6 +142,56 @@ export function MyOrderDetailPage() {
     }
   }
 
+  async function acceptScheduleProposal() {
+    if (!query.data?.pendingScheduleProposal) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await acceptMyCustomerOrderScheduleProposal(
+        sellerWorkspace(query.data.sellerOrganizationId),
+        query.data.sellerOrganizationId,
+        orderId,
+        { proposalId: query.data.pendingScheduleProposal.proposalId },
+      );
+      await query.refetch();
+    } catch (err) {
+      setActionError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : t("orders.error"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function declineScheduleProposal() {
+    if (!query.data?.pendingScheduleProposal) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await declineMyCustomerOrderScheduleProposal(
+        sellerWorkspace(query.data.sellerOrganizationId),
+        query.data.sellerOrganizationId,
+        orderId,
+        { proposalId: query.data.pendingScheduleProposal.proposalId },
+      );
+      await query.refetch();
+    } catch (err) {
+      setActionError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : t("orders.error"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const pageShell =
     "personal-page personal-commerce-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3";
 
@@ -188,9 +245,23 @@ export function MyOrderDetailPage() {
 
   const order = query.data;
   const canCancel =
-    order.status.localeCompare("Submitted", undefined, { sensitivity: "accent" }) === 0;
+    !order.pendingScheduleProposal
+    && (order.status.localeCompare("Submitted", undefined, { sensitivity: "accent" }) === 0
+      || (order.status.localeCompare("Accepted", undefined, { sensitivity: "accent" }) === 0
+        && order.fulfillmentStatus.localeCompare("Pending", undefined, { sensitivity: "accent" }) === 0));
   const FulfillmentIcon = isDelivery(order.fulfillmentType) ? Truck : Package;
   const tone = orderStatusChipTone(order);
+  const requestedLocal =
+    order.requestedPickupLocal ?? order.requestedDeliveryLocal ?? order.effectiveFulfillmentLocal;
+  const adjustmentEvents = (order.activity ?? []).filter(
+    (e) =>
+      e.action === "QuantityReduced"
+      || e.action === "ItemCancelled"
+      || e.action === "OrderTotalAdjusted"
+      || e.action === "OrderCancelled"
+      || e.action === "CustomerRefused"
+      || e.action === "PaymentConfirmed",
+  );
 
   return (
     <div className={pageShell} data-testid="my-order-detail-page">
@@ -202,6 +273,46 @@ export function MyOrderDetailPage() {
       />
 
       {actionError ? <ErrorState title={t("orders.error")} detail={actionError} /> : null}
+
+      <div className="exits-animate-toolbar" data-testid="my-order-status">
+        <StatusChip tone={tone}>{t(displayOrderStatusKey(order) as MessageKey)}</StatusChip>
+      </div>
+
+      {order.hasLineAdjustments ? (
+        <section
+          className="pc-checkout-section exits-animate-panel"
+          data-testid="order-updated-notice"
+          data-shell="soft-glass"
+        >
+          <h2 className="pc-checkout-section__title">{t("orders.orderUpdated")}</h2>
+          <ul className="m-0 list-none space-y-1 p-0 text-[length:var(--exits-text-sm)]">
+            {order.lines
+              .filter((line) => (line.originalQuantity ?? 0) > line.quantity)
+              .map((line) => (
+                <li key={line.lineId}>
+                  {line.isCancelled
+                    ? t("orders.lineCancelledSummary")
+                        .replace("{name}", line.nameSnapshot)
+                        .replace("{reason}", line.adjustmentReason ?? "")
+                    : t("orders.lineAdjustedSummary")
+                        .replace("{name}", line.nameSnapshot)
+                        .replace("{from}", `${line.originalQuantity} ${line.unitSnapshot}`)
+                        .replace("{to}", `${line.quantity} ${line.unitSnapshot}`)
+                        .replace("{reason}", (line.adjustmentReason ?? "").replace(/([A-Z])/g, " $1").trim().toLowerCase())}
+                </li>
+              ))}
+          </ul>
+          {order.originalTotal > order.total ? (
+            <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)]" data-testid="order-updated-total">
+              {t("orders.newTotal")}: <MoneyDisplay amount={order.total} />
+              <span className="text-muted">
+                {" "}
+                ({t("orders.originalAmount")}: <MoneyDisplay amount={order.originalTotal} />)
+              </span>
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section
         className={cn("pc-order-card exits-animate-panel", orderCardToneClass(tone))}
@@ -246,14 +357,98 @@ export function MyOrderDetailPage() {
               <span className="pc-order-kv__value">{order.paymentReference}</span>
             </div>
           ) : null}
-          {order.requestedPickupLocal ? (
+          {order.preferredFulfillmentDate && order.preferredFulfillmentPeriod ? (
+            <div className="pc-order-kv" data-testid="order-preferred-fulfillment">
+              <span className="pc-order-kv__label">
+                {order.fulfillmentType === "Delivery"
+                  ? t("orders.preferredDeliverySummary")
+                  : t("orders.preferredPickupSummary")}
+              </span>
+              <span className="pc-order-kv__value">
+                {formatPreferredFulfillmentLabel({
+                  date: order.preferredFulfillmentDate,
+                  period: order.preferredFulfillmentPeriod,
+                  timeZoneId: order.preferredFulfillmentTimeZoneId,
+                  todayLabel: t("orders.preferredDayToday"),
+                  tomorrowLabel: t("orders.preferredDayTomorrow"),
+                })}
+              </span>
+            </div>
+          ) : null}
+          {!order.preferredFulfillmentPeriod && order.requestedPickupLocal ? (
             <div className="pc-order-kv" data-testid="order-requested-pickup">
               <span className="pc-order-kv__label">{t("orders.requestedPickupTime")}</span>
               <span className="pc-order-kv__value">{order.requestedPickupLocal}</span>
             </div>
           ) : null}
+          {!order.preferredFulfillmentPeriod && order.requestedDeliveryLocal ? (
+            <div className="pc-order-kv" data-testid="order-requested-delivery">
+              <span className="pc-order-kv__label">{t("orders.requestedDeliveryTime")}</span>
+              <span className="pc-order-kv__value">{order.requestedDeliveryLocal}</span>
+            </div>
+          ) : null}
+          {order.confirmedFulfillmentLocal ? (
+            <div className="pc-order-kv" data-testid="order-confirmed-schedule">
+              <span className="pc-order-kv__label">{t("orders.confirmedScheduleLabel")}</span>
+              <span className="pc-order-kv__value">{order.confirmedFulfillmentLocal}</span>
+            </div>
+          ) : null}
         </div>
       </section>
+
+      {order.pendingScheduleProposal ? (
+        <section
+          className="pc-checkout-section exits-animate-panel"
+          data-testid="schedule-proposal-panel"
+          data-shell="soft-glass"
+        >
+          <h2 className="pc-checkout-section__title flex items-center gap-2">
+            <Clock3 className="size-4 shrink-0 text-muted" aria-hidden />
+            {t("orders.sellerProposedSchedule")}
+          </h2>
+          {requestedLocal ? (
+            <div className="pc-order-kv" data-testid="proposal-requested">
+              <span className="pc-order-kv__label">{t("orders.requestedScheduleLabel")}</span>
+              <span className="pc-order-kv__value">{requestedLocal}</span>
+            </div>
+          ) : null}
+          <div className="pc-order-kv" data-testid="proposal-proposed">
+            <span className="pc-order-kv__label">{t("orders.proposedScheduleLabel")}</span>
+            <span className="pc-order-kv__value">{order.pendingScheduleProposal.local}</span>
+          </div>
+          {order.pendingScheduleProposal.note ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="proposal-note">
+              {order.pendingScheduleProposal.note}
+            </p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              intent="primary"
+              appearance="glossy"
+              data-testid="accept-schedule-proposal"
+              disabled={busy}
+              onClick={() => void acceptScheduleProposal()}
+            >
+              {busy ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              ) : null}
+              {t("orders.acceptNewSchedule")}
+            </Button>
+            <Button
+              type="button"
+              intent="danger"
+              appearance="glossy"
+              emphasis="strong"
+              data-testid="decline-schedule-proposal"
+              disabled={busy}
+              onClick={() => void declineScheduleProposal()}
+            >
+              {t("orders.declineNewSchedule")}
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="pc-checkout-section exits-animate-panel" data-testid="order-lines">
         <h2 className="pc-checkout-section__title flex items-center gap-2">
@@ -264,7 +459,21 @@ export function MyOrderDetailPage() {
           <div key={line.lineId} className="pc-checkout-line">
             <span className="pc-checkout-line__name">
               {line.nameSnapshot}
-              <span className="pc-checkout-line__qty"> × {line.quantity}</span>
+              {line.isCancelled ? (
+                <span className="pc-checkout-line__qty text-muted"> · {t("orders.itemCancelled")}</span>
+              ) : (
+                <span className="pc-checkout-line__qty">
+                  {" "}
+                  × {line.quantity} {line.unitSnapshot}
+                </span>
+              )}
+              {(line.originalQuantity ?? 0) > line.quantity ? (
+                <span className="block text-[length:var(--exits-text-xs)] text-muted">
+                  {t("orders.originalQtySecondary")
+                    .replace("{qty}", String(line.originalQuantity))
+                    .replace("{unit}", line.unitSnapshot)}
+                </span>
+              ) : null}
             </span>
             <MoneyDisplay amount={line.lineTotal} className="pc-checkout-line__amount" />
           </div>
@@ -296,6 +505,27 @@ export function MyOrderDetailPage() {
           {order.delivery.addressLine2 ? (
             <p className="m-0 text-[length:var(--exits-text-sm)]">{order.delivery.addressLine2}</p>
           ) : null}
+        </section>
+      ) : null}
+
+      {adjustmentEvents.length > 0 ? (
+        <section
+          className="pc-checkout-section exits-animate-panel"
+          data-testid="order-activity-timeline"
+          data-shell="soft-glass"
+        >
+          <h2 className="pc-checkout-section__title">{t("orders.activityTimeline")}</h2>
+          <ol className="m-0 list-none space-y-2 p-0">
+            {adjustmentEvents.map((event) => (
+              <li key={event.eventId} className="text-[length:var(--exits-text-sm)]">
+                <p className="m-0 font-medium">{event.summary ?? event.action}</p>
+                <p className="mb-0 mt-0.5 text-muted">
+                  {new Date(event.atUtc).toLocaleString()}
+                  {event.note ? ` · ${event.note}` : ""}
+                </p>
+              </li>
+            ))}
+          </ol>
         </section>
       ) : null}
 

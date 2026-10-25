@@ -3,6 +3,7 @@ import type { CustomerOrderDto } from "@/api/pos/pos-customer-orders-client";
 export type SellerOrderAction =
   | "Accept"
   | "Reject"
+  | "ProposeSchedule"
   | "StartPreparing"
   | "MarkReady"
   | "OutForDelivery"
@@ -17,7 +18,19 @@ function is(value: string, expected: string): boolean {
 /** Allowed seller transitions mirroring MAUI SellerOrderDetail — server remains authoritative. */
 export function availableSellerActions(order: CustomerOrderDto): SellerOrderAction[] {
   if (is(order.status, "Submitted")) {
-    return ["Accept", "Reject"];
+    const actions: SellerOrderAction[] = [];
+    if (!order.pendingScheduleProposal) {
+      actions.push("Accept");
+    }
+    actions.push("Reject");
+    if (
+      order.requestedPickupLocal
+      || order.requestedDeliveryLocal
+      || order.effectiveFulfillmentLocal
+    ) {
+      actions.push("ProposeSchedule");
+    }
+    return actions;
   }
 
   if (!is(order.status, "Accepted")) {
@@ -97,19 +110,32 @@ export function filterSellerOrdersClientSide<
   return items;
 }
 
-export function displayOrderStatusKey(order: {
-  status: string;
-  fulfillmentStatus: string;
-  fulfillmentType: string;
-}): string {
-  if (is(order.status, "Submitted")) return "orders.statusNew";
+export function displayOrderStatusKey(
+  order: {
+    status: string;
+    fulfillmentStatus: string;
+    fulfillmentType: string;
+    pendingScheduleProposal?: unknown;
+  },
+  audience: "buyer" | "seller" = "buyer",
+): string {
+  if (is(order.status, "Submitted")) {
+    if (order.pendingScheduleProposal) {
+      return "orders.sellerProposedSchedule";
+    }
+    return audience === "seller" ? "orders.statusNew" : "orders.statusPendingApproval";
+  }
   if (is(order.status, "Rejected")) return "orders.statusRejected";
   if (is(order.status, "Cancelled")) return "orders.statusCancelled";
   if (is(order.status, "Completed")) return "orders.statusCompleted";
   if (is(order.fulfillmentStatus, "Pending")) return "orders.statusAccepted";
   if (is(order.fulfillmentStatus, "Preparing")) return "orders.statusPreparing";
   if (is(order.fulfillmentStatus, "Ready") || is(order.fulfillmentStatus, "ReadyForPickup")) {
-    return is(order.fulfillmentType, "Pickup") ? "orders.statusReadyPickup" : "orders.statusReady";
+    // Seller chip: both Ready / ReadyForPickup → "Ready". Buyer pickup → "Ready for Pickup".
+    if (audience === "seller") return "orders.statusReady";
+    return is(order.fulfillmentType, "Pickup") || is(order.fulfillmentStatus, "ReadyForPickup")
+      ? "orders.statusReadyPickup"
+      : "orders.statusReady";
   }
   if (is(order.fulfillmentStatus, "OutForDelivery")) return "orders.statusOutForDelivery";
   if (is(order.fulfillmentStatus, "Delivered")) return "orders.statusDelivered";

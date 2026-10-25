@@ -22,6 +22,12 @@ export const customerOrderLineSchema = z.object({
   unitPrice: z.number(),
   discount: z.number(),
   lineTotal: z.number(),
+  originalQuantity: z.number().optional().default(0),
+  cancelledQuantity: z.number().optional().default(0),
+  originalLineTotal: z.number().optional().default(0),
+  isCancelled: z.boolean().optional().default(false),
+  adjustmentReason: z.string().nullable().optional(),
+  adjustmentNote: z.string().nullable().optional(),
 });
 
 export const customerOrderDeliverySchema = z.object({
@@ -95,10 +101,61 @@ export const customerOrderSchema = z.object({
   requestedPickupLocal: z.string().nullable().optional(),
   requestedPickupTimeZoneId: z.string().nullable().optional(),
   requestedPickupAtUtc: z.string().nullable().optional(),
+  requestedDeliveryLocal: z.string().nullable().optional(),
+  requestedDeliveryTimeZoneId: z.string().nullable().optional(),
+  requestedDeliveryAtUtc: z.string().nullable().optional(),
+  preferredFulfillmentDate: z.string().nullable().optional(),
+  preferredFulfillmentPeriod: z.string().nullable().optional(),
+  preferredFulfillmentTimeZoneId: z.string().nullable().optional(),
+  preferredFulfillmentWindowStartUtc: z.string().nullable().optional(),
+  preferredFulfillmentWindowEndUtc: z.string().nullable().optional(),
   amountReceived: z.number().nullable().optional(),
   changeAmount: z.number().nullable().optional(),
   paymentConfirmedAtUtc: z.string().nullable().optional(),
   paymentConfirmedBy: guidSchema.nullable().optional(),
+  confirmedFulfillmentLocal: z.string().nullable().optional(),
+  confirmedFulfillmentTimeZoneId: z.string().nullable().optional(),
+  confirmedFulfillmentAtUtc: z.string().nullable().optional(),
+  effectiveFulfillmentLocal: z.string().nullable().optional(),
+  effectiveFulfillmentTimeZoneId: z.string().nullable().optional(),
+  effectiveFulfillmentAtUtc: z.string().nullable().optional(),
+  pendingScheduleProposal: z
+    .object({
+      proposalId: guidSchema,
+      local: z.string(),
+      timeZoneId: z.string(),
+      atUtc: z.string(),
+      note: z.string().nullable().optional(),
+      proposedBy: guidSchema,
+      proposedAtUtc: z.string(),
+    })
+    .nullable()
+    .optional(),
+  originalMerchandiseSubtotal: z.number().optional().default(0),
+  originalTotal: z.number().optional().default(0),
+  cancelReason: z.string().nullable().optional(),
+  cancelNotes: z.string().nullable().optional(),
+  hasLineAdjustments: z.boolean().optional().default(false),
+  activity: z
+    .array(
+      z.object({
+        eventId: guidSchema,
+        atUtc: z.string(),
+        actorId: guidSchema.nullable().optional(),
+        action: z.string(),
+        lineId: guidSchema.nullable().optional(),
+        productName: z.string().nullable().optional(),
+        previousQuantity: z.number().nullable().optional(),
+        newQuantity: z.number().nullable().optional(),
+        reasonCode: z.string().nullable().optional(),
+        note: z.string().nullable().optional(),
+        previousTotal: z.number().nullable().optional(),
+        newTotal: z.number().nullable().optional(),
+        summary: z.string().nullable().optional(),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 export const customerOrderListItemSchema = z.object({
@@ -252,6 +309,8 @@ export type PlaceCustomerOrderRequest = {
   requestedPickupTime?: string | null;
   requestedDeliveryDate?: string | null;
   requestedDeliveryTime?: string | null;
+  preferredFulfillmentDate?: string | null;
+  preferredFulfillmentPeriod?: string | null;
 };
 
 export type QuoteCustomerOrderDeliveryRequest = {
@@ -267,6 +326,17 @@ export type QuoteCustomerOrderDeliveryRequest = {
 export type RejectCustomerOrderRequest = {
   reason: string;
   notes?: string | null;
+};
+
+export type ProposeCustomerOrderScheduleRequest = {
+  date: string;
+  time: string;
+  note?: string | null;
+  clientProposalId?: string | null;
+};
+
+export type RespondCustomerOrderScheduleProposalRequest = {
+  proposalId: string;
 };
 
 function sellerPath(organizationId: string): string {
@@ -377,12 +447,64 @@ export async function rejectSellerCustomerOrder(
   return customerOrderSchema.parse(raw);
 }
 
+export async function proposeSellerCustomerOrderSchedule(
+  workspace: PosWorkspaceScope,
+  orderId: string,
+  request: ProposeCustomerOrderScheduleRequest,
+): Promise<CustomerOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    path: `${sellerPath(workspace.organizationId)}/${orderId}/propose-schedule`,
+    body: request,
+  });
+  return customerOrderSchema.parse(raw);
+}
+
+export type AdjustCustomerOrderLinesRequest = {
+  lines: Array<{
+    lineId: string;
+    newQuantity: number;
+    reason: string;
+    note?: string | null;
+  }>;
+};
+
+export async function adjustSellerCustomerOrderLines(
+  workspace: PosWorkspaceScope,
+  orderId: string,
+  request: AdjustCustomerOrderLinesRequest,
+): Promise<CustomerOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    path: `${sellerPath(workspace.organizationId)}/${orderId}/adjust-lines`,
+    body: request,
+  });
+  return customerOrderSchema.parse(raw);
+}
+
+export async function cancelSellerCustomerOrder(
+  workspace: PosWorkspaceScope,
+  orderId: string,
+  request: { reason: string; notes?: string | null },
+): Promise<CustomerOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    path: `${sellerPath(workspace.organizationId)}/${orderId}/cancel-by-seller`,
+    body: request,
+  });
+  return customerOrderSchema.parse(raw);
+}
+
 export async function confirmSellerCustomerOrderPayment(
   workspace: PosWorkspaceScope,
   orderId: string,
   amountReceived: number | null,
+  paymentReference?: string | null,
 ): Promise<CustomerOrderDto> {
-  const body = { amountReceived };
+  const body = { amountReceived, paymentReference: paymentReference ?? null };
   const headers = await buildPosMutationIdempotencyHeaders(
     orderId,
     JSON.stringify(body),
@@ -619,6 +741,36 @@ export async function cancelMyCustomerOrder(
     workspace,
     path: `${customerSellerPath(sellerOrganizationId)}/${orderId}/cancel`,
     body: {},
+  });
+  return customerOrderSchema.parse(raw);
+}
+
+export async function acceptMyCustomerOrderScheduleProposal(
+  workspace: PosWorkspaceScope,
+  sellerOrganizationId: string,
+  orderId: string,
+  request: RespondCustomerOrderScheduleProposalRequest,
+): Promise<CustomerOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    path: `${customerSellerPath(sellerOrganizationId)}/${orderId}/accept-schedule-proposal`,
+    body: request,
+  });
+  return customerOrderSchema.parse(raw);
+}
+
+export async function declineMyCustomerOrderScheduleProposal(
+  workspace: PosWorkspaceScope,
+  sellerOrganizationId: string,
+  orderId: string,
+  request: RespondCustomerOrderScheduleProposalRequest,
+): Promise<CustomerOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    path: `${customerSellerPath(sellerOrganizationId)}/${orderId}/decline-schedule-proposal`,
+    body: request,
   });
   return customerOrderSchema.parse(raw);
 }

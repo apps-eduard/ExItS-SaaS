@@ -46,6 +46,71 @@ public sealed class PlaceCustomerOrderCapabilityTests
     }
 
     [Fact]
+    public async Task Closed_store_with_scheduling_places_real_order_with_pickup_schedule()
+    {
+        var useCase = CreateUseCase(
+            canOrder: true,
+            canDelivery: true,
+            branch: ClosedSchedulableBranch());
+        var result = await useCase.ExecuteAsync(
+            Seller,
+            PickupRequest(requestedPickupDate: "2026-08-18", requestedPickupTime: "10:00"),
+            Actor);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Submitted", result.Value!.Status);
+        Assert.Equal("Unpaid", result.Value.PaymentStatus);
+        Assert.Equal("2026-08-18 10:00", result.Value.RequestedPickupLocal);
+    }
+
+    [Fact]
+    public async Task Closed_store_without_schedule_is_rejected()
+    {
+        var useCase = CreateUseCase(
+            canOrder: true,
+            canDelivery: true,
+            branch: ClosedSchedulableBranch());
+        var result = await useCase.ExecuteAsync(Seller, PickupRequest(), Actor);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("closed", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Closed_store_accepts_valid_schedule_without_accept_scheduled_flag()
+    {
+        var closed = ClosedSchedulableBranch() with { AcceptScheduledOrdersWhileClosed = false };
+        var useCase = CreateUseCase(canOrder: true, canDelivery: true, branch: closed);
+        var result = await useCase.ExecuteAsync(
+            Seller,
+            PickupRequest(requestedPickupDate: "2026-08-18", requestedPickupTime: "10:00"),
+            Actor);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Submitted", result.Value!.Status);
+        Assert.Equal("2026-08-18 10:00", result.Value.RequestedPickupLocal);
+    }
+
+    [Fact]
+    public async Task Paused_store_rejects_even_with_schedule()
+    {
+        var paused = ClosedSchedulableBranch() with
+        {
+            OnlineOrdersPaused = true,
+            CustomerOrderingOperational = false,
+            AcceptScheduledOrdersWhileClosed = true,
+        };
+        var useCase = CreateUseCase(canOrder: true, canDelivery: true, branch: paused);
+        var result = await useCase.ExecuteAsync(
+            Seller,
+            PickupRequest(requestedPickupDate: "2026-08-18", requestedPickupTime: "10:00"),
+            Actor);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("temporarily", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Idempotency_key_returns_existing_order()
     {
         var orders = new FakeOrders();
@@ -151,13 +216,14 @@ public sealed class PlaceCustomerOrderCapabilityTests
     private static PlaceCustomerOrder CreateUseCase(
         bool canOrder,
         bool canDelivery,
-        FakeOrders? orders = null)
+        FakeOrders? orders = null,
+        CustomerOrderBranchSnapshot? branch = null)
     {
         orders ??= new FakeOrders();
         return new PlaceCustomerOrder(
             orders,
             new FakeProducts(),
-            new FakeBranches(),
+            new FakeBranches(branch),
             new FakeStock(),
             new FixedClock(Utc),
             new FixedCapability(Seller, canOrder, canDelivery));
@@ -168,7 +234,9 @@ public sealed class PlaceCustomerOrderCapabilityTests
     private static PlaceCustomerOrderRequest PickupRequest(
         string? idempotencyKey = null,
         string? paymentMethod = null,
-        string? paymentReference = null) =>
+        string? paymentReference = null,
+        string? requestedPickupDate = null,
+        string? requestedPickupTime = null) =>
         new(
             "Pickup",
             Branch,
@@ -185,7 +253,9 @@ public sealed class PlaceCustomerOrderCapabilityTests
             paymentMethod,
             paymentMethod is "GCash" or "ManualGCash"
                 ? paymentReference ?? "GCASH-1001"
-                : paymentReference);
+                : paymentReference,
+            requestedPickupDate,
+            requestedPickupTime);
 
     private static PlaceCustomerOrderRequest DeliveryRequest() =>
         new(
@@ -223,20 +293,59 @@ public sealed class PlaceCustomerOrderCapabilityTests
         public DateTimeOffset UtcNow => utc;
     }
 
-    private sealed class FakeBranches : ICustomerOrderBranchDirectory
+    private static CustomerOrderBranchSnapshot ClosedSchedulableBranch() =>
+        new(
+            Branch,
+            "Main",
+            CustomerOrderingEnabled: true,
+            PickupEnabled: true,
+            DeliveryEnabled: true,
+            CustomerOrderingOperational: false,
+            PickupOperational: false,
+            DeliveryOperational: false,
+            OnlineOrdersPaused: false,
+            StoreStatusMessage: "Opens tomorrow 09:00",
+            14.5995m,
+            120.9842m,
+            new CustomerOrderBranchDeliveryPolicySnapshot(0m, 49m, 2m, 10m, 15m, 500m),
+            IsPrimary: true,
+            DeliveryServiceAreas:
+            [
+                new CustomerOrderDeliveryServiceAreaSnapshot(ServiceArea, "Manila", "NCR")
+            ],
+            PickupReady: true,
+            DeliveryReady: true,
+            TimeZoneId: "UTC",
+            OperatingHours:
+            [
+                new("Monday", false, false, "09:00", "17:00"),
+                new("Tuesday", false, false, "09:00", "17:00"),
+                new("Wednesday", false, false, "09:00", "17:00"),
+                new("Thursday", false, false, "09:00", "17:00"),
+                new("Friday", false, false, "09:00", "17:00"),
+                new("Saturday", true, false, null, null),
+                new("Sunday", true, false, null, null),
+            ],
+            AcceptScheduledOrdersWhileClosed: true,
+            MinPreparationLeadMinutes: 0,
+            MaxAdvanceScheduleDays: 14,
+            StoreIsOpenNow: false);
+
+    private sealed class FakeBranches(CustomerOrderBranchSnapshot? snapshot = null) : ICustomerOrderBranchDirectory
     {
+        private readonly CustomerOrderBranchSnapshot _branch =
+            snapshot ?? OperationalBranch(Branch, "Main");
+
         public Task<CustomerOrderBranchSnapshot?> GetBranchAsync(
             Guid sellerOrganizationId,
             Guid branchId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<CustomerOrderBranchSnapshot?>(OperationalBranch(Branch, "Main"));
+            Task.FromResult<CustomerOrderBranchSnapshot?>(_branch);
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
             Guid sellerOrganizationId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([
-                OperationalBranch(Branch, "Main")
-            ]);
+            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([_branch]);
 
         private static CustomerOrderBranchSnapshot OperationalBranch(Guid branchId, string name) =>
             new(

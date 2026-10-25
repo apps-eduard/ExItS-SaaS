@@ -140,7 +140,7 @@ export function SellerOrdersPage() {
                     <div className="customer-order-row__aside">
                       <span className="customer-order-row__total">{money(order.total)}</span>
                       <StatusChip tone="info">
-                        {t(displayOrderStatusKey(order) as MessageKey)}
+                        {t(displayOrderStatusKey(order, "seller") as MessageKey)}
                       </StatusChip>
                     </div>
                   </Link>

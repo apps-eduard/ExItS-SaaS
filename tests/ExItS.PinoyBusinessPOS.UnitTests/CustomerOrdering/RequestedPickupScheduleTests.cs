@@ -23,6 +23,11 @@ public sealed class RequestedPickupScheduleTests
         Assert.Null(result.Value.AtUtc);
     }
 
+    private static readonly IReadOnlyList<CustomerOrderBranchHoursDaySnapshot> ThursdayOpen =
+    [
+        new("Thursday", false, false, "08:00", "20:00"),
+    ];
+
     [Fact]
     public void Branch_timezone_is_used_instead_of_a_browser_offset()
     {
@@ -31,7 +36,8 @@ public sealed class RequestedPickupScheduleTests
             "2026-10-08",
             "14:30",
             "Asia/Manila",
-            Now);
+            Now,
+            ThursdayOpen);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("2026-10-08 14:30", result.Value.Local);
@@ -46,10 +52,25 @@ public sealed class RequestedPickupScheduleTests
             "2026-10-08",
             "11:00",
             "Asia/Manila",
-            Now);
+            Now,
+            ThursdayOpen);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPickupRequest, result.ErrorCode);
+    }
+
+    [Fact]
+    public void Scheduled_pickup_without_hours_is_rejected()
+    {
+        var result = RequestedPickupSchedule.Resolve(
+            CustomerOrderFulfillmentType.Pickup,
+            "2026-10-08",
+            "14:30",
+            "Asia/Manila",
+            Now);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("operating hours", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

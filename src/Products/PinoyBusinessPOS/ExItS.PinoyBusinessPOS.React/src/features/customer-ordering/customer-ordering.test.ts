@@ -17,6 +17,7 @@ import {
 } from "@/features/customer-ordering/personal-merchant-cart";
 import {
   availableSellerActions,
+  displayOrderStatusKey,
   filterSellerOrdersClientSide,
 } from "@/features/customer-ordering/seller-order-actions";
 import type { CustomerOrderDto } from "@/api/pos/pos-customer-orders-client";
@@ -141,6 +142,10 @@ describe("seller order actions", () => {
       merchandiseSubtotal: 10,
       deliveryFee: 0,
       total: 10,
+      originalMerchandiseSubtotal: 10,
+      originalTotal: 10,
+      hasLineAdjustments: false,
+      activity: [],
       stockReservationState: "Reserved",
       lines: [],
       createdAtUtc: "2026-08-21T00:00:00Z",
@@ -152,6 +157,46 @@ describe("seller order actions", () => {
   it("offers accept/reject for submitted orders only", () => {
     expect(availableSellerActions(order({ status: "Submitted" }))).toEqual(["Accept", "Reject"]);
     expect(availableSellerActions(order({ status: "Completed" }))).toEqual([]);
+  });
+
+  it("offers propose schedule when a requested time exists", () => {
+    expect(
+      availableSellerActions(
+        order({
+          status: "Submitted",
+          requestedPickupLocal: "2026-08-16 20:30",
+        }),
+      ),
+    ).toEqual(["Accept", "Reject", "ProposeSchedule"]);
+  });
+
+  it("hides accept while a schedule proposal is pending", () => {
+    expect(
+      availableSellerActions(
+        order({
+          status: "Submitted",
+          requestedPickupLocal: "2026-08-16 20:30",
+          pendingScheduleProposal: {
+            proposalId: "11111111-1111-4111-8111-111111111111",
+            local: "2026-08-16 22:00",
+            timeZoneId: "Asia/Manila",
+            atUtc: "2026-08-16T14:00:00Z",
+            note: null,
+            proposedBy: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            proposedAtUtc: "2026-08-16T12:05:00Z",
+          },
+        }),
+      ),
+    ).toEqual(["Reject", "ProposeSchedule"]);
+  });
+
+  it("shows awaiting seller approval for submitted orders", () => {
+    expect(displayOrderStatusKey(order({ status: "Submitted" }))).toBe(
+      "orders.statusPendingApproval",
+    );
+    expect(displayOrderStatusKey(order({ status: "Submitted" }), "seller")).toBe(
+      "orders.statusNew",
+    );
   });
 
   it("offers delivery transitions only for delivery fulfillment", () => {

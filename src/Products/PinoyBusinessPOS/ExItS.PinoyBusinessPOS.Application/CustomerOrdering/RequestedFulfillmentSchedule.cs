@@ -115,7 +115,10 @@ public static class RequestedFulfillmentSchedule
         return ApplicationResult<(string?, string?, DateTimeOffset?)>.Success((local, zone.Id, instant));
     }
 
-    /// <summary>Returns null when hours are unknown or the clock falls inside the open window.</summary>
+    /// <summary>
+    /// Returns null when the clock falls inside the open window.
+    /// Missing or invalid hours block scheduled fulfillment (no silent allow).
+    /// </summary>
     internal static string? ValidateAgainstStoreHours(
         DateOnly day,
         TimeOnly clock,
@@ -123,14 +126,14 @@ public static class RequestedFulfillmentSchedule
     {
         if (operatingHours is null || operatingHours.Count == 0)
         {
-            return null;
+            return "This store has not published operating hours for scheduling.";
         }
 
         var match = operatingHours.FirstOrDefault(item =>
             Enum.TryParse<DayOfWeek>(item.DayOfWeek, true, out var weekday) && weekday == day.DayOfWeek);
         if (match is null)
         {
-            return null;
+            return "This store has not published hours for that day.";
         }
 
         if (match.IsClosed)
@@ -146,7 +149,7 @@ public static class RequestedFulfillmentSchedule
         if (!TimeOnly.TryParseExact(match.OpenTime, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var open)
             || !TimeOnly.TryParseExact(match.CloseTime, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var close))
         {
-            return null;
+            return "This store has invalid operating hours for that day.";
         }
 
         // Same-day window (open < close): [open, close].
