@@ -15,22 +15,44 @@ import {
   isUiStandardNavGroup,
   isUiStandardNavSubgroup,
   parseUiStandardCategoryParam,
-  UI_STANDARD_NAV,
+  parseUiStandardsProductParam,
+  UI_STANDARD_ORG_DEFAULT_CATEGORY,
+  UI_STANDARD_ORG_NAV,
+  UI_STANDARD_PERSONAL_DEFAULT_CATEGORY,
+  UI_STANDARD_PERSONAL_NAV,
   type UiStandardFilterCategory,
   type UiStandardNavChild,
+  type UiStandardsProduct,
 } from "@/features/ui-standards/ui-standard-catalog";
+import { OrgEhgButtonGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgButtonGlassGallery";
+import { OrgEhgInputGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgInputGlassGallery";
+import { OrgEhgDateGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDateGlassGallery";
+import { OrgEhgQuickActionGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQuickActionGlassGallery";
+import { OrgEhgCardGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgCardGlassGallery";
+import { parseOrgEhgCardGlassKind } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgCardGlassKinds";
+import {
+  isOrgEhgCategory,
+  UiStandardsOrgHybridGlass,
+} from "@/features/ui-standards/org-enterprise-hybrid-glass/UiStandardsOrgHybridGlass";
+import {
+  UiStandardsShellAppearanceProvider,
+  UiStandardsShellRoot,
+} from "@/features/ui-standards/UiStandardsShellAppearance";
+import { UI_STANDARD_NAV_ICONS } from "@/features/ui-standards/ui-standards-product-icons";
+import { cn } from "@/lib/cn";
 import "@/features/ui-standards/ui-standards.css";
+import "@/features/ui-standards/org-enterprise-hybrid-glass/org-enterprise-hybrid-glass.css";
 
 /**
- * Canonical ExItS UI Standard page — live samples and the locked ExitsTable reference.
- * Route: /ui-standards ( /ui-standard aliases here ).
- * Classic / Simple modes removed (TASK-66D).
- * Sidenav open state + topbar toggle: UiStandardsSidenavProvider.
+ * ExItS UI Standards (DEV only).
+ * Personal shell shortcut -> ?product=personal -> classic Soft Glass playground.
+ * Organization/business shell shortcut -> ?product=organization -> Hybrid Glass live pages.
  */
 export function UiStandardsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const product = parseUiStandardsProductParam(searchParams.get("product"));
   const [category, setCategory] = useState<UiStandardFilterCategory>(() =>
-    parseUiStandardCategoryParam(searchParams.get("category")),
+    parseUiStandardCategoryParam(searchParams.get("category"), product),
   );
   const { isOpen, setOpen } = useUiStandardsDisclosure();
   const { open: sidenavOpen } = useUiStandardsSidenav();
@@ -38,30 +60,50 @@ export function UiStandardsPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({
     "form-components": true,
+    "button-components": true,
+    "glass-components": true,
+    "card-glass": true,
     cards: true,
     icons: true,
+    "org-enterprise-hybrid-glass": true,
   });
 
+  const nav = product === "organization" ? UI_STANDARD_ORG_NAV : UI_STANDARD_PERSONAL_NAV;
+  const defaultCategory =
+    product === "organization"
+      ? UI_STANDARD_ORG_DEFAULT_CATEGORY
+      : UI_STANDARD_PERSONAL_DEFAULT_CATEGORY;
+
   useEffect(() => {
-    setCategory(parseUiStandardCategoryParam(searchParams.get("category")));
+    const nextProduct = parseUiStandardsProductParam(searchParams.get("product"));
+    setCategory(parseUiStandardCategoryParam(searchParams.get("category"), nextProduct));
   }, [searchParams]);
 
   const syncParams = useCallback(
-    (next: { category?: UiStandardFilterCategory }) => {
+    (next: { category?: UiStandardFilterCategory; product?: UiStandardsProduct }) => {
       setSearchParams(
         (prev) => {
           const params = new URLSearchParams(prev);
+          const nextProduct =
+            next.product ?? parseUiStandardsProductParam(params.get("product"));
           const cat =
             next.category !== undefined
               ? next.category
-              : parseUiStandardCategoryParam(params.get("category"));
+              : parseUiStandardCategoryParam(params.get("category"), nextProduct);
 
           params.delete("q");
+          params.delete("view");
+          // Personal is the default surface ? omit product= from the URL to avoid remount noise.
+          if (nextProduct === "organization") params.set("product", "organization");
+          else params.delete("product");
 
-          if (cat !== "all") params.set("category", cat);
+          const productDefault =
+            nextProduct === "organization"
+              ? UI_STANDARD_ORG_DEFAULT_CATEGORY
+              : UI_STANDARD_PERSONAL_DEFAULT_CATEGORY;
+          if (cat !== productDefault) params.set("category", cat);
           else params.delete("category");
 
-          params.delete("view");
           return params;
         },
         { replace: true },
@@ -79,13 +121,13 @@ export function UiStandardsPage() {
   );
 
   const clearFilters = useCallback(() => {
-    setCategory("all");
-    syncParams({ category: "all" });
-  }, [syncParams]);
+    setCategory(defaultCategory);
+    syncParams({ category: defaultCategory, product });
+  }, [defaultCategory, product, syncParams]);
 
   const visibleLiveCards = useMemo(
-    () => filterLiveCards(category, ""),
-    [category],
+    () => (product === "personal" ? filterLiveCards(category, "") : []),
+    [category, product],
   );
 
   const visibleLiveIds = useMemo(
@@ -94,16 +136,33 @@ export function UiStandardsPage() {
   );
 
   useEffect(() => {
-    if (category !== "data") {
+    if (product !== "personal" || category !== "data") {
       return;
     }
     setOpen("tables.demo", true);
-  }, [category, setOpen]);
+  }, [category, product, setOpen]);
 
-  const hasLive = visibleLiveCards.length > 0;
-  const showExitsTableReference = category === "data";
-  const showLucide = category === "lucide";
-  const hasAnyResult = hasLive || showExitsTableReference || showLucide;
+  const showOrgEhg = product === "organization" && isOrgEhgCategory(category);
+  const showButtonGlass = product === "personal" && category === "button-glass";
+  const showInputGlass = product === "personal" && category === "input-glass";
+  const showDateGlass = product === "personal" && category === "date-glass";
+  const showQuickActionGlass = product === "personal" && category === "quick-action-glass";
+  const personalCardGlassKind =
+    product === "personal" ? parseOrgEhgCardGlassKind(category) : null;
+  const showCardGlass = personalCardGlassKind != null;
+  const hasLive = product === "personal" && visibleLiveCards.length > 0;
+  const showExitsTableReference = product === "personal" && category === "data";
+  const showLucide = product === "personal" && category === "lucide";
+  const hasAnyResult =
+    showOrgEhg ||
+    showButtonGlass ||
+    showInputGlass ||
+    showDateGlass ||
+    showQuickActionGlass ||
+    showCardGlass ||
+    hasLive ||
+    showExitsTableReference ||
+    showLucide;
 
   useEffect(() => {
     const node = mainRef.current;
@@ -172,6 +231,7 @@ export function UiStandardsPage() {
       );
     }
     const selected = category === item.id;
+    const ItemIcon = UI_STANDARD_NAV_ICONS[item.id];
     return (
       <button
         key={item.id}
@@ -182,7 +242,13 @@ export function UiStandardsPage() {
         data-testid={`ui-standards-filter-${item.id}`}
         onClick={() => setCategoryFilter(item.id)}
       >
-        {item.label}
+        {product === "organization" ? (
+          <span className="ui-standards-sidenav__item-indicator" aria-hidden="true" />
+        ) : null}
+        {ItemIcon ? (
+          <ItemIcon className="ui-standards-sidenav__item-icon" aria-hidden strokeWidth={2.25} />
+        ) : null}
+        <span className="ui-standards-sidenav__item-label">{item.label}</span>
       </button>
     );
   }
@@ -192,24 +258,33 @@ export function UiStandardsPage() {
   }
 
   return (
-    <div
-      className="exits-page ui-standards-page flex min-h-0 min-w-0 flex-1 flex-col"
-      data-testid="ui-standards-page"
-    >
+    <UiStandardsShellAppearanceProvider>
+    <UiStandardsShellRoot product={product}>
       <div
-        className="ui-standards-layout"
+        className={cn(
+          "ui-standards-layout",
+          product === "organization" && "ui-standards-layout--org-ehg",
+        )}
         data-sidenav={sidenavOpen ? "open" : "hidden"}
+        data-exits-product={product}
         data-testid="ui-standards-layout"
       >
         {sidenavOpen ? (
           <nav
             id="ui-standards-sidenav"
-            className="ui-standards-sidenav"
-            aria-label="UI standard categories"
+            className={cn(
+              "ui-standards-sidenav",
+              product === "organization" && "ui-standards-sidenav--org-ehg",
+            )}
+            aria-label={
+              product === "organization"
+                ? "Organization Enterprise Hybrid Glass pages"
+                : "Personal UI standard categories"
+            }
             data-testid="ui-standards-sidenav"
           >
             <div className="ui-standards-sidenav__list" role="group" data-testid="ui-standards-category-filters">
-              {UI_STANDARD_NAV.map((entry) => {
+              {nav.map((entry) => {
                 if (isUiStandardNavGroup(entry)) {
                   const expanded = groupOpen[entry.id] ?? true;
                   return (
@@ -251,15 +326,48 @@ export function UiStandardsPage() {
         >
       <PageHeader
         title="ExItS UI Standard"
-        description="Live reference for shared components, interaction patterns, and design standards."
+        description={
+          product === "organization"
+            ? "Organization Enterprise Hybrid Glass — live reference on authenticated Platform and POS APIs."
+            : "Live Soft Glass / component playground for Personal UI standards."
+        }
       />
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standard-global-note">
-        Changes to global components should be reflected here and throughout the application.
+        {product === "organization"
+          ? "Background from Button / Input glass playgrounds applies to this entire UI Standards shell (experimental). Light/dark follows Preferences. Personal Soft Glass production pages are unchanged."
+          : "Background from glass playgrounds applies to this entire UI Standards shell (experimental). Light/dark follows Preferences. Changes to global components should still be reflected here and throughout the application."}
       </p>
 
-      {category === "all" ? <UiStandardsPreferencePreview /> : null}
+      {product === "personal" && category === "all" ? <UiStandardsPreferencePreview /> : null}
 
-      {!hasAnyResult ? (
+      {showOrgEhg ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-org-ehg-section">
+          <UiStandardsOrgHybridGlass category={category} />
+        </section>
+      ) : showButtonGlass ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-button-glass-section">
+          <OrgEhgButtonGlassGallery />
+        </section>
+      ) : showInputGlass ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-input-glass-section">
+          <OrgEhgInputGlassGallery />
+        </section>
+      ) : showDateGlass ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-date-glass-section">
+          <OrgEhgDateGlassGallery />
+        </section>
+      ) : showQuickActionGlass ? (
+        <section
+          className="flex min-w-0 flex-col gap-2"
+          data-testid="ui-standards-quick-action-glass-section"
+        >
+          <OrgEhgQuickActionGlassGallery />
+        </section>
+      ) : showCardGlass && personalCardGlassKind ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-card-glass-section">
+          <OrgEhgCardGlassGallery kind={personalCardGlassKind} />
+        </section>
+      ) : !hasAnyResult ? (
         <EmptyState
           title="No UI standards found"
           detail="Try another filter."
@@ -333,6 +441,7 @@ export function UiStandardsPage() {
         ) : null}
         </div>
       </div>
-    </div>
+    </UiStandardsShellRoot>
+    </UiStandardsShellAppearanceProvider>
   );
 }

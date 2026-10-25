@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
@@ -14,19 +15,22 @@ public sealed class SuspendOrganizationMembership
     private readonly IPlatformAccessTokenRepository _accessTokens;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public SuspendOrganizationMembership(
         IOrganizationMembershipRepository memberships,
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _memberships = memberships;
         _sessions = sessions;
         _accessTokens = accessTokens;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<OrganizationMembership>> ExecuteAsync(
@@ -63,6 +67,14 @@ public sealed class SuspendOrganizationMembership
                 .ClearOrganizationBindingAsync(membership.UserId, membership.OrganizationId, cancellationToken)
                 .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await RealtimePublish
+                .MembershipAccessChangedAsync(
+                    _realtime,
+                    membership.OrganizationId.Value,
+                    membership.UserId.Value,
+                    resourceVersion: membership.UpdatedAtUtc.ToUnixTimeMilliseconds().ToString(),
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
             return ApplicationResult<OrganizationMembership>.Success(membership);
         }
         catch (DomainException ex)
@@ -77,15 +89,18 @@ public sealed class ChangeOrganizationRole
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public ChangeOrganizationRole(
         IOrganizationMembershipRepository memberships,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _memberships = memberships;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<OrganizationMembership>> ExecuteAsync(
@@ -124,6 +139,14 @@ public sealed class ChangeOrganizationRole
             membership.ChangeRole(role, _clock.UtcNow, actorReference);
             await _memberships.UpdateAsync(membership, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await RealtimePublish
+                .MembershipAccessChangedAsync(
+                    _realtime,
+                    membership.OrganizationId.Value,
+                    membership.UserId.Value,
+                    resourceVersion: membership.UpdatedAtUtc.ToUnixTimeMilliseconds().ToString(),
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
             return ApplicationResult<OrganizationMembership>.Success(membership);
         }
         catch (DomainException ex)

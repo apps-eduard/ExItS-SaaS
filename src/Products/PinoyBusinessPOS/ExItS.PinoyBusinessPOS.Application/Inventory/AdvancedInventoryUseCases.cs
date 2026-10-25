@@ -629,6 +629,7 @@ public sealed class CompleteStockCount
     private readonly BranchInventoryMutationService _branchMutations;
     private readonly IOrganizationBranchDirectory? _branches;
     private readonly IClock _clock;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public CompleteStockCount(
         IStockCountRepository counts,
@@ -637,7 +638,8 @@ public sealed class CompleteStockCount
         IInventoryBranchBalanceRepository branchBalances,
         BranchInventoryMutationService branchMutations,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _counts = counts;
         _inventory = inventory;
@@ -646,6 +648,7 @@ public sealed class CompleteStockCount
         _branchMutations = branchMutations;
         _clock = clock;
         _branches = branches;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<StockCount>> ExecuteAsync(
@@ -790,6 +793,14 @@ public sealed class CompleteStockCount
                         }
                     },
                     cancellationToken)
+                .ConfigureAwait(false);
+            await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                .TryInventoryStockChangedAsync(
+                    _realtime,
+                    organizationId,
+                    kind: "stock-count-complete",
+                    branchId: completed.BranchId?.Value,
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             return ApplicationResult<StockCount>.Success(completed);
         }

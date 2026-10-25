@@ -55,11 +55,16 @@ const PRODUCT_SHOWCASE_CLASSES = new Set([
   "ui-standards-qdate__choice--selected",
   "ui-standards-qdate__output",
   "ui-standards-qdate__roll-window",
+  "ui-standards-qdate__roll-item",
   "ui-standards-qdate__roll-item--current",
+  "ui-standards-qtime",
   "ui-standards-qtime__faces",
   "ui-standards-qtime__period",
   "ui-standards-qtime__tick",
   "ui-standards-date-preview-card--soft-glass",
+  "ui-standards-textarea",
+  "ui-standards-soft-glass-roll-card__pop",
+  "ui-standards-soft-glass-roll-card__pop--datetime",
 ]);
 
 function sourceFiles(dir: string): string[] {
@@ -98,6 +103,15 @@ describe("UI Standards is development-only", () => {
   it("loads the showcase stylesheet only from the UI Standards page", () => {
     const importers = sourceFiles(srcDir)
       .filter((file) => readFileSync(file, "utf8").includes("ui-standards/ui-standards.css"))
+      .map((file) => relative(srcDir, file).replace(/\\/g, "/"));
+    expect(importers).toEqual(["features/ui-standards/UiStandardsPage.tsx"]);
+  });
+
+  it("loads Organization Hybrid Glass CSS only from the UI Standards page", () => {
+    const importers = sourceFiles(srcDir)
+      .filter((file) =>
+        readFileSync(file, "utf8").includes("org-enterprise-hybrid-glass/org-enterprise-hybrid-glass.css"),
+      )
       .map((file) => relative(srcDir, file).replace(/\\/g, "/"));
     expect(importers).toEqual(["features/ui-standards/UiStandardsPage.tsx"]);
   });

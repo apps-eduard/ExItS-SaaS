@@ -13,6 +13,8 @@ export default defineConfig({
       "virtual:pwa-register": path.resolve(rootDir, "./src/pwa/register-sw.mock.ts"),
       "virtual:pwa-register/react": path.resolve(rootDir, "./src/pwa/register-sw.mock.ts"),
     },
+    // Prefer TypeScript sources when a stale sibling `.js` exists next to `.tsx`/`.ts`.
+    extensions: [".mjs", ".mts", ".ts", ".tsx", ".jsx", ".js", ".json"],
   },
   test: {
     environment: "jsdom",

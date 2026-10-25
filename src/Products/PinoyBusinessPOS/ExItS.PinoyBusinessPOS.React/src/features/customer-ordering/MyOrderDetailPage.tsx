@@ -37,6 +37,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
+import { usePosRealtimeOrderWatch } from "@/realtime/usePosRealtime";
 
 function orderCardToneClass(tone: ReturnType<typeof orderStatusChipTone>): string {
   if (tone === "success") return "pc-order-card--success";
@@ -107,6 +108,8 @@ export function MyOrderDetailPage() {
         signal,
       ),
   });
+
+  usePosRealtimeOrderWatch(query.data?.sellerOrganizationId, orderId);
 
   async function cancelOrder() {
     if (!query.data) return;

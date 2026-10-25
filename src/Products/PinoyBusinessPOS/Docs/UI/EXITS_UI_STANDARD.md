@@ -3,9 +3,17 @@
 **Status:** ACTIVE  
 **Scope:** `ExItS.PinoyBusinessPOS.React`  
 **Compact visual reference:** `/ui-standards` (development only — not in production or preview builds; `/ui-standard` redirects here). See [ui-standards-development-only.md](./ui-standards-development-only.md).  
-**Live samples + catalog:** single canonical page (search + category filters)
+**Live samples + catalog:** single canonical page (search + category filters)  
+**Organization live reference:** [exits-organization-enterprise-hybrid-glass.md](./exits-organization-enterprise-hybrid-glass.md) — five Enterprise Hybrid Glass pages on `/ui-standards` using real Platform/POS APIs; does **not** change Personal Soft Glass or production Organization layouts.
 
 This document locks **interaction semantics** so features reuse one set of primitives instead of inventing local Save/Edit/Delete/toast/confirm/drawer/modal patterns.
+
+### Personal vs Organization visual ownership
+
+| Surface | System | Rule |
+|--------|--------|------|
+| Personal | Soft Glass | Existing locks and `.personal-*` scopes — do not replace with Organization Hybrid Glass |
+| Organization (UI Standards live) | Enterprise Hybrid Glass | `.org-ehg` + `data-exits-product="organization"` in UI Standards only until migration is explicitly approved |
 
 The corresponding Cursor Project Rules under `.cursor/rules` (`exits-ui-architecture.mdc`, `exits-responsive-data.mdc`, `exits-ui-reuse-interactions.mdc`) enforce these standards for Agent-assisted development.
 

@@ -80,6 +80,9 @@ import {
   parseBranchSetupTab,
   type BranchSetupTab,
 } from "@/features/branches/branch-setup-tabs";
+import { RealtimeDraftConflictNotice } from "@/realtime/RealtimeDraftConflictNotice";
+import { exitsRealtimeConnection } from "@/realtime/exits-realtime-connection";
+import { RealtimeEventTypes } from "@/realtime/realtime-event-types";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export type { BranchSetupTab } from "@/features/branches/branch-setup-tabs";
@@ -217,6 +220,8 @@ export function BranchFulfillmentEditPage() {
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
   const [hydratedBranchId, setHydratedBranchId] = useState<string | null>(null);
+  const [settingsDraftDirty, setSettingsDraftDirty] = useState(false);
+  const [remoteSettingsPending, setRemoteSettingsPending] = useState(false);
   const isHydrated = hydratedBranchId === branchId && Boolean(branchId);
 
   // Reset hydration marker before repopulating local draft state.
@@ -227,6 +232,32 @@ export function BranchFulfillmentEditPage() {
   useEffect(() => {
     setActiveTab(parseBranchSetupTab(searchParams.get("tab")));
   }, [searchParams, branchId]);
+
+  useEffect(() => {
+    if (import.meta.env.MODE === "test" || !branchId) {
+      return;
+    }
+    return exitsRealtimeConnection.subscribe((envelope) => {
+      const branchEvents = new Set<string>([
+        RealtimeEventTypes.BranchOperatingHoursChanged,
+        RealtimeEventTypes.BranchFulfillmentSettingsChanged,
+        RealtimeEventTypes.BranchSettingsChanged,
+        RealtimeEventTypes.BranchDeliveryPolicyChanged,
+        RealtimeEventTypes.BranchDeliveryAreasChanged,
+      ]);
+      if (!branchEvents.has(envelope.eventType)) {
+        return;
+      }
+      if (envelope.resourceId && envelope.resourceId !== branchId) {
+        return;
+      }
+      if (settingsDraftDirty) {
+        setRemoteSettingsPending(true);
+        return;
+      }
+      void queryClient.invalidateQueries({ queryKey: ["branch-fulfillment"] });
+    });
+  }, [branchId, settingsDraftDirty, queryClient]);
 
   function selectSetupTab(tab: BranchSetupTab) {
     setActiveTab(tab);
@@ -684,6 +715,17 @@ export function BranchFulfillmentEditPage() {
           {okMessage}
         </Notice>
       ) : null}
+      <RealtimeDraftConflictNotice
+        visible={remoteSettingsPending}
+        onReload={() => {
+          setRemoteSettingsPending(false);
+          setSettingsDraftDirty(false);
+          setHydratedBranchId(null);
+          void queryClient.invalidateQueries({ queryKey: ["branch-fulfillment"] });
+        }}
+        onDismiss={() => setRemoteSettingsPending(false)}
+        testId="branch-fulfillment-remote-conflict"
+      />
 
       <div className="branch-setup-tabs-scroll">
         <UnderlineTabBar
@@ -783,7 +825,10 @@ export function BranchFulfillmentEditPage() {
           hours={hours}
           t={t}
           onUpdateHour={updateHour}
-          onReplaceHours={setHours}
+          onReplaceHours={(next) => {
+            setSettingsDraftDirty(true);
+            setHours(next);
+          }}
         />
       ) : null}
 

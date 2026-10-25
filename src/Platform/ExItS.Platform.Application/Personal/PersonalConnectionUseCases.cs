@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -218,6 +219,7 @@ public sealed class RequestPersonalConnection
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public RequestPersonalConnection(
         IPersonalContactRepository contacts,
@@ -228,7 +230,8 @@ public sealed class RequestPersonalConnection
         ListPersonalConnectionRequests lister,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher realtime)
     {
         _contacts = contacts;
         _requests = requests;
@@ -239,6 +242,7 @@ public sealed class RequestPersonalConnection
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime;
     }
 
     public async Task<ApplicationResult<PersonalConnectionRequestDto>> ExecuteAsync(
@@ -341,6 +345,14 @@ public sealed class RequestPersonalConnection
                 summary: "Personal connection request created.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
+            await PersonalUtangRealtime
+                .NotifyNotificationChangedAsync(
+                    _realtime,
+                    targetUserIdentityId.Value,
+                    "connection-request",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             return ApplicationResult<PersonalConnectionRequestDto>.Success(
                 await _lister.ToDtoAsync(request, requesterUserIdentityId, cancellationToken).ConfigureAwait(false));
         }
@@ -366,6 +378,7 @@ public sealed class AcceptPersonalConnectionRequest
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     private readonly ListPersonalConnectionRequests _lister;
 
@@ -378,7 +391,8 @@ public sealed class AcceptPersonalConnectionRequest
         ListPersonalConnectionRequests lister,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher realtime)
     {
         _contacts = contacts;
         _requests = requests;
@@ -389,6 +403,7 @@ public sealed class AcceptPersonalConnectionRequest
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime;
     }
 
     public async Task<ApplicationResult<PersonalConnectionRequestDto>> ExecuteAsync(
@@ -496,6 +511,14 @@ public sealed class AcceptPersonalConnectionRequest
                 AuditOutcome.Succeeded,
                 summary: "Personal connection request accepted.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            await PersonalUtangRealtime
+                .NotifyNotificationChangedAsync(
+                    _realtime,
+                    request.RequesterUserIdentityId.Value,
+                    "connection-accepted",
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             return ApplicationResult<PersonalConnectionRequestDto>.Success(
                 await _lister.ToDtoAsync(request, acceptingUserIdentityId, cancellationToken).ConfigureAwait(false));

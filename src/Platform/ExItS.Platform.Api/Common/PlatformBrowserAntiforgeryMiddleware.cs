@@ -48,8 +48,12 @@ internal sealed class PlatformBrowserAntiforgeryMiddleware(
         }
 
         var path = context.Request.Path.Value ?? string.Empty;
+        // SignalR negotiate/WebSocket upgrade POSTs authenticate via the Platform session cookie
+        // (and/or X-ExItS-Session-Token). They do not carry antiforgery form tokens. Exemption is
+        // limited to /hubs/* hub negotiate endpoints — not the rest of the API surface.
+        // Authorization still requires [Authorize] on each hub; group joins are server-validated.
         if (ExemptPaths.Contains(path)
-            || path.StartsWith("/hubs/personal-profile", StringComparison.OrdinalIgnoreCase))
+            || path.StartsWith("/hubs/", StringComparison.OrdinalIgnoreCase))
         {
             await next(context).ConfigureAwait(false);
             return;

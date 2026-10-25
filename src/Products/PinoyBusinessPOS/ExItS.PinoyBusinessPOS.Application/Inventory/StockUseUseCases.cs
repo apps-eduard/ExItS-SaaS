@@ -66,6 +66,7 @@ public sealed class CreateStockUse
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public CreateStockUse(
         IStockUseRepository stockUses,
@@ -77,7 +78,8 @@ public sealed class CreateStockUse
         BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _stockUses = stockUses;
         _products = products;
@@ -89,6 +91,7 @@ public sealed class CreateStockUse
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<StockUseDto>> ExecuteAsync(
@@ -118,7 +121,7 @@ public sealed class CreateStockUse
 
         try
         {
-            return await _unitOfWork
+            var stockUseResult = await _unitOfWork
                 .ExecuteInSerializableTransactionAsync(
                     async ct =>
                     {
@@ -413,6 +416,19 @@ public sealed class CreateStockUse
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
+            if (stockUseResult.IsSuccess)
+            {
+                await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                    .TryInventoryStockChangedAsync(
+                        _realtime,
+                        organizationId,
+                        kind: "stock-use",
+                        branchId: request.BranchId,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return stockUseResult;
         }
         catch (DomainException ex)
         {

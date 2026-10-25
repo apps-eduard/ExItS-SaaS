@@ -144,8 +144,12 @@ public sealed class UpsertOrganizationPaymentMethodSetting(
     IOrganizationPaymentMethodSettingRepository settings,
     IPosUnitOfWork unitOfWork,
     IClock clock,
-    IPosCommercialAccessAccessor access)
+    IPosCommercialAccessAccessor access,
+    ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
 {
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime =
+        realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
+
     public async Task<ApplicationResult<PaymentMethodSettingDto>> ExecuteAsync(
         Guid organizationId,
         UpsertPaymentMethodSettingRequest request,
@@ -228,6 +232,23 @@ public sealed class UpsertOrganizationPaymentMethodSetting(
         {
             return ApplicationResult<PaymentMethodSettingDto>.Failure(ex.ErrorCode, ex.Message);
         }
+
+        await _realtime
+            .PublishToGroupsAsync(
+                [ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimeGroupNames.Organization(organizationId)],
+                ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimeEventEnvelope.Create(
+                    ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimeEventTypes.PaymentMethodSettingsChanged,
+                    ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimeResourceTypes.OrganizationSettings,
+                    organizationId.ToString("D"),
+                    ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimeScopeTypes.Organization,
+                    organizationId.ToString("D"),
+                    data: new Dictionary<string, string>
+                    {
+                        ["organizationId"] = organizationId.ToString("D"),
+                        ["methodCode"] = def.MethodCode
+                    }),
+                cancellationToken)
+            .ConfigureAwait(false);
 
         var list = new ListOrganizationPaymentMethods(settings, access);
         var dto = (await list.ExecuteAsync(organizationId, cancellationToken).ConfigureAwait(false))

@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Application.Reference;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
@@ -473,8 +474,11 @@ public sealed class UpdateBranch(
     IBranchDeliveryPolicyRepository policies,
     EntitlementQueryService entitlements,
     IPlatformUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    IRealtimeChangePublisher? realtime = null)
 {
+    private readonly IRealtimeChangePublisher _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
+
     public async Task<ApplicationResult<OrganizationBranchDto>> ExecuteAsync(
         PlatformOrganizationId organizationId,
         OrganizationBranchId branchId,
@@ -553,6 +557,15 @@ public sealed class UpdateBranch(
 
         await branches.UpdateAsync(branch, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await RealtimePublish
+            .BranchSettingsChangedAsync(
+                _realtime,
+                organizationId.Value,
+                branchId.Value,
+                RealtimeEventTypes.BranchSettingsChanged,
+                resourceVersion: branch.UpdatedAtUtc.ToUnixTimeMilliseconds().ToString(),
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
         var policy = await policies.GetByBranchIdAsync(branch.Id, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<OrganizationBranchDto>.Success(BranchMapper.ToDto(branch, policy));
     }
@@ -910,8 +923,15 @@ public sealed class UpsertBranchDeliveryPolicy(
     IOrganizationBranchRepository branches,
     IBranchDeliveryPolicyRepository policies,
     IPlatformUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    GetBranchFulfillmentReadiness readiness,
+    ICustomerStorefrontAvailabilityNotifier storefrontNotifier,
+    IRealtimeChangePublisher? realtime = null)
 {
+    private readonly GetBranchFulfillmentReadiness _readiness = readiness;
+    private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier = storefrontNotifier;
+    private readonly IRealtimeChangePublisher _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
+
     public async Task<ApplicationResult<BranchDeliveryPolicyDto>> ExecuteAsync(
         PlatformOrganizationId organizationId,
         OrganizationBranchId branchId,
@@ -969,6 +989,25 @@ public sealed class UpsertBranchDeliveryPolicy(
             }
 
             await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            var fulfillmentResult = await _readiness
+                .ExecuteAsync(organizationId, branchId, cancellationToken)
+                .ConfigureAwait(false);
+            if (fulfillmentResult.IsSuccess && fulfillmentResult.Value is not null)
+            {
+                await CustomerStorefrontAvailabilityNotify
+                    .PublishAsync(_storefrontNotifier, organizationId, fulfillmentResult.Value, cancellationToken)
+                    .ConfigureAwait(false);
+                await RealtimePublish
+                    .BranchSettingsChangedAsync(
+                        _realtime,
+                        organizationId.Value,
+                        branchId.Value,
+                        RealtimeEventTypes.BranchDeliveryPolicyChanged,
+                        resourceVersion: existing.UpdatedAtUtc.ToUnixTimeMilliseconds().ToString(),
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             return ApplicationResult<BranchDeliveryPolicyDto>.Success(BranchMapper.ToDto(existing));
         }
         catch (DomainException ex)

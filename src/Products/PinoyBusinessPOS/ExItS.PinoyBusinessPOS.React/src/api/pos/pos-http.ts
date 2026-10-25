@@ -5,6 +5,13 @@ import { getDurableInstallationDeviceId } from "@/workspace/browser-installation
 
 export const POS_API_BASE_PATH = "/pos-api";
 
+/** Relative POS API URL (e.g. SignalR hub under the Vite /pos-api proxy). */
+export function posApiUrl(path: string): string {
+  assertRelativePosBase(POS_API_BASE_PATH);
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return `${POS_API_BASE_PATH}${suffix}`;
+}
+
 const ABSOLUTE_API_PATTERN = /^https?:\/\//i;
 
 export type PosProblemDetails = {

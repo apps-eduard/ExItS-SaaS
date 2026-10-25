@@ -326,7 +326,7 @@ ext btn [icon] [intent] [appearance] [shape] [density] [icon name] [ripple] [dis
 | `ext btn` | Always | Default button |
 | `icon` | Icon only is on | Icon-only control |
 | intent | Not Standard | `primary` `secondary` `success` `info` `amber` `danger` `warn` `help` `black` |
-| appearance | Not Standard | `soft` `soft-outline` `outline` `raised` `ghost` `glossy` `gradient` `rounded` `flat` |
+| appearance | Not Standard | `soft` `soft-outline` `soft-glass` `outline` `raised` `ghost` `glossy` `glossy-glass` `glossy-raise` `gradient` `gradient-glass` `rounded` `flat` |
 | shape | Not Standard | `square` `soft` `pill` |
 | density | Not Standard | `compact` `comfort` |
 | icon name | Not None | `check` `plus` `star` `bookmark` `bell` `info` `heart` `trash` `alert` `moon` |

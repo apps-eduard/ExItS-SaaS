@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Parties;
+using ExItS.PinoyBusinessPOS.Application.Realtime;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -108,6 +109,7 @@ public sealed class PlaceCustomerOrder
     private readonly ICatalogProductAvailabilityResolver? _availability;
     private readonly IEffectivePriceResolver? _effectivePrices;
     private readonly PartyBranchAccessService? _branchAccess;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public PlaceCustomerOrder(
         ICustomerOrderRepository orders,
@@ -124,7 +126,8 @@ public sealed class PlaceCustomerOrder
         PartyBranchAccessService? branchAccess = null,
         PersonalOnlineCommerceAuthorization? shoppingAuth = null,
         CustomerCreditAuthorizationService? creditAuthorization = null,
-        IPosUnitOfWork? unitOfWork = null)
+        IPosUnitOfWork? unitOfWork = null,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _products = products;
@@ -141,6 +144,7 @@ public sealed class PlaceCustomerOrder
         _availability = availability;
         _effectivePrices = effectivePrices;
         _branchAccess = branchAccess;
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -595,6 +599,14 @@ public sealed class PlaceCustomerOrder
                 }
             }
 
+            await PosRealtimeCustomerOrderPublish
+                .PublishAsync(
+                    _realtime,
+                    created,
+                    PosRealtimeEventTypes.CustomerOrderSubmitted,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(created));
         }
         catch (DomainException ex)
@@ -1029,6 +1041,7 @@ public sealed class AcceptCustomerOrder
     private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public AcceptCustomerOrder(
         ICustomerOrderRepository orders,
@@ -1036,7 +1049,8 @@ public sealed class AcceptCustomerOrder
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IPersonalBusinessNotificationPublisher? personalNotifications = null)
+        IPersonalBusinessNotificationPublisher? personalNotifications = null,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _stock = stock;
@@ -1044,6 +1058,7 @@ public sealed class AcceptCustomerOrder
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -1082,6 +1097,13 @@ public sealed class AcceptCustomerOrder
             {
                 await NotifyCustomerAsync(accepted, CustomerOrderNotificationTypes.Accepted, "Order accepted", cancellationToken)
                     .ConfigureAwait(false);
+                await PosRealtimeCustomerOrderPublish
+                    .PublishAsync(
+                        _realtime,
+                        accepted,
+                        PosRealtimeEventTypes.CustomerOrderAccepted,
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return result;
@@ -1118,6 +1140,7 @@ public sealed class RejectCustomerOrder
     private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public RejectCustomerOrder(
         ICustomerOrderRepository orders,
@@ -1125,7 +1148,8 @@ public sealed class RejectCustomerOrder
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IPersonalBusinessNotificationPublisher? personalNotifications = null)
+        IPersonalBusinessNotificationPublisher? personalNotifications = null,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _stock = stock;
@@ -1133,6 +1157,7 @@ public sealed class RejectCustomerOrder
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -1186,6 +1211,13 @@ public sealed class RejectCustomerOrder
                         "Order rejected",
                         cancellationToken)
                     .ConfigureAwait(false);
+                await PosRealtimeCustomerOrderPublish
+                    .PublishAsync(
+                        _realtime,
+                        rejected,
+                        PosRealtimeEventTypes.CustomerOrderRejected,
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return result;
@@ -1209,6 +1241,7 @@ public sealed class CancelCustomerOrder
     private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public CancelCustomerOrder(
         ICustomerOrderRepository orders,
@@ -1216,7 +1249,8 @@ public sealed class CancelCustomerOrder
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IPersonalBusinessNotificationPublisher? personalNotifications = null)
+        IPersonalBusinessNotificationPublisher? personalNotifications = null,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _stock = stock;
@@ -1224,6 +1258,7 @@ public sealed class CancelCustomerOrder
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -1279,6 +1314,13 @@ public sealed class CancelCustomerOrder
                         "Order cancelled",
                         cancellationToken)
                     .ConfigureAwait(false);
+                await PosRealtimeCustomerOrderPublish
+                    .PublishAsync(
+                        _realtime,
+                        cancelled,
+                        PosRealtimeEventTypes.CustomerOrderCancelled,
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return result;
@@ -1300,17 +1342,20 @@ public sealed class AdvanceCustomerOrderFulfillment
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IClock _clock;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public AdvanceCustomerOrderFulfillment(
         ICustomerOrderRepository orders,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IPersonalBusinessNotificationPublisher? personalNotifications = null)
+        IPersonalBusinessNotificationPublisher? personalNotifications = null,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public Task<ApplicationResult<CustomerOrderDto>> StartPreparingAsync(
@@ -1324,6 +1369,7 @@ public sealed class AdvanceCustomerOrderFulfillment
             actorId,
             o => o.StartPreparing(_clock.UtcNow, actorId),
             null,
+            PosRealtimeEventTypes.CustomerOrderPreparing,
             cancellationToken);
 
     public Task<ApplicationResult<CustomerOrderDto>> MarkReadyAsync(
@@ -1337,6 +1383,7 @@ public sealed class AdvanceCustomerOrderFulfillment
             actorId,
             o => o.MarkReady(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.Ready,
+            PosRealtimeEventTypes.CustomerOrderReadyForPickup,
             cancellationToken);
 
     public Task<ApplicationResult<CustomerOrderDto>> MarkOutForDeliveryAsync(
@@ -1350,6 +1397,7 @@ public sealed class AdvanceCustomerOrderFulfillment
             actorId,
             o => o.MarkOutForDelivery(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.OutForDelivery,
+            PosRealtimeEventTypes.CustomerOrderOutForDelivery,
             cancellationToken);
 
     public Task<ApplicationResult<CustomerOrderDto>> MarkDeliveredAsync(
@@ -1363,6 +1411,7 @@ public sealed class AdvanceCustomerOrderFulfillment
             actorId,
             o => o.MarkDelivered(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.Delivered,
+            PosRealtimeEventTypes.CustomerOrderDelivered,
             cancellationToken);
 
     public Task<ApplicationResult<CustomerOrderDto>> MarkCollectedAsync(
@@ -1376,6 +1425,7 @@ public sealed class AdvanceCustomerOrderFulfillment
             actorId,
             o => o.MarkCollected(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.Collected,
+            PosRealtimeEventTypes.CustomerOrderCollected,
             cancellationToken);
 
     private async Task<ApplicationResult<CustomerOrderDto>> MutateAsync(
@@ -1384,6 +1434,7 @@ public sealed class AdvanceCustomerOrderFulfillment
         Guid actorId,
         Action<CustomerOrder> mutate,
         string? notifyType,
+        string realtimeEventType,
         CancellationToken cancellationToken)
     {
         if (actorId == Guid.Empty)
@@ -1421,6 +1472,10 @@ public sealed class AdvanceCustomerOrderFulfillment
                     .ConfigureAwait(false);
             }
 
+            await PosRealtimeCustomerOrderPublish
+                .PublishAsync(_realtime, order, realtimeEventType, cancellationToken)
+                .ConfigureAwait(false);
+
             return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
         }
         catch (DomainException ex)
@@ -1440,6 +1495,7 @@ public sealed class CompleteCustomerOrder
     private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public CompleteCustomerOrder(
         ICustomerOrderRepository orders,
@@ -1449,7 +1505,8 @@ public sealed class CompleteCustomerOrder
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IPersonalBusinessNotificationPublisher? personalNotifications = null)
+        IPersonalBusinessNotificationPublisher? personalNotifications = null,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _products = products;
@@ -1459,6 +1516,7 @@ public sealed class CompleteCustomerOrder
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -1511,6 +1569,13 @@ public sealed class CompleteCustomerOrder
                         "Order completed",
                         cancellationToken)
                     .ConfigureAwait(false);
+                await PosRealtimeCustomerOrderPublish
+                    .PublishAsync(
+                        _realtime,
+                        completed,
+                        PosRealtimeEventTypes.CustomerOrderCompleted,
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return result;
@@ -1531,15 +1596,18 @@ public sealed class ConfirmCustomerOrderPayment
     private readonly ICustomerOrderRepository _orders;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public ConfirmCustomerOrderPayment(
         ICustomerOrderRepository orders,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -1562,7 +1630,8 @@ public sealed class ConfirmCustomerOrderPayment
     {
         try
         {
-            return await _unitOfWork
+            CustomerOrder? updated = null;
+            var result = await _unitOfWork
                 .ExecuteInSerializableTransactionAsync(async ct =>
                 {
                     var order = await _orders
@@ -1580,9 +1649,23 @@ public sealed class ConfirmCustomerOrderPayment
 
                     mutate(order);
                     await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    updated = order;
                     return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
                 }, cancellationToken)
                 .ConfigureAwait(false);
+
+            if (result.IsSuccess && updated is not null)
+            {
+                await PosRealtimeCustomerOrderPublish
+                    .PublishAsync(
+                        _realtime,
+                        updated,
+                        PosRealtimeEventTypes.PaymentStatusChanged,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return result;
         }
         catch (DomainException ex)
         {
@@ -1600,15 +1683,18 @@ public sealed class DeclineCustomerOrderPayment
     private readonly ICustomerOrderRepository _orders;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPosRealtimeChangePublisher _realtime;
 
     public DeclineCustomerOrderPayment(
         ICustomerOrderRepository orders,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IPosRealtimeChangePublisher? realtime = null)
     {
         _orders = orders;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -1619,7 +1705,8 @@ public sealed class DeclineCustomerOrderPayment
     {
         try
         {
-            return await _unitOfWork
+            CustomerOrder? updated = null;
+            var result = await _unitOfWork
                 .ExecuteInSerializableTransactionAsync(async ct =>
                 {
                     var order = await _orders
@@ -1637,9 +1724,23 @@ public sealed class DeclineCustomerOrderPayment
 
                     order.DeclinePayment(actorId, _clock.UtcNow);
                     await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    updated = order;
                     return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
                 }, cancellationToken)
                 .ConfigureAwait(false);
+
+            if (result.IsSuccess && updated is not null)
+            {
+                await PosRealtimeCustomerOrderPublish
+                    .PublishAsync(
+                        _realtime,
+                        updated,
+                        PosRealtimeEventTypes.PaymentStatusChanged,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return result;
         }
         catch (DomainException ex)
         {

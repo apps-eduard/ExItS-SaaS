@@ -152,6 +152,9 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(rootDir, "src"),
     },
+    // Prefer TypeScript sources when a stale sibling `.js` exists next to `.tsx`/`.ts`.
+    // Vite's default puts `.js` before `.tsx`, so local emit leftovers silently win.
+    extensions: [".mjs", ".mts", ".ts", ".tsx", ".jsx", ".js", ".json"],
   },
   server: {
     host: "127.0.0.1",

@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet, useParams } from "react-router-dom";
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
@@ -295,7 +295,10 @@ const uiStandardsDevRoutes = UiStandardsPage
           </Suspense>
         ),
       },
-      { path: "ui-standard", element: <Navigate to="/ui-standards?category=buttons" replace /> },
+      {
+        path: "ui-standard",
+        element: <Navigate to="/ui-standards?category=buttons" replace />,
+      },
     ]
   : [];
 

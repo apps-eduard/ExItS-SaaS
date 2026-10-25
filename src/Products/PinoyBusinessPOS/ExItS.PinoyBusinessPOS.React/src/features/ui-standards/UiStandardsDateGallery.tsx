@@ -488,6 +488,7 @@ export function UiStandardsQdate({
   today = DATE_PICKER_SAMPLE,
   showToday = false,
   todayPlacement = "footer",
+  showClear = false,
   disabled = false,
   appearance = "standard",
   variety = "calendar",
@@ -495,6 +496,7 @@ export function UiStandardsQdate({
   onChange,
   onPicked,
   onToday,
+  onClear,
   showSet = false,
   onSet,
   showValue = true,
@@ -512,6 +514,8 @@ export function UiStandardsQdate({
   showToday?: boolean;
   /** Footer is the sample row. Header sits top-right, vertically centered, on the Soft Glass Roll popup. */
   todayPlacement?: "footer" | "header";
+  /** Soft Glass calendar UI sample: Clear action in the footer row with Today. */
+  showClear?: boolean;
   disabled?: boolean;
   appearance?: DateAppearance;
   variety?: DateVariety;
@@ -519,6 +523,7 @@ export function UiStandardsQdate({
   onChange?: (value: DatePickerValue) => void;
   onPicked?: () => void;
   onToday?: () => void;
+  onClear?: () => void;
   /** Soft Glass Roll date-time: Set under the roll carets. */
   showSet?: boolean;
   onSet?: () => void;
@@ -559,6 +564,33 @@ export function UiStandardsQdate({
       Today
     </button>
   ) : null;
+  const clearButton = showClear ? (
+    <button
+      type="button"
+      className="ui-standards-qdate__clear"
+      disabled={disabled}
+      data-testid={testId ? `${testId}-clear` : undefined}
+      onClick={() => {
+        if (disabled) return;
+        setAnchor(null);
+        onClear?.();
+      }}
+    >
+      Clear
+    </button>
+  ) : null;
+  const footerActions =
+    !embedded && (showClear || (showToday && todayPlacement === "footer")) ? (
+      <div
+        className={
+          "ui-standards-qdate__actions" +
+          (showClear && showToday && todayPlacement === "footer" ? " ui-standards-qdate__actions--split" : "")
+        }
+      >
+        {clearButton}
+        {todayPlacement === "footer" ? todayButton : null}
+      </div>
+    ) : null;
 
   useEffect(() => {
     const next = parseIsoDate(range ? rangeValue.from : single);
@@ -606,7 +638,7 @@ export function UiStandardsQdate({
       className={
         "ui-standards-qdate" +
         (disabled ? " ui-standards-qdate--disabled" : "") +
-        (showToday && !embedded ? " ui-standards-qdate--today" : "") +
+        ((showToday || showClear) && !embedded ? " ui-standards-qdate--today" : "") +
         (appearance !== "standard" ? ` ui-standards-qdate--${appearance}` : "") +
         (variety === "roll" ? " ui-standards-qdate--roll" : "") +
         (onDark ? " ui-standards-qdate--on-dark" : "") +
@@ -826,7 +858,7 @@ export function UiStandardsQdate({
             Set
           </button>
         ) : null}
-        {embedded || todayPlacement === "header" ? null : todayButton}
+        {footerActions}
         {embedded || !showValue ? null : (
           <div className="ui-standards-qdate__output" data-testid={testId ? `${testId}-value` : undefined}>
             <span className="ui-standards-qdate__output-label">Value</span>
@@ -1271,10 +1303,69 @@ function SoftGlassRollCard(): ReactNode {
   );
 }
 
+/**
+ * Soft Glass date / time UI samples — calendar + field chrome as glass
+ * (desktop + mobile). Personal Soft Glass only; Organization Date glass unchanged.
+ */
+function SoftGlassDateUiGlassSample(): ReactNode {
+  const sampleDay = "2026-10-25";
+  const [value, setValue] = useState(sampleDay);
+  const display = value ? isoDateToDisplay(value) : "";
+  return (
+    <div
+      className="ui-standards-soft-glass-ui-sample"
+      data-shell="soft-glass"
+      data-testid="ui-standard-date-soft-glass-ui-sample"
+    >
+      <div className="ui-standards-soft-glass-ui-sample__title">Soft Glass · Date UI</div>
+      <p className="ui-standards-soft-glass-ui-sample__blurb">
+        Calendar picker field and popover in Soft Glass — Clear / Today footer. Mobile keeps the same glass shell.
+      </p>
+      <div className="ui-standards-soft-glass-ui-sample__stack">
+        <div className="ui-standards-date-preview-card ui-standards-date-preview-card--soft-glass ui-standards-soft-glass-ui-sample__field">
+          <UiStandardsQinput
+            label="Date"
+            value={display}
+            readOnly
+            placeholder={SOFT_GLASS_DATE_INPUT_PLACEHOLDER}
+            accent={SOFT_GLASS_ROLL_PRIMARY}
+            fill={SOFT_GLASS_ROLL_PRIMARY}
+            ink={SOFT_GLASS_ROLL_INK}
+            appearance="outlined"
+            clearable={Boolean(value)}
+            clearMark="reset"
+            onClear={() => setValue("")}
+            suffix={<CalendarDays className="ui-standards-qinput__picker-icon" aria-hidden />}
+            testId="ui-standard-date-soft-glass-ui-input"
+          />
+        </div>
+        <UiStandardsQdate
+          color={SOFT_GLASS_ROLL_PRIMARY}
+          ink={SOFT_GLASS_ROLL_INK}
+          value={value || sampleDay}
+          today={todayIsoDate()}
+          showToday
+          showClear
+          todayPlacement="footer"
+          appearance="soft-glass"
+          variety="calendar"
+          showValue={false}
+          onChange={(next) => {
+            if (typeof next === "string") setValue(next);
+          }}
+          onClear={() => setValue("")}
+          testId="ui-standard-date-soft-glass-ui-calendar"
+        />
+      </div>
+    </div>
+  );
+}
+
 /** Soft Glass Roll samples — sits below the Date playground (not in the Date samples gallery). */
 export function UiStandardsSoftGlassRollSamples(): ReactNode {
   return (
     <div className="flex flex-col gap-4" data-testid="ui-standard-date-soft-glass-roll-samples">
+      <SoftGlassDateUiGlassSample />
       <SoftGlassRollCard />
       <DateRow title="Soft Glass Roll" testId="ui-standard-date-soft-glass-roll-row" appearance="soft-glass" variety="roll" />
     </div>

@@ -6,11 +6,13 @@ import { ChevronDown, MapPin, Store, Warehouse } from "lucide-react";
 import { listOrganizationNotifications } from "@/api/platform/organization-notifications-client";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
+import { ShellHomeButton } from "@/components/exits/ShellHomeButton";
 import { ShellNeedsAttentionButton } from "@/components/exits/ShellNeedsAttentionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
 import { ShellSidebarModeButton } from "@/components/exits/ShellSidebarModeButton";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
+import { shellHomeHref } from "@/features/shell/shell-home-href";
 import {
   countUnreadOrganizationNotifications,
   formatUnreadNotificationBadge,
@@ -204,14 +206,20 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
 
   return (
     <header
-      className={cn("app-top-bar", hideDesktopBrand && "app-top-bar--shell-desktop")}
+      className={cn(
+        "app-top-bar",
+        hideDesktopBrand && "app-top-bar--shell-desktop",
+        isUiStandards && "app-top-bar--ui-standards",
+      )}
       data-testid="app-top-bar"
       data-hide-desktop-brand={hideDesktopBrand ? "true" : "false"}
+      data-ui-standards={isUiStandards ? "true" : "false"}
     >
       <div
         className={cn(
           "app-top-bar__row",
           hideDesktopBrand && "app-top-bar__row--shell-desktop",
+          isUiStandards && "app-top-bar__row--ui-standards",
         )}
       >
         {isUiStandards && uiStandardsSidenav ? (
@@ -227,6 +235,7 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
           className={cn(
             "app-top-bar__brand",
             hideDesktopBrand && "app-top-bar__brand--shell-mobile",
+            isUiStandards && "app-top-bar__brand--ui-standards",
           )}
         >
           <span className="app-top-bar__mark" aria-hidden="true">
@@ -234,35 +243,45 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
           </span>
           <div className="app-top-bar__brand-copy">
             {/* Mobile topbar: no branch selector — switch via Account menu → Workspace. */}
-            <p className="app-top-bar__app-name">{t("app.name")}</p>
+            <p className="app-top-bar__app-name">
+              {isUiStandards ? t("uiStandards.title") : t("app.name")}
+            </p>
           </div>
         </div>
 
-        <div
-          className={cn(
-            "app-top-bar__center hidden lg:flex",
-            hideDesktopBrand && "app-top-bar__center--shell-desktop",
-          )}
-        >
-          {showWorkspaceControl ? (
-            renderWorkspaceButton("workspace-context", false)
-          ) : (
-            <span className="sr-only">{t("topbar.workspacePending")}</span>
-          )}
-        </div>
+        {!isUiStandards ? (
+          <div
+            className={cn(
+              "app-top-bar__center hidden lg:flex",
+              hideDesktopBrand && "app-top-bar__center--shell-desktop",
+            )}
+          >
+            {showWorkspaceControl ? (
+              renderWorkspaceButton("workspace-context", false)
+            ) : (
+              <span className="sr-only">{t("topbar.workspacePending")}</span>
+            )}
+          </div>
+        ) : null}
 
-        <div className="app-top-bar__actions">
+        <div className={cn("app-top-bar__actions", isUiStandards && "app-top-bar__actions--ui-standards")}>
+          <ShellHomeButton
+            to={shellHomeHref(boundWorkspace)}
+            label={t("topbar.home")}
+            testId="org-shell-home"
+            className="app-top-bar__action"
+          />
           <ShellConnectionButton
             testId="org-shell-connection-button"
             className="app-top-bar__action"
           />
-          {boundWorkspace ? (
+          {!isUiStandards && boundWorkspace ? (
             <ShellNeedsAttentionButton
               testId="org-needs-attention"
               className="app-top-bar__action"
             />
           ) : null}
-          {canOpenOrgNotifications ? (
+          {!isUiStandards && canOpenOrgNotifications ? (
             <ShellNotificationButton
               to="/org/notifications"
               label={t("shell.notifications.label")}
@@ -282,10 +301,17 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
               }
             />
           ) : null}
-          <ShellUiStandardsButton
-            label={t("uiStandards.topbar")}
-            className="app-top-bar__action"
-          />
+          {!isUiStandards ? (
+            <ShellUiStandardsButton
+              product={boundWorkspace ? "organization" : "personal"}
+              label={
+                boundWorkspace
+                  ? t("uiStandards.topbarOrganization")
+                  : t("uiStandards.topbarPersonal")
+              }
+              className="app-top-bar__action"
+            />
+          ) : null}
           <ShellPreferencesButton
             label={t("topbar.preferences")}
             className="app-top-bar__action"

@@ -1,0 +1,6291 @@
+/**
+ * Organization ? Enterprise Hybrid Glass (UI Standards prototype ONLY).
+ *
+ * STRICT: Every rule is scoped under `.org-ehg` or `[data-org-ehg]`.
+ * Do not use these selectors as Personal Soft Glass defaults.
+ * Do not import this file from product Organization pages until approved.
+ */
+
+.org-ehg {
+  /* Product-scoped tokens ? do not redefine --exits-* globals here as defaults */
+  --org-ehg-bg: #f4f6f8;
+  --org-ehg-surface: #ffffff;
+  --org-ehg-surface-raised: #ffffff;
+  --org-ehg-surface-muted: #eef1f4;
+  --org-ehg-border: #d5dbe3;
+  --org-ehg-border-strong: #b8c0cc;
+  --org-ehg-ink: #1a2332;
+  --org-ehg-ink-muted: #5a6577;
+  --org-ehg-nav-glass: color-mix(in srgb, #ffffff 82%, transparent);
+  --org-ehg-nav-border: color-mix(in srgb, #94a3b8 35%, transparent);
+  --org-ehg-kpi-wash: color-mix(in srgb, var(--exits-primary) 8%, #ffffff);
+  --org-ehg-kpi-border: color-mix(in srgb, var(--exits-primary) 22%, #d5dbe3);
+  --org-ehg-radius: 0.5rem;
+  --org-ehg-radius-lg: 0.75rem;
+  --org-ehg-shadow: 0 1px 2px color-mix(in srgb, #0f172a 6%, transparent),
+    0 4px 12px color-mix(in srgb, #0f172a 4%, transparent);
+  --org-ehg-focus: var(--exits-primary);
+  color: var(--org-ehg-ink);
+  background: var(--org-ehg-bg);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+[data-theme="dark"] .org-ehg,
+.org-ehg[data-org-ehg-theme="dark"] {
+  --org-ehg-bg: #0f1419;
+  --org-ehg-surface: #1a222d;
+  --org-ehg-surface-raised: #222b38;
+  --org-ehg-surface-muted: #151c26;
+  --org-ehg-border: #2e3a4a;
+  --org-ehg-border-strong: #3d4c60;
+  --org-ehg-ink: #e8eef6;
+  --org-ehg-ink-muted: #9aa8bc;
+  --org-ehg-nav-glass: color-mix(in srgb, #1a222d 88%, transparent);
+  --org-ehg-nav-border: color-mix(in srgb, #64748b 40%, transparent);
+  --org-ehg-kpi-wash: color-mix(in srgb, var(--exits-primary) 14%, #1a222d);
+  --org-ehg-kpi-border: color-mix(in srgb, var(--exits-primary) 28%, #2e3a4a);
+  --org-ehg-shadow: 0 1px 2px color-mix(in srgb, #000 40%, transparent),
+    0 6px 16px color-mix(in srgb, #000 28%, transparent);
+}
+
+.org-ehg *,
+.org-ehg *::before,
+.org-ehg *::after {
+  box-sizing: border-box;
+}
+
+.org-ehg__banner {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  background: var(--org-ehg-surface-muted);
+  color: var(--org-ehg-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.org-ehg__banner strong {
+  color: var(--org-ehg-ink);
+  font-weight: 600;
+}
+
+/* Shell: restrained glass nav + solid work surface */
+.org-ehg__shell {
+  display: grid;
+  grid-template-columns: 13.5rem minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 28rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius-lg);
+  overflow: hidden;
+  background: var(--org-ehg-bg);
+  box-shadow: var(--org-ehg-shadow);
+}
+
+.org-ehg__topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--org-ehg-nav-glass);
+  border-bottom: 1px solid var(--org-ehg-nav-border);
+  /* Prefer semi-opaque solid ? avoid fullscreen backdrop-filter */
+}
+
+.org-ehg__brand {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  color: var(--org-ehg-ink);
+}
+
+.org-ehg__selectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.org-ehg__select {
+  appearance: none;
+  min-height: 2.25rem;
+  padding: 0.35rem 1.75rem 0.35rem 0.65rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  background: var(--org-ehg-surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6577' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 0.5rem center;
+  color: var(--org-ehg-ink);
+  font-size: 0.8125rem;
+}
+
+.org-ehg__select:focus-visible {
+  outline: 2px solid var(--org-ehg-focus);
+  outline-offset: 1px;
+}
+
+.org-ehg__sidenav {
+  padding: 0.65rem 0.5rem;
+  background: var(--org-ehg-nav-glass);
+  border-right: 1px solid var(--org-ehg-nav-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.org-ehg__nav-item {
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: 0.45rem 0.65rem;
+  border: none;
+  border-radius: calc(var(--org-ehg-radius) - 0.1rem);
+  background: transparent;
+  color: var(--org-ehg-ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: default;
+}
+
+.org-ehg__nav-item[data-active="true"] {
+  background: var(--org-ehg-kpi-wash);
+  color: var(--org-ehg-ink);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--exits-primary);
+}
+
+.org-ehg__main {
+  padding: 0.85rem 1rem 1.1rem;
+  background: var(--org-ehg-bg);
+  min-width: 0;
+}
+
+.org-ehg__page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.org-ehg__page-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.org-ehg__page-lede {
+  margin: 0.2rem 0 0;
+  color: var(--org-ehg-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.org-ehg__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.org-ehg__kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.org-ehg__kpi {
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--org-ehg-kpi-border);
+  border-radius: var(--org-ehg-radius);
+  background: linear-gradient(
+    165deg,
+    var(--org-ehg-kpi-wash) 0%,
+    var(--org-ehg-surface) 55%
+  );
+  box-shadow: var(--org-ehg-shadow);
+}
+
+.org-ehg__kpi-label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--org-ehg-ink-muted);
+}
+
+.org-ehg__kpi-value {
+  margin: 0.25rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.org-ehg__kpi-meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--org-ehg-ink-muted);
+}
+
+.org-ehg__panel {
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  background: var(--org-ehg-surface);
+  box-shadow: var(--org-ehg-shadow);
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.org-ehg__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--org-ehg-border);
+  background: var(--org-ehg-surface-raised);
+}
+
+.org-ehg__panel-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.org-ehg__panel-body {
+  padding: 0.65rem 0.75rem;
+}
+
+.org-ehg__split {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.75rem;
+}
+
+.org-ehg__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.org-ehg__table th,
+.org-ehg__table td {
+  padding: 0.45rem 0.5rem;
+  text-align: start;
+  border-bottom: 1px solid var(--org-ehg-border);
+  vertical-align: middle;
+}
+
+.org-ehg__table th {
+  font-size: 0.6875rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--org-ehg-ink-muted);
+  background: var(--org-ehg-surface-muted);
+}
+
+.org-ehg__table tr:last-child td {
+  border-bottom: none;
+}
+
+.org-ehg__table--compact th,
+.org-ehg__table--compact td {
+  padding: 0.35rem 0.45rem;
+}
+
+.org-ehg__num {
+  font-variant-numeric: tabular-nums;
+  text-align: end !important;
+}
+
+.org-ehg__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.org-ehg__list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--org-ehg-border);
+  font-size: 0.8125rem;
+}
+
+.org-ehg__list-item:last-child {
+  border-bottom: none;
+}
+
+.org-ehg__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.org-ehg__field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.org-ehg__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.org-ehg__field--full {
+  grid-column: 1 / -1;
+}
+
+.org-ehg__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--org-ehg-ink);
+}
+
+.org-ehg__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--org-ehg-ink-muted);
+}
+
+.org-ehg__error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--exits-danger, #dc2626);
+}
+
+.org-ehg__input {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  background: var(--org-ehg-surface);
+  color: var(--org-ehg-ink);
+  font-size: 0.875rem;
+}
+
+.org-ehg__input:focus-visible {
+  outline: 2px solid var(--org-ehg-focus);
+  outline-offset: 1px;
+}
+
+.org-ehg__input[aria-invalid="true"] {
+  border-color: var(--exits-danger, #dc2626);
+}
+
+.org-ehg__input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--org-ehg-surface-muted);
+}
+
+.org-ehg__section {
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--org-ehg-border);
+}
+
+.org-ehg__section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.org-ehg__section-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+
+.org-ehg__compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.org-ehg__compare-frame {
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  overflow: hidden;
+}
+
+.org-ehg__compare-label {
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--org-ehg-surface-muted);
+  border-bottom: 1px solid var(--org-ehg-border);
+}
+
+.org-ehg__device-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.org-ehg__device {
+  flex: 1 1 10rem;
+  max-width: 22rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius-lg);
+  padding: 0.5rem;
+  background: var(--org-ehg-surface-muted);
+}
+
+.org-ehg__device-chrome {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--org-ehg-border-strong);
+  margin: 0 auto 0.45rem;
+  width: 2.5rem;
+}
+
+.org-ehg__mobile-card {
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  background: var(--org-ehg-surface);
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.org-ehg__mobile-card strong {
+  font-size: 0.875rem;
+}
+
+.org-ehg__state-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.65rem;
+}
+
+.org-ehg__state-card {
+  padding: 0.65rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  background: var(--org-ehg-surface);
+}
+
+.org-ehg__state-card h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--org-ehg-ink-muted);
+}
+
+@media (max-width: 960px) {
+  .org-ehg__kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .org-ehg__split,
+  .org-ehg__compare,
+  .org-ehg__field-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 719px) {
+  .org-ehg__shell {
+    grid-template-columns: 1fr;
+  }
+
+  .org-ehg__sidenav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--org-ehg-nav-border);
+  }
+
+  .org-ehg__nav-item {
+    width: auto;
+  }
+
+  .org-ehg__kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Live reference host ? solid work surface over Hybrid Glass shell tokens */
+.org-ehg--live {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.15rem 0 1rem;
+}
+
+.org-ehg__context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius);
+  background: var(--org-ehg-surface);
+}
+
+.org-ehg__context-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.org-ehg__context-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--org-ehg-ink-muted);
+}
+
+.org-ehg__context-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--org-ehg-ink);
+}
+
+.org-ehg__live-surface {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--org-ehg-border);
+  border-radius: var(--org-ehg-radius-lg);
+  background: var(--org-ehg-surface);
+  box-shadow: var(--org-ehg-shadow);
+}
+
+.org-ehg__settings-tabs {
+  margin-bottom: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ?? Button Glass Styles (UI Standards sample ONLY) ??
+ * Spec match: rounded rect 8 / 10 / 12px (never pill). True Hybrid Glass washes + blur.
+ * Scoped under .org-ehg-btn-glass* ? does not alter Personal Soft Glass or global Button.
+ */
+.org-ehg-btn-glass-gallery {
+  --org-ehg-btn-r-sm: 8px;
+  --org-ehg-btn-r-md: 10px;
+  --org-ehg-btn-r-lg: 12px;
+  --org-ehg-btn-r-panel: 16px;
+  --org-ehg-btn-h-xs: 1.75rem; /* 28px */
+  --org-ehg-btn-h-sm: 2rem; /* 32px */
+  --org-ehg-btn-h-md: 2.5rem; /* 40px */
+  --org-ehg-btn-h-lg: 3rem; /* 48px */
+  --org-ehg-btn-h-xl: 3.5rem; /* 56px */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.org-ehg-btn-glass-gallery__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .org-ehg-btn-glass-gallery__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-btn-glass-panel {
+  --org-ehg-btn-glass-accent: #3b82f6;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  height: 100%;
+  padding: 1.25rem 1.35rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--org-ehg-btn-r-panel);
+  background: #f8fafc;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+
+.org-ehg-btn-glass-panel--playground,
+.org-ehg-btn-glass-panel--playground[data-org-ehg-theme="dark"] {
+  height: auto;
+  min-height: 5.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1.25rem;
+  background: transparent;
+}
+
+.org-ehg-btn-glass-panel--playground-scene {
+  min-height: 7.5rem;
+  border-color: rgba(255, 255, 255, 0.18);
+  background-color: #1e3a8a;
+  background-image:
+    radial-gradient(ellipse 90% 70% at 18% 88%, rgba(56, 189, 248, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 82% 78%, rgba(37, 99, 235, 0.65) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%, rgba(15, 23, 42, 0.55) 100%),
+    linear-gradient(160deg, #7dd3fc 0%, #3b82f6 32%, #1d4ed8 58%, #0f172a 100%);
+  background-size: cover;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] {
+  background: #0b1220;
+  border-color: #1e293b;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.org-ehg-btn-glass-panel__header {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-panel__header {
+  border-bottom-color: #1e293b;
+}
+
+.org-ehg-btn-glass-panel__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #0f172a;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-panel__title {
+  color: #f8fafc;
+}
+
+.org-ehg-btn-glass-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 1.1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.org-ehg-btn-glass-panel__section-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-panel__section-title {
+  color: #94a3b8;
+}
+
+.org-ehg-btn-glass-panel__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 0.85rem;
+}
+
+.org-ehg-btn-glass-sample {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  min-width: 4.5rem;
+}
+
+.org-ehg-btn-glass-sample__caption {
+  max-width: 7.5rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #64748b;
+  text-align: center;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-sample__caption {
+  color: #94a3b8;
+}
+
+/* Mountain / photo backdrop so Soft?Ultra glass reads as real glass */
+.org-ehg-btn-glass-panel__scene {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 0.65rem;
+  min-height: 7.5rem;
+  padding: 1.5rem 1rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow-x: auto;
+  background-color: #1e3a8a;
+  background-image:
+    radial-gradient(ellipse 90% 70% at 18% 88%, rgba(56, 189, 248, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 82% 78%, rgba(37, 99, 235, 0.65) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%, rgba(15, 23, 42, 0.55) 100%),
+    linear-gradient(160deg, #7dd3fc 0%, #3b82f6 32%, #1d4ed8 58%, #0f172a 100%);
+  background-size: cover;
+  background-position: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.org-ehg-btn-glass-panel__scene .org-ehg-btn-glass-sample__caption {
+  color: rgba(248, 250, 252, 0.92);
+  text-shadow: 0 1px 3px rgba(15, 23, 42, 0.65);
+}
+
+/* ??? Base glass control ???
+ * Clean edge recipe (LOCKED for this sample):
+ * - ONE 1px border (no extra 0 0 0 1px ring ? that double-fringes with blur)
+ * - ONE top specular inset highlight only
+ * - Outer glow uses large blur + zero spread so it sits off the stroke
+ * - Fill clipped to padding-box so blur/fill does not bleed under the border
+ */
+.org-ehg-btn-glass {
+  --org-ehg-btn-glass-ink: #1e3a8a;
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-edge: rgba(37, 99, 235, 0.42);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.72);
+  --org-ehg-btn-glass-blur: 10px;
+  --org-ehg-btn-glass-radius: var(--org-ehg-btn-r-md);
+  --org-ehg-btn-glass-glow: 0 8px 18px rgba(59, 130, 246, 0.16);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  isolation: isolate;
+  height: var(--org-ehg-btn-h-md);
+  min-height: var(--org-ehg-btn-h-md);
+  padding: 0 1rem;
+  border: 1px solid var(--org-ehg-btn-glass-edge);
+  border-radius: var(--org-ehg-btn-glass-radius);
+  background:
+    linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 42%),
+    var(--org-ehg-btn-glass-fill);
+  background-clip: padding-box;
+  color: var(--org-ehg-btn-glass-ink);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(var(--org-ehg-btn-glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--org-ehg-btn-glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    var(--org-ehg-btn-glass-glow);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    filter 140ms ease,
+    transform 140ms ease;
+}
+
+.org-ehg-btn-glass__icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  stroke-width: 2.25;
+  display: block;
+  align-self: center;
+}
+
+.org-ehg-btn-glass > span {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  align-self: center;
+}
+
+.org-ehg-btn-glass__caret {
+  margin-block: 0;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass {
+  --org-ehg-btn-glass-ink: #f8fafc;
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-edge: rgba(191, 219, 254, 0.38);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.28);
+  --org-ehg-btn-glass-glow: 0 10px 22px rgba(59, 130, 246, 0.28);
+  background:
+    linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 40%),
+    var(--org-ehg-btn-glass-fill);
+  background-clip: padding-box;
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    var(--org-ehg-btn-glass-glow);
+}
+
+/* ??? Intensity ladder (must read as different glass, not five solid blues) ??? */
+.org-ehg-btn-glass--solid {
+  --org-ehg-btn-glass-fill: #3b82f6;
+  --org-ehg-btn-glass-ink: #ffffff;
+  --org-ehg-btn-glass-edge: #1d4ed8;
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.32);
+  --org-ehg-btn-glass-blur: 0px;
+  --org-ehg-btn-glass-glow: 0 6px 14px rgba(37, 99, 235, 0.32);
+  background:
+    linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 48%),
+    #3b82f6;
+  background-clip: padding-box;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-btn-glass--soft {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.12);
+  --org-ehg-btn-glass-edge: rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.78);
+  --org-ehg-btn-glass-blur: 6px;
+  --org-ehg-btn-glass-ink: #1e40af;
+  --org-ehg-btn-glass-glow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.org-ehg-btn-glass--medium {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-edge: rgba(37, 99, 235, 0.42);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.7);
+  --org-ehg-btn-glass-blur: 10px;
+  --org-ehg-btn-glass-ink: #1e3a8a;
+  --org-ehg-btn-glass-glow: 0 8px 18px rgba(59, 130, 246, 0.16);
+}
+
+.org-ehg-btn-glass--strong {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.48);
+  --org-ehg-btn-glass-edge: rgba(37, 99, 235, 0.55);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.55);
+  --org-ehg-btn-glass-blur: 14px;
+  --org-ehg-btn-glass-ink: #ffffff;
+  --org-ehg-btn-glass-glow: 0 8px 18px rgba(37, 99, 235, 0.22);
+  text-shadow: 0 1px 1px rgba(15, 23, 42, 0.18);
+}
+
+.org-ehg-btn-glass--ultra {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.16);
+  --org-ehg-btn-glass-edge: rgba(96, 165, 250, 0.72);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.88);
+  --org-ehg-btn-glass-blur: 18px;
+  --org-ehg-btn-glass-ink: #1e3a8a;
+  /* Soft aura only ? no hard 1px ring (avoids dirty double edge) */
+  --org-ehg-btn-glass-glow: 0 0 20px rgba(59, 130, 246, 0.28);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--soft {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.14);
+  --org-ehg-btn-glass-edge: rgba(226, 232, 240, 0.22);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.22);
+  --org-ehg-btn-glass-ink: #e2e8f0;
+  --org-ehg-btn-glass-glow: 0 6px 16px rgba(59, 130, 246, 0.18);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--medium {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.32);
+  --org-ehg-btn-glass-edge: rgba(191, 219, 254, 0.38);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.26);
+  --org-ehg-btn-glass-glow: 0 10px 22px rgba(59, 130, 246, 0.28);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--strong {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.52);
+  --org-ehg-btn-glass-edge: rgba(191, 219, 254, 0.45);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.24);
+  --org-ehg-btn-glass-ink: #ffffff;
+  --org-ehg-btn-glass-glow: 0 10px 24px rgba(59, 130, 246, 0.36);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--ultra {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.18);
+  --org-ehg-btn-glass-edge: rgba(226, 232, 240, 0.48);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.34);
+  --org-ehg-btn-glass-ink: #f8fafc;
+  --org-ehg-btn-glass-glow: 0 0 26px rgba(59, 130, 246, 0.42);
+}
+
+/* ??? Types ??? */
+.org-ehg-btn-glass--tone-primary.org-ehg-btn-glass--solid {
+  --org-ehg-btn-glass-fill: #3b82f6;
+  --org-ehg-btn-glass-ink: #ffffff;
+}
+
+.org-ehg-btn-glass--tone-secondary {
+  --org-ehg-btn-glass-fill: rgba(255, 255, 255, 0.72);
+  --org-ehg-btn-glass-edge: rgba(148, 163, 184, 0.55);
+  --org-ehg-btn-glass-ink: #334155;
+  --org-ehg-btn-glass-blur: 8px;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-secondary {
+  --org-ehg-btn-glass-fill: rgba(148, 163, 184, 0.16);
+  --org-ehg-btn-glass-edge: rgba(148, 163, 184, 0.4);
+  --org-ehg-btn-glass-ink: #e2e8f0;
+}
+
+.org-ehg-btn-glass--tone-outline {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.06);
+  --org-ehg-btn-glass-edge: #3b82f6;
+  --org-ehg-btn-glass-ink: #1d4ed8;
+  --org-ehg-btn-glass-blur: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 50%),
+    rgba(59, 130, 246, 0.06);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-outline {
+  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.08);
+  --org-ehg-btn-glass-edge: #60a5fa;
+  --org-ehg-btn-glass-ink: #93c5fd;
+}
+
+.org-ehg-btn-glass--tone-ghost {
+  --org-ehg-btn-glass-fill: transparent;
+  --org-ehg-btn-glass-edge: transparent;
+  --org-ehg-btn-glass-ink: #1e40af;
+  --org-ehg-btn-glass-blur: 0px;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-ghost {
+  --org-ehg-btn-glass-ink: #93c5fd;
+}
+
+.org-ehg-btn-glass--tone-text {
+  --org-ehg-btn-glass-fill: transparent;
+  --org-ehg-btn-glass-edge: transparent;
+  --org-ehg-btn-glass-ink: #2563eb;
+  --org-ehg-btn-glass-blur: 0px;
+  height: auto;
+  min-height: 0;
+  padding: 0.2rem 0.35rem;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-weight: 600;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-text {
+  --org-ehg-btn-glass-ink: #60a5fa;
+}
+
+/* ??? Status ??? */
+.org-ehg-btn-glass--tone-success {
+  --org-ehg-btn-glass-fill: rgba(34, 197, 94, 0.22);
+  --org-ehg-btn-glass-edge: rgba(34, 197, 94, 0.45);
+  --org-ehg-btn-glass-ink: #166534;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-success {
+  --org-ehg-btn-glass-fill: rgba(34, 197, 94, 0.28);
+  --org-ehg-btn-glass-edge: rgba(74, 222, 128, 0.45);
+  --org-ehg-btn-glass-ink: #bbf7d0;
+}
+
+.org-ehg-btn-glass--tone-warning {
+  --org-ehg-btn-glass-fill: rgba(245, 158, 11, 0.24);
+  --org-ehg-btn-glass-edge: rgba(245, 158, 11, 0.5);
+  --org-ehg-btn-glass-ink: #92400e;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-warning {
+  --org-ehg-btn-glass-fill: rgba(245, 158, 11, 0.3);
+  --org-ehg-btn-glass-edge: rgba(251, 191, 36, 0.5);
+  --org-ehg-btn-glass-ink: #fde68a;
+}
+
+.org-ehg-btn-glass--tone-danger {
+  --org-ehg-btn-glass-fill: rgba(248, 113, 113, 0.24);
+  --org-ehg-btn-glass-edge: rgba(248, 113, 113, 0.5);
+  --org-ehg-btn-glass-ink: #991b1b;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-danger {
+  --org-ehg-btn-glass-fill: rgba(248, 113, 113, 0.3);
+  --org-ehg-btn-glass-edge: rgba(252, 165, 165, 0.5);
+  --org-ehg-btn-glass-ink: #fecaca;
+}
+
+.org-ehg-btn-glass--tone-info {
+  --org-ehg-btn-glass-fill: rgba(56, 189, 248, 0.24);
+  --org-ehg-btn-glass-edge: rgba(56, 189, 248, 0.5);
+  --org-ehg-btn-glass-ink: #075985;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-info {
+  --org-ehg-btn-glass-fill: rgba(56, 189, 248, 0.3);
+  --org-ehg-btn-glass-edge: rgba(125, 211, 252, 0.5);
+  --org-ehg-btn-glass-ink: #bae6fd;
+}
+
+.org-ehg-btn-glass--tone-neutral {
+  --org-ehg-btn-glass-fill: rgba(100, 116, 139, 0.18);
+  --org-ehg-btn-glass-edge: rgba(100, 116, 139, 0.4);
+  --org-ehg-btn-glass-ink: #334155;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-neutral {
+  --org-ehg-btn-glass-fill: rgba(148, 163, 184, 0.22);
+  --org-ehg-btn-glass-edge: rgba(148, 163, 184, 0.4);
+  --org-ehg-btn-glass-ink: #e2e8f0;
+}
+
+/* ??? States ???
+ * Avoid filter:brightness on glass ? it softens the 1px stroke with backdrop-filter.
+ */
+.org-ehg-btn-glass:hover:not(:disabled),
+.org-ehg-btn-glass--state-hover {
+  transform: translateY(-1px);
+  --org-ehg-btn-glass-edge: rgba(37, 99, 235, 0.58);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.86);
+  --org-ehg-btn-glass-glow: 0 10px 22px rgba(59, 130, 246, 0.26);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass:hover:not(:disabled),
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--state-hover {
+  --org-ehg-btn-glass-edge: rgba(226, 232, 240, 0.52);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.36);
+  --org-ehg-btn-glass-glow: 0 0 28px rgba(59, 130, 246, 0.48);
+}
+
+.org-ehg-btn-glass:focus-visible,
+.org-ehg-btn-glass--state-focused {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  transform: none;
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    var(--org-ehg-btn-glass-glow);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass:focus-visible,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--state-focused {
+  outline-color: #60a5fa;
+}
+
+.org-ehg-btn-glass:active:not(:disabled),
+.org-ehg-btn-glass--state-pressed {
+  transform: translateY(1px);
+  --org-ehg-btn-glass-glow: none;
+  box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+.org-ehg-btn-glass:disabled,
+.org-ehg-btn-glass--state-disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  filter: grayscale(0.55);
+  transform: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.org-ehg-btn-glass--state-loading {
+  gap: 0.45rem;
+}
+
+/* ??? Sizes (spec: clear XS?XL ladder) ??? */
+.org-ehg-btn-glass--size-xs {
+  --org-ehg-btn-glass-radius: var(--org-ehg-btn-r-sm);
+  height: var(--org-ehg-btn-h-xs);
+  min-height: var(--org-ehg-btn-h-xs);
+  padding: 0 0.55rem;
+  font-size: 0.6875rem;
+  gap: 0.28rem;
+}
+
+.org-ehg-btn-glass--size-xs .org-ehg-btn-glass__icon {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.org-ehg-btn-glass--size-sm {
+  --org-ehg-btn-glass-radius: var(--org-ehg-btn-r-sm);
+  height: var(--org-ehg-btn-h-sm);
+  min-height: var(--org-ehg-btn-h-sm);
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+}
+
+.org-ehg-btn-glass--size-sm .org-ehg-btn-glass__icon {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.org-ehg-btn-glass--size-md {
+  --org-ehg-btn-glass-radius: var(--org-ehg-btn-r-md);
+  height: var(--org-ehg-btn-h-md);
+  min-height: var(--org-ehg-btn-h-md);
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+}
+
+.org-ehg-btn-glass--size-lg {
+  --org-ehg-btn-glass-radius: var(--org-ehg-btn-r-lg);
+  height: var(--org-ehg-btn-h-lg);
+  min-height: var(--org-ehg-btn-h-lg);
+  padding: 0 1.2rem;
+  font-size: 0.9375rem;
+  gap: 0.5rem;
+}
+
+.org-ehg-btn-glass--size-lg .org-ehg-btn-glass__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.org-ehg-btn-glass--size-xl {
+  --org-ehg-btn-glass-radius: var(--org-ehg-btn-r-lg);
+  height: var(--org-ehg-btn-h-xl);
+  min-height: var(--org-ehg-btn-h-xl);
+  padding: 0 1.4rem;
+  font-size: 1.0625rem;
+  gap: 0.55rem;
+}
+
+.org-ehg-btn-glass--size-xl .org-ehg-btn-glass__icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.org-ehg-btn-glass--icon-only {
+  width: var(--org-ehg-btn-h-md);
+  min-width: var(--org-ehg-btn-h-md);
+  padding: 0;
+}
+
+/* Icon above label (playground + gallery) */
+.org-ehg-btn-glass--icon-top {
+  flex-direction: column;
+  height: auto;
+  min-height: calc(var(--org-ehg-btn-h-md) + 0.65rem);
+  padding: 0.5rem 0.85rem;
+  gap: 0.28rem;
+  line-height: 1.15;
+}
+
+.org-ehg-btn-glass--icon-top.org-ehg-btn-glass--size-xs {
+  min-height: calc(var(--org-ehg-btn-h-xs) + 0.45rem);
+  padding: 0.35rem 0.55rem;
+  gap: 0.18rem;
+}
+
+.org-ehg-btn-glass--icon-top.org-ehg-btn-glass--size-sm {
+  min-height: calc(var(--org-ehg-btn-h-sm) + 0.5rem);
+  padding: 0.4rem 0.65rem;
+}
+
+.org-ehg-btn-glass--icon-top.org-ehg-btn-glass--size-lg {
+  min-height: calc(var(--org-ehg-btn-h-lg) + 0.75rem);
+  padding: 0.6rem 1.05rem;
+  gap: 0.35rem;
+}
+
+.org-ehg-btn-glass--icon-top.org-ehg-btn-glass--size-xl {
+  min-height: calc(var(--org-ehg-btn-h-xl) + 0.85rem);
+  padding: 0.7rem 1.2rem;
+  gap: 0.4rem;
+}
+
+.org-ehg-btn-glass--icon-top .org-ehg-btn-glass__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.org-ehg-btn-glass--with-dropdown.org-ehg-btn-glass--icon-top {
+  /* Keep chevron under the label row for stacked layout */
+  gap: 0.22rem;
+}
+
+.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-xs {
+  width: var(--org-ehg-btn-h-xs);
+  min-width: var(--org-ehg-btn-h-xs);
+}
+
+.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-sm {
+  width: var(--org-ehg-btn-h-sm);
+  min-width: var(--org-ehg-btn-h-sm);
+}
+
+.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-lg {
+  width: var(--org-ehg-btn-h-lg);
+  min-width: var(--org-ehg-btn-h-lg);
+}
+
+.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-xl {
+  width: var(--org-ehg-btn-h-xl);
+  min-width: var(--org-ehg-btn-h-xl);
+}
+
+.org-ehg-btn-glass__badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  display: inline-flex;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass__badge {
+  box-shadow: 0 0 0 2px #0b1220;
+}
+
+.org-ehg-btn-glass--split {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.org-ehg-btn-glass__split-main,
+.org-ehg-btn-glass__split-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.org-ehg-btn-glass__split-main {
+  padding: 0 0.9rem;
+}
+
+.org-ehg-btn-glass__split-caret {
+  width: 2.15rem;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.org-ehg-btn-glass-panel:not([data-org-ehg-theme="dark"]) .org-ehg-btn-glass--split:not(.org-ehg-btn-glass--solid) .org-ehg-btn-glass__split-caret {
+  border-inline-start-color: rgba(59, 130, 246, 0.28);
+}
+
+.org-ehg-btn-glass__spin {
+  animation: org-ehg-btn-glass-spin 0.8s linear infinite;
+}
+
+@keyframes org-ehg-btn-glass-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg-btn-glass,
+  .org-ehg-btn-glass:hover:not(:disabled),
+  .org-ehg-btn-glass--state-hover {
+    transition: none;
+    transform: none;
+  }
+
+  .org-ehg-btn-glass__spin {
+    animation: none;
+  }
+}
+
+/* ?? Input Glass Styles (UI Standards sample ONLY) ??
+ * Org radii: 8px fields. Clean single border + top specular. Not Personal Soft Glass.
+ */
+.org-ehg-input-glass-gallery {
+  --org-ehg-input-r: 8px;
+  --org-ehg-input-r-panel: 16px;
+  --org-ehg-input-h-sm: 2rem;
+  --org-ehg-input-h-md: 2.5rem;
+  --org-ehg-input-h-lg: 3rem;
+  /* Showcase field width ? matches Soft Glass primary field lock */
+  --org-ehg-input-glass-w: 18rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.org-ehg-input-glass-gallery__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .org-ehg-input-glass-gallery__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-input-glass-panel {
+  --org-ehg-input-glass-accent: #3b82f6;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  padding: 1.25rem 1.35rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--org-ehg-input-r-panel);
+  background: #f8fafc;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] {
+  background: #0b1220;
+  border-color: #1e293b;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.org-ehg-input-glass-panel--playground,
+.org-ehg-input-glass-panel--playground[data-org-ehg-theme="dark"] {
+  height: auto;
+  min-height: 6.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1.35rem 1.25rem;
+  background: transparent;
+}
+
+.org-ehg-input-glass-panel--playground .org-ehg-input-glass-field {
+  width: var(--org-ehg-input-glass-w, 18rem);
+  max-width: 100%;
+}
+
+.org-ehg-input-glass-panel--playground-scene {
+  min-height: 8rem;
+  border-color: rgba(255, 255, 255, 0.18);
+  background-color: #1e3a8a;
+  background-image:
+    radial-gradient(ellipse 90% 70% at 18% 88%, rgba(56, 189, 248, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 82% 78%, rgba(37, 99, 235, 0.65) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%, rgba(15, 23, 42, 0.55) 100%),
+    linear-gradient(160deg, #7dd3fc 0%, #3b82f6 32%, #1d4ed8 58%, #0f172a 100%);
+  background-size: cover;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.org-ehg-input-glass-panel__header {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-panel__header {
+  border-bottom-color: #1e293b;
+}
+
+.org-ehg-input-glass-panel__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #0f172a;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-panel__title {
+  color: #f8fafc;
+}
+
+.org-ehg-input-glass-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 1.1rem;
+}
+
+.org-ehg-input-glass-panel__section-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-panel__section-title {
+  color: #94a3b8;
+}
+
+.org-ehg-input-glass-panel__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.85rem 1rem;
+}
+
+.org-ehg-input-glass-sample {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  width: var(--org-ehg-input-glass-w, 18rem);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.org-ehg-input-glass-sample .org-ehg-input-glass-field {
+  width: 100%;
+}
+
+.org-ehg-input-glass-sample__caption {
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #64748b;
+  text-align: center;
+  width: 100%;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-sample__caption {
+  color: #94a3b8;
+}
+
+.org-ehg-input-glass-panel__scene {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 7.5rem;
+  padding: 1.5rem 1rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow-x: auto;
+  background-color: #1e3a8a;
+  background-image:
+    radial-gradient(ellipse 90% 70% at 18% 88%, rgba(56, 189, 248, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 82% 78%, rgba(37, 99, 235, 0.65) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%, rgba(15, 23, 42, 0.55) 100%),
+    linear-gradient(160deg, #7dd3fc 0%, #3b82f6 32%, #1d4ed8 58%, #0f172a 100%);
+  background-size: cover;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.org-ehg-input-glass-panel__scene .org-ehg-input-glass-sample {
+  width: 11rem;
+  flex: 0 0 11rem;
+}
+
+.org-ehg-input-glass-panel__scene .org-ehg-input-glass-sample__caption {
+  color: rgba(248, 250, 252, 0.92);
+  text-shadow: 0 1px 3px rgba(15, 23, 42, 0.65);
+}
+
+.org-ehg-input-glass-field {
+  --org-ehg-input-glass-fill: rgba(59, 130, 246, 0.18);
+  --org-ehg-input-glass-edge: rgba(37, 99, 235, 0.4);
+  --org-ehg-input-glass-specular: rgba(255, 255, 255, 0.7);
+  --org-ehg-input-glass-ink: #0f172a;
+  --org-ehg-input-glass-muted: #64748b;
+  --org-ehg-input-glass-blur: 10px;
+  --org-ehg-input-glass-glow: 0 6px 16px rgba(59, 130, 246, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.org-ehg-input-glass-field__icon-top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  color: var(--org-ehg-input-glass-accent, #3b82f6);
+}
+
+.org-ehg-input-glass-field__label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--org-ehg-input-glass-ink);
+}
+
+.org-ehg-input-glass-field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--org-ehg-input-h-md);
+  padding: 0 0.75rem;
+  border: 1px solid var(--org-ehg-input-glass-edge);
+  border-radius: var(--org-ehg-input-r);
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, var(--org-ehg-input-glass-specular) 0%, rgba(255, 255, 255, 0) 42%),
+    var(--org-ehg-input-glass-fill);
+  background-clip: padding-box;
+  color: var(--org-ehg-input-glass-ink);
+  -webkit-backdrop-filter: blur(var(--org-ehg-input-glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--org-ehg-input-glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-input-glass-specular),
+    var(--org-ehg-input-glass-glow);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.org-ehg-input-glass-field__control:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-field__control:focus-within {
+  outline-color: #60a5fa;
+}
+
+.org-ehg-input-glass-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.org-ehg-input-glass-field__input::placeholder {
+  color: var(--org-ehg-input-glass-muted);
+  opacity: 0.85;
+}
+
+.org-ehg-input-glass-field__affix,
+.org-ehg-input-glass-field__mark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--org-ehg-input-glass-muted);
+}
+
+.org-ehg-input-glass-field__affix {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.org-ehg-input-glass-field__mark {
+  width: 1rem;
+  height: 1rem;
+}
+
+.org-ehg-input-glass-field__hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--org-ehg-input-glass-muted);
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-field {
+  --org-ehg-input-glass-ink: #f8fafc;
+  --org-ehg-input-glass-muted: #94a3b8;
+  --org-ehg-input-glass-fill: rgba(59, 130, 246, 0.22);
+  --org-ehg-input-glass-edge: rgba(191, 219, 254, 0.35);
+  --org-ehg-input-glass-specular: rgba(255, 255, 255, 0.22);
+  --org-ehg-input-glass-glow: 0 8px 20px rgba(59, 130, 246, 0.22);
+}
+
+.org-ehg-input-glass-field--solid .org-ehg-input-glass-field__control {
+  --org-ehg-input-glass-fill: #ffffff;
+  --org-ehg-input-glass-edge: #cbd5e1;
+  --org-ehg-input-glass-blur: 0px;
+  --org-ehg-input-glass-specular: rgba(255, 255, 255, 0.9);
+  --org-ehg-input-glass-glow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-field--solid .org-ehg-input-glass-field__control {
+  --org-ehg-input-glass-fill: #1e293b;
+  --org-ehg-input-glass-edge: #475569;
+  --org-ehg-input-glass-specular: rgba(255, 255, 255, 0.08);
+}
+
+.org-ehg-input-glass-field--soft .org-ehg-input-glass-field__control {
+  --org-ehg-input-glass-fill: rgba(59, 130, 246, 0.1);
+  --org-ehg-input-glass-edge: rgba(59, 130, 246, 0.26);
+  --org-ehg-input-glass-blur: 6px;
+}
+
+.org-ehg-input-glass-field--medium .org-ehg-input-glass-field__control {
+  --org-ehg-input-glass-fill: rgba(59, 130, 246, 0.2);
+  --org-ehg-input-glass-edge: rgba(37, 99, 235, 0.4);
+  --org-ehg-input-glass-blur: 10px;
+}
+
+.org-ehg-input-glass-field--strong .org-ehg-input-glass-field__control {
+  --org-ehg-input-glass-fill: rgba(59, 130, 246, 0.36);
+  --org-ehg-input-glass-edge: rgba(37, 99, 235, 0.5);
+  --org-ehg-input-glass-blur: 14px;
+}
+
+.org-ehg-input-glass-field--ultra .org-ehg-input-glass-field__control {
+  --org-ehg-input-glass-fill: rgba(59, 130, 246, 0.14);
+  --org-ehg-input-glass-edge: rgba(96, 165, 250, 0.7);
+  --org-ehg-input-glass-specular: rgba(255, 255, 255, 0.85);
+  --org-ehg-input-glass-blur: 18px;
+  --org-ehg-input-glass-glow: 0 0 18px rgba(59, 130, 246, 0.24);
+}
+
+.org-ehg-input-glass-field--size-sm .org-ehg-input-glass-field__control {
+  height: var(--org-ehg-input-h-sm);
+  font-size: 0.8125rem;
+}
+
+.org-ehg-input-glass-field--size-lg .org-ehg-input-glass-field__control {
+  height: var(--org-ehg-input-h-lg);
+  padding-inline: 0.9rem;
+}
+
+.org-ehg-input-glass-field--state-hover .org-ehg-input-glass-field__control,
+.org-ehg-input-glass-field__control:hover {
+  --org-ehg-input-glass-edge: rgba(37, 99, 235, 0.58);
+  --org-ehg-input-glass-glow: 0 8px 18px rgba(59, 130, 246, 0.2);
+}
+
+.org-ehg-input-glass-field--state-focused .org-ehg-input-glass-field__control {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.org-ehg-input-glass-field--state-error {
+  --org-ehg-input-glass-edge: rgba(239, 68, 68, 0.65);
+  --org-ehg-input-glass-fill: rgba(239, 68, 68, 0.1);
+}
+
+.org-ehg-input-glass-field--state-error .org-ehg-input-glass-field__hint {
+  color: #dc2626;
+}
+
+.org-ehg-input-glass-field--state-success {
+  --org-ehg-input-glass-edge: rgba(34, 197, 94, 0.55);
+  --org-ehg-input-glass-fill: rgba(34, 197, 94, 0.12);
+}
+
+.org-ehg-input-glass-field--state-success .org-ehg-input-glass-field__hint {
+  color: #16a34a;
+}
+
+.org-ehg-input-glass-field--state-disabled .org-ehg-input-glass-field__control,
+.org-ehg-input-glass-field--state-disabled .org-ehg-input-glass-field__input {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.org-ehg-input-glass-field--state-readonly .org-ehg-input-glass-field__control {
+  --org-ehg-input-glass-fill: rgba(148, 163, 184, 0.14);
+}
+
+.org-ehg-input-glass-field--dropdown .org-ehg-input-glass-field__input {
+  cursor: pointer;
+  /* Value + caret must share the control mid-line (not stretch to full height) */
+  height: auto;
+  align-self: center;
+  line-height: 1;
+}
+
+.org-ehg-input-glass-field--textarea .org-ehg-input-glass-field__control {
+  height: auto;
+  min-height: 4.5rem;
+  align-items: flex-start;
+  padding-block: 0.55rem;
+}
+
+.org-ehg-input-glass-field--textarea .org-ehg-input-glass-field__input {
+  resize: vertical;
+  min-height: 3.25rem;
+}
+
+/* Glass dropdown menu (Button / Input playground) ? org-scoped Soft Glass-like panel */
+.org-ehg-input-glass-field__menu-host {
+  width: 100%;
+  display: block;
+}
+
+.org-ehg-input-glass-field__control--trigger {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.org-ehg-input-glass-field__value {
+  display: block;
+  flex: 1 1 auto;
+  align-self: center;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.org-ehg-input-glass-field__placeholder {
+  color: var(--org-ehg-input-glass-muted, #64748b);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.org-ehg-input-glass-field__control--trigger .org-ehg-input-glass-field__mark {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.org-ehg-glass-menu {
+  --org-ehg-glass-menu-radius: 8px;
+  box-sizing: border-box;
+  min-width: 10rem;
+  padding: 0.35rem;
+  border: 2px solid color-mix(in srgb, #3b82f6 45%, #cbd5e1);
+  border-radius: var(--org-ehg-glass-menu-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 40%),
+    rgba(248, 250, 252, 0.92);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  backdrop-filter: blur(14px) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 10px 28px rgba(15, 23, 42, 0.16);
+  color: #0f172a;
+}
+
+.org-ehg-glass-menu--dark {
+  border-color: color-mix(in srgb, #60a5fa 50%, #334155);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 42%),
+    rgba(15, 23, 42, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.45);
+  color: #f8fafc;
+}
+
+.org-ehg-glass-menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.org-ehg-glass-menu__option {
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.org-ehg-glass-menu__option:hover,
+.org-ehg-glass-menu__option:focus-visible {
+  background: color-mix(in srgb, #3b82f6 12%, transparent) !important;
+}
+
+.org-ehg-glass-menu__option--selected,
+.org-ehg-glass-menu__option[data-selected="true"] {
+  background: color-mix(in srgb, #3b82f6 16%, transparent) !important;
+  box-shadow: inset 3px 0 0 #3b82f6;
+  color: #1d4ed8;
+}
+
+.org-ehg-glass-menu--dark .org-ehg-glass-menu__option--selected,
+.org-ehg-glass-menu--dark .org-ehg-glass-menu__option[data-selected="true"] {
+  color: #ffffff;
+}
+
+/* ??? Glass animations (btn + input, Org UI Standards) ??? */
+@keyframes org-ehg-glass-bg-shimmer {
+  0% {
+    transform: translateX(-130%) skewX(-16deg);
+  }
+  100% {
+    transform: translateX(230%) skewX(-16deg);
+  }
+}
+
+@keyframes org-ehg-glass-bg-pulse-wash {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes org-ehg-glass-bg-drift {
+  0% {
+    background-position: 0% 45%, 0% 0%, 0% 0%;
+  }
+  50% {
+    background-position: 100% 55%, 0% 0%, 0% 0%;
+  }
+  100% {
+    background-position: 0% 45%, 0% 0%, 0% 0%;
+  }
+}
+
+@keyframes org-ehg-glass-focus-ring-pulse {
+  0%,
+  100% {
+    outline-color: rgba(59, 130, 246, 0.4);
+    outline-offset: 2px;
+  }
+  50% {
+    outline-color: rgba(59, 130, 246, 1);
+    outline-offset: 5px;
+  }
+}
+
+@keyframes org-ehg-glass-focus-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 var(--org-ehg-glass-anim-specular, rgba(255, 255, 255, 0.72)),
+      0 0 0 0 rgba(59, 130, 246, 0),
+      var(--org-ehg-glass-anim-glow, 0 8px 18px rgba(59, 130, 246, 0.16));
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 var(--org-ehg-glass-anim-specular, rgba(255, 255, 255, 0.72)),
+      0 0 0 5px rgba(59, 130, 246, 0.22),
+      0 12px 30px rgba(59, 130, 246, 0.42);
+  }
+}
+
+@keyframes org-ehg-glass-focus-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Button ? background animation */
+.org-ehg-btn-glass--bg-shimmer,
+.org-ehg-btn-glass--bg-pulse {
+  overflow: hidden;
+}
+
+.org-ehg-btn-glass--bg-shimmer::after,
+.org-ehg-btn-glass--bg-pulse::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.org-ehg-btn-glass--bg-shimmer::after {
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 48%,
+    transparent 100%
+  );
+  opacity: 0.65;
+  animation: org-ehg-glass-bg-shimmer 2.4s ease-in-out infinite;
+}
+
+.org-ehg-btn-glass--bg-pulse::before {
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, #93c5fd 55%, transparent);
+  animation: org-ehg-glass-bg-pulse-wash 2.2s ease-in-out infinite;
+}
+
+.org-ehg-btn-glass--bg-shimmer > *,
+.org-ehg-btn-glass--bg-pulse > * {
+  position: relative;
+  z-index: 1;
+}
+
+.org-ehg-btn-glass--bg-drift {
+  background-image:
+    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.38) 42%, transparent 72%),
+    linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(var(--org-ehg-btn-glass-fill), var(--org-ehg-btn-glass-fill));
+  background-size: 220% 220%, 100% 100%, 100% 100%;
+  animation: org-ehg-glass-bg-drift 5s ease-in-out infinite;
+}
+
+/* Button ? focus animation (live focus or forced focused state) */
+.org-ehg-btn-glass--focus-ring-pulse:focus-visible,
+.org-ehg-btn-glass--focus-ring-pulse.org-ehg-btn-glass--state-focused {
+  animation: org-ehg-glass-focus-ring-pulse 1.4s ease-in-out infinite;
+}
+
+.org-ehg-btn-glass--focus-glow:focus-visible,
+.org-ehg-btn-glass--focus-glow.org-ehg-btn-glass--state-focused {
+  --org-ehg-glass-anim-specular: var(--org-ehg-btn-glass-specular);
+  --org-ehg-glass-anim-glow: var(--org-ehg-btn-glass-glow);
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  animation: org-ehg-glass-focus-glow 1.6s ease-in-out infinite;
+}
+
+.org-ehg-btn-glass--focus-breathe:focus-visible,
+.org-ehg-btn-glass--focus-breathe.org-ehg-btn-glass--state-focused {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  animation: org-ehg-glass-focus-breathe 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--focus-glow:focus-visible,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--focus-glow.org-ehg-btn-glass--state-focused,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--focus-breathe:focus-visible,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--focus-breathe.org-ehg-btn-glass--state-focused,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--focus-ring-pulse:focus-visible,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--focus-ring-pulse.org-ehg-btn-glass--state-focused {
+  outline-color: #60a5fa;
+}
+
+/* Input ? background animation on control */
+.org-ehg-input-glass-field--bg-shimmer .org-ehg-input-glass-field__control,
+.org-ehg-input-glass-field--bg-pulse .org-ehg-input-glass-field__control {
+  overflow: hidden;
+}
+
+.org-ehg-input-glass-field--bg-shimmer .org-ehg-input-glass-field__control::after,
+.org-ehg-input-glass-field--bg-pulse .org-ehg-input-glass-field__control::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.org-ehg-input-glass-field--bg-shimmer .org-ehg-input-glass-field__control::after {
+  top: -25%;
+  bottom: -25%;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 48%,
+    transparent 100%
+  );
+  opacity: 0.7;
+  animation: org-ehg-glass-bg-shimmer 2.4s ease-in-out infinite;
+}
+
+.org-ehg-input-glass-field--bg-pulse .org-ehg-input-glass-field__control::before {
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, #93c5fd 50%, transparent);
+  animation: org-ehg-glass-bg-pulse-wash 2.2s ease-in-out infinite;
+}
+
+.org-ehg-input-glass-field--bg-shimmer .org-ehg-input-glass-field__control > *,
+.org-ehg-input-glass-field--bg-pulse .org-ehg-input-glass-field__control > * {
+  position: relative;
+  z-index: 1;
+}
+
+.org-ehg-input-glass-field--bg-drift .org-ehg-input-glass-field__control {
+  background-image:
+    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.4) 42%, transparent 72%),
+    linear-gradient(180deg, var(--org-ehg-input-glass-specular) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(var(--org-ehg-input-glass-fill), var(--org-ehg-input-glass-fill));
+  background-size: 220% 220%, 100% 100%, 100% 100%;
+  animation: org-ehg-glass-bg-drift 5s ease-in-out infinite;
+}
+
+/* Input ? focus animation */
+.org-ehg-input-glass-field--focus-ring-pulse .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-field--focus-ring-pulse.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control {
+  animation: org-ehg-glass-focus-ring-pulse 1.4s ease-in-out infinite;
+}
+
+.org-ehg-input-glass-field--focus-glow .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-field--focus-glow.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control {
+  --org-ehg-glass-anim-specular: var(--org-ehg-input-glass-specular);
+  --org-ehg-glass-anim-glow: var(--org-ehg-input-glass-glow);
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  animation: org-ehg-glass-focus-glow 1.6s ease-in-out infinite;
+}
+
+.org-ehg-input-glass-field--focus-breathe .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-field--focus-breathe.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  animation: org-ehg-glass-focus-breathe 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Thick bottom edge grows from center (locked outlined field focus recipe). */
+.org-ehg-input-glass-field--focus-thick-below .org-ehg-input-glass-field__control {
+  overflow: visible;
+}
+
+.org-ehg-input-glass-field--focus-thick-below .org-ehg-input-glass-field__focus-bar {
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  border-radius: inherit;
+  border-bottom: 3px solid #3b82f6;
+  background: transparent;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.org-ehg-input-glass-field--focus-thick-below .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control,
+.org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--open
+  .org-ehg-input-glass-field__control {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.org-ehg-input-glass-field--focus-thick-below .org-ehg-input-glass-field__control:focus-within
+  .org-ehg-input-glass-field__focus-bar,
+.org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__focus-bar,
+.org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--open
+  .org-ehg-input-glass-field__focus-bar {
+  transform: scaleX(1);
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-ring-pulse
+  .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-ring-pulse.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control,
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-glow
+  .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-glow.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control,
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-breathe
+  .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-breathe.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control {
+  outline-color: #60a5fa;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below
+  .org-ehg-input-glass-field__focus-bar {
+  border-bottom-color: #60a5fa;
+}
+
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below
+  .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control,
+.org-ehg-input-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--open
+  .org-ehg-input-glass-field__control {
+  border-color: #60a5fa;
+}
+
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below
+  .org-ehg-input-glass-field__focus-bar {
+  border-bottom-color: #60a5fa;
+}
+
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below
+  .org-ehg-input-glass-field__control:focus-within,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--state-focused
+  .org-ehg-input-glass-field__control,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"]
+  .org-ehg-input-glass-field--focus-thick-below.org-ehg-input-glass-field--open
+  .org-ehg-input-glass-field__control {
+  border-color: #60a5fa;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg-btn-glass--bg-shimmer::after,
+  .org-ehg-btn-glass--bg-pulse::before,
+  .org-ehg-btn-glass--bg-drift,
+  .org-ehg-btn-glass--focus-ring-pulse:focus-visible,
+  .org-ehg-btn-glass--focus-ring-pulse.org-ehg-btn-glass--state-focused,
+  .org-ehg-btn-glass--focus-glow:focus-visible,
+  .org-ehg-btn-glass--focus-glow.org-ehg-btn-glass--state-focused,
+  .org-ehg-btn-glass--focus-breathe:focus-visible,
+  .org-ehg-btn-glass--focus-breathe.org-ehg-btn-glass--state-focused,
+  .org-ehg-input-glass-field--bg-shimmer .org-ehg-input-glass-field__control::after,
+  .org-ehg-input-glass-field--bg-pulse .org-ehg-input-glass-field__control::before,
+  .org-ehg-input-glass-field--bg-drift .org-ehg-input-glass-field__control,
+  .org-ehg-input-glass-field--focus-ring-pulse .org-ehg-input-glass-field__control:focus-within,
+  .org-ehg-input-glass-field--focus-ring-pulse.org-ehg-input-glass-field--state-focused
+    .org-ehg-input-glass-field__control,
+  .org-ehg-input-glass-field--focus-glow .org-ehg-input-glass-field__control:focus-within,
+  .org-ehg-input-glass-field--focus-glow.org-ehg-input-glass-field--state-focused
+    .org-ehg-input-glass-field__control,
+  .org-ehg-input-glass-field--focus-breathe .org-ehg-input-glass-field__control:focus-within,
+  .org-ehg-input-glass-field--focus-breathe.org-ehg-input-glass-field--state-focused
+    .org-ehg-input-glass-field__control {
+    animation: none !important;
+  }
+
+  .org-ehg-input-glass-field--focus-thick-below .org-ehg-input-glass-field__focus-bar {
+    transition: none !important;
+  }
+}
+
+/* ??? Background playground (Appearance lab) ? UI Standards ONLY ???
+ * Scoped to .org-ehg-bg-lab / .org-ehg-bg-lab__*. Does not change body, :root,
+ * Personal Soft Glass, or production Organization pages.
+ */
+.org-ehg-bg-lab {
+  --org-ehg-bg-intensity: 0.15;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Reference-style list: swatch | title + description */
+.org-ehg-bg-lab__option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.org-ehg-bg-lab__option-row {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 11rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #1a2332;
+  text-align: start;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.org-ehg-bg-lab__option-row:last-child {
+  border-bottom: 0;
+}
+
+.org-ehg-bg-lab__option-row:hover {
+  background: #f8fafc;
+}
+
+.org-ehg-bg-lab__option-row:focus-visible {
+  outline: 2px solid var(--exits-primary);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.org-ehg-bg-lab__option-row--selected {
+  background: color-mix(in srgb, var(--exits-primary) 6%, #ffffff);
+  box-shadow: inset 3px 0 0 var(--exits-primary);
+}
+
+@media (max-width: 640px) {
+  .org-ehg-bg-lab__option-row {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+}
+
+.org-ehg-bg-lab__swatch {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 4.25rem;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  isolation: isolate;
+  flex-shrink: 0;
+}
+
+.org-ehg-bg-lab__swatch-base,
+.org-ehg-bg-lab__swatch-decor {
+  position: absolute;
+  inset: 0;
+}
+
+/* Selection list swatches show the full recipe (not intensity-scaled) */
+.org-ehg-bg-lab__swatch-decor {
+  opacity: 1;
+  pointer-events: none;
+}
+
+.org-ehg-bg-lab__option-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.org-ehg-bg-lab__option-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.org-ehg-bg-lab__option-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-primary) 14%, #ffffff);
+  color: color-mix(in srgb, var(--exits-primary) 72%, #0f172a);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.org-ehg-bg-lab__option-desc {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #5a6577;
+}
+
+.org-ehg-bg-lab__option-selected-mark {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--exits-primary);
+}
+
+.org-ehg-bg-lab__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.35rem;
+}
+
+.org-ehg-bg-lab__control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.org-ehg-bg-lab__intensity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.org-ehg-bg-lab__intensity-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.org-ehg-bg-lab__intensity-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--exits-primary);
+}
+
+.org-ehg-bg-lab__intensity input[type="range"] {
+  width: 100%;
+  accent-color: var(--exits-primary);
+}
+
+.org-ehg-bg-lab__intensity-hint {
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.org-ehg-bg-lab__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem 1.25rem;
+}
+
+.org-ehg-bg-lab__preview-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.org-ehg-bg-lab__preview-caption {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-bg-lab__compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .org-ehg-bg-lab__compare {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-bg-lab__stage {
+  position: relative;
+  isolation: isolate;
+  min-height: 22rem;
+  border: 1px solid #d5dbe3;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.org-ehg-bg-lab__base,
+.org-ehg-bg-lab__decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.org-ehg-bg-lab__base {
+  z-index: 0;
+}
+
+.org-ehg-bg-lab__decor {
+  z-index: 1;
+  opacity: var(--org-ehg-bg-intensity, 0.15);
+}
+
+.org-ehg-bg-lab__content {
+  position: relative;
+  z-index: 2;
+  min-height: 22rem;
+  padding: 0.75rem;
+}
+
+.org-ehg-bg-lab__shell {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--org-ehg-border) 80%, transparent);
+  min-height: 20.5rem;
+  box-shadow: var(--org-ehg-shadow);
+}
+
+.org-ehg-bg-lab__main {
+  background: transparent;
+}
+
+.org-ehg-bg-lab__solid-card {
+  background: var(--org-ehg-surface);
+}
+
+/* Glass off ? solid nav chrome */
+.org-ehg-bg-lab__stage[data-show-glass="false"] .org-ehg-bg-lab__topbar,
+.org-ehg-bg-lab__stage[data-show-glass="false"] .org-ehg-bg-lab__sidenav {
+  background: var(--org-ehg-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-bg-lab__stage[data-show-glass="false"] .org-ehg-bg-lab__kpi {
+  background: var(--org-ehg-surface);
+}
+
+.org-ehg-bg-lab__stage[data-show-glass="true"] .org-ehg-bg-lab__topbar,
+.org-ehg-bg-lab__stage[data-show-glass="true"] .org-ehg-bg-lab__sidenav {
+  /* Semi-opaque glass only ? no fullscreen backdrop-filter */
+  background: var(--org-ehg-nav-glass);
+}
+
+/* ??? Option recipes (match playground reference swatches) ??? */
+/* 1 Soft Ambient ? diagonal cool slate wash + edge primary light */
+/* Playground preview panels (Button glass / Input glass) reuse bg layers */
+.org-ehg-pg-bg {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  --org-ehg-bg-intensity: 0.45;
+}
+
+.org-ehg-pg-bg > .org-ehg-bg-lab__base,
+.org-ehg-pg-bg > .org-ehg-bg-lab__decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.org-ehg-pg-bg > .org-ehg-bg-lab__base {
+  z-index: 0;
+}
+
+.org-ehg-pg-bg > .org-ehg-bg-lab__decor {
+  z-index: 1;
+  opacity: var(--org-ehg-bg-intensity, 0.45);
+}
+
+.org-ehg-pg-bg__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: inherit;
+}
+
+/* Glass playground cards: Background paints the whole card (controls + preview) */
+.org-ehg-glass-playground-card {
+  gap: 0;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 70%, transparent);
+  border-radius: var(--exits-radius-lg);
+  box-shadow: var(--exits-shadow-sm);
+  overflow: hidden;
+}
+
+.org-ehg-glass-playground-card > .org-ehg-glass-playground-card__body,
+.org-ehg-glass-playground-card > .org-ehg-pg-bg__content.org-ehg-glass-playground-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+}
+
+.org-ehg-pg-bg[data-bg-option="neutral-solid"] > .org-ehg-bg-lab__decor {
+  opacity: 0;
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="soft-ambient"][data-org-ehg-theme="light"] .org-ehg-bg-lab__base,
+.org-ehg-pg-bg[data-bg-option="soft-ambient"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-ambient"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-base {
+  background: linear-gradient(145deg, #d0dce7 0%, #a8b8cb 48%, #8c9eb7 100%);
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="soft-ambient"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__base,
+.org-ehg-pg-bg[data-bg-option="soft-ambient"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-ambient"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-base {
+  background: linear-gradient(145deg, #1a2433 0%, #121820 48%, #0b1016 100%);
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="soft-ambient"][data-org-ehg-theme="light"] .org-ehg-bg-lab__decor,
+.org-ehg-pg-bg[data-bg-option="soft-ambient"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-ambient"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 70% 55% at 8% 12%, color-mix(in srgb, var(--exits-primary) 35%, #ffffff), transparent 72%),
+    radial-gradient(ellipse 55% 45% at 92% 88%, color-mix(in srgb, var(--exits-primary) 18%, #64748b), transparent 70%);
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="soft-ambient"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__decor,
+.org-ehg-pg-bg[data-bg-option="soft-ambient"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-ambient"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 65% 50% at 10% 14%, color-mix(in srgb, var(--exits-primary) 28%, transparent), transparent 72%),
+    radial-gradient(ellipse 50% 40% at 90% 86%, color-mix(in srgb, var(--exits-primary) 14%, #334155), transparent 70%);
+}
+
+/* 2 Subtle Mesh ? overlapping soft clouds */
+.org-ehg-bg-lab__stage[data-bg-option="subtle-mesh"][data-org-ehg-theme="light"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="subtle-mesh"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-base {
+  background: #f7f8fb;
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="subtle-mesh"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="subtle-mesh"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-base {
+  background: #10161e;
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="subtle-mesh"][data-org-ehg-theme="light"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="subtle-mesh"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 55% 50% at 18% 78%, color-mix(in srgb, #94a3b8 55%, #c7d2fe), transparent 68%),
+    radial-gradient(ellipse 50% 48% at 82% 22%, color-mix(in srgb, #cbd5e1 50%, #e0e7ff), transparent 66%),
+    radial-gradient(ellipse 60% 55% at 48% 48%, #ffffff 0%, transparent 70%),
+    radial-gradient(ellipse 40% 36% at 8% 18%, color-mix(in srgb, var(--exits-primary) 12%, #e2e8f0), transparent 65%);
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="subtle-mesh"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="subtle-mesh"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 52% 46% at 16% 76%, color-mix(in srgb, #475569 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 48% 44% at 84% 24%, color-mix(in srgb, var(--exits-primary) 16%, #334155), transparent 68%),
+    radial-gradient(ellipse 55% 50% at 50% 50%, color-mix(in srgb, #1e293b 40%, transparent), transparent 72%);
+}
+
+/* 3 Soft Aurora ? cinematic purple/blue bands (dark reference); restrained light twin */
+.org-ehg-bg-lab__stage[data-bg-option="soft-aurora"][data-org-ehg-theme="light"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-aurora"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-base {
+  background: #eef2f7;
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="soft-aurora"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-aurora"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-base {
+  background: #05070a;
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="soft-aurora"][data-org-ehg-theme="light"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-aurora"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 70% 45% at 35% 60%, color-mix(in srgb, #8b5cf6 22%, transparent), transparent 70%),
+    radial-gradient(ellipse 65% 50% at 70% 45%, color-mix(in srgb, #3b82f6 28%, transparent), transparent 68%),
+    linear-gradient(115deg, transparent 20%, color-mix(in srgb, var(--exits-primary) 12%, transparent) 50%, transparent 80%);
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="soft-aurora"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-aurora"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 75% 55% at 32% 62%, #6d28d9 0%, color-mix(in srgb, #7c3aed 55%, transparent) 35%, transparent 70%),
+    radial-gradient(ellipse 70% 60% at 68% 48%, #2563eb 0%, color-mix(in srgb, #38bdf8 40%, transparent) 40%, transparent 72%),
+    radial-gradient(ellipse 50% 40% at 55% 40%, color-mix(in srgb, #a78bfa 35%, transparent), transparent 65%),
+    linear-gradient(125deg, transparent 15%, color-mix(in srgb, #1e3a8a 45%, transparent) 48%, transparent 85%);
+}
+
+/* 4 Neutral Solid ? soft grey?white (light) / deep charcoal (dark); no decor */
+.org-ehg-bg-lab__stage[data-bg-option="neutral-solid"][data-org-ehg-theme="light"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="neutral-solid"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-base {
+  background: linear-gradient(90deg, #c5ccd6 0%, #e8ecf1 45%, #f7f8fa 100%);
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="neutral-solid"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="neutral-solid"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-base {
+  background: linear-gradient(90deg, #0a0e14 0%, #121820 55%, #1a222d 100%);
+}
+
+.org-ehg-bg-lab__stage[data-bg-option="neutral-solid"] .org-ehg-bg-lab__decor,
+.org-ehg-pg-bg[data-bg-option="neutral-solid"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="neutral-solid"] .org-ehg-bg-lab__swatch-decor {
+  opacity: 0;
+  background: none;
+}
+
+/* Ensure mesh / aurora playground panels get the same recipes */
+.org-ehg-pg-bg[data-bg-option="subtle-mesh"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__base {
+  background: #f7f8fb;
+}
+.org-ehg-pg-bg[data-bg-option="subtle-mesh"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__base {
+  background: #10161e;
+}
+.org-ehg-pg-bg[data-bg-option="subtle-mesh"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__decor {
+  background:
+    radial-gradient(ellipse 55% 50% at 18% 78%, color-mix(in srgb, #94a3b8 55%, #c7d2fe), transparent 68%),
+    radial-gradient(ellipse 50% 48% at 82% 22%, color-mix(in srgb, #cbd5e1 50%, #e0e7ff), transparent 66%),
+    radial-gradient(ellipse 60% 55% at 48% 48%, #ffffff 0%, transparent 70%),
+    radial-gradient(ellipse 40% 36% at 8% 18%, color-mix(in srgb, var(--exits-primary) 12%, #e2e8f0), transparent 65%);
+}
+.org-ehg-pg-bg[data-bg-option="subtle-mesh"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__decor {
+  background:
+    radial-gradient(ellipse 52% 46% at 16% 76%, color-mix(in srgb, #475569 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 48% 44% at 84% 24%, color-mix(in srgb, var(--exits-primary) 16%, #334155), transparent 68%),
+    radial-gradient(ellipse 55% 50% at 50% 50%, color-mix(in srgb, #1e293b 40%, transparent), transparent 72%);
+}
+.org-ehg-pg-bg[data-bg-option="soft-aurora"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__base {
+  background: #eef2f7;
+}
+.org-ehg-pg-bg[data-bg-option="soft-aurora"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__base {
+  background: #05070a;
+}
+.org-ehg-pg-bg[data-bg-option="soft-aurora"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__decor {
+  background:
+    radial-gradient(ellipse 70% 45% at 35% 60%, color-mix(in srgb, #8b5cf6 22%, transparent), transparent 70%),
+    radial-gradient(ellipse 65% 50% at 70% 45%, color-mix(in srgb, #3b82f6 28%, transparent), transparent 68%),
+    linear-gradient(115deg, transparent 20%, color-mix(in srgb, var(--exits-primary) 12%, transparent) 50%, transparent 80%);
+}
+.org-ehg-pg-bg[data-bg-option="soft-aurora"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__decor {
+  background:
+    radial-gradient(ellipse 75% 55% at 32% 62%, #6d28d9 0%, color-mix(in srgb, #7c3aed 55%, transparent) 35%, transparent 70%),
+    radial-gradient(ellipse 70% 60% at 68% 48%, #2563eb 0%, color-mix(in srgb, #38bdf8 40%, transparent) 40%, transparent 72%),
+    radial-gradient(ellipse 50% 40% at 55% 40%, color-mix(in srgb, #a78bfa 35%, transparent), transparent 65%),
+    linear-gradient(125deg, transparent 15%, color-mix(in srgb, #1e3a8a 45%, transparent) 48%, transparent 85%);
+}
+.org-ehg-pg-bg[data-bg-option="neutral-solid"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__base {
+  background: linear-gradient(90deg, #c5ccd6 0%, #e8ecf1 45%, #f7f8fa 100%);
+}
+.org-ehg-pg-bg[data-bg-option="neutral-solid"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__base {
+  background: linear-gradient(90deg, #0a0e14 0%, #121820 55%, #1a222d 100%);
+}
+
+/* 5 Soft Vignette ? clear center, soft edge shade */
+.org-ehg-pg-bg[data-bg-option="soft-vignette"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__stage[data-bg-option="soft-vignette"][data-org-ehg-theme="light"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-vignette"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-base {
+  background: #f5f7fa;
+}
+.org-ehg-pg-bg[data-bg-option="soft-vignette"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__stage[data-bg-option="soft-vignette"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-vignette"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-base {
+  background: #0f1419;
+}
+.org-ehg-pg-bg[data-bg-option="soft-vignette"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__stage[data-bg-option="soft-vignette"][data-org-ehg-theme="light"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-vignette"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 78% 72% at 50% 45%, #ffffff 0%, transparent 62%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 42%, color-mix(in srgb, #94a3b8 28%, transparent) 100%),
+    radial-gradient(ellipse 50% 40% at 50% 0%, color-mix(in srgb, var(--exits-primary) 14%, transparent), transparent 70%);
+}
+.org-ehg-pg-bg[data-bg-option="soft-vignette"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__stage[data-bg-option="soft-vignette"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="soft-vignette"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(ellipse 72% 68% at 50% 42%, color-mix(in srgb, #1e293b 55%, transparent) 0%, transparent 65%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 38%, color-mix(in srgb, #000 55%, transparent) 100%),
+    radial-gradient(ellipse 48% 36% at 50% 8%, color-mix(in srgb, var(--exits-primary) 18%, transparent), transparent 72%);
+}
+
+/* 6 Horizon Wash ? cool top / soft warm floor, related in light & dark */
+.org-ehg-pg-bg[data-bg-option="horizon-wash"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__stage[data-bg-option="horizon-wash"][data-org-ehg-theme="light"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="horizon-wash"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-base {
+  background: linear-gradient(180deg, #eef3f8 0%, #f4f6f8 42%, #f7f5f2 100%);
+}
+.org-ehg-pg-bg[data-bg-option="horizon-wash"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__stage[data-bg-option="horizon-wash"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="horizon-wash"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-base {
+  background: linear-gradient(180deg, #0c121a 0%, #111820 48%, #14131a 100%);
+}
+.org-ehg-pg-bg[data-bg-option="horizon-wash"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__stage[data-bg-option="horizon-wash"][data-org-ehg-theme="light"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="horizon-wash"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--exits-primary) 16%, transparent) 0%,
+      transparent 38%,
+      color-mix(in srgb, #d6c4b0 22%, transparent) 78%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 90% 35% at 50% 100%, color-mix(in srgb, #cbd5e1 35%, transparent), transparent 70%);
+}
+.org-ehg-pg-bg[data-bg-option="horizon-wash"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__stage[data-bg-option="horizon-wash"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="horizon-wash"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--exits-primary) 20%, transparent) 0%,
+      transparent 40%,
+      color-mix(in srgb, #92400e 12%, transparent) 82%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 90% 32% at 50% 100%, color-mix(in srgb, #334155 40%, transparent), transparent 72%);
+}
+
+/* 7 Spotlight Glow ? single soft top-center primary wash */
+.org-ehg-pg-bg[data-bg-option="spotlight-glow"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__stage[data-bg-option="spotlight-glow"][data-org-ehg-theme="light"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="spotlight-glow"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-base {
+  background: #f3f5f8;
+}
+.org-ehg-pg-bg[data-bg-option="spotlight-glow"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__stage[data-bg-option="spotlight-glow"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__base,
+.org-ehg-bg-lab__swatch[data-bg-option="spotlight-glow"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-base {
+  background: #0e1319;
+}
+.org-ehg-pg-bg[data-bg-option="spotlight-glow"][data-org-ehg-theme="light"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__stage[data-bg-option="spotlight-glow"][data-org-ehg-theme="light"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="spotlight-glow"][data-org-ehg-theme="light"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% -5%,
+      color-mix(in srgb, var(--exits-primary) 32%, #ffffff),
+      transparent 68%
+    ),
+    radial-gradient(ellipse 40% 28% at 50% 18%, color-mix(in srgb, #ffffff 70%, transparent), transparent 70%);
+}
+.org-ehg-pg-bg[data-bg-option="spotlight-glow"][data-org-ehg-theme="dark"] > .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__stage[data-bg-option="spotlight-glow"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__decor,
+.org-ehg-bg-lab__swatch[data-bg-option="spotlight-glow"][data-org-ehg-theme="dark"] .org-ehg-bg-lab__swatch-decor {
+  background:
+    radial-gradient(
+      ellipse 68% 52% at 50% -8%,
+      color-mix(in srgb, var(--exits-primary) 38%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(ellipse 36% 24% at 50% 16%, color-mix(in srgb, #94a3b8 12%, transparent), transparent 72%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg-bg-lab__option-row {
+    transition: none;
+  }
+}
+
+/* --- Menu Glass Card (UI Standards / DEV only) --- */
+.org-ehg-menu-glass-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.org-ehg-menu-glass-gallery__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .org-ehg-menu-glass-gallery__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-menu-glass-panel {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 22rem;
+  border: 1px solid color-mix(in srgb, #94a3b8 40%, transparent);
+  border-radius: 1.1rem;
+  overflow: hidden;
+}
+
+.org-ehg-menu-glass-panel__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.1rem 1.15rem 1.25rem;
+}
+
+.org-ehg-menu-glass-panel--playground,
+.org-ehg-menu-glass-panel--playground[data-org-ehg-theme="dark"] {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 0;
+  padding: 0.35rem 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.org-ehg-menu-glass-panel__header {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0 0 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, #94a3b8 30%, transparent);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass-panel__header {
+  border-bottom-color: color-mix(in srgb, #64748b 40%, transparent);
+}
+
+.org-ehg-menu-glass-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass-panel__title {
+  color: #f8fafc;
+}
+
+.org-ehg-menu-glass-panel__blurb {
+  margin: 0.3rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass-panel__blurb {
+  color: #94a3b8;
+}
+
+.org-ehg-menu-glass-panel__section {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.org-ehg-menu-glass-panel__section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.org-ehg-menu-glass-panel__section-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass-panel__section-title {
+  color: #94a3b8;
+}
+
+.org-ehg-menu-glass-panel__section-detail {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass-panel__section-detail {
+  color: #94a3b8;
+}
+
+.org-ehg-menu-glass-panel__row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.org-ehg-menu-glass-sample {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.org-ehg-menu-glass-sample__caption {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass-sample__caption {
+  color: #94a3b8;
+}
+
+.org-ehg-menu-glass {
+  --org-ehg-menu-glass-radius: 0.85rem;
+  --org-ehg-menu-glass-fill: rgba(248, 250, 252, 0.78);
+  --org-ehg-menu-glass-edge: color-mix(in srgb, #3b82f6 28%, #cbd5e1);
+  --org-ehg-menu-glass-specular: rgba(255, 255, 255, 0.72);
+  --org-ehg-menu-glass-ink: #0f172a;
+  --org-ehg-menu-glass-muted: #64748b;
+  --org-ehg-menu-glass-accent: #3b82f6;
+  --org-ehg-menu-glass-blur: 12px;
+  --org-ehg-menu-glass-item-min: 2.35rem;
+  --org-ehg-menu-glass-pad: 0.45rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 14rem;
+  max-width: 20rem;
+  padding: var(--org-ehg-menu-glass-pad);
+  border: 1px solid var(--org-ehg-menu-glass-edge);
+  border-radius: var(--org-ehg-menu-glass-radius);
+  background:
+    linear-gradient(180deg, var(--org-ehg-menu-glass-specular) 0%, rgba(255, 255, 255, 0) 42%),
+    var(--org-ehg-menu-glass-fill);
+  -webkit-backdrop-filter: blur(var(--org-ehg-menu-glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--org-ehg-menu-glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-menu-glass-specular),
+    0 10px 28px rgba(15, 23, 42, 0.12);
+  color: var(--org-ehg-menu-glass-ink);
+}
+
+.org-ehg-menu-glass--comfortable {
+  --org-ehg-menu-glass-item-min: 2.55rem;
+  --org-ehg-menu-glass-pad: 0.55rem;
+}
+
+.org-ehg-menu-glass--compact {
+  --org-ehg-menu-glass-item-min: 2.15rem;
+  --org-ehg-menu-glass-pad: 0.4rem;
+}
+
+.org-ehg-menu-glass--preset-account {
+  --org-ehg-menu-glass-edge: color-mix(in srgb, #6366f1 30%, #cbd5e1);
+  --org-ehg-menu-glass-accent: #6366f1;
+}
+
+.org-ehg-menu-glass--preset-quick-actions {
+  --org-ehg-menu-glass-edge: color-mix(in srgb, #0ea5e9 30%, #cbd5e1);
+  --org-ehg-menu-glass-accent: #0ea5e9;
+}
+
+.org-ehg-menu-glass--solid {
+  --org-ehg-menu-glass-fill: #ffffff;
+  --org-ehg-menu-glass-blur: 0px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-menu-glass--soft {
+  --org-ehg-menu-glass-fill: rgba(248, 250, 252, 0.55);
+  --org-ehg-menu-glass-blur: 8px;
+}
+
+.org-ehg-menu-glass--medium {
+  --org-ehg-menu-glass-fill: rgba(248, 250, 252, 0.78);
+  --org-ehg-menu-glass-blur: 12px;
+}
+
+.org-ehg-menu-glass--strong {
+  --org-ehg-menu-glass-fill: rgba(241, 245, 249, 0.88);
+  --org-ehg-menu-glass-edge: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 40%, #94a3b8);
+  --org-ehg-menu-glass-blur: 14px;
+}
+
+.org-ehg-menu-glass--ultra {
+  --org-ehg-menu-glass-fill: rgba(226, 232, 240, 0.92);
+  --org-ehg-menu-glass-edge: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 48%, #64748b);
+  --org-ehg-menu-glass-blur: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 14px 36px color-mix(in srgb, var(--org-ehg-menu-glass-accent) 28%, transparent);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass {
+  --org-ehg-menu-glass-fill: rgba(15, 23, 42, 0.72);
+  --org-ehg-menu-glass-edge: color-mix(in srgb, #60a5fa 42%, #334155);
+  --org-ehg-menu-glass-specular: rgba(255, 255, 255, 0.1);
+  --org-ehg-menu-glass-ink: #f8fafc;
+  --org-ehg-menu-glass-muted: #94a3b8;
+  --org-ehg-menu-glass-accent: #60a5fa;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass--preset-account,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass--preset-account {
+  --org-ehg-menu-glass-edge: color-mix(in srgb, #a5b4fc 42%, #334155);
+  --org-ehg-menu-glass-accent: #a5b4fc;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass--preset-quick-actions,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass--preset-quick-actions {
+  --org-ehg-menu-glass-edge: color-mix(in srgb, #38bdf8 42%, #334155);
+  --org-ehg-menu-glass-accent: #38bdf8;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass--solid,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass--solid {
+  --org-ehg-menu-glass-fill: #1e293b;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass--soft,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass--soft {
+  --org-ehg-menu-glass-fill: rgba(15, 23, 42, 0.55);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass--medium,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass--medium {
+  --org-ehg-menu-glass-fill: rgba(15, 23, 42, 0.72);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass--strong,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass--strong {
+  --org-ehg-menu-glass-fill: rgba(30, 41, 59, 0.85);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass--ultra,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass--ultra {
+  --org-ehg-menu-glass-fill: rgba(30, 41, 59, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 14px 36px color-mix(in srgb, var(--org-ehg-menu-glass-accent) 32%, transparent);
+}
+
+.org-ehg-menu-glass__header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.35rem;
+  padding: 0.45rem 0.5rem 0.65rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--org-ehg-menu-glass-muted) 28%, transparent);
+}
+
+.org-ehg-menu-glass__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.65rem;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%),
+    color-mix(in srgb, var(--org-ehg-menu-glass-accent) 18%, transparent);
+  color: var(--org-ehg-menu-glass-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass__avatar,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass__avatar {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 55%),
+    color-mix(in srgb, var(--org-ehg-menu-glass-accent) 22%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.org-ehg-menu-glass__header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.org-ehg-menu-glass__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--org-ehg-menu-glass-muted);
+}
+
+.org-ehg-menu-glass__heading {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-ehg-menu-glass__subtitle {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--org-ehg-menu-glass-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-ehg-menu-glass__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-ehg-menu-glass__item-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.org-ehg-menu-glass__divider {
+  height: 1px;
+  margin: 0.3rem 0.4rem;
+  background: color-mix(in srgb, var(--org-ehg-menu-glass-muted) 35%, transparent);
+}
+
+.org-ehg-menu-glass__item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: var(--org-ehg-menu-glass-item-min);
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.org-ehg-menu-glass__item:hover,
+.org-ehg-menu-glass__item:focus-visible {
+  background: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 12%, transparent);
+  outline: none;
+}
+
+.org-ehg-menu-glass__item--selected {
+  background: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--org-ehg-menu-glass-accent);
+  color: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 72%, #0f172a);
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass__item--selected,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass__item--selected {
+  color: #ffffff;
+  box-shadow: inset 3px 0 0 var(--org-ehg-menu-glass-accent);
+}
+
+.org-ehg-menu-glass__item--danger {
+  color: #dc2626;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass__item--danger,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass__item--danger {
+  color: #f87171;
+}
+
+.org-ehg-menu-glass__item--danger:hover,
+.org-ehg-menu-glass__item--danger:focus-visible {
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+}
+
+.org-ehg-menu-glass__icon {
+  flex: 0 0 auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--org-ehg-menu-glass-accent);
+}
+
+.org-ehg-menu-glass__item--danger .org-ehg-menu-glass__icon {
+  color: inherit;
+}
+
+.org-ehg-menu-glass__copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.org-ehg-menu-glass__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-ehg-menu-glass__hint {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--org-ehg-menu-glass-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-ehg-menu-glass--compact .org-ehg-menu-glass__hint {
+  display: none;
+}
+
+.org-ehg-menu-glass__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 16%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 80%, #0f172a);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.org-ehg-menu-glass-panel[data-org-ehg-theme="dark"] .org-ehg-menu-glass__badge,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-menu-glass__badge {
+  color: #e2e8f0;
+}
+
+.org-ehg-menu-glass__caret {
+  flex: 0 0 auto;
+  width: 0.9rem;
+  height: 0.9rem;
+  opacity: 0.55;
+  color: var(--org-ehg-menu-glass-muted);
+}
+
+.org-ehg-menu-glass__footer {
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.35rem 0.2rem;
+  border-top: 1px solid color-mix(in srgb, var(--org-ehg-menu-glass-muted) 28%, transparent);
+}
+
+.org-ehg-menu-glass__footer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--org-ehg-menu-glass-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: start;
+  cursor: pointer;
+}
+
+.org-ehg-menu-glass__footer-btn:hover,
+.org-ehg-menu-glass__footer-btn:focus-visible {
+  background: color-mix(in srgb, var(--org-ehg-menu-glass-accent) 12%, transparent);
+  outline: none;
+}
+
+.org-ehg-menu-glass-panel--playground .org-ehg-menu-glass {
+  max-width: 19rem;
+  width: min(100%, 19rem);
+}
+
+/* --- Card glass kinds (UI Standards / DEV only) --- */
+.org-ehg-card-glass-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.org-ehg-card-glass-gallery__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .org-ehg-card-glass-gallery__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-card-glass-panel {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 22rem;
+  border: 1px solid color-mix(in srgb, #94a3b8 40%, transparent);
+  border-radius: 1.1rem;
+  overflow: hidden;
+}
+
+.org-ehg-card-glass-panel__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.1rem 1.15rem 1.25rem;
+}
+
+.org-ehg-card-glass-panel__header {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0 0 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, #94a3b8 30%, transparent);
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass-panel__header {
+  border-bottom-color: color-mix(in srgb, #64748b 40%, transparent);
+}
+
+.org-ehg-card-glass-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass-panel__title {
+  color: #f8fafc;
+}
+
+.org-ehg-card-glass-panel__blurb {
+  margin: 0.3rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass-panel__blurb {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass-panel__row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 0.9rem;
+  align-items: stretch;
+}
+
+.org-ehg-card-glass-sample {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.org-ehg-card-glass-sample__caption {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass-sample__caption {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  padding: 1rem 1.05rem 1.05rem;
+  border: 1px solid color-mix(in srgb, #3b82f6 26%, #cbd5e1);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.28) 38%, rgba(248, 250, 252, 0.55) 100%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 12px 30px rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass {
+  border-color: color-mix(in srgb, #60a5fa 38%, #334155);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(15, 23, 42, 0.78) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 14px 34px rgba(0, 0, 0, 0.42);
+  color: #f8fafc;
+}
+
+.org-ehg-card-glass--solid {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: #ffffff;
+  border-color: #dbe3ee;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass--solid {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.org-ehg-card-glass--table,
+.org-ehg-card-glass--settings,
+.org-ehg-card-glass--timeline {
+  min-width: 0;
+}
+
+.org-ehg-card-glass__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.7rem;
+}
+
+.org-ehg-card-glass__lead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.org-ehg-card-glass__icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, #3b82f6 16%, #ffffff);
+  color: #2563eb;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.org-ehg-card-glass__icon-chip--solid {
+  background: color-mix(in srgb, #0ea5e9 16%, #f8fafc);
+  color: #0284c7;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__icon-chip {
+  background: color-mix(in srgb, #60a5fa 22%, #0f172a);
+  color: #93c5fd;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.org-ehg-card-glass__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.org-ehg-card-glass__subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__subtitle {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__metric {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.org-ehg-card-glass__hint {
+  margin: 0.35rem 0 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__hint {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 0 0 auto;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.org-ehg-card-glass__badge--up {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #15803d;
+}
+
+.org-ehg-card-glass__badge--down {
+  background: color-mix(in srgb, #ef4444 16%, transparent);
+  color: #b91c1c;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__badge--up {
+  color: #86efac;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__badge--down {
+  color: #fca5a5;
+}
+
+.org-ehg-card-glass__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #22c55e 16%, transparent);
+  color: #15803d;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__pill {
+  color: #86efac;
+}
+
+.org-ehg-card-glass__progress {
+  height: 0.45rem;
+  margin-top: auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, #94a3b8 22%, transparent);
+  overflow: hidden;
+}
+
+.org-ehg-card-glass__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7dd3fc, #3b82f6 55%, #2563eb);
+}
+
+.org-ehg-card-glass__spark {
+  display: block;
+  width: 100%;
+  height: 3rem;
+  margin-top: 0.55rem;
+  color: #22c55e;
+}
+
+.org-ehg-card-glass__foot-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  margin-top: 0.65rem;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.org-ehg-card-glass__foot-stats strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__foot-stats {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__foot-stats strong {
+  color: #e2e8f0;
+}
+
+.org-ehg-card-glass__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-ehg-card-glass__stats li {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.org-ehg-card-glass__stats span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__stats span {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__stat-bar {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #94a3b8 20%, transparent);
+  overflow: hidden;
+}
+
+.org-ehg-card-glass__stat-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #3b82f6;
+}
+
+.org-ehg-card-glass__stat-bar > i[data-tone="warn"] {
+  background: #ff5722;
+}
+
+.org-ehg-card-glass__stat-bar > i[data-tone="danger"] {
+  background: #ef4444;
+}
+
+.org-ehg-card-glass__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-ehg-card-glass__timeline li {
+  display: grid;
+  grid-template-columns: 0.75rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.org-ehg-card-glass__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: #3b82f6;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #3b82f6 18%, transparent);
+}
+
+.org-ehg-card-glass__timeline li[data-tone="success"] .org-ehg-card-glass__dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #22c55e 18%, transparent);
+}
+
+.org-ehg-card-glass__timeline li[data-tone="warn"] .org-ehg-card-glass__dot {
+  background: #ff5722;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #ff5722 18%, transparent);
+}
+
+.org-ehg-card-glass__timeline-body {
+  position: relative;
+  min-width: 0;
+  padding-right: 2.25rem;
+}
+
+.org-ehg-card-glass__timeline-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.org-ehg-card-glass__timeline-top strong {
+  font-size: 0.8125rem;
+}
+
+.org-ehg-card-glass__time {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-card-glass__timeline-detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__time,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__timeline-detail {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__avatar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #3b82f6 18%, #e2e8f0);
+  color: #1d4ed8;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__avatar {
+  background: color-mix(in srgb, #60a5fa 22%, #1e293b);
+  color: #bfdbfe;
+}
+
+.org-ehg-card-glass__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__link {
+  color: #93c5fd;
+}
+
+.org-ehg-card-glass__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.org-ehg-card-glass__table th {
+  padding: 0.35rem 0.4rem 0.5rem 0;
+  border-bottom: 1px solid color-mix(in srgb, #94a3b8 30%, transparent);
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: start;
+  text-transform: uppercase;
+}
+
+.org-ehg-card-glass__table td {
+  padding: 0.55rem 0.4rem 0.55rem 0;
+  border-bottom: 1px solid color-mix(in srgb, #94a3b8 22%, transparent);
+  vertical-align: middle;
+}
+
+.org-ehg-card-glass__table tr:last-child td {
+  border-bottom: 0;
+}
+
+.org-ehg-card-glass__table td strong {
+  display: block;
+  font-size: 0.78rem;
+}
+
+.org-ehg-card-glass__muted {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__table th,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__muted {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__status {
+  display: inline-flex;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.org-ehg-card-glass__status[data-tone="success"] {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #15803d;
+}
+
+.org-ehg-card-glass__status[data-tone="info"] {
+  background: color-mix(in srgb, #3b82f6 18%, transparent);
+  color: #1d4ed8;
+}
+
+.org-ehg-card-glass__status[data-tone="warn"] {
+  background: color-mix(in srgb, #ff5722 18%, transparent);
+  color: #c2410c;
+}
+
+.org-ehg-card-glass__status[data-tone="danger"] {
+  background: color-mix(in srgb, #ef4444 16%, transparent);
+  color: #b91c1c;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__status[data-tone="success"] {
+  color: #86efac;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__status[data-tone="info"] {
+  color: #93c5fd;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__status[data-tone="warn"] {
+  color: #fdba74;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__status[data-tone="danger"] {
+  color: #fca5a5;
+}
+
+.org-ehg-card-glass__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.org-ehg-card-glass__field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+@media (max-width: 520px) {
+  .org-ehg-card-glass__field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-card-glass__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__field {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__field input,
+.org-ehg-card-glass__field select,
+.org-ehg-card-glass__input-affix {
+  min-height: 2.35rem;
+  border: 1px solid color-mix(in srgb, #3b82f6 28%, #cbd5e1);
+  border-radius: 0.6rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.35) 100%);
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.org-ehg-card-glass__field input,
+.org-ehg-card-glass__field select {
+  padding: 0.45rem 0.7rem;
+}
+
+.org-ehg-card-glass__input-affix {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-inline: 0.7rem;
+  overflow: hidden;
+}
+
+.org-ehg-card-glass__input-affix input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.org-ehg-card-glass__input-affix em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__field input,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__field select,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__input-affix {
+  border-color: color-mix(in srgb, #60a5fa 38%, #334155);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(15, 23, 42, 0.55) 100%);
+  color: #f8fafc;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__input-affix em {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid color-mix(in srgb, #94a3b8 28%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, #ffffff 45%, transparent);
+  font-size: 0.8125rem;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__switch-row {
+  border-color: color-mix(in srgb, #64748b 40%, transparent);
+  background: color-mix(in srgb, #0f172a 45%, transparent);
+}
+
+.org-ehg-card-glass__switch-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.org-ehg-card-glass__switch-row strong {
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.org-ehg-card-glass__switch-row small {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__switch-row small {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, #94a3b8 28%, transparent);
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__actions {
+  border-top-color: color-mix(in srgb, #64748b 40%, transparent);
+}
+
+.org-ehg-card-glass__btn {
+  min-height: 2.25rem;
+  min-width: 6.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.55rem;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.org-ehg-card-glass__btn--ghost {
+  border-color: color-mix(in srgb, #94a3b8 45%, transparent);
+  background: transparent;
+  color: inherit;
+}
+
+.org-ehg-card-glass__btn--primary {
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 14px color-mix(in srgb, #2563eb 35%, transparent);
+}
+
+/* --- Date Glass (UI Standards / DEV only) --- */
+.org-ehg-date-glass-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.org-ehg-date-glass-gallery__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .org-ehg-date-glass-gallery__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-date-glass-panel {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 22rem;
+  border: 1px solid color-mix(in srgb, #94a3b8 40%, transparent);
+  border-radius: 1.1rem;
+  overflow: hidden;
+}
+
+.org-ehg-date-glass-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.1rem 1.15rem 1.25rem;
+}
+
+.org-ehg-date-glass-panel--playground,
+.org-ehg-date-glass-panel--playground[data-org-ehg-theme="dark"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28rem;
+  padding: 1rem 0.75rem;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.org-ehg-date-glass-panel__header {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0 0 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, #94a3b8 30%, transparent);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-panel__header {
+  border-bottom-color: color-mix(in srgb, #64748b 40%, transparent);
+}
+
+.org-ehg-date-glass-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-panel__title {
+  color: #f8fafc;
+}
+
+.org-ehg-date-glass-panel__blurb {
+  margin: 0.3rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-panel__blurb {
+  color: #94a3b8;
+}
+
+.org-ehg-date-glass-panel__section {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.org-ehg-date-glass-panel__section-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-panel__section-title {
+  color: #94a3b8;
+}
+
+.org-ehg-date-glass-panel__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.org-ehg-date-glass-panel__popovers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+  align-items: center;
+  justify-items: center;
+}
+
+.org-ehg-date-glass-sample {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.org-ehg-date-glass-sample__caption {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-sample__caption {
+  color: #94a3b8;
+}
+
+.org-ehg-date-glass-field {
+  --org-ehg-date-glass-fill: rgba(248, 250, 252, 0.78);
+  --org-ehg-date-glass-edge: color-mix(in srgb, var(--exits-primary) 28%, #cbd5e1);
+  --org-ehg-date-glass-specular: rgba(255, 255, 255, 0.72);
+  --org-ehg-date-glass-ink: #0f172a;
+  --org-ehg-date-glass-muted: #64748b;
+  --org-ehg-date-glass-accent: var(--exits-primary);
+  --org-ehg-date-glass-blur: 12px;
+  --org-ehg-date-glass-glow: 0 8px 18px color-mix(in srgb, var(--exits-primary) 12%, transparent);
+  --org-ehg-date-h: 2.35rem;
+  --org-ehg-date-r: 0.7rem;
+  --org-ehg-date-fs: 0.875rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.org-ehg-date-glass-field--size-sm {
+  --org-ehg-date-h: 2rem;
+  --org-ehg-date-fs: 0.8125rem;
+}
+
+.org-ehg-date-glass-field--size-lg {
+  --org-ehg-date-h: 2.75rem;
+  --org-ehg-date-fs: 0.9375rem;
+}
+
+.org-ehg-date-glass-field--solid {
+  --org-ehg-date-glass-fill: #ffffff;
+  --org-ehg-date-glass-blur: 0px;
+}
+
+.org-ehg-date-glass-field--soft {
+  --org-ehg-date-glass-fill: rgba(248, 250, 252, 0.52);
+  --org-ehg-date-glass-blur: 8px;
+}
+
+.org-ehg-date-glass-field--medium {
+  --org-ehg-date-glass-fill: rgba(248, 250, 252, 0.78);
+  --org-ehg-date-glass-blur: 12px;
+}
+
+.org-ehg-date-glass-field--strong {
+  --org-ehg-date-glass-fill: rgba(241, 245, 249, 0.88);
+  --org-ehg-date-glass-edge: color-mix(in srgb, var(--exits-primary) 40%, #94a3b8);
+  --org-ehg-date-glass-blur: 14px;
+}
+
+.org-ehg-date-glass-field--ultra {
+  --org-ehg-date-glass-fill: rgba(226, 232, 240, 0.92);
+  --org-ehg-date-glass-edge: color-mix(in srgb, var(--exits-primary) 48%, #64748b);
+  --org-ehg-date-glass-blur: 16px;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-field {
+  --org-ehg-date-glass-fill: rgba(15, 23, 42, 0.72);
+  --org-ehg-date-glass-edge: color-mix(in srgb, var(--exits-primary) 42%, #334155);
+  --org-ehg-date-glass-specular: rgba(255, 255, 255, 0.1);
+  --org-ehg-date-glass-ink: #f8fafc;
+  --org-ehg-date-glass-muted: #94a3b8;
+  --org-ehg-date-glass-accent: var(--exits-primary);
+  --org-ehg-date-glass-glow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--solid,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--solid {
+  --org-ehg-date-glass-fill: #1e293b;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--soft,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--soft {
+  --org-ehg-date-glass-fill: rgba(15, 23, 42, 0.55);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--medium,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--medium {
+  --org-ehg-date-glass-fill: rgba(15, 23, 42, 0.72);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--strong,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--strong {
+  --org-ehg-date-glass-fill: rgba(30, 41, 59, 0.85);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--ultra,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--ultra {
+  --org-ehg-date-glass-fill: rgba(30, 41, 59, 0.92);
+}
+
+.org-ehg-date-glass-field__label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--org-ehg-date-glass-ink);
+}
+
+.org-ehg-date-glass-field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--org-ehg-date-h);
+  padding: 0 0.75rem;
+  border: 1px solid var(--org-ehg-date-glass-edge);
+  border-radius: var(--org-ehg-date-r);
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, var(--org-ehg-date-glass-specular) 0%, rgba(255, 255, 255, 0) 42%),
+    var(--org-ehg-date-glass-fill);
+  color: var(--org-ehg-date-glass-ink);
+  font: inherit;
+  font-size: var(--org-ehg-date-fs);
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(var(--org-ehg-date-glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--org-ehg-date-glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-date-glass-specular),
+    var(--org-ehg-date-glass-glow);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.org-ehg-date-glass-field--solid .org-ehg-date-glass-field__control {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-date-glass-field__control:hover,
+.org-ehg-date-glass-field--state-hover .org-ehg-date-glass-field__control {
+  border-color: color-mix(in srgb, var(--org-ehg-date-glass-accent) 55%, var(--org-ehg-date-glass-edge));
+}
+
+.org-ehg-date-glass-field__control:focus-visible {
+  outline: 2px solid var(--org-ehg-date-glass-accent);
+  outline-offset: 2px;
+}
+
+.org-ehg-date-glass-field--focus-thick-below .org-ehg-date-glass-field__control {
+  overflow: visible;
+}
+
+.org-ehg-date-glass-field--focus-thick-below .org-ehg-date-glass-field__focus-bar {
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  border-radius: inherit;
+  border-bottom: 3px solid var(--org-ehg-date-glass-accent);
+  background: transparent;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.org-ehg-date-glass-field--focus-thick-below .org-ehg-date-glass-field__control:focus-visible,
+.org-ehg-date-glass-field--focus-thick-below.org-ehg-date-glass-field--state-focused
+  .org-ehg-date-glass-field__control,
+.org-ehg-date-glass-field--focus-thick-below.org-ehg-date-glass-field--open
+  .org-ehg-date-glass-field__control {
+  outline: none;
+  border-color: var(--org-ehg-date-glass-accent);
+}
+
+.org-ehg-date-glass-field--focus-thick-below .org-ehg-date-glass-field__control:focus-visible
+  .org-ehg-date-glass-field__focus-bar,
+.org-ehg-date-glass-field--focus-thick-below.org-ehg-date-glass-field--state-focused
+  .org-ehg-date-glass-field__focus-bar,
+.org-ehg-date-glass-field--focus-thick-below.org-ehg-date-glass-field--open
+  .org-ehg-date-glass-field__focus-bar {
+  transform: scaleX(1);
+}
+
+.org-ehg-date-glass-field--focus-glow .org-ehg-date-glass-field__control:focus-visible,
+.org-ehg-date-glass-field--focus-glow.org-ehg-date-glass-field--state-focused
+  .org-ehg-date-glass-field__control,
+.org-ehg-date-glass-field--focus-glow.org-ehg-date-glass-field--open
+  .org-ehg-date-glass-field__control {
+  outline: 2px solid var(--org-ehg-date-glass-accent);
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-date-glass-specular),
+    0 0 0 4px color-mix(in srgb, var(--org-ehg-date-glass-accent) 22%, transparent),
+    var(--org-ehg-date-glass-glow);
+}
+
+.org-ehg-date-glass-field--state-disabled .org-ehg-date-glass-field__control,
+.org-ehg-date-glass-field__control:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.org-ehg-date-glass-field--state-error .org-ehg-date-glass-field__control {
+  --org-ehg-date-glass-fill: color-mix(in srgb, #ef4444 12%, var(--org-ehg-date-glass-fill));
+  border-color: #ef4444;
+}
+
+.org-ehg-date-glass-field--state-success .org-ehg-date-glass-field__control {
+  --org-ehg-date-glass-fill: color-mix(in srgb, #22c55e 12%, var(--org-ehg-date-glass-fill));
+  border-color: #22c55e;
+}
+
+.org-ehg-date-glass-field__mark,
+.org-ehg-date-glass-field__caret {
+  flex: 0 0 auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--org-ehg-date-glass-accent);
+}
+
+.org-ehg-date-glass-field__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-ehg-date-glass-field__placeholder {
+  color: var(--org-ehg-date-glass-muted);
+  font-weight: 500;
+}
+
+.org-ehg-date-glass-field__range,
+.org-ehg-date-glass-field__datetime {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.org-ehg-date-glass-field__range-arrow {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--org-ehg-date-glass-muted);
+}
+
+.org-ehg-date-glass-field__time-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--org-ehg-date-glass-accent) 14%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-date-glass-accent) 78%, var(--org-ehg-date-glass-ink));
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field__time-chip,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-field__time-chip {
+  color: #e2e8f0;
+}
+
+.org-ehg-date-glass-field__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--org-ehg-date-glass-muted);
+}
+
+.org-ehg-date-glass-field--state-error .org-ehg-date-glass-field__hint {
+  color: #dc2626;
+}
+
+.org-ehg-date-glass-field--state-success .org-ehg-date-glass-field__hint {
+  color: #16a34a;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--state-error .org-ehg-date-glass-field__hint {
+  color: #f87171;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field--state-success .org-ehg-date-glass-field__hint {
+  color: #4ade80;
+}
+
+.org-ehg-date-glass-field__anchor {
+  position: relative;
+  width: 100%;
+}
+
+.org-ehg-date-glass-popover {
+  --org-ehg-date-pop-fill: rgba(248, 250, 252, 0.82);
+  --org-ehg-date-pop-edge: color-mix(in srgb, var(--exits-primary) 28%, #cbd5e1);
+  --org-ehg-date-pop-ink: #0f172a;
+  --org-ehg-date-pop-muted: #64748b;
+  --org-ehg-date-pop-accent: var(--exits-primary);
+  box-sizing: border-box;
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 1px);
+  left: 50%;
+  width: max-content;
+  max-width: min(26rem, 100%);
+  margin: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--org-ehg-date-pop-edge);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 40%),
+    var(--org-ehg-date-pop-fill);
+  color: var(--org-ehg-date-pop-ink);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  backdrop-filter: blur(14px) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 16px 40px rgba(15, 23, 42, 0.16);
+  transform: translateX(-50%);
+  transform-origin: top center;
+}
+
+/*
+ * Soft Glass scale ? same recipe as Soft Glass dropdown / date roll
+ * (`data-transition="scale"` / scale3d 0?1, 0.3s).
+ */
+.org-ehg-date-glass-popover[data-transition="scale"][data-state="open"] {
+  animation: org-ehg-date-glass-pop-scale-in 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.org-ehg-date-glass-popover[data-transition="scale"][data-state="closed"] {
+  pointer-events: none;
+  animation: org-ehg-date-glass-pop-scale-out 0.3s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+@keyframes org-ehg-date-glass-pop-scale-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale3d(0, 0, 1);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale3d(1, 1, 1);
+  }
+}
+
+@keyframes org-ehg-date-glass-pop-scale-out {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) scale3d(1, 1, 1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) scale3d(0, 0, 1);
+  }
+}
+
+.org-ehg-date-glass-popover--surface-dialog {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  transform-origin: center center;
+}
+
+.org-ehg-date-glass-popover--surface-dialog[data-transition="scale"][data-state="open"] {
+  animation: org-ehg-date-glass-dialog-scale-in 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.org-ehg-date-glass-popover--surface-dialog[data-transition="scale"][data-state="closed"] {
+  animation: org-ehg-date-glass-dialog-scale-out 0.3s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+@keyframes org-ehg-date-glass-dialog-scale-in {
+  from {
+    opacity: 0;
+    transform: scale3d(0, 0, 1);
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes org-ehg-date-glass-dialog-scale-out {
+  from {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+  to {
+    opacity: 0;
+    transform: scale3d(0, 0, 1);
+  }
+}
+
+.org-ehg-date-glass-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+.org-ehg-date-glass-dialog__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.42);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.org-ehg-date-glass-dialog[data-state="open"] .org-ehg-date-glass-dialog__scrim {
+  animation: org-ehg-date-glass-dialog-scrim-in 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.org-ehg-date-glass-dialog[data-state="closed"] .org-ehg-date-glass-dialog__scrim {
+  animation: org-ehg-date-glass-dialog-scrim-out 0.3s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+@keyframes org-ehg-date-glass-dialog-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes org-ehg-date-glass-dialog-scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.org-ehg-date-glass-dialog__stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg-date-glass-popover[data-transition="scale"][data-state="open"],
+  .org-ehg-date-glass-popover[data-transition="scale"][data-state="closed"],
+  .org-ehg-date-glass-dialog[data-state="open"] .org-ehg-date-glass-dialog__scrim,
+  .org-ehg-date-glass-dialog[data-state="closed"] .org-ehg-date-glass-dialog__scrim {
+    animation: none;
+  }
+}
+
+.org-ehg-date-glass-popover--datetime {
+  max-width: 28rem;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover {
+  --org-ehg-date-pop-fill: rgba(15, 23, 42, 0.82);
+  --org-ehg-date-pop-edge: color-mix(in srgb, var(--exits-primary) 42%, #334155);
+  --org-ehg-date-pop-ink: #f8fafc;
+  --org-ehg-date-pop-muted: #94a3b8;
+  --org-ehg-date-pop-accent: var(--exits-primary);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 42%),
+    var(--org-ehg-date-pop-fill);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 18px 42px rgba(0, 0, 0, 0.45);
+}
+
+.org-ehg-date-glass-popover__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(7.5rem, 0.85fr);
+  gap: 0.75rem;
+}
+
+.org-ehg-date-glass-popover__cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.org-ehg-date-glass-popover__month {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.org-ehg-date-glass-popover__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 10%, transparent);
+  color: var(--org-ehg-date-pop-accent);
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__nav:hover {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent);
+}
+
+.org-ehg-date-glass-popover__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.15rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--org-ehg-date-pop-muted);
+  text-align: center;
+}
+
+.org-ehg-date-glass-popover__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.15rem;
+}
+
+.org-ehg-date-glass-popover__day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__day--empty {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.org-ehg-date-glass-popover__day:hover {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 12%, transparent);
+}
+
+.org-ehg-date-glass-popover__day--selected {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--exits-primary) 78%, #ffffff) 0%,
+    var(--exits-primary) 100%
+  );
+  color: #ffffff;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--exits-primary) 35%, transparent);
+}
+
+.org-ehg-date-glass-popover__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.35rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 6%, transparent);
+}
+
+.org-ehg-date-glass-popover__side-title {
+  margin: 0 0 0.15rem;
+  padding: 0 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--org-ehg-date-pop-muted);
+}
+
+.org-ehg-date-glass-popover__quick,
+.org-ehg-date-glass-popover__times {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-ehg-date-glass-popover__side--times .org-ehg-date-glass-popover__times {
+  max-height: 12.5rem;
+  overflow: auto;
+}
+
+.org-ehg-date-glass-popover__quick-item,
+.org-ehg-date-glass-popover__time {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.3rem 0.55rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__quick-item:hover,
+.org-ehg-date-glass-popover__time:hover {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 14%, transparent);
+}
+
+.org-ehg-date-glass-popover__quick-item--active,
+.org-ehg-date-glass-popover__time--selected {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent);
+  box-shadow: inset 3px 0 0 var(--org-ehg-date-pop-accent);
+  color: color-mix(in srgb, var(--org-ehg-date-pop-accent) 72%, var(--org-ehg-date-pop-ink));
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quick-item--active,
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__time--selected,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quick-item--active,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__time--selected {
+  color: #ffffff;
+}
+
+.org-ehg-date-glass-popover__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid color-mix(in srgb, var(--org-ehg-date-pop-muted) 28%, transparent);
+}
+
+.org-ehg-date-glass-popover__summary {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--org-ehg-date-pop-muted);
+}
+
+.org-ehg-date-glass-popover__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.org-ehg-date-glass-popover__btn {
+  min-height: 2.15rem;
+  min-width: 5.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.55rem;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__btn--ghost {
+  border-color: color-mix(in srgb, var(--org-ehg-date-pop-muted) 40%, transparent);
+  background: transparent;
+  color: inherit;
+}
+
+.org-ehg-date-glass-popover__btn--primary {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--exits-primary) 78%, #ffffff) 0%,
+    var(--exits-primary) 100%
+  );
+  color: #ffffff;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--exits-primary) 35%, transparent);
+}
+
+.org-ehg-date-glass-panel--playground .org-ehg-date-glass-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 22rem;
+  width: min(100%, 22rem);
+}
+
+.org-ehg-date-glass-panel--playground .org-ehg-date-glass-field__label,
+.org-ehg-date-glass-panel--playground .org-ehg-date-glass-field__hint {
+  align-self: stretch;
+  text-align: start;
+}
+
+.org-ehg-date-glass-panel--playground .org-ehg-date-glass-field__control {
+  width: 100%;
+}
+
+/* Static gallery popovers stay in flow (not anchored under a field). */
+.org-ehg-date-glass-sample .org-ehg-date-glass-popover {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg-date-glass-field--focus-thick-below .org-ehg-date-glass-field__focus-bar {
+    transition: none !important;
+  }
+}
+
+/* --- Date Glass ? Android Material default --- */
+.org-ehg-date-glass-popover--android {
+  max-width: 20.5rem;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 1.15rem;
+}
+
+.org-ehg-date-glass-popover--android.org-ehg-date-glass-popover--datetime {
+  max-width: 22.5rem;
+}
+
+.org-ehg-date-glass-popover__android-header {
+  padding: 1rem 1.1rem 0.95rem;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.38) 0%, transparent 58%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--exits-primary) 72%, transparent) 0%,
+      color-mix(in srgb, var(--exits-primary) 88%, #0f172a) 100%
+    );
+  color: #ffffff;
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  backdrop-filter: blur(14px) saturate(1.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__android-header,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__android-header {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.12) 0%, transparent 58%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--exits-primary) 55%, transparent) 0%,
+      color-mix(in srgb, var(--exits-primary) 72%, #0f172a) 100%
+    );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.org-ehg-date-glass-popover__android-eyebrow {
+  margin: 0 0 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.88;
+}
+
+.org-ehg-date-glass-popover__android-value-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.org-ehg-date-glass-popover__android-date {
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.org-ehg-date-glass-popover__android-date--solo {
+  font-size: 2rem;
+}
+
+.org-ehg-date-glass-popover__android-time-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.org-ehg-date-glass-popover__android-time {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.org-ehg-date-glass-popover__android-ampm {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.org-ehg-date-glass-popover__ampm {
+  min-width: 2.1rem;
+  min-height: 1.35rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid color-mix(in srgb, #fff 45%, transparent);
+  border-radius: 0.3rem;
+  background: transparent;
+  color: color-mix(in srgb, #fff 72%, transparent);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__ampm--active {
+  background: color-mix(in srgb, #fff 22%, transparent);
+  border-color: #fff;
+  color: #fff;
+}
+
+.org-ehg-date-glass-popover__body--android {
+  display: block;
+  padding: 0.75rem 0.85rem 0.35rem;
+}
+
+.org-ehg-date-glass-popover__body--android-datetime {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(8.5rem, 0.9fr);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.75rem 0.85rem 0.35rem;
+}
+
+.org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__day--selected {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--exits-primary) 78%, #ffffff) 0%,
+    var(--exits-primary) 100%
+  );
+  border-radius: 999px;
+}
+
+.org-ehg-date-glass-popover__clock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.org-ehg-date-glass-popover__clock-svg {
+  width: 100%;
+  max-width: 9.5rem;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.org-ehg-date-glass-popover__clock-face {
+  fill: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+  stroke: color-mix(in srgb, var(--exits-primary) 35%, #94a3b8);
+  stroke-width: 1.5;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__clock-face,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__clock-face {
+  fill: color-mix(in srgb, var(--exits-primary) 16%, transparent);
+  stroke: color-mix(in srgb, var(--exits-primary) 45%, #334155);
+}
+
+.org-ehg-date-glass-popover__clock-center {
+  fill: var(--exits-primary);
+}
+
+.org-ehg-date-glass-popover__clock-hand {
+  stroke: var(--exits-primary);
+  stroke-linecap: round;
+}
+
+.org-ehg-date-glass-popover__clock-hand--hour {
+  stroke-width: 3.5;
+}
+
+.org-ehg-date-glass-popover__clock-hand--minute {
+  stroke-width: 2.5;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__clock-center,
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__clock-hand,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__clock-center,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__clock-hand {
+  fill: var(--exits-primary);
+  stroke: var(--exits-primary);
+}
+
+.org-ehg-date-glass-popover__clock-num {
+  fill: currentColor;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.org-ehg-date-glass-popover__footer--android {
+  justify-content: flex-end;
+  margin-top: 0;
+  padding: 0.35rem 0.75rem 0.7rem;
+  border-top: 0;
+}
+
+.org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--ghost {
+  border-color: transparent;
+  color: var(--exits-primary);
+  min-width: 4.5rem;
+  background: transparent;
+}
+
+.org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--primary {
+  min-width: 4.5rem;
+  background: transparent;
+  color: var(--exits-primary);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--ghost,
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--primary,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--ghost,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--primary {
+  color: var(--exits-primary);
+}
+
+.org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--ghost:hover,
+.org-ehg-date-glass-popover--android .org-ehg-date-glass-popover__btn--primary:hover {
+  background: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+}
+
+/* --- Date Glass ? Quasar calendar + column time --- */
+.org-ehg-date-glass-popover--quasar {
+  max-width: 18.5rem;
+  padding: 0.65rem 0.75rem 0.55rem;
+}
+
+.org-ehg-date-glass-popover--quasar.org-ehg-date-glass-popover--datetime {
+  max-width: 20rem;
+}
+
+.org-ehg-date-glass-popover--quasar.org-ehg-date-glass-popover--time {
+  max-width: 14.5rem;
+}
+
+.org-ehg-date-glass-popover__body--quasar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  grid-template-columns: none;
+}
+
+.org-ehg-date-glass-popover__body--quasar-datetime {
+  gap: 0.85rem;
+}
+
+.org-ehg-date-glass-popover__body--quasar-time {
+  gap: 0.5rem;
+}
+
+.org-ehg-date-glass-popover__quasar-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.org-ehg-date-glass-popover__quasar-cal-head--carets {
+  gap: 0.75rem;
+  padding-inline: 0.1rem;
+}
+
+.org-ehg-date-glass-popover__quasar-stepper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.org-ehg-date-glass-popover__quasar-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--org-ehg-date-pop-ink) 72%, transparent);
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__quasar-caret:hover:not(:disabled) {
+  color: var(--org-ehg-date-pop-accent);
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 10%, transparent);
+}
+
+.org-ehg-date-glass-popover__quasar-caret:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.org-ehg-date-glass-popover__quasar-month,
+.org-ehg-date-glass-popover__quasar-year {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__quasar-year {
+  min-width: 3.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.org-ehg-date-glass-popover__quasar-month:hover,
+.org-ehg-date-glass-popover__quasar-year:hover {
+  color: var(--org-ehg-date-pop-accent);
+}
+
+.org-ehg-date-glass-popover__quasar-cal-head--year-page {
+  gap: 0.5rem;
+}
+
+.org-ehg-date-glass-popover__quasar-stepper--title {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  gap: 0.25rem;
+}
+
+.org-ehg-date-glass-popover__quasar-view-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.75rem;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.org-ehg-date-glass-popover__quasar-link-back {
+  border: 0;
+  padding: 0.15rem 0.2rem;
+  background: transparent;
+  color: var(--org-ehg-date-pop-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__quasar-link-back:hover {
+  text-decoration: underline;
+}
+
+.org-ehg-date-glass-popover__quasar-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.15rem 0 0.25rem;
+}
+
+.org-ehg-date-glass-popover__quasar-choices--years {
+  /* Fixed 3?6 page ? no scroll; carets change the year window. */
+  grid-template-rows: repeat(6, minmax(2.15rem, auto));
+  max-height: none;
+  overflow: visible;
+}
+
+.org-ehg-date-glass-popover__quasar-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.15rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__quasar-choice:hover {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 12%, transparent);
+}
+
+.org-ehg-date-glass-popover__quasar-choice--selected {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-date-pop-accent) 78%, var(--org-ehg-date-pop-ink));
+  font-weight: 700;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-choice--selected,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-choice--selected {
+  color: #ffffff;
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent);
+}
+
+.org-ehg-date-glass-popover__quasar-nav-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.org-ehg-date-glass-popover__nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.org-ehg-date-glass-popover__body--android-time {
+  justify-content: center;
+}
+
+.org-ehg-date-glass-popover__body--sidebar-time {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.org-ehg-date-glass-popover__weekdays--quasar {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.org-ehg-date-glass-popover__day--quasar,
+.org-ehg-date-glass-popover--quasar .org-ehg-date-glass-popover__day--selected {
+  border-radius: 999px;
+}
+
+.org-ehg-date-glass-popover__day--in-range {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 14%, transparent);
+  border-radius: 999px;
+}
+
+.org-ehg-date-glass-popover__body--sidebar-range {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Quasar footer ? Clear | Today | Set (all ghost text). */
+.org-ehg-date-glass-popover__quasar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid color-mix(in srgb, var(--org-ehg-date-pop-muted) 28%, transparent);
+}
+
+.org-ehg-date-glass-popover__quasar-footer-btn {
+  border: 0;
+  padding: 0.3rem 0.2rem;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__quasar-footer-btn--clear {
+  color: #ef4444;
+}
+
+.org-ehg-date-glass-popover__quasar-footer-btn--clear:hover {
+  text-decoration: underline;
+}
+
+.org-ehg-date-glass-popover__quasar-footer-btn--today {
+  color: var(--org-ehg-date-pop-ink);
+}
+
+.org-ehg-date-glass-popover__quasar-footer-btn--today:hover {
+  color: var(--org-ehg-date-pop-accent);
+  text-decoration: underline;
+}
+
+.org-ehg-date-glass-popover__quasar-footer-btn--set {
+  color: var(--org-ehg-date-pop-accent);
+}
+
+.org-ehg-date-glass-popover__quasar-footer-btn--set:hover {
+  text-decoration: underline;
+}
+
+.org-ehg-date-glass-popover__quasar-time {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.org-ehg-date-glass-popover__quasar-time-selected {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.org-ehg-date-glass-popover__quasar-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  border-radius: 0.35rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--exits-primary) 78%, #ffffff) 0%,
+    var(--exits-primary) 100%
+  );
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--exits-primary) 28%, transparent);
+}
+
+.org-ehg-date-glass-popover__quasar-time-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  max-height: 11rem;
+  overflow: hidden;
+}
+
+.org-ehg-date-glass-popover__quasar-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 11rem;
+  overflow: auto;
+}
+
+.org-ehg-date-glass-popover__quasar-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 1.85rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.org-ehg-date-glass-popover__quasar-item:hover {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 12%, transparent);
+}
+
+.org-ehg-date-glass-popover__quasar-item--selected {
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-date-pop-accent) 78%, var(--org-ehg-date-pop-ink));
+  font-weight: 700;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-item--selected,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-item--selected {
+  color: #ffffff;
+  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent);
+}
+
+
+/* =============================================================================
+ * Quick Action Glass ? UI Standards sample (not Personal SoftGlassQuickAction)
+ * ============================================================================= */
+
+.org-ehg-qa-glass-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.org-ehg-qa-glass-gallery__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .org-ehg-qa-glass-gallery__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.org-ehg-qa-glass-panel {
+  --org-ehg-qa-radius: 0.85rem;
+  --org-ehg-qa-chip-radius: 0.65rem;
+  --org-ehg-qa-fill: color-mix(in srgb, #ffffff 72%, transparent);
+  --org-ehg-qa-edge: color-mix(in srgb, #ffffff 78%, #94a3b8);
+  --org-ehg-qa-ink: #1e293b;
+  --org-ehg-qa-muted: #64748b;
+  --org-ehg-qa-accent: #3b82f6;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem 1rem 1.15rem;
+  border: 1px solid color-mix(in srgb, #94a3b8 28%, transparent);
+  border-radius: 1rem;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 55% at 100% 0%, color-mix(in srgb, #93c5fd 28%, transparent), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 0% 100%, color-mix(in srgb, #fdba74 18%, transparent), transparent 50%),
+    #f3f4f6;
+  color: var(--org-ehg-qa-ink);
+  box-shadow: var(--org-ehg-shadow);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] {
+  --org-ehg-qa-fill: color-mix(in srgb, #ffffff 8%, #1a222d);
+  --org-ehg-qa-edge: color-mix(in srgb, #ffffff 16%, #334155);
+  --org-ehg-qa-ink: #f1f5f9;
+  --org-ehg-qa-muted: #94a3b8;
+  border-color: color-mix(in srgb, #64748b 35%, transparent);
+  background:
+    radial-gradient(ellipse 65% 50% at 100% 0%, color-mix(in srgb, #3b82f6 22%, transparent), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, color-mix(in srgb, #6366f1 12%, transparent), transparent 50%),
+    #0b1220;
+}
+
+.org-ehg-qa-glass-panel__header {
+  margin: 0;
+}
+
+.org-ehg-qa-glass-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--org-ehg-qa-ink);
+}
+
+.org-ehg-qa-glass-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.org-ehg-qa-glass-panel__section-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--org-ehg-qa-muted);
+}
+
+.org-ehg-qa-glass-panel__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.org-ehg-qa-glass-panel__icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.org-ehg-qa-glass-sample {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.org-ehg-qa-glass-sample__caption {
+  font-size: 0.6875rem;
+  color: var(--org-ehg-qa-muted);
+  padding-inline: 0.15rem;
+}
+
+.org-ehg-qa-glass,
+.org-ehg-qa-glass__split-main,
+.org-ehg-qa-glass__split-caret {
+  appearance: none;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.org-ehg-qa-glass {
+  --org-ehg-qa-accent: #3b82f6;
+  --org-ehg-qa-glass-blur: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 2.85rem;
+  min-width: 11.5rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--org-ehg-qa-accent) 28%, var(--org-ehg-qa-edge));
+  border-radius: var(--org-ehg-qa-radius);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 8%, var(--org-ehg-qa-fill));
+  -webkit-backdrop-filter: blur(var(--org-ehg-qa-glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--org-ehg-qa-glass-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent),
+    0 8px 22px color-mix(in srgb, var(--org-ehg-qa-accent) 14%, transparent),
+    0 1px 2px color-mix(in srgb, #0f172a 8%, transparent);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.org-ehg-qa-glass:hover {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 42%, var(--org-ehg-qa-edge));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 78%, transparent),
+    0 10px 26px color-mix(in srgb, var(--org-ehg-qa-accent) 20%, transparent),
+    0 1px 2px color-mix(in srgb, #0f172a 10%, transparent);
+}
+
+.org-ehg-qa-glass:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--org-ehg-qa-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 12%, var(--org-ehg-qa-fill));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent),
+    0 10px 28px color-mix(in srgb, var(--org-ehg-qa-accent) 18%, #000),
+    0 1px 2px color-mix(in srgb, #000 40%, transparent);
+}
+
+.org-ehg-qa-glass--tone-primary { --org-ehg-qa-accent: #3b82f6; }
+.org-ehg-qa-glass--tone-secondary { --org-ehg-qa-accent: #64748b; }
+.org-ehg-qa-glass--tone-success { --org-ehg-qa-accent: #10b981; }
+.org-ehg-qa-glass--tone-info { --org-ehg-qa-accent: #0ea5e9; }
+.org-ehg-qa-glass--tone-warning { --org-ehg-qa-accent: #ff5722; }
+.org-ehg-qa-glass--tone-amber { --org-ehg-qa-accent: #ffc107; }
+.org-ehg-qa-glass--tone-orange { --org-ehg-qa-accent: #fb923c; }
+.org-ehg-qa-glass--tone-teal { --org-ehg-qa-accent: #26a69a; }
+.org-ehg-qa-glass--tone-cyan { --org-ehg-qa-accent: #06b6d4; }
+.org-ehg-qa-glass--tone-sky { --org-ehg-qa-accent: #38bdf8; }
+.org-ehg-qa-glass--tone-indigo { --org-ehg-qa-accent: #6366f1; }
+.org-ehg-qa-glass--tone-violet { --org-ehg-qa-accent: #7c3aed; }
+.org-ehg-qa-glass--tone-fuchsia { --org-ehg-qa-accent: #d946ef; }
+.org-ehg-qa-glass--tone-rose { --org-ehg-qa-accent: #f43f5e; }
+.org-ehg-qa-glass--tone-lime { --org-ehg-qa-accent: #84cc16; }
+.org-ehg-qa-glass--tone-emerald { --org-ehg-qa-accent: #059669; }
+.org-ehg-qa-glass--tone-people { --org-ehg-qa-accent: #8b5cf6; }
+.org-ehg-qa-glass--tone-inventory { --org-ehg-qa-accent: #f59e0b; }
+.org-ehg-qa-glass--tone-sales { --org-ehg-qa-accent: #ec4899; }
+.org-ehg-qa-glass--tone-danger { --org-ehg-qa-accent: #ef4444; }
+.org-ehg-qa-glass--tone-charcoal { --org-ehg-qa-accent: #0f172a; }
+.org-ehg-qa-glass--tone-neutral { --org-ehg-qa-accent: #475569; }
+
+/* Size ladder ? md matches base row / chip defaults */
+.org-ehg-qa-glass--size-sm {
+  gap: 0.5rem;
+  min-height: 2.35rem;
+  min-width: 9.5rem;
+  padding: 0.3rem 0.55rem 0.3rem 0.4rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__icon {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__glyph {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__label {
+  font-size: 0.8125rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__trail {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__switch {
+  width: 2rem;
+  height: 1.1rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__switch::after {
+  top: 0.125rem;
+  inset-inline-start: 0.125rem;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__switch--on::after {
+  inset-inline-start: calc(100% - 0.975rem);
+}
+
+.org-ehg-qa-glass--size-sm.org-ehg-qa-glass--split {
+  min-width: 10rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__split-main {
+  gap: 0.5rem;
+  padding: 0.3rem 0.45rem 0.3rem 0.4rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__split-rule {
+  margin-block: 0.3rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__split-caret {
+  width: 2rem;
+}
+
+.org-ehg-qa-glass--size-lg {
+  gap: 0.85rem;
+  min-height: 3.25rem;
+  min-width: 13.5rem;
+  padding: 0.55rem 0.85rem 0.55rem 0.6rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__icon {
+  width: 2.35rem;
+  height: 2.35rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__glyph {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__label {
+  font-size: 0.9375rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__trail {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__switch {
+  width: 2.7rem;
+  height: 1.45rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__switch::after {
+  top: 0.175rem;
+  inset-inline-start: 0.175rem;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__switch--on::after {
+  inset-inline-start: calc(100% - 1.275rem);
+}
+
+.org-ehg-qa-glass--size-lg.org-ehg-qa-glass--split {
+  min-width: 14rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__split-main {
+  gap: 0.85rem;
+  padding: 0.55rem 0.65rem 0.55rem 0.6rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__split-rule {
+  margin-block: 0.55rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__split-caret {
+  width: 2.75rem;
+}
+
+.org-ehg-qa-glass__icon {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  /* Soft = square with radius (default). Rounded = circle. */
+  border-radius: var(--org-ehg-qa-chip-radius);
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, #fff 35%, transparent), transparent 55%),
+    var(--org-ehg-qa-accent);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent),
+    0 4px 10px color-mix(in srgb, var(--org-ehg-qa-accent) 35%, transparent);
+}
+
+.org-ehg-qa-glass__icon--rounded {
+  border-radius: 999px;
+}
+
+.org-ehg-qa-glass__glyph {
+  width: 1rem;
+  height: 1rem;
+}
+
+.org-ehg-qa-glass__dot {
+  position: absolute;
+  top: -0.15rem;
+  inset-inline-end: -0.15rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #ef4444;
+  border: 1.5px solid color-mix(in srgb, #fff 70%, var(--org-ehg-qa-fill));
+  box-shadow: 0 0 0 1px color-mix(in srgb, #ef4444 40%, transparent);
+}
+
+.org-ehg-qa-glass__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-align: start;
+  color: var(--org-ehg-qa-ink);
+}
+
+.org-ehg-qa-glass__trail {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--org-ehg-qa-muted);
+}
+
+.org-ehg-qa-glass__switch {
+  flex: none;
+  position: relative;
+  width: 2.35rem;
+  height: 1.3rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, #94a3b8 55%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, #0f172a 18%, transparent);
+  cursor: pointer;
+}
+
+.org-ehg-qa-glass__switch::after {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  inset-inline-start: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px color-mix(in srgb, #0f172a 25%, transparent);
+  transition: inset-inline-start 120ms ease, background-color 120ms ease;
+}
+
+.org-ehg-qa-glass__switch--on {
+  background: #10b981;
+}
+
+.org-ehg-qa-glass__switch--on::after {
+  inset-inline-start: calc(100% - 1.15rem);
+}
+
+.org-ehg-qa-glass--ghost {
+  min-width: 0;
+  background: color-mix(in srgb, #fff 28%, transparent);
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 18%, transparent);
+  box-shadow: none;
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass--ghost {
+  background: color-mix(in srgb, #fff 4%, transparent);
+  border-color: color-mix(in srgb, #fff 12%, transparent);
+}
+
+.org-ehg-qa-glass--split {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  min-width: 12rem;
+  overflow: hidden;
+}
+
+.org-ehg-qa-glass__split-main {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.45rem 0.55rem 0.45rem 0.5rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.org-ehg-qa-glass__split-rule {
+  flex: none;
+  width: 1px;
+  align-self: stretch;
+  margin-block: 0.45rem;
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 28%, var(--org-ehg-qa-edge));
+}
+
+.org-ehg-qa-glass__split-caret {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.org-ehg-qa-glass-icon {
+  --org-ehg-qa-accent: #64748b;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--org-ehg-qa-edge);
+  /* Soft square is default for action-group chips; rounded = circle. */
+  border-radius: var(--org-ehg-qa-chip-radius, 0.65rem);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 50%, transparent), transparent 50%),
+    var(--org-ehg-qa-fill);
+  color: var(--org-ehg-qa-ink);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 65%, transparent),
+    0 6px 16px color-mix(in srgb, #0f172a 8%, transparent);
+  cursor: pointer;
+}
+
+.org-ehg-qa-glass-icon--soft {
+  border-radius: var(--org-ehg-qa-chip-radius, 0.65rem);
+}
+
+.org-ehg-qa-glass-icon--rounded {
+  border-radius: 999px;
+}
+
+.org-ehg-qa-glass-icon:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--org-ehg-qa-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass-icon {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent),
+    0 8px 18px color-mix(in srgb, #000 35%, transparent);
+}
+
+.org-ehg-qa-glass-icon--tone-primary { --org-ehg-qa-accent: #3b82f6; }
+.org-ehg-qa-glass-icon--tone-secondary { --org-ehg-qa-accent: #64748b; }
+.org-ehg-qa-glass-icon--tone-success { --org-ehg-qa-accent: #10b981; }
+.org-ehg-qa-glass-icon--tone-info { --org-ehg-qa-accent: #0ea5e9; }
+.org-ehg-qa-glass-icon--tone-warning { --org-ehg-qa-accent: #ff5722; }
+.org-ehg-qa-glass-icon--tone-amber { --org-ehg-qa-accent: #ffc107; }
+.org-ehg-qa-glass-icon--tone-orange { --org-ehg-qa-accent: #fb923c; }
+.org-ehg-qa-glass-icon--tone-teal { --org-ehg-qa-accent: #26a69a; }
+.org-ehg-qa-glass-icon--tone-cyan { --org-ehg-qa-accent: #06b6d4; }
+.org-ehg-qa-glass-icon--tone-sky { --org-ehg-qa-accent: #38bdf8; }
+.org-ehg-qa-glass-icon--tone-indigo { --org-ehg-qa-accent: #6366f1; }
+.org-ehg-qa-glass-icon--tone-violet { --org-ehg-qa-accent: #7c3aed; }
+.org-ehg-qa-glass-icon--tone-fuchsia { --org-ehg-qa-accent: #d946ef; }
+.org-ehg-qa-glass-icon--tone-rose { --org-ehg-qa-accent: #f43f5e; }
+.org-ehg-qa-glass-icon--tone-lime { --org-ehg-qa-accent: #84cc16; }
+.org-ehg-qa-glass-icon--tone-emerald { --org-ehg-qa-accent: #059669; }
+.org-ehg-qa-glass-icon--tone-people { --org-ehg-qa-accent: #8b5cf6; }
+.org-ehg-qa-glass-icon--tone-inventory { --org-ehg-qa-accent: #f59e0b; }
+.org-ehg-qa-glass-icon--tone-sales { --org-ehg-qa-accent: #ec4899; }
+.org-ehg-qa-glass-icon--tone-danger { --org-ehg-qa-accent: #ef4444; }
+.org-ehg-qa-glass-icon--tone-charcoal { --org-ehg-qa-accent: #0f172a; }
+.org-ehg-qa-glass-icon--tone-neutral { --org-ehg-qa-accent: #64748b; }
+
+.org-ehg-qa-glass-icon--filled {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 55%, transparent);
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, #fff 30%, transparent), transparent 55%),
+    var(--org-ehg-qa-accent);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent),
+    0 8px 18px color-mix(in srgb, var(--org-ehg-qa-accent) 40%, transparent);
+}
+
+.org-ehg-qa-glass-group,
+.org-ehg-qa-glass__action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.org-ehg-qa-glass__action-group--size-sm {
+  gap: 0.4rem;
+}
+
+.org-ehg-qa-glass__action-group--size-lg {
+  gap: 0.7rem;
+}
+
+.org-ehg-qa-glass-icon--size-sm {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.org-ehg-qa-glass-icon--size-sm .org-ehg-qa-glass__glyph {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.org-ehg-qa-glass-icon--size-lg {
+  width: 3.1rem;
+  height: 3.1rem;
+}
+
+.org-ehg-qa-glass-icon--size-lg .org-ehg-qa-glass__glyph {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/*
+ * Action chips (action-group + action-icon) — colored glass (reference light + dark).
+ * Light: tinted wash + colored glyph. Dark: saturated glass fill + white glyph.
+ */
+.org-ehg-qa-glass-icon--action {
+  width: 2.55rem;
+  height: 2.55rem;
+  -webkit-backdrop-filter: blur(10px) saturate(1.35);
+  backdrop-filter: blur(10px) saturate(1.35);
+
+  border: 1px solid color-mix(in srgb, #fff 72%, var(--org-ehg-qa-accent));
+  background:
+    radial-gradient(
+      circle at 32% 22%,
+      color-mix(in srgb, #fff 55%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--org-ehg-qa-accent) 22%, transparent),
+      color-mix(in srgb, var(--org-ehg-qa-accent) 10%, #ffffff)
+    );
+  color: var(--org-ehg-qa-accent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 80%, transparent),
+    0 6px 16px color-mix(in srgb, var(--org-ehg-qa-accent) 22%, transparent);
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--size-sm {
+  width: 2.05rem;
+  height: 2.05rem;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--size-md {
+  width: 2.55rem;
+  height: 2.55rem;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--size-lg {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Action chips nested inside the Quick Action card (not icon-only). */
+.org-ehg-qa-glass .org-ehg-qa-glass-icon--action {
+  width: 2rem;
+  height: 2rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass-icon--action {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass-icon--action .org-ehg-qa-glass__glyph {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass-icon--action {
+  width: 2.35rem;
+  height: 2.35rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass-icon--action .org-ehg-qa-glass__glyph {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.org-ehg-qa-glass .org-ehg-qa-glass__action-group {
+  gap: 0.35rem;
+}
+
+.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__action-group {
+  gap: 0.25rem;
+}
+
+.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__action-group {
+  gap: 0.45rem;
+}
+
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-primary {
+  --org-ehg-qa-accent: #3b82f6;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-success {
+  --org-ehg-qa-accent: #10b981;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-info {
+  --org-ehg-qa-accent: #0ea5e9;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-warning {
+  --org-ehg-qa-accent: #ff5722;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-amber {
+  --org-ehg-qa-accent: #ffc107;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-orange {
+  --org-ehg-qa-accent: #fb923c;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-teal {
+  --org-ehg-qa-accent: #26a69a;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-cyan {
+  --org-ehg-qa-accent: #06b6d4;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-sky {
+  --org-ehg-qa-accent: #38bdf8;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-indigo {
+  --org-ehg-qa-accent: #6366f1;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-violet {
+  --org-ehg-qa-accent: #7c3aed;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-fuchsia {
+  --org-ehg-qa-accent: #d946ef;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-rose {
+  --org-ehg-qa-accent: #f43f5e;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-lime {
+  --org-ehg-qa-accent: #84cc16;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-emerald {
+  --org-ehg-qa-accent: #059669;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-people {
+  --org-ehg-qa-accent: #8b5cf6;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-inventory {
+  --org-ehg-qa-accent: #f59e0b;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-sales {
+  --org-ehg-qa-accent: #ec4899;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-danger {
+  --org-ehg-qa-accent: #ef4444;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-charcoal {
+  --org-ehg-qa-accent: #0f172a;
+}
+
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-secondary,
+.org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-neutral {
+  --org-ehg-qa-accent: #475569;
+  border-color: color-mix(in srgb, #fff 70%, #94a3b8);
+  background:
+    radial-gradient(circle at 32% 22%, color-mix(in srgb, #fff 58%, transparent), transparent 58%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #94a3b8 18%, transparent),
+      color-mix(in srgb, #e2e8f0 55%, #ffffff)
+    );
+  color: #334155;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 82%, transparent),
+    0 6px 16px color-mix(in srgb, #64748b 14%, transparent);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass-icon--action {
+  border-color: color-mix(in srgb, #fff 22%, var(--org-ehg-qa-accent));
+  background:
+    radial-gradient(
+      circle at 30% 22%,
+      color-mix(in srgb, #fff 28%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--org-ehg-qa-accent) 72%, transparent),
+      color-mix(in srgb, var(--org-ehg-qa-accent) 42%, #0b1220)
+    );
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 28%, transparent),
+    0 0 18px color-mix(in srgb, var(--org-ehg-qa-accent) 38%, transparent),
+    0 8px 20px color-mix(in srgb, #000 45%, transparent);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-secondary,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-neutral {
+  --org-ehg-qa-accent: #64748b;
+  border-color: color-mix(in srgb, #fff 18%, #64748b);
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, #fff 18%, transparent), transparent 55%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #94a3b8 38%, transparent),
+      color-mix(in srgb, #475569 55%, #0b1220)
+    );
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 16%, transparent),
+    0 0 14px color-mix(in srgb, #64748b 22%, transparent),
+    0 8px 20px color-mix(in srgb, #000 45%, transparent);
+}
+
+.org-ehg-qa-glass-panel--playground {
+  min-height: 7.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}

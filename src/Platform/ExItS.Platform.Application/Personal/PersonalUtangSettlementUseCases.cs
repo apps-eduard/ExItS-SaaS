@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -35,6 +36,7 @@ public sealed class SettlePersonalDebtRelationship
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public SettlePersonalDebtRelationship(
         IPersonalDebtRelationshipRepository relationships,
@@ -43,7 +45,8 @@ public sealed class SettlePersonalDebtRelationship
         IPersonalReminderRepository reminders,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _relationships = relationships;
         _entries = entries;
@@ -52,6 +55,7 @@ public sealed class SettlePersonalDebtRelationship
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<SettlePersonalDebtRelationshipResultDto>> ExecuteAsync(
@@ -207,6 +211,16 @@ public sealed class SettlePersonalDebtRelationship
                     ? "Personal Utang settlement proposed."
                     : "Personal Utang settled and closed.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            await PersonalUtangRealtime
+                .NotifyEntryChangedAsync(_realtime, relationship, entry.Id.Value, "repayment", cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var recipient in PersonalUtangRealtime.ResolveEntryRecipients(relationship))
+            {
+                await PersonalUtangRealtime
+                    .NotifyNotificationChangedAsync(_realtime, recipient, "utang-settlement", cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             return ApplicationResult<SettlePersonalDebtRelationshipResultDto>.Success(
                 BuildSettleOutcome(relationship, entry, actingUserIdentityId));

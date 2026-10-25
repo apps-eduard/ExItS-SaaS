@@ -736,6 +736,7 @@ public sealed class CreateStockRequest
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public CreateStockRequest(
         IStockRequestRepository requests,
@@ -746,7 +747,8 @@ public sealed class CreateStockRequest
         StockRequestQueryService queries,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _requests = requests;
         _routes = routes;
@@ -757,6 +759,7 @@ public sealed class CreateStockRequest
         _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<StockRequestDto>> ExecuteAsync(
@@ -923,9 +926,20 @@ public sealed class CreateStockRequest
                 .ConfigureAwait(false);
 
             var dto = await _queries.GetByIdAsync(organizationId, stockRequest.Id.Value, cancellationToken).ConfigureAwait(false);
-            return dto is null
-                ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
-                : ApplicationResult<StockRequestDto>.Success(dto);
+            if (dto is null)
+            {
+                return ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.");
+            }
+
+            await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                .TryInventoryStockChangedAsync(
+                    _realtime,
+                    organizationId,
+                    kind: "stock-request-create",
+                    branchId: actingBranchId,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<StockRequestDto>.Success(dto);
         }
         catch (DomainException ex)
         {
@@ -944,6 +958,7 @@ public sealed class ApproveStockRequest
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public ApproveStockRequest(
         IStockRequestRepository requests,
@@ -953,7 +968,8 @@ public sealed class ApproveStockRequest
         StockRequestQueryService queries,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _requests = requests;
         _inventory = inventory;
@@ -963,6 +979,7 @@ public sealed class ApproveStockRequest
         _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<StockRequestDto>> ExecuteAsync(
@@ -1119,9 +1136,20 @@ public sealed class ApproveStockRequest
             .ConfigureAwait(false);
 
         var dto = await _queries.GetByIdAsync(organizationId, reloaded.Id.Value, cancellationToken).ConfigureAwait(false);
-        return dto is null
-            ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
-            : ApplicationResult<StockRequestDto>.Success(dto);
+        if (dto is null)
+        {
+            return ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.");
+        }
+
+        await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+            .TryInventoryStockChangedAsync(
+                _realtime,
+                organizationId,
+                kind: "stock-request-approve",
+                branchId: reloaded.DestinationLocationId.Value,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return ApplicationResult<StockRequestDto>.Success(dto);
     }
 }
 
@@ -1866,6 +1894,7 @@ internal static class StockRequestDispatchCoverage
 
 public sealed class RejectStockRequest
 {
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
     private readonly IStockRequestRepository _requests;
     private readonly IInventoryTransferRepository _transfers;
     private readonly StockRequestQueryService _queries;
@@ -1879,8 +1908,10 @@ public sealed class RejectStockRequest
         StockRequestQueryService queries,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
         _requests = requests;
         _transfers = transfers;
         _queries = queries;
@@ -1916,7 +1947,7 @@ public sealed class RejectStockRequest
 
         try
         {
-            return await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
+            var rejectResult = await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
             {
                 var utcNow = _clock.UtcNow;
                 await StockRequestStatusSync
@@ -1943,6 +1974,19 @@ public sealed class RejectStockRequest
                     ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
                     : ApplicationResult<StockRequestDto>.Success(dto);
             }, cancellationToken).ConfigureAwait(false);
+            if (rejectResult.IsSuccess)
+            {
+                await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                    .TryInventoryStockChangedAsync(
+                        _realtime,
+                        organizationId,
+                        kind: "stock-request-reject",
+                        branchId: actingBranchId,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return rejectResult;
         }
         catch (DomainException ex)
         {
@@ -1962,19 +2006,22 @@ public sealed class CancelStockRequest
     private readonly StockRequestQueryService _queries;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public CancelStockRequest(
         IStockRequestRepository requests,
         IInventoryTransferRepository transfers,
         StockRequestQueryService queries,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _requests = requests;
         _transfers = transfers;
         _queries = queries;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<StockRequestDto>> ExecuteAsync(
@@ -2003,7 +2050,7 @@ public sealed class CancelStockRequest
 
         try
         {
-            return await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
+            var cancelResult = await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
             {
                 var utcNow = _clock.UtcNow;
                 await StockRequestStatusSync
@@ -2017,6 +2064,19 @@ public sealed class CancelStockRequest
                     ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
                     : ApplicationResult<StockRequestDto>.Success(dto);
             }, cancellationToken).ConfigureAwait(false);
+            if (cancelResult.IsSuccess)
+            {
+                await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                    .TryInventoryStockChangedAsync(
+                        _realtime,
+                        organizationId,
+                        kind: "stock-request-cancel",
+                        branchId: actingBranchId,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return cancelResult;
         }
         catch (DomainException ex)
         {

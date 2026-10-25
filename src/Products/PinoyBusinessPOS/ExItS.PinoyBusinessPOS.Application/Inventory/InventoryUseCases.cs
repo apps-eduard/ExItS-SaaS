@@ -1593,6 +1593,7 @@ public sealed class AdjustInventoryStock
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public AdjustInventoryStock(
         IInventoryRepository inventory,
@@ -1604,7 +1605,8 @@ public sealed class AdjustInventoryStock
         BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _inventory = inventory;
         _products = products;
@@ -1616,6 +1618,7 @@ public sealed class AdjustInventoryStock
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<InventoryAccount>> ExecuteAsync(
@@ -1901,6 +1904,15 @@ public sealed class AdjustInventoryStock
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
             await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                .TryInventoryStockChangedAsync(
+                    _realtime,
+                    organizationId,
+                    kind: "adjust",
+                    branchId: branchId,
+                    productId: productId,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
             return ApplicationResult<InventoryAccount>.Success(account);
         }
         catch (DomainException ex)

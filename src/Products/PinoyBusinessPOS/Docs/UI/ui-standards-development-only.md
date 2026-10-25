@@ -4,7 +4,7 @@
 **Scope:** `ExItS.PinoyBusinessPOS.React`  
 **Route:** `/ui-standards` (`/ui-standard` redirects here)
 
-The UI Standards page is a reference and playground for building the app. It is **not** a product feature. It exists only when the app runs with the Vite dev server (`npm run dev`) or under Vitest.
+The UI Standards page is the **Organization Enterprise Hybrid Glass** live reference (five authenticated workflow pages). Component lock playgrounds remain in-repo for unit tests and lock files but are no longer showcase navigation. It is **not** a product feature. It exists only when the app runs with the Vite dev server (`npm run dev`) or under Vitest.
 
 It is **not** included in:
 
@@ -17,6 +17,7 @@ It is **not** included in:
 | --- | --- | --- |
 | Route and page | `src/app/router.tsx` registers `/ui-standards` and `/ui-standard` only when `import.meta.env.DEV` is true, and loads the page with a lazy `import()` | Vite replaces `import.meta.env.DEV` with `false`, so the routes, the page chunk, and everything it imports are removed. `/ui-standards` falls through to the route error page. |
 | Showcase CSS | `src/features/ui-standards/ui-standards.css`, imported only by `UiStandardsPage.tsx` | Not bundled, because the page is not bundled. |
+| Organization Hybrid Glass CSS | `src/features/ui-standards/org-enterprise-hybrid-glass/org-enterprise-hybrid-glass.css`, imported only by `UiStandardsPage.tsx` | Same DEV tree-shake; never a Personal Soft Glass default. Includes the experimental Background playground (`.org-ehg-bg-lab*`) — local preview only, not production Org pages. See [exits-organization-enterprise-hybrid-glass.md](./exits-organization-enterprise-hybrid-glass.md). |
 | Top bar shortcut | `ShellUiStandardsButton` renders only when `import.meta.env.DEV` is true and the mode is local validation | Not rendered. |
 
 Measured on Oct 18, 2026 after this change: the production CSS went from 1,155 KB to 945 KB raw (140 KB to 115 KB gzip), and the main JS bundle no longer contains the page.

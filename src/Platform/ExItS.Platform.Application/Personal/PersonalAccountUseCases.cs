@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -323,6 +324,7 @@ public sealed class UpdatePersonalProfile
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public UpdatePersonalProfile(
         IPlatformUserRepository users,
@@ -332,7 +334,8 @@ public sealed class UpdatePersonalProfile
         GetPersonalProfile getProfile,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _users = users;
         _profiles = profiles;
@@ -342,6 +345,7 @@ public sealed class UpdatePersonalProfile
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalProfileDto>> ExecuteAsync(
@@ -412,6 +416,14 @@ public sealed class UpdatePersonalProfile
             AuditOutcome.Succeeded,
             summary: "Personal profile display name updated.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        await RealtimePublish
+            .PersonalSettingsChangedAsync(
+                _realtime,
+                userIdentityId.Value,
+                RealtimeEventTypes.PersonalSettingsChanged,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
 
         return await _getProfile.ExecuteAsync(userIdentityId, accountProfileId, cancellationToken)
             .ConfigureAwait(false);
@@ -493,17 +505,20 @@ public sealed class UpdatePersonalAccountSettings
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public UpdatePersonalAccountSettings(
         IPersonalAccountSettingsRepository settings,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _settings = settings;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalAccountSettingsDto>> ExecuteAsync(
@@ -548,6 +563,14 @@ public sealed class UpdatePersonalAccountSettings
             AuditOutcome.Succeeded,
             summary: "Personal notification preferences updated.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        await RealtimePublish
+            .PersonalSettingsChangedAsync(
+                _realtime,
+                userIdentityId.Value,
+                RealtimeEventTypes.PersonalSettingsChanged,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
 
         return ApplicationResult<PersonalAccountSettingsDto>.Success(GetPersonalAccountSettings.ToDto(settings));
     }

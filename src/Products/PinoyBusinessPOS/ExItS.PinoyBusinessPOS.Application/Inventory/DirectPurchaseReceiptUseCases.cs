@@ -72,6 +72,7 @@ public sealed class CreateDirectPurchaseReceipt
     private readonly PartyBranchAccessService? _branchAccess;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public CreateDirectPurchaseReceipt(
         IDirectPurchaseReceiptRepository receipts,
@@ -88,7 +89,8 @@ public sealed class CreateDirectPurchaseReceipt
         IClock clock,
         IOrganizationBranchDirectory? branches = null,
         PartyBranchAccessService? branchAccess = null,
-        ConnectedB2bDirectPurchaseCreditSync? b2bCreditSync = null)
+        ConnectedB2bDirectPurchaseCreditSync? b2bCreditSync = null,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _receipts = receipts;
         _products = products;
@@ -105,6 +107,7 @@ public sealed class CreateDirectPurchaseReceipt
         _branchAccess = branchAccess;
         _clock = clock;
         _branches = branches;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<DirectPurchaseReceiptDto>> ExecuteAsync(
@@ -143,7 +146,7 @@ public sealed class CreateDirectPurchaseReceipt
 
         try
         {
-            return await _unitOfWork
+            var receiptResult = await _unitOfWork
                 .ExecuteInSerializableTransactionAsync(
                     async ct =>
                     {
@@ -450,6 +453,19 @@ public sealed class CreateDirectPurchaseReceipt
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
+            if (receiptResult.IsSuccess)
+            {
+                await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                    .TryInventoryStockChangedAsync(
+                        _realtime,
+                        organizationId,
+                        kind: "direct-purchase",
+                        branchId: receivingBranchId,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return receiptResult;
         }
         catch (PersistenceConflictException ex)
         {

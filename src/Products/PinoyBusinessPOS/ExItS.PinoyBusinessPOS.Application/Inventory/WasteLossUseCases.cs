@@ -67,6 +67,7 @@ public sealed class CreateWasteLoss
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public CreateWasteLoss(
         IWasteLossRepository wasteLosses,
@@ -79,7 +80,8 @@ public sealed class CreateWasteLoss
         BranchExpirationPolicyResolver expirationPolicies,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _wasteLosses = wasteLosses;
         _products = products;
@@ -92,6 +94,7 @@ public sealed class CreateWasteLoss
         _unitOfWork = unitOfWork;
         _clock = clock;
         _branches = branches;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<WasteLossDto>> ExecuteAsync(
@@ -121,7 +124,7 @@ public sealed class CreateWasteLoss
 
         try
         {
-            return await _unitOfWork
+            var wasteResult = await _unitOfWork
                 .ExecuteInSerializableTransactionAsync(
                     async ct =>
                     {
@@ -514,6 +517,19 @@ public sealed class CreateWasteLoss
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
+            if (wasteResult.IsSuccess)
+            {
+                await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                    .TryInventoryStockChangedAsync(
+                        _realtime,
+                        organizationId,
+                        kind: "waste-loss",
+                        branchId: request.BranchId,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return wasteResult;
         }
         catch (DomainException ex)
         {

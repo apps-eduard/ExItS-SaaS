@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { HubConnectionBuilder } from "@microsoft/signalr";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { platformApiUrl } from "@/api/platform/browser-session";
 import { getPersonalProfile, type PersonalProfileDto } from "@/api/platform/start-business-client";
 import { PersonalAvatarContextProvider } from "@/features/personal/personal-avatar-context";
+import { exitsRealtimeConnection } from "@/realtime/exits-realtime-connection";
+import { RealtimeEventTypes } from "@/realtime/realtime-event-types";
 
 export function PersonalAvatarProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -22,21 +22,26 @@ export function PersonalAvatarProvider({ children }: { children: ReactNode }) {
     if (import.meta.env.MODE === "test") {
       return;
     }
-    const connection = new HubConnectionBuilder()
-      .withUrl(platformApiUrl("/hubs/personal-profile"), { withCredentials: true })
-      .withAutomaticReconnect()
-      .build();
-    connection.on("ProfilePhotoUpdated", (payload: { profilePhotoUrl?: string | null }) => {
-      const next = payload?.profilePhotoUrl ?? null;
+
+    const applyPhoto = (next: string | null) => {
       setPhotoUrl(next);
       queryClient.setQueryData<PersonalProfileDto | undefined>(["personal", "profile"], (current) =>
         current ? { ...current, profilePhotoUrl: next } : current,
       );
-    });
-    void connection.start().catch(() => undefined);
-    return () => {
-      void connection.stop();
     };
+
+    const unsubscribe = exitsRealtimeConnection.subscribe((envelope) => {
+      if (envelope.eventType !== RealtimeEventTypes.PersonalProfilePhotoChanged) {
+        return;
+      }
+      const next = envelope.data?.profilePhotoUrl ?? null;
+      applyPhoto(next);
+    });
+
+    // Legacy dual-publish still emits ProfilePhotoUpdated on personal-profile hub;
+    // shared exits-realtime PersonalProfilePhotoChanged covers multi-device sync.
+
+    return unsubscribe;
   }, [queryClient]);
 
   return (

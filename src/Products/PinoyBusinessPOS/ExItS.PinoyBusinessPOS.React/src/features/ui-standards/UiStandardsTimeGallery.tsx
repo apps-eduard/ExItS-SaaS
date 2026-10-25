@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type WheelEvent } from "react";
-import { INPUT_SAMPLES, type InputSample } from "@/features/ui-standards/UiStandardsInputGallery";
+import { Clock } from "lucide-react";
+import { INPUT_SAMPLES, UiStandardsQinput, type InputSample } from "@/features/ui-standards/UiStandardsInputGallery";
 import { SoftGlassRollCaret } from "@/features/ui-standards/soft-glass-roll-caret";
 import {
   SOFT_GLASS_DATETIME_FORMAT_CHECKED_LABEL,
@@ -13,6 +14,9 @@ import { softGlassRollTouchHandlers } from "@/features/ui-standards/soft-glass-r
 import { radioAccent } from "@/features/ui-standards/UiStandardsRadioGallery";
 import { DROPDOWN_STANDARD_COLOR, UiStandardsQdropdown } from "@/features/ui-standards/UiStandardsDropdownGallery";
 import { Switch } from "@/components/ui/switch";
+
+const SOFT_GLASS_TIME_PRIMARY = "var(--exits-primary)";
+const SOFT_GLASS_TIME_INK = "#ffffff";
 
 /**
  * Quasar-style time picker samples for the Form Components pilot.
@@ -862,10 +866,61 @@ function TimeRow({
   );
 }
 
+/**
+ * Soft Glass time UI sample — hour / minute / AM·PM roll field + popover as glass.
+ * Personal Soft Glass only; Organization Date glass unchanged.
+ */
+function SoftGlassTimeUiGlassSample(): ReactNode {
+  const [value, setValue] = useState("21:00");
+  const display = displayTime(value, false);
+  return (
+    <div
+      className="ui-standards-soft-glass-ui-sample"
+      data-shell="soft-glass"
+      data-testid="ui-standard-time-soft-glass-ui-sample"
+    >
+      <div className="ui-standards-soft-glass-ui-sample__title">Soft Glass · Time UI</div>
+      <p className="ui-standards-soft-glass-ui-sample__blurb">
+        Column time picker (hour, minute, AM/PM) in Soft Glass. Same shell on mobile.
+      </p>
+      <div className="ui-standards-soft-glass-ui-sample__stack">
+        <div className="ui-standards-date-preview-card ui-standards-date-preview-card--soft-glass ui-standards-soft-glass-ui-sample__field">
+          <UiStandardsQinput
+            label="Time"
+            value={display}
+            readOnly
+            placeholder="hh:mm am"
+            accent={SOFT_GLASS_TIME_PRIMARY}
+            fill={SOFT_GLASS_TIME_PRIMARY}
+            ink={SOFT_GLASS_TIME_INK}
+            appearance="outlined"
+            suffix={<Clock className="ui-standards-qinput__picker-icon" aria-hidden />}
+            testId="ui-standard-time-soft-glass-ui-input"
+          />
+        </div>
+        <UiStandardsQtime
+          color={SOFT_GLASS_TIME_PRIMARY}
+          ink={SOFT_GLASS_TIME_INK}
+          value={value}
+          appearance="soft-glass"
+          variety="roll"
+          showValue={false}
+          formatPlacement="header"
+          onChange={(next) => {
+            if (typeof next === "string") setValue(next);
+          }}
+          testId="ui-standard-time-soft-glass-ui-roll"
+        />
+      </div>
+    </div>
+  );
+}
+
 /** Soft Glass Roll time samples — sits below the Time playground (not in the Time samples gallery). */
 export function UiStandardsSoftGlassRollTimeSamples(): ReactNode {
   return (
     <div className="flex flex-col gap-4" data-testid="ui-standard-time-soft-glass-roll-samples">
+      <SoftGlassTimeUiGlassSample />
       <TimeRow title="Soft Glass Roll" testId="ui-standard-time-soft-glass-roll" appearance="soft-glass" variety="roll" />
     </div>
   );

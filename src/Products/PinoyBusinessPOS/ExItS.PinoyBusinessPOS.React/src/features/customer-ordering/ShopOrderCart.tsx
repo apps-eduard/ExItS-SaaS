@@ -93,7 +93,7 @@ export function ShopOrderCart({
   storeStatusMessage = null,
 }: ShopOrderCartProps) {
   const { t } = useI18n();
-  const toast = useToast();
+  const { toast } = useToast();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const lineCount = lines.length;
   const canContinue = lineCount > 0 && checkoutMode === "open" && !continueBlockedDetail;

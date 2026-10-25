@@ -60,11 +60,15 @@ function QuasarExampleCard({
   outline = false,
   soft = false,
   softOutline = false,
+  softGlass = false,
   raised = false,
   icon = false,
   ghost = false,
   glossy = false,
+  glossyGlass = false,
+  glossyRaise = false,
   gradient = false,
+  gradientGlass = false,
   rounded = false,
   flat = false,
   square = false,
@@ -75,11 +79,15 @@ function QuasarExampleCard({
   outline?: boolean;
   soft?: boolean;
   softOutline?: boolean;
+  softGlass?: boolean;
   raised?: boolean;
   icon?: boolean;
   ghost?: boolean;
   glossy?: boolean;
+  glossyGlass?: boolean;
+  glossyRaise?: boolean;
   gradient?: boolean;
+  gradientGlass?: boolean;
   rounded?: boolean;
   flat?: boolean;
   square?: boolean;
@@ -97,11 +105,15 @@ function QuasarExampleCard({
             outline={outline}
             soft={soft}
             softOutline={softOutline}
+            softGlass={softGlass}
             raised={raised}
             icon={icon}
             ghost={ghost}
             glossy={glossy}
+            glossyGlass={glossyGlass}
+            glossyRaise={glossyRaise}
             gradient={gradient}
+            gradientGlass={gradientGlass}
             rounded={rounded}
             flat={flat}
             square={square}
@@ -123,11 +135,15 @@ function SampleQbtn({
   outline,
   soft,
   softOutline,
+  softGlass,
   raised,
   icon,
   ghost,
   glossy,
+  glossyGlass,
+  glossyRaise,
   gradient,
+  gradientGlass,
   rounded,
   flat,
   square,
@@ -137,11 +153,15 @@ function SampleQbtn({
   outline: boolean;
   soft: boolean;
   softOutline: boolean;
+  softGlass: boolean;
   raised: boolean;
   icon: boolean;
   ghost: boolean;
   glossy: boolean;
+  glossyGlass: boolean;
+  glossyRaise: boolean;
   gradient: boolean;
+  gradientGlass: boolean;
   rounded: boolean;
   flat: boolean;
   square: boolean;
@@ -150,7 +170,10 @@ function SampleQbtn({
   const accent = button.bg.toLowerCase() === "#ffffff" ? "#000000" : button.bg;
   const ButtonIcon = button.Icon;
   const transparent = outline || ghost;
-  const darkInk = (button.id === "standard" || button.id === "black") && ((outline && !icon) || ghost || soft || softOutline);
+  const wash = soft || softOutline || softGlass || glossyGlass || gradientGlass;
+  const darkInk =
+    (button.id === "standard" || button.id === "black") &&
+    ((outline && !icon) || ghost || wash);
   const filledStyle: CSSProperties & { "--qbtn-bg"?: string } = {
     backgroundColor: button.bg,
     color: button.fg,
@@ -166,19 +189,29 @@ function SampleQbtn({
         (rounded ? " ui-standards-qbtn--rounded" : "") +
         (soft ? " ui-standards-qbtn--soft" : "") +
         (softOutline ? " ui-standards-qbtn--soft-outline" : "") +
+        (softGlass ? " ui-standards-qbtn--soft-glass" : "") +
         (outline ? " ui-standards-qbtn--outline" : "") +
         (ghost ? " ui-standards-qbtn--ghost" : "") +
         (darkInk ? " ui-standards-qbtn--dark-ink" : "") +
         (flat ? " ui-standards-qbtn--flat" : "") +
-        (raised ? " ui-standards-qbtn--raised" : "") +
-        (!transparent && gradient ? " ui-standards-qbtn--gradient" : "") +
-        (!transparent && !gradient && (glossy || button.glossy) ? " ui-standards-qbtn--glossy" : "") +
-        (!transparent && !soft && !softOutline && button.border ? " ui-standards-qbtn--border" : "")
+        (raised && !glossyRaise ? " ui-standards-qbtn--raised" : "") +
+        (!transparent && gradient && !gradientGlass ? " ui-standards-qbtn--gradient" : "") +
+        (!transparent && gradientGlass ? " ui-standards-qbtn--gradient-glass" : "") +
+        (!transparent && !gradient && !gradientGlass && !glossyGlass && !glossyRaise && (glossy || button.glossy)
+          ? " ui-standards-qbtn--glossy"
+          : "") +
+        (!transparent && !gradient && !gradientGlass && glossyGlass
+          ? " ui-standards-qbtn--glossy-glass"
+          : "") +
+        (!transparent && !gradient && !gradientGlass && glossyRaise
+          ? " ui-standards-qbtn--glossy-raise"
+          : "") +
+        (!transparent && !wash && button.border ? " ui-standards-qbtn--border" : "")
       }
       style={
         softOutline
           ? { color: accent, "--qbtn-bg": accent, borderColor: accent }
-          : soft
+          : soft || softGlass || glossyGlass || gradientGlass
             ? { color: accent, "--qbtn-bg": accent }
             : transparent
             ? { color: accent, borderColor: outline ? accent : "transparent", backgroundColor: "transparent" }
@@ -212,10 +245,26 @@ function QuasarStandardButtons() {
       <QuasarExampleCard title="Button outline" testId="ui-standard-btn-quasar-outline" outline />
       <QuasarExampleCard title="Button soft" testId="ui-standard-btn-quasar-soft" soft />
       <QuasarExampleCard title="Button soft outline" testId="ui-standard-btn-quasar-soft-outline" softOutline />
+      <QuasarExampleCard title="Button soft glass" testId="ui-standard-btn-quasar-soft-glass" softGlass />
       <QuasarExampleCard title="Raised" testId="ui-standard-btn-quasar-raised" raised />
       <QuasarExampleCard title="Button ghost" testId="ui-standard-btn-quasar-ghost" ghost />
       <QuasarExampleCard title="Button glossy" testId="ui-standard-btn-quasar-glossy" glossy />
+      <QuasarExampleCard
+        title="Button glossy glass"
+        testId="ui-standard-btn-quasar-glossy-glass"
+        glossyGlass
+      />
+      <QuasarExampleCard
+        title="Button glossy raise"
+        testId="ui-standard-btn-quasar-glossy-raise"
+        glossyRaise
+      />
       <QuasarExampleCard title="Button gradient" testId="ui-standard-btn-quasar-gradient" gradient />
+      <QuasarExampleCard
+        title="Button gradient glass"
+        testId="ui-standard-btn-quasar-gradient-glass"
+        gradientGlass
+      />
       <QuasarExampleCard title="Button rounded" testId="ui-standard-btn-quasar-rounded" rounded />
       <QuasarExampleCard title="Button flat" testId="ui-standard-btn-quasar-flat" flat />
       <QuasarExampleCard

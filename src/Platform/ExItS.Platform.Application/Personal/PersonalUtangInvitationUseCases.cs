@@ -54,6 +54,7 @@ public sealed class CreatePersonalUtangInvitation
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.Platform.Application.Realtime.IRealtimeChangePublisher _realtime;
 
     public CreatePersonalUtangInvitation(
         IPersonalDebtRelationshipRepository relationships,
@@ -63,7 +64,8 @@ public sealed class CreatePersonalUtangInvitation
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.Platform.Application.Realtime.IRealtimeChangePublisher? realtime = null)
     {
         _relationships = relationships;
         _contacts = contacts;
@@ -73,6 +75,7 @@ public sealed class CreatePersonalUtangInvitation
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? ExItS.Platform.Application.Realtime.NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalUtangInvitationDto>> ExecuteAsync(
@@ -218,6 +221,29 @@ public sealed class CreatePersonalUtangInvitation
                 AuditOutcome.Succeeded,
                 summary: "Personal Utang invitation created.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            var inviteRecipients = new List<Guid> { actingUserIdentityId.Value };
+            if (inviteeUserId is not null)
+            {
+                inviteRecipients.Add(inviteeUserId.Value);
+                await PersonalUtangRealtime
+                    .NotifyNotificationChangedAsync(
+                        _realtime,
+                        inviteeUserId.Value,
+                        "utang-invitation",
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            await PersonalUtangRealtime
+                .NotifyInvitationChangedAsync(
+                    _realtime,
+                    invitation.Id.Value,
+                    relationship.Id.Value,
+                    "invitation-created",
+                    inviteRecipients,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             return ApplicationResult<PersonalUtangInvitationDto>.Success(ToDto(invitation, acceptToken));
         }
@@ -632,6 +658,7 @@ public sealed class AcceptPersonalUtangInvitation
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.Platform.Application.Realtime.IRealtimeChangePublisher _realtime;
 
     public AcceptPersonalUtangInvitation(
         IPersonalUtangInvitationRepository invitations,
@@ -641,8 +668,10 @@ public sealed class AcceptPersonalUtangInvitation
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.Platform.Application.Realtime.IRealtimeChangePublisher? realtime = null)
     {
+        _realtime = realtime ?? ExItS.Platform.Application.Realtime.NullRealtimeChangePublisher.Instance;
         _invitations = invitations;
         _contacts = contacts;
         _relationships = relationships;
@@ -776,6 +805,30 @@ public sealed class AcceptPersonalUtangInvitation
                 summary: "Personal Utang invitation accepted; participant linked. No organization membership or product role granted.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
+            await PersonalUtangRealtime
+                .NotifyInvitationChangedAsync(
+                    _realtime,
+                    invitation.Id.Value,
+                    relationship.Id.Value,
+                    "invitation-accepted",
+                    [invitation.InvitedByUserIdentityId.Value, acceptingUserIdentityId.Value],
+                    cancellationToken)
+                .ConfigureAwait(false);
+            await PersonalUtangRealtime
+                .NotifyNotificationChangedAsync(
+                    _realtime,
+                    invitation.InvitedByUserIdentityId.Value,
+                    "utang-invitation-accepted",
+                    cancellationToken)
+                .ConfigureAwait(false);
+            await PersonalUtangRealtime
+                .NotifyNotificationChangedAsync(
+                    _realtime,
+                    acceptingUserIdentityId.Value,
+                    "utang-invitation-accepted",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             await _auditWriter.WriteAsync(
                 $"platform-user:{acceptingUserIdentityId.Value:D}",
                 AuditActorType.PlatformUser,
@@ -826,6 +879,7 @@ public sealed class AcceptPersonalUtangInvitationById
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.Platform.Application.Realtime.IRealtimeChangePublisher _realtime;
 
     public AcceptPersonalUtangInvitationById(
         IPersonalUtangInvitationRepository invitations,
@@ -835,7 +889,8 @@ public sealed class AcceptPersonalUtangInvitationById
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.Platform.Application.Realtime.IRealtimeChangePublisher? realtime = null)
     {
         _invitations = invitations;
         _contacts = contacts;
@@ -845,6 +900,7 @@ public sealed class AcceptPersonalUtangInvitationById
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? ExItS.Platform.Application.Realtime.NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalUtangInvitationAcceptResultDto>> ExecuteAsync(
@@ -957,6 +1013,30 @@ public sealed class AcceptPersonalUtangInvitationById
                 AuditOutcome.Succeeded,
                 summary: "Personal Utang invitation accepted by invitation id; participant linked.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            await PersonalUtangRealtime
+                .NotifyInvitationChangedAsync(
+                    _realtime,
+                    invitation.Id.Value,
+                    relationship.Id.Value,
+                    "invitation-accepted",
+                    [invitation.InvitedByUserIdentityId.Value, acceptingUserIdentityId.Value],
+                    cancellationToken)
+                .ConfigureAwait(false);
+            await PersonalUtangRealtime
+                .NotifyNotificationChangedAsync(
+                    _realtime,
+                    invitation.InvitedByUserIdentityId.Value,
+                    "utang-invitation-accepted",
+                    cancellationToken)
+                .ConfigureAwait(false);
+            await PersonalUtangRealtime
+                .NotifyNotificationChangedAsync(
+                    _realtime,
+                    acceptingUserIdentityId.Value,
+                    "utang-invitation-accepted",
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Success(
                 new PersonalUtangInvitationAcceptResultDto(

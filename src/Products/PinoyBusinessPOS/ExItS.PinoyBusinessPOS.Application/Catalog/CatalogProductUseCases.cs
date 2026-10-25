@@ -1150,6 +1150,7 @@ public sealed class UpdateCatalogProductPrices
     private readonly IClock _clock;
     private readonly CatalogProductGovernanceAuthority _governance;
     private readonly ICatalogGovernanceActorAccessor _actorAccessor;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public UpdateCatalogProductPrices(
         ICatalogProductRepository products,
@@ -1158,7 +1159,8 @@ public sealed class UpdateCatalogProductPrices
         IPosUnitOfWork unitOfWork,
         IClock clock,
         CatalogProductGovernanceAuthority governance,
-        ICatalogGovernanceActorAccessor actorAccessor)
+        ICatalogGovernanceActorAccessor actorAccessor,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _products = products;
         _units = units;
@@ -1167,6 +1169,7 @@ public sealed class UpdateCatalogProductPrices
         _clock = clock;
         _governance = governance;
         _actorAccessor = actorAccessor;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<UpdatePosCatalogProductPricesResponse>> ExecuteAsync(
@@ -1286,6 +1289,13 @@ public sealed class UpdateCatalogProductPrices
         if (anyChanged)
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                .InventoryOrPricingChangedAsync(
+                    _realtime,
+                    organizationId,
+                    ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimeEventTypes.CatalogPricingChanged,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
         }
 
         var accounts = await _inventory

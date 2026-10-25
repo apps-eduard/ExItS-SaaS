@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
@@ -52,15 +53,18 @@ public sealed class UpdateOrganizationProfile
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public UpdateOrganizationProfile(
         IPlatformOrganizationRepository organizations,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _organizations = organizations;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PlatformOrganization>> ExecuteAsync(
@@ -117,6 +121,13 @@ public sealed class UpdateOrganizationProfile
 
             await _organizations.UpdateAsync(organization, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await RealtimePublish
+                .OrganizationSettingsChangedAsync(
+                    _realtime,
+                    organization.Id.Value,
+                    resourceVersion: organization.UpdatedAtUtc.ToUnixTimeMilliseconds().ToString(),
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
             return ApplicationResult<PlatformOrganization>.Success(organization);
         }
         catch (DomainException ex)

@@ -5560,17 +5560,161 @@ button.exits-card {
   overflow: hidden;
 }
 
-/* UI standards reference fills the viewport. Other pages keep max-w-5xl.
-   Double class beats the shell's single-class width and gutter utilities. */
-.app-shell.app-shell--full {
-  max-width: none;
-  width: 100%;
-  height: 100dvh;
+/*
+ * Crystal screen frame — Preferences primary rim around whole shell.
+ * UI Standards: `.app-shell--full` · Personal: `.personal-crystal-screen`
+ * Command: ext ui-standards crystal screen-border
+ */
+html:has(.app-shell--full),
+html:has(.personal-crystal-screen),
+body:has(.app-shell--full),
+body:has(.personal-crystal-screen) {
+  height: 100%;
   max-height: 100dvh;
   overflow: hidden;
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--exits-bg);
+}
+
+#root:has(.app-shell--full),
+#root:has(.personal-crystal-screen) {
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.app-shell.app-shell--full,
+.personal-crystal-screen {
+  --ui-standards-crystal-inset: 0.45rem;
+  /* Match Soft Glass shell radius. */
+  --ui-standards-crystal-radius: 1.1rem;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  max-width: none;
+  width: calc(100% - (2 * var(--ui-standards-crystal-inset)));
+  min-height: 0;
+  height: calc(100dvh - (2 * var(--ui-standards-crystal-inset)));
+  max-height: calc(100dvh - (2 * var(--ui-standards-crystal-inset)));
+  margin: var(--ui-standards-crystal-inset);
+  overflow: hidden;
+  border: var(--soft-glass-crystal-border);
+  border-radius: var(--ui-standards-crystal-radius);
+  box-shadow: var(--soft-glass-crystal-rim);
+  background-clip: padding-box;
+}
+
+.app-shell.app-shell--full {
+  /* Override AppShell utilities: page gutters, safe-area top, pb-[max(2rem)]. */
+  padding-top: 0 !important;
+  padding-bottom: max(0px, env(safe-area-inset-bottom)) !important;
+  padding-left: max(0px, env(safe-area-inset-left)) !important;
+  padding-right: max(0px, env(safe-area-inset-right)) !important;
+}
+
+.personal-crystal-screen {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--exits-bg);
+}
+
+.personal-crystal-screen > .personal-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  /* Shell fills the crystal frame; inset/margin live on the frame. */
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Pin mobile bottom nav to the crystal frame, not the viewport gutter. */
+.personal-crystal-screen > .personal-bottom-nav {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  isolation: isolate;
+  overflow: hidden;
+  border-top: 0;
+  border-bottom-left-radius: calc(var(--ui-standards-crystal-radius) - 1px);
+  border-bottom-right-radius: calc(var(--ui-standards-crystal-radius) - 1px);
+  background: var(--exits-shell-content-bg, #e8ecf2);
+}
+
+/* Soft Glass edge — top + bottom of Personal bottom nav (same as top bar). */
+.personal-crystal-screen > .personal-bottom-nav::before,
+.personal-crystal-screen > .personal-bottom-nav::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  z-index: 4;
+  height: 1.1rem;
+  pointer-events: none;
+}
+
+.personal-crystal-screen > .personal-bottom-nav::before {
+  inset-block-start: 0;
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-block-start: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 85%, transparent),
+    0 -8px 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+.personal-crystal-screen > .personal-bottom-nav::after {
+  inset-block-end: 0;
+  border-radius: 0 0 calc(var(--ui-standards-crystal-radius) - 1px)
+    calc(var(--ui-standards-crystal-radius) - 1px);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-block-end: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, #fff 85%, transparent),
+    0 8px 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+[data-theme="dark"] .personal-crystal-screen > .personal-bottom-nav {
+  background: var(--exits-shell-content-bg, var(--exits-bg));
+}
+
+[data-theme="dark"] .personal-crystal-screen > .personal-bottom-nav::before {
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-block-start-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent),
+    0 -8px 22px color-mix(in srgb, #000 28%, transparent);
+}
+
+[data-theme="dark"] .personal-crystal-screen > .personal-bottom-nav::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-block-end-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, #fff 10%, transparent),
+    0 8px 22px color-mix(in srgb, #000 28%, transparent);
 }
 
 .app-shell--full #main-content {
@@ -5579,6 +5723,14 @@ button.exits-card {
 }
 
 .app-shell--full .app-top-bar {
+  margin-inline: 0;
+  margin-right: 0;
+  border-top-left-radius: calc(var(--ui-standards-crystal-radius) - 1px);
+  border-top-right-radius: calc(var(--ui-standards-crystal-radius) - 1px);
+}
+
+/* Personal top bar Soft Glass radius is owned by `.personal-shell .app-top-bar--personal`. */
+.personal-crystal-screen .app-top-bar--personal {
   margin-inline: 0;
   margin-right: 0;
 }
@@ -19591,6 +19743,126 @@ a.dashboard-metric-card:focus-visible {
   min-width: 0;
 }
 
+/*
+ * UI Standards full-screen shell: sidenav toggle | title | actions.
+ * Without this row, the leading toggle competes with brand/center in the
+ * default 2/3-column grid and the topbar wraps or misaligns.
+ */
+.app-top-bar__row--ui-standards {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+/*
+ * UI Standards topbar — Soft Glass chrome (same recipe as Personal top bar).
+ * Scoped to .app-top-bar--ui-standards only (does not restyle Personal / Org product topbars).
+ * Data bindings unchanged: ExItS UI Standard title, sidenav toggle, connection / prefs / account.
+ */
+.app-top-bar--ui-standards {
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  z-index: 30;
+  min-height: var(--exits-shell-chrome-height, 3.25rem);
+  /* Blend into page content — Soft Glass lips carry the edge. */
+  border-bottom: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-top-left-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  border-top-right-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  overflow: hidden;
+}
+
+/* Soft Glass edge — top + bottom of UI Standards top bar (same as Personal). */
+.app-top-bar--ui-standards::before,
+.app-top-bar--ui-standards::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  z-index: 4;
+  height: 1.1rem;
+  pointer-events: none;
+}
+
+.app-top-bar--ui-standards::before {
+  inset-block-start: 0;
+  border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0 0;
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-block-start: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 85%, transparent),
+    0 -8px 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+.app-top-bar--ui-standards::after {
+  inset-block-end: 0;
+  border-radius: 0 0 calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-block-end: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, #fff 85%, transparent),
+    0 8px 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+[data-theme="dark"] .app-top-bar--ui-standards::before {
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-block-start-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent),
+    0 -8px 22px color-mix(in srgb, #000 28%, transparent);
+}
+
+[data-theme="dark"] .app-top-bar--ui-standards::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-block-end-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, #fff 10%, transparent),
+    0 8px 22px color-mix(in srgb, #000 28%, transparent);
+}
+
+.app-top-bar__brand--ui-standards {
+  min-width: 0;
+}
+
+.app-top-bar__brand--ui-standards .app-top-bar__app-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.app-top-bar__actions--ui-standards {
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
 .app-top-bar__sidebar-mode[data-intent="standard"] {
   color: #000000;
   background-color: #ffffff;
@@ -26961,18 +27233,46 @@ html:has(.operations-shell) #root,
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   animation: none !important;
+  /* Same radius as Soft Glass screen edge (concentric with 1px frame border). */
+  border-top-left-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  border-top-right-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  overflow: hidden;
 }
 
-/* Soft glass edge below the nav bar — match sidenav edge recipe. */
+/*
+ * Soft Glass edge — top + bottom of Personal top bar (same recipe as sidenav).
+ * Top (::before) mirrors bottom (::after) so both lips match the Soft Glass screen edge.
+ */
+.personal-shell .app-top-bar--personal::before,
 .personal-shell .app-top-bar--personal::after {
   content: "";
   position: absolute;
   inset-inline: 0;
-  inset-block-end: 0;
   z-index: 4;
   height: 1.1rem;
   pointer-events: none;
-  border-radius: 0;
+}
+
+.personal-shell .app-top-bar--personal::before {
+  inset-block-start: 0;
+  border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0 0;
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-block-start: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 85%, transparent),
+    0 -8px 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+.personal-shell .app-top-bar--personal::after {
+  inset-block-end: 0;
+  border-radius: 0 0 calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
   background: linear-gradient(
     to bottom,
     transparent 0%,
@@ -26983,6 +27283,19 @@ html:has(.operations-shell) #root,
   box-shadow:
     inset 0 -1px 0 color-mix(in srgb, #fff 85%, transparent),
     0 8px 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .app-top-bar--personal::before {
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-block-start-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent),
+    0 -8px 22px color-mix(in srgb, #000 28%, transparent);
 }
 
 [data-theme="dark"] .personal-shell .app-top-bar--personal::after {
@@ -27009,25 +27322,23 @@ html:has(.operations-shell) #root,
     ) !important;
   border: 0 !important;
   border-inline-end: 0 !important;
-  border-start-start-radius: 1.1rem;
-  border-end-start-radius: 1.1rem;
-  border-start-end-radius: 1.1rem;
-  border-end-end-radius: 1.1rem;
+  border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-/* Soft glass edge on the outer (start) side. */
+/* Soft glass edge on the outer (start) side — full height to screen top/bottom. */
 .personal-shell .personal-sidebar.admin-sidebar::before {
   content: "";
   position: absolute;
-  inset-block: 0.55rem;
+  inset-block: 0;
   inset-inline-start: 0;
   z-index: 4;
   width: 1.1rem;
   pointer-events: none;
-  border-radius: 0.95rem 0 0 0.95rem;
+  border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0 0
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
   background: linear-gradient(
     to left,
     transparent 0%,
@@ -27040,16 +27351,17 @@ html:has(.operations-shell) #root,
     -8px 0 22px color-mix(in srgb, #64748b 10%, transparent);
 }
 
-/* Soft glass edge facing the content column. */
+/* Soft glass edge facing the content column — full height. */
 .personal-shell .personal-sidebar.admin-sidebar::after {
   content: "";
   position: absolute;
-  inset-block: 0.55rem;
+  inset-block: 0;
   inset-inline-end: 0;
   z-index: 4;
   width: 1.1rem;
   pointer-events: none;
-  border-radius: 0 0.95rem 0.95rem 0;
+  border-radius: 0 calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0;
   background: linear-gradient(
     to right,
     transparent 0%,
@@ -27647,16 +27959,12 @@ html:has(.operations-shell) #root,
 }
 
 /*
- * Personal desktop — Gmail-style floating content:
- * large radius on all four corners, clear gap from top bar / sidebar / edges.
+ * Personal desktop — full-height sidenav to Soft Glass screen top,
+ * content column holds top bar + main.
  */
 @media (min-width: 1024px) {
   .personal-shell .personal-sidebar.admin-sidebar {
-    border-radius: 0;
-    border-start-start-radius: 1.1rem;
-    border-end-start-radius: 1.1rem;
-    border-start-end-radius: 1.1rem;
-    border-end-end-radius: 1.1rem;
+    border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
     border: 0;
     border-inline-end: 0;
     height: 100%;
@@ -27664,7 +27972,7 @@ html:has(.operations-shell) #root,
   }
 
   .personal-shell .admin-sidebar-rail {
-    height: auto;
+    height: 100%;
     max-height: none;
     align-self: stretch;
   }
@@ -27687,6 +27995,12 @@ html:has(.operations-shell) #root,
     border-bottom: 0;
     background: var(--exits-shell-content-bg, #e8ecf2);
     box-shadow: none;
+    border-top-left-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
+    border-top-right-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
   }
 
   .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
@@ -29536,12 +29850,33 @@ html:has(.operations-shell) #root,
 /*
  * Soft Glass radius tokens (LOCKED — soft-glass-card-global-default).
  * SOFT_GLASS_RADIUS / SOFT_GLASS_RIBBON_RADIUS — command: ext soft-glass ribbon radius
+ *
+ * Crystal screen-edge tokens: UI Standards `.app-shell--full` + Personal `.personal-crystal-screen`
+ * (whole screen: top bar + sidenav + main). Color follows Preferences primary.
  */
 :root {
   --soft-glass-radius: 1.1rem;
   --soft-glass-ribbon-radius: 1.1rem 1.1rem 1.1rem 0;
   /* LOCKED: SOFT_GLASS_FIELD_RADIUS — Soft Glass input / dropdown (Soft control). */
   --soft-glass-field-radius: 0.6875rem;
+  /*
+   * Screen-edge Soft Glass rim (Personal + UI Standards) — same recipe as Soft Glass cards:
+   * 1px slate+primary soft border, inset top highlight, soft primary elevation. No hard glow.
+   */
+  --soft-glass-crystal-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --soft-glass-crystal-edge: color-mix(in srgb, #e2e8f0 62%, var(--soft-glass-crystal-soft));
+  --soft-glass-crystal-border: 1px solid var(--soft-glass-crystal-edge);
+  --soft-glass-crystal-rim:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--exits-primary) 8%, transparent);
+}
+
+[data-theme="dark"] {
+  --soft-glass-crystal-soft: color-mix(in srgb, var(--exits-primary) 42%, #1e293b);
+  --soft-glass-crystal-edge: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  --soft-glass-crystal-rim:
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 4px 14px rgba(0, 0, 0, 0.28);
 }
 
 /* Legacy overhanging ribbon — still used on non–Soft Glass People / Profile / workplaces. */
@@ -30624,7 +30959,10 @@ html:has(.operations-shell) #root,
 }
 
 @media (min-width: 1024px) {
-  .personal-shell {
+  /* Full-height sidenav flush to Soft Glass screen top (beside top bar + main). */
+  .personal-shell.admin-shell {
+    display: flex;
+    flex-direction: row;
     column-gap: 0;
     padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -30632,6 +30970,9 @@ html:has(.operations-shell) #root,
 
   .personal-shell > .admin-sidebar-rail {
     margin: 0;
+    align-self: stretch;
+    height: 100%;
+    max-height: none;
   }
 
   [data-navigation-mode="standard"] .personal-shell > .admin-sidebar-rail {
@@ -30648,11 +30989,24 @@ html:has(.operations-shell) #root,
   .personal-shell .personal-sidebar.admin-sidebar {
     border: 0;
     border-inline-end: 0;
-    border-radius: 0;
-    border-start-start-radius: 1.1rem;
-    border-end-start-radius: 1.1rem;
-    border-start-end-radius: 1.1rem;
-    border-end-end-radius: 1.1rem;
+    height: 100%;
+    max-height: none;
+    /* Soft Glass radius on left and right. */
+    border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  }
+
+  .personal-shell .app-top-bar--personal {
+    border-top-left-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
+    border-top-right-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
+  }
+
+  .personal-shell .app-top-bar--personal::before {
+    border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+      calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0 0;
   }
 
   [data-navigation-mode="compact"] .personal-shell > .admin-sidebar-rail {

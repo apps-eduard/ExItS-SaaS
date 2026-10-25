@@ -1220,6 +1220,7 @@ public sealed class DispatchInventoryTransfer
     private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public DispatchInventoryTransfer(
         IInventoryTransferRepository transfers,
@@ -1235,7 +1236,8 @@ public sealed class DispatchInventoryTransfer
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        InventoryCostResolver? costs = null)
+        InventoryCostResolver? costs = null,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _transfers = transfers;
         _inventory = inventory;
@@ -1251,6 +1253,7 @@ public sealed class DispatchInventoryTransfer
         _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<InventoryTransfer>> ExecuteAsync(
@@ -1269,7 +1272,7 @@ public sealed class DispatchInventoryTransfer
 
         try
         {
-            return await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
+            var dispatchResult = await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
             {
         var orgId = PosOrganizationId.From(organizationId);
         var transfer = await _transfers
@@ -1571,6 +1574,19 @@ public sealed class DispatchInventoryTransfer
             return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
         }
             }, cancellationToken).ConfigureAwait(false);
+            if (dispatchResult.IsSuccess)
+            {
+                await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                    .TryInventoryStockChangedAsync(
+                        _realtime,
+                        organizationId,
+                        kind: "transfer-dispatch",
+                        branchId: actingBranchId,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return dispatchResult;
         }
         catch (DomainException ex)
         {
@@ -1629,6 +1645,7 @@ public sealed class ReceiveInventoryTransfer
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime;
 
     public ReceiveInventoryTransfer(
         IInventoryTransferRepository transfers,
@@ -1646,7 +1663,8 @@ public sealed class ReceiveInventoryTransfer
         IStockRequestRepository stockRequests,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
     {
         _transfers = transfers;
         _damageCustodies = damageCustodies;
@@ -1664,6 +1682,7 @@ public sealed class ReceiveInventoryTransfer
         _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<InventoryTransfer>> ExecuteAsync(
@@ -1683,7 +1702,7 @@ public sealed class ReceiveInventoryTransfer
 
         try
         {
-            return await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
+            var receiveResult = await _unitOfWork.ExecuteInSerializableTransactionAsync(async ct =>
             {
         var orgId = PosOrganizationId.From(organizationId);
         var transfer = await _transfers
@@ -2476,6 +2495,19 @@ public sealed class ReceiveInventoryTransfer
             return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
         }
             }, cancellationToken).ConfigureAwait(false);
+            if (receiveResult.IsSuccess)
+            {
+                await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+                    .TryInventoryStockChangedAsync(
+                        _realtime,
+                        organizationId,
+                        kind: "transfer-receive",
+                        branchId: actingBranchId,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return receiveResult;
         }
         catch (DomainException ex)
         {

@@ -1,0 +1,31 @@
+# Personal / Organization visual isolation (LOCKED)
+
+Personal Soft Glass and Organization Enterprise Hybrid Glass are **separate visual systems**.
+
+## Ownership
+
+| Surface | System | Allowed style scopes |
+| --- | --- | --- |
+| Personal | Soft Glass | `.personal-*`, Soft Glass locks (`exits-soft-glass-*.mdc`), Personal feature CSS |
+| Organization (UI Standards live) | Enterprise Hybrid Glass | `.org-ehg` / `[data-org-ehg]` / `data-exits-product="organization"` under UI Standards until migration is explicitly approved |
+| Shared primitives | Behavior locks | `Button`, `ExitsSelect`, modals, tables — **do not** restyle their global defaults to Org Hybrid Glass |
+
+## Forbidden
+
+- Making Organization Hybrid Glass the Personal Soft Glass default
+- Adding a global Glass / Normal / Hybrid user preference that overwrites Personal
+- Putting unscoped `.org-ehg` rules in `globals.css`
+- Importing `org-enterprise-hybrid-glass.css` from product Organization or Personal pages without an explicit migration task
+- “Reusing” Soft Glass by editing Personal selectors to look like Organization
+- Migrating production Organization pages before the five UI Standards Org Hybrid Glass live pages are reviewed and approved
+
+## UI Standards
+
+Five live reference pages under `/ui-standards` → **Organization — Enterprise Hybrid Glass** (DEV / local-validation only).  
+Sidenav/topbar Hybrid Glass chrome must not replace ExItS UI Standards data bindings (title, toggle, connection / prefs / account).  
+Doc: `src/Products/PinoyBusinessPOS/Docs/UI/exits-organization-enterprise-hybrid-glass.md`
+
+## Related
+
+- `exits-personal-org-admin-separation.mdc` (surface / code ownership)
+- Soft Glass locks remain Personal-owned

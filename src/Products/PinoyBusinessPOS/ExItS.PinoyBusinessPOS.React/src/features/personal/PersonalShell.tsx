@@ -8,10 +8,12 @@ const MenuIcon = symbol("menu");
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
+import { ShellHomeButton } from "@/components/exits/ShellHomeButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
 import { ShellSidebarModeButton } from "@/components/exits/ShellSidebarModeButton";
+import { PERSONAL_HOME_HREF } from "@/features/shell/shell-home-href";
 import { IconButton } from "@/components/ui/icon-button";
 import { PersonalAvatarProvider } from "@/features/personal/PersonalAvatarProvider";
 import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
@@ -81,20 +83,21 @@ export function PersonalShell() {
 
   return (
     <PersonalAvatarProvider>
-      <div
-        className={cn(
-          "personal-shell admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
-          /* Small: no horizontal shell pad so top bar can be true full-bleed; gutters live on body. */
-          "px-0 pt-[env(safe-area-inset-top)]",
-          /* Reserve space for fixed bottom nav (pt-1 + min-h-11 + border + safe area). */
-          isDesktop
-            ? "pb-[env(safe-area-inset-bottom)]"
-            : "pb-[calc(3.05rem+env(safe-area-inset-bottom))]",
-          /* Desktop: sidenav and top bar sit flush on the left, right, and bottom. */
-          "lg:flex-row lg:gap-0 lg:pt-[env(safe-area-inset-top)] lg:pb-[env(safe-area-inset-bottom)] lg:ps-[env(safe-area-inset-left)] lg:pe-[env(safe-area-inset-right)]",
-        )}
-        data-testid="personal-shell"
-      >
+      <div className="personal-crystal-screen" data-testid="personal-crystal-screen">
+        <div
+          className={cn(
+            "personal-shell admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
+            /* Small: no horizontal shell pad so top bar can be true full-bleed; gutters live on body. */
+            "px-0 pt-[env(safe-area-inset-top)]",
+            /* Reserve space for absolute bottom nav inside the crystal frame. */
+            isDesktop
+              ? "pb-[env(safe-area-inset-bottom)]"
+              : "pb-[calc(3.05rem+env(safe-area-inset-bottom))]",
+            /* Desktop: full-height sidenav beside top bar + main. */
+            "lg:flex-row lg:gap-0 lg:pt-[env(safe-area-inset-top)] lg:pb-[env(safe-area-inset-bottom)] lg:ps-[env(safe-area-inset-left)] lg:pe-[env(safe-area-inset-right)]",
+          )}
+          data-testid="personal-shell"
+        >
         <a
           href="#main-content"
           className="sr-only z-50 rounded-[var(--exits-radius-md)] bg-primary px-3 py-2 text-primary-foreground"
@@ -160,6 +163,12 @@ export function PersonalShell() {
               </div>
 
               <div className="app-top-bar__actions app-top-bar__actions--personal">
+                <ShellHomeButton
+                  to={PERSONAL_HOME_HREF}
+                  label={t("topbar.home")}
+                  testId="personal-shell-home"
+                  className="app-top-bar__action"
+                />
                 <PersonalThemeModeButton className="app-top-bar__action" />
                 <PersonalAppearanceMenu className="app-top-bar__action personal-topbar-secondary" />
                 <ShellConnectionButton className="app-top-bar__action personal-topbar-secondary" />
@@ -206,10 +215,11 @@ export function PersonalShell() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
 
-      {/* Outside overflow-hidden shell so fixed bottom chrome is never clipped. */}
-      <PersonalBottomNav />
+        {/* Absolute inside crystal (not viewport-fixed) so the rim wraps shell + mobile nav. */}
+        <PersonalBottomNav />
+      </div>
     </PersonalAvatarProvider>
   );
 }

@@ -131,6 +131,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("personal-shell")).toBeInTheDocument();
     });
+    expect(screen.getByTestId("personal-crystal-screen")).toBeInTheDocument();
     expect(screen.getByTestId("personal-bottom-nav")).toBeInTheDocument();
     expect(screen.queryByTestId("app-top-bar")).not.toBeInTheDocument();
     expect(screen.getByTestId("shell-connection-button")).toBeInTheDocument();
@@ -139,7 +140,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-notification-bell")).toBeInTheDocument();
     expect(screen.getByTestId("shell-ui-standards-button")).toHaveAttribute(
       "href",
-      "/ui-standards?category=buttons",
+      "/ui-standards",
     );
     expect(screen.queryByTestId("personal-notification-bell-badge")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-home")).toBeInTheDocument();

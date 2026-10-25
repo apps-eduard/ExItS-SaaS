@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -105,19 +106,22 @@ public sealed class UpdatePersonalSharedUtangPreference
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public UpdatePersonalSharedUtangPreference(
         IPersonalSharedUtangPreferenceRepository preferences,
         IPersonalContactRepository contacts,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _preferences = preferences;
         _contacts = contacts;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalSharedUtangPreferenceDto>> ExecuteAsync(
@@ -199,6 +203,32 @@ public sealed class UpdatePersonalSharedUtangPreference
                 summary:
                     $"Shared Utang preferences updated (receive={prefs.ReceiveSharedUtang}, notifications={prefs.SharedUtangNotifications}).",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            // Owner + authorized counterparty only (relationship-scoped groups = personal-user of each).
+            await RealtimePublish
+                .PersonalSettingsChangedAsync(
+                    _realtime,
+                    ownerUserIdentityId.Value,
+                    RealtimeEventTypes.PersonalSettingsChanged,
+                    data: new Dictionary<string, string>
+                    {
+                        ["kind"] = "shared-utang-preference",
+                        ["counterpartyUserId"] = counterparty.Value.ToString("D")
+                    },
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            await RealtimePublish
+                .PersonalSettingsChangedAsync(
+                    _realtime,
+                    counterparty.Value,
+                    RealtimeEventTypes.PersonalSettingsChanged,
+                    data: new Dictionary<string, string>
+                    {
+                        ["kind"] = "shared-utang-preference",
+                        ["ownerUserId"] = ownerUserIdentityId.Value.ToString("D")
+                    },
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
 
             return ApplicationResult<PersonalSharedUtangPreferenceDto>.Success(
                 GetPersonalSharedUtangPreference.ToDto(prefs));

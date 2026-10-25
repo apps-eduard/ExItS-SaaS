@@ -148,9 +148,12 @@ public sealed class UpdateOrganizationConnectedCommerceSettings(
     IOrganizationConnectedCommerceSettingsRepository settings,
     IPosUnitOfWork uow,
     IPosCommercialAccessAccessor access,
-    TimeProvider? clock = null)
+    TimeProvider? clock = null,
+    ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher? realtime = null)
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+    private readonly ExItS.PinoyBusinessPOS.Application.Realtime.IPosRealtimeChangePublisher _realtime =
+        realtime ?? ExItS.PinoyBusinessPOS.Application.Realtime.NullPosRealtimeChangePublisher.Instance;
 
     public async Task<ApplicationResult<OrganizationConnectedCommerceSettingsDto>> ExecuteAsync(
         Guid organizationId,
@@ -207,6 +210,13 @@ public sealed class UpdateOrganizationConnectedCommerceSettings(
         }
 
         await uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimePublish
+            .OrganizationSettingsChangedAsync(
+                _realtime,
+                organizationId,
+                ExItS.PinoyBusinessPOS.Application.Realtime.PosRealtimeEventTypes.ConnectedCommerceSettingsChanged,
+                cancellationToken)
+            .ConfigureAwait(false);
         return ApplicationResult<OrganizationConnectedCommerceSettingsDto>.Success(
             GetOrganizationConnectedCommerceSettings.Map(row));
     }

@@ -48,6 +48,8 @@ using ExItS.PinoyBusinessPOS.Api.Onboarding;
 using ExItS.PinoyBusinessPOS.Api.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Api.Returns;
 using ExItS.PinoyBusinessPOS.Api.Permissions;
+using ExItS.PinoyBusinessPOS.Api.Realtime;
+using ExItS.PinoyBusinessPOS.Application.Realtime;
 using ExItS.PinoyBusinessPOS.Application.Onboarding;
 using ExItS.PinoyBusinessPOS.Application.Registers;
 using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
@@ -66,6 +68,9 @@ if (builder.Configuration.GetValue<bool>("LocalValidation:Enabled") && builder.E
 
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthorization();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IPosRealtimeChangePublisher, SignalRPosRealtimeChangePublisher>();
 builder.Services.AddPosHealthChecks();
 builder.AddPosSecurity();
 builder.AddPosForwardedHeaders();
@@ -662,9 +667,25 @@ app.UsePosSecurity();
 app.UseMiddleware<PosPlatformBearerMiddleware>();
 app.UseMiddleware<PosCommercialAccessMiddleware>();
 app.UseMiddleware<PosRoleResolutionMiddleware>();
+app.UseMiddleware<PosClaimsPrincipalMiddleware>();
+app.UseAuthorization();
+
+// Reject anonymous SignalR negotiate/connect for POS hub (no ASP.NET auth schemes on this host).
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments(ExitsPosRealtimeHub.HubPath, StringComparison.OrdinalIgnoreCase)
+        && context.User?.Identity?.IsAuthenticated != true)
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return;
+    }
+
+    await next().ConfigureAwait(false);
+});
 
 app.MapPosRootEndpoint();
 app.MapPosHealthEndpoints();
+app.MapHub<ExitsPosRealtimeHub>(ExitsPosRealtimeHub.HubPath);
 app.MapPosRuntimePolicyEndpoints();
 app.MapCustomerEndpoints();
 app.MapCreditEndpoints();

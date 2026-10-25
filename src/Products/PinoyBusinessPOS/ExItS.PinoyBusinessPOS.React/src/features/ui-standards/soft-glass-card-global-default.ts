@@ -18,6 +18,30 @@ export const SOFT_GLASS_BORDER_SLATE = "#e2e8f0" as const;
 export const SOFT_GLASS_BORDER_SLATE_PCT = 62 as const;
 
 /**
+ * Soft Glass screen-edge frame (NOT Soft Glass cards).
+ * Applied to UI Standards `.app-shell--full` and Personal `.personal-crystal-screen`.
+ * Same Soft Glass border recipe as cards/tables: 1px slate+primary soft, inset highlight,
+ * soft elevation. Color follows Preferences primary.
+ * Command: `ext ui-standards crystal screen-border`
+ */
+export const UI_STANDARDS_CRYSTAL_SCREEN_BORDER_COMMAND = "ext ui-standards crystal screen-border" as const;
+/** Light border: slate mix % into primary-soft (matches `SOFT_GLASS_BORDER_SLATE_PCT`). */
+export const UI_STANDARDS_CRYSTAL_BORDER_SLATE_PCT = 62 as const;
+/** Dark border: primary chip % into slate (matches `SOFT_GLASS_DARK_BORDER_CHIP_PCT`). */
+export const UI_STANDARDS_CRYSTAL_BORDER_DARK_CHIP_PCT = 16 as const;
+/** Soft elevation accent mix % (matches `SOFT_GLASS_SHADOW_ACCENT_PCT`). */
+export const UI_STANDARDS_CRYSTAL_SHADOW_ACCENT_PCT = 8 as const;
+/** Inset from viewport so the screen rim is visible (CSS `--ui-standards-crystal-inset`). */
+export const UI_STANDARDS_CRYSTAL_SCREEN_INSET = "0.45rem" as const;
+/** Frame corner radius — Soft Glass shell (CSS `--ui-standards-crystal-radius`). */
+export const UI_STANDARDS_CRYSTAL_SCREEN_RADIUS = "1.1rem" as const;
+
+/** @deprecated Use `UI_STANDARDS_CRYSTAL_BORDER_SLATE_PCT` — Soft Glass edge, not white/primary mix. */
+export const UI_STANDARDS_CRYSTAL_BORDER_WHITE_PCT = UI_STANDARDS_CRYSTAL_BORDER_SLATE_PCT;
+/** @deprecated Use `UI_STANDARDS_CRYSTAL_BORDER_DARK_CHIP_PCT`. */
+export const UI_STANDARDS_CRYSTAL_BORDER_DARK_WHITE_PCT = UI_STANDARDS_CRYSTAL_BORDER_DARK_CHIP_PCT;
+
+/**
  * Soft Glass shell / card corner radius (LOCKED).
  * Same value as `TABLE_GLOBAL_SOFT_GLASS_RADIUS`. CSS: `--soft-glass-radius`.
  */

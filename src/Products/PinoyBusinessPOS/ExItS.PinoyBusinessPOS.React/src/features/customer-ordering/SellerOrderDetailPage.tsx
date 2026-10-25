@@ -33,6 +33,7 @@ import { ActorName } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { usePosRealtimeOrderWatch } from "@/realtime/usePosRealtime";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function money(n: number): string {
@@ -191,6 +192,8 @@ export function SellerOrderDetailPage() {
     enabled: Boolean(workspace) && Boolean(orderId),
     queryFn: ({ signal }) => getSellerCustomerOrder(workspace!, orderId, signal),
   });
+
+  usePosRealtimeOrderWatch(workspace?.organizationId, orderId);
 
   const activityEvents = useMemo(
     () => (query.data ? buildOrderActivityEvents(query.data) : []),

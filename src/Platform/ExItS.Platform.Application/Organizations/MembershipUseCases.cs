@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
@@ -280,6 +281,7 @@ public sealed class RevokeOrganizationMembership
     private readonly IPlatformAccessTokenRepository _accessTokens;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public RevokeOrganizationMembership(
         IOrganizationMembershipRepository memberships,
@@ -287,7 +289,8 @@ public sealed class RevokeOrganizationMembership
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _memberships = memberships;
         _assignments = assignments;
@@ -295,6 +298,7 @@ public sealed class RevokeOrganizationMembership
         _accessTokens = accessTokens;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<OrganizationMembership>> ExecuteAsync(
@@ -342,6 +346,14 @@ public sealed class RevokeOrganizationMembership
                 .ConfigureAwait(false);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await RealtimePublish
+                .MembershipAccessChangedAsync(
+                    _realtime,
+                    membership.OrganizationId.Value,
+                    membership.UserId.Value,
+                    resourceVersion: membership.UpdatedAtUtc.ToUnixTimeMilliseconds().ToString(),
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
             return ApplicationResult<OrganizationMembership>.Success(membership);
         }
         catch (DomainException ex)

@@ -88,11 +88,15 @@ const PLAYGROUND_APPEARANCES = [
   { id: "standard", label: "Standard" },
   { id: "soft", label: "Soft" },
   { id: "soft-outline", label: "Soft outline" },
+  { id: "soft-glass", label: "Soft glass" },
   { id: "outline", label: "Outline" },
   { id: "raised", label: "Raised" },
   { id: "ghost", label: "Ghost" },
   { id: "glossy", label: "Glossy" },
+  { id: "glossy-glass", label: "Glossy glass" },
+  { id: "glossy-raise", label: "Glossy raise" },
   { id: "gradient", label: "Gradient" },
+  { id: "gradient-glass", label: "Gradient glass" },
   { id: "rounded", label: "Rounded" },
   { id: "flat", label: "Flat" },
   { id: "medallion", label: "Medallion" },
@@ -529,7 +533,12 @@ export function UiStandardsButtonPlayground() {
   const transparent = appearance === "outline" || appearance === "ghost";
   const soft = appearance === "soft";
   const softOutline = appearance === "soft-outline";
-  const darkInk = (sample.id === "standard" || sample.id === "black") && (transparent || soft || softOutline);
+  const softGlass = appearance === "soft-glass";
+  const glossyGlass = appearance === "glossy-glass";
+  const gradientGlass = appearance === "gradient-glass";
+  const wash = soft || softOutline || softGlass || glossyGlass || gradientGlass;
+  const darkInk =
+    (sample.id === "standard" || sample.id === "black") && (transparent || wash);
   const previewStyle: CSSProperties & { "--qbtn-bg"?: string; "--qbtn-icon-bg"?: string; "--qbtn-icon-fg"?: string } =
     isMedallion
       ? {
@@ -542,25 +551,31 @@ export function UiStandardsButtonPlayground() {
             borderColor: appearance === "outline" ? accent : "transparent",
             backgroundColor: "transparent",
           }
-        : soft || softOutline
+        : wash
           ? { color: accent, "--qbtn-bg": accent, ...(softOutline ? { borderColor: accent } : {}) }
           : { backgroundColor: intentFill, color: sample.fg };
-  if (appearance === "gradient" && !transparent && !isMedallion) previewStyle["--qbtn-bg"] = intentFill;
+  if ((appearance === "gradient" || gradientGlass) && !transparent && !isMedallion) {
+    previewStyle["--qbtn-bg"] = intentFill;
+  }
   const previewClass = [
     isMedallion ? "ui-standards-qbtn-icon-medallion" : "ui-standards-qbtn",
     isMedallion ? "" : "ui-standards-qbtn--playground",
     !isMedallion && appearance === "soft" ? "ui-standards-qbtn--soft" : "",
     !isMedallion && appearance === "soft-outline" ? "ui-standards-qbtn--soft-outline" : "",
+    !isMedallion && appearance === "soft-glass" ? "ui-standards-qbtn--soft-glass" : "",
     !isMedallion && appearance === "outline" ? "ui-standards-qbtn--outline" : "",
     !isMedallion && appearance === "ghost" ? "ui-standards-qbtn--ghost" : "",
     !isMedallion && appearance === "raised" ? "ui-standards-qbtn--raised" : "",
     !isMedallion && appearance === "glossy" ? "ui-standards-qbtn--glossy" : "",
+    !isMedallion && appearance === "glossy-glass" ? "ui-standards-qbtn--glossy-glass" : "",
+    !isMedallion && appearance === "glossy-raise" ? "ui-standards-qbtn--glossy-raise" : "",
     !isMedallion && appearance === "gradient" ? "ui-standards-qbtn--gradient" : "",
+    !isMedallion && appearance === "gradient-glass" ? "ui-standards-qbtn--gradient-glass" : "",
     !isMedallion && appearance === "flat" ? "ui-standards-qbtn--flat" : "",
     !isMedallion && darkInk ? "ui-standards-qbtn--dark-ink" : "",
     !isMedallion && showIconOnly ? "ui-standards-qbtn--icon-only" : "",
     !isMedallion && ripple ? "ui-standards-qbtn--ripple" : "",
-    !isMedallion && !transparent && !soft && !softOutline && "border" in sample && sample.border
+    !isMedallion && !transparent && !wash && "border" in sample && sample.border
       ? "ui-standards-qbtn--border"
       : "",
   ]
@@ -570,11 +585,15 @@ export function UiStandardsButtonPlayground() {
     isMedallion ? "ui-standards-qbtn-icon-medallion" : "ui-standards-qbtn ui-standards-qbtn--playground ui-standards-qbtn--icon-only",
     !isMedallion && appearance === "soft" ? "ui-standards-qbtn--soft" : "",
     !isMedallion && appearance === "soft-outline" ? "ui-standards-qbtn--soft-outline" : "",
+    !isMedallion && appearance === "soft-glass" ? "ui-standards-qbtn--soft-glass" : "",
     !isMedallion && appearance === "outline" ? "ui-standards-qbtn--outline" : "",
     !isMedallion && appearance === "ghost" ? "ui-standards-qbtn--ghost" : "",
     !isMedallion && appearance === "raised" ? "ui-standards-qbtn--raised" : "",
     !isMedallion && appearance === "glossy" ? "ui-standards-qbtn--glossy" : "",
+    !isMedallion && appearance === "glossy-glass" ? "ui-standards-qbtn--glossy-glass" : "",
+    !isMedallion && appearance === "glossy-raise" ? "ui-standards-qbtn--glossy-raise" : "",
     !isMedallion && appearance === "gradient" ? "ui-standards-qbtn--gradient" : "",
+    !isMedallion && appearance === "gradient-glass" ? "ui-standards-qbtn--gradient-glass" : "",
     !isMedallion && appearance === "flat" ? "ui-standards-qbtn--flat" : "",
     !isMedallion && darkInk ? "ui-standards-qbtn--dark-ink" : "",
     !isMedallion && ripple ? "ui-standards-qbtn--ripple" : "",

@@ -1,10 +1,21 @@
 export type UiStandardFilterCategory =
   | "all"
   | "buttons"
+  | "button-glass"
   | "button-stepper"
   | "button-group"
   | "button-dropdown"
   | "inputs"
+  | "input-glass"
+  | "date-glass"
+  | "quick-action-glass"
+  | "card-glass-menu"
+  | "card-glass-soft-kpi"
+  | "card-glass-hybrid-kpi"
+  | "card-glass-solid"
+  | "card-glass-timeline"
+  | "card-glass-table"
+  | "card-glass-settings"
   | "radio"
   | "checkbox"
   | "toggle"
@@ -28,7 +39,24 @@ export type UiStandardFilterCategory =
   | "data"
   | "states"
   | "lucide"
-  | "typography";
+  | "typography"
+  /** Organization Enterprise Hybrid Glass (UI Standards live reference — not Personal Soft Glass). */
+  | "org-ehg-dashboard"
+  | "org-ehg-inventory"
+  | "org-ehg-orders"
+  | "org-ehg-stock-requests"
+  | "org-ehg-branch-settings"
+  | "org-ehg-button-glass"
+  | "org-ehg-input-glass"
+  | "org-ehg-date-glass"
+  | "org-ehg-quick-action-glass"
+  | "org-ehg-card-glass-menu"
+  | "org-ehg-card-glass-soft-kpi"
+  | "org-ehg-card-glass-hybrid-kpi"
+  | "org-ehg-card-glass-solid"
+  | "org-ehg-card-glass-timeline"
+  | "org-ehg-card-glass-table"
+  | "org-ehg-card-glass-settings";
 
 export type UiStandardLiveCardId =
   | "buttons"
@@ -75,20 +103,29 @@ export type UiStandardNavLink = {
   href: string;
 };
 
-/** Second-level submenu inside a group (e.g. Form Components → Selects). */
+/** Second-level (or nested) submenu inside a group (e.g. Glass components → Card glass). */
 export type UiStandardNavSubgroup = {
-  id: "select-components";
+  id: "select-components" | "glass-components" | "card-glass";
   label: string;
-  children: readonly UiStandardNavItem[];
+  children: readonly (UiStandardNavItem | UiStandardNavSubgroup)[];
 };
 
 export type UiStandardNavChild = UiStandardNavItem | UiStandardNavLink | UiStandardNavSubgroup;
 
 export type UiStandardNavGroup = {
-  id: "button-components" | "form-components" | "cards" | "icons";
+  id:
+    | "button-components"
+    | "form-components"
+    | "glass-components"
+    | "cards"
+    | "icons"
+    | "org-enterprise-hybrid-glass";
   label: string;
   children: readonly UiStandardNavChild[];
 };
+
+/** Which UI Standards surface the shell shortcut opens. */
+export type UiStandardsProduct = "personal" | "organization";
 
 export type UiStandardNavEntry = UiStandardNavItem | UiStandardNavGroup;
 
@@ -101,11 +138,40 @@ export function isUiStandardNavSubgroup(child: UiStandardNavChild): child is UiS
 }
 
 function navItemsOf(child: UiStandardNavChild): UiStandardNavItem[] {
-  if (isUiStandardNavSubgroup(child)) return [...child.children];
+  if (isUiStandardNavSubgroup(child)) {
+    return child.children.flatMap((nested) =>
+      isUiStandardNavSubgroup(nested) ? navItemsOf(nested) : [nested],
+    );
+  }
   return "href" in child ? [] : [child];
 }
 
-export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
+/** Card glass kinds under Glass components → Card glass. */
+export const UI_STANDARD_CARD_GLASS_NAV: readonly UiStandardNavItem[] = [
+  { id: "card-glass-menu", label: "Menu card" },
+  { id: "card-glass-soft-kpi", label: "Soft KPI" },
+  { id: "card-glass-hybrid-kpi", label: "Hybrid KPI" },
+  { id: "card-glass-solid", label: "Solid data" },
+  { id: "card-glass-timeline", label: "Activity timeline" },
+  { id: "card-glass-table", label: "Orders table" },
+  { id: "card-glass-settings", label: "Settings form" },
+];
+
+export const UI_STANDARD_ORG_CARD_GLASS_NAV: readonly UiStandardNavItem[] = [
+  { id: "org-ehg-card-glass-menu", label: "Menu card" },
+  { id: "org-ehg-card-glass-soft-kpi", label: "Soft KPI" },
+  { id: "org-ehg-card-glass-hybrid-kpi", label: "Hybrid KPI" },
+  { id: "org-ehg-card-glass-solid", label: "Solid data" },
+  { id: "org-ehg-card-glass-timeline", label: "Activity timeline" },
+  { id: "org-ehg-card-glass-table", label: "Orders table" },
+  { id: "org-ehg-card-glass-settings", label: "Settings form" },
+];
+
+/**
+ * Personal UI Standards sidenav — classic Soft Glass / component playground.
+ * Opened from the Personal shell shortcut (`?product=personal`).
+ */
+export const UI_STANDARD_PERSONAL_NAV: readonly UiStandardNavEntry[] = [
   { id: "all", label: "Global preview" },
   {
     id: "button-components",
@@ -139,6 +205,21 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
       { id: "time", label: "Time picker" },
     ],
   },
+  {
+    id: "glass-components",
+    label: "Glass components",
+    children: [
+      { id: "button-glass", label: "Button glass" },
+      { id: "input-glass", label: "Input glass" },
+      { id: "date-glass", label: "Date glass" },
+      { id: "quick-action-glass", label: "Quick Action glass" },
+      {
+        id: "card-glass",
+        label: "Card glass",
+        children: UI_STANDARD_CARD_GLASS_NAV,
+      },
+    ],
+  },
   { id: "breadcrumbs", label: "Breadcrumbs" },
   { id: "messages", label: "Messages" },
   { id: "feedback", label: "Feedback" },
@@ -169,9 +250,67 @@ export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = [
   { id: "typography", label: "Typography" },
 ];
 
-export const UI_STANDARD_FILTER_OPTIONS: readonly UiStandardNavItem[] = UI_STANDARD_NAV.flatMap((entry) =>
-  isUiStandardNavGroup(entry) ? entry.children.flatMap(navItemsOf) : [entry],
-);
+/**
+ * Organization UI Standards sidenav — Enterprise Hybrid Glass live pages.
+ * Opened from the Organization/business shell shortcut (`?product=organization`).
+ */
+export const UI_STANDARD_ORG_NAV: readonly UiStandardNavEntry[] = [
+  {
+    id: "org-enterprise-hybrid-glass",
+    label: "Organization — Enterprise Hybrid Glass",
+    children: [
+      { id: "org-ehg-dashboard", label: "Organization Dashboard" },
+      { id: "org-ehg-inventory", label: "Inventory & Warehouse" },
+      { id: "org-ehg-orders", label: "Customer Orders & Payments" },
+      { id: "org-ehg-stock-requests", label: "Stock Requests & Transfers" },
+      { id: "org-ehg-branch-settings", label: "Branch Settings & Connected Commerce" },
+      {
+        id: "glass-components",
+        label: "Glass components",
+        children: [
+          { id: "org-ehg-button-glass", label: "Button glass" },
+          { id: "org-ehg-input-glass", label: "Input glass" },
+          { id: "org-ehg-date-glass", label: "Date glass" },
+          { id: "org-ehg-quick-action-glass", label: "Quick Action glass" },
+          {
+            id: "card-glass",
+            label: "Card glass",
+            children: UI_STANDARD_ORG_CARD_GLASS_NAV,
+          },
+        ],
+      },
+    ],
+  },
+];
+
+/** @deprecated Prefer UI_STANDARD_PERSONAL_NAV / UI_STANDARD_ORG_NAV by product. */
+export const UI_STANDARD_NAV: readonly UiStandardNavEntry[] = UI_STANDARD_PERSONAL_NAV;
+
+export const UI_STANDARD_PERSONAL_DEFAULT_CATEGORY: UiStandardFilterCategory = "all";
+export const UI_STANDARD_ORG_DEFAULT_CATEGORY: UiStandardFilterCategory = "org-ehg-dashboard";
+
+export const UI_STANDARD_FILTER_OPTIONS: readonly UiStandardNavItem[] = [
+  ...UI_STANDARD_PERSONAL_NAV.flatMap((entry) =>
+    isUiStandardNavGroup(entry) ? entry.children.flatMap(navItemsOf) : [entry],
+  ),
+  ...UI_STANDARD_ORG_NAV.flatMap((entry) =>
+    isUiStandardNavGroup(entry) ? entry.children.flatMap(navItemsOf) : [entry],
+  ),
+];
+
+export function parseUiStandardsProductParam(raw: string | null): UiStandardsProduct {
+  const value = (raw ?? "").trim().toLowerCase();
+  if (value === "organization" || value === "org") {
+    return "organization";
+  }
+  return "personal";
+}
+
+export function uiStandardsHref(product: UiStandardsProduct): string {
+  return product === "organization"
+    ? `/ui-standards?product=organization&category=${UI_STANDARD_ORG_DEFAULT_CATEGORY}`
+    : "/ui-standards";
+}
 
 export type UiStandardLiveCardDef = {
   id: UiStandardLiveCardId;
@@ -996,8 +1135,15 @@ function matchesQuery(haystack: string[], query: string): boolean {
   return haystack.some((part) => part.toLowerCase().includes(q));
 }
 
-export function parseUiStandardCategoryParam(raw: string | null): UiStandardFilterCategory {
+export function parseUiStandardCategoryParam(
+  raw: string | null,
+  product: UiStandardsProduct = "personal",
+): UiStandardFilterCategory {
   const value = (raw ?? "").trim().toLowerCase();
+  const fallback =
+    product === "organization"
+      ? UI_STANDARD_ORG_DEFAULT_CATEGORY
+      : UI_STANDARD_PERSONAL_DEFAULT_CATEGORY;
   // Legacy Actions filter → Buttons
   if (value === "actions") {
     return "buttons";
@@ -1005,10 +1151,42 @@ export function parseUiStandardCategoryParam(raw: string | null): UiStandardFilt
   if (value === "cards") {
     return "card";
   }
+  // Legacy Org EHG sample ids → live five-page set
+  // Background options live inside glass playgrounds (not a separate page).
+  if (
+    value === "org-ehg-overview" ||
+    value === "org-ehg-components" ||
+    value === "org-ehg-appearance"
+  ) {
+    return "org-ehg-dashboard";
+  }
+  if (value === "org-ehg-forms") {
+    return "org-ehg-branch-settings";
+  }
+  if (value === "menu-glass" || value === "card-glass") {
+    return "card-glass-menu";
+  }
+  if (value === "org-ehg-menu-glass" || value === "org-ehg-card-glass") {
+    return "org-ehg-card-glass-menu";
+  }
+  if (value === "personal-soft-glass") {
+    return fallback;
+  }
+  if (value === "") {
+    return fallback;
+  }
   const allowed = UI_STANDARD_FILTER_OPTIONS.map((o) => o.id);
-  return (allowed.includes(value as UiStandardFilterCategory)
-    ? value
-    : "all") as UiStandardFilterCategory;
+  if (allowed.includes(value as UiStandardFilterCategory)) {
+    const parsed = value as UiStandardFilterCategory;
+    if (product === "organization" && !parsed.startsWith("org-ehg-")) {
+      return UI_STANDARD_ORG_DEFAULT_CATEGORY;
+    }
+    if (product === "personal" && parsed.startsWith("org-ehg-")) {
+      return UI_STANDARD_PERSONAL_DEFAULT_CATEGORY;
+    }
+    return parsed;
+  }
+  return fallback;
 }
 
 export function filterLiveCards(

@@ -17,6 +17,49 @@
   background: var(--exits-bg);
 }
 
+/*
+ * Shell background + theme (DEV / UI Standards only).
+ * Experimental Hybrid Glass page backgrounds paint behind sidenav + main.
+ */
+.ui-standards-page.ui-standards-shell-bg {
+  background: transparent;
+}
+
+.ui-standards-shell-bg__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/*
+ * Shell-bg pages keep Soft Glass sidenav wash (Personal recipe), not a flat
+ * translucent surface strip. Org-EHG variant may tint lightly over Soft Glass.
+ */
+.ui-standards-page.ui-standards-shell-bg .ui-standards-sidenav--org-ehg {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 88%, transparent),
+      color-mix(in srgb, var(--exits-surface) 72%, transparent)
+    );
+}
+
+[data-theme="dark"] .ui-standards-page.ui-standards-shell-bg .ui-standards-sidenav--org-ehg,
+.ui-standards-page.ui-standards-shell-bg[data-org-ehg-theme="dark"] .ui-standards-sidenav--org-ehg {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 8%, #1a222d),
+      color-mix(in srgb, #fff 3%, #1a222d)
+    );
+}
+
 .ui-standards-layout {
   position: relative;
   display: grid;
@@ -34,6 +77,8 @@
 }
 
 .ui-standards-sidenav {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -42,13 +87,383 @@
   height: 100%;
   padding: 0.75rem 0.45rem;
   overflow: hidden;
+  /* Soft Glass chrome — same recipe as Personal sidenav. */
   border: 0;
-  border-right: 1px solid var(--exits-border);
-  border-radius: 0;
-  background: var(--exits-surface);
+  border-right: 0;
+  border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 94%, transparent),
+      color-mix(in srgb, #fff 82%, var(--exits-shell-content-bg, #e8ecf2))
+    );
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Soft Glass edge — outer (start) side, full height. */
+.ui-standards-sidenav::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 4;
+  width: 1.1rem;
+  pointer-events: none;
+  border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0 0
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  background: linear-gradient(
+    to left,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-inline-start: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset 1px 0 0 color-mix(in srgb, #fff 85%, transparent),
+    -8px 0 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+/* Soft Glass edge — content (end) side, full height. */
+.ui-standards-sidenav::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 4;
+  width: 1.1rem;
+  pointer-events: none;
+  border-radius: 0 calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+    calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    color-mix(in srgb, #fff 35%, transparent) 42%,
+    color-mix(in srgb, #fff 72%, transparent) 100%
+  );
+  border-inline-end: 1px solid color-mix(in srgb, #fff 78%, #cbd5e1);
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, #fff 85%, transparent),
+    8px 0 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-sidenav {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 8%, var(--exits-shell-sidebar-bg, #12161e)),
+      color-mix(in srgb, #fff 3%, var(--exits-shell-sidebar-bg, #12161e))
+    );
+}
+
+[data-theme="dark"] .ui-standards-sidenav::before {
+  background: linear-gradient(
+    to left,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-inline-start-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset 1px 0 0 color-mix(in srgb, #fff 10%, transparent),
+    -8px 0 22px color-mix(in srgb, #000 28%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-sidenav::after {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    color-mix(in srgb, #fff 6%, transparent) 42%,
+    color-mix(in srgb, #fff 12%, transparent) 100%
+  );
+  border-inline-end-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, #fff 10%, transparent),
+    8px 0 22px color-mix(in srgb, #000 28%, transparent);
+}
+
+/*
+ * Organization Hybrid Glass sidenav chrome (UI Standards only).
+ * Does not change sidenav data bindings (filters, test ids, open/toggle state).
+ */
+.ui-standards-sidenav--org-ehg {
+  gap: 0.75rem;
+  padding: 0.85rem 0.55rem 1rem;
+  /* Soft Glass lips / radius come from .ui-standards-sidenav; keep a light fill tint. */
+  border-right: 0;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 90%, transparent),
+      color-mix(in srgb, var(--exits-surface) 82%, transparent)
+    );
+  box-shadow: none;
+}
+
+[data-theme="dark"] .ui-standards-sidenav--org-ehg {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 8%, #1a222d),
+      color-mix(in srgb, #fff 3%, #1a222d)
+    );
+  border-right: 0;
+  box-shadow: none;
+}
+
+.ui-standards-sidenav__brand {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.55rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 60%, transparent);
+  margin-bottom: 0.15rem;
+}
+
+.ui-standards-sidenav__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-surface));
+  color: var(--exits-primary);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  flex: none;
+}
+
+.ui-standards-sidenav__brand-copy {
+  min-width: 0;
+}
+
+.ui-standards-sidenav__brand-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--exits-text);
+  line-height: 1.2;
+}
+
+.ui-standards-sidenav__brand-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--exits-text-muted, var(--exits-muted));
+  line-height: 1.3;
+}
+
+.ui-standards-sidenav--org-ehg .ui-standards-sidenav__item {
+  position: relative;
+  gap: 0.5rem;
+  border-radius: 0.65rem;
+  font-weight: 500;
+}
+
+.ui-standards-sidenav--org-ehg .ui-standards-sidenav__item--group {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--exits-text-muted, var(--exits-muted));
+  text-transform: none;
+}
+
+.ui-standards-sidenav--org-ehg .ui-standards-sidenav__item-indicator {
+  position: absolute;
+  inset-block: 0.45rem;
+  inset-inline-start: 0.2rem;
+  width: 0.2rem;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.ui-standards-sidenav--org-ehg .ui-standards-sidenav__item[data-selected="true"] {
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-primary);
+  font-weight: 600;
+}
+
+.ui-standards-sidenav--org-ehg .ui-standards-sidenav__item[data-selected="true"] .ui-standards-sidenav__item-indicator {
+  background: var(--exits-primary);
+}
+
+.ui-standards-sidenav--org-ehg .ui-standards-sidenav__item--child {
+  padding-inline-start: 0.95rem;
+}
+
+.ui-standards-sidenav__item-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: none;
+  opacity: 0.92;
+}
+
+.ui-standards-sidenav__item-icon--group {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--exits-primary);
+}
+
+.ui-standards-sidenav__item[data-selected="true"] .ui-standards-sidenav__item-icon {
+  color: var(--exits-primary);
+  opacity: 1;
+}
+
+.ui-standards-product-rail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  padding: 0 0.2rem 0.55rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 60%, transparent);
+  margin-bottom: 0.25rem;
+}
+
+.ui-standards-product-rail__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 3.35rem;
+  padding: 0.45rem 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 70%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--exits-surface) 70%, transparent);
+  color: var(--exits-text);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.ui-standards-product-rail__btn:hover,
+.ui-standards-product-rail__btn:focus-visible {
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, transparent);
+}
+
+.ui-standards-product-rail__btn:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.ui-standards-product-rail__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.ui-standards-product-rail__label {
+  line-height: 1.15;
+  text-align: center;
+}
+
+.ui-standards-product-rail__btn--organization[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.ui-standards-product-rail__btn--personal[data-selected="true"] {
+  border-color: color-mix(in srgb, #8b5cf6 42%, var(--exits-border));
+  background: color-mix(in srgb, #8b5cf6 12%, var(--exits-surface));
+  color: #6d28d9;
+}
+
+[data-theme="dark"] .ui-standards-product-rail__btn--personal[data-selected="true"] {
+  color: #c4b5fd;
+  background: color-mix(in srgb, #8b5cf6 18%, #1a222d);
+}
+
+.ui-standards-layout--org-ehg {
+  background: color-mix(in srgb, var(--exits-bg) 92%, var(--exits-primary) 8%);
+}
+
+[data-theme="dark"] .ui-standards-layout--org-ehg {
+  background: #0f1419;
+}
+
+.ui-standards-layout--personal-sg {
+  background: color-mix(in srgb, var(--exits-bg) 94%, #8b5cf6 6%);
+}
+
+[data-theme="dark"] .ui-standards-layout--personal-sg {
+  background: #121018;
+}
+
+.ui-standards-sidenav--personal-sg {
+  gap: 0.75rem;
+  padding: 0.85rem 0.55rem 1rem;
+  /* Soft Glass lips / radius from base; light Personal Soft Glass tint. */
+  border-right: 0;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 90%, transparent),
+      color-mix(in srgb, var(--exits-surface) 86%, #8b5cf6 6%)
+    );
+}
+
+[data-theme="dark"] .ui-standards-sidenav--personal-sg {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 8%, #1a1624),
+      color-mix(in srgb, #fff 3%, #1a1624)
+    );
+  border-right: 0;
+}
+
+.ui-standards-sidenav--personal-sg .ui-standards-sidenav__item[data-selected="true"] {
+  background: color-mix(in srgb, #8b5cf6 14%, var(--exits-surface));
+  color: #6d28d9;
+}
+
+[data-theme="dark"] .ui-standards-sidenav--personal-sg .ui-standards-sidenav__item[data-selected="true"] {
+  color: #c4b5fd;
+}
+
+.ui-standards-sidenav--personal-sg .ui-standards-sidenav__item[data-selected="true"] .ui-standards-sidenav__item-indicator {
+  background: #8b5cf6;
+}
+
+.personal-soft-glass-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.personal-soft-glass-ref__banner {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid color-mix(in srgb, #8b5cf6 22%, var(--exits-border));
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, #8b5cf6 8%, var(--exits-surface));
+  color: var(--exits-text-muted, var(--exits-muted));
+  font-size: 0.8125rem;
+}
+
+.personal-soft-glass-ref__banner strong {
+  color: var(--exits-text);
+  font-weight: 650;
+}
+
+.personal-soft-glass-ref__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
 }
 
 .ui-standards-sidenav__list {
+  position: relative;
+  z-index: 2;
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -1543,6 +1958,158 @@
   );
 }
 
+/* Soft glass — Soft Glass wash + slate/accent border (no blur, no lift). */
+.ui-standards-qbtn--soft-glass {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--qbtn-bg, currentColor));
+  color: var(--qbtn-bg, currentColor);
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 10%, #fff);
+  background-image: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 18%, #fff),
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 8%, #fff) 55%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 12%, #f8fafc)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 4px 12px color-mix(in srgb, var(--qbtn-bg, currentColor) 8%, transparent);
+}
+
+.ui-standards-qbtn--soft-glass:hover {
+  filter: none;
+  transform: none;
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, #fff);
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--qbtn-bg, currentColor));
+}
+
+[data-theme="dark"] .ui-standards-qbtn--soft-glass {
+  border-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, #475569);
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, #0f172a);
+  background-image: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 26%, #1e293b),
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 12%, #0f172a)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 14px color-mix(in srgb, var(--qbtn-bg, currentColor) 14%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--soft-glass:hover {
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 22%, #0f172a);
+  border-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 22%, #64748b);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--soft-glass.ui-standards-qbtn--dark-ink {
+  color: #e2e8f0 !important;
+  border-color: color-mix(in srgb, #e2e8f0 22%, #475569);
+}
+
+/* Glossy glass — Soft Glass wash + glossy sheen (no blur). */
+.ui-standards-qbtn--glossy-glass {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--qbtn-bg, currentColor));
+  color: var(--qbtn-bg, currentColor);
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 12%, #fff);
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.48),
+      rgba(255, 255, 255, 0.12) 46%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(0, 0, 0, 0.05) 54%,
+      rgba(0, 0, 0, 0.03)
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--qbtn-bg, currentColor) 22%, #fff),
+      color-mix(in srgb, var(--qbtn-bg, currentColor) 8%, #fff)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 4px 12px color-mix(in srgb, var(--qbtn-bg, currentColor) 10%, transparent);
+}
+
+.ui-standards-qbtn--glossy-glass:hover {
+  filter: none;
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 18%, #fff);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--glossy-glass {
+  border-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, #475569);
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 18%, #0f172a);
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.22),
+      rgba(255, 255, 255, 0.06) 46%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(0, 0, 0, 0.18) 54%,
+      rgba(0, 0, 0, 0.12)
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--qbtn-bg, currentColor) 28%, #1e293b),
+      color-mix(in srgb, var(--qbtn-bg, currentColor) 12%, #0f172a)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 14px color-mix(in srgb, var(--qbtn-bg, currentColor) 18%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--glossy-glass:hover {
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 24%, #0f172a);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--glossy-glass.ui-standards-qbtn--dark-ink {
+  color: #e2e8f0 !important;
+  border-color: color-mix(in srgb, #e2e8f0 22%, #475569);
+}
+
+/* Glossy raise — filled + glossy sheen + soft bottom raise (table glossy-raise recipe). */
+.ui-standards-qbtn--glossy-raise {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.12)
+  );
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.ui-standards-qbtn--glossy-raise:hover {
+  filter: none;
+  transform: translateY(-1px);
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.ui-standards-qbtn--glossy-raise:active {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--glossy-raise {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.28)
+  );
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--glossy-raise:hover {
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
 .ui-standards-qbtn--gradient {
   background-color: var(--qbtn-bg);
   background-image: linear-gradient(
@@ -1551,6 +2118,61 @@
     var(--qbtn-bg) 52%,
     color-mix(in srgb, #000 24%, var(--qbtn-bg)) 100%
   );
+}
+
+/* Gradient glass — Soft Glass wash with vertical gradient (no blur, no lift). */
+.ui-standards-qbtn--gradient-glass {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--qbtn-bg, currentColor));
+  color: var(--qbtn-bg, currentColor);
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 12%, #fff);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 28%, #fff) 0%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 12%, #fff) 52%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 20%, #f1f5f9) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 4px 12px color-mix(in srgb, var(--qbtn-bg, currentColor) 10%, transparent);
+}
+
+.ui-standards-qbtn--gradient-glass:hover {
+  filter: none;
+  transform: none;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 34%, #fff) 0%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, #fff) 52%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 24%, #f1f5f9) 100%
+  );
+}
+
+[data-theme="dark"] .ui-standards-qbtn--gradient-glass {
+  border-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, #475569);
+  background-color: color-mix(in srgb, var(--qbtn-bg, currentColor) 18%, #0f172a);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 36%, #1e293b) 0%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 18%, #0f172a) 52%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 12%, #020617) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 14px color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, transparent);
+}
+
+[data-theme="dark"] .ui-standards-qbtn--gradient-glass:hover {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 42%, #1e293b) 0%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 24%, #0f172a) 52%,
+    color-mix(in srgb, var(--qbtn-bg, currentColor) 16%, #020617) 100%
+  );
+}
+
+[data-theme="dark"] .ui-standards-qbtn--gradient-glass.ui-standards-qbtn--dark-ink {
+  color: #e2e8f0 !important;
+  border-color: color-mix(in srgb, #e2e8f0 22%, #475569);
 }
 
 .ui-standards-qbtn--shape-soft {
@@ -2098,6 +2720,157 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.ui-standards-qdate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.ui-standards-qdate__actions--split {
+  justify-content: space-between;
+}
+
+.ui-standards-qdate__actions .ui-standards-qdate__today {
+  width: auto;
+  margin-top: 0;
+  padding: 0.35rem 0.55rem;
+}
+
+.ui-standards-qdate__clear {
+  border: 0;
+  border-radius: var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem));
+  background: transparent;
+  padding: 0.35rem 0.55rem;
+  color: var(--qdate-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__actions {
+  padding-top: 0.15rem;
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__clear,
+.ui-standards-qdate--soft-glass .ui-standards-qdate__actions .ui-standards-qdate__today {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft, color-mix(in srgb, var(--exits-primary) 42%, #fff)));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash, color-mix(in srgb, var(--exits-primary) 8%, #fff)) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid, color-mix(in srgb, var(--exits-primary) 16%, #fff)) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 3px 10px color-mix(in srgb, var(--personal-qa-chip, var(--exits-primary)) 8%, transparent);
+  color: var(--personal-qa-chip-ink, color-mix(in srgb, #000 28%, var(--exits-primary)));
+  font-weight: 700;
+}
+
+.ui-standards-qdate--soft-glass .ui-standards-qdate__clear:hover:not(:disabled),
+.ui-standards-qdate--soft-glass .ui-standards-qdate__actions .ui-standards-qdate__today:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft, color-mix(in srgb, var(--exits-primary) 42%, #fff)));
+}
+
+/* Soft Glass date / time UI samples (field + open glass picker). */
+.ui-standards-soft-glass-ui-sample {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 55%, color-mix(in srgb, var(--exits-primary) 42%, #fff));
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 72%, color-mix(in srgb, var(--exits-primary) 8%, #fff)) 0%,
+    color-mix(in srgb, color-mix(in srgb, var(--exits-primary) 8%, #fff) 78%, #fff) 48%,
+    color-mix(in srgb, color-mix(in srgb, var(--exits-primary) 16%, #fff) 70%, #fff) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 6px 16px color-mix(in srgb, var(--exits-primary) 12%, transparent);
+}
+
+.ui-standards-soft-glass-ui-sample__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: color-mix(in srgb, #000 28%, var(--exits-primary));
+}
+
+.ui-standards-soft-glass-ui-sample__blurb {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.ui-standards-soft-glass-ui-sample__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  max-width: 20rem;
+}
+
+.ui-standards-soft-glass-ui-sample__field {
+  width: 100%;
+}
+
+.ui-standards-soft-glass-ui-sample .ui-standards-qdate {
+  width: 100%;
+  max-width: 20rem;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-ui-sample {
+  border-color: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, var(--exits-primary) 8%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 6px 16px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-ui-sample__title {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ui-standards-soft-glass-ui-sample__blurb {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__clear,
+[data-theme="dark"] .ui-standards-qdate--soft-glass .ui-standards-qdate__actions .ui-standards-qdate__today {
+  border-color: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 5%, transparent) 0%,
+    color-mix(in srgb, var(--exits-primary) 13%, #1e293b) 46%,
+    color-mix(in srgb, var(--exits-primary-hover, var(--exits-primary)) 11%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 3px 10px rgba(0, 0, 0, 0.26);
+  color: #e2e8f0;
+}
+
+@media (max-width: 639px) {
+  .ui-standards-soft-glass-ui-sample__stack,
+  .ui-standards-soft-glass-ui-sample .ui-standards-qdate {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 .ui-standards-qdate__today--header {

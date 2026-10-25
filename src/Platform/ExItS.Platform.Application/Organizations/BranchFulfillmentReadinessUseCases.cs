@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Application.Reference;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
@@ -271,19 +272,22 @@ public sealed class UpsertBranchOperatingHours
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly GetBranchFulfillmentReadiness _readiness;
     private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public UpsertBranchOperatingHours(
         IOrganizationBranchRepository branches,
         IBranchOperatingHoursRepository hours,
         IPlatformUnitOfWork unitOfWork,
         GetBranchFulfillmentReadiness readiness,
-        ICustomerStorefrontAvailabilityNotifier storefrontNotifier)
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier,
+        IRealtimeChangePublisher? realtime = null)
     {
         _branches = branches;
         _hours = hours;
         _unitOfWork = unitOfWork;
         _readiness = readiness;
         _storefrontNotifier = storefrontNotifier;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -319,6 +323,14 @@ public sealed class UpsertBranchOperatingHours
         {
             await CustomerStorefrontAvailabilityNotify
                 .PublishAsync(_storefrontNotifier, organizationId, result.Value, cancellationToken)
+                .ConfigureAwait(false);
+            await RealtimePublish
+                .BranchSettingsChangedAsync(
+                    _realtime,
+                    organizationId.Value,
+                    branchId.Value,
+                    RealtimeEventTypes.BranchOperatingHoursChanged,
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -362,19 +374,22 @@ public sealed class UpdateBranchFulfillmentSettings
     private readonly IClock _clock;
     private readonly GetBranchFulfillmentReadiness _readiness;
     private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public UpdateBranchFulfillmentSettings(
         IOrganizationBranchRepository branches,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         GetBranchFulfillmentReadiness readiness,
-        ICustomerStorefrontAvailabilityNotifier storefrontNotifier)
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier,
+        IRealtimeChangePublisher? realtime = null)
     {
         _branches = branches;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _readiness = readiness;
         _storefrontNotifier = storefrontNotifier;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -495,6 +510,14 @@ public sealed class UpdateBranchFulfillmentSettings
             await CustomerStorefrontAvailabilityNotify
                 .PublishAsync(_storefrontNotifier, organizationId, fulfillmentResult.Value, cancellationToken)
                 .ConfigureAwait(false);
+            await RealtimePublish
+                .BranchSettingsChangedAsync(
+                    _realtime,
+                    organizationId.Value,
+                    branchId.Value,
+                    RealtimeEventTypes.BranchFulfillmentSettingsChanged,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
         }
 
         return fulfillmentResult;
@@ -508,19 +531,22 @@ public sealed class SetBranchOnlineOrdersPaused
     private readonly IClock _clock;
     private readonly GetBranchFulfillmentReadiness _readiness;
     private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public SetBranchOnlineOrdersPaused(
         IOrganizationBranchRepository branches,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         GetBranchFulfillmentReadiness readiness,
-        ICustomerStorefrontAvailabilityNotifier storefrontNotifier)
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier,
+        IRealtimeChangePublisher? realtime = null)
     {
         _branches = branches;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _readiness = readiness;
         _storefrontNotifier = storefrontNotifier;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -563,6 +589,14 @@ public sealed class SetBranchOnlineOrdersPaused
         {
             await CustomerStorefrontAvailabilityNotify
                 .PublishAsync(_storefrontNotifier, organizationId, pauseResult.Value, cancellationToken)
+                .ConfigureAwait(false);
+            await RealtimePublish
+                .BranchSettingsChangedAsync(
+                    _realtime,
+                    organizationId.Value,
+                    branchId.Value,
+                    RealtimeEventTypes.BranchFulfillmentSettingsChanged,
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
 

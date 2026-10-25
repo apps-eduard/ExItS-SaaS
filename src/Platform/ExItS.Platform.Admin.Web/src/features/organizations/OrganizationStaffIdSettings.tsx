@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
+import { env } from "@/lib/env";
 import { useQuery } from "@tanstack/react-query";
 
 type StaffIdSettings = {
@@ -23,7 +24,7 @@ export function OrganizationStaffIdSettings({ organizationId }: { organizationId
   const query = useQuery({
     queryKey: ["organization-staff-id-settings", organizationId],
     queryFn: () =>
-      platformRequest<StaffIdSettings>({
+      platformRequest<StaffIdSettings>(env.platformApiBaseUrl, {
         path: `/api/v1/platform/organizations/${organizationId}/staff-id-settings`,
       }),
   });
@@ -47,7 +48,7 @@ export function OrganizationStaffIdSettings({ organizationId }: { organizationId
     setError(null);
     setMessage(null);
     try {
-      const saved = await platformRequest<StaffIdSettings>({
+      const saved = await platformRequest<StaffIdSettings>(env.platformApiBaseUrl, {
         method: "PUT",
         path: `/api/v1/platform/organizations/${organizationId}/staff-id-settings`,
         body: {

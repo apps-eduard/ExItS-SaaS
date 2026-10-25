@@ -24,6 +24,8 @@ Component: `SoftGlassQuickAction` for Soft Glass quick-action rows.
 - Focus: `SOFT_GLASS_FOCUS` (`#8b5cf6`) outline
 - Filled icon / pennant chips with soft radial highlight (not neon glow)
 
+Crystal screen-edge border belongs on UI Standards `.app-shell--full` only (whole screen), **not** Soft Glass cards/components.
+
 ## Title ribbon (LOCKED — Soft Glass default)
 
 Command: `ext soft-glass ribbon radius` (`SOFT_GLASS_RIBBON_DEFAULT_COMMAND`).

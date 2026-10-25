@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -22,6 +23,7 @@ public sealed class ConfirmPersonalUtangEntry
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public ConfirmPersonalUtangEntry(
         IPersonalDebtRelationshipRepository relationships,
@@ -33,7 +35,8 @@ public sealed class ConfirmPersonalUtangEntry
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _relationships = relationships;
         _entries = entries;
@@ -45,6 +48,7 @@ public sealed class ConfirmPersonalUtangEntry
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalUtangEntryDto>> ExecuteAsync(
@@ -127,6 +131,16 @@ public sealed class ConfirmPersonalUtangEntry
                     cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
+            await PersonalUtangRealtime
+                .NotifyEntryChangedAsync(_realtime, relationship, entry.Id.Value, "entry-confirmed", cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var recipient in PersonalUtangRealtime.ResolveEntryRecipients(relationship))
+            {
+                await PersonalUtangRealtime
+                    .NotifyNotificationChangedAsync(_realtime, recipient, "utang-entry-confirmed", cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             return ApplicationResult<PersonalUtangEntryDto>.Success(
                 RecordPersonalUtangEntry.ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
         }
@@ -154,6 +168,7 @@ public sealed class DisputePersonalUtangEntry
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public DisputePersonalUtangEntry(
         IPersonalDebtRelationshipRepository relationships,
@@ -164,7 +179,8 @@ public sealed class DisputePersonalUtangEntry
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _relationships = relationships;
         _entries = entries;
@@ -175,6 +191,7 @@ public sealed class DisputePersonalUtangEntry
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalUtangEntryDto>> ExecuteAsync(
@@ -248,6 +265,16 @@ public sealed class DisputePersonalUtangEntry
                     cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
+            await PersonalUtangRealtime
+                .NotifyEntryChangedAsync(_realtime, relationship, entry.Id.Value, "entry-disputed", cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var recipient in PersonalUtangRealtime.ResolveEntryRecipients(relationship))
+            {
+                await PersonalUtangRealtime
+                    .NotifyNotificationChangedAsync(_realtime, recipient, "utang-entry-disputed", cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             return ApplicationResult<PersonalUtangEntryDto>.Success(
                 RecordPersonalUtangEntry.ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
         }
@@ -275,6 +302,7 @@ public sealed class CancelPersonalUtangEntry
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public CancelPersonalUtangEntry(
         IPersonalDebtRelationshipRepository relationships,
@@ -285,7 +313,8 @@ public sealed class CancelPersonalUtangEntry
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IRealtimeChangePublisher? realtime = null)
     {
         _relationships = relationships;
         _entries = entries;
@@ -296,6 +325,7 @@ public sealed class CancelPersonalUtangEntry
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<PersonalUtangEntryDto>> ExecuteAsync(
@@ -362,6 +392,16 @@ public sealed class CancelPersonalUtangEntry
                     AuditOutcome.Succeeded,
                     summary: "Pending Personal Utang entry cancelled.",
                     cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+
+            await PersonalUtangRealtime
+                .NotifyEntryChangedAsync(_realtime, relationship, entry.Id.Value, "entry-cancelled", cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var recipient in PersonalUtangRealtime.ResolveEntryRecipients(relationship))
+            {
+                await PersonalUtangRealtime
+                    .NotifyNotificationChangedAsync(_realtime, recipient, "utang-entry-cancelled", cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return ApplicationResult<PersonalUtangEntryDto>.Success(

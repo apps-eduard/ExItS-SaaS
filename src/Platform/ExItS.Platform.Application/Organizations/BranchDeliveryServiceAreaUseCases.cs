@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Realtime;
 using ExItS.Platform.Application.Reference;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
@@ -115,6 +116,8 @@ public sealed class AddBranchDeliveryServiceArea
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly GetBranchFulfillmentReadiness _readiness;
+    private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public AddBranchDeliveryServiceArea(
         IOrganizationBranchRepository branches,
@@ -122,7 +125,9 @@ public sealed class AddBranchDeliveryServiceArea
         IPhilippineLocalityDirectory directory,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        GetBranchFulfillmentReadiness readiness)
+        GetBranchFulfillmentReadiness readiness,
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier,
+        IRealtimeChangePublisher? realtime = null)
     {
         _branches = branches;
         _areas = areas;
@@ -130,6 +135,8 @@ public sealed class AddBranchDeliveryServiceArea
         _unitOfWork = unitOfWork;
         _clock = clock;
         _readiness = readiness;
+        _storefrontNotifier = storefrontNotifier;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -181,7 +188,23 @@ public sealed class AddBranchDeliveryServiceArea
             return ApplicationResult<BranchFulfillmentReadinessDto>.Failure(ex.ErrorCode, ex.Message);
         }
 
-        return await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        var result = await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        if (result.IsSuccess && result.Value is not null)
+        {
+            await CustomerStorefrontAvailabilityNotify
+                .PublishAsync(_storefrontNotifier, organizationId, result.Value, cancellationToken)
+                .ConfigureAwait(false);
+            await RealtimePublish
+                .BranchSettingsChangedAsync(
+                    _realtime,
+                    organizationId.Value,
+                    branchId.Value,
+                    RealtimeEventTypes.BranchDeliveryAreasChanged,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return result;
     }
 }
 
@@ -192,19 +215,25 @@ public sealed class DeactivateBranchDeliveryServiceArea
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly GetBranchFulfillmentReadiness _readiness;
+    private readonly ICustomerStorefrontAvailabilityNotifier _storefrontNotifier;
+    private readonly IRealtimeChangePublisher _realtime;
 
     public DeactivateBranchDeliveryServiceArea(
         IOrganizationBranchRepository branches,
         IBranchDeliveryServiceAreaRepository areas,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        GetBranchFulfillmentReadiness readiness)
+        GetBranchFulfillmentReadiness readiness,
+        ICustomerStorefrontAvailabilityNotifier storefrontNotifier,
+        IRealtimeChangePublisher? realtime = null)
     {
         _branches = branches;
         _areas = areas;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _readiness = readiness;
+        _storefrontNotifier = storefrontNotifier;
+        _realtime = realtime ?? NullRealtimeChangePublisher.Instance;
     }
 
     public async Task<ApplicationResult<BranchFulfillmentReadinessDto>> ExecuteAsync(
@@ -232,6 +261,22 @@ public sealed class DeactivateBranchDeliveryServiceArea
         area.Deactivate(_clock.UtcNow);
         await _areas.UpdateAsync(area, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        return await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        var result = await _readiness.ExecuteAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        if (result.IsSuccess && result.Value is not null)
+        {
+            await CustomerStorefrontAvailabilityNotify
+                .PublishAsync(_storefrontNotifier, organizationId, result.Value, cancellationToken)
+                .ConfigureAwait(false);
+            await RealtimePublish
+                .BranchSettingsChangedAsync(
+                    _realtime,
+                    organizationId.Value,
+                    branchId.Value,
+                    RealtimeEventTypes.BranchDeliveryAreasChanged,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return result;
     }
 }

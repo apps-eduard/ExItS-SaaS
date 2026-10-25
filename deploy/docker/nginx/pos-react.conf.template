@@ -14,6 +14,12 @@ map $host $pwa_manifest_file {
     default          /manifest.webmanifest;
 }
 
+# SignalR WebSocket upgrades through /platform-api and /pos-api (hubs under /hubs/*).
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
 server {
     listen 80;
     server_name _;
@@ -55,6 +61,10 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
         proxy_cookie_domain ~.+ "";
         proxy_cookie_flags ~ nosecure;
         proxy_pass_header Set-Cookie;
@@ -76,6 +86,10 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
         proxy_cookie_domain ~.+ "";
         proxy_cookie_flags ~ nosecure;
         proxy_pass_header Set-Cookie;

@@ -111,6 +111,9 @@ describe("personal merchant cart", () => {
         deliveryServiceAreas: null,
         operatingHours: null,
         storeStatusMessage: null,
+        acceptScheduledOrdersWhileClosed: false,
+        minPreparationLeadMinutes: 0,
+        maxAdvanceScheduleDays: 7,
       },
     ];
     const pickup = resolveFulfillmentSelection(branches, true, FulfillmentPickup, null);

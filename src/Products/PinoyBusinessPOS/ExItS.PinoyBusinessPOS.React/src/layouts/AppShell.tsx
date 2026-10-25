@@ -26,12 +26,16 @@ export function AppShell({
   return (
     <div
       className={cn(
-        "app-shell mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
-        sellFloor && "app-shell--sell-floor",
-        fullScreen && "app-shell--full",
-        withOrgBottomNav
-          ? "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]"
-          : "pb-[max(2rem,env(safe-area-inset-bottom))]",
+        "app-shell mx-auto flex w-full min-w-0 flex-col overflow-x-hidden",
+        fullScreen
+          ? "app-shell--full"
+          : cn(
+              "min-h-[100dvh] max-w-5xl px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+              sellFloor && "app-shell--sell-floor",
+              withOrgBottomNav
+                ? "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]"
+                : "pb-[max(2rem,env(safe-area-inset-bottom))]",
+            ),
       )}
     >
       <a
