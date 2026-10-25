@@ -1,6 +1,7 @@
-import { useMemo } from "react";
-import { SoftGlassDateField } from "@/components/exits/SoftGlassDateField";
-import { Button } from "@/components/ui/button";
+import { useMemo, useRef, useState } from "react";
+import { SoftGlassDatePopover } from "@/components/exits/SoftGlassDatePopover";
+import { PreferredChoiceCard } from "@/features/customer-ordering/PreferredChoiceCard";
+import { formatPreferredFulfillmentLongDate } from "@/features/customer-ordering/preferred-fulfillment-display";
 import {
   addCalendarDays,
   availablePreferredPeriods,
@@ -53,6 +54,8 @@ export function PreferredFulfillmentScheduler({
   testIdPrefix = "preferred-fulfillment",
 }: PreferredFulfillmentSchedulerProps) {
   const { t } = useI18n();
+  const anotherCardRef = useRef<HTMLDivElement | null>(null);
+  const [anotherCalendarOpen, setAnotherCalendarOpen] = useState(false);
   const now = useMemo(() => new Date(), []);
   const storeToday = branchLocalClock(now, timeZoneId).date;
   const storeTomorrow = addCalendarDays(storeToday, 1);
@@ -98,6 +101,12 @@ export function PreferredFulfillmentScheduler({
   const resolvedPeriod =
     period && periods.includes(period) ? period : null;
 
+  function openAnotherCalendar() {
+    onDayChoiceChange("another");
+    onPeriodChange(null);
+    setAnotherCalendarOpen(true);
+  }
+
   return (
     <div className="flex flex-col gap-3" data-testid={testIdPrefix}>
       <div className="flex flex-col gap-2">
@@ -105,60 +114,76 @@ export function PreferredFulfillmentScheduler({
           {mode === "delivery" ? t("orders.preferredDelivery") : t("orders.preferredPickup")}
         </span>
         <div className="flex flex-wrap gap-2" data-testid={`${testIdPrefix}-day-choices`}>
-          <DayChip
+          <PreferredChoiceCard
             testId={`${testIdPrefix}-day-today`}
-            label={t("orders.preferredDayToday")}
+            title={t("orders.preferredDayToday")}
+            caption={formatPreferredFulfillmentLongDate(storeToday)}
             selected={dayChoice === "today"}
             disabled={!todaySelectable}
             onClick={() => {
+              setAnotherCalendarOpen(false);
               onDayChoiceChange("today");
               onPeriodChange(null);
             }}
           />
-          <DayChip
+          <PreferredChoiceCard
             testId={`${testIdPrefix}-day-tomorrow`}
-            label={t("orders.preferredDayTomorrow")}
+            title={t("orders.preferredDayTomorrow")}
+            caption={formatPreferredFulfillmentLongDate(storeTomorrow)}
             selected={dayChoice === "tomorrow"}
             disabled={!tomorrowSelectable}
             onClick={() => {
+              setAnotherCalendarOpen(false);
               onDayChoiceChange("tomorrow");
               onPeriodChange(null);
             }}
           />
-          <DayChip
-            testId={`${testIdPrefix}-day-another`}
-            label={t("orders.preferredDayAnother")}
-            selected={dayChoice === "another"}
-            onClick={() => {
-              onDayChoiceChange("another");
-              onPeriodChange(null);
-            }}
-          />
+          <div ref={anotherCardRef} className="personal-preferred-period-anchor">
+            <PreferredChoiceCard
+              testId={`${testIdPrefix}-day-another`}
+              title={t("orders.preferredDayAnother")}
+              caption={
+                anotherDate
+                  ? formatPreferredFulfillmentLongDate(anotherDate)
+                  : t("orders.preferredDayAnotherCaption")
+              }
+              selected={dayChoice === "another"}
+              onClick={() => {
+                if (dayChoice === "another" && anotherCalendarOpen) {
+                  setAnotherCalendarOpen(false);
+                  return;
+                }
+                openAnotherCalendar();
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {dayChoice === "another" ? (
-        <SoftGlassDateField
-          label={t("orders.preferredChooseDate")}
-          value={anotherDate}
-          minDate={storeToday}
-          maxDate={storeMaxDate}
-          isDateDisabled={(iso) =>
-            !isPreferredDateSelectable({
-              date: iso,
-              now,
-              timeZoneId,
-              operatingHours,
-              maxAdvanceScheduleDays,
-            }) || isDayClosed(iso, operatingHours)
-          }
-          onChange={(next) => {
-            onAnotherDateChange(next);
-            onPeriodChange(null);
-          }}
-          testId={`${testIdPrefix}-date-picker`}
-        />
-      ) : null}
+      <SoftGlassDatePopover
+        open={anotherCalendarOpen}
+        onOpenChange={setAnotherCalendarOpen}
+        anchorRef={anotherCardRef}
+        label={t("orders.preferredChooseDate")}
+        value={anotherDate}
+        minDate={storeToday}
+        maxDate={storeMaxDate}
+        isDateDisabled={(iso) =>
+          !isPreferredDateSelectable({
+            date: iso,
+            now,
+            timeZoneId,
+            operatingHours,
+            maxAdvanceScheduleDays,
+          }) || isDayClosed(iso, operatingHours)
+        }
+        onChange={(next) => {
+          onAnotherDateChange(next);
+          onDayChoiceChange("another");
+          onPeriodChange(null);
+        }}
+        testId={`${testIdPrefix}-date-picker`}
+      />
 
       <div className="flex flex-col gap-2">
         <span className="pc-field__label" data-testid={`${testIdPrefix}-period-label`}>
@@ -168,23 +193,15 @@ export function PreferredFulfillmentScheduler({
           {(["Morning", "Afternoon", "Evening"] as const).map((option) => {
             const enabled = periods.includes(option);
             return (
-              <button
+              <PreferredChoiceCard
                 key={option}
-                type="button"
-                className={
-                  "personal-preferred-period" +
-                  (resolvedPeriod === option ? " personal-preferred-period--selected" : "")
-                }
+                testId={`${testIdPrefix}-period-${option.toLowerCase()}`}
+                title={t(`orders.preferredPeriod${option}` as "orders.preferredPeriodMorning")}
+                caption={periodCaption(option)}
+                selected={resolvedPeriod === option}
                 disabled={!enabled || !selectedDate}
-                aria-pressed={resolvedPeriod === option}
-                data-testid={`${testIdPrefix}-period-${option.toLowerCase()}`}
                 onClick={() => onPeriodChange(option)}
-              >
-                <span className="personal-preferred-period__title">
-                  {t(`orders.preferredPeriod${option}` as "orders.preferredPeriodMorning")}
-                </span>
-                <span className="personal-preferred-period__caption">{periodCaption(option)}</span>
-              </button>
+              />
             );
           })}
         </div>
@@ -204,35 +221,6 @@ export function PreferredFulfillmentScheduler({
         </p>
       ) : null}
     </div>
-  );
-}
-
-function DayChip({
-  label,
-  selected,
-  disabled,
-  onClick,
-  testId,
-}: {
-  label: string;
-  selected: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  testId: string;
-}) {
-  return (
-    <Button
-      type="button"
-      intent={selected ? "primary" : "neutral"}
-      appearance={selected ? "glossy" : "outline"}
-      disabled={disabled}
-      aria-pressed={selected}
-      data-testid={testId}
-      onClick={onClick}
-      className="min-w-[6.5rem]"
-    >
-      {label}
-    </Button>
   );
 }
 

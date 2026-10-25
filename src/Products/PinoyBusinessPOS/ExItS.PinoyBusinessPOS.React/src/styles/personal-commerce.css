@@ -927,6 +927,19 @@
 }
 
 /* Preferred fulfillment period chips (Personal Soft Glass checkout). */
+.personal-preferred-period-anchor {
+  display: flex;
+  flex: 1 1 8.5rem;
+  min-width: 8.5rem;
+  max-width: 14rem;
+}
+
+.personal-preferred-period-anchor .personal-preferred-period {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+}
+
 .personal-preferred-period {
   display: flex;
   flex-direction: column;
@@ -950,19 +963,146 @@
   cursor: not-allowed;
 }
 
+.personal-preferred-period--info {
+  flex: 1 1 8.5rem;
+  max-width: 18rem;
+  cursor: default;
+  pointer-events: none;
+}
+
 .personal-preferred-period--selected {
   border-color: var(--exits-primary);
   background: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-surface));
 }
 
 .personal-preferred-period__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: var(--exits-text-sm);
   font-weight: 650;
 }
 
+.personal-preferred-period__icon {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.personal-preferred-period__check {
+  margin-inline-start: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--exits-success, #22c55e);
+}
+
 .personal-preferred-period__caption {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem;
+  width: 100%;
   font-size: var(--exits-text-xs);
   color: var(--exits-muted, var(--exits-text-muted));
+}
+
+.personal-preferred-period__time {
+  font-size: var(--exits-text-sm);
+  font-weight: 700;
+  color: var(--exits-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.personal-preferred-period--tone-success .personal-preferred-period__time {
+  color: var(--exits-success, #22c55e);
+}
+
+.personal-preferred-period--tone-warn .personal-preferred-period__time {
+  color: var(--exits-warning, #ff5722);
+}
+
+.personal-preferred-period--tone-danger .personal-preferred-period__time {
+  color: var(--exits-danger);
+}
+
+.personal-preferred-period--tone-success {
+  border-color: color-mix(in srgb, var(--exits-success, #22c55e) 34%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-success, #22c55e) 12%, var(--exits-surface));
+}
+
+.personal-preferred-period--tone-success .personal-preferred-period__title {
+  color: var(--exits-success, #22c55e);
+}
+
+.personal-preferred-period--tone-warn {
+  border-color: color-mix(in srgb, var(--exits-warning, #ff5722) 34%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-warning, #ff5722) 12%, var(--exits-surface));
+}
+
+.personal-preferred-period--tone-warn .personal-preferred-period__title {
+  color: var(--exits-warning, #ff5722);
+}
+
+.personal-preferred-period--tone-danger {
+  border-color: color-mix(in srgb, var(--exits-danger) 34%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger) 12%, var(--exits-surface));
+}
+
+.personal-preferred-period--tone-danger .personal-preferred-period__title {
+  color: var(--exits-danger);
+}
+
+[data-theme="dark"] .personal-preferred-period--tone-success {
+  border-color: color-mix(in srgb, var(--exits-success, #22c55e) 40%, #475569);
+  background: color-mix(in srgb, var(--exits-success, #22c55e) 16%, #0f172a);
+}
+
+[data-theme="dark"] .personal-preferred-period--tone-warn {
+  border-color: color-mix(in srgb, var(--exits-warning, #ff5722) 40%, #475569);
+  background: color-mix(in srgb, var(--exits-warning, #ff5722) 16%, #0f172a);
+}
+
+[data-theme="dark"] .personal-preferred-period--tone-danger {
+  border-color: color-mix(in srgb, var(--exits-danger) 40%, #475569);
+  background: color-mix(in srgb, var(--exits-danger) 16%, #0f172a);
+}
+
+.pc-checkout-fulfillment-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pc-checkout-fulfillment-title-row .pc-checkout-section__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pc-checkout-fulfillment-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  flex: 0 0 auto;
+  text-align: end;
+  line-height: 1.25;
+}
+
+.pc-checkout-fulfillment-clock__date {
+  font-size: var(--exits-text-sm);
+  font-weight: 650;
+  color: var(--exits-text);
+  white-space: nowrap;
+}
+
+.pc-checkout-fulfillment-clock__time {
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  color: var(--exits-muted, var(--exits-text-muted));
+  white-space: nowrap;
 }
 
 [data-theme="dark"] .personal-preferred-period {

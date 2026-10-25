@@ -701,6 +701,13 @@
   box-sizing: border-box;
 }
 
+/* Soft Glass date-only: anchored popover below the field (not centered dialog). */
+.exits-sg-datetime__portal--popover {
+  display: block;
+  padding: 0;
+  pointer-events: none;
+}
+
 .exits-sg-datetime__scrim {
   position: absolute;
   inset: 0;
@@ -711,6 +718,24 @@
   background: rgba(15, 23, 42, 0.45);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.exits-sg-datetime__scrim--popover {
+  pointer-events: auto;
+  background: transparent;
+}
+
+.exits-sg-datetime__popover-panel {
+  position: fixed;
+  z-index: 1;
+  max-width: min(20rem, calc(100vw - 1rem));
+  max-height: min(80dvh, calc(100vh - 1rem));
+  overflow-x: hidden;
+  overflow-y: auto;
+  pointer-events: auto;
+  transform-origin: top center;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .exits-sg-datetime__portal-stage {

@@ -6,7 +6,12 @@ import {
   isPreferredDateSelectable,
   PREFERRED_FULFILLMENT_MIN_USABLE_MINUTES,
 } from "./preferred-fulfillment-periods";
-import { formatPreferredFulfillmentLabel } from "./preferred-fulfillment-display";
+import {
+  formatPreferredFulfillmentLabel,
+  formatPreferredFulfillmentLongDate,
+  PHILIPPINES_TIME_ZONE,
+  philippinesFulfillmentClock,
+} from "./preferred-fulfillment-display";
 
 const weekdayHours = [
   { dayOfWeek: "Thursday", isClosed: false, isOpen24Hours: false, openTime: "08:00", closeTime: "17:00" },
@@ -121,5 +126,18 @@ describe("preferred fulfillment periods", () => {
         tomorrowLabel: "Tomorrow",
       }),
     ).toBe("Tomorrow — Morning");
+  });
+
+  it("formats the long calendar date under preferred period times", () => {
+    expect(formatPreferredFulfillmentLongDate("2026-10-25")).toBe("Sun, Oct 25, 2026");
+  });
+
+  it("reads checkout fulfillment clock in Asia/Manila", () => {
+    expect(PHILIPPINES_TIME_ZONE).toBe("Asia/Manila");
+    // 2026-10-25 15:45 UTC = 11:45 PM Asia/Manila same calendar day
+    const clock = philippinesFulfillmentClock(new Date("2026-10-25T15:45:00.000Z"));
+    expect(clock.dateIso).toBe("2026-10-25");
+    expect(clock.dateLong).toBe("Sun, Oct 25, 2026");
+    expect(clock.timeDisplay).toMatch(/11:45\s*PM/i);
   });
 });

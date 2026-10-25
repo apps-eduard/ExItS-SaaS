@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Package, Smartphone, Truck, Users, Wallet } from "lucide-react";
+import { Clock, Package, Smartphone, Truck, Users, Wallet } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { PosApiError } from "@/api/pos/pos-http";
 import { describePosApiError } from "@/access/pos-commercial-errors";
@@ -35,6 +35,10 @@ import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
 import { OrderingUnavailablePanel } from "@/features/customer-ordering/OrderingUnavailablePanel";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import {
+  PreferredChoiceCard,
+  PreferredInfoCard,
+} from "@/features/customer-ordering/PreferredChoiceCard";
+import {
   CheckoutPlaceButton,
   SegmentedOption,
 } from "@/features/customer-ordering/personal-commerce-ui";
@@ -49,6 +53,8 @@ import {
   personalCustomerRelationshipLabel,
   personalStoreDisplayName,
 } from "@/features/customer-ordering/format-personal-store-label";
+import { CheckoutFulfillmentPhClock } from "@/features/customer-ordering/CheckoutFulfillmentPhClock";
+import { StoreOpenStatusCard } from "@/features/customer-ordering/StoreOpenStatusCard";
 import {
   PreferredFulfillmentScheduler,
   resolvePreferredScheduleDate,
@@ -521,7 +527,20 @@ export function MerchantCheckoutPage() {
         await refreshStorefrontAfterStockConflict();
         setError(t("orders.stockConflict"));
       } else if (err instanceof PosApiError) {
-        setError(describePosApiError(err, t, "error.detail"));
+        const detail = describePosApiError(err, t, "error.detail");
+        // Prefer day/period copy when the API still returns legacy exact-time closed-store text.
+        const legacyClosedSchedule =
+          /store is closed/i.test(detail)
+          && /date and time/i.test(detail);
+        setError(
+          legacyClosedSchedule
+            ? t(
+                selection.fulfillmentType === FulfillmentDelivery
+                  ? "orders.closedNeedsPreferredDelivery"
+                  : "orders.closedNeedsPreferredPickup",
+              )
+            : detail,
+        );
       } else {
         setError(err instanceof Error ? err.message : t("orders.error"));
       }
@@ -722,41 +741,78 @@ export function MerchantCheckoutPage() {
         </aside>
         <div className="pc-checkout-side">
         <section className="pc-checkout-section">
-          <h2 className="pc-checkout-section__title">{t("orders.fulfillmentType")}</h2>
-          {selection.showFulfillmentToggle ? (
-            <div className="pc-segmented" role="radiogroup" aria-label={t("orders.fulfillmentType")}>
-              <SegmentedOption
-                pressed={selection.fulfillmentType === FulfillmentPickup}
+          <div className="pc-checkout-fulfillment-title-row">
+            <h2 className="pc-checkout-section__title m-0">{t("orders.fulfillmentType")}</h2>
+            <CheckoutFulfillmentPhClock />
+          </div>
+          <div
+            className="flex flex-wrap gap-2"
+            role="radiogroup"
+            aria-label={t("orders.fulfillmentType")}
+            data-testid="checkout-fulfillment-method-cards"
+          >
+            {selection.showFulfillmentToggle || selection.fulfillmentType === FulfillmentPickup ? (
+              <PreferredChoiceCard
                 testId="fulfillment-pickup"
-                onClick={() => setFulfillmentType(FulfillmentPickup)}
-              >
-                <Package className="size-4 shrink-0" aria-hidden />
-                {t("orders.pickup")}
-              </SegmentedOption>
-              <SegmentedOption
-                pressed={selection.fulfillmentType === FulfillmentDelivery}
+                title={t("orders.pickup")}
+                caption={t("orders.pickupCardCaption")}
+                selected={selection.fulfillmentType === FulfillmentPickup}
+                icon={<Package className="size-4 shrink-0" aria-hidden />}
+                onClick={
+                  selection.showFulfillmentToggle
+                    ? () => setFulfillmentType(FulfillmentPickup)
+                    : undefined
+                }
+                disabled={!selection.showFulfillmentToggle && selection.fulfillmentType !== FulfillmentPickup}
+              />
+            ) : null}
+            {selection.fulfillmentType === FulfillmentPickup ? (
+              <>
+                <PreferredInfoCard
+                  title={t("orders.storeHours")}
+                  value={storeHoursLine || t("orders.storeHoursUnknown")}
+                  testId="checkout-store-hours"
+                  icon={<Clock className="size-4 shrink-0" aria-hidden />}
+                />
+                <StoreOpenStatusCard
+                  operatingHours={selectedBranch?.operatingHours}
+                  timeZoneId={selectedBranch?.timeZoneId}
+                />
+              </>
+            ) : null}
+            {selection.showFulfillmentToggle || selection.fulfillmentType === FulfillmentDelivery ? (
+              <PreferredChoiceCard
                 testId="fulfillment-delivery"
-                onClick={() => setFulfillmentType(FulfillmentDelivery)}
-              >
-                <Truck className="size-4 shrink-0" aria-hidden />
-                {t("orders.delivery")}
-              </SegmentedOption>
-            </div>
-          ) : (
-            <p className="m-0 text-[length:var(--exits-text-sm)]">
-              {selection.fulfillmentType === FulfillmentDelivery
-                ? t("orders.delivery")
-                : t("orders.pickup")}
-            </p>
-          )}
+                title={t("orders.delivery")}
+                caption={t("orders.deliveryCardCaption")}
+                selected={selection.fulfillmentType === FulfillmentDelivery}
+                icon={<Truck className="size-4 shrink-0" aria-hidden />}
+                onClick={
+                  selection.showFulfillmentToggle
+                    ? () => setFulfillmentType(FulfillmentDelivery)
+                    : undefined
+                }
+                disabled={!selection.showFulfillmentToggle && selection.fulfillmentType !== FulfillmentDelivery}
+              />
+            ) : null}
+            {selection.fulfillmentType === FulfillmentDelivery ? (
+              <>
+                <PreferredInfoCard
+                  title={t("orders.storeHours")}
+                  value={storeHoursLine || t("orders.storeHoursUnknown")}
+                  testId="checkout-store-hours"
+                  icon={<Clock className="size-4 shrink-0" aria-hidden />}
+                />
+                <StoreOpenStatusCard
+                  operatingHours={selectedBranch?.operatingHours}
+                  timeZoneId={selectedBranch?.timeZoneId}
+                />
+              </>
+            ) : null}
+          </div>
 
           {selection.fulfillmentType === FulfillmentPickup ? (
             <div className="flex flex-col gap-3" data-testid="pickup-schedule">
-              {storeHoursLine ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="checkout-store-hours">
-                  {storeHoursLine}
-                </p>
-              ) : null}
               <PreferredFulfillmentScheduler
                 mode="pickup"
                 dayChoice={preferredDayChoice}
@@ -806,11 +862,6 @@ export function MerchantCheckoutPage() {
           {selection.fulfillmentType === FulfillmentDelivery ? (
             <div className="flex flex-col gap-3" data-testid="delivery-fields">
               <div className="flex flex-col gap-3" data-testid="delivery-schedule">
-                {storeHoursLine ? (
-                  <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="checkout-store-hours">
-                    {storeHoursLine}
-                  </p>
-                ) : null}
                 <PreferredFulfillmentScheduler
                   mode="delivery"
                   dayChoice={preferredDayChoice}

@@ -8946,7 +8946,7 @@ export const en = {
   "orders.closedStillAccepting": "Orders are still accepted for future pickup or delivery.",
   "orders.closedScheduleSubjectToSeller": "Your requested schedule is subject to seller confirmation.",
   "orders.closedScheduleOpenSlotsOnly":
-    "At checkout, choose a day and time when the store is open. Closed days and after-hours times cannot be selected.",
+    "At checkout, choose a preferred day and period when the store is open. Closed days cannot be selected.",
   "orders.closedNoScheduling":
     "This store is not accepting scheduled orders while closed. Online ordering resumes during store hours.",
   "orders.cartSavedOnDevice": "Your cart is saved automatically on this device.",
@@ -8956,12 +8956,27 @@ export const en = {
   "orders.saveCartForLaterConfirm":
     "Your cart stays on this device for your account. No order is submitted until you place it. Come back when the store opens or when you are ready to schedule.",
   "orders.scheduleDateTimeRequired": "Choose a preferred day and period for this order.",
+  "orders.closedNeedsPreferredPickup":
+    "This store is closed. Choose a preferred pickup day and period to place your order.",
+  "orders.closedNeedsPreferredDelivery":
+    "This store is closed. Choose a preferred delivery day and period to place your order.",
   "orders.preferredPickup": "Preferred pickup",
   "orders.preferredDelivery": "Preferred delivery",
   "orders.preferredFulfillmentPeriod": "Preferred period",
   "orders.preferredDayToday": "Today",
   "orders.preferredDayTomorrow": "Tomorrow",
   "orders.preferredDayAnother": "Choose another day",
+  "orders.preferredDayAnotherCaption": "Pick a date",
+  "orders.pickupCardCaption": "Collect at the store",
+  "orders.deliveryCardCaption": "Delivered to your address",
+  "orders.operationTime": "Store Hours",
+  "orders.storeHours": "Store Hours",
+  "orders.storeStatusOpen": "Open",
+  "orders.storeStatusClosed": "Closed",
+  "orders.storeStatusOpen24Hours": "24 hours",
+  "orders.storeStatusRemainingToOpen": "{duration} remaining to open",
+  "orders.storeStatusRemainingToClose": "{duration} remaining to close",
+  "orders.storeStatusClosedNoOpen": "Hours unavailable",
   "orders.preferredChooseDate": "Choose date",
   "orders.preferredPeriodMorning": "Morning",
   "orders.preferredPeriodAfternoon": "Afternoon",
