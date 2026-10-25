@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type WheelEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowRight,
@@ -9,6 +9,15 @@ import {
   ChevronRight,
   Clock3,
 } from "lucide-react";
+import {
+  ORG_EHG_DATE_GLASS_DEFAULT_FOCUS,
+  ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY,
+  ORG_EHG_DATE_GLASS_DEFAULT_KIND,
+  ORG_EHG_DATE_GLASS_DEFAULT_SIZE,
+  ORG_EHG_DATE_GLASS_DEFAULT_SURFACE,
+  ORG_EHG_DATE_GLASS_DEFAULT_VARIETY,
+} from "@/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-date-glass-global-default";
+import { softGlassRollTouchHandlers } from "@/features/ui-standards/soft-glass-roll-touch";
 import { useScalePresence } from "@/features/ui-standards/soft-glass-scale-presence";
 
 export type OrgEhgDateGlassIntensity = "solid" | "soft" | "medium" | "strong" | "ultra";
@@ -27,19 +36,22 @@ export type OrgEhgDateGlassPopover = "none" | "date" | "datetime" | "time" | "ra
 export type OrgEhgDateGlassSurface = "popover" | "dialog";
 /**
  * Date glass varieties (playground Variety dropdown).
- * - quasar — Quasar calendar (Clear/Today/Set) + column hour/minute/AM·PM (default)
+ * - quasar — Quasar calendar (Clear/Today/Set) + 3-value glass HH/MM/AM·PM roll (default)
  * - android — Material header + calendar + clock dial
  * - sidebar — Calendar + quick select / time list
  */
 export type OrgEhgDateGlassVariety = "android" | "sidebar" | "quasar";
 
-export const ORG_EHG_DATE_GLASS_DEFAULT_VARIETY: OrgEhgDateGlassVariety = "quasar";
-/** Locked default kind: Date and time glass. */
-export const ORG_EHG_DATE_GLASS_DEFAULT_KIND: OrgEhgDateGlassKind = "datetime";
-/** Locked default intensity for Organization date / date-time glass (not Solid). */
-export const ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY: OrgEhgDateGlassIntensity = "medium";
-/** Locked default picker surface: popover under the field. */
-export const ORG_EHG_DATE_GLASS_DEFAULT_SURFACE: OrgEhgDateGlassSurface = "popover";
+export {
+  ORG_EHG_DATE_GLASS_COMMAND,
+  ORG_EHG_DATE_GLASS_DEFAULT_FOCUS,
+  ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY,
+  ORG_EHG_DATE_GLASS_DEFAULT_KIND,
+  ORG_EHG_DATE_GLASS_DEFAULT_SIZE,
+  ORG_EHG_DATE_GLASS_DEFAULT_SURFACE,
+  ORG_EHG_DATE_GLASS_DEFAULT_VARIETY,
+  ORG_EHG_DATE_GLASS_TITLE,
+} from "@/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-date-glass-global-default";
 
 export type OrgEhgDateGlassFieldProps = {
   intensity?: OrgEhgDateGlassIntensity;
@@ -513,7 +525,6 @@ function QuasarCalendarPane({
   onSelectMonth: (month: number) => void;
   onSelectYear: (year: number) => void;
   onShiftMonth: (delta: number) => void;
-  onViewChange?: (view: QuasarCalView) => void;
 }) {
   const [view, setView] = useState<QuasarCalView>("calendar");
   const [yearPage, setYearPage] = useState(
@@ -530,117 +541,16 @@ function QuasarCalendarPane({
 
   function setCalView(next: QuasarCalView) {
     setView(next);
-    onViewChange?.(next);
   }
 
   useEffect(() => {
     setYearPage(year - ((year - QUASAR_YEAR_MIN) % QUASAR_YEAR_PAGE_SIZE));
   }, [year]);
 
-  if (view === "months") {
-    return (
-      <div className="org-ehg-date-glass-popover__quasar-cal">
-        <div className="org-ehg-date-glass-popover__quasar-cal-head">
-          <strong className="org-ehg-date-glass-popover__quasar-view-title">Select month</strong>
-          <button
-            type="button"
-            className="org-ehg-date-glass-popover__quasar-link-back"
-            onClick={() => setCalView("calendar")}
-          >
-            Back
-          </button>
-        </div>
-        <div className="org-ehg-date-glass-popover__quasar-choices" role="listbox" aria-label="Month">
-          {MONTHS_SHORT.map((name, index) => (
-            <button
-              key={name}
-              type="button"
-              className={
-                "org-ehg-date-glass-popover__quasar-choice" +
-                (index === month ? " org-ehg-date-glass-popover__quasar-choice--selected" : "")
-              }
-              aria-pressed={index === month}
-              onClick={() => {
-                onSelectMonth(index);
-                setCalView("calendar");
-              }}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (view === "years") {
-    return (
-      <div className="org-ehg-date-glass-popover__quasar-cal">
-        <div className="org-ehg-date-glass-popover__quasar-cal-head org-ehg-date-glass-popover__quasar-cal-head--year-page">
-          <span className="org-ehg-date-glass-popover__quasar-stepper org-ehg-date-glass-popover__quasar-stepper--title">
-            <button
-              type="button"
-              className="org-ehg-date-glass-popover__quasar-caret"
-              aria-label="Previous years"
-              disabled={yearPage <= QUASAR_YEAR_MIN}
-              onClick={() =>
-                setYearPage((page) => Math.max(QUASAR_YEAR_MIN, page - QUASAR_YEAR_PAGE_SIZE))
-              }
-            >
-              <ChevronLeft className="size-3.5" strokeWidth={2} aria-hidden />
-            </button>
-            <strong className="org-ehg-date-glass-popover__quasar-view-title">Select year</strong>
-            <button
-              type="button"
-              className="org-ehg-date-glass-popover__quasar-caret"
-              aria-label="Next years"
-              disabled={yearPage + QUASAR_YEAR_PAGE_SIZE > QUASAR_YEAR_MAX}
-              onClick={() =>
-                setYearPage((page) =>
-                  Math.min(QUASAR_YEAR_MAX - QUASAR_YEAR_PAGE_SIZE + 1, page + QUASAR_YEAR_PAGE_SIZE),
-                )
-              }
-            >
-              <ChevronRight className="size-3.5" strokeWidth={2} aria-hidden />
-            </button>
-          </span>
-          <button
-            type="button"
-            className="org-ehg-date-glass-popover__quasar-link-back"
-            onClick={() => setCalView("calendar")}
-          >
-            Back
-          </button>
-        </div>
-        <div
-          className="org-ehg-date-glass-popover__quasar-choices org-ehg-date-glass-popover__quasar-choices--years"
-          role="listbox"
-          aria-label="Year"
-        >
-          {years.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={
-                "org-ehg-date-glass-popover__quasar-choice" +
-                (item === year ? " org-ehg-date-glass-popover__quasar-choice--selected" : "")
-              }
-              aria-pressed={item === year}
-              onClick={() => {
-                onSelectYear(item);
-                setCalView("calendar");
-              }}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const yearPageEnd = Math.min(QUASAR_YEAR_MAX, yearPage + QUASAR_YEAR_PAGE_SIZE - 1);
 
   return (
-    <div className="org-ehg-date-glass-popover__quasar-cal">
+    <div className="org-ehg-date-glass-popover__quasar-cal" data-cal-view={view}>
       <div className="org-ehg-date-glass-popover__quasar-cal-head org-ehg-date-glass-popover__quasar-cal-head--carets">
         <span className="org-ehg-date-glass-popover__quasar-stepper">
           <button
@@ -653,9 +563,13 @@ function QuasarCalendarPane({
           </button>
           <button
             type="button"
-            className="org-ehg-date-glass-popover__quasar-month"
+            className={
+              "org-ehg-date-glass-popover__quasar-month" +
+              (view === "months" ? " org-ehg-date-glass-popover__quasar-month--active" : "")
+            }
             aria-label="Select month"
-            onClick={() => setCalView("months")}
+            aria-pressed={view === "months"}
+            onClick={() => setCalView(view === "months" ? "calendar" : "months")}
           >
             {MONTHS_LONG[month]}
           </button>
@@ -672,67 +586,332 @@ function QuasarCalendarPane({
           <button
             type="button"
             className="org-ehg-date-glass-popover__quasar-caret"
-            aria-label="Previous year"
-            disabled={year <= QUASAR_YEAR_MIN}
-            onClick={() => onSelectYear(Math.max(QUASAR_YEAR_MIN, year - 1))}
+            aria-label={view === "years" ? "Previous years" : "Previous year"}
+            disabled={
+              view === "years" ? yearPage <= QUASAR_YEAR_MIN : year <= QUASAR_YEAR_MIN
+            }
+            onClick={() => {
+              if (view === "years") {
+                setYearPage((page) => Math.max(QUASAR_YEAR_MIN, page - QUASAR_YEAR_PAGE_SIZE));
+                return;
+              }
+              onSelectYear(Math.max(QUASAR_YEAR_MIN, year - 1));
+            }}
           >
             <ChevronLeft className="size-3.5" strokeWidth={2} aria-hidden />
           </button>
           <button
             type="button"
-            className="org-ehg-date-glass-popover__quasar-year"
+            className={
+              "org-ehg-date-glass-popover__quasar-year" +
+              (view === "years" ? " org-ehg-date-glass-popover__quasar-year--active" : "")
+            }
             aria-label="Select year"
-            onClick={() => setCalView("years")}
+            aria-pressed={view === "years"}
+            onClick={() => setCalView(view === "years" ? "calendar" : "years")}
           >
-            {year}
+            {view === "years" ? `${yearPage} – ${yearPageEnd}` : year}
           </button>
           <button
             type="button"
             className="org-ehg-date-glass-popover__quasar-caret"
-            aria-label="Next year"
-            disabled={year >= QUASAR_YEAR_MAX}
-            onClick={() => onSelectYear(Math.min(QUASAR_YEAR_MAX, year + 1))}
+            aria-label={view === "years" ? "Next years" : "Next year"}
+            disabled={
+              view === "years"
+                ? yearPage + QUASAR_YEAR_PAGE_SIZE > QUASAR_YEAR_MAX
+                : year >= QUASAR_YEAR_MAX
+            }
+            onClick={() => {
+              if (view === "years") {
+                setYearPage((page) =>
+                  Math.min(QUASAR_YEAR_MAX - QUASAR_YEAR_PAGE_SIZE + 1, page + QUASAR_YEAR_PAGE_SIZE),
+                );
+                return;
+              }
+              onSelectYear(Math.min(QUASAR_YEAR_MAX, year + 1));
+            }}
           >
             <ChevronRight className="size-3.5" strokeWidth={2} aria-hidden />
           </button>
         </span>
       </div>
-      <div className="org-ehg-date-glass-popover__weekdays org-ehg-date-glass-popover__weekdays--quasar" aria-hidden>
-        {QUASAR_WEEKDAYS.map((day) => (
-          <span key={day}>{day}</span>
-        ))}
-      </div>
-      <div className="org-ehg-date-glass-popover__grid" role="grid" aria-label={`${MONTHS_LONG[month]} ${year}`}>
-        {cells.map((day, index) =>
-          day == null ? (
-            <span
-              key={`empty-${index}`}
-              className="org-ehg-date-glass-popover__day org-ehg-date-glass-popover__day--empty"
-            />
-          ) : (
-            <button
-              key={day}
-              type="button"
-              className={
-                "org-ehg-date-glass-popover__day org-ehg-date-glass-popover__day--quasar" +
-                (() => {
-                  const extra = dayRangeClass(year, month, day, selectedDay, rangeStart, rangeEnd);
-                  return extra ? ` ${extra}` : "";
-                })()
-              }
-              aria-pressed={
-                rangeStart?.day != null
-                  ? dayRangeClass(year, month, day, selectedDay, rangeStart, rangeEnd).includes(
-                      "selected",
-                    )
-                  : day === selectedDay
-              }
-              onClick={() => onSelectDay(day)}
+
+      <div className="org-ehg-date-glass-popover__quasar-cal-body">
+        {view === "months" ? (
+          <div
+            className="org-ehg-date-glass-popover__quasar-choices"
+            role="listbox"
+            aria-label="Month"
+          >
+            {MONTHS_SHORT.map((name, index) => (
+              <button
+                key={name}
+                type="button"
+                className={
+                  "org-ehg-date-glass-popover__quasar-choice" +
+                  (index === month ? " org-ehg-date-glass-popover__quasar-choice--selected" : "")
+                }
+                aria-pressed={index === month}
+                onClick={() => {
+                  onSelectMonth(index);
+                  setCalView("calendar");
+                }}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        ) : view === "years" ? (
+          <div
+            className="org-ehg-date-glass-popover__quasar-choices org-ehg-date-glass-popover__quasar-choices--years"
+            role="listbox"
+            aria-label="Year"
+          >
+            {years.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={
+                  "org-ehg-date-glass-popover__quasar-choice" +
+                  (item === year ? " org-ehg-date-glass-popover__quasar-choice--selected" : "")
+                }
+                aria-pressed={item === year}
+                onClick={() => {
+                  onSelectYear(item);
+                  setCalView("calendar");
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div
+              className="org-ehg-date-glass-popover__weekdays org-ehg-date-glass-popover__weekdays--quasar"
+              aria-hidden
             >
-              {day}
-            </button>
-          ),
+              {QUASAR_WEEKDAYS.map((day) => (
+                <span key={day}>{day}</span>
+              ))}
+            </div>
+            <div
+              className="org-ehg-date-glass-popover__grid"
+              role="grid"
+              aria-label={`${MONTHS_LONG[month]} ${year}`}
+            >
+              {cells.map((day, index) =>
+                day == null ? (
+                  <span
+                    key={`empty-${index}`}
+                    className="org-ehg-date-glass-popover__day org-ehg-date-glass-popover__day--empty"
+                  />
+                ) : (
+                  <button
+                    key={day}
+                    type="button"
+                    className={
+                      "org-ehg-date-glass-popover__day org-ehg-date-glass-popover__day--quasar" +
+                      (() => {
+                        const extra = dayRangeClass(
+                          year,
+                          month,
+                          day,
+                          selectedDay,
+                          rangeStart,
+                          rangeEnd,
+                        );
+                        return extra ? ` ${extra}` : "";
+                      })()
+                    }
+                    aria-pressed={
+                      rangeStart?.day != null
+                        ? dayRangeClass(
+                            year,
+                            month,
+                            day,
+                            selectedDay,
+                            rangeStart,
+                            rangeEnd,
+                          ).includes("selected")
+                        : day === selectedDay
+                    }
+                    onClick={() => onSelectDay(day)}
+                  >
+                    {day}
+                  </button>
+                ),
+              )}
+            </div>
+          </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function stepQuasarList(list: readonly string[], current: string, delta: number): string {
+  const index = list.indexOf(current);
+  const start = index >= 0 ? index : 0;
+  return list[(start + delta + list.length) % list.length]!;
+}
+
+function clampQuasarHour(raw: string, fallback: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 2);
+  if (!digits) return fallback;
+  const n = Number(digits);
+  if (!Number.isFinite(n) || n < 1) return "01";
+  if (n > 12) return "12";
+  return String(n).padStart(2, "0");
+}
+
+function clampQuasarMinute(raw: string, fallback: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 2);
+  if (!digits) return fallback;
+  const n = Number(digits);
+  if (!Number.isFinite(n) || n < 0) return "00";
+  if (n > 59) return "59";
+  return String(n).padStart(2, "0");
+}
+
+function QuasarTimeDigitInput({
+  value,
+  ariaLabel,
+  onCommit,
+  clamp,
+}: {
+  value: string;
+  ariaLabel: string;
+  onCommit: (next: string) => void;
+  clamp: (raw: string, fallback: string) => string;
+}) {
+  const [draft, setDraft] = useState(value);
+  const [editing, setEditing] = useState(false);
+  const valueRef = useRef(value);
+
+  useEffect(() => {
+    valueRef.current = value;
+    setDraft(value);
+  }, [value]);
+
+  function commit(raw: string) {
+    const next = clamp(raw, valueRef.current);
+    setDraft(next);
+    if (next !== valueRef.current) onCommit(next);
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={2}
+      className="org-ehg-date-glass-popover__quasar-time-value org-ehg-date-glass-popover__quasar-time-value--input org-ehg-date-glass-popover__quasar-time-value--current"
+      aria-label={ariaLabel}
+      value={editing ? draft : value}
+      onFocus={(event) => {
+        setEditing(true);
+        setDraft(valueRef.current);
+        event.currentTarget.select();
+      }}
+      onBlur={() => {
+        commit(draft);
+        setEditing(false);
+      }}
+      onChange={(event) => {
+        const digits = event.target.value.replace(/\D/g, "").slice(0, 2);
+        setDraft(digits);
+        if (digits.length === 2) {
+          const next = clamp(digits, valueRef.current);
+          setDraft(next);
+          if (next !== valueRef.current) onCommit(next);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.currentTarget.blur();
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          setDraft(valueRef.current);
+          event.currentTarget.blur();
+        }
+      }}
+      onMouseDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    />
+  );
+}
+
+function QuasarTimeGlassRoll({
+  label,
+  caption,
+  list,
+  value,
+  typeable,
+  clamp,
+  onChange,
+}: {
+  label: string;
+  caption: string;
+  list: readonly string[];
+  value: string;
+  typeable?: boolean;
+  clamp?: (raw: string, fallback: string) => string;
+  onChange: (next: string) => void;
+}) {
+  const prev = stepQuasarList(list, value, -1);
+  const next = stepQuasarList(list, value, 1);
+  const startYRef = useRef<number | null>(null);
+  const goPrev = () => onChange(prev);
+  const goNext = () => onChange(next);
+  const touch = softGlassRollTouchHandlers(goPrev, goNext, false, startYRef);
+
+  function onWheel(event: WheelEvent<HTMLDivElement>) {
+    if (Math.abs(event.deltaY) < 2) return;
+    event.preventDefault();
+    if (event.deltaY > 0) goNext();
+    else goPrev();
+  }
+
+  return (
+    <div
+      className="org-ehg-date-glass-popover__quasar-time-step"
+      role="group"
+      aria-label={label}
+      onWheel={onWheel}
+      {...touch}
+    >
+      <span className="org-ehg-date-glass-popover__quasar-time-caption">{caption}</span>
+      <div className="org-ehg-date-glass-popover__quasar-time-window">
+        <button
+          type="button"
+          className="org-ehg-date-glass-popover__quasar-time-neighbor"
+          aria-label={`Select ${prev}`}
+          onClick={goPrev}
+        >
+          {prev}
+        </button>
+        <div className="org-ehg-date-glass-popover__quasar-time-band">
+          {typeable && clamp ? (
+            <QuasarTimeDigitInput value={value} ariaLabel={label} onCommit={onChange} clamp={clamp} />
+          ) : (
+            <span
+              className="org-ehg-date-glass-popover__quasar-time-value org-ehg-date-glass-popover__quasar-time-value--current org-ehg-date-glass-popover__quasar-time-value--period"
+              aria-live="polite"
+            >
+              {value}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          className="org-ehg-date-glass-popover__quasar-time-neighbor"
+          aria-label={`Select ${next}`}
+          onClick={goNext}
+        >
+          {next}
+        </button>
       </div>
     </div>
   );
@@ -755,63 +934,32 @@ function QuasarTimeColumns({
 }) {
   return (
     <div className="org-ehg-date-glass-popover__quasar-time" aria-label="Time">
-      <div className="org-ehg-date-glass-popover__quasar-time-selected" aria-hidden>
-        <span className="org-ehg-date-glass-popover__quasar-chip">{hour}</span>
-        <span className="org-ehg-date-glass-popover__quasar-chip">{minute}</span>
-        <span className="org-ehg-date-glass-popover__quasar-chip">{period}</span>
-      </div>
-      <div className="org-ehg-date-glass-popover__quasar-time-cols">
-        <ul className="org-ehg-date-glass-popover__quasar-col" role="listbox" aria-label="Hour">
-          {QUASAR_HOURS.map((item) => (
-            <li key={item}>
-              <button
-                type="button"
-                className={
-                  "org-ehg-date-glass-popover__quasar-item" +
-                  (item === hour ? " org-ehg-date-glass-popover__quasar-item--selected" : "")
-                }
-                aria-pressed={item === hour}
-                onClick={() => onHour(item)}
-              >
-                {item}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <ul className="org-ehg-date-glass-popover__quasar-col" role="listbox" aria-label="Minute">
-          {QUASAR_MINUTES.map((item) => (
-            <li key={item}>
-              <button
-                type="button"
-                className={
-                  "org-ehg-date-glass-popover__quasar-item" +
-                  (item === minute ? " org-ehg-date-glass-popover__quasar-item--selected" : "")
-                }
-                aria-pressed={item === minute}
-                onClick={() => onMinute(item)}
-              >
-                {item}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <ul className="org-ehg-date-glass-popover__quasar-col" role="listbox" aria-label="AM or PM">
-          {QUASAR_PERIODS.map((item) => (
-            <li key={item}>
-              <button
-                type="button"
-                className={
-                  "org-ehg-date-glass-popover__quasar-item" +
-                  (item === period ? " org-ehg-date-glass-popover__quasar-item--selected" : "")
-                }
-                aria-pressed={item === period}
-                onClick={() => onPeriod(item)}
-              >
-                {item}
-              </button>
-            </li>
-          ))}
-        </ul>
+      <div className="org-ehg-date-glass-popover__quasar-time-steppers">
+        <QuasarTimeGlassRoll
+          label="Hour"
+          caption="Hours"
+          list={QUASAR_HOURS}
+          value={hour}
+          typeable
+          clamp={clampQuasarHour}
+          onChange={onHour}
+        />
+        <QuasarTimeGlassRoll
+          label="Minute"
+          caption="Minutes"
+          list={QUASAR_MINUTES}
+          value={minute}
+          typeable
+          clamp={clampQuasarMinute}
+          onChange={onMinute}
+        />
+        <QuasarTimeGlassRoll
+          label="AM or PM"
+          caption="Period"
+          list={QUASAR_PERIODS}
+          value={period}
+          onChange={(next) => onPeriod(next as "AM" | "PM")}
+        />
       </div>
     </div>
   );
@@ -930,6 +1078,7 @@ function AndroidHeader({
 export function OrgEhgDateGlassPopover({
   variant = "datetime",
   variety = ORG_EHG_DATE_GLASS_DEFAULT_VARIETY,
+  intensity = ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY,
   value,
   onChange,
   onClose,
@@ -940,6 +1089,8 @@ export function OrgEhgDateGlassPopover({
 }: {
   variant?: "date" | "datetime" | "time" | "range";
   variety?: OrgEhgDateGlassVariety;
+  /** Same Soft→Ultra glass recipe as the field — drives popover + HH/MM glass. */
+  intensity?: OrgEhgDateGlassIntensity;
   value?: string;
   onChange?: (next: string) => void;
   onClose?: () => void;
@@ -972,10 +1123,8 @@ export function OrgEhgDateGlassPopover({
   const [listTime, setListTime] = useState(
     formatTime(initial.time.hour, initial.time.minute, initial.time.period),
   );
-  const [quasarCalView, setQuasarCalView] = useState<QuasarCalView>("calendar");
-  const quasarOnCalendar = isTimeOnly || quasarCalView === "calendar";
-  const showQuasarTime =
-    isTimeOnly || (variant === "datetime" && quasarCalView === "calendar");
+  // Keep footer + time chrome while month/year grids are open so the popover does not shrink.
+  const showQuasarTime = isTimeOnly || variant === "datetime";
 
   useEffect(() => {
     if (isRange) {
@@ -1111,16 +1260,19 @@ export function OrgEhgDateGlassPopover({
   function quasarClear() {
     if (isTimeOnly) {
       onChange?.("");
+      onClose?.();
       return;
     }
     if (isRange) {
       setRangeStart(null);
       setRangeEnd(null);
       onChange?.("");
+      onClose?.();
       return;
     }
     setDate((prev) => ({ ...prev, day: null }));
     onChange?.("");
+    onClose?.();
   }
 
   function currentDraftTime(now = new Date()): DraftTime {
@@ -1136,23 +1288,40 @@ export function OrgEhgDateGlassPopover({
 
   function quasarToday() {
     const now = new Date();
-    if (isTimeOnly) {
-      setTime(currentDraftTime(now));
-      return;
-    }
+    const nextTime = currentDraftTime(now);
     const picked: DraftDate = {
       year: now.getFullYear(),
       month: now.getMonth(),
       day: now.getDate(),
     };
-    setDate(picked);
-    if (variant === "datetime") {
-      setTime(currentDraftTime(now));
+
+    if (isTimeOnly) {
+      setTime(nextTime);
+      commitTime(nextTime);
+      onClose?.();
+      return;
     }
+
     if (isRange) {
+      setDate(picked);
       setRangeStart(picked);
       setRangeEnd(picked);
+      onChange?.(formatRangeLabel(picked, picked));
+      onClose?.();
+      return;
     }
+
+    setDate(picked);
+    const dateLabel = formatQuasarDate(picked.year, picked.month, picked.day!);
+    if (variant === "datetime") {
+      setTime(nextTime);
+      onChange?.(
+        formatDatetime(dateLabel, formatTime(nextTime.hour, nextTime.minute, nextTime.period)),
+      );
+    } else {
+      onChange?.(dateLabel);
+    }
+    onClose?.();
   }
 
   function quasarSet() {
@@ -1211,6 +1380,7 @@ export function OrgEhgDateGlassPopover({
       className={[
         "org-ehg-date-glass-popover",
         `org-ehg-date-glass-popover--${variety}`,
+        `org-ehg-date-glass-popover--${intensity}`,
         `org-ehg-date-glass-popover--surface-${surface}`,
         variant === "datetime" ? "org-ehg-date-glass-popover--datetime" : "",
         isTimeOnly ? "org-ehg-date-glass-popover--time" : "",
@@ -1221,6 +1391,7 @@ export function OrgEhgDateGlassPopover({
         .join(" ")}
       data-testid={testId}
       data-variety={variety}
+      data-intensity={intensity}
       data-surface={surface}
       data-state={open ? "open" : "closed"}
       data-transition="scale"
@@ -1273,7 +1444,6 @@ export function OrgEhgDateGlassPopover({
                 onSelectMonth={selectMonth}
                 onSelectYear={selectYear}
                 onShiftMonth={shiftView}
-                onViewChange={setQuasarCalView}
               />
             )}
             {showQuasarTime ? (
@@ -1287,34 +1457,48 @@ export function OrgEhgDateGlassPopover({
               />
             ) : null}
           </div>
-          {quasarOnCalendar ? (
-            <footer className="org-ehg-date-glass-popover__quasar-footer">
-              <button
-                type="button"
-                className="org-ehg-date-glass-popover__quasar-footer-btn org-ehg-date-glass-popover__quasar-footer-btn--clear"
-                data-testid={testId ? `${testId}-clear` : undefined}
-                onClick={quasarClear}
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                className="org-ehg-date-glass-popover__quasar-footer-btn org-ehg-date-glass-popover__quasar-footer-btn--today"
-                data-testid={testId ? `${testId}-today` : undefined}
-                onClick={quasarToday}
-              >
-                {isTimeOnly || variant === "datetime" ? "Now" : "Today"}
-              </button>
-              <button
-                type="button"
-                className="org-ehg-date-glass-popover__quasar-footer-btn org-ehg-date-glass-popover__quasar-footer-btn--set"
-                data-testid={testId ? `${testId}-set` : undefined}
-                onClick={quasarSet}
-              >
-                Set
-              </button>
-            </footer>
-          ) : null}
+          <footer
+            className="org-ehg-date-glass-popover__quasar-footer"
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="org-ehg-date-glass-popover__quasar-footer-btn org-ehg-date-glass-popover__quasar-footer-btn--clear"
+              data-testid={testId ? `${testId}-clear` : undefined}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.stopPropagation();
+                quasarClear();
+              }}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="org-ehg-date-glass-popover__quasar-footer-btn org-ehg-date-glass-popover__quasar-footer-btn--today"
+              data-testid={testId ? `${testId}-today` : undefined}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.stopPropagation();
+                quasarToday();
+              }}
+            >
+              {isTimeOnly || variant === "datetime" ? "Now" : "Today"}
+            </button>
+            <button
+              type="button"
+              className="org-ehg-date-glass-popover__quasar-footer-btn org-ehg-date-glass-popover__quasar-footer-btn--set"
+              data-testid={testId ? `${testId}-set` : undefined}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.stopPropagation();
+                quasarSet();
+              }}
+            >
+              Set
+            </button>
+          </footer>
         </>
       ) : isAndroid ? (
         <div
@@ -1462,7 +1646,7 @@ export function OrgEhgDateGlassPopover({
  */
 export function OrgEhgDateGlassField({
   intensity = ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY,
-  size = "md",
+  size = ORG_EHG_DATE_GLASS_DEFAULT_SIZE,
   state = "default",
   kind = ORG_EHG_DATE_GLASS_DEFAULT_KIND,
   variety = ORG_EHG_DATE_GLASS_DEFAULT_VARIETY,
@@ -1473,7 +1657,7 @@ export function OrgEhgDateGlassField({
   open: openProp,
   showPopover = "none",
   surface = ORG_EHG_DATE_GLASS_DEFAULT_SURFACE,
-  focusAnimation = "thick-below",
+  focusAnimation = ORG_EHG_DATE_GLASS_DEFAULT_FOCUS,
   onOpenChange,
   onChange,
   testId,
@@ -1569,6 +1753,7 @@ export function OrgEhgDateGlassField({
       <OrgEhgDateGlassPopover
         variant={popoverVariant}
         variety={variety}
+        intensity={intensity}
         value={displayValue}
         open={open}
         surface={surface}

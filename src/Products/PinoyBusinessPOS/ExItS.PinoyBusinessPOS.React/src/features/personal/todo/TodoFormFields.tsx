@@ -15,7 +15,7 @@ import {
   ExitsOutlineSelect,
   ExitsOutlineTextarea,
 } from "@/components/exits/ExitsOutlineField";
-import { SoftGlassDateTimeField } from "@/components/exits/SoftGlassDateTimeField";
+import { ExitsDateGlassDateTimeField } from "@/components/exits/ExitsDateGlassDateTimeField";
 import { Button } from "@/components/ui/button";
 import {
   TODO_PRIORITIES,
@@ -244,14 +244,14 @@ export function TodoFormFields({
           />
 
           <div className="personal-todo-form__datetime-row">
-            <SoftGlassDateTimeField
+            <ExitsDateGlassDateTimeField
               label={t("personal.todo.dueAt")}
               value={form.dueAtLocal}
               onChange={(dueAtLocal) => setForm({ ...form, dueAtLocal })}
               testId={`${idPrefix}-due`}
             />
             <div className="personal-todo-form__reminder">
-              <SoftGlassDateTimeField
+              <ExitsDateGlassDateTimeField
                 label={t("personal.todo.reminderAt")}
                 value={form.reminderAtLocal}
                 onChange={(reminderAtLocal) => setForm({ ...form, reminderAtLocal })}

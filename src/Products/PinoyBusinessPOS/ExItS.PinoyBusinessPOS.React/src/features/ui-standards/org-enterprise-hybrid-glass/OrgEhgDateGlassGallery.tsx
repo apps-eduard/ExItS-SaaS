@@ -50,16 +50,19 @@ function ModePanel({
         <header className="org-ehg-date-glass-panel__header">
           <h2 className="org-ehg-date-glass-panel__title">{title} – Date &amp; Date-Time</h2>
           <p className="org-ehg-date-glass-panel__blurb">
-            Default: Quasar date &amp; time glass. Thick-below focus, light and dark.
+            Locked: Quasar medium datetime · md · popover · focus-thick-below. Time is a
+            3-value glass roll (tap above/below; HH/MM typeable; no carets).
           </p>
         </header>
 
         <Section title="1. Default · Quasar date &amp; time">
-          <Sample caption="Quasar · Medium (default)">
+          <Sample caption="Quasar · Medium datetime (locked)">
             <OrgEhgDateGlassField
               variety="quasar"
               kind="datetime"
               intensity="medium"
+              size="md"
+              focusAnimation="thick-below"
               showPopover="none"
               testId={`${testId}-quasar-default`}
             />
@@ -202,25 +205,30 @@ function ModePanel({
         </section>
 
         <section className="org-ehg-date-glass-panel__section">
-          <h3 className="org-ehg-date-glass-panel__section-title">9. Quasar popovers</h3>
+          <h3 className="org-ehg-date-glass-panel__section-title">
+            9. Quasar popovers (glass time roll)
+          </h3>
           <div className="org-ehg-date-glass-panel__popovers">
             <Sample caption="Quasar · Calendar (month / year)">
               <OrgEhgDateGlassPopover
                 variety="quasar"
+                intensity="medium"
                 variant="date"
                 testId={`${testId}-popover-quasar-date`}
               />
             </Sample>
-            <Sample caption="Quasar · Date &amp; column time">
+            <Sample caption="Quasar · Date &amp; glass HH/MM roll">
               <OrgEhgDateGlassPopover
                 variety="quasar"
+                intensity="medium"
                 variant="datetime"
                 testId={`${testId}-popover-quasar-datetime`}
               />
             </Sample>
-            <Sample caption="Quasar · Time only">
+            <Sample caption="Quasar · Time roll only">
               <OrgEhgDateGlassPopover
                 variety="quasar"
+                intensity="medium"
                 variant="time"
                 testId={`${testId}-popover-quasar-time`}
               />
@@ -228,6 +236,7 @@ function ModePanel({
             <Sample caption="Quasar · Date range">
               <OrgEhgDateGlassPopover
                 variety="quasar"
+                intensity="medium"
                 variant="range"
                 value="Feb 20, 2025 → Feb 27, 2025"
                 testId={`${testId}-popover-quasar-range`}
@@ -249,8 +258,8 @@ export function OrgEhgDateGlassGallery() {
       <p className="org-ehg__banner m-0">
         <strong>Enterprise Hybrid Glass · Date glass</strong>
         {" — "}
-        Default variety: Quasar (month/year pick, Clear/Today/Set, time only, date range).
-        Personal Soft Glass date controls are unchanged.
+        Locked: ext org-ehg date-glass quasar medium datetime md popover focus-thick-below.
+        Quasar time = 3-value glass roll (tap neighbors; typeable HH/MM; Clear closes).
       </p>
       <OrgEhgDateGlassPlayground />
       <div className="org-ehg-date-glass-gallery__columns">

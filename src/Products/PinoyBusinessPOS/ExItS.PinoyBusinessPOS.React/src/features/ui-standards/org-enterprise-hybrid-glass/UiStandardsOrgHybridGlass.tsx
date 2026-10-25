@@ -1,5 +1,6 @@
 import type { UiStandardFilterCategory } from "@/features/ui-standards/ui-standard-catalog";
 import { OrgEhgButtonGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgButtonGlassGallery";
+import { OrgEhgFabGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgFabGlassGallery";
 import { OrgEhgInputGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgInputGlassGallery";
 import { OrgEhgDateGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDateGlassGallery";
 import { OrgEhgQuickActionGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQuickActionGlassGallery";
@@ -34,6 +35,7 @@ const ORG_EHG_CARD_GLASS_CATEGORIES = [
 export const ORG_EHG_CATEGORIES = [
   ...ORG_EHG_LIVE_CATEGORIES,
   "org-ehg-button-glass",
+  "org-ehg-fab-glass",
   "org-ehg-input-glass",
   "org-ehg-date-glass",
   "org-ehg-quick-action-glass",
@@ -69,6 +71,8 @@ export function UiStandardsOrgHybridGlass({ category }: { category: OrgEhgCatego
       return <OrgEhgBranchSettingsLive />;
     case "org-ehg-button-glass":
       return <OrgEhgButtonGlassGallery />;
+    case "org-ehg-fab-glass":
+      return <OrgEhgFabGlassGallery />;
     case "org-ehg-input-glass":
       return <OrgEhgInputGlassGallery />;
     case "org-ehg-date-glass":

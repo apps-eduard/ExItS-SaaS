@@ -45,6 +45,7 @@ function GlassBtn({
   icon: Icon,
   iconEnd: IconEnd,
   iconOnly = false,
+  fab = false,
   badge,
   split = false,
   caption,
@@ -60,6 +61,8 @@ function GlassBtn({
   icon?: LucideIcon;
   iconEnd?: LucideIcon;
   iconOnly?: boolean;
+  /** Circular floating action (icon-only + round). */
+  fab?: boolean;
   badge?: string;
   split?: boolean;
   caption?: string;
@@ -67,13 +70,16 @@ function GlassBtn({
   bgAnimation?: GlassBgAnimation;
   focusAnimation?: GlassFocusAnimation;
 }) {
+  const asFab = fab;
+  const asIconOnly = iconOnly || asFab;
   const className = [
     "org-ehg-btn-glass",
     `org-ehg-btn-glass--${intensity}`,
     `org-ehg-btn-glass--tone-${tone}`,
     `org-ehg-btn-glass--size-${size}`,
     state ? `org-ehg-btn-glass--state-${state}` : "",
-    iconOnly ? "org-ehg-btn-glass--icon-only" : "",
+    asIconOnly ? "org-ehg-btn-glass--icon-only" : "",
+    asFab ? "org-ehg-btn-glass--fab" : "",
     split ? "org-ehg-btn-glass--split" : "",
     bgAnimation !== "none" ? `org-ehg-btn-glass--bg-${bgAnimation}` : "",
     focusAnimation !== "none" ? `org-ehg-btn-glass--focus-${focusAnimation}` : "",
@@ -102,16 +108,16 @@ function GlassBtn({
       className={className}
       data-testid={testId}
       disabled={state === "disabled" || state === "loading"}
-      aria-label={iconOnly ? label : undefined}
+      aria-label={asIconOnly ? label : undefined}
       aria-busy={state === "loading" || undefined}
     >
       {state === "loading" ? null : Icon ? (
         <Icon className="org-ehg-btn-glass__icon" aria-hidden strokeWidth={2.25} />
       ) : null}
-      {iconOnly ? null : <span>{label}</span>}
+      {asIconOnly ? null : <span>{label}</span>}
       {state === "loading" ? (
         <Loader2 className="org-ehg-btn-glass__icon org-ehg-btn-glass__spin" aria-hidden strokeWidth={2.25} />
-      ) : IconEnd ? (
+      ) : IconEnd && !asIconOnly ? (
         <IconEnd className="org-ehg-btn-glass__icon" aria-hidden strokeWidth={2.25} />
       ) : null}
       {badge ? (
@@ -373,10 +379,51 @@ function ModePanel({
           <GlassBtn label="Ultra" intensity="ultra" icon={Check} caption="80–90%" />
         </div>
       </section>
+
+      <section className="org-ehg-btn-glass-panel__section">
+        <h3 className="org-ehg-btn-glass-panel__section-title">9. Floating action</h3>
+        <div className="org-ehg-btn-glass-fab-scene" data-testid={`${testId}-fab-scene`}>
+          <GlassBtn
+            label="Add"
+            fab
+            size="lg"
+            intensity="medium"
+            tone="primary"
+            icon={Plus}
+            caption="Corner FAB"
+            testId={`${testId}-fab`}
+          />
+        </div>
+        <div className="org-ehg-btn-glass-panel__row org-ehg-btn-glass-panel__row--fab">
+          <GlassBtn label="Add SM" fab size="sm" intensity="medium" tone="primary" icon={Plus} caption="FAB SM" />
+          <GlassBtn label="Add MD" fab size="md" intensity="medium" tone="primary" icon={Plus} caption="FAB MD" />
+          <GlassBtn label="Add LG" fab size="lg" intensity="medium" tone="primary" icon={Plus} caption="FAB LG" />
+          <GlassBtn label="Add XL" fab size="xl" intensity="medium" tone="primary" icon={Plus} caption="FAB XL" />
+          <GlassBtn
+            label="Cart"
+            fab
+            size="lg"
+            intensity="soft"
+            tone="success"
+            icon={ShoppingCart}
+            badge="3"
+            caption="Badge"
+            testId={`${testId}-fab-badge`}
+          />
+          <GlassBtn
+            label="Danger"
+            fab
+            size="lg"
+            intensity="medium"
+            tone="danger"
+            icon={X}
+            caption="Danger"
+          />
+        </div>
+      </section>
     </div>
   );
 }
-
 /**
  * Organization — Enterprise Hybrid Glass Button Glass Styles (UI Standards / DEV only).
  * Spec sample: light | dark columns. Org-scoped radii and glass — not Personal Soft Glass.

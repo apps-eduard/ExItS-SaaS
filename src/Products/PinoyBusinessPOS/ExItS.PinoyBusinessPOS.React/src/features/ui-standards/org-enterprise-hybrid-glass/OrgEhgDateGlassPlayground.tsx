@@ -10,10 +10,15 @@ import {
 } from "@/features/ui-standards/UiStandardsPlaygrounds";
 import { PlaygroundLabel, PlaygroundSection } from "@/features/ui-standards/UiStandardsSnippetBlock";
 import {
+  ORG_EHG_DATE_GLASS_COMMAND,
+  ORG_EHG_DATE_GLASS_DEFAULT_FOCUS,
   ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY,
   ORG_EHG_DATE_GLASS_DEFAULT_KIND,
+  ORG_EHG_DATE_GLASS_DEFAULT_SIZE,
   ORG_EHG_DATE_GLASS_DEFAULT_SURFACE,
   ORG_EHG_DATE_GLASS_DEFAULT_VARIETY,
+} from "@/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-date-glass-global-default";
+import {
   OrgEhgDateGlassField,
   type OrgEhgDateGlassFocusAnimation,
   type OrgEhgDateGlassIntensity,
@@ -83,9 +88,9 @@ const DEFAULTS = {
   kind: ORG_EHG_DATE_GLASS_DEFAULT_KIND,
   variety: ORG_EHG_DATE_GLASS_DEFAULT_VARIETY,
   surface: ORG_EHG_DATE_GLASS_DEFAULT_SURFACE,
-  size: "md" as OrgEhgDateGlassSize,
+  size: ORG_EHG_DATE_GLASS_DEFAULT_SIZE,
   state: "default" as OrgEhgDateGlassState,
-  focusAnimation: "thick-below" as OrgEhgDateGlassFocusAnimation,
+  focusAnimation: ORG_EHG_DATE_GLASS_DEFAULT_FOCUS,
   label: "Date and time",
   value: "02/20/2025  10:30 AM",
   showPicker: true,
@@ -105,6 +110,9 @@ function dateGlassCommand(
   if (focusAnimation !== "none") parts.push(`focus-${focusAnimation}`);
   return parts.join(" ");
 }
+
+/** Locked playground reset command (must match ORG_EHG_DATE_GLASS_COMMAND). */
+export const ORG_EHG_DATE_GLASS_PLAYGROUND_DEFAULT_COMMAND = ORG_EHG_DATE_GLASS_COMMAND;
 
 /**
  * Interactive Org Enterprise Hybrid Glass date playground (UI Standards / DEV only).
@@ -163,7 +171,7 @@ export function OrgEhgDateGlassPlayground() {
 
   return (
     <section
-      className="org-ehg org-ehg-pg-bg org-ehg-glass-playground-card flex min-w-0 flex-col"
+      className="org-ehg org-ehg-pg-bg org-ehg-glass-playground-card org-ehg-date-glass-playground flex min-w-0 flex-col"
       data-testid="ui-standard-card-org-ehg-date-glass-playground"
       data-bg-option={background}
       data-org-ehg-theme={theme}
@@ -211,7 +219,55 @@ export function OrgEhgDateGlassPlayground() {
         </div>
 
         <PlaygroundSection testId="ui-standard-org-ehg-date-glass-playground" className="">
-          <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex min-w-0 flex-col gap-3" data-testid="ui-standard-org-ehg-date-pg-preview-card">
+            <PlaygroundLabel>Preview</PlaygroundLabel>
+            <div
+              className="org-ehg-date-glass-panel org-ehg-date-glass-panel--playground"
+              data-testid="ui-standard-org-ehg-date-pg-preview"
+              data-org-ehg-theme={theme}
+            >
+              <OrgEhgDateGlassField
+                intensity={intensity}
+                kind={kind}
+                variety={variety}
+                size={size}
+                state={state}
+                focusAnimation={focusAnimation}
+                label={label}
+                value={value}
+                surface={surface}
+                open={showPicker ? open : false}
+                onOpenChange={setOpen}
+                onChange={setValue}
+                showPopover={
+                  showPicker
+                    ? kind === "datetime"
+                      ? "datetime"
+                      : kind === "time"
+                        ? "time"
+                        : kind === "range"
+                          ? "range"
+                          : kind === "month"
+                            ? "none"
+                            : "date"
+                    : "none"
+                }
+                hint={
+                  state === "error"
+                    ? "Choose a valid date"
+                    : state === "success"
+                      ? "Date confirmed"
+                      : undefined
+                }
+                testId="ui-standard-org-ehg-date-pg-preview-field"
+              />
+            </div>
+          </div>
+
+          <div
+            className="org-ehg-date-glass-playground__controls grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+            aria-hidden={open ? true : undefined}
+          >
             <CompactSelect
               label="Variety"
               value={variety}
@@ -298,51 +354,6 @@ export function OrgEhgDateGlassPlayground() {
               />
               Enable picker
             </label>
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-3" data-testid="ui-standard-org-ehg-date-pg-preview-card">
-            <PlaygroundLabel>Preview</PlaygroundLabel>
-            <div
-              className="org-ehg-date-glass-panel org-ehg-date-glass-panel--playground"
-              data-testid="ui-standard-org-ehg-date-pg-preview"
-              data-org-ehg-theme={theme}
-            >
-              <OrgEhgDateGlassField
-                intensity={intensity}
-                kind={kind}
-                variety={variety}
-                size={size}
-                state={state}
-                focusAnimation={focusAnimation}
-                label={label}
-                value={value}
-                surface={surface}
-                open={showPicker ? open : false}
-                onOpenChange={setOpen}
-                onChange={setValue}
-                showPopover={
-                  showPicker
-                    ? kind === "datetime"
-                      ? "datetime"
-                      : kind === "time"
-                        ? "time"
-                        : kind === "range"
-                          ? "range"
-                          : kind === "month"
-                            ? "none"
-                            : "date"
-                    : "none"
-                }
-                hint={
-                  state === "error"
-                    ? "Choose a valid date"
-                    : state === "success"
-                      ? "Date confirmed"
-                      : undefined
-                }
-                testId="ui-standard-org-ehg-date-pg-preview-field"
-              />
-            </div>
           </div>
 
           <UiStandardsCopyCommand

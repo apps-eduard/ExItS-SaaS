@@ -1,0 +1,36 @@
+---
+description: Org EHG Date glass Quasar medium datetime global default
+alwaysApply: true
+---
+
+# Org EHG Date glass (LOCKED)
+
+When creating an **Organization Enterprise Hybrid Glass** date / date-time field (UI Standards Org EHG), use the lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-date-glass-global-default.ts`.
+
+The locked command is `ext org-ehg date-glass quasar medium datetime md popover focus-thick-below`.
+
+- Variety: `quasar` (`ORG_EHG_DATE_GLASS_DEFAULT_VARIETY`)
+- Intensity: `medium` (`ORG_EHG_DATE_GLASS_DEFAULT_INTENSITY`)
+- Kind: `datetime` (`ORG_EHG_DATE_GLASS_DEFAULT_KIND`)
+- Size: `md` (`ORG_EHG_DATE_GLASS_DEFAULT_SIZE`)
+- Surface: `popover` (`ORG_EHG_DATE_GLASS_DEFAULT_SURFACE`)
+- Focus: `thick-below` (`ORG_EHG_DATE_GLASS_DEFAULT_FOCUS`)
+
+## Quasar time roll
+
+- 3-value vertical glass roll (prev / current / next) — **no carets**
+- Tap / click above or below to select that value; swipe and wheel still step
+- Middle HH / MM are typeable; equal row height and column width
+- Intensity drives field, popover shell, and time-roll glass
+- Footer: Clear / Now|Today / Set
+
+## Product use
+
+Product forms (New to-do due date / reminder, etc.) use `ExitsDateGlassDateTimeField` in `components/exits/` — locked Org EHG Quasar datetime with datetime-local value bridge. Prefer dialog surface in modals so the picker is not clipped.
+
+## Scope
+
+Org EHG recipe stays scoped (`.org-ehg-*`). Do **not** restyle Personal Soft Glass Roll (`exits-soft-glass-datetime.mdc`) unless the user asks.
+
+Use `OrgEhgDateGlassField` / `OrgEhgDateGlassPopover` in UI Standards; use `ExitsDateGlassDateTimeField` in product. Change this lock only when the user asks. Update `org-ehg-date-glass-global-default.ts`, `org-ehg-date-glass-global-default.test.ts`, field/playground defaults, Quasar time CSS, `ExitsDateGlassDateTimeField`, and this rule together.

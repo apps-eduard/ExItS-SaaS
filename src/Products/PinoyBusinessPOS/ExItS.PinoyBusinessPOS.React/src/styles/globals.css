@@ -12018,6 +12018,7 @@ body:has(.personal-crystal-screen) {
 .personal-todo-form-fields > .exits-locked-field,
 .personal-todo-form-fields > .ui-standards-textarea,
 .personal-todo-form-fields > .exits-sg-datetime,
+.personal-todo-form-fields > .org-ehg-date-glass-field,
 .personal-todo-form-fields > .personal-todo-form__datetime-row,
 .personal-todo-form-fields > .personal-todo-quick-due {
   margin-top: 0.1rem;
@@ -12034,7 +12035,13 @@ body:has(.personal-crystal-screen) {
 }
 
 .personal-todo-form__datetime-row > .exits-sg-datetime,
+.personal-todo-form__datetime-row > .org-ehg-date-glass-field,
 .personal-todo-form__reminder {
+  width: 100%;
+  min-width: 0;
+}
+
+.personal-todo-form__reminder > .org-ehg-date-glass-field {
   width: 100%;
   min-width: 0;
 }

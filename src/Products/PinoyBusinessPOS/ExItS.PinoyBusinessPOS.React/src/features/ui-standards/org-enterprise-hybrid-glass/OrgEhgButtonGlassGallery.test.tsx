@@ -71,4 +71,17 @@ describe("OrgEhgButtonGlassGallery", () => {
     expect(css).toContain(".org-ehg-btn-glass--bg-shimmer");
     expect(css).toContain(".org-ehg-input-glass-field--focus-glow");
   });
+
+  it("renders floating action samples as circular FAB, not base pill buttons", () => {
+    renderGallery();
+    const light = screen.getByTestId("org-ehg-btn-glass-light");
+    expect(within(light).getByTestId("org-ehg-btn-glass-light-fab-scene")).toBeInTheDocument();
+    const fab = within(light).getByTestId("org-ehg-btn-glass-light-fab");
+    expect(fab).toHaveClass("org-ehg-btn-glass--fab");
+    expect(fab).toHaveClass("org-ehg-btn-glass--icon-only");
+    expect(css).toContain(".org-ehg-btn-glass--fab");
+    expect(css).toContain("border-radius: 999px");
+    const baseRule = css.match(/\.org-ehg-btn-glass\s*\{[^}]+\}/);
+    expect(baseRule?.[0] ?? "").not.toMatch(/border-radius:\s*999/);
+  });
 });

@@ -125,10 +125,24 @@ describe("OrgEhgDateGlassGallery", () => {
     await user.click(screen.getByTestId("ui-standard-org-ehg-date-pg-preview-field-trigger"));
     const popover = await screen.findByTestId("ui-standard-org-ehg-date-pg-preview-field-popover");
     expect(popover).toHaveAttribute("data-variety", "quasar");
+    expect(popover).toHaveAttribute("data-intensity", "ultra");
+    expect(popover).toHaveClass("org-ehg-date-glass-popover--ultra");
+    expect(within(popover).getByRole("textbox", { name: "Hour" })).toHaveClass(
+      "org-ehg-date-glass-popover__quasar-time-value",
+    );
     expect(within(popover).getByText("Set")).toBeInTheDocument();
+    await user.click(within(popover).getByText("Clear"));
+    expect(screen.getByTestId("ui-standard-org-ehg-date-pg-preview-field-trigger")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    const closed = screen.queryByTestId("ui-standard-org-ehg-date-pg-preview-field-popover");
+    if (closed) {
+      expect(closed).toHaveAttribute("data-state", "closed");
+    }
   });
 
-  it("opens Quasar month and year pickers, hides chrome, and supports range", async () => {
+  it("opens Quasar month and year pickers without shrinking header/footer, and supports range", async () => {
     const user = userEvent.setup();
     render(wrap(<OrgEhgDateGlassGallery />));
 
@@ -140,12 +154,18 @@ describe("OrgEhgDateGlassGallery", () => {
     expect(within(quasarDate).getByLabelText("Next year")).toBeInTheDocument();
 
     await user.click(within(quasarDate).getByLabelText("Select month"));
-    expect(within(quasarDate).getByText("Select month")).toBeInTheDocument();
+    expect(within(quasarDate).getByLabelText("Select month")).toHaveAttribute("aria-pressed", "true");
+    expect(within(quasarDate).getByLabelText("Previous month")).toBeInTheDocument();
+    expect(within(quasarDate).getByLabelText("Next year")).toBeInTheDocument();
     expect(within(quasarDate).getByRole("button", { name: "Feb" })).toBeInTheDocument();
-    await user.click(within(quasarDate).getByRole("button", { name: "Back" }));
+    await user.click(within(quasarDate).getByLabelText("Select month"));
+    expect(within(quasarDate).getByLabelText("Select month")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
 
     await user.click(within(quasarDate).getByLabelText("Select year"));
-    expect(within(quasarDate).getByText("Select year")).toBeInTheDocument();
+    expect(within(quasarDate).getByLabelText("Select year")).toHaveAttribute("aria-pressed", "true");
     expect(within(quasarDate).getByLabelText("Previous years")).toBeInTheDocument();
     expect(within(quasarDate).getByLabelText("Next years")).toBeInTheDocument();
     expect(
@@ -161,6 +181,10 @@ describe("OrgEhgDateGlassGallery", () => {
       "org-ehg-date-glass-light-popover-quasar-datetime",
     );
     expect(within(quasarDatetime).getByLabelText("Time")).toBeInTheDocument();
+    expect(within(quasarDatetime).getByRole("textbox", { name: "Hour" })).toBeInTheDocument();
+    expect(within(quasarDatetime).getByRole("textbox", { name: "Minute" })).toBeInTheDocument();
+    expect(within(quasarDatetime).getByText("Hours")).toBeInTheDocument();
+    expect(within(quasarDatetime).getByText("Minutes")).toBeInTheDocument();
     expect(within(quasarDatetime).getByText("Now")).toBeInTheDocument();
     expect(within(quasarDatetime).getByText("Set")).toBeInTheDocument();
     await user.click(within(quasarDatetime).getByText("Now"));
@@ -175,18 +199,25 @@ describe("OrgEhgDateGlassGallery", () => {
       within(monthGrid).getByRole("button", { name: String(now.getDate()) }),
     ).toHaveAttribute("aria-pressed", "true");
     const timeBlock = within(quasarDatetime).getByLabelText("Time");
-    expect(timeBlock).toHaveTextContent(hourPad);
-    expect(timeBlock).toHaveTextContent(minute);
+    const hourInput = within(timeBlock).getByRole("textbox", { name: "Hour" });
+    const minuteInput = within(timeBlock).getByRole("textbox", { name: "Minute" });
+    expect(hourInput).toHaveValue(hourPad);
+    expect(minuteInput).toHaveValue(minute);
     expect(timeBlock).toHaveTextContent(period);
+    await user.clear(hourInput);
+    await user.type(hourInput, "09");
+    expect(hourInput).toHaveValue("09");
+    await user.clear(minuteInput);
+    await user.type(minuteInput, "45");
+    expect(minuteInput).toHaveValue("45");
     await user.click(within(quasarDatetime).getByLabelText("Select month"));
-    expect(within(quasarDatetime).queryByLabelText("Time")).not.toBeInTheDocument();
-    expect(within(quasarDatetime).queryByText("Set")).not.toBeInTheDocument();
-    await user.click(within(quasarDatetime).getByRole("button", { name: "Back" }));
     expect(within(quasarDatetime).getByLabelText("Time")).toBeInTheDocument();
     expect(within(quasarDatetime).getByText("Set")).toBeInTheDocument();
+    expect(within(quasarDatetime).getByLabelText("Previous month")).toBeInTheDocument();
     await user.click(within(quasarDatetime).getByLabelText("Select year"));
-    expect(within(quasarDatetime).queryByLabelText("Time")).not.toBeInTheDocument();
-    expect(within(quasarDatetime).queryByText("Set")).not.toBeInTheDocument();
+    expect(within(quasarDatetime).getByLabelText("Time")).toBeInTheDocument();
+    expect(within(quasarDatetime).getByText("Set")).toBeInTheDocument();
+    expect(within(quasarDatetime).getByLabelText("Previous years")).toBeInTheDocument();
 
     const quasarTime = within(light).getByTestId("org-ehg-date-glass-light-popover-quasar-time");
     expect(quasarTime).toHaveAttribute("aria-label", "Quasar time picker");

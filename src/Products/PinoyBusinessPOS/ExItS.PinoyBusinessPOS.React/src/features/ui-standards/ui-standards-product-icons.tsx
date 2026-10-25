@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   Building2,
   CalendarDays,
+  CirclePlus,
   LayoutDashboard,
   Package,
   Settings2,
@@ -16,6 +17,7 @@ import type { UiStandardFilterCategory } from "@/features/ui-standards/ui-standa
 /** Shell / page icons for Organization Hybrid Glass leaf pages. */
 export const UI_STANDARD_NAV_ICONS: Partial<Record<UiStandardFilterCategory, LucideIcon>> = {
   "button-glass": Sparkles,
+  "fab-glass": CirclePlus,
   "input-glass": Sparkles,
   "date-glass": CalendarDays,
   "quick-action-glass": SquareMousePointer,
@@ -32,6 +34,7 @@ export const UI_STANDARD_NAV_ICONS: Partial<Record<UiStandardFilterCategory, Luc
   "org-ehg-stock-requests": ArrowLeftRight,
   "org-ehg-branch-settings": Settings2,
   "org-ehg-button-glass": Sparkles,
+  "org-ehg-fab-glass": CirclePlus,
   "org-ehg-input-glass": Sparkles,
   "org-ehg-date-glass": CalendarDays,
   "org-ehg-quick-action-glass": SquareMousePointer,

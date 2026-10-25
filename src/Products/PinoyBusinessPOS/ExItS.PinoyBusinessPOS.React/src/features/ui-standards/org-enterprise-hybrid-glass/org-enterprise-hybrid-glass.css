@@ -777,12 +777,13 @@
  */
 .org-ehg-btn-glass {
   --org-ehg-btn-glass-ink: #1e3a8a;
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.28);
-  --org-ehg-btn-glass-edge: rgba(37, 99, 235, 0.42);
+  --org-ehg-btn-glass-accent: #3b82f6;
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 42%, transparent);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.72);
   --org-ehg-btn-glass-blur: 10px;
   --org-ehg-btn-glass-radius: var(--org-ehg-btn-r-md);
-  --org-ehg-btn-glass-glow: 0 8px 18px rgba(59, 130, 246, 0.16);
+  --org-ehg-btn-glass-glow: 0 8px 18px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 16%, transparent);
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -843,10 +844,10 @@
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass {
   --org-ehg-btn-glass-ink: #f8fafc;
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.28);
-  --org-ehg-btn-glass-edge: rgba(191, 219, 254, 0.38);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, #e2e8f0 38%, transparent);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.28);
-  --org-ehg-btn-glass-glow: 0 10px 22px rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-glow: 0 10px 22px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
   background:
     linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 40%),
     var(--org-ehg-btn-glass-fill);
@@ -856,98 +857,344 @@
     var(--org-ehg-btn-glass-glow);
 }
 
-/* ??? Intensity ladder (must read as different glass, not five solid blues) ??? */
+/* ??? Intensity ladder (reads through --org-ehg-btn-glass-accent) ??? */
 .org-ehg-btn-glass--solid {
-  --org-ehg-btn-glass-fill: #3b82f6;
+  --org-ehg-btn-glass-fill: var(--org-ehg-btn-glass-accent);
   --org-ehg-btn-glass-ink: #ffffff;
-  --org-ehg-btn-glass-edge: #1d4ed8;
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 72%, #0f172a);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.32);
   --org-ehg-btn-glass-blur: 0px;
-  --org-ehg-btn-glass-glow: 0 6px 14px rgba(37, 99, 235, 0.32);
+  --org-ehg-btn-glass-glow: 0 6px 14px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 32%, transparent);
   background:
     linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 48%),
-    #3b82f6;
+    var(--org-ehg-btn-glass-accent);
   background-clip: padding-box;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
 .org-ehg-btn-glass--soft {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.12);
-  --org-ehg-btn-glass-edge: rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 12%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.78);
   --org-ehg-btn-glass-blur: 6px;
-  --org-ehg-btn-glass-ink: #1e40af;
-  --org-ehg-btn-glass-glow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 78%, #0f172a);
+  --org-ehg-btn-glass-glow: 0 4px 12px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 10%, transparent);
 }
 
 .org-ehg-btn-glass--medium {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.28);
-  --org-ehg-btn-glass-edge: rgba(37, 99, 235, 0.42);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 42%, transparent);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.7);
   --org-ehg-btn-glass-blur: 10px;
-  --org-ehg-btn-glass-ink: #1e3a8a;
-  --org-ehg-btn-glass-glow: 0 8px 18px rgba(59, 130, 246, 0.16);
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 72%, #0f172a);
+  --org-ehg-btn-glass-glow: 0 8px 18px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 16%, transparent);
 }
 
 .org-ehg-btn-glass--strong {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.48);
-  --org-ehg-btn-glass-edge: rgba(37, 99, 235, 0.55);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 48%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 55%, transparent);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.55);
   --org-ehg-btn-glass-blur: 14px;
   --org-ehg-btn-glass-ink: #ffffff;
-  --org-ehg-btn-glass-glow: 0 8px 18px rgba(37, 99, 235, 0.22);
+  --org-ehg-btn-glass-glow: 0 8px 18px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 22%, transparent);
   text-shadow: 0 1px 1px rgba(15, 23, 42, 0.18);
 }
 
 .org-ehg-btn-glass--ultra {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.16);
-  --org-ehg-btn-glass-edge: rgba(96, 165, 250, 0.72);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 16%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 72%, transparent);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.88);
   --org-ehg-btn-glass-blur: 18px;
-  --org-ehg-btn-glass-ink: #1e3a8a;
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 72%, #0f172a);
   /* Soft aura only ? no hard 1px ring (avoids dirty double edge) */
-  --org-ehg-btn-glass-glow: 0 0 20px rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-glow: 0 0 20px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--soft {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.14);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 14%, transparent);
   --org-ehg-btn-glass-edge: rgba(226, 232, 240, 0.22);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.22);
   --org-ehg-btn-glass-ink: #e2e8f0;
-  --org-ehg-btn-glass-glow: 0 6px 16px rgba(59, 130, 246, 0.18);
+  --org-ehg-btn-glass-glow: 0 6px 16px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 18%, transparent);
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--medium {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.32);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 32%, transparent);
   --org-ehg-btn-glass-edge: rgba(191, 219, 254, 0.38);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.26);
-  --org-ehg-btn-glass-glow: 0 10px 22px rgba(59, 130, 246, 0.28);
+  --org-ehg-btn-glass-glow: 0 10px 22px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--strong {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.52);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 52%, transparent);
   --org-ehg-btn-glass-edge: rgba(191, 219, 254, 0.45);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.24);
   --org-ehg-btn-glass-ink: #ffffff;
-  --org-ehg-btn-glass-glow: 0 10px 24px rgba(59, 130, 246, 0.36);
+  --org-ehg-btn-glass-glow: 0 10px 24px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 36%, transparent);
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--ultra {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.18);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 18%, transparent);
   --org-ehg-btn-glass-edge: rgba(226, 232, 240, 0.48);
   --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.34);
   --org-ehg-btn-glass-ink: #f8fafc;
-  --org-ehg-btn-glass-glow: 0 0 26px rgba(59, 130, 246, 0.42);
+  --org-ehg-btn-glass-glow: 0 0 26px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 42%, transparent);
 }
 
-/* ??? Types ??? */
+/* ??? Intent (color) ? same set as normal Button playground ??? */
+.org-ehg-btn-glass--intent-standard {
+  --org-ehg-btn-glass-accent: #64748b;
+}
+.org-ehg-btn-glass--intent-primary {
+  --org-ehg-btn-glass-accent: #1976d2;
+}
+.org-ehg-btn-glass--intent-secondary {
+  --org-ehg-btn-glass-accent: #26a69a;
+}
+.org-ehg-btn-glass--intent-success {
+  --org-ehg-btn-glass-accent: #22c55e;
+}
+.org-ehg-btn-glass--intent-info {
+  --org-ehg-btn-glass-accent: #0ea5e9;
+}
+.org-ehg-btn-glass--intent-amber {
+  --org-ehg-btn-glass-accent: #ffc107;
+}
+.org-ehg-btn-glass--intent-danger {
+  --org-ehg-btn-glass-accent: #ef4444;
+}
+.org-ehg-btn-glass--intent-warn {
+  --org-ehg-btn-glass-accent: #ff5722;
+}
+.org-ehg-btn-glass--intent-help {
+  --org-ehg-btn-glass-accent: #a855f7;
+}
+.org-ehg-btn-glass--intent-black {
+  --org-ehg-btn-glass-accent: #0f172a;
+}
+.org-ehg-btn-glass--intent-neutral {
+  --org-ehg-btn-glass-accent: #475569;
+}
+.org-ehg-btn-glass--intent-charcoal {
+  --org-ehg-btn-glass-accent: #0f172a;
+}
+.org-ehg-btn-glass--intent-orange {
+  --org-ehg-btn-glass-accent: #fb923c;
+}
+.org-ehg-btn-glass--intent-teal {
+  --org-ehg-btn-glass-accent: #26a69a;
+}
+.org-ehg-btn-glass--intent-cyan {
+  --org-ehg-btn-glass-accent: #06b6d4;
+}
+.org-ehg-btn-glass--intent-sky {
+  --org-ehg-btn-glass-accent: #38bdf8;
+}
+.org-ehg-btn-glass--intent-indigo {
+  --org-ehg-btn-glass-accent: #6366f1;
+}
+.org-ehg-btn-glass--intent-violet {
+  --org-ehg-btn-glass-accent: #7c3aed;
+}
+.org-ehg-btn-glass--intent-fuchsia {
+  --org-ehg-btn-glass-accent: #d946ef;
+}
+.org-ehg-btn-glass--intent-rose {
+  --org-ehg-btn-glass-accent: #f43f5e;
+}
+.org-ehg-btn-glass--intent-lime {
+  --org-ehg-btn-glass-accent: #84cc16;
+}
+.org-ehg-btn-glass--intent-emerald {
+  --org-ehg-btn-glass-accent: #059669;
+}
+.org-ehg-btn-glass--intent-people {
+  --org-ehg-btn-glass-accent: #8b5cf6;
+}
+.org-ehg-btn-glass--intent-inventory {
+  --org-ehg-btn-glass-accent: #f59e0b;
+}
+.org-ehg-btn-glass--intent-sales {
+  --org-ehg-btn-glass-accent: #ec4899;
+}
+
+.org-ehg-btn-glass--intent-amber.org-ehg-btn-glass--solid,
+.org-ehg-btn-glass--intent-amber.org-ehg-btn-glass--strong,
+.org-ehg-btn-glass--intent-lime.org-ehg-btn-glass--solid,
+.org-ehg-btn-glass--intent-lime.org-ehg-btn-glass--strong,
+.org-ehg-btn-glass--intent-orange.org-ehg-btn-glass--solid,
+.org-ehg-btn-glass--intent-orange.org-ehg-btn-glass--strong,
+.org-ehg-btn-glass--intent-inventory.org-ehg-btn-glass--solid,
+.org-ehg-btn-glass--intent-inventory.org-ehg-btn-glass--strong {
+  --org-ehg-btn-glass-ink: #0f172a;
+}
+
+.org-ehg-btn-glass--intent-standard.org-ehg-btn-glass--solid {
+  --org-ehg-btn-glass-fill: #ffffff;
+  --org-ehg-btn-glass-edge: #cbd5e1;
+  --org-ehg-btn-glass-ink: #0f172a;
+  --org-ehg-btn-glass-accent: #64748b;
+}
+
+/* ??? Appearance (surface) ? same set as normal Button playground ??? */
+.org-ehg-btn-glass--appearance-soft {
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 10%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 22%, transparent);
+  --org-ehg-btn-glass-blur: 8px;
+}
+
+.org-ehg-btn-glass--appearance-soft-outline {
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 8%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 55%, transparent);
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 82%, #0f172a);
+  --org-ehg-btn-glass-blur: 8px;
+}
+
+.org-ehg-btn-glass--appearance-soft-glass {
+  --org-ehg-btn-glass-blur: 12px;
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.82);
+}
+
+.org-ehg-btn-glass--appearance-outline {
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 6%, transparent);
+  --org-ehg-btn-glass-edge: var(--org-ehg-btn-glass-accent);
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 88%, #0f172a);
+  --org-ehg-btn-glass-blur: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 50%),
+    color-mix(in srgb, var(--org-ehg-btn-glass-accent) 6%, transparent);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--appearance-outline {
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 8%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 78%, #e2e8f0);
+  --org-ehg-btn-glass-ink: #e2e8f0;
+}
+
+.org-ehg-btn-glass--appearance-raised {
+  --org-ehg-btn-glass-glow: 0 10px 24px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    0 1px 0 color-mix(in srgb, #fff 40%, transparent),
+    var(--org-ehg-btn-glass-glow);
+}
+
+.org-ehg-btn-glass--appearance-ghost {
+  --org-ehg-btn-glass-fill: transparent;
+  --org-ehg-btn-glass-edge: transparent;
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 88%, #0f172a);
+  --org-ehg-btn-glass-blur: 0px;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--appearance-ghost {
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 55%, #f8fafc);
+}
+
+.org-ehg-btn-glass--appearance-glossy {
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.92);
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 38%, transparent);
+}
+
+.org-ehg-btn-glass--appearance-glossy-glass {
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.95);
+  --org-ehg-btn-glass-blur: 16px;
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 22%, transparent);
+}
+
+.org-ehg-btn-glass--appearance-glossy-raise {
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.92);
+  --org-ehg-btn-glass-glow: 0 12px 28px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 32%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    0 2px 0 color-mix(in srgb, #fff 35%, transparent),
+    var(--org-ehg-btn-glass-glow);
+}
+
+.org-ehg-btn-glass--appearance-gradient {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--org-ehg-btn-glass-accent) 88%, #fff) 0%,
+      var(--org-ehg-btn-glass-accent) 48%,
+      color-mix(in srgb, var(--org-ehg-btn-glass-accent) 72%, #0f172a) 100%
+    );
+  --org-ehg-btn-glass-ink: #ffffff;
+  --org-ehg-btn-glass-blur: 0px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-btn-glass--appearance-gradient-glass {
+  background:
+    linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--org-ehg-btn-glass-accent) 35%, transparent) 0%,
+      color-mix(in srgb, var(--org-ehg-btn-glass-accent) 18%, transparent) 100%
+    );
+  --org-ehg-btn-glass-blur: 12px;
+}
+
+.org-ehg-btn-glass--appearance-rounded {
+  --org-ehg-btn-glass-radius: 999px;
+  border-radius: 999px;
+}
+
+.org-ehg-btn-glass--appearance-flat {
+  --org-ehg-btn-glass-blur: 0px;
+  --org-ehg-btn-glass-glow: none;
+  --org-ehg-btn-glass-specular: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-btn-glass--appearance-medallion {
+  --org-ehg-btn-glass-radius: 999px;
+  border-radius: 999px;
+  --org-ehg-btn-glass-fill: var(--org-ehg-btn-glass-accent);
+  --org-ehg-btn-glass-ink: #ffffff;
+  --org-ehg-btn-glass-blur: 0px;
+  background: var(--org-ehg-btn-glass-accent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-btn-glass--appearance-text {
+  --org-ehg-btn-glass-fill: transparent;
+  --org-ehg-btn-glass-edge: transparent;
+  --org-ehg-btn-glass-ink: var(--org-ehg-btn-glass-accent);
+  --org-ehg-btn-glass-blur: 0px;
+  height: auto;
+  min-height: 0;
+  padding: 0.2rem 0.35rem;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-weight: 600;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--appearance-text {
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 55%, #f8fafc);
+}
+
+/* Legacy tone-* aliases (gallery / speed-dial) */
+.org-ehg-btn-glass--tone-primary {
+  --org-ehg-btn-glass-accent: #3b82f6;
+}
 .org-ehg-btn-glass--tone-primary.org-ehg-btn-glass--solid {
-  --org-ehg-btn-glass-fill: #3b82f6;
+  --org-ehg-btn-glass-fill: var(--org-ehg-btn-glass-accent);
   --org-ehg-btn-glass-ink: #ffffff;
 }
 
 .org-ehg-btn-glass--tone-secondary {
+  --org-ehg-btn-glass-accent: #94a3b8;
   --org-ehg-btn-glass-fill: rgba(255, 255, 255, 0.72);
   --org-ehg-btn-glass-edge: rgba(148, 163, 184, 0.55);
   --org-ehg-btn-glass-ink: #334155;
@@ -961,25 +1208,25 @@
 }
 
 .org-ehg-btn-glass--tone-outline {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.06);
-  --org-ehg-btn-glass-edge: #3b82f6;
-  --org-ehg-btn-glass-ink: #1d4ed8;
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 6%, transparent);
+  --org-ehg-btn-glass-edge: var(--org-ehg-btn-glass-accent);
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 88%, #0f172a);
   --org-ehg-btn-glass-blur: 8px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 50%),
-    rgba(59, 130, 246, 0.06);
+    color-mix(in srgb, var(--org-ehg-btn-glass-accent) 6%, transparent);
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-outline {
-  --org-ehg-btn-glass-fill: rgba(59, 130, 246, 0.08);
-  --org-ehg-btn-glass-edge: #60a5fa;
+  --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 8%, transparent);
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 70%, #e2e8f0);
   --org-ehg-btn-glass-ink: #93c5fd;
 }
 
 .org-ehg-btn-glass--tone-ghost {
   --org-ehg-btn-glass-fill: transparent;
   --org-ehg-btn-glass-edge: transparent;
-  --org-ehg-btn-glass-ink: #1e40af;
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 88%, #0f172a);
   --org-ehg-btn-glass-blur: 0px;
   background: transparent;
   box-shadow: none;
@@ -994,7 +1241,7 @@
 .org-ehg-btn-glass--tone-text {
   --org-ehg-btn-glass-fill: transparent;
   --org-ehg-btn-glass-edge: transparent;
-  --org-ehg-btn-glass-ink: #2563eb;
+  --org-ehg-btn-glass-ink: var(--org-ehg-btn-glass-accent);
   --org-ehg-btn-glass-blur: 0px;
   height: auto;
   min-height: 0;
@@ -1007,68 +1254,23 @@
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-text {
-  --org-ehg-btn-glass-ink: #60a5fa;
+  --org-ehg-btn-glass-ink: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 55%, #f8fafc);
 }
 
-/* ??? Status ??? */
 .org-ehg-btn-glass--tone-success {
-  --org-ehg-btn-glass-fill: rgba(34, 197, 94, 0.22);
-  --org-ehg-btn-glass-edge: rgba(34, 197, 94, 0.45);
-  --org-ehg-btn-glass-ink: #166534;
+  --org-ehg-btn-glass-accent: #22c55e;
 }
-
-.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-success {
-  --org-ehg-btn-glass-fill: rgba(34, 197, 94, 0.28);
-  --org-ehg-btn-glass-edge: rgba(74, 222, 128, 0.45);
-  --org-ehg-btn-glass-ink: #bbf7d0;
-}
-
 .org-ehg-btn-glass--tone-warning {
-  --org-ehg-btn-glass-fill: rgba(245, 158, 11, 0.24);
-  --org-ehg-btn-glass-edge: rgba(245, 158, 11, 0.5);
-  --org-ehg-btn-glass-ink: #92400e;
+  --org-ehg-btn-glass-accent: #ff5722;
 }
-
-.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-warning {
-  --org-ehg-btn-glass-fill: rgba(245, 158, 11, 0.3);
-  --org-ehg-btn-glass-edge: rgba(251, 191, 36, 0.5);
-  --org-ehg-btn-glass-ink: #fde68a;
-}
-
 .org-ehg-btn-glass--tone-danger {
-  --org-ehg-btn-glass-fill: rgba(248, 113, 113, 0.24);
-  --org-ehg-btn-glass-edge: rgba(248, 113, 113, 0.5);
-  --org-ehg-btn-glass-ink: #991b1b;
+  --org-ehg-btn-glass-accent: #ef4444;
 }
-
-.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-danger {
-  --org-ehg-btn-glass-fill: rgba(248, 113, 113, 0.3);
-  --org-ehg-btn-glass-edge: rgba(252, 165, 165, 0.5);
-  --org-ehg-btn-glass-ink: #fecaca;
-}
-
 .org-ehg-btn-glass--tone-info {
-  --org-ehg-btn-glass-fill: rgba(56, 189, 248, 0.24);
-  --org-ehg-btn-glass-edge: rgba(56, 189, 248, 0.5);
-  --org-ehg-btn-glass-ink: #075985;
+  --org-ehg-btn-glass-accent: #0ea5e9;
 }
-
-.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-info {
-  --org-ehg-btn-glass-fill: rgba(56, 189, 248, 0.3);
-  --org-ehg-btn-glass-edge: rgba(125, 211, 252, 0.5);
-  --org-ehg-btn-glass-ink: #bae6fd;
-}
-
 .org-ehg-btn-glass--tone-neutral {
-  --org-ehg-btn-glass-fill: rgba(100, 116, 139, 0.18);
-  --org-ehg-btn-glass-edge: rgba(100, 116, 139, 0.4);
-  --org-ehg-btn-glass-ink: #334155;
-}
-
-.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--tone-neutral {
-  --org-ehg-btn-glass-fill: rgba(148, 163, 184, 0.22);
-  --org-ehg-btn-glass-edge: rgba(148, 163, 184, 0.4);
-  --org-ehg-btn-glass-ink: #e2e8f0;
+  --org-ehg-btn-glass-accent: #64748b;
 }
 
 /* ??? States ???
@@ -1256,6 +1458,682 @@
 .org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-xl {
   width: var(--org-ehg-btn-h-xl);
   min-width: var(--org-ehg-btn-h-xl);
+}
+
+/*
+ * Floating action (FAB) — circular Hybrid Glass, showcase only.
+ * Base `.org-ehg-btn-glass` stays rounded-rect; round radius is opt-in via `--fab`.
+ */
+.org-ehg-btn-glass--fab {
+  --org-ehg-btn-glass-radius: 999px;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    0 10px 28px color-mix(in srgb, var(--org-ehg-btn-glass-accent, #3b82f6) 28%, transparent),
+    0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+/* FAB mark ~52% of circle (Material-style speed dial), not the tiny 14px glass icon */
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--icon-only .org-ehg-btn-glass__icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  stroke-width: 2;
+}
+
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-xs .org-ehg-btn-glass__icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-sm .org-ehg-btn-glass__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-md .org-ehg-btn-glass__icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-lg .org-ehg-btn-glass__icon {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--icon-only.org-ehg-btn-glass--size-xl .org-ehg-btn-glass__icon {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--fab-extended .org-ehg-btn-glass__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 2;
+}
+
+.org-ehg-btn-glass--fab:hover:not(:disabled),
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--state-hover {
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    0 14px 34px color-mix(in srgb, var(--org-ehg-btn-glass-accent, #3b82f6) 36%, transparent),
+    0 3px 8px rgba(15, 23, 42, 0.2);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--fab {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 12px 32px color-mix(in srgb, var(--org-ehg-btn-glass-accent, #3b82f6) 40%, #000),
+    0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+/* FAB corner stage ? Soft Ambient wash (not neon blue wallpaper) */
+.org-ehg-btn-glass-fab-scene {
+  position: relative;
+  min-height: 8.75rem;
+  padding: 1.25rem 1rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, #94a3b8 35%, transparent);
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 8% 12%,
+      color-mix(in srgb, var(--exits-primary, #3b82f6) 28%, #ffffff),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 92% 88%,
+      color-mix(in srgb, var(--exits-primary, #3b82f6) 14%, #64748b),
+      transparent 70%
+    ),
+    linear-gradient(145deg, #d0dce7 0%, #a8b8cb 48%, #8c9eb7 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-fab-scene {
+  border-color: color-mix(in srgb, #64748b 40%, transparent);
+  background:
+    radial-gradient(
+      ellipse 65% 50% at 10% 14%,
+      color-mix(in srgb, var(--exits-primary, #3b82f6) 22%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 90% 86%,
+      color-mix(in srgb, var(--exits-primary, #60a5fa) 12%, transparent),
+      transparent 68%
+    ),
+    linear-gradient(145deg, #1a2433 0%, #121820 48%, #0b1016 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.org-ehg-btn-glass-fab-scene > .org-ehg-btn-glass-sample {
+  position: absolute;
+  inset-inline-end: 1rem;
+  bottom: 1rem;
+  margin: 0;
+}
+
+.org-ehg-btn-glass-fab-scene .org-ehg-btn-glass-sample__caption {
+  color: #475569;
+  text-shadow: none;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-fab-scene
+  .org-ehg-btn-glass-sample__caption {
+  color: #94a3b8;
+}
+
+/* Playground FAB preview: inherit Soft Ambient card bg ? no second wallpaper */
+.org-ehg-btn-glass-fab-scene--playground {
+  width: 100%;
+  min-height: 9.5rem;
+  border: 1px solid color-mix(in srgb, var(--exits-border, #e2e8f0) 70%, transparent);
+  border-radius: var(--exits-radius-lg, 12px);
+  background: transparent;
+  box-shadow: none;
+}
+
+.org-ehg-btn-glass-fab-scene--playground > .org-ehg-btn-glass {
+  position: absolute;
+  inset-inline-end: 1rem;
+  bottom: 1rem;
+}
+
+/* Speed dial preview ? centered in the scene */
+.org-ehg-btn-glass-fab-scene--playground > .org-ehg-btn-glass-speed-dial,
+.org-ehg-btn-glass-fab-scene--speed-dial > .org-ehg-btn-glass-speed-dial,
+.org-ehg-btn-glass-fab-scene--speed-dial > .org-ehg-btn-glass-sample--speed-dial {
+  position: absolute;
+  inset: auto;
+  inset-inline-start: 50%;
+  inset-block-start: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+}
+
+[dir="rtl"] .org-ehg-btn-glass-fab-scene--playground > .org-ehg-btn-glass-speed-dial,
+[dir="rtl"] .org-ehg-btn-glass-fab-scene--speed-dial > .org-ehg-btn-glass-speed-dial,
+[dir="rtl"] .org-ehg-btn-glass-fab-scene--speed-dial > .org-ehg-btn-glass-sample--speed-dial {
+  transform: translate(50%, -50%);
+}
+
+.org-ehg-btn-glass-panel--playground-fab {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  width: 100%;
+}
+
+.org-ehg-btn-glass-panel__row--fab {
+  margin-top: 0.85rem;
+}
+
+/* Speed dial ? stacked child FABs (direction via data-show) */
+.org-ehg-btn-glass-speed-dial {
+  --org-ehg-speed-dial-gap: 0.65rem;
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: var(--org-ehg-speed-dial-gap);
+  z-index: 2;
+}
+
+.org-ehg-btn-glass-speed-dial__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: var(--org-ehg-speed-dial-gap);
+  pointer-events: none;
+}
+
+.org-ehg-btn-glass-speed-dial[data-open="true"] .org-ehg-btn-glass-speed-dial__actions {
+  pointer-events: auto;
+}
+
+/* Show direction: top (default) ? actions above trigger */
+.org-ehg-btn-glass-speed-dial[data-show="top"],
+.org-ehg-btn-glass-speed-dial:not([data-show]) {
+  flex-direction: column-reverse;
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="top"] .org-ehg-btn-glass-speed-dial__actions,
+.org-ehg-btn-glass-speed-dial:not([data-show]) .org-ehg-btn-glass-speed-dial__actions {
+  flex-direction: column-reverse;
+}
+
+/* Show direction: bottom ? actions below trigger */
+.org-ehg-btn-glass-speed-dial[data-show="bottom"] {
+  flex-direction: column;
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="bottom"] .org-ehg-btn-glass-speed-dial__actions {
+  flex-direction: column;
+}
+
+/* Show direction: left ? actions toward start */
+.org-ehg-btn-glass-speed-dial[data-show="left"] {
+  flex-direction: row-reverse;
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="left"] .org-ehg-btn-glass-speed-dial__actions {
+  flex-direction: row-reverse;
+}
+
+/* Show direction: right ? actions toward end */
+.org-ehg-btn-glass-speed-dial[data-show="right"] {
+  flex-direction: row;
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="right"] .org-ehg-btn-glass-speed-dial__actions {
+  flex-direction: row;
+}
+
+.org-ehg-btn-glass-speed-dial__actions .org-ehg-btn-glass--fab {
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    0 6px 16px color-mix(in srgb, var(--org-ehg-btn-glass-accent, #3b82f6) 22%, transparent),
+    0 1px 4px rgba(15, 23, 42, 0.14);
+}
+
+.org-ehg-btn-glass-speed-dial__trigger .org-ehg-btn-glass__icon {
+  transition: transform 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.org-ehg-btn-glass-speed-dial[data-open="true"]
+  .org-ehg-btn-glass-speed-dial__trigger
+  .org-ehg-btn-glass__icon {
+  transform: rotate(45deg);
+}
+
+/* --- Speed dial transitions (data-transition) --- */
+.org-ehg-btn-glass-speed-dial__action-wrap {
+  transform-origin: center bottom;
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="bottom"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform-origin: center top;
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="left"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform-origin: right center;
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="right"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform-origin: left center;
+}
+
+/* none ? snap */
+.org-ehg-btn-glass-speed-dial[data-transition="none"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 0;
+  visibility: hidden;
+  transition: none;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="none"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* fade */
+.org-ehg-btn-glass-speed-dial[data-transition="fade"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 200ms ease,
+    visibility 0ms linear 200ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="fade"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 220ms ease,
+    visibility 0ms linear 0ms;
+}
+
+/* scale */
+.org-ehg-btn-glass-speed-dial[data-transition="scale"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.72);
+  transition:
+    opacity 180ms ease,
+    transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    visibility 0ms linear 200ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="scale"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition:
+    opacity 200ms ease,
+    transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    visibility 0ms linear 0ms;
+}
+
+/* slide ? move out from trigger along show axis */
+/* slide — move out from trigger along show axis */
+.org-ehg-btn-glass-speed-dial[data-transition="slide"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.75rem);
+  transition:
+    opacity 160ms ease,
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0ms linear 200ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="slide"][data-show="bottom"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateY(-0.75rem);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="slide"][data-show="left"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateX(0.75rem);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="slide"][data-show="right"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateX(-0.75rem);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="slide"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0, 0);
+  transition:
+    opacity 200ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0ms linear 0ms;
+}
+
+/* stagger — cascade dropdown (nearest trigger first) */
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.7rem) scale(0.86);
+  transition:
+    opacity 160ms ease,
+    transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    visibility 0ms linear 220ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-show="bottom"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateY(-0.7rem) scale(0.86);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-show="left"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateX(0.7rem) scale(0.86);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-show="right"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateX(-0.7rem) scale(0.86);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0, 0) scale(1);
+  transition:
+    opacity 220ms ease,
+    transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    visibility 0ms linear 0ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(2) {
+  transition-delay: 55ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(3) {
+  transition-delay: 110ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(4) {
+  transition-delay: 165ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(5) {
+  transition-delay: 220ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"]:not([data-open="true"])
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(1) {
+  transition-delay: 110ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"]:not([data-open="true"])
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(2) {
+  transition-delay: 55ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="stagger"]:not([data-open="true"])
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(3) {
+  transition-delay: 0ms;
+}
+
+/* bounce */
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.85rem) scale(0.75);
+  transition:
+    opacity 140ms ease,
+    transform 160ms ease,
+    visibility 0ms linear 180ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"][data-show="bottom"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateY(-0.85rem) scale(0.75);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"][data-show="left"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateX(0.85rem) scale(0.75);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"][data-show="right"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  transform: translateX(-0.85rem) scale(0.75);
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0, 0) scale(1);
+  transition:
+    opacity 200ms ease,
+    transform 420ms cubic-bezier(0.34, 1.45, 0.64, 1),
+    visibility 0ms linear 0ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(2) {
+  transition-delay: 45ms;
+}
+
+.org-ehg-btn-glass-speed-dial[data-transition="bounce"][data-open="true"]
+  .org-ehg-btn-glass-speed-dial__action-wrap:nth-child(3) {
+  transition-delay: 90ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg-btn-glass-speed-dial[data-transition] .org-ehg-btn-glass-speed-dial__action-wrap {
+    transition: opacity 120ms ease !important;
+    transform: none !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/* Side label base ? type recipes via data-label-type */
+.org-ehg-btn-glass-speed-dial__label {
+  --org-ehg-speed-dial-tip-chip: var(--exits-primary, #3b82f6);
+  --org-ehg-speed-dial-tip-fill: #ffffff;
+  --org-ehg-speed-dial-tip-edge: color-mix(in srgb, #64748b 55%, var(--org-ehg-speed-dial-tip-chip));
+  --org-ehg-speed-dial-tip-arrow: 0.5rem;
+  position: absolute;
+  inset-inline-end: calc(100% + 0.7rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #0f172a;
+  pointer-events: none;
+}
+
+/* Left / right show ? labels sit above the action so they do not collide with the stack */
+.org-ehg-btn-glass-speed-dial[data-show="left"] .org-ehg-btn-glass-speed-dial__label,
+.org-ehg-btn-glass-speed-dial[data-show="right"] .org-ehg-btn-glass-speed-dial__label {
+  inset-inline-end: auto;
+  inset-inline-start: 50%;
+  top: auto;
+  bottom: calc(100% + 0.45rem);
+  transform: translateX(-50%);
+}
+
+.org-ehg-btn-glass-speed-dial[data-show="left"] .org-ehg-btn-glass-speed-dial__label-caret,
+.org-ehg-btn-glass-speed-dial[data-show="right"] .org-ehg-btn-glass-speed-dial__label-caret {
+  inset-inline-end: auto;
+  inset-inline-start: 50%;
+  top: auto;
+  bottom: calc(var(--org-ehg-speed-dial-tip-arrow) / -2);
+  margin-top: 0;
+  margin-inline-start: calc(var(--org-ehg-speed-dial-tip-arrow) / -2);
+  border-block-end: 1px solid var(--org-ehg-speed-dial-tip-edge);
+  border-inline-start: 1px solid var(--org-ehg-speed-dial-tip-edge);
+  border-block-start: none;
+  border-inline-end: none;
+  box-shadow: 1px 1px 2px color-mix(in srgb, #0f172a 5%, transparent);
+}
+
+/* Label tooltip ? Soft Glass tip + caret toward the action FAB */
+.org-ehg-btn-glass-speed-dial[data-label-type="label-tooltip"] .org-ehg-btn-glass-speed-dial__label {
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--org-ehg-speed-dial-tip-edge);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--org-ehg-speed-dial-tip-chip) 14%, transparent) 0%,
+      color-mix(in srgb, var(--org-ehg-speed-dial-tip-fill) 92%, transparent) 55%,
+      color-mix(in srgb, var(--org-ehg-speed-dial-tip-fill) 96%, transparent) 100%
+    ),
+    var(--org-ehg-speed-dial-tip-fill);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent),
+    0 1px 2px color-mix(in srgb, #0f172a 6%, transparent),
+    0 6px 16px color-mix(in srgb, var(--org-ehg-speed-dial-tip-chip) 12%, transparent);
+}
+
+.org-ehg-btn-glass-speed-dial__label-caret {
+  position: absolute;
+  inset-inline-end: calc(var(--org-ehg-speed-dial-tip-arrow) / -2);
+  top: 50%;
+  width: var(--org-ehg-speed-dial-tip-arrow);
+  height: var(--org-ehg-speed-dial-tip-arrow);
+  margin-top: calc(var(--org-ehg-speed-dial-tip-arrow) / -2);
+  box-sizing: border-box;
+  background: var(--org-ehg-speed-dial-tip-fill);
+  border: 1px solid var(--org-ehg-speed-dial-tip-edge);
+  border-block-end: none;
+  border-inline-start: none;
+  transform: rotate(45deg);
+  box-shadow: 1px -1px 2px color-mix(in srgb, #0f172a 5%, transparent);
+}
+
+/* Rounded label ? pill chip, no caret */
+.org-ehg-btn-glass-speed-dial[data-label-type="rounded-label"] .org-ehg-btn-glass-speed-dial__label {
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #94a3b8 40%, transparent);
+  background: color-mix(in srgb, #ffffff 92%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, #0f172a 10%, transparent);
+}
+
+/* Flat label ? plain ink, no chrome */
+.org-ehg-btn-glass-speed-dial[data-label-type="flat-label"] .org-ehg-btn-glass-speed-dial__label {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #334155;
+  text-shadow: 0 1px 0 color-mix(in srgb, #fff 70%, transparent);
+}
+
+/* Extended ? icon + text inside pill FAB (side label hidden) */
+.org-ehg-btn-glass--fab.org-ehg-btn-glass--fab-extended {
+  --org-ehg-btn-glass-radius: 999px;
+  width: auto;
+  min-width: 0;
+  padding-inline: 0.85rem;
+  gap: 0.4rem;
+}
+
+.org-ehg-btn-glass-speed-dial__extended-text {
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.org-ehg-btn-glass-speed-dial[data-label-type="extended"] .org-ehg-btn-glass-speed-dial__action-wrap {
+  align-self: flex-end;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="label-tooltip"]
+  .org-ehg-btn-glass-speed-dial__label {
+  --org-ehg-speed-dial-tip-fill: #1e293b;
+  --org-ehg-speed-dial-tip-edge: color-mix(in srgb, #94a3b8 40%, var(--org-ehg-speed-dial-tip-chip));
+  color: #e2e8f0;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--org-ehg-speed-dial-tip-chip) 18%, transparent) 0%,
+      color-mix(in srgb, #1e293b 88%, transparent) 55%,
+      color-mix(in srgb, #0f172a 94%, transparent) 100%
+    ),
+    var(--org-ehg-speed-dial-tip-fill);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent),
+    0 1px 2px color-mix(in srgb, #000 35%, transparent),
+    0 8px 18px color-mix(in srgb, var(--org-ehg-speed-dial-tip-chip) 16%, transparent);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-speed-dial__label-caret {
+  box-shadow: 1px -1px 2px color-mix(in srgb, #000 30%, transparent);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="rounded-label"]
+  .org-ehg-btn-glass-speed-dial__label {
+  color: #e2e8f0;
+  border-color: color-mix(in srgb, #64748b 50%, transparent);
+  background: color-mix(in srgb, #1e293b 88%, transparent);
+  box-shadow: 0 2px 10px color-mix(in srgb, #000 40%, transparent);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="flat-label"]
+  .org-ehg-btn-glass-speed-dial__label {
+  color: #e2e8f0;
+  text-shadow: 0 1px 2px color-mix(in srgb, #000 55%, transparent);
+}
+
+.org-ehg-btn-glass-speed-dial__action-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.org-ehg-btn-glass-fab-scene--speed-dial {
+  min-height: 16.5rem;
+  overflow: visible;
+  padding: 1.5rem 7.5rem;
+}
+
+.org-ehg-btn-glass-fab-scene--playground.org-ehg-btn-glass-fab-scene--speed-dial {
+  min-height: 17.5rem;
+}
+
+.org-ehg-btn-glass-sample--speed-dial {
+  min-width: 7.5rem;
+  padding-inline-start: 5.5rem;
+  box-sizing: content-box;
 }
 
 .org-ehg-btn-glass__badge {
@@ -4100,13 +4978,20 @@
   padding: 1.1rem 1.15rem 1.25rem;
 }
 
+/* Date playground card: let anchored popover paint over the gallery below */
+.org-ehg-date-glass-playground.org-ehg-glass-playground-card,
+.org-ehg-date-glass-playground.org-ehg-pg-bg {
+  overflow: visible;
+  z-index: 6;
+}
+
 .org-ehg-date-glass-panel--playground,
 .org-ehg-date-glass-panel--playground[data-org-ehg-theme="dark"] {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   min-height: 28rem;
-  padding: 1rem 0.75rem;
+  padding: 0.35rem 0.75rem 1rem;
   border: 0;
   background: transparent;
   overflow: visible;
@@ -4220,6 +5105,23 @@
   gap: 0.35rem;
   width: 100%;
   min-width: 0;
+}
+
+/* Keep open picker above later playground controls (Kind / State / ?) so Set is clickable */
+.org-ehg-date-glass-field--open {
+  z-index: 80;
+}
+
+.org-ehg-date-glass-panel--playground:has(.org-ehg-date-glass-field--open),
+.org-ehg-date-glass-playground:has(.org-ehg-date-glass-field--open)
+  [data-testid="ui-standard-org-ehg-date-pg-preview-card"] {
+  position: relative;
+  z-index: 40;
+}
+
+.org-ehg-date-glass-playground:has(.org-ehg-date-glass-field--open)
+  .org-ehg-date-glass-playground__controls {
+  pointer-events: none;
 }
 
 .org-ehg-date-glass-field--size-sm {
@@ -4413,18 +5315,27 @@
 
 .org-ehg-date-glass-field__mark,
 .org-ehg-date-glass-field__caret {
+  display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
   width: 1.05rem;
   height: 1.05rem;
   color: var(--org-ehg-date-glass-accent);
 }
 
 .org-ehg-date-glass-field__value {
+  display: flex;
   flex: 1 1 auto;
+  align-items: center;
+  align-self: center;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1;
 }
 
 .org-ehg-date-glass-field__placeholder {
@@ -4438,9 +5349,13 @@
   align-items: center;
   gap: 0.35rem;
   min-width: 0;
+  max-width: 100%;
+  line-height: 1;
 }
 
 .org-ehg-date-glass-field__range-arrow {
+  display: block;
+  flex-shrink: 0;
   width: 0.9rem;
   height: 0.9rem;
   color: var(--org-ehg-date-glass-muted);
@@ -4449,13 +5364,24 @@
 .org-ehg-date-glass-field__time-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.1rem 0.4rem;
+  justify-content: center;
+  gap: 0.28rem;
+  box-sizing: border-box;
+  min-height: 1.35rem;
+  padding: 0 0.4rem;
   border-radius: 0.4rem;
   background: color-mix(in srgb, var(--org-ehg-date-glass-accent) 14%, transparent);
   color: color-mix(in srgb, var(--org-ehg-date-glass-accent) 78%, var(--org-ehg-date-glass-ink));
   font-size: 0.8125rem;
   font-weight: 700;
+  line-height: 1;
+}
+
+.org-ehg-date-glass-field__time-chip svg {
+  display: block;
+  flex-shrink: 0;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-field__time-chip,
@@ -4492,15 +5418,20 @@
 }
 
 .org-ehg-date-glass-popover {
-  --org-ehg-date-pop-fill: rgba(248, 250, 252, 0.82);
+  --org-ehg-date-pop-fill: rgba(248, 250, 252, 0.78);
   --org-ehg-date-pop-edge: color-mix(in srgb, var(--exits-primary) 28%, #cbd5e1);
   --org-ehg-date-pop-ink: #0f172a;
   --org-ehg-date-pop-muted: #64748b;
   --org-ehg-date-pop-accent: var(--exits-primary);
+  --org-ehg-date-pop-blur: 12px;
+  --org-ehg-date-pop-specular: rgba(255, 255, 255, 0.7);
+  --org-ehg-date-pop-chip-fill: color-mix(in srgb, var(--org-ehg-date-pop-fill) 88%, transparent);
   box-sizing: border-box;
   position: absolute;
-  z-index: 40;
+  z-index: 90;
   top: calc(100% + 1px);
+  pointer-events: auto;
+  isolation: isolate;
   left: 50%;
   width: max-content;
   max-width: min(26rem, 100%);
@@ -4509,16 +5440,45 @@
   border: 1px solid var(--org-ehg-date-pop-edge);
   border-radius: 1rem;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 40%),
+    linear-gradient(180deg, var(--org-ehg-date-pop-specular) 0%, rgba(255, 255, 255, 0) 40%),
     var(--org-ehg-date-pop-fill);
   color: var(--org-ehg-date-pop-ink);
-  -webkit-backdrop-filter: blur(14px) saturate(1.25);
-  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--org-ehg-date-pop-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--org-ehg-date-pop-blur)) saturate(1.25);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 1px 0 var(--org-ehg-date-pop-specular),
     0 16px 40px rgba(15, 23, 42, 0.16);
   transform: translateX(-50%);
   transform-origin: top center;
+}
+
+/* Intensity ? same Soft?Ultra glass ladder as the field (popover shell + HH/MM chips) */
+.org-ehg-date-glass-popover--solid {
+  --org-ehg-date-pop-fill: #ffffff;
+  --org-ehg-date-pop-blur: 0px;
+  --org-ehg-date-pop-chip-fill: #f8fafc;
+}
+
+.org-ehg-date-glass-popover--soft {
+  --org-ehg-date-pop-fill: rgba(248, 250, 252, 0.52);
+  --org-ehg-date-pop-blur: 8px;
+}
+
+.org-ehg-date-glass-popover--medium {
+  --org-ehg-date-pop-fill: rgba(248, 250, 252, 0.78);
+  --org-ehg-date-pop-blur: 12px;
+}
+
+.org-ehg-date-glass-popover--strong {
+  --org-ehg-date-pop-fill: rgba(241, 245, 249, 0.88);
+  --org-ehg-date-pop-edge: color-mix(in srgb, var(--exits-primary) 40%, #94a3b8);
+  --org-ehg-date-pop-blur: 14px;
+}
+
+.org-ehg-date-glass-popover--ultra {
+  --org-ehg-date-pop-fill: rgba(226, 232, 240, 0.92);
+  --org-ehg-date-pop-edge: color-mix(in srgb, var(--exits-primary) 48%, #64748b);
+  --org-ehg-date-pop-blur: 16px;
 }
 
 /*
@@ -4658,17 +5618,50 @@
 
 .org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover,
 .org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover {
-  --org-ehg-date-pop-fill: rgba(15, 23, 42, 0.82);
+  --org-ehg-date-pop-fill: rgba(15, 23, 42, 0.72);
   --org-ehg-date-pop-edge: color-mix(in srgb, var(--exits-primary) 42%, #334155);
   --org-ehg-date-pop-ink: #f8fafc;
   --org-ehg-date-pop-muted: #94a3b8;
   --org-ehg-date-pop-accent: var(--exits-primary);
+  --org-ehg-date-pop-specular: rgba(255, 255, 255, 0.1);
+  --org-ehg-date-pop-chip-fill: color-mix(in srgb, var(--org-ehg-date-pop-fill) 90%, #1e293b);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(180deg, var(--org-ehg-date-pop-specular) 0%, rgba(255, 255, 255, 0) 42%),
     var(--org-ehg-date-pop-fill);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 var(--org-ehg-date-pop-specular),
     0 18px 42px rgba(0, 0, 0, 0.45);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--solid,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--solid {
+  --org-ehg-date-pop-fill: #1e293b;
+  --org-ehg-date-pop-blur: 0px;
+  --org-ehg-date-pop-chip-fill: #334155;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--soft,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--soft {
+  --org-ehg-date-pop-fill: rgba(15, 23, 42, 0.55);
+  --org-ehg-date-pop-blur: 8px;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--medium,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--medium {
+  --org-ehg-date-pop-fill: rgba(15, 23, 42, 0.72);
+  --org-ehg-date-pop-blur: 12px;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--strong,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--strong {
+  --org-ehg-date-pop-fill: rgba(30, 41, 59, 0.85);
+  --org-ehg-date-pop-blur: 14px;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--ultra,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover--ultra {
+  --org-ehg-date-pop-fill: rgba(30, 41, 59, 0.92);
+  --org-ehg-date-pop-blur: 16px;
 }
 
 .org-ehg-date-glass-popover__body {
@@ -5166,12 +6159,27 @@
   gap: 0.5rem;
 }
 
+.org-ehg-date-glass-popover__quasar-cal {
+  display: flex;
+  flex-direction: column;
+  min-height: 16.25rem;
+}
+
+.org-ehg-date-glass-popover__quasar-cal-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 13.5rem;
+}
+
 .org-ehg-date-glass-popover__quasar-cal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--org-ehg-date-pop-muted) 28%, transparent);
 }
 
 .org-ehg-date-glass-popover__quasar-cal-head--carets {
@@ -5230,7 +6238,7 @@
 }
 
 .org-ehg-date-glass-popover__quasar-year {
-  min-width: 3.25rem;
+  min-width: 5.5rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -5239,53 +6247,25 @@
   color: var(--org-ehg-date-pop-accent);
 }
 
-.org-ehg-date-glass-popover__quasar-cal-head--year-page {
-  gap: 0.5rem;
-}
-
-.org-ehg-date-glass-popover__quasar-stepper--title {
-  flex: 1 1 auto;
-  justify-content: flex-start;
-  gap: 0.25rem;
-}
-
-.org-ehg-date-glass-popover__quasar-view-title {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 5.75rem;
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.org-ehg-date-glass-popover__quasar-link-back {
-  border: 0;
-  padding: 0.15rem 0.2rem;
-  background: transparent;
+.org-ehg-date-glass-popover__quasar-month--active,
+.org-ehg-date-glass-popover__quasar-year--active {
   color: var(--org-ehg-date-pop-accent);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.org-ehg-date-glass-popover__quasar-link-back:hover {
-  text-decoration: underline;
 }
 
 .org-ehg-date-glass-popover__quasar-choices {
   display: grid;
+  flex: 1 1 auto;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 0.35rem;
+  align-content: stretch;
   padding: 0.15rem 0 0.25rem;
+  min-height: 100%;
 }
 
 .org-ehg-date-glass-popover__quasar-choices--years {
-  /* Fixed 3?6 page ? no scroll; carets change the year window. */
-  grid-template-rows: repeat(6, minmax(2.15rem, auto));
+  /* Fixed 3�6 page ? no scroll; year carets change the year window. */
+  grid-template-rows: repeat(6, minmax(0, 1fr));
   max-height: none;
   overflow: visible;
 }
@@ -5295,6 +6275,7 @@
   align-items: center;
   justify-content: center;
   min-height: 2.15rem;
+  height: 100%;
   border: 0;
   border-radius: 0.35rem;
   background: transparent;
@@ -5409,81 +6390,202 @@
 .org-ehg-date-glass-popover__quasar-time {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.35rem;
+  padding-top: 0.15rem;
 }
 
-.org-ehg-date-glass-popover__quasar-time-selected {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.35rem;
-}
-
-.org-ehg-date-glass-popover__quasar-chip {
-  display: inline-flex;
+.org-ehg-date-glass-popover__quasar-time-steppers {
+  --org-ehg-time-row-h: 2.05rem;
+  --org-ehg-time-col-w: 3.35rem;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.35rem;
-  border-radius: 0.35rem;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--exits-primary) 78%, #ffffff) 0%,
-    var(--exits-primary) 100%
-  );
-  color: #ffffff;
-  font-size: 0.9375rem;
+  gap: 0.45rem;
+}
+
+/* Vertical glass roll ? 3 equal rows (prev / current / next), no carets */
+.org-ehg-date-glass-popover__quasar-time-step {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: var(--org-ehg-time-col-w);
+  min-width: var(--org-ehg-time-col-w);
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.org-ehg-date-glass-popover__quasar-time-caption {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 0.15rem;
+  padding: 0 0 0.3rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--org-ehg-date-pop-edge) 70%, transparent);
+  text-align: center;
+  font-size: 0.62rem;
   font-weight: 700;
-  box-shadow: 0 4px 10px color-mix(in srgb, var(--exits-primary) 28%, transparent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--org-ehg-date-pop-muted) 78%, var(--org-ehg-date-pop-accent));
 }
 
-.org-ehg-date-glass-popover__quasar-time-cols {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.35rem;
-  max-height: 11rem;
-  overflow: hidden;
-}
-
-.org-ehg-date-glass-popover__quasar-col {
+.org-ehg-date-glass-popover__quasar-time-window {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  margin: 0;
+  align-items: stretch;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: calc(var(--org-ehg-time-row-h) * 3);
   padding: 0;
-  list-style: none;
-  max-height: 11rem;
-  overflow: auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--org-ehg-date-pop-edge) 58%, transparent);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(180deg, var(--org-ehg-date-pop-specular) 0%, rgba(255, 255, 255, 0) 38%),
+    color-mix(in srgb, var(--org-ehg-date-pop-fill) 78%, transparent);
+  -webkit-backdrop-filter: blur(var(--org-ehg-date-pop-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--org-ehg-date-pop-blur)) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-date-pop-specular),
+    0 8px 18px color-mix(in srgb, var(--org-ehg-date-pop-accent) 10%, transparent);
 }
 
-.org-ehg-date-glass-popover__quasar-item {
+.org-ehg-date-glass-popover__quasar-time-neighbor,
+.org-ehg-date-glass-popover__quasar-time-band {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 1.85rem;
+  height: var(--org-ehg-time-row-h);
+  min-height: var(--org-ehg-time-row-h);
+  max-height: var(--org-ehg-time-row-h);
+  margin: 0;
+  padding: 0;
+}
+
+.org-ehg-date-glass-popover__quasar-time-neighbor {
   border: 0;
-  border-radius: 0.3rem;
   background: transparent;
-  color: inherit;
+  color: color-mix(in srgb, var(--org-ehg-date-pop-ink) 38%, transparent);
   font: inherit;
   font-size: 0.875rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
   cursor: pointer;
 }
 
-.org-ehg-date-glass-popover__quasar-item:hover {
-  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 12%, transparent);
+.org-ehg-date-glass-popover__quasar-time-neighbor:hover {
+  color: color-mix(in srgb, var(--org-ehg-date-pop-ink) 68%, var(--org-ehg-date-pop-accent));
 }
 
-.org-ehg-date-glass-popover__quasar-item--selected {
-  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent);
-  color: color-mix(in srgb, var(--org-ehg-date-pop-accent) 78%, var(--org-ehg-date-pop-ink));
+.org-ehg-date-glass-popover__quasar-time-band {
+  border-radius: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent) 18%,
+      color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent) 50%,
+      color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent) 82%,
+      transparent 100%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--org-ehg-date-pop-accent) 22%, transparent),
+    0 0 12px color-mix(in srgb, var(--org-ehg-date-pop-accent) 18%, transparent);
+}
+
+.org-ehg-date-glass-popover__quasar-time-value {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--org-ehg-date-pop-ink);
+  font-size: 0.875rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
-.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-item--selected,
-.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-item--selected {
-  color: #ffffff;
-  background: color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent);
+.org-ehg-date-glass-popover__quasar-time-value--current {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+}
+
+.org-ehg-date-glass-popover__quasar-time-value--input {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  cursor: text;
+}
+
+.org-ehg-date-glass-popover__quasar-time-value--input:hover,
+.org-ehg-date-glass-popover__quasar-time-value--input:focus {
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.org-ehg-date-glass-popover__quasar-time-value--period {
+  font-size: 0.875rem;
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-time-window,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-time-window {
+  border-color: color-mix(in srgb, var(--org-ehg-date-pop-edge) 70%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 42%),
+    color-mix(in srgb, var(--org-ehg-date-pop-fill) 82%, #0f172a);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-time-band,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-time-band {
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent) 18%,
+      color-mix(in srgb, var(--org-ehg-date-pop-accent) 42%, transparent) 50%,
+      color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent) 82%,
+      transparent 100%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px color-mix(in srgb, var(--org-ehg-date-pop-accent) 35%, transparent),
+    0 0 14px color-mix(in srgb, var(--org-ehg-date-pop-accent) 28%, transparent);
+}
+
+.org-ehg-date-glass-panel[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-time-value,
+.org-ehg-glass-playground-card[data-org-ehg-theme="dark"] .org-ehg-date-glass-popover__quasar-time-value {
+  color: #f8fafc;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--org-ehg-date-pop-accent) 45%, transparent);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 
@@ -6064,7 +7166,7 @@
 }
 
 /*
- * Action chips (action-group + action-icon) — colored glass (reference light + dark).
+ * Action chips (action-group + action-icon) â colored glass (reference light + dark).
  * Light: tinted wash + colored glyph. Dark: saturated glass fill + white glyph.
  */
 .org-ehg-qa-glass-icon--action {

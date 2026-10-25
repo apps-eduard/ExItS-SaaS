@@ -2,6 +2,7 @@ export type UiStandardFilterCategory =
   | "all"
   | "buttons"
   | "button-glass"
+  | "fab-glass"
   | "button-stepper"
   | "button-group"
   | "button-dropdown"
@@ -47,6 +48,7 @@ export type UiStandardFilterCategory =
   | "org-ehg-stock-requests"
   | "org-ehg-branch-settings"
   | "org-ehg-button-glass"
+  | "org-ehg-fab-glass"
   | "org-ehg-input-glass"
   | "org-ehg-date-glass"
   | "org-ehg-quick-action-glass"
@@ -210,6 +212,7 @@ export const UI_STANDARD_PERSONAL_NAV: readonly UiStandardNavEntry[] = [
     label: "Glass components",
     children: [
       { id: "button-glass", label: "Button glass" },
+      { id: "fab-glass", label: "Floating action glass" },
       { id: "input-glass", label: "Input glass" },
       { id: "date-glass", label: "Date glass" },
       { id: "quick-action-glass", label: "Quick Action glass" },
@@ -269,6 +272,7 @@ export const UI_STANDARD_ORG_NAV: readonly UiStandardNavEntry[] = [
         label: "Glass components",
         children: [
           { id: "org-ehg-button-glass", label: "Button glass" },
+          { id: "org-ehg-fab-glass", label: "Floating action glass" },
           { id: "org-ehg-input-glass", label: "Input glass" },
           { id: "org-ehg-date-glass", label: "Date glass" },
           { id: "org-ehg-quick-action-glass", label: "Quick Action glass" },

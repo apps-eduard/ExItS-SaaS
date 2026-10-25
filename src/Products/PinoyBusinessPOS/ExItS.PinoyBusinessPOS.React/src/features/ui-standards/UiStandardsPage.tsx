@@ -25,6 +25,7 @@ import {
   type UiStandardsProduct,
 } from "@/features/ui-standards/ui-standard-catalog";
 import { OrgEhgButtonGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgButtonGlassGallery";
+import { OrgEhgFabGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgFabGlassGallery";
 import { OrgEhgInputGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgInputGlassGallery";
 import { OrgEhgDateGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDateGlassGallery";
 import { OrgEhgQuickActionGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQuickActionGlassGallery";
@@ -144,6 +145,7 @@ export function UiStandardsPage() {
 
   const showOrgEhg = product === "organization" && isOrgEhgCategory(category);
   const showButtonGlass = product === "personal" && category === "button-glass";
+  const showFabGlass = product === "personal" && category === "fab-glass";
   const showInputGlass = product === "personal" && category === "input-glass";
   const showDateGlass = product === "personal" && category === "date-glass";
   const showQuickActionGlass = product === "personal" && category === "quick-action-glass";
@@ -156,6 +158,7 @@ export function UiStandardsPage() {
   const hasAnyResult =
     showOrgEhg ||
     showButtonGlass ||
+    showFabGlass ||
     showInputGlass ||
     showDateGlass ||
     showQuickActionGlass ||
@@ -347,6 +350,10 @@ export function UiStandardsPage() {
       ) : showButtonGlass ? (
         <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-button-glass-section">
           <OrgEhgButtonGlassGallery />
+        </section>
+      ) : showFabGlass ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-fab-glass-section">
+          <OrgEhgFabGlassGallery />
         </section>
       ) : showInputGlass ? (
         <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-input-glass-section">

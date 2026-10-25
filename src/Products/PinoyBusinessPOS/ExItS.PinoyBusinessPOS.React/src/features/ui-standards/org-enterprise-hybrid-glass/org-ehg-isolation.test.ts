@@ -43,6 +43,7 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
     expect(personalGlass.label).toBe("Glass components");
     expect(personalGlass.children.map((c) => ("id" in c ? c.id : ""))).toEqual([
       "button-glass",
+      "fab-glass",
       "input-glass",
       "date-glass",
       "quick-action-glass",
@@ -97,6 +98,7 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
     if (!glassSub || !isUiStandardNavSubgroup(glassSub)) return;
     expect(glassSub.children.map((c) => ("id" in c ? c.id : ""))).toEqual([
       "org-ehg-button-glass",
+      "org-ehg-fab-glass",
       "org-ehg-input-glass",
       "org-ehg-date-glass",
       "org-ehg-quick-action-glass",
@@ -143,10 +145,12 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
     expect(css).not.toMatch(/personal-qa-glass/);
   });
 
-  it("is not imported by product feature folders outside ui-standards", () => {
+  it("is not imported by product feature folders outside ui-standards (exits bridge allowed)", () => {
     const offenders = sourceFiles(srcDir)
       .map((file) => relative(srcDir, file).replace(/\\/g, "/"))
       .filter((file) => !file.startsWith("features/ui-standards/"))
+      // Product bridge: components/exits may wrap Org EHG (same pattern as SoftGlassDateTimeField).
+      .filter((file) => !file.startsWith("components/exits/"))
       .filter((file) => {
         const text = read(file);
         return (
@@ -158,3 +162,4 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
     expect(offenders).toEqual([]);
   });
 });
+

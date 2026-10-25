@@ -37,11 +37,37 @@ describe("OrgEhgButtonGlassPlayground", () => {
     expect(screen.getByTestId("ui-standard-org-ehg-btn-glass-playground")).toBeInTheDocument();
     const previewBtn = screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn");
     expect(previewBtn).toHaveClass("org-ehg-btn-glass--medium");
-    expect(previewBtn).toHaveClass("org-ehg-btn-glass--tone-primary");
+    expect(previewBtn).toHaveClass("org-ehg-btn-glass--intent-primary");
+    expect(previewBtn).toHaveClass("org-ehg-btn-glass--appearance-standard");
     expect(previewBtn).toHaveClass("org-ehg-btn-glass--size-md");
     expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview")).toHaveAttribute(
       "data-org-ehg-theme",
       "light",
+    );
+  });
+
+  it("updates intent and appearance like the normal button playground", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgButtonGlassPlayground />));
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-intent", "success");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn")).toHaveClass(
+      "org-ehg-btn-glass--intent-success",
+    );
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-intent", "violet");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn")).toHaveClass(
+      "org-ehg-btn-glass--intent-violet",
+    );
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-appearance", "outline");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn")).toHaveClass(
+      "org-ehg-btn-glass--appearance-outline",
+    );
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-appearance", "text");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn")).toHaveClass(
+      "org-ehg-btn-glass--appearance-text",
     );
   });
 
@@ -93,6 +119,82 @@ describe("OrgEhgButtonGlassPlayground", () => {
     const playground = within(root).getByTestId("ui-standard-card-org-ehg-btn-glass-playground");
     const light = within(root).getByTestId("org-ehg-btn-glass-light");
     expect(playground.compareDocumentPosition(light) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("turns on floating action preview with circular FAB classes", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgButtonGlassPlayground />));
+
+    await user.click(screen.getByTestId("ui-standard-org-ehg-btn-pg-fab"));
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-fab-scene")).toBeInTheDocument();
+    const previewBtn = screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn");
+    expect(previewBtn).toHaveClass("org-ehg-btn-glass--fab");
+    expect(previewBtn).toHaveClass("org-ehg-btn-glass--icon-only");
+    expect(previewBtn).toHaveClass("org-ehg-btn-glass--size-lg");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-copy")).toHaveTextContent(/\bfab\b/);
+  });
+
+  it("turns on speed dial with stacked child actions and command token", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgButtonGlassPlayground />));
+
+    await user.click(screen.getByTestId("ui-standard-org-ehg-btn-pg-speed-dial"));
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-open",
+      "true",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-label-type",
+      "label-tooltip",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-transition",
+      "stagger",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-show",
+      "top",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn")).toHaveClass(
+      "org-ehg-btn-glass--fab",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial-person")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-copy")).toHaveTextContent(/speed-dial/);
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-speed-dial-type", "rounded-label");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-label-type",
+      "rounded-label",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-copy")).toHaveTextContent(/rounded-label/);
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-speed-dial-type", "icon-only");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-label-type",
+      "icon-only",
+    );
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-speed-dial-show", "left");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-show",
+      "left",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-copy")).toHaveTextContent(/show-left/);
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-speed-dial-transition", "bounce");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-transition",
+      "bounce",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-copy")).toHaveTextContent(
+      /transition-bounce/,
+    );
+
+    await user.click(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn"));
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
+      "data-open",
+      "false",
+    );
   });
 
   it("applies playground background and button animation classes", async () => {

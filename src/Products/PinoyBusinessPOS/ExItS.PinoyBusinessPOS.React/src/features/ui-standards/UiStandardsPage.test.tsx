@@ -1210,6 +1210,9 @@ describe("UiStandardsPage", () => {
     expect(group).toHaveTextContent("Glass components");
     expect(group).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByTestId("ui-standards-filter-button-glass")).toHaveTextContent("Button glass");
+    expect(screen.getByTestId("ui-standards-filter-fab-glass")).toHaveTextContent(
+      "Floating action glass",
+    );
     expect(screen.getByTestId("ui-standards-filter-input-glass")).toHaveTextContent("Input glass");
     expect(screen.getByTestId("ui-standards-filter-date-glass")).toHaveTextContent("Date glass");
     expect(screen.getByTestId("ui-standards-filter-card-glass")).toHaveTextContent("Card glass");
@@ -1221,6 +1224,10 @@ describe("UiStandardsPage", () => {
     await user.click(screen.getByTestId("ui-standards-filter-button-glass"));
     expect(screen.getByTestId("ui-standards-button-glass-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-org-ehg-button-glass")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("ui-standards-filter-fab-glass"));
+    expect(screen.getByTestId("ui-standards-fab-glass-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-fab-glass")).toBeInTheDocument();
 
     await user.click(screen.getByTestId("ui-standards-filter-input-glass"));
     expect(screen.getByTestId("ui-standards-input-glass-section")).toBeInTheDocument();
@@ -3035,6 +3042,21 @@ describe("UiStandardsPage Organization Hybrid Glass", () => {
     expect(screen.getByTestId("ui-standards-org-ehg-live-stub")).toHaveAttribute(
       "data-category",
       "org-ehg-button-glass",
+    );
+  });
+
+  it("opens Organization Hybrid Glass → Floating action glass", () => {
+    renderPage("/ui-standards?product=organization&category=org-ehg-fab-glass");
+    expect(screen.getByTestId("ui-standards-filter-org-ehg-fab-glass")).toHaveTextContent(
+      "Floating action glass",
+    );
+    expect(screen.getByTestId("ui-standards-filter-org-ehg-fab-glass")).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByTestId("ui-standards-org-ehg-live-stub")).toHaveAttribute(
+      "data-category",
+      "org-ehg-fab-glass",
     );
   });
 
