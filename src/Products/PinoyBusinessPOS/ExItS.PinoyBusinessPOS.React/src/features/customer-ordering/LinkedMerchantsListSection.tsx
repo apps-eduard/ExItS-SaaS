@@ -734,11 +734,15 @@ export function LinkedMerchantsListSection({
                   ))}
                 </ul>
               )}
-              {renderFooter({
-                testId: "linked-merchants-list-footer",
-                rangeTestId: "linked-merchants-list-range",
-                loadMoreTestId: "linked-merchants-load-more-list",
-              })}
+              {hasNextPage ? (
+                <CommerceLoadMore
+                  label={t("inventory.loadMore")}
+                  loadingLabel={t("loading.label")}
+                  busy={isFetchingNextPage}
+                  testId="linked-merchants-load-more-list"
+                  onClick={onLoadMore}
+                />
+              ) : null}
             </div>
           }
         />

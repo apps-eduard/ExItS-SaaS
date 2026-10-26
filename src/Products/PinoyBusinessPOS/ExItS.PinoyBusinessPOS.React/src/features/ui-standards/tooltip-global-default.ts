@@ -21,4 +21,10 @@ export const TOOLTIP_GLOBAL_GAP_PX = 10 as const;
 /** Triangle caret edge length (px). */
 export const TOOLTIP_GLOBAL_ARROW_PX = 8 as const;
 
+/** Tip label size — keep `.exits-tooltip` in sync. */
+export const TOOLTIP_GLOBAL_FONT_SIZE = "0.75rem" as const;
+
+/** Tip label weight — regular, not bold. */
+export const TOOLTIP_GLOBAL_FONT_WEIGHT = 400 as const;
+
 export const TOOLTIP_GLOBAL_DEFAULT_COMMAND = "ext tooltip soft-glass top" as const;

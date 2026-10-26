@@ -16,6 +16,7 @@ The locked command is `ext tooltip soft-glass top`.
 - Sidebars (compact icon rail): pass `placement="end"` (or `start` in RTL layouts that need it)
 - Delays: hover `TOOLTIP_GLOBAL_HOVER_DELAY_MS` (300), focus `TOOLTIP_GLOBAL_FOCUS_DELAY_MS` (40)
 - Gap / caret: `TOOLTIP_GLOBAL_GAP_PX` (10) / `TOOLTIP_GLOBAL_ARROW_PX` (8) — keep `.exits-tooltip__arrow` CSS aligned
+- Type: `TOOLTIP_GLOBAL_FONT_SIZE` = **0.75rem**, `TOOLTIP_GLOBAL_FONT_WEIGHT` = **400** (not bold) — keep `.exits-tooltip` CSS aligned
 - Accessibility: keep `aria-label` (or visible text) on the trigger; tooltip is supplementary only
 - Do **not** rely on native `title=` alone for icon-only actions (browser tip competes with Soft Glass)
 

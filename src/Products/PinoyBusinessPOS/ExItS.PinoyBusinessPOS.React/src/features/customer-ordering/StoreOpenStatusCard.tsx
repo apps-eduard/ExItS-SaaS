@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { PreferredInfoCard } from "@/features/customer-ordering/PreferredChoiceCard";
+import { formatStoreClock } from "@/features/customer-ordering/store-hours-summary";
 import {
   formatRemainingDuration,
   resolveStoreOpenStatus,
@@ -76,16 +77,33 @@ export function StoreOpenStatusCard({
   }
 
   if (status.kind === "open") {
+    const closeDisplay = formatStoreClock(status.closeTime) ?? status.closeTime;
     return (
-      <PreferredInfoCard
-        title={t("orders.storeStatusOpen")}
-        value={remainingCaption(
-          t("orders.storeStatusRemainingToClose"),
-          formatRemainingDuration(status.minutesUntilClose),
-        )}
-        testId={testId}
-        tone="success"
-      />
+      <div
+        className="personal-preferred-period personal-preferred-period--info personal-preferred-period--split"
+        data-testid={testId}
+      >
+        <span className="personal-preferred-period__body personal-preferred-period__body--open">
+          <span className="personal-preferred-period__title">
+            {t("orders.storeStatusOpen")}
+          </span>
+          <span className="personal-preferred-period__caption">
+            {remainingCaption(
+              t("orders.storeStatusRemainingToClose"),
+              formatRemainingDuration(status.minutesUntilClose),
+            )}
+          </span>
+        </span>
+        <span className="personal-preferred-period__divider" aria-hidden="true" />
+        <span className="personal-preferred-period__aside personal-preferred-period__aside--danger">
+          <span className="personal-preferred-period__title">
+            {t("orders.storeStatusClose")}
+          </span>
+          <span className="personal-preferred-period__caption">
+            <span className="personal-preferred-period__time">{closeDisplay}</span>
+          </span>
+        </span>
+      </div>
     );
   }
 

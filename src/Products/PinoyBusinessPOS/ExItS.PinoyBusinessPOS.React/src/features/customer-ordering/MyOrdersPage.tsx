@@ -89,7 +89,7 @@ export function MyOrdersPage() {
       const haystack = [
         order.branchNameSnapshot,
         statusLabel,
-        paymentStatusLabel(order.paymentStatus, t),
+        paymentStatusLabel(order.paymentStatus, t, order.paymentMethod),
         paymentMethodLabel(order.paymentMethod, t),
         fulfillmentLabel(order.fulfillmentType, t),
         String(order.lineCount),
@@ -279,7 +279,7 @@ export function MyOrdersPage() {
                             </StatusChip>
                           </ExitsTableCell>
                           <ExitsTableCell truncate>
-                            {paymentStatusLabel(order.paymentStatus, t)}
+                            {paymentStatusLabel(order.paymentStatus, t, order.paymentMethod)}
                           </ExitsTableCell>
                           <ExitsTableCell truncate>
                             {paymentMethodLabel(order.paymentMethod, t)}

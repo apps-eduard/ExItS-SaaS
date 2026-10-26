@@ -5,6 +5,8 @@ import {
   TOOLTIP_GLOBAL_DEFAULT_PLACEMENT,
   TOOLTIP_GLOBAL_DEFAULT_SHELL,
   TOOLTIP_GLOBAL_FOCUS_DELAY_MS,
+  TOOLTIP_GLOBAL_FONT_SIZE,
+  TOOLTIP_GLOBAL_FONT_WEIGHT,
   TOOLTIP_GLOBAL_GAP_PX,
   TOOLTIP_GLOBAL_HOVER_DELAY_MS,
 } from "@/features/ui-standards/tooltip-global-default";
@@ -21,5 +23,7 @@ describe("Tooltip global default", () => {
     expect(TOOLTIP_GLOBAL_FOCUS_DELAY_MS).toBe(40);
     expect(TOOLTIP_GLOBAL_GAP_PX).toBe(10);
     expect(TOOLTIP_GLOBAL_ARROW_PX).toBe(8);
+    expect(TOOLTIP_GLOBAL_FONT_SIZE).toBe("0.75rem");
+    expect(TOOLTIP_GLOBAL_FONT_WEIGHT).toBe(400);
   });
 });

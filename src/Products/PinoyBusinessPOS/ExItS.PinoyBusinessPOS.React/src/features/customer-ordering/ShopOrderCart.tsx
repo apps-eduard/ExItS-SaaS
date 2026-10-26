@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShoppingCart, Trash2, X } from "lucide-react";
+import { ArrowRight, ShoppingCart, Trash2, X } from "lucide-react";
 import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
 import type {
   CustomerStorefrontBranchDto,
@@ -313,10 +313,13 @@ export function ShopOrderCart({
             {checkoutMode === "open" ? (
               <Button
                 type="button"
+                intent="primary"
+                appearance="ghost"
+                emphasis="strong"
                 data-testid="shop-review"
                 disabled={!canContinue}
                 className={cn(
-                  "sell-cart-pay w-full",
+                  "sell-cart-pay sell-cart-pay--text-arrow",
                   canContinue ? "sell-cart-pay--ready" : "sell-cart-pay--disabled",
                 )}
                 onClick={() => {
@@ -325,19 +328,24 @@ export function ShopOrderCart({
                   }
                 }}
               >
-                {lineCount > 0 ? t("sell.continueToPayment") : t("sell.pay")}
+                <span className="sell-cart-pay__label">
+                  {lineCount > 0 ? t("sell.continueToPayment") : t("sell.pay")}
+                </span>
+                <ArrowRight className="sell-cart-pay__arrow size-5 shrink-0" strokeWidth={2.5} aria-hidden />
               </Button>
             ) : null}
             {checkoutMode === "schedule" && lineCount > 0 ? (
               <Button
                 type="button"
                 intent="primary"
-                appearance="solid"
-                className="sell-cart-pay sell-cart-pay--ready w-full"
+                appearance="ghost"
+                emphasis="strong"
+                className="sell-cart-pay sell-cart-pay--text-arrow sell-cart-pay--ready"
                 data-testid="shop-schedule-order"
                 onClick={() => onScheduleOrder?.()}
               >
-                {t("orders.scheduleAndCheckout")}
+                <span className="sell-cart-pay__label">{t("orders.scheduleAndCheckout")}</span>
+                <ArrowRight className="sell-cart-pay__arrow size-5 shrink-0" strokeWidth={2.5} aria-hidden />
               </Button>
             ) : null}
             {(checkoutMode === "closed" || checkoutMode === "paused" || checkoutMode === "blocked")

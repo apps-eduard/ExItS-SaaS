@@ -21,7 +21,7 @@ export type PersonalStoreIdentityProps = {
   connectionTestId?: string;
   /**
    * Soft Glass store card badge layout:
-   * row 1 = Connected + Delivery, row 2 = Linked date + Ordering available.
+   * Connected + Delivery under the name; Linked + Ordering full-width 50/50 under the avatar.
    */
   emphasisBadges?: boolean;
   linkedAtLabel?: string | null;
@@ -47,7 +47,10 @@ export function PersonalStoreIdentity({
   const name = storeName.trim() || "?";
 
   return (
-    <div className="pc-store-card__top" data-testid="personal-store-identity">
+    <div
+      className={cn("pc-store-card__top", emphasisBadges && "pc-store-card__top--emphasis")}
+      data-testid="personal-store-identity"
+    >
       <span className="pc-store-card__avatar" aria-hidden>
         {storeDisplayInitial(name)}
       </span>
@@ -63,7 +66,7 @@ export function PersonalStoreIdentity({
         ) : null}
         {emphasisBadges ? (
           <div
-            className="pc-store-card__badge-rows"
+            className="pc-store-card__badge-rows pc-store-card__badge-rows--under-name"
             data-testid="personal-store-identity-badges"
           >
             <div className="pc-store-card__badge-row pc-store-card__badge-row--pair">
@@ -95,36 +98,6 @@ export function PersonalStoreIdentity({
                 <span className="pc-store-card__badge-spacer" aria-hidden />
               )}
             </div>
-            <div className="pc-store-card__badge-row pc-store-card__badge-row--pair">
-              {linkedAtLabel ? (
-                <StatusChip
-                  tone="info"
-                  appearance="emphasis"
-                  shape="pill"
-                  className="pc-store-card__status pc-store-card__meta-chip"
-                  data-testid="personal-store-linked-chip"
-                >
-                  {linkedAtLabel}
-                </StatusChip>
-              ) : (
-                <span className="pc-store-card__badge-spacer" aria-hidden />
-              )}
-              {orderingPending ? (
-                <MerchantOrderingBadge available={canCustomerOrder} pending />
-              ) : (
-                <StatusChip
-                  tone={canCustomerOrder ? "success" : "warning"}
-                  appearance="emphasis"
-                  shape="pill"
-                  className="pc-store-card__status pc-store-card__ordering-chip"
-                  data-testid="personal-store-ordering-chip"
-                >
-                  {canCustomerOrder
-                    ? t("personal.orderingAvailable")
-                    : t("personal.orderingUnavailable")}
-                </StatusChip>
-              )}
-            </div>
           </div>
         ) : (
           <div className="pc-store-card__badge-row">
@@ -140,6 +113,43 @@ export function PersonalStoreIdentity({
         )}
         {extra}
       </div>
+      {emphasisBadges ? (
+        <div
+          className="pc-store-card__badge-rows pc-store-card__badge-rows--full"
+          data-testid="personal-store-identity-badges-full"
+        >
+          <div className="pc-store-card__badge-row pc-store-card__badge-row--pair">
+            {linkedAtLabel ? (
+              <StatusChip
+                tone="info"
+                appearance="emphasis"
+                shape="pill"
+                className="pc-store-card__status pc-store-card__meta-chip"
+                data-testid="personal-store-linked-chip"
+              >
+                {linkedAtLabel}
+              </StatusChip>
+            ) : (
+              <span className="pc-store-card__badge-spacer" aria-hidden />
+            )}
+            {orderingPending ? (
+              <MerchantOrderingBadge available={canCustomerOrder} pending />
+            ) : (
+              <StatusChip
+                tone={canCustomerOrder ? "success" : "warning"}
+                appearance="emphasis"
+                shape="pill"
+                className="pc-store-card__status pc-store-card__ordering-chip"
+                data-testid="personal-store-ordering-chip"
+              >
+                {canCustomerOrder
+                  ? t("personal.orderingAvailable")
+                  : t("personal.orderingUnavailable")}
+              </StatusChip>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

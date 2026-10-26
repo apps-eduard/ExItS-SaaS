@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SoftGlassDatePopover } from "@/components/exits/SoftGlassDatePopover";
 import { PreferredChoiceCard } from "@/features/customer-ordering/PreferredChoiceCard";
 import { formatPreferredFulfillmentLongDate } from "@/features/customer-ordering/preferred-fulfillment-display";
@@ -15,6 +15,8 @@ import {
   pickupMaxScheduleDate,
   type PickupHoursDay,
 } from "@/features/customer-ordering/pickup-time-bounds";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export type PreferredDayChoice = "today" | "tomorrow" | "another";
@@ -54,6 +56,7 @@ export function PreferredFulfillmentScheduler({
   testIdPrefix = "preferred-fulfillment",
 }: PreferredFulfillmentSchedulerProps) {
   const { t } = useI18n();
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
   const anotherCardRef = useRef<HTMLDivElement | null>(null);
   const [anotherCalendarOpen, setAnotherCalendarOpen] = useState(false);
   const now = useMemo(() => new Date(), []);
@@ -101,6 +104,12 @@ export function PreferredFulfillmentScheduler({
   const resolvedPeriod =
     period && periods.includes(period) ? period : null;
 
+  useEffect(() => {
+    if (isDesktop || dayChoice !== "tomorrow") return;
+    onAnotherDateChange(storeTomorrow);
+    onDayChoiceChange("another");
+  }, [dayChoice, isDesktop, onAnotherDateChange, onDayChoiceChange, storeTomorrow]);
+
   function openAnotherCalendar() {
     onDayChoiceChange("another");
     onPeriodChange(null);
@@ -126,22 +135,26 @@ export function PreferredFulfillmentScheduler({
               onPeriodChange(null);
             }}
           />
-          <PreferredChoiceCard
-            testId={`${testIdPrefix}-day-tomorrow`}
-            title={t("orders.preferredDayTomorrow")}
-            caption={formatPreferredFulfillmentLongDate(storeTomorrow)}
-            selected={dayChoice === "tomorrow"}
-            disabled={!tomorrowSelectable}
-            onClick={() => {
-              setAnotherCalendarOpen(false);
-              onDayChoiceChange("tomorrow");
-              onPeriodChange(null);
-            }}
-          />
+          {isDesktop ? (
+            <PreferredChoiceCard
+              testId={`${testIdPrefix}-day-tomorrow`}
+              title={t("orders.preferredDayTomorrow")}
+              caption={formatPreferredFulfillmentLongDate(storeTomorrow)}
+              selected={dayChoice === "tomorrow"}
+              disabled={!tomorrowSelectable}
+              onClick={() => {
+                setAnotherCalendarOpen(false);
+                onDayChoiceChange("tomorrow");
+                onPeriodChange(null);
+              }}
+            />
+          ) : null}
           <div ref={anotherCardRef} className="personal-preferred-period-anchor">
             <PreferredChoiceCard
               testId={`${testIdPrefix}-day-another`}
-              title={t("orders.preferredDayAnother")}
+              title={
+                isDesktop ? t("orders.preferredDayAnother") : t("orders.preferredSelectDate")
+              }
               caption={
                 anotherDate
                   ? formatPreferredFulfillmentLongDate(anotherDate)

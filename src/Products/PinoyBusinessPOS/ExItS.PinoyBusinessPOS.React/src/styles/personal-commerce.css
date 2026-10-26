@@ -468,6 +468,37 @@
   gap: 0.85rem;
 }
 
+/* Avatar + name on row 1; badge pairs span full card width under the avatar. */
+.pc-store-card__top--emphasis {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "avatar body"
+    "badges badges";
+  column-gap: 0.85rem;
+  row-gap: 0.45rem;
+  align-items: start;
+}
+
+.pc-store-card__top--emphasis > .pc-store-card__avatar {
+  grid-area: avatar;
+}
+
+.pc-store-card__top--emphasis > .pc-store-card__body {
+  grid-area: body;
+}
+
+.pc-store-card__top--emphasis > .pc-store-card__badge-rows--full {
+  grid-area: badges;
+  margin-top: 0;
+  width: 100%;
+}
+
+.pc-store-card__top--emphasis .pc-store-card__badge-rows--under-name {
+  margin-top: 0.35rem;
+  width: 100%;
+}
+
 .pc-store-card__avatar {
   display: inline-flex;
   flex-shrink: 0;
@@ -532,8 +563,10 @@
 
 .pc-store-card__badge-row--pair > .pc-store-card__status,
 .pc-store-card__badge-row--pair > .pc-store-card__ordering,
+.pc-store-card__badge-row--pair > .pc-store-card__ordering-chip,
+.pc-store-card__badge-row--pair > .pc-store-card__meta-chip,
 .pc-store-card__badge-row--pair > .pc-store-card__badge-spacer {
-  display: inline-flex;
+  display: flex;
   min-width: 0;
   width: 100%;
   max-width: none;
@@ -542,10 +575,21 @@
   justify-content: center;
 }
 
+/* Nested ConnectionStatusChip wrapper → StatusChip must fill the 50% cell. */
+.pc-store-card__badge-row--pair > .pc-store-card__status:not(.exits-status-chip) {
+  display: flex;
+  width: 100%;
+}
+
+.pc-store-card__badge-row--pair > .pc-store-card__status:not(.exits-status-chip) > .exits-status-chip,
+.pc-store-card__badge-row--pair > .exits-status-chip,
 .pc-store-card__badge-row--pair .exits-status-chip,
 .pc-store-card__badge-row--pair .pc-store-card__ordering {
   box-sizing: border-box;
+  display: inline-flex;
+  flex: 1 1 auto;
   width: 100%;
+  max-width: none;
   height: var(--pc-store-chip-height, 1.5rem);
   min-height: var(--pc-store-chip-height, 1.5rem);
   max-height: var(--pc-store-chip-height, 1.5rem);
@@ -942,9 +986,9 @@
 
 .personal-preferred-period {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
   min-width: 8.5rem;
   flex: 1 1 8.5rem;
   max-width: 14rem;
@@ -973,6 +1017,15 @@
 .personal-preferred-period--selected {
   border-color: var(--exits-primary);
   background: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-surface));
+}
+
+.personal-preferred-period__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .personal-preferred-period__title {
@@ -1005,6 +1058,60 @@
   width: 100%;
   font-size: var(--exits-text-xs);
   color: var(--exits-muted, var(--exits-text-muted));
+}
+
+/* Open + remaining | Close + clock — remaining-hours Soft Glass card. */
+.personal-preferred-period--split {
+  align-items: stretch;
+  gap: 0.75rem;
+  border-color: color-mix(in srgb, var(--exits-success, #22c55e) 34%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-success, #22c55e) 12%, var(--exits-surface));
+}
+
+.personal-preferred-period--split .personal-preferred-period__body--open {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.personal-preferred-period--split .personal-preferred-period__body--open > .personal-preferred-period__title {
+  color: var(--exits-success, #22c55e);
+}
+
+.personal-preferred-period--split .personal-preferred-period__body--open .personal-preferred-period__time {
+  color: var(--exits-success, #22c55e);
+}
+
+.personal-preferred-period__divider {
+  display: block;
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 0;
+  min-height: 2.5rem;
+  margin-block: 0;
+  border: 0;
+  border-inline-start: 1.5px solid color-mix(in srgb, var(--exits-text) 22%, var(--exits-border));
+  background: transparent;
+}
+
+.personal-preferred-period__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  min-width: 4.25rem;
+  text-align: end;
+}
+
+.personal-preferred-period__aside .personal-preferred-period__caption {
+  justify-content: flex-end;
+}
+
+.personal-preferred-period__aside--danger > .personal-preferred-period__title,
+.personal-preferred-period__aside--danger .personal-preferred-period__time {
+  color: var(--exits-danger, #ef4444);
 }
 
 .personal-preferred-period__time {
@@ -1057,6 +1164,15 @@
 [data-theme="dark"] .personal-preferred-period--tone-success {
   border-color: color-mix(in srgb, var(--exits-success, #22c55e) 40%, #475569);
   background: color-mix(in srgb, var(--exits-success, #22c55e) 16%, #0f172a);
+}
+
+[data-theme="dark"] .personal-preferred-period--split {
+  border-color: color-mix(in srgb, var(--exits-success, #22c55e) 40%, #475569);
+  background: color-mix(in srgb, var(--exits-success, #22c55e) 16%, #0f172a);
+}
+
+[data-theme="dark"] .personal-preferred-period__divider {
+  border-inline-start-color: color-mix(in srgb, #e2e8f0 28%, #475569);
 }
 
 [data-theme="dark"] .personal-preferred-period--tone-warn {
@@ -1389,6 +1505,22 @@
   .pc-checkout-layout {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  /* Let the page scroll — don't lock the cart panel to a fixed viewport height. */
+  .pc-checkout-cart.sell-cart-shell,
+  .pc-checkout-cart .sell-cart-panel {
+    min-height: 0;
+    height: auto !important;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pc-checkout-cart .sell-cart-lines {
+    flex: 0 1 auto !important;
+    max-height: min(40dvh, 22rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Soft Glass order items receipt (buyer order detail) */
@@ -1689,27 +1821,130 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exits-primary) 25%, transparent);
 }
 
-.pc-checkout-place {
-  position: sticky;
-  bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
-  z-index: 60;
-  min-height: 3rem;
+/*
+ * Place Order — same text + arrow CTA as Personal shop View Cart.
+ * Soft Glass dock shell on mobile, primary text (not solid fill).
+ */
+.pc-checkout-place.pc-checkout-place--text-arrow {
+  z-index: 45;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
   width: 100%;
-  font-size: var(--exits-text-md);
+  max-width: 100%;
+  height: auto;
+  top: auto;
+  min-height: 2.75rem;
+  max-height: 4rem;
+  padding: 0.85rem 0.85rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--shop-glass-soft, var(--exits-primary)));
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #ffffff 94%, var(--shop-glass-wash, #f5f3ff)) 0%,
+      color-mix(in srgb, #ffffff 92%, var(--shop-glass-mid, #ede9fe)) 100%
+    );
+  color: var(--shop-glass-chip, var(--exits-primary)) !important;
+  box-shadow:
+    0 -6px 20px color-mix(in srgb, var(--shop-glass-chip, var(--exits-primary)) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent);
+  font-size: var(--exits-text-sm, 0.875rem);
   font-weight: 700;
+  letter-spacing: 0.01em;
+  pointer-events: auto;
+}
+
+.pc-checkout-place.pc-checkout-place--text-arrow:hover:not(:disabled),
+.pc-checkout-place.pc-checkout-place--text-arrow:focus-visible:not(:disabled) {
+  color: var(--shop-glass-chip, var(--exits-primary)) !important;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #ffffff 90%, var(--shop-glass-wash, #f5f3ff)) 0%,
+      color-mix(in srgb, #ffffff 88%, var(--shop-glass-mid, #ede9fe)) 100%
+    );
+  filter: none;
+}
+
+.pc-checkout-place.pc-checkout-place--text-arrow:disabled {
+  opacity: 0.48;
+}
+
+.pc-checkout-place__label {
+  color: inherit;
+}
+
+.pc-checkout-place__arrow,
+.pc-checkout-place__spinner {
+  color: inherit;
+}
+
+[data-theme="dark"] .pc-checkout-place.pc-checkout-place--text-arrow {
+  border-color: color-mix(in srgb, var(--shop-glass-chip, var(--exits-primary)) 22%, #475569);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #0f172a 94%, var(--shop-glass-wash, #1e1b4b)) 0%,
+      color-mix(in srgb, #1e293b 92%, var(--shop-glass-mid, #312e81)) 100%
+    );
+  color: #e2e8f0 !important;
+  box-shadow:
+    0 -8px 24px color-mix(in srgb, #020617 42%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
 }
 
 @media (max-width: 1023.98px) {
-  .merchant-checkout-page {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  /* Evening period + remaining-hours status stretch full row on small screens. */
+  .personal-preferred-period[data-testid$="-period-evening"],
+  .personal-preferred-period[data-testid="checkout-store-open-status"] {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
   }
 
-  .pc-checkout-place {
-    position: fixed;
-    left: max(0.75rem, env(safe-area-inset-left));
-    right: max(0.75rem, env(safe-area-inset-right));
-    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-    width: auto;
+  /*
+   * Room for portaled Place Order dock + bottom nav so content can scroll
+   * clear of the sticky CTA (fixed-in-main was blocking mobile scroll).
+   */
+  .merchant-checkout-page {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .personal-shell .admin-shell__content.personal-shell__content:has(.merchant-checkout-page) {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  /* Portaled onto .personal-crystal-screen — same model as View Cart dock. */
+  .personal-crystal-screen > .pc-checkout-place.pc-checkout-place--text-arrow {
+    position: absolute !important;
+    inset-inline: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none;
+    height: auto !important;
+    max-height: 4rem;
+    box-sizing: border-box;
+    bottom: calc(3.05rem + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--soft-glass-radius, 1.1rem) var(--soft-glass-radius, 1.1rem) 0 0;
+    border-bottom: 0;
+    justify-content: center;
+    min-height: 2.85rem;
+    padding-block: 0.9rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pc-checkout-place.pc-checkout-place--text-arrow {
+    position: sticky;
+    bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -4192,8 +4427,15 @@
     right: max(0.7rem, env(safe-area-inset-right, 0px));
     bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
     width: auto;
-    height: min(82dvh, calc(100dvh - 2rem - env(safe-area-inset-top, 0px)));
-    max-height: min(82dvh, calc(100dvh - 2rem - env(safe-area-inset-top, 0px)));
+    /* Height follows lines; max reaches bottom edge of Personal top bar (4.25rem). */
+    height: auto;
+    max-height: calc(
+      100dvh
+        - var(--ui-standards-crystal-inset, 0.45rem)
+        - env(safe-area-inset-top, 0px)
+        - 4.25rem
+        - max(0.7rem, env(safe-area-inset-bottom, 0px))
+    );
     margin: 0;
     padding: 0.55rem 0.85rem 0.85rem;
     border-width: 1px;
@@ -4213,24 +4455,31 @@
       inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    overflow: hidden;
   }
 
   .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-panel {
+    /* Beat Tailwind flex-1 so short carts stay content-height. */
+    flex: 0 1 auto !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0;
     padding-inline: 0.15rem;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+    overflow: hidden;
   }
 
-  /* Same row: Cart · N items …… Clear flush right (before corner X). */
+  /* Same row: Cart · N items …… Clear aligned to line delete icons (X stays corner). */
   .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-panel__header {
     display: flex;
     width: 100%;
     align-items: center;
     justify-content: flex-start;
     gap: 0.35rem;
-    padding-inline: 0.15rem 2.35rem;
+    padding-inline: 0.15rem;
     margin-bottom: 0.25rem;
   }
 
@@ -4251,9 +4500,13 @@
 
   .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-clear {
     margin: 0;
-    margin-inline-end: -0.15rem;
+    min-width: 1.75rem;
     min-height: 2.25rem;
-    padding-inline: 0.45rem;
+    padding-inline: 0;
+    /* Nudge left of the corner X / delete column. */
+    margin-inline-end: 1.35rem;
+    text-align: end;
+    justify-content: flex-end;
   }
 
   .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-sheet__close {
@@ -4268,14 +4521,23 @@
     align-self: center;
   }
 
+  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-empty {
+    flex: 0 0 auto !important;
+    justify-content: flex-start;
+    padding-block: 0.85rem 0.5rem;
+  }
+
   .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-lines {
+    flex: 0 1 auto !important;
     padding-inline: 0.1rem;
     min-height: 0;
+    overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-footer {
+    flex-shrink: 0;
     padding: 0.75rem 0.15rem 0.15rem;
     background: transparent;
   }
@@ -4286,8 +4548,45 @@
     color: #0f172a;
   }
 
-  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay {
+  /* Continue / Schedule — text + arrow, centered like Place Order. */
+  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay.sell-cart-pay--text-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    gap: 0.15rem;
+    width: 100%;
     min-height: var(--exits-control-height, 2.25rem);
+    margin-inline: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    color: var(--shop-glass-chip, var(--exits-primary)) !important;
+    box-shadow: none !important;
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay.sell-cart-pay--text-arrow:hover:not(:disabled),
+  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay.sell-cart-pay--text-arrow:focus-visible:not(:disabled) {
+    background: transparent !important;
+    color: var(--shop-glass-chip, var(--exits-primary)) !important;
+    filter: none;
+  }
+
+  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay.sell-cart-pay--text-arrow:disabled {
+    opacity: 0.48;
+  }
+
+  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay__label,
+  .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay__arrow {
+    color: inherit;
+  }
+
+  [data-theme="dark"] .personal-shell .merchant-shop-page--floor .sell-cart-sheet .sell-cart-pay.sell-cart-pay--text-arrow {
+    color: #e2e8f0 !important;
   }
 
   [data-theme="dark"] .personal-shell .merchant-shop-page--floor .sell-cart-sheet,

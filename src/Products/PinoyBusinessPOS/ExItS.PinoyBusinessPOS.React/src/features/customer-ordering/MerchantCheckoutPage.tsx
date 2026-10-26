@@ -20,8 +20,13 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { formatQuantityDisplay } from "@/cart/sell-cart-helpers";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
+import { cn } from "@/lib/cn";
 import {
   checkoutPlaceBlocker,
   checkoutPlaceDisabled,
@@ -115,6 +120,7 @@ export function MerchantCheckoutPage() {
   const navigate = useNavigate();
   const online = useBrowserOnline();
   const { session } = useSession();
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
   const { organizationId = "" } = useParams();
   const [searchParams] = useSearchParams();
   const scheduleCheckoutIntent = searchParams.get("schedule") === "1";
@@ -722,22 +728,30 @@ export function MerchantCheckoutPage() {
       ) : null}
 
       <div className="pc-checkout-layout">
-        <aside className="sell-cart-shell pc-checkout-cart" data-testid="checkout-lines" aria-label={t("sell.cartLabel")}>
-          <ShopOrderCart
-            lines={cart.lines}
-            productsById={
-              new Map(
-                (storefrontQuery.data?.products ?? []).map((product) => [product.productId, product]),
-              )
-            }
-            workspace={workspace}
-            sellerOrganizationId={organizationId}
-            subtotal={merchandiseSubtotal}
-            showPayButton={false}
-            onChangeQuantity={setQuantity}
-            onEditWeight={setWeightProduct}
-            onClear={clearLines}
-          />
+        {/* Desktop: editable cart column. Mobile: items live in Order Summary Soft Glass card. */}
+        <aside
+          className={cn("sell-cart-shell pc-checkout-cart", !isDesktop && "hidden")}
+          data-testid="checkout-lines"
+          aria-label={t("sell.cartLabel")}
+          hidden={!isDesktop}
+        >
+          {isDesktop ? (
+            <ShopOrderCart
+              lines={cart.lines}
+              productsById={
+                new Map(
+                  (storefrontQuery.data?.products ?? []).map((product) => [product.productId, product]),
+                )
+              }
+              workspace={workspace}
+              sellerOrganizationId={organizationId}
+              subtotal={merchandiseSubtotal}
+              showPayButton={false}
+              onChangeQuantity={setQuantity}
+              onEditWeight={setWeightProduct}
+              onClear={clearLines}
+            />
+          ) : null}
         </aside>
         <div className="pc-checkout-side">
         <section className="pc-checkout-section">
@@ -1057,31 +1071,83 @@ export function MerchantCheckoutPage() {
           ) : null}
         </section>
 
-        <section className="pc-checkout-section" data-testid="checkout-totals">
-          <h2 className="pc-checkout-section__title">{t("orders.orderSummary")}</h2>
-          <div className="pc-checkout-totals">
-            <div className="pc-checkout-totals__row">
-              <span>{t("orders.subtotal")}</span>
-              <strong>{money(merchandiseSubtotal)}</strong>
+        {!isDesktop ? (
+          <section
+            className="pc-order-items exits-animate-panel"
+            data-testid="checkout-totals"
+            data-shell="soft-glass"
+          >
+            <h2 className="pc-order-items__title">
+              <span className="pc-order-items__title-text">{t("orders.orderSummary")}</span>
+              <span className="pc-order-items__title-rule" aria-hidden />
+            </h2>
+            <ul className="pc-order-items__list" data-testid="checkout-summary-lines">
+              {cart.lines.map((line) => {
+                const lineTotal = Math.round(line.unitPrice * line.quantity * 100) / 100;
+                const qtyLabel = formatQuantityDisplay(line.quantity);
+                return (
+                  <li key={line.productId} className="pc-order-items__line">
+                    <span className="pc-order-items__name">
+                      <span className="pc-order-items__qty">{qtyLabel}x</span> {line.name}
+                      {line.unitOfMeasure ? (
+                        <span className="pc-order-items__meta"> ({line.unitOfMeasure})</span>
+                      ) : null}
+                    </span>
+                    <MoneyDisplay amount={lineTotal} className="pc-order-items__amount" />
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="pc-order-items__totals">
+              <div className="pc-order-items__row">
+                <span>{t("orders.subtotal")}</span>
+                <MoneyDisplay amount={merchandiseSubtotal} className="pc-order-items__amount" />
+              </div>
+              <div className="pc-order-items__row">
+                <span>{t("orders.deliveryFeeLabel")}</span>
+                <MoneyDisplay amount={deliveryFee} className="pc-order-items__amount" />
+              </div>
+              {quoteQuery.data?.distanceExceptionApplied ? (
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid="checkout-distance-exception"
+                >
+                  {t("customers.delivery.extendedApproved")}
+                </p>
+              ) : null}
+              <div className="pc-order-items__row pc-order-items__row--grand">
+                <span>{t("orders.total")}</span>
+                <MoneyDisplay amount={total} className="pc-order-items__grand" />
+              </div>
             </div>
-            <div className="pc-checkout-totals__row">
-              <span>{t("orders.deliveryFee")}</span>
-              <strong>{money(deliveryFee)}</strong>
+          </section>
+        ) : (
+          <section className="pc-checkout-section" data-testid="checkout-totals">
+            <h2 className="pc-checkout-section__title">{t("orders.orderSummary")}</h2>
+            <div className="pc-checkout-totals">
+              <div className="pc-checkout-totals__row">
+                <span>{t("orders.subtotal")}</span>
+                <strong>{money(merchandiseSubtotal)}</strong>
+              </div>
+              <div className="pc-checkout-totals__row">
+                <span>{t("orders.deliveryFee")}</span>
+                <strong>{money(deliveryFee)}</strong>
+              </div>
+              {quoteQuery.data?.distanceExceptionApplied ? (
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid="checkout-distance-exception"
+                >
+                  {t("customers.delivery.extendedApproved")}
+                </p>
+              ) : null}
+              <div className="pc-checkout-totals__row pc-checkout-totals__row--grand">
+                <span>{t("orders.total")}</span>
+                <strong>{money(total)}</strong>
+              </div>
             </div>
-            {quoteQuery.data?.distanceExceptionApplied ? (
-              <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                data-testid="checkout-distance-exception"
-              >
-                {t("customers.delivery.extendedApproved")}
-              </p>
-            ) : null}
-            <div className="pc-checkout-totals__row pc-checkout-totals__row--grand">
-              <span>{t("orders.total")}</span>
-              <strong>{money(total)}</strong>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
         {(!selection.canPlace || !selection.branchId)
         && !(scheduleRequired && scheduleComplete)
         && selectedBranch?.onlineOrdersPaused !== true ? (

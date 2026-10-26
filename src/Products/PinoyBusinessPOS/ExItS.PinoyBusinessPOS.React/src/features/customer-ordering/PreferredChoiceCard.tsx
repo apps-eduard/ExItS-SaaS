@@ -31,20 +31,20 @@ export function PreferredChoiceCard({
       data-testid={testId}
       onClick={onClick}
     >
-      <span className="personal-preferred-period__title">
-        {icon ? <span className="personal-preferred-period__icon">{icon}</span> : null}
-        {title}
+      <span className="personal-preferred-period__body">
+        <span className="personal-preferred-period__title">
+          {icon ? <span className="personal-preferred-period__icon">{icon}</span> : null}
+          {title}
+        </span>
+        <span className="personal-preferred-period__caption">{caption}</span>
       </span>
-      <span className="personal-preferred-period__caption">
-        {caption}
-        {selected ? (
-          <Check
-            className="personal-preferred-period__check"
-            strokeWidth={3}
-            aria-hidden
-          />
-        ) : null}
-      </span>
+      {selected ? (
+        <Check
+          className="personal-preferred-period__check"
+          strokeWidth={3}
+          aria-hidden
+        />
+      ) : null}
     </button>
   );
 }
@@ -72,11 +72,13 @@ export function PreferredInfoCard({
       }
       data-testid={testId}
     >
-      <span className="personal-preferred-period__title">
-        {icon ? <span className="personal-preferred-period__icon">{icon}</span> : null}
-        {title}
+      <span className="personal-preferred-period__body">
+        <span className="personal-preferred-period__title">
+          {icon ? <span className="personal-preferred-period__icon">{icon}</span> : null}
+          {title}
+        </span>
+        <span className="personal-preferred-period__caption">{value}</span>
       </span>
-      <span className="personal-preferred-period__caption">{value}</span>
     </div>
   );
 }

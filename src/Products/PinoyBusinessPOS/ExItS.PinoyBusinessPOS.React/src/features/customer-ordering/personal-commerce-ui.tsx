@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
-import { Loader2, ShoppingBag } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowRight, Loader2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -152,16 +155,32 @@ export function CheckoutPlaceButton({
   disabled?: boolean;
   onClick: () => void;
 }) {
-  return (
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
+
+  const button = (
     <Button
       type="button"
-      className="pc-checkout-place gap-2"
+      intent="primary"
+      appearance="ghost"
+      emphasis="strong"
+      className="pc-checkout-place pc-checkout-place--text-arrow"
       data-testid="place-order"
       disabled={disabled || busy}
       onClick={onClick}
     >
-      {busy ? <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden /> : null}
-      {busy ? busyLabel : label}
+      {busy ? <Loader2 className="pc-checkout-place__spinner size-4 shrink-0 animate-spin" aria-hidden /> : null}
+      <span className="pc-checkout-place__label">{busy ? busyLabel : label}</span>
+      {!busy ? (
+        <ArrowRight className="pc-checkout-place__arrow size-5 shrink-0" strokeWidth={2.5} aria-hidden />
+      ) : null}
     </Button>
   );
+
+  /* Mobile: portal onto crystal — fixed inside the scroll main blocks touch scroll. */
+  if (isDesktop || typeof document === "undefined") {
+    return button;
+  }
+  const host =
+    document.querySelector<HTMLElement>("[data-testid='personal-crystal-screen']") ?? document.body;
+  return createPortal(button, host);
 }

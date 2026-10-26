@@ -48,7 +48,7 @@ describe("resolveStoreOpenStatus", () => {
       timeZoneId: "Asia/Manila",
       operatingHours: week,
     });
-    expect(status).toEqual({ kind: "open", minutesUntilClose: 7 * 60 });
+    expect(status).toEqual({ kind: "open", minutesUntilClose: 7 * 60, closeTime: "17:00" });
   });
 
   it("returns closed with minutes until open", () => {
@@ -82,7 +82,7 @@ describe("resolveStoreOpenStatus", () => {
       timeZoneId: "Asia/Manila",
       operatingHours: overnight,
     });
-    expect(status).toEqual({ kind: "open", minutesUntilClose: 3 * 60 });
+    expect(status).toEqual({ kind: "open", minutesUntilClose: 3 * 60, closeTime: "02:00" });
   });
 
   it("returns unknown without hours", () => {

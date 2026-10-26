@@ -10,7 +10,8 @@ type ClockInterval = { startMinutes: number; endMinutes: number };
 export type StoreOpenStatus =
   | { kind: "unknown" }
   | { kind: "open24" }
-  | { kind: "open"; minutesUntilClose: number }
+  /** `closeTime` is branch-local `HH:mm` for the end of the current open window. */
+  | { kind: "open"; minutesUntilClose: number; closeTime: string }
   | { kind: "closed"; minutesUntilOpen: number | null };
 
 /** Current open / closed status from branch hours + timezone. */
@@ -41,18 +42,26 @@ export function resolveStoreOpenStatus(input: {
   );
   if (current) {
     let untilClose = current.endMinutes - nowMinutes;
+    let closeMinutes = current.endMinutes;
     if (current.endMinutes >= 24 * 60) {
       const tomorrow = addCalendarDays(local.date, 1);
       const nextIntervals = openIntervalsForDay(tomorrow, hours);
       const continues = nextIntervals.find((interval) => interval.startMinutes === 0);
       if (continues) {
         untilClose += continues.endMinutes;
+        closeMinutes = continues.endMinutes;
+      } else {
+        closeMinutes = 0;
       }
     }
     if (untilClose >= 24 * 60) {
       return { kind: "open24" };
     }
-    return { kind: "open", minutesUntilClose: Math.max(0, untilClose) };
+    return {
+      kind: "open",
+      minutesUntilClose: Math.max(0, untilClose),
+      closeTime: minutesToClock(closeMinutes),
+    };
   }
 
   const untilOpen = minutesUntilNextOpen(local.date, nowMinutes, hours);
@@ -162,4 +171,12 @@ function clockToMinutes(value: string | null | undefined): number | null {
   const minute = Number(match[2]);
   if (hour > 23 || minute > 59) return null;
   return hour * 60 + minute;
+}
+
+/** Wall-clock `HH:mm` from minutes past midnight (wraps at 24h). */
+function minutesToClock(totalMinutes: number): string {
+  const wrapped = ((Math.round(totalMinutes) % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hour = Math.floor(wrapped / 60);
+  const minute = wrapped % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }

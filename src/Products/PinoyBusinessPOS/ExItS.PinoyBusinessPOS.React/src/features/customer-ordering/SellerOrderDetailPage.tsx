@@ -36,6 +36,10 @@ import {
 import { ActorName } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { formatPreferredFulfillmentLabel } from "@/features/customer-ordering/preferred-fulfillment-display";
+import {
+  paymentMethodLabel,
+  paymentStatusLabel,
+} from "@/features/customer-ordering/personal-order-card";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { usePosRealtimeOrderWatch } from "@/realtime/usePosRealtime";
@@ -43,18 +47,6 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function money(n: number): string {
   return `₱${n.toFixed(2)}`;
-}
-
-function paymentMethodLabel(code: string, t: (key: MessageKey) => string): string {
-  if (code === "Cash") return t("orders.paymentCash");
-  if (code === "ManualGCash") return t("orders.paymentGCashShort");
-  return t("orders.paymentUtang");
-}
-
-function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
-  if (status === "Paid") return t("orders.paymentPaid");
-  if (status === "Pending") return t("orders.paymentAwaitingVerification");
-  return t("orders.paymentUnpaid");
 }
 
 function parseCashReceived(value: string): number | null {
@@ -699,7 +691,9 @@ export function SellerOrderDetailPage() {
         ) : null}
         <div>
           {t("orders.paymentStatus")}:{" "}
-          <strong data-testid="seller-payment-status">{paymentStatusLabel(order.paymentStatus, t)}</strong>
+          <strong data-testid="seller-payment-status">
+            {paymentStatusLabel(order.paymentStatus, t, order.paymentMethod)}
+          </strong>
         </div>
         {order.paymentMethod === "ManualGCash" && order.paymentStatus === "Paid" ? (
           <p className="m-0 text-muted" data-testid="gcash-manual-confirmation">

@@ -39,13 +39,39 @@ export function paymentMethodLabel(code: string, t: (key: MessageKey) => string)
   return t("orders.paymentUtang");
 }
 
-export function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
+/**
+ * Display payment status. Utang uses the credit lifecycle labels:
+ * On Credit | Partially Paid | Paid | Credit Pending | Credit Declined.
+ */
+export function paymentStatusLabel(
+  status: string,
+  t: (key: MessageKey) => string,
+  paymentMethod?: string,
+): string {
+  if (paymentMethod === "Utang") {
+    if (status === "Paid") return t("orders.paymentPaid");
+    if (status === "PartiallyPaid") return t("orders.paymentPartiallyPaid");
+    if (status === "Pending" || status === "CreditPending") {
+      return t("orders.paymentCreditPending");
+    }
+    if (status === "Declined" || status === "CreditDeclined") {
+      return t("orders.paymentCreditDeclined");
+    }
+    return t("orders.paymentOnCredit");
+  }
   if (status === "Paid") return t("orders.paymentPaid");
   if (status === "Pending") return t("orders.paymentAwaitingVerification");
   return t("orders.paymentUnpaid");
 }
 
-function paymentStatusTone(status: string): string {
+function paymentStatusTone(status: string, paymentMethod?: string): string {
+  if (paymentMethod === "Utang") {
+    if (status === "Paid") return "success";
+    if (status === "PartiallyPaid") return "warn";
+    if (status === "Pending" || status === "CreditPending") return "warn";
+    if (status === "Declined" || status === "CreditDeclined") return "warn";
+    return "primary";
+  }
   if (status === "Paid") return "success";
   if (status === "Pending") return "warn";
   return "warn";
@@ -57,10 +83,25 @@ function paymentMethodTone(code: string): string {
   return "primary";
 }
 
-function PaymentStatusIcon({ status }: { status: string }) {
+function PaymentStatusIcon({
+  status,
+  paymentMethod,
+}: {
+  status: string;
+  paymentMethod?: string;
+}) {
   let Icon: LucideIcon = CircleAlert;
-  if (status === "Paid") Icon = CheckCircle2;
-  else if (status === "Pending") Icon = Clock3;
+  if (paymentMethod === "Utang") {
+    if (status === "Paid") Icon = CheckCircle2;
+    else if (status === "PartiallyPaid") Icon = HandCoins;
+    else if (status === "Pending" || status === "CreditPending") Icon = Clock3;
+    else if (status === "Declined" || status === "CreditDeclined") Icon = CircleAlert;
+    else Icon = HandCoins;
+  } else if (status === "Paid") {
+    Icon = CheckCircle2;
+  } else if (status === "Pending") {
+    Icon = Clock3;
+  }
   return <Icon className="pc-order-card__fact-icon" aria-hidden />;
 }
 
@@ -94,11 +135,16 @@ export function PersonalOrderFactChips({
   return (
     <div className="pc-order-card__meta-row" data-testid="my-order-card-facts">
       <span
-        className={cn("pc-order-card__fact", `pc-order-card__fact--${paymentStatusTone(paymentStatus)}`)}
+        className={cn(
+          "pc-order-card__fact",
+          `pc-order-card__fact--${paymentStatusTone(paymentStatus, paymentMethod)}`,
+        )}
         data-testid="order-payment-status"
       >
-        <PaymentStatusIcon status={paymentStatus} />
-        <span className="pc-order-card__fact-text truncate">{paymentStatusLabel(paymentStatus, t)}</span>
+        <PaymentStatusIcon status={paymentStatus} paymentMethod={paymentMethod} />
+        <span className="pc-order-card__fact-text truncate">
+          {paymentStatusLabel(paymentStatus, t, paymentMethod)}
+        </span>
       </span>
       <span
         className={cn("pc-order-card__fact", `pc-order-card__fact--${paymentMethodTone(paymentMethod)}`)}
