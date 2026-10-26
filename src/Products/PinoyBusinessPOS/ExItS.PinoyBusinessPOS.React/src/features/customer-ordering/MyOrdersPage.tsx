@@ -1,22 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import {
-  Banknote,
-  CheckCircle2,
-  CircleAlert,
-  Clock3,
-  HandCoins,
-  Package,
-  RefreshCw,
-  Search,
-  ShoppingBag,
-  Smartphone,
-  Store,
-  Truck,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { RefreshCw, Search, Store, Users } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listMyCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { Button } from "@/components/ui/button";
@@ -44,6 +29,13 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
 import {
+  fulfillmentLabel,
+  orderCardToneClass,
+  paymentMethodLabel,
+  paymentStatusLabel,
+  PersonalOrderFactChips,
+} from "@/features/customer-ordering/personal-order-card";
+import {
   displayOrderStatusKey,
   orderStatusChipTone,
 } from "@/features/customer-ordering/seller-order-actions";
@@ -58,56 +50,8 @@ import {
   TABLE_GLOBAL_DEFAULT_HEADER_INTENT,
 } from "@/features/ui-standards/table-global-default";
 
-function orderCardToneClass(tone: ReturnType<typeof orderStatusChipTone>): string {
-  if (tone === "success") return "pc-order-card--success";
-  if (tone === "danger" || tone === "warning") return "pc-order-card--warn";
-  return "pc-order-card--primary";
-}
-
 const BUYER_SCOPE_ORG = "00000000-0000-4000-8000-000000000001";
 const ORDERS_PAGE_SIZE = 40;
-
-function fulfillmentLabel(type: string, t: (key: MessageKey) => string): string {
-  if (type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0) {
-    return t("orders.delivery");
-  }
-  if (type.localeCompare("Pickup", undefined, { sensitivity: "accent" }) === 0) {
-    return t("orders.pickup");
-  }
-  return type;
-}
-
-function FulfillmentIcon({ type }: { type: string }) {
-  const isDelivery = type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0;
-  const Icon = isDelivery ? Truck : Package;
-  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
-}
-
-function paymentMethodLabel(code: string, t: (key: MessageKey) => string): string {
-  if (code === "Cash") return t("orders.paymentCash");
-  if (code === "ManualGCash") return t("orders.paymentGCashShort");
-  return t("orders.paymentUtang");
-}
-
-function PaymentMethodIcon({ code }: { code: string }) {
-  let Icon: LucideIcon = Banknote;
-  if (code === "ManualGCash") Icon = Smartphone;
-  else if (code === "Utang") Icon = HandCoins;
-  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
-}
-
-function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
-  if (status === "Paid") return t("orders.paymentPaid");
-  if (status === "Pending") return t("orders.paymentAwaitingVerification");
-  return t("orders.paymentUnpaid");
-}
-
-function PaymentStatusIcon({ status }: { status: string }) {
-  let Icon: LucideIcon = CircleAlert;
-  if (status === "Paid") Icon = CheckCircle2;
-  else if (status === "Pending") Icon = Clock3;
-  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
-}
 
 export function MyOrdersPage() {
   const { t } = useI18n();
@@ -335,25 +279,16 @@ export function MyOrdersPage() {
                             </StatusChip>
                           </ExitsTableCell>
                           <ExitsTableCell truncate>
-                            <span className="inline-flex min-w-0 items-center gap-1.5">
-                              <PaymentStatusIcon status={order.paymentStatus} />
-                              <span className="truncate">{paymentStatusLabel(order.paymentStatus, t)}</span>
-                            </span>
+                            {paymentStatusLabel(order.paymentStatus, t)}
                           </ExitsTableCell>
                           <ExitsTableCell truncate>
-                            <span className="inline-flex min-w-0 items-center gap-1.5">
-                              <PaymentMethodIcon code={order.paymentMethod} />
-                              <span className="truncate">{paymentMethodLabel(order.paymentMethod, t)}</span>
-                            </span>
+                            {paymentMethodLabel(order.paymentMethod, t)}
                           </ExitsTableCell>
                           <ExitsTableCell cellAlign="center" colSize="numeric">
                             {order.lineCount}
                           </ExitsTableCell>
                           <ExitsTableCell truncate>
-                            <span className="inline-flex min-w-0 items-center gap-1.5">
-                              <FulfillmentIcon type={order.fulfillmentType} />
-                              <span className="truncate">{fulfillmentLabel(order.fulfillmentType, t)}</span>
-                            </span>
+                            {fulfillmentLabel(order.fulfillmentType, t)}
                           </ExitsTableCell>
                           <ExitsTableCell truncate>
                             {new Date(order.createdAtUtc).toLocaleString()}
@@ -422,44 +357,24 @@ export function MyOrdersPage() {
                           to={`/personal/orders/${order.orderId}`}
                           className={cn("pc-order-card text-foreground no-underline", orderCardToneClass(tone))}
                           data-testid="my-order-card"
+                          data-shell="soft-glass"
                         >
                           <span className="pc-order-card__ribbon">
                             <span className="pc-order-card__ribbon-label truncate uppercase">{statusLabel}</span>
-                            <span className="pc-order-card__ribbon-fold" aria-hidden />
                           </span>
                           <div className="pc-order-card__body min-w-0 flex-1">
                             <p className="pc-order-card__title m-0 truncate">{order.branchNameSnapshot}</p>
-                            <div className="pc-order-card__meta-row" data-testid="my-order-card-facts">
-                              <span className="pc-order-card__fact">
-                                <PaymentStatusIcon status={order.paymentStatus} />
-                                <span className="pc-order-card__fact-text truncate">
-                                  {paymentStatusLabel(order.paymentStatus, t)}
-                                </span>
-                              </span>
-                              <span className="pc-order-card__fact">
-                                <PaymentMethodIcon code={order.paymentMethod} />
-                                <span className="pc-order-card__fact-text truncate">
-                                  {paymentMethodLabel(order.paymentMethod, t)}
-                                </span>
-                              </span>
-                              <span className="pc-order-card__fact">
-                                <ShoppingBag className="pc-order-card__fact-icon" aria-hidden />
-                                <span className="pc-order-card__fact-text truncate">
-                                  {order.lineCount} {t("orders.items")}
-                                </span>
-                              </span>
-                            </div>
-                            <div className="pc-order-card__fulfill">
-                              <span className="pc-order-card__fact">
-                                <FulfillmentIcon type={order.fulfillmentType} />
-                                <span className="pc-order-card__fact-text truncate">
-                                  {fulfillmentLabel(order.fulfillmentType, t)}
-                                </span>
-                              </span>
-                              <span className="pc-order-card__when truncate">
-                                {new Date(order.createdAtUtc).toLocaleString()}
-                              </span>
-                            </div>
+                            <PersonalOrderFactChips
+                              paymentStatus={order.paymentStatus}
+                              paymentMethod={order.paymentMethod}
+                              itemCount={order.lineCount}
+                              fulfillmentType={order.fulfillmentType}
+                              itemsLabel={t("orders.items")}
+                              t={t}
+                            />
+                            <p className="pc-order-card__schedule m-0 truncate">
+                              {new Date(order.createdAtUtc).toLocaleString()}
+                            </p>
                           </div>
                         </Link>
                       </li>

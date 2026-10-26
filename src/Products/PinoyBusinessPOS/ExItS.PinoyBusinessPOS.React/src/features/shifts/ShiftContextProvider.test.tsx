@@ -23,6 +23,7 @@ let workspaceMock: {
 };
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
+  useOptionalWorkspace: () => workspaceMock,
   useWorkspace: () => workspaceMock,
 }));
 
@@ -56,6 +57,21 @@ describe("ShiftContextProvider", () => {
   });
 
   it("does not stay loading when Manage Business has no branch", async () => {
+    render(
+      <ShiftContextProvider>
+        <Probe />
+      </ShiftContextProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("shift-loading")).toHaveTextContent("false");
+    });
+    expect(getCurrentCashierShift).not.toHaveBeenCalled();
+    expect(screen.getByTestId("shift-id")).toHaveTextContent("none");
+  });
+
+  it("renders idle when WorkspaceProvider context is missing", async () => {
+    workspaceMock = null as unknown as typeof workspaceMock;
     render(
       <ShiftContextProvider>
         <Probe />

@@ -450,14 +450,24 @@ export function OrgEhgCardGlassSettings() {
             <strong>Enable low stock alerts</strong>
             <small>Notify managers when SKUs fall below threshold</small>
           </span>
-          <Switch checked disabled aria-label="Enable low stock alerts" />
+          <Switch
+            checked
+            disabled
+            aria-label="Enable low stock alerts"
+            onCheckedChange={() => {}}
+          />
         </label>
         <label className="org-ehg-card-glass__switch-row">
           <span>
             <strong>Send email notifications</strong>
             <small>Also push to contact email on the branch profile</small>
           </span>
-          <Switch checked disabled aria-label="Send email notifications" />
+          <Switch
+            checked
+            disabled
+            aria-label="Send email notifications"
+            onCheckedChange={() => {}}
+          />
         </label>
       </div>
       <footer className="org-ehg-card-glass__actions">

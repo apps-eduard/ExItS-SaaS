@@ -20,7 +20,8 @@ public sealed partial class CustomerOrder
 
     /// <summary>
     /// Seller reduces and/or cancels lines under the disclosed partial-fulfillment policy.
-    /// Does not require buyer approval. Blocks when payment is already Paid (refund obligation unsupported).
+    /// Does not require buyer approval. Allowed through Ready / ReadyForPickup (pickup-time
+    /// customer-driven line changes). Paid stays Paid; overpayment is a refund/credit obligation.
     /// Returns reservation release deltas (productId → quantity to release) for the application layer.
     /// </summary>
     public IReadOnlyList<(Catalog.CatalogProductId ProductId, decimal ReleaseQuantity)> AdjustLines(
@@ -41,14 +42,8 @@ public sealed partial class CustomerOrder
 
         EnsureCanAdjustLines();
 
-        if (PaymentStatus == CustomerOrderPaymentStatus.Paid)
-        {
-            throw new DomainException(
-                DomainErrorCodes.CustomerOrderPaidAdjustmentBlocked,
-                "This order is already paid. Quantity adjustments require a supported refund or credit workflow before they can proceed.");
-        }
-
         var previousTotal = Total;
+        var wasPaid = PaymentStatus == CustomerOrderPaymentStatus.Paid;
         var releases = new List<(Catalog.CatalogProductId ProductId, decimal ReleaseQuantity)>();
         var touched = false;
 
@@ -117,6 +112,20 @@ public sealed partial class CustomerOrder
             newTotal: Total,
             summary: $"Order total adjusted from {previousTotal:0.00} to {Total:0.00}."));
 
+        // Paid stays Paid. Overpayment (AmountReceived − Total) is the explicit refund/credit obligation.
+        if (wasPaid && AmountReceived is decimal received && received > Total)
+        {
+            var overpayment = SaleMoney.RoundMoney(received - Total);
+            _activityEvents.Add(new CustomerOrderActivityEvent(
+                Guid.NewGuid(),
+                utcNow,
+                actorId,
+                CustomerOrderActivityEvent.Actions.OrderTotalAdjusted,
+                previousTotal: previousTotal,
+                newTotal: Total,
+                summary: $"Paid order adjusted; refund/credit obligation {overpayment:0.00} (payment status remains Paid)."));
+        }
+
         if (_lines.All(l => l.IsCancelled))
         {
             CancelInternal(
@@ -167,9 +176,9 @@ public sealed partial class CustomerOrder
                 "Cancellation reason is invalid.");
         }
 
-        if (reason is CustomerOrderCancelReason.CustomerRefusedPickup
+        if ((reason is CustomerOrderCancelReason.CustomerRefusedPickup
                 or CustomerOrderCancelReason.CustomerRefusedDelivery
-                or CustomerOrderCancelReason.Other
+                or CustomerOrderCancelReason.Other)
             && string.IsNullOrWhiteSpace(notes))
         {
             throw new DomainException(
@@ -177,6 +186,7 @@ public sealed partial class CustomerOrder
                 "Enter a seller note for this cancellation.");
         }
 
+        EnsureSellerCancelAllowed(reason);
         CancelInternal(reason, notes, actorId, utcNow);
         var action = reason is CustomerOrderCancelReason.CustomerRefusedPickup
                 or CustomerOrderCancelReason.CustomerRefusedDelivery
@@ -264,13 +274,57 @@ public sealed partial class CustomerOrder
                 "This order can no longer be adjusted.");
         }
 
-        if (FulfillmentStatus is CustomerOrderFulfillmentStatus.Collected
-            or CustomerOrderFulfillmentStatus.Delivered
-            or CustomerOrderFulfillmentStatus.OutForDelivery)
+        // Pickup Ready stays adjustable (customer may refuse or drop lines at handoff).
+        // Close after the order leaves the counter / leaves for delivery.
+        if (FulfillmentStatus is CustomerOrderFulfillmentStatus.OutForDelivery
+            or CustomerOrderFulfillmentStatus.Collected
+            or CustomerOrderFulfillmentStatus.Delivered)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidCustomerOrderStatusTransition,
                 "Lines cannot be adjusted after the order is out for delivery, delivered, or collected.");
+        }
+    }
+
+    private void EnsureSellerCancelAllowed(CustomerOrderCancelReason reason)
+    {
+        if (FulfillmentStatus == CustomerOrderFulfillmentStatus.ReadyForPickup)
+        {
+            if (reason is not (CustomerOrderCancelReason.CustomerRefusedPickup
+                or CustomerOrderCancelReason.Other))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidCustomerOrderCancelReason,
+                    "Ready-for-pickup cancellations require Customer Refused Pickup (or Other with a seller note).");
+            }
+
+            return;
+        }
+
+        if (FulfillmentStatus == CustomerOrderFulfillmentStatus.Ready)
+        {
+            if (reason is not (CustomerOrderCancelReason.CustomerRefusedDelivery
+                or CustomerOrderCancelReason.SellerUnableToFulfill
+                or CustomerOrderCancelReason.Other))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidCustomerOrderCancelReason,
+                    "Ready delivery cancellations require an authorized delivery exception reason.");
+            }
+
+            return;
+        }
+
+        if (FulfillmentStatus == CustomerOrderFulfillmentStatus.OutForDelivery)
+        {
+            if (reason is not (CustomerOrderCancelReason.CustomerRefusedDelivery
+                or CustomerOrderCancelReason.SellerUnableToFulfill
+                or CustomerOrderCancelReason.Other))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidCustomerOrderCancelReason,
+                    "Out-for-delivery cancellations require an authorized delivery exception reason.");
+            }
         }
     }
 

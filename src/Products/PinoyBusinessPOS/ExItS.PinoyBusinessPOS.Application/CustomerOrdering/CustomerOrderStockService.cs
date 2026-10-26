@@ -424,7 +424,10 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                             .ConfigureAwait(false);
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
-                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        // Cancelled / zero-qty lines already released reservation deltas on adjust.
+                        if (line.Quantity <= 0m
+                            || !byProduct.TryGetValue(line.ProductId.Value, out var account)
+                            || !account.IsTracked)
                         {
                             continue;
                         }

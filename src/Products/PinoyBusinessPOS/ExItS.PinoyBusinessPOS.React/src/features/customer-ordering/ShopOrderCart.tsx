@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ShoppingCart, Trash2 } from "lucide-react";
+import { ShoppingCart, Trash2, X } from "lucide-react";
+import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
 import type {
   CustomerStorefrontBranchDto,
   CustomerStorefrontProductDto,
@@ -106,17 +107,25 @@ export function ShopOrderCart({
 
   return (
     <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="sell-cart-panel__header flex shrink-0 items-start justify-between gap-2">
+      <div className="sell-cart-panel__header flex shrink-0 items-center justify-between gap-2">
         <div className="sell-cart-panel__title min-w-0">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{t("sell.cartLabel")}</h2>
-          {lineCount > 0 ? (
-            <p className="sell-cart-panel__meta m-0 text-[length:var(--exits-text-xs)] text-muted">
-              {lineCount} {lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
-            </p>
-          ) : null}
+          <h2 className="sell-cart-panel__heading m-0 flex min-w-0 flex-wrap items-center gap-x-1.5 text-[length:var(--exits-text-md)] font-semibold">
+            <span className="sell-cart-panel__label">{t("sell.cartLabel")}</span>
+            {lineCount > 0 ? (
+              <>
+                <span className="sell-cart-panel__dot" aria-hidden>
+                  ·
+                </span>
+                <span className="sell-cart-panel__meta">
+                  {lineCount}{" "}
+                  {lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
+                </span>
+              </>
+            ) : null}
+          </h2>
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">
-          {lineCount > 0 ? (
+        {lineCount > 0 ? (
+          <div className="sell-cart-panel__actions flex shrink-0 items-center">
             <Button
               type="button"
               intent="danger"
@@ -126,19 +135,23 @@ export function ShopOrderCart({
             >
               {t("sell.cartClear")}
             </Button>
-          ) : null}
-          {showClose && onClose ? (
+          </div>
+        ) : null}
+        {showClose && onClose ? (
+          <ExitsTooltip content={t("sell.cartSheetClose")} placement="top">
             <Button
               type="button"
-              variant="ghost"
-              className="min-h-8 px-2 text-[length:var(--exits-text-xs)]"
+              intent="neutral"
+              appearance="ghost"
+              className="sell-cart-sheet__close size-9 min-h-9 shrink-0 p-0"
               aria-label={t("sell.cartSheetClose")}
+              data-testid="shop-cart-sheet-close"
               onClick={onClose}
             >
-              {t("sell.cartSheetClose")}
+              <X className="size-5" strokeWidth={2.5} aria-hidden />
             </Button>
-          ) : null}
-        </div>
+          </ExitsTooltip>
+        ) : null}
       </div>
 
       {lineCount === 0 ? (

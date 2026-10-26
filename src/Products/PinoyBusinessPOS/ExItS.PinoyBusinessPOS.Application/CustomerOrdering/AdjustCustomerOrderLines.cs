@@ -71,7 +71,7 @@ public sealed class AdjustCustomerOrderLines
                     var adjustments = new List<CustomerOrderLineAdjustment>();
                     foreach (var line in request.Lines)
                     {
-                        if (!Enum.TryParse<CustomerOrderLineAdjustmentReason>(line.Reason, true, out var reason))
+                        if (!TryParseAdjustmentReason(line.Reason, out var reason))
                         {
                             return ApplicationResult<CustomerOrderDto>.Failure(
                                 DomainErrorCodes.InvalidCustomerOrderLineAdjustment,
@@ -136,6 +136,26 @@ public sealed class AdjustCustomerOrderLines
         {
             return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    internal static bool TryParseAdjustmentReason(
+        string? raw,
+        out CustomerOrderLineAdjustmentReason reason)
+    {
+        reason = default;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        // Reject pure numeric payloads so undefined integers cannot sneak past TryParse.
+        var trimmed = raw.Trim();
+        if (!Enum.TryParse(trimmed, ignoreCase: true, out reason))
+        {
+            return false;
+        }
+
+        return Enum.IsDefined(reason);
     }
 }
 

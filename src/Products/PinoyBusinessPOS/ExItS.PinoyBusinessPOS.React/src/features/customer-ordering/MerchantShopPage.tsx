@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CustomerStorefrontProductDto } from "@/api/pos/pos-customer-orders-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Banknote, RefreshCw, ShoppingCart, Users, WifiOff } from "lucide-react";
+import { ArrowRight, RefreshCw, ShoppingCart, Users, WifiOff } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
   getCustomerStorefront,
@@ -86,6 +87,20 @@ export function MerchantShopPage() {
   const sideCartLayout = useMediaMin(1024);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
   const [weightProduct, setWeightProduct] = useState<CustomerStorefrontProductDto | null>(null);
+
+  // Hide Personal bottom nav while the mobile cart sheet is open (nav sits above page chrome).
+  useEffect(() => {
+    const shell = document.querySelector(".personal-shell");
+    if (!shell) return;
+    if (cartSheetOpen && !sideCartLayout) {
+      shell.setAttribute("data-shop-cart-open", "true");
+    } else {
+      shell.removeAttribute("data-shop-cart-open");
+    }
+    return () => {
+      shell.removeAttribute("data-shop-cart-open");
+    };
+  }, [cartSheetOpen, sideCartLayout]);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const lockedBranchId = useMemo(() => {
@@ -432,7 +447,7 @@ export function MerchantShopPage() {
           <section
             className={cn(
               "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-1 flex-col",
-              showFloatingCart && "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
+              showFloatingCart && "pb-[calc(6.75rem+env(safe-area-inset-bottom))]",
             )}
           >
             {storefront.branches.length > 1 && !lockedBranchId ? (
@@ -544,42 +559,55 @@ export function MerchantShopPage() {
         </div>
       </div>
 
-      {showFloatingCart ? (
-        <button
-          type="button"
-          className="sell-cart-floating sell-cart-bar sell-cart-bar--filled"
-          onClick={() => setCartSheetOpen(true)}
-          aria-expanded={cartSheetOpen}
-          aria-label={t("sell.floatingCartView")}
-        >
-          <span className="sell-cart-bar__summary">
-            <span className="sell-cart-bar__icon" aria-hidden>
-              <Banknote className="size-5" strokeWidth={2} />
-            </span>
-            <span className="sell-cart-bar__copy">
-              <span className="sell-cart-bar__count">
-                {cart.lines.length}{" "}
-                {cart.lines.length === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
+      {showFloatingCart
+        ? createPortal(
+            <button
+              type="button"
+              className="sell-cart-floating sell-cart-bar sell-cart-bar--shop-dock"
+              onClick={() => setCartSheetOpen(true)}
+              aria-expanded={cartSheetOpen}
+              aria-label={t("sell.floatingCartView")}
+              data-testid="shop-floating-cart"
+            >
+              <span className="sell-cart-bar__handle" aria-hidden>
+                <span className="sell-cart-bar__handle-bar" />
               </span>
-              <span className="sell-cart-bar__total">₱{merchandiseSubtotal.toFixed(2)}</span>
-            </span>
-          </span>
-          <span className="sell-cart-bar__action" aria-hidden>
-            <span className="sell-cart-bar__action-label">{t("sell.floatingCartViewLabel")}</span>
-            <ShoppingCart className="size-4 shrink-0" strokeWidth={2} />
-          </span>
-        </button>
-      ) : null}
+              <span className="sell-cart-bar__body">
+                <span className="sell-cart-bar__summary">
+                  <span className="sell-cart-bar__icon" aria-hidden>
+                    <ShoppingCart className="size-5" strokeWidth={2} />
+                  </span>
+                  <span className="sell-cart-bar__copy">
+                    <span className="sell-cart-bar__count">
+                      {cart.lines.length}{" "}
+                      {cart.lines.length === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
+                    </span>
+                    <span className="sell-cart-bar__total">₱{merchandiseSubtotal.toFixed(2)}</span>
+                  </span>
+                </span>
+                <span className="sell-cart-bar__divider" aria-hidden />
+                <span className="sell-cart-bar__action">
+                  <span className="sell-cart-bar__action-label">{t("sell.floatingCartView")}</span>
+                  <ArrowRight className="sell-cart-bar__action-arrow size-5" strokeWidth={2.5} aria-hidden />
+                </span>
+              </span>
+            </button>,
+            document.querySelector("[data-testid='personal-crystal-screen']") ?? document.body,
+          )
+        : null}
 
       {!sideCartLayout && cartSheetOpen ? (
         <>
           <div
-            className="sell-cart-sheet-backdrop fixed inset-0 z-30 bg-black/40"
+            className="sell-cart-sheet-backdrop fixed inset-0 z-[55]"
             role="presentation"
             onClick={() => setCartSheetOpen(false)}
           />
           <div
-            className="sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] max-h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] flex-col gap-2 overflow-hidden border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
+            className="sell-cart-sheet sell-cart-sheet--personal-mobile z-[60] flex flex-col gap-2 overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("sell.cartLabel")}
           >
             <div className="sell-cart-sheet__handle" aria-hidden>
               <span className="sell-cart-sheet__handle-bar" />

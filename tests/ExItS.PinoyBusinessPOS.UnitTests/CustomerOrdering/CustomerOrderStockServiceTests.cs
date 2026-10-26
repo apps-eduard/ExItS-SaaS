@@ -133,6 +133,67 @@ public sealed class CustomerOrderStockServiceTests
     }
 
     [Fact]
+    public async Task Consume_skips_cancelled_zero_quantity_lines()
+    {
+        var org = PosOrganizationId.From(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var keepId = CatalogProductId.From(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        var cancelId = CatalogProductId.From(Guid.Parse("88888888-8888-8888-8888-888888888888"));
+        var actor = Guid.Parse("66666666-6666-6666-6666-666666666666");
+        var now = DateTimeOffset.Parse("2026-08-16T10:00:00Z");
+
+        var keepAccount = InventoryAccount.CreateUntracked(org, keepId, now);
+        keepAccount.Enable(10m, UnitOfMeasure.Piece, actor, now, false);
+        var cancelAccount = InventoryAccount.CreateUntracked(org, cancelId, now);
+        cancelAccount.Enable(10m, UnitOfMeasure.Piece, actor, now, false);
+        var inventory = new FakeInventoryRepository([keepAccount, cancelAccount]);
+        var stock = new CustomerOrderStockService(inventory);
+        var keepProduct = CatalogProduct.Create(org, "Rice", UnitOfMeasure.Piece, 10m, now, id: keepId);
+        var cancelProduct = CatalogProduct.Create(org, "Snack", UnitOfMeasure.Piece, 5m, now, id: cancelId);
+
+        var order = CustomerOrder.CreateSubmitted(
+            org,
+            "260816-004",
+            CustomerOrderParty.Personal(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Pat"),
+            CustomerOrderFulfillmentType.Pickup,
+            Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            "Main",
+            [
+                new CustomerOrderLineDraft(keepId, "Rice", "R", UnitOfMeasure.Piece, 2m, 10m),
+                new CustomerOrderLineDraft(cancelId, "Snack", "S", UnitOfMeasure.Piece, 1m, 5m),
+            ],
+            actor,
+            now);
+        order.Accept(actor, now);
+        await stock.ReserveForAcceptAsync(order, actor, now);
+
+        var cancelLine = order.Lines.Single(l => l.ProductId == cancelId);
+        var releases = order.AdjustLines(
+            [new CustomerOrderLineAdjustment(cancelLine.Id.Value, 0m, CustomerOrderLineAdjustmentReason.CustomerRequested)],
+            actor,
+            now.AddMinutes(1));
+        await stock.ReleaseReservationDeltasAsync(order, releases, now.AddMinutes(1));
+
+        await stock.ConsumeOnCompleteAsync(
+            order,
+            new Dictionary<Guid, CatalogProduct>
+            {
+                [keepId.Value] = keepProduct,
+                [cancelId.Value] = cancelProduct,
+            },
+            actor,
+            now.AddMinutes(2));
+
+        Assert.Equal(CustomerOrderStockReservationState.Consumed, order.StockReservationState);
+        Assert.Equal(8m, inventory.Accounts[keepId.Value].OnHandQuantity);
+        Assert.Equal(0m, inventory.Accounts[keepId.Value].ReservedQuantity);
+        Assert.Equal(10m, inventory.Accounts[cancelId.Value].OnHandQuantity);
+        Assert.Equal(0m, inventory.Accounts[cancelId.Value].ReservedQuantity);
+        Assert.Single(inventory.Movements);
+        Assert.Equal(keepId, inventory.Movements[0].ProductId);
+        Assert.Equal(-2m, inventory.Movements[0].QuantityEffect);
+    }
+
+    [Fact]
     public async Task Untracked_line_does_not_reserve_or_consume()
     {
         var org = PosOrganizationId.From(Guid.Parse("11111111-1111-1111-1111-111111111111"));
@@ -166,28 +227,51 @@ public sealed class CustomerOrderStockServiceTests
 
     private sealed class FakeInventoryRepository : IInventoryRepository
     {
-        public InventoryAccount Account { get; set; }
+        private readonly Dictionary<Guid, InventoryAccount> _accounts;
         private readonly List<StockMovement> _movements = [];
 
-        public FakeInventoryRepository(InventoryAccount account) => Account = account;
+        public FakeInventoryRepository(InventoryAccount account)
+            : this([account])
+        {
+        }
+
+        public FakeInventoryRepository(IEnumerable<InventoryAccount> accounts)
+        {
+            _accounts = accounts.ToDictionary(a => a.ProductId.Value);
+        }
+
+        public InventoryAccount Account
+        {
+            get => _accounts.Values.First();
+            set => _accounts[value.ProductId.Value] = value;
+        }
+
+        public IReadOnlyDictionary<Guid, InventoryAccount> Accounts => _accounts;
 
         public Task<InventoryAccount?> GetByProductIdAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<InventoryAccount?>(
-                Account.ProductId == productId && Account.OrganizationId == organizationId ? Account : null);
+            Task.FromResult(
+                _accounts.TryGetValue(productId.Value, out var account)
+                    && account.OrganizationId == organizationId
+                    ? account
+                    : null);
 
         public Task<IReadOnlyList<InventoryAccount>> ListByProductIdsAsync(
             PosOrganizationId organizationId,
             IReadOnlyCollection<CatalogProductId> productIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<InventoryAccount>>(
-                productIds.Any(p => p == Account.ProductId) ? [Account] : []);
+                productIds
+                    .Select(id => _accounts.GetValueOrDefault(id.Value))
+                    .Where(a => a is not null && a.OrganizationId == organizationId)
+                    .Cast<InventoryAccount>()
+                    .ToList());
 
         public Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default)
         {
-            Account = account;
+            _accounts[account.ProductId.Value] = account;
             return Task.CompletedTask;
         }
 
@@ -198,9 +282,12 @@ public sealed class CustomerOrderStockServiceTests
             CancellationToken cancellationToken = default)
         {
             LockCallCount++;
-            return action(
-                productIds.Any(p => p == Account.ProductId) ? [Account] : [],
-                cancellationToken);
+            var locked = productIds
+                .Select(id => _accounts.GetValueOrDefault(id.Value))
+                .Where(a => a is not null && a.OrganizationId == organizationId)
+                .Cast<InventoryAccount>()
+                .ToList();
+            return action(locked, cancellationToken);
         }
 
         public int LockCallCount { get; private set; }

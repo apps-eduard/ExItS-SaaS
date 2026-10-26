@@ -24,7 +24,7 @@ import { describePosApiError } from "@/access/pos-commercial-errors";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -72,10 +72,11 @@ const REJECT_REASONS = [
 ] as const;
 
 const ADJUST_REASONS = [
-  "OutOfStock",
   "InsufficientStock",
+  "ProductUnavailable",
   "DamagedProduct",
   "QualityIssue",
+  "CustomerRequested",
   "Other",
 ] as const;
 
@@ -86,29 +87,54 @@ type AdjustDraft = {
   note: string;
 };
 
-function canAdjustOrder(order: CustomerOrderDto): boolean {
-  if (order.paymentStatus === "Paid") return false;
+/** Stage allows Adjust Items through Ready / ReadyForPickup (pickup handoff). */
+function isAdjustableFulfillmentStage(order: CustomerOrderDto): boolean {
   if (["Completed", "Rejected", "Cancelled", "Draft"].includes(order.status)) return false;
-  if (["Collected", "Delivered", "OutForDelivery"].includes(order.fulfillmentStatus)) return false;
+  if (["Collected", "Delivered", "OutForDelivery"].includes(order.fulfillmentStatus)) {
+    return false;
+  }
+  return order.status === "Submitted" || order.status === "Accepted";
+}
+
+function canAdjustOrder(order: CustomerOrderDto): boolean {
+  // Paid is allowed: overpayment stays as ChangeAmount / refund-credit obligation.
+  if (!isAdjustableFulfillmentStage(order)) return false;
   return order.lines.some((l) => !l.isCancelled && l.quantity > 0);
 }
 
-function canSellerCancelOrder(order: CustomerOrderDto): boolean {
+/** Whole-order cancel during Accepted / Preparing (not Ready refusal). */
+function canSellerCancelActiveOrder(order: CustomerOrderDto): boolean {
   if (["Completed", "Rejected", "Cancelled"].includes(order.status)) return false;
-  if (["Collected", "Delivered"].includes(order.fulfillmentStatus)) return false;
-  return order.status === "Accepted" || order.status === "Submitted";
+  if (order.status !== "Accepted" && order.status !== "Submitted") return false;
+  if (["Ready", "ReadyForPickup", "Collected", "Delivered", "OutForDelivery"].includes(order.fulfillmentStatus)) {
+    return false;
+  }
+  return true;
+}
+
+/** Customer refusal / authorized exception once Ready. */
+function canSellerRefuseAtReady(order: CustomerOrderDto): boolean {
+  if (["Completed", "Rejected", "Cancelled"].includes(order.status)) return false;
+  return (
+    order.fulfillmentStatus === "ReadyForPickup"
+    || order.fulfillmentStatus === "Ready"
+  );
 }
 
 function adjustReasonLabel(reason: string, t: (key: MessageKey) => string): string {
   switch (reason) {
     case "OutOfStock":
       return t("orders.adjustReasonOutOfStock");
+    case "ProductUnavailable":
+      return t("orders.adjustReasonProductUnavailable");
     case "InsufficientStock":
       return t("orders.adjustReasonInsufficientStock");
     case "DamagedProduct":
       return t("orders.adjustReasonDamagedProduct");
     case "QualityIssue":
       return t("orders.adjustReasonQualityIssue");
+    case "CustomerRequested":
+      return t("orders.adjustReasonCustomerRequested");
     default:
       return t("orders.adjustReasonOther");
   }
@@ -374,6 +400,36 @@ export function SellerOrderDetailPage() {
     });
   }
 
+  function estimateLineTotal(
+    line: CustomerOrderDto["lines"][number],
+    qty: number,
+  ): number {
+    if (qty <= 0) return 0;
+    const unit = line.unitPrice;
+    const ratio = line.originalQuantity > 0 ? qty / line.originalQuantity : 0;
+    const discount = Math.min(unit * qty, (line.discount ?? 0) * ratio);
+    return Math.round((unit * qty - discount) * 100) / 100;
+  }
+
+  /** Preview-only totals for Confirm Order Adjustment (server remains authoritative). */
+  function estimateAdjustedTotals(
+    order: CustomerOrderDto,
+    drafts: Record<string, AdjustDraft>,
+  ): { merchandise: number; total: number } {
+    let merchandise = 0;
+    for (const line of order.lines) {
+      if (line.isCancelled) continue;
+      const draft = drafts[line.lineId];
+      const qty = draft ? draft.newQuantity : line.quantity;
+      merchandise += estimateLineTotal(line, qty);
+    }
+    const delivery = merchandise > 0 ? order.deliveryFee : 0;
+    return {
+      merchandise: Math.round(merchandise * 100) / 100,
+      total: Math.round((merchandise + delivery) * 100) / 100,
+    };
+  }
+
   async function saveAdjustments() {
     if (!workspace || !canManage || !query.data || busy) return;
     const changed = changedAdjustments(query.data);
@@ -584,8 +640,6 @@ export function SellerOrderDetailPage() {
                   date: order.preferredFulfillmentDate,
                   period: order.preferredFulfillmentPeriod,
                   timeZoneId: order.preferredFulfillmentTimeZoneId,
-                  todayLabel: t("orders.preferredDayToday"),
-                  tomorrowLabel: t("orders.preferredDayTomorrow"),
                 })?.split(" — ")[0] ?? order.preferredFulfillmentDate}
               </strong>
             </div>
@@ -777,7 +831,8 @@ export function SellerOrderDetailPage() {
           {canManage && canAdjustOrder(order) && !showAdjust ? (
             <Button
               type="button"
-              variant="ghost"
+              intent="primary"
+              appearance="outline"
               data-testid="adjust-items"
               disabled={busy}
               onClick={openAdjustPanel}
@@ -786,50 +841,266 @@ export function SellerOrderDetailPage() {
             </Button>
           ) : null}
         </div>
-        <ul className="m-0 list-none space-y-2 p-0">
-          {order.lines.map((line) => (
-            <li key={line.lineId} className="customer-order-line flex flex-col gap-0.5">
-              <div className="flex w-full items-center justify-between gap-2">
-                <span className="min-w-0 truncate">
-                  {line.nameSnapshot}
-                  {line.isCancelled ? (
-                    <span className="text-muted"> · {t("orders.itemCancelled")}</span>
-                  ) : (
-                    <span>
-                      {" "}
-                      × {line.quantity} {line.unitSnapshot}
-                    </span>
-                  )}
-                </span>
-                <strong>
-                  <MoneyDisplay amount={line.lineTotal} />
-                </strong>
-              </div>
-              {(line.originalQuantity ?? 0) > line.quantity ? (
-                <span className="text-[length:var(--exits-text-xs)] text-muted">
-                  {t("orders.orderedQuantity")}: {line.originalQuantity} {line.unitSnapshot}
-                  {line.cancelledQuantity > 0
-                    ? ` · ${t("orders.cancelledQuantity")}: ${line.cancelledQuantity}`
-                    : ""}
-                  {line.adjustmentReason
-                    ? ` · ${adjustReasonLabel(line.adjustmentReason, t)}`
-                    : ""}
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-        <div className="customer-order-line customer-order-line--total">
-          <span>{t("orders.total")}</span>
-          <strong>
-            <MoneyDisplay amount={order.total} />
-          </strong>
-        </div>
-        {order.hasLineAdjustments && order.originalTotal > order.total ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="seller-original-total">
-            {t("orders.originalAmount")}: <MoneyDisplay amount={order.originalTotal} />
+        {canManage && canAdjustOrder(order) && !showAdjust && order.paymentStatus === "Paid" ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="adjust-items-paid-hint">
+            {t("orders.adjustItemsPaidHint")}
           </p>
         ) : null}
+        {canManage && canAdjustOrder(order) && !showAdjust && order.paymentStatus !== "Paid" ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="adjust-items-unpaid-hint">
+            {t("orders.adjustItemsUnpaidHint")}
+          </p>
+        ) : null}
+
+        {showAdjust ? (
+          <div className="flex flex-col gap-3" data-testid="adjust-items-panel">
+            {order.lines
+              .filter((line) => !line.isCancelled)
+              .map((line) => {
+                const draft = adjustDrafts[line.lineId];
+                if (!draft) return null;
+                return (
+                  <div
+                    key={line.lineId}
+                    className="flex flex-col gap-2 rounded border p-2"
+                    data-testid={`adjust-line-${line.lineId}`}
+                  >
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <p className="m-0 min-w-0 truncate font-medium">
+                        {line.nameSnapshot} · {line.unitSnapshot}
+                      </p>
+                      <strong>
+                        <MoneyDisplay amount={estimateLineTotal(line, draft.newQuantity)} />
+                      </strong>
+                    </div>
+                    <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("orders.orderedQuantity")}: {line.originalQuantity || line.quantity}
+                      {" · "}
+                      {t("orders.fulfillableQuantity")}: {draft.newQuantity}
+                      {" · "}
+                      {t("orders.cancelledQuantity")}:{" "}
+                      {Math.max(0, (line.originalQuantity || line.quantity) - draft.newQuantity)}
+                    </p>
+                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                      <span>{t("orders.fulfillableQuantity")}</span>
+                      <QuantityStepper
+                        variant="outline"
+                        min={0}
+                        max={line.quantity}
+                        step={1}
+                        precision={0}
+                        value={draft.newQuantity}
+                        valueTestId={`adjust-qty-${line.lineId}`}
+                        ariaLabel={t("orders.fulfillableQuantity")}
+                        decreaseLabel={t("orders.reduceQuantity")}
+                        increaseLabel={t("orders.fulfillableQuantity")}
+                        disabled={busy}
+                        onChange={(next) => {
+                          setAdjustDrafts((prev) => ({
+                            ...prev,
+                            [line.lineId]: {
+                              ...draft,
+                              newQuantity: Math.min(line.quantity, Math.max(0, next)),
+                            },
+                          }));
+                        }}
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        intent="danger"
+                        appearance="ghost"
+                        data-testid={`cancel-item-${line.lineId}`}
+                        disabled={busy || draft.newQuantity === 0}
+                        onClick={() =>
+                          setAdjustDrafts((prev) => ({
+                            ...prev,
+                            [line.lineId]: { ...draft, newQuantity: 0 },
+                          }))
+                        }
+                      >
+                        {t("orders.cancelItem")}
+                      </Button>
+                    </div>
+                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                      <span>{t("orders.adjustmentReason")}</span>
+                      <select
+                        className="catalog-form-select"
+                        value={draft.reason}
+                        onChange={(e) =>
+                          setAdjustDrafts((prev) => ({
+                            ...prev,
+                            [line.lineId]: {
+                              ...draft,
+                              reason: e.target.value as AdjustDraft["reason"],
+                            },
+                          }))
+                        }
+                      >
+                        {ADJUST_REASONS.map((r) => (
+                          <option key={r} value={r}>
+                            {adjustReasonLabel(r, t)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                      <span>{t("orders.adjustmentNote")}</span>
+                      <input
+                        className="catalog-form-select"
+                        value={draft.note}
+                        onChange={(e) =>
+                          setAdjustDrafts((prev) => ({
+                            ...prev,
+                            [line.lineId]: { ...draft, note: e.target.value },
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                );
+              })}
+
+            {showConfirmAdjust ? (
+              <div className="flex flex-col gap-2 rounded border p-2" data-testid="confirm-adjustments-panel">
+                <p className="m-0 font-semibold">{t("orders.confirmAdjustmentsTitle")}</p>
+                {changedAdjustments(order).map((draft) => {
+                  const line = order.lines.find((l) => l.lineId === draft.lineId)!;
+                  const cancelledQty = Math.max(0, line.quantity - draft.newQuantity);
+                  return (
+                    <p key={draft.lineId} className="m-0 text-[length:var(--exits-text-sm)]">
+                      {line.nameSnapshot}: {line.quantity} → {draft.newQuantity} {line.unitSnapshot}
+                      {draft.newQuantity === 0
+                        ? ` (${t("orders.itemCancelled")})`
+                        : ` (${t("orders.quantityReduced")}; −${cancelledQty} ${line.unitSnapshot})`}
+                    </p>
+                  );
+                })}
+                {(() => {
+                  const preview = estimateAdjustedTotals(order, adjustDrafts);
+                  const difference = preview.total - order.total;
+                  return (
+                    <>
+                      <p className="m-0 text-[length:var(--exits-text-sm)]">
+                        {t("orders.adjustmentOriginalTotal")}:{" "}
+                        <MoneyDisplay amount={order.originalTotal || order.total} />
+                      </p>
+                      <p className="m-0 text-[length:var(--exits-text-sm)]">
+                        {t("orders.adjustmentRevisedTotal")}: <MoneyDisplay amount={preview.total} />
+                      </p>
+                      <p className="m-0 text-[length:var(--exits-text-sm)]">
+                        {t("orders.adjustmentDifference")}: <MoneyDisplay amount={difference} />
+                      </p>
+                    </>
+                  );
+                })()}
+                <div className="catalog-form-actions customer-order-detail-actions">
+                  <div className="catalog-form-actions__primary">
+                    <Button
+                      type="button"
+                      intent="primary"
+                      appearance="glossy"
+                      data-testid="confirm-save-adjustments"
+                      disabled={busy || !canManage}
+                      onClick={() => void confirmAdjustments()}
+                    >
+                      {t("orders.confirmAdjustmentsConfirm")}
+                    </Button>
+                  </div>
+                  <div className="catalog-form-actions__secondary">
+                    <Button
+                      type="button"
+                      intent="danger"
+                      appearance="ghost"
+                      disabled={busy}
+                      onClick={() => setShowConfirmAdjust(false)}
+                    >
+                      {t("orders.confirmAdjustmentsBack")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="catalog-form-actions customer-order-detail-actions">
+                <div className="catalog-form-actions__primary">
+                  <Button
+                    type="button"
+                    intent="primary"
+                    appearance="glossy"
+                    data-testid="save-adjustments"
+                    disabled={busy || !canManage}
+                    onClick={() => void saveAdjustments()}
+                  >
+                    {t("orders.saveAdjustments")}
+                  </Button>
+                </div>
+                <div className="catalog-form-actions__secondary">
+                  <Button
+                    type="button"
+                    intent="danger"
+                    appearance="ghost"
+                    className="catalog-form-actions__danger"
+                    disabled={busy}
+                    onClick={() => {
+                      setShowAdjust(false);
+                      setShowConfirmAdjust(false);
+                    }}
+                  >
+                    {t("orders.cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <ul className="m-0 list-none space-y-2 p-0">
+              {order.lines.map((line) => (
+                <li key={line.lineId} className="customer-order-line flex flex-col gap-0.5">
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <span className="min-w-0 truncate">
+                      {line.nameSnapshot}
+                      {line.isCancelled ? (
+                        <span className="text-muted"> · {t("orders.itemCancelled")}</span>
+                      ) : (
+                        <span>
+                          {" "}
+                          × {line.quantity} {line.unitSnapshot}
+                        </span>
+                      )}
+                    </span>
+                    <strong>
+                      <MoneyDisplay amount={line.lineTotal} />
+                    </strong>
+                  </div>
+                  {(line.originalQuantity ?? 0) > line.quantity ? (
+                    <span className="text-[length:var(--exits-text-xs)] text-muted">
+                      {t("orders.orderedQuantity")}: {line.originalQuantity} {line.unitSnapshot}
+                      {line.cancelledQuantity > 0
+                        ? ` · ${t("orders.cancelledQuantity")}: ${line.cancelledQuantity}`
+                        : ""}
+                      {line.adjustmentReason
+                        ? ` · ${adjustReasonLabel(line.adjustmentReason, t)}`
+                        : ""}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <div className="customer-order-line customer-order-line--total">
+              <span>{t("orders.total")}</span>
+              <strong>
+                <MoneyDisplay amount={order.total} />
+              </strong>
+            </div>
+            {order.hasLineAdjustments && order.originalTotal > order.total ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="seller-original-total">
+                {t("orders.originalAmount")}: <MoneyDisplay amount={order.originalTotal} />
+              </p>
+            ) : null}
+          </>
+        )}
       </section>
 
       <section
@@ -877,170 +1148,14 @@ export function SellerOrderDetailPage() {
         </ol>
       </section>
 
-      {showAdjust ? (
-        <section className="catalog-form-section exits-animate-panel gap-3" data-testid="adjust-items-panel">
-          <h2 className="catalog-form-section__title">{t("orders.adjustItems")}</h2>
-          {order.lines
-            .filter((line) => !line.isCancelled)
-            .map((line) => {
-              const draft = adjustDrafts[line.lineId];
-              if (!draft) return null;
-              return (
-                <div key={line.lineId} className="flex flex-col gap-2 rounded border p-2" data-testid={`adjust-line-${line.lineId}`}>
-                  <p className="m-0 font-medium">
-                    {line.nameSnapshot} · {line.unitSnapshot}
-                  </p>
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("orders.orderedQuantity")}: {line.originalQuantity || line.quantity}
-                    {" · "}
-                    {t("orders.fulfillableQuantity")}: {draft.newQuantity}
-                    {" · "}
-                    {t("orders.cancelledQuantity")}:{" "}
-                    {Math.max(0, (line.originalQuantity || line.quantity) - draft.newQuantity)}
-                  </p>
-                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    <span>{t("orders.fulfillableQuantity")}</span>
-                    <input
-                      className="catalog-form-select"
-                      type="number"
-                      min={0}
-                      max={line.quantity}
-                      step="any"
-                      data-testid={`adjust-qty-${line.lineId}`}
-                      value={draft.newQuantity}
-                      onChange={(e) => {
-                        const next = Number(e.target.value);
-                        setAdjustDrafts((prev) => ({
-                          ...prev,
-                          [line.lineId]: {
-                            ...draft,
-                            newQuantity: Number.isFinite(next) ? Math.min(line.quantity, Math.max(0, next)) : 0,
-                          },
-                        }));
-                      }}
-                    />
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      data-testid={`cancel-item-${line.lineId}`}
-                      onClick={() =>
-                        setAdjustDrafts((prev) => ({
-                          ...prev,
-                          [line.lineId]: { ...draft, newQuantity: 0 },
-                        }))
-                      }
-                    >
-                      {t("orders.cancelItem")}
-                    </Button>
-                  </div>
-                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    <span>{t("orders.adjustmentReason")}</span>
-                    <select
-                      className="catalog-form-select"
-                      value={draft.reason}
-                      onChange={(e) =>
-                        setAdjustDrafts((prev) => ({
-                          ...prev,
-                          [line.lineId]: {
-                            ...draft,
-                            reason: e.target.value as AdjustDraft["reason"],
-                          },
-                        }))
-                      }
-                    >
-                      {ADJUST_REASONS.map((r) => (
-                        <option key={r} value={r}>
-                          {adjustReasonLabel(r, t)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    <span>{t("orders.adjustmentNote")}</span>
-                    <input
-                      className="catalog-form-select"
-                      value={draft.note}
-                      onChange={(e) =>
-                        setAdjustDrafts((prev) => ({
-                          ...prev,
-                          [line.lineId]: { ...draft, note: e.target.value },
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-              );
-            })}
-          {showConfirmAdjust ? (
-            <div className="flex flex-col gap-2 rounded border p-2" data-testid="confirm-adjustments-panel">
-              <p className="m-0 font-semibold">{t("orders.confirmAdjustmentsTitle")}</p>
-              {changedAdjustments(order).map((draft) => {
-                const line = order.lines.find((l) => l.lineId === draft.lineId)!;
-                return (
-                  <p key={draft.lineId} className="m-0 text-[length:var(--exits-text-sm)]">
-                    {line.nameSnapshot}: {line.quantity} → {draft.newQuantity} {line.unitSnapshot}
-                    {draft.newQuantity === 0 ? ` (${t("orders.itemCancelled")})` : ` (${t("orders.quantityReduced")})`}
-                  </p>
-                );
-              })}
-              <p className="m-0 text-[length:var(--exits-text-sm)]">
-                {t("orders.newTotal")}: <MoneyDisplay amount={order.total} /> →{" "}
-                {t("orders.saveAdjustments")}
-              </p>
-              <div className="catalog-form-actions customer-order-detail-actions">
-                <div className="catalog-form-actions__primary">
-                  <Button
-                    type="button"
-                    data-testid="confirm-save-adjustments"
-                    disabled={busy || !canManage}
-                    onClick={() => void confirmAdjustments()}
-                  >
-                    {t("orders.saveAdjustments")}
-                  </Button>
-                </div>
-                <div className="catalog-form-actions__secondary">
-                  <Button type="button" variant="ghost" disabled={busy} onClick={() => setShowConfirmAdjust(false)}>
-                    {t("orders.cancel")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="catalog-form-actions customer-order-detail-actions">
-              <div className="catalog-form-actions__primary">
-                <Button
-                  type="button"
-                  data-testid="save-adjustments"
-                  disabled={busy || !canManage}
-                  onClick={() => void saveAdjustments()}
-                >
-                  {t("orders.saveAdjustments")}
-                </Button>
-              </div>
-              <div className="catalog-form-actions__secondary">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="catalog-form-actions__danger"
-                  disabled={busy}
-                  onClick={() => {
-                    setShowAdjust(false);
-                    setShowConfirmAdjust(false);
-                  }}
-                >
-                  {t("orders.cancel")}
-                </Button>
-              </div>
-            </div>
-          )}
-        </section>
-      ) : null}
-
       {showSellerCancel ? (
         <section className="catalog-form-section exits-animate-panel gap-3" data-testid="seller-cancel-panel">
-          <h2 className="catalog-form-section__title">{t("orders.cancelCustomerRefused")}</h2>
+          <h2 className="catalog-form-section__title">
+            {sellerCancelReason === "CustomerRefusedPickup"
+              || sellerCancelReason === "CustomerRefusedDelivery"
+              ? t("orders.cancelCustomerRefused")
+              : t("orders.cancelOrder")}
+          </h2>
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             <span>{t("orders.sellerCancelReason")}</span>
             <select
@@ -1243,7 +1358,22 @@ export function SellerOrderDetailPage() {
                 {actionLabel("Reject")}
               </Button>
             ) : null}
-            {canManage && canSellerCancelOrder(order) && order.fulfillmentStatus === "ReadyForPickup" ? (
+            {canManage && canSellerCancelActiveOrder(order) ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="catalog-form-actions__danger"
+                data-testid="seller-action-cancel-order"
+                disabled={busy}
+                onClick={() => {
+                  setSellerCancelReason("SellerUnableToFulfill");
+                  setShowSellerCancel(true);
+                }}
+              >
+                {t("orders.cancelOrder")}
+              </Button>
+            ) : null}
+            {canManage && canSellerRefuseAtReady(order) ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -1252,7 +1382,7 @@ export function SellerOrderDetailPage() {
                 disabled={busy}
                 onClick={() => {
                   setSellerCancelReason(
-                    order.fulfillmentType === "Delivery"
+                    order.fulfillmentType === "Delivery" || order.fulfillmentStatus === "Ready"
                       ? "CustomerRefusedDelivery"
                       : "CustomerRefusedPickup",
                   );

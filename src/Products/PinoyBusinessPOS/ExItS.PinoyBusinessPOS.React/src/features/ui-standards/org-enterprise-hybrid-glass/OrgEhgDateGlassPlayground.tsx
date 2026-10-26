@@ -119,15 +119,16 @@ export const ORG_EHG_DATE_GLASS_PLAYGROUND_DEFAULT_COMMAND = ORG_EHG_DATE_GLASS_
  */
 export function OrgEhgDateGlassPlayground() {
   const { background, setBackground, theme, toggleTheme } = useUiStandardsShellAppearance();
-  const [intensity, setIntensity] = useState(DEFAULTS.intensity);
-  const [kind, setKind] = useState(DEFAULTS.kind);
-  const [variety, setVariety] = useState(DEFAULTS.variety);
-  const [size, setSize] = useState(DEFAULTS.size);
-  const [state, setState] = useState(DEFAULTS.state);
-  const [focusAnimation, setFocusAnimation] = useState(DEFAULTS.focusAnimation);
+  const [intensity, setIntensity] = useState<OrgEhgDateGlassIntensity>(DEFAULTS.intensity);
+  const [kind, setKind] = useState<OrgEhgDateGlassKind>(DEFAULTS.kind);
+  const [variety, setVariety] = useState<OrgEhgDateGlassVariety>(DEFAULTS.variety);
+  const [size, setSize] = useState<OrgEhgDateGlassSize>(DEFAULTS.size);
+  const [state, setState] = useState<OrgEhgDateGlassState>(DEFAULTS.state);
+  const [focusAnimation, setFocusAnimation] =
+    useState<OrgEhgDateGlassFocusAnimation>(DEFAULTS.focusAnimation);
   const [label, setLabel] = useState(DEFAULTS.label);
   const [value, setValue] = useState(DEFAULTS.value);
-  const [surface, setSurface] = useState(DEFAULTS.surface);
+  const [surface, setSurface] = useState<OrgEhgDateGlassSurface>(DEFAULTS.surface);
   const [showPicker, setShowPicker] = useState(DEFAULTS.showPicker);
   const [open, setOpen] = useState(false);
 

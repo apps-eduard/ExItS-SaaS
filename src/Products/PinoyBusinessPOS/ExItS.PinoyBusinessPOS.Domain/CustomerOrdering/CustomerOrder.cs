@@ -776,6 +776,13 @@ public sealed partial class CustomerOrder
         EnsureStatus(CustomerOrderStatus.Accepted, "Only accepted orders can be marked ready.");
         EnsureFulfillment(CustomerOrderFulfillmentStatus.Preparing, "Only preparing orders can be marked ready.");
 
+        if (!_lines.Any(l => !l.IsCancelled && l.Quantity > 0m))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderFulfillmentTransition,
+                "Mark Ready requires at least one fulfillable item.");
+        }
+
         FulfillmentStatus = target;
         ReadyAtUtc = utcNow;
         ReadyBy = actorId;

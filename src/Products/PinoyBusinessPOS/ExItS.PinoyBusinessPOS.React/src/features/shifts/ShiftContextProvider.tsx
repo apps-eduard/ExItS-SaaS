@@ -19,7 +19,7 @@ import {
   evaluateCheckoutShiftReadiness,
   type CheckoutShiftReadiness,
 } from "@/features/shifts/checkout-readiness";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { useOptionalWorkspace } from "@/workspace/WorkspaceProvider";
 
 type ShiftContextValue = {
   currentShift: PosCashierShiftDto | null;
@@ -34,7 +34,13 @@ type ShiftContextValue = {
 const ShiftContext = createContext<ShiftContextValue | null>(null);
 
 export function ShiftContextProvider({ children }: { children: ReactNode }) {
-  const { boundWorkspace, sessionGrant, posDevice, deviceEnforcementEnabled } = useWorkspace();
+  // Optional: Personal shell mounts this under WorkspaceProvider, but HMR / stale
+  // sibling `.js` emits can briefly split the React context module identity.
+  const workspace = useOptionalWorkspace();
+  const boundWorkspace = workspace?.boundWorkspace ?? null;
+  const sessionGrant = workspace?.sessionGrant ?? null;
+  const posDevice = workspace?.posDevice ?? null;
+  const deviceEnforcementEnabled = workspace?.deviceEnforcementEnabled ?? false;
   const [currentShift, setCurrentShift] = useState<PosCashierShiftDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

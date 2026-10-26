@@ -7,5 +7,8 @@ public enum CustomerOrderLineAdjustmentReason
     InsufficientStock = 1,
     DamagedProduct = 2,
     QualityIssue = 3,
-    Other = 4
+    Other = 4,
+    /// <summary>Product not available to sell (alias path for Product Unavailable).</summary>
+    ProductUnavailable = 5,
+    CustomerRequested = 6
 }

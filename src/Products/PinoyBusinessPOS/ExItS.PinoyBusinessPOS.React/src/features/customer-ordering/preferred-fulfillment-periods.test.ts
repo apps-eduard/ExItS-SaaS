@@ -7,6 +7,7 @@ import {
   PREFERRED_FULFILLMENT_MIN_USABLE_MINUTES,
 } from "./preferred-fulfillment-periods";
 import {
+  formatOrderEventDateTime,
   formatPreferredFulfillmentLabel,
   formatPreferredFulfillmentLongDate,
   PHILIPPINES_TIME_ZONE,
@@ -104,28 +105,25 @@ describe("preferred fulfillment periods", () => {
     expect(tuesdayMorning).toContain("Morning");
   });
 
-  it("formats today and tomorrow labels without inventing an exact time", () => {
-    const now = new Date("2026-10-08T04:00:00.000Z");
+  it("formats preferred as calendar date — period (not Today/Tomorrow)", () => {
     expect(
       formatPreferredFulfillmentLabel({
         date: "2026-10-08",
         period: "Afternoon",
         timeZoneId: "Asia/Manila",
-        now,
+        now: new Date("2026-10-08T04:00:00.000Z"),
         todayLabel: "Today",
         tomorrowLabel: "Tomorrow",
       }),
-    ).toBe("Today — Afternoon");
+    ).toBe("Thu, Oct 8, 2026 — Afternoon");
     expect(
       formatPreferredFulfillmentLabel({
         date: addCalendarDays("2026-10-08", 1),
         period: "Morning",
         timeZoneId: "Asia/Manila",
-        now,
-        todayLabel: "Today",
-        tomorrowLabel: "Tomorrow",
+        now: new Date("2026-10-08T04:00:00.000Z"),
       }),
-    ).toBe("Tomorrow — Morning");
+    ).toBe("Fri, Oct 9, 2026 — Morning");
   });
 
   it("formats the long calendar date under preferred period times", () => {
@@ -139,5 +137,12 @@ describe("preferred fulfillment periods", () => {
     expect(clock.dateIso).toBe("2026-10-25");
     expect(clock.dateLong).toBe("Sun, Oct 25, 2026");
     expect(clock.timeDisplay).toMatch(/11:45\s*PM/i);
+  });
+
+  it("formats ready/pickup event timestamps as calendar date + time", () => {
+    // 2026-10-27 07:15 UTC = 3:15 PM Asia/Manila
+    expect(formatOrderEventDateTime("2026-10-27T07:15:00.000Z")).toBe(
+      "Tue, Oct 27, 2026, 3:15 PM",
+    );
   });
 });

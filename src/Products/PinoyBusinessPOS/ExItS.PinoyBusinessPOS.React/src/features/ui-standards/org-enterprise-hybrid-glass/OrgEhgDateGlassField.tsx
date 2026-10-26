@@ -519,7 +519,6 @@ function QuasarCalendarPane({
   onSelectMonth,
   onSelectYear,
   onShiftMonth,
-  onViewChange,
 }: {
   year: number;
   month: number;
@@ -1116,7 +1115,10 @@ export function OrgEhgDateGlassPopover({
             date: parseInitialRange(value).start,
             time: { hour: "10", minute: "30", period: "AM" as const },
           }
-        : parseInitialDraft(value, variant === "range" ? "date" : variant),
+        : parseInitialDraft(
+            value,
+            variant === "time" ? "time" : variant === "datetime" ? "datetime" : "date",
+          ),
     [value, variant, isRange],
   );
   const initialRange = useMemo(() => parseInitialRange(value), [value]);
@@ -1139,7 +1141,10 @@ export function OrgEhgDateGlassPopover({
       setDate(next.start);
       return;
     }
-    const next = parseInitialDraft(value, variant === "range" ? "date" : variant);
+    const next = parseInitialDraft(
+      value,
+      variant === "time" ? "time" : variant === "datetime" ? "datetime" : "date",
+    );
     setDate(next.date);
     setTime(next.time);
     setListTime(formatTime(next.time.hour, next.time.minute, next.time.period));
@@ -1245,7 +1250,9 @@ export function OrgEhgDateGlassPopover({
         setRangeEnd(null);
         return;
       }
-      const startStamp = dateStamp(rangeStart.year, rangeStart.month, rangeStart.day);
+      const startDay = rangeStart.day;
+      if (startDay == null || picked.day == null) return;
+      const startStamp = dateStamp(rangeStart.year, rangeStart.month, startDay);
       const pickStamp = dateStamp(picked.year, picked.month, picked.day);
       if (pickStamp < startStamp) {
         setRangeEnd(rangeStart);

@@ -145,12 +145,21 @@ Under the checkout-disclosed partial-fulfillment policy, an authorized seller ma
 Rules:
 
 - Seller cannot increase quantity, unit price, or payable total through adjust
-- Paid orders: adjustment **blocked** until a supported refund/credit workflow exists (`CustomerOrderPaidAdjustmentBlocked`)
+- Paid orders: adjustment **allowed** during Submitted / Accepted / Preparing. Payment stays Paid; `AmountReceived − Total` is the explicit refund/credit obligation (existing change/overpayment field). Do not silently mark Unpaid or invent a completed refund.
 - Activity events record actor, timestamp, previous/new qty, reason, note, previous/new total
 - SignalR: `CustomerOrderLinesAdjusted` (plus existing cancel events when the whole order cancels)
 - Buyer Soft Glass detail shows **Order Updated**, original qty as secondary text, revised total, and a simple activity timeline
+- **Ready stays adjustable:** at `Ready` / `ReadyForPickup`, sellers may still Reduce Quantity or Cancel Item (customer drops or refuses lines at handoff). Adjust closes after OutForDelivery / Collected / Delivered. Mark Ready still requires at least one fulfillable line.
 
-Reason codes: OutOfStock, InsufficientStock, DamagedProduct, QualityIssue, Other (Other requires a note).
+| Stage | Reduce / Cancel Item | Cancel entire order |
+|---|---|---|
+| Submitted | YES | Reject (existing) / seller cancel |
+| Accepted / Preparing | YES | YES (`SellerUnableToFulfill`, …) |
+| ReadyForPickup | YES (pickup handoff) | Customer refused pickup (note required) or Other |
+| Ready (delivery) | YES (before dispatch) | Authorized delivery exception |
+| OutForDelivery / Collected / Delivered / Completed | NO | Controlled exception / refund-return only |
+
+Reason codes: InsufficientStock, ProductUnavailable, OutOfStock, DamagedProduct, QualityIssue, CustomerRequested, Other (Other requires a note).
 
 ### Seller approval and schedule proposals
 

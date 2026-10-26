@@ -1,23 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Ban,
-  Banknote,
-  CheckCircle2,
-  CircleAlert,
-  Clock3,
-  HandCoins,
-  Info,
-  Loader2,
-  MapPin,
-  Package,
-  ShoppingBag,
-  Smartphone,
-  Truck,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Ban, Clock3, Info, Loader2, MapPin, Users } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
   acceptMyCustomerOrderScheduleProposal,
@@ -33,9 +17,17 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { formatPreferredFulfillmentLabel } from "@/features/customer-ordering/preferred-fulfillment-display";
+import {
+  isDeliveryFulfillment,
+  orderCardToneClass,
+  PersonalOrderFactChips,
+  PersonalOrderTimelineRow,
+} from "@/features/customer-ordering/personal-order-card";
+import {
+  formatOrderEventDateTime,
+  formatPreferredFulfillmentLabel,
+} from "@/features/customer-ordering/preferred-fulfillment-display";
 import {
   displayOrderStatusKey,
   orderStatusChipTone,
@@ -45,52 +37,6 @@ import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { usePosRealtimeOrderWatch } from "@/realtime/usePosRealtime";
-
-function orderCardToneClass(tone: ReturnType<typeof orderStatusChipTone>): string {
-  if (tone === "success") return "pc-order-card--success";
-  if (tone === "danger" || tone === "warning") return "pc-order-card--warn";
-  return "pc-order-card--primary";
-}
-
-function fulfillmentLabel(type: string, t: (key: MessageKey) => string): string {
-  if (type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0) {
-    return t("orders.delivery");
-  }
-  if (type.localeCompare("Pickup", undefined, { sensitivity: "accent" }) === 0) {
-    return t("orders.pickup");
-  }
-  return type;
-}
-
-function isDelivery(type: string): boolean {
-  return type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0;
-}
-
-function paymentMethodLabel(code: string, t: (key: MessageKey) => string): string {
-  if (code === "Cash") return t("orders.paymentCash");
-  if (code === "ManualGCash") return t("orders.paymentGCashShort");
-  return t("orders.paymentUtang");
-}
-
-function PaymentMethodIcon({ code }: { code: string }) {
-  let Icon: LucideIcon = Banknote;
-  if (code === "ManualGCash") Icon = Smartphone;
-  else if (code === "Utang") Icon = HandCoins;
-  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
-}
-
-function paymentStatusLabel(status: string, t: (key: MessageKey) => string): string {
-  if (status === "Paid") return t("orders.paymentPaid");
-  if (status === "Pending") return t("orders.paymentAwaitingVerification");
-  return t("orders.paymentUnpaid");
-}
-
-function PaymentStatusIcon({ status }: { status: string }) {
-  let Icon: LucideIcon = CircleAlert;
-  if (status === "Paid") Icon = CheckCircle2;
-  else if (status === "Pending") Icon = Clock3;
-  return <Icon className="pc-order-card__fact-icon" aria-hidden />;
-}
 
 export function MyOrderDetailPage() {
   const { t } = useI18n();
@@ -249,10 +195,40 @@ export function MyOrderDetailPage() {
     && (order.status.localeCompare("Submitted", undefined, { sensitivity: "accent" }) === 0
       || (order.status.localeCompare("Accepted", undefined, { sensitivity: "accent" }) === 0
         && order.fulfillmentStatus.localeCompare("Pending", undefined, { sensitivity: "accent" }) === 0));
-  const FulfillmentIcon = isDelivery(order.fulfillmentType) ? Truck : Package;
   const tone = orderStatusChipTone(order);
+  const isDeliveryOrder = isDeliveryFulfillment(order.fulfillmentType);
+  const eventTimeZone =
+    order.preferredFulfillmentTimeZoneId
+    ?? order.confirmedFulfillmentTimeZoneId
+    ?? order.effectiveFulfillmentTimeZoneId
+    ?? undefined;
   const requestedLocal =
     order.requestedPickupLocal ?? order.requestedDeliveryLocal ?? order.effectiveFulfillmentLocal;
+  const preferredValue =
+    formatPreferredFulfillmentLabel({
+      date: order.preferredFulfillmentDate,
+      period: order.preferredFulfillmentPeriod,
+      timeZoneId: order.preferredFulfillmentTimeZoneId,
+    })
+    ?? (!order.preferredFulfillmentPeriod
+      ? order.requestedPickupLocal ?? order.requestedDeliveryLocal ?? null
+      : null);
+  const preferredLabel = isDeliveryOrder
+    ? t("orders.preferredDeliverySummary")
+    : t("orders.preferredPickupSummary");
+  // Ready = when the seller marked the order ready (not the preferred window).
+  const readyAtLabel = order.readyAtUtc
+    ? formatOrderEventDateTime(order.readyAtUtc, eventTimeZone)
+    : null;
+  // Pickup / Delivered = when the customer collected or delivery completed.
+  const completedAtIso = isDeliveryOrder ? order.deliveredAtUtc : order.collectedAtUtc;
+  const completedAtLabel = completedAtIso
+    ? formatOrderEventDateTime(completedAtIso, eventTimeZone)
+    : null;
+  const completedLabel = isDeliveryOrder
+    ? t("orders.fulfillmentDeliveredLabel")
+    : t("orders.fulfillmentPickedUpLabel");
+  const hasSchedule = Boolean(preferredValue || readyAtLabel || completedAtLabel);
   const adjustmentEvents = (order.activity ?? []).filter(
     (e) =>
       e.action === "QuantityReduced"
@@ -273,10 +249,6 @@ export function MyOrderDetailPage() {
       />
 
       {actionError ? <ErrorState title={t("orders.error")} detail={actionError} /> : null}
-
-      <div className="exits-animate-toolbar" data-testid="my-order-status">
-        <StatusChip tone={tone}>{t(displayOrderStatusKey(order) as MessageKey)}</StatusChip>
-      </div>
 
       {order.hasLineAdjustments ? (
         <section
@@ -317,80 +289,61 @@ export function MyOrderDetailPage() {
       <section
         className={cn("pc-order-card exits-animate-panel", orderCardToneClass(tone))}
         data-testid="order-facts"
+        data-shell="soft-glass"
       >
+        <span className="pc-order-card__ribbon" data-testid="my-order-status">
+          <span className="pc-order-card__ribbon-label truncate uppercase">
+            {t(displayOrderStatusKey(order) as MessageKey)}
+          </span>
+        </span>
         <div className="pc-order-card__body min-w-0 flex-1">
           <p className="pc-order-card__title m-0 truncate">{order.branchNameSnapshot}</p>
-          <div className="pc-order-card__meta-row" data-testid="my-order-card-facts">
-            <span className="pc-order-card__fact" data-testid="order-payment-status">
-              <PaymentStatusIcon status={order.paymentStatus} />
-              <span className="pc-order-card__fact-text truncate">
-                {paymentStatusLabel(order.paymentStatus, t)}
-              </span>
-            </span>
-            <span className="pc-order-card__fact" data-testid="order-payment-method">
-              <PaymentMethodIcon code={order.paymentMethod} />
-              <span className="pc-order-card__fact-text truncate">
-                {paymentMethodLabel(order.paymentMethod, t)}
-              </span>
-            </span>
-            <span className="pc-order-card__fact">
-              <ShoppingBag className="pc-order-card__fact-icon" aria-hidden />
-              <span className="pc-order-card__fact-text truncate">
-                {order.lines.length} {t("orders.items")}
-              </span>
-            </span>
-          </div>
-          <div className="pc-order-card__fulfill">
-            <span className="pc-order-card__fact">
-              <FulfillmentIcon className="pc-order-card__fact-icon" aria-hidden />
-              <span className="pc-order-card__fact-text truncate">
-                {fulfillmentLabel(order.fulfillmentType, t)}
-              </span>
-            </span>
-            <span className="pc-order-card__when truncate">
-              {new Date(order.createdAtUtc).toLocaleString()}
-            </span>
-          </div>
+          <PersonalOrderFactChips
+            paymentStatus={order.paymentStatus}
+            paymentMethod={order.paymentMethod}
+            itemCount={order.lines.length}
+            fulfillmentType={order.fulfillmentType}
+            itemsLabel={t("orders.items")}
+            t={t}
+          />
+          {hasSchedule ? (
+            <>
+              <div className="pc-order-card__divider" aria-hidden />
+              <div className="pc-order-card__schedule-stack" data-testid="order-fulfillment-schedule">
+                {preferredValue ? (
+                  <PersonalOrderTimelineRow
+                    icon="preferred"
+                    label={preferredLabel}
+                    value={preferredValue}
+                    tone="muted"
+                    testId="order-preferred-fulfillment"
+                  />
+                ) : null}
+                {readyAtLabel ? (
+                  <PersonalOrderTimelineRow
+                    icon="ready"
+                    label={t("orders.readyForPickup")}
+                    value={readyAtLabel}
+                    tone="ready"
+                    testId="order-ready-at"
+                  />
+                ) : null}
+                {completedAtLabel ? (
+                  <PersonalOrderTimelineRow
+                    icon="completed"
+                    label={completedLabel}
+                    value={completedAtLabel}
+                    tone="completed"
+                    testId="order-completed-at"
+                  />
+                ) : null}
+              </div>
+            </>
+          ) : null}
           {order.paymentReference ? (
             <div className="pc-order-kv" data-testid="order-payment-reference">
               <span className="pc-order-kv__label">{t("orders.paymentRefShort")}</span>
               <span className="pc-order-kv__value">{order.paymentReference}</span>
-            </div>
-          ) : null}
-          {order.preferredFulfillmentDate && order.preferredFulfillmentPeriod ? (
-            <div className="pc-order-kv" data-testid="order-preferred-fulfillment">
-              <span className="pc-order-kv__label">
-                {order.fulfillmentType === "Delivery"
-                  ? t("orders.preferredDeliverySummary")
-                  : t("orders.preferredPickupSummary")}
-              </span>
-              <span className="pc-order-kv__value">
-                {formatPreferredFulfillmentLabel({
-                  date: order.preferredFulfillmentDate,
-                  period: order.preferredFulfillmentPeriod,
-                  timeZoneId: order.preferredFulfillmentTimeZoneId,
-                  todayLabel: t("orders.preferredDayToday"),
-                  tomorrowLabel: t("orders.preferredDayTomorrow"),
-                })}
-              </span>
-            </div>
-          ) : null}
-          {!order.preferredFulfillmentPeriod && order.requestedPickupLocal ? (
-            <div className="pc-order-kv" data-testid="order-requested-pickup">
-              <span className="pc-order-kv__label">{t("orders.requestedPickupTime")}</span>
-              <span className="pc-order-kv__value">{order.requestedPickupLocal}</span>
-            </div>
-          ) : null}
-          {!order.preferredFulfillmentPeriod && order.requestedDeliveryLocal ? (
-            <div className="pc-order-kv" data-testid="order-requested-delivery">
-              <span className="pc-order-kv__label">{t("orders.requestedDeliveryTime")}</span>
-              <span className="pc-order-kv__value">{order.requestedDeliveryLocal}</span>
-            </div>
-          ) : null}
-          {order.confirmedFulfillmentLocal ? (
-            <div className="pc-order-kv" data-testid="order-confirmed-schedule">
-              <span className="pc-order-kv__label">{t("orders.confirmedScheduleLabel")}</span>
-              <span className="pc-order-kv__value">{order.confirmedFulfillmentLocal}</span>
             </div>
           ) : null}
         </div>
@@ -450,46 +403,57 @@ export function MyOrderDetailPage() {
         </section>
       ) : null}
 
-      <section className="pc-checkout-section exits-animate-panel" data-testid="order-lines">
-        <h2 className="pc-checkout-section__title flex items-center gap-2">
-          <Package className="size-4 shrink-0 text-muted" aria-hidden />
-          {t("orders.viewDetails")}
+      <section
+        className="pc-order-items exits-animate-panel"
+        data-testid="order-lines"
+        data-shell="soft-glass"
+      >
+        <h2 className="pc-order-items__title">
+          <span className="pc-order-items__title-text">{t("orders.orderItems")}</span>
+          <span className="pc-order-items__title-rule" aria-hidden />
         </h2>
-        {order.lines.map((line) => (
-          <div key={line.lineId} className="pc-checkout-line">
-            <span className="pc-checkout-line__name">
-              {line.nameSnapshot}
-              {line.isCancelled ? (
-                <span className="pc-checkout-line__qty text-muted"> · {t("orders.itemCancelled")}</span>
-              ) : (
-                <span className="pc-checkout-line__qty">
-                  {" "}
-                  × {line.quantity} {line.unitSnapshot}
-                </span>
-              )}
-              {(line.originalQuantity ?? 0) > line.quantity ? (
-                <span className="block text-[length:var(--exits-text-xs)] text-muted">
-                  {t("orders.originalQtySecondary")
-                    .replace("{qty}", String(line.originalQuantity))
-                    .replace("{unit}", line.unitSnapshot)}
-                </span>
-              ) : null}
-            </span>
-            <MoneyDisplay amount={line.lineTotal} className="pc-checkout-line__amount" />
-          </div>
-        ))}
-        <div className="pc-checkout-totals">
-          <div className="pc-checkout-totals__row">
+        <ul className="pc-order-items__list">
+          {order.lines.map((line) => (
+            <li key={line.lineId} className="pc-order-items__line">
+              <span className="pc-order-items__name">
+                {line.isCancelled ? (
+                  <>
+                    {line.nameSnapshot}
+                    <span className="pc-order-items__meta"> · {t("orders.itemCancelled")}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="pc-order-items__qty">{line.quantity}x</span>{" "}
+                    {line.nameSnapshot}
+                    {line.unitSnapshot ? (
+                      <span className="pc-order-items__meta"> ({line.unitSnapshot})</span>
+                    ) : null}
+                  </>
+                )}
+                {(line.originalQuantity ?? 0) > line.quantity ? (
+                  <span className="pc-order-items__adjusted">
+                    {t("orders.originalQtySecondary")
+                      .replace("{qty}", String(line.originalQuantity))
+                      .replace("{unit}", line.unitSnapshot)}
+                  </span>
+                ) : null}
+              </span>
+              <MoneyDisplay amount={line.lineTotal} className="pc-order-items__amount" />
+            </li>
+          ))}
+        </ul>
+        <div className="pc-order-items__totals">
+          <div className="pc-order-items__row">
             <span>{t("orders.subtotal")}</span>
-            <MoneyDisplay amount={order.merchandiseSubtotal} />
+            <MoneyDisplay amount={order.merchandiseSubtotal} className="pc-order-items__amount" />
           </div>
-          <div className="pc-checkout-totals__row">
-            <span>{t("orders.deliveryFee")}</span>
-            <MoneyDisplay amount={order.deliveryFee} />
+          <div className="pc-order-items__row">
+            <span>{t("orders.deliveryFeeLabel")}</span>
+            <MoneyDisplay amount={order.deliveryFee} className="pc-order-items__amount" />
           </div>
-          <div className="pc-checkout-totals__row pc-checkout-totals__row--grand">
+          <div className="pc-order-items__row pc-order-items__row--grand">
             <span>{t("orders.total")}</span>
-            <MoneyDisplay amount={order.total} />
+            <MoneyDisplay amount={order.total} className="pc-order-items__grand" />
           </div>
         </div>
       </section>
