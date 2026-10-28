@@ -25,11 +25,44 @@ describe("OrgEhgQuickActionGlassPlayground", () => {
     expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-tone")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-trailing")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-size")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-card-shape")).toBeInTheDocument();
     const preview = screen.getByTestId("ui-standard-org-ehg-qa-pg-preview-btn");
     expect(preview).toBeInTheDocument();
     expect(preview).toHaveClass("org-ehg-qa-glass--size-md");
     expect(preview).toHaveAttribute("data-size", "md");
+    expect(preview).toHaveAttribute("data-card-shape", "standard");
     expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-copy")).toBeInTheDocument();
+  });
+
+  it("switches card shape on the preview row", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgQuickActionGlassPlayground />));
+    const shapeRoot = screen.getByTestId("ui-standard-org-ehg-qa-pg-card-shape");
+    await user.click(within(shapeRoot).getByTestId("ui-standard-org-ehg-qa-pg-card-shape-field"));
+    await user.click(within(shapeRoot).getByTestId("ui-standard-org-ehg-qa-pg-card-shape-option-pill"));
+    expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-preview-btn")).toHaveAttribute(
+      "data-card-shape",
+      "pill",
+    );
+  });
+
+  it("toggles shadow off on the preview row", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgQuickActionGlassPlayground />));
+    const preview = screen.getByTestId("ui-standard-org-ehg-qa-pg-preview-btn");
+    expect(preview).not.toHaveClass("org-ehg-qa-glass--no-shadow");
+    await user.click(screen.getByTestId("ui-standard-org-ehg-qa-pg-shadow"));
+    expect(preview).toHaveClass("org-ehg-qa-glass--no-shadow");
+  });
+
+  it("toggles icon shadow off on icon-only preview", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgQuickActionGlassPlayground />));
+    await user.click(screen.getByTestId("ui-standard-org-ehg-qa-pg-icon-only"));
+    const icon = screen.getByTestId("ui-standard-org-ehg-qa-pg-preview-icon");
+    expect(icon).not.toHaveClass("org-ehg-qa-glass-icon--no-shadow");
+    await user.click(screen.getByTestId("ui-standard-org-ehg-qa-pg-icon-shadow"));
+    expect(icon).toHaveClass("org-ehg-qa-glass-icon--no-shadow");
   });
 
   it("switches size sm / lg on the preview row", async () => {

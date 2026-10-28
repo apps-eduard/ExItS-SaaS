@@ -26,7 +26,7 @@ Search `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/component
 | Soft Glass primary fields | Glass input, select, and search (`exits-soft-glass-primary-fields.mdc`) |
 | Soft Glass date / date-time | Soft Glass Roll recipe (`exits-soft-glass-datetime.mdc`) |
 | Org EHG date / date-time | Product: `ExitsDateGlassDateTimeField`; playground: `OrgEhgDateGlassField` (`exits-org-ehg-date-glass.mdc`) |
-| Soft Glass quick action | `SoftGlassQuickAction` (count badge \| chevron \| add) |
+| Quick Action | `SoftGlassQuickAction` Org EHG default (`exits-org-ehg-qa-glass.mdc`; Stores to pay lock) |
 | Tooltip | `ExitsTooltip` (lock: `exits-tooltip-default.mdc`) |
 
 A table filter is `ExitsMultiSelect`. Empty selection means all rows.

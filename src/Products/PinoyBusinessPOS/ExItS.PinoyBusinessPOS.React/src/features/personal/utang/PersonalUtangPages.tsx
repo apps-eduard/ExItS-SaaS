@@ -762,16 +762,30 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
       <Card
         className={cn(
-          "utang-money-main-card utang-ribbon-card utang-money-glass exits-animate-panel flex min-w-0 flex-col gap-3",
-          mode === "lent" ? "utang-money-glass--lent" : "utang-money-glass--owe",
+          "utang-money-main-card exits-animate-panel flex min-w-0 flex-col gap-3",
+          mode === "lent"
+            ? "utang-ribbon-card utang-money-glass utang-money-glass--lent"
+            : "utang-money-glass utang-money-glass--owe utang-money-glass--plain personal-tracker-card w-full",
         )}
-        data-shell="soft-glass"
+        padding={mode === "owe" ? "none" : undefined}
+        data-shell={mode === "lent" ? "soft-glass" : undefined}
         aria-label={title}
         data-testid="utang-summary-section"
       >
-        <RibbonTitle icon={mode === "lent" ? HandCoins : Wallet}>
-          <span data-testid="utang-summary-ribbon">{title}</span>
-        </RibbonTitle>
+        {mode === "lent" ? (
+          <RibbonTitle icon={HandCoins}>
+            <span data-testid="utang-summary-ribbon">{title}</span>
+          </RibbonTitle>
+        ) : (
+          <div className="personal-tracker-card__header utang-money-plain-title">
+            <h2 className="personal-tracker-card__title" data-testid="utang-summary-ribbon">
+              <span className="personal-tracker-card__pennant" aria-hidden>
+                <Wallet className="personal-tracker-card__pennant-icon size-[1.05rem] shrink-0" />
+              </span>
+              {title}
+            </h2>
+          </div>
+        )}
         <div
           className="personal-home-metrics utang-summary-cards utang-money-summary"
           data-testid="utang-summary-cards"
@@ -793,7 +807,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             identity={mode === "lent" ? "lent" : "owe"}
             label={recordFormLabel}
             icon={Plus}
-            trailing="add"
+            trailing="chevron"
             className="utang-summary-cards__action"
             aria-controls="utang-record-panel"
             aria-expanded={recordFormOpen}

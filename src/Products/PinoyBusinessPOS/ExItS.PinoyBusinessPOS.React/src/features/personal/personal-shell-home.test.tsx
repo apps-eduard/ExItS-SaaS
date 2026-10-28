@@ -203,34 +203,91 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-todo-summary-pennant")).toBeInTheDocument();
     expect(screen.getByTestId("personal-todo-view-all")).toHaveAttribute("href", "/personal/todo");
     expect(screen.getByTestId("personal-todo-view-all")).toHaveTextContent("View all");
-    expect(screen.getByTestId("personal-qa-start-business")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-qa-owe")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-qa-stores")).toBeInTheDocument();
+    for (const [testId, identity] of [
+      ["personal-qa-start-business", "start"],
+      ["personal-qa-lent", "lent"],
+      ["personal-qa-owe", "owe"],
+      ["personal-qa-stores", "stores"],
+      ["personal-qa-people", "people"],
+    ] as const) {
+      const tile = screen.getByTestId(testId);
+      expect(tile).toHaveClass(
+        `personal-qa-glass--${identity}`,
+        "personal-qa-glass--md",
+        "personal-qa-glass--card-soft",
+        "personal-qa-glass--no-shadow",
+        "personal-qa-glass--icon-soft",
+        "personal-qa-glass--no-icon-shadow",
+      );
+      expect(tile.querySelector(".personal-qa-glass__chevron")).toBeTruthy();
+    }
     expect(screen.getByTestId("personal-qa-people")).toHaveAttribute("href", "/personal/people?add=1");
     expect(screen.getByTestId("personal-qa-people")).toHaveTextContent("Add person");
+    expect(screen.getByTestId("personal-qa-people")).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass people md icon-soft card-soft trail-chevron no-shadow no-icon-shadow",
+    );
+    expect(screen.getByTestId("personal-qa-people").querySelector(".personal-qa-glass__plus")).toBeNull();
     expect(screen.queryByTestId("personal-qa-todo")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-people")).toHaveClass(
       "personal-qa-glass",
       "personal-qa-glass--people",
+      "personal-qa-glass--md",
+      "personal-qa-glass--card-soft",
+      "personal-qa-glass--icon-soft",
+    );
+    expect(screen.getByTestId("personal-stat-people")).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass people md icon-soft card-soft trail-count no-shadow no-icon-shadow",
     );
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("People");
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
     expect(screen.getByTestId("personal-stat-active")).toHaveClass(
       "personal-qa-glass",
       "personal-qa-glass--lent",
+      "personal-qa-glass--md",
+      "personal-qa-glass--card-soft",
     );
     expect(screen.getByTestId("personal-stat-active-shared")).toHaveClass(
       "personal-qa-glass",
       "personal-qa-glass--owe",
+      "personal-qa-glass--md",
+      "personal-qa-glass--card-soft",
+    );
+    expect(screen.getByTestId("personal-utang-owed-to-me")).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass lent md card-soft no-shadow",
+    );
+    expect(screen.getByTestId("personal-utang-i-owe")).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass owe md card-soft no-shadow",
     );
     expect(screen.getByTestId("personal-stat-lent-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-borrowed-shared")).toBeInTheDocument();
     expect(screen.queryByTestId("personal-owed-divider")).not.toBeInTheDocument();
-    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveClass("tracker-amount-card", "utang-settings-card--lent");
-    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveClass("tracker-amount-card", "utang-settings-card--owe");
+    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveClass(
+      "tracker-amount-card",
+      "utang-settings-card--lent",
+      "personal-qa-glass--md",
+      "personal-qa-glass--card-soft",
+      "personal-qa-glass--no-shadow",
+    );
+    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass lent md card-soft no-shadow",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveClass(
+      "tracker-amount-card",
+      "utang-settings-card--owe",
+      "personal-qa-glass--md",
+      "personal-qa-glass--card-soft",
+    );
+    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass owe md card-soft no-shadow",
+    );
     expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveTextContent("I lent");
     expect(screen.getByTestId("personal-stat-lent-mine")).toHaveTextContent("500");
     expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveTextContent("I owed");

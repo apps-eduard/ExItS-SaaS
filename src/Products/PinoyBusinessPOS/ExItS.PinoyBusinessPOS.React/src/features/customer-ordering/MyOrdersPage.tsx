@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { RefreshCw, Search, Store, Users } from "lucide-react";
+import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listMyCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { RESPONSIVE_DATA_TABLE_MIN_LG } from "@/components/exits/responsive-data
 import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import { personalStoreDisplayName } from "@/features/customer-ordering/format-personal-store-label";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
 import {
   fulfillmentLabel,
@@ -80,6 +82,27 @@ export function MyOrdersPage() {
     },
   });
 
+  const merchantsQuery = useQuery({
+    queryKey: ["personal", "linked-merchants", "my-orders-store-names"],
+    enabled: tokenReady && online,
+    queryFn: ({ signal }) => listLinkedMerchants(1, 100, signal),
+  });
+
+  const storeNameByOrgId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const merchant of merchantsQuery.data?.items ?? []) {
+      map.set(
+        merchant.organizationId,
+        personalStoreDisplayName(merchant.organizationDisplayName),
+      );
+    }
+    return map;
+  }, [merchantsQuery.data?.items]);
+
+  function orderStoreTitle(order: { sellerOrganizationId: string; branchNameSnapshot: string }): string {
+    return storeNameByOrgId.get(order.sellerOrganizationId) ?? order.branchNameSnapshot;
+  }
+
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -87,6 +110,7 @@ export function MyOrdersPage() {
     return items.filter((order) => {
       const statusLabel = t(displayOrderStatusKey(order) as MessageKey);
       const haystack = [
+        orderStoreTitle(order),
         order.branchNameSnapshot,
         statusLabel,
         paymentStatusLabel(order.paymentStatus, t, order.paymentMethod),
@@ -98,13 +122,13 @@ export function MyOrdersPage() {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [items, search, t]);
+  }, [items, search, storeNameByOrgId, t]);
   const pageShell =
     "personal-page personal-commerce-page my-orders-page exits-page flex min-w-0 flex-col gap-3";
   const tableChromeStyle = {
-    "--qheader-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+    "--qheader-bg": "#fff",
     "--qheader-ink": "var(--exits-text, #000)",
-    "--qfooter-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+    "--qfooter-bg": "#fff",
     "--qfooter-ink": "var(--exits-text, #000)",
   } as CSSProperties;
 
@@ -244,13 +268,14 @@ export function MyOrdersPage() {
                     data-intent={TABLE_GLOBAL_DEFAULT_HEADER_INTENT}
                     style={
                       {
-                        "--qheader-bg": "color-mix(in srgb, var(--exits-primary) 8%, transparent)",
+                        "--qheader-bg": "#fff",
                         "--qheader-ink": "var(--exits-text, #000)",
                       } as CSSProperties
                     }
                   >
                     <ExitsTableRow>
-                      <ExitsTableHead colSize="flex">{t("orders.branch")}</ExitsTableHead>
+                      <ExitsTableHead colSize="flex">{t("orders.store")}</ExitsTableHead>
+                      <ExitsTableHead>{t("orders.branch")}</ExitsTableHead>
                       <ExitsTableHead>{t("orders.statusLabel")}</ExitsTableHead>
                       <ExitsTableHead>{t("orders.paymentStatus")}</ExitsTableHead>
                       <ExitsTableHead>{t("orders.paymentMethod")}</ExitsTableHead>
@@ -265,13 +290,17 @@ export function MyOrdersPage() {
                     {filteredItems.map((order) => {
                       const tone = orderStatusChipTone(order);
                       const statusLabel = t(displayOrderStatusKey(order) as MessageKey);
+                      const storeTitle = orderStoreTitle(order);
                       const href = `/personal/orders/${order.orderId}`;
                       return (
                         <ExitsTableRow key={order.orderId} data-testid={`my-order-table-row-${order.orderId}`}>
-                          <ExitsTableCell emphasis="semibold" truncate title={order.branchNameSnapshot}>
+                          <ExitsTableCell emphasis="semibold" truncate title={storeTitle}>
                             <Link className="text-foreground no-underline hover:underline" to={href}>
-                              {order.branchNameSnapshot}
+                              {storeTitle}
                             </Link>
+                          </ExitsTableCell>
+                          <ExitsTableCell truncate title={order.branchNameSnapshot}>
+                            {order.branchNameSnapshot}
                           </ExitsTableCell>
                           <ExitsTableCell>
                             <StatusChip tone={tone} appearance="emphasis">
@@ -351,6 +380,11 @@ export function MyOrdersPage() {
                   {filteredItems.map((order) => {
                     const tone = orderStatusChipTone(order);
                     const statusLabel = t(displayOrderStatusKey(order) as MessageKey);
+                    const storeTitle = orderStoreTitle(order);
+                    const branchLabel = order.branchNameSnapshot.trim();
+                    const showBranchRibbon =
+                      Boolean(branchLabel) &&
+                      branchLabel.localeCompare(storeTitle, undefined, { sensitivity: "accent" }) !== 0;
                     return (
                       <li key={order.orderId}>
                         <Link
@@ -362,8 +396,16 @@ export function MyOrdersPage() {
                           <span className="pc-order-card__ribbon">
                             <span className="pc-order-card__ribbon-label truncate uppercase">{statusLabel}</span>
                           </span>
+                          {showBranchRibbon ? (
+                            <span
+                              className="pc-order-card__ribbon pc-order-card__ribbon--branch"
+                              data-testid="my-order-card-branch-ribbon"
+                            >
+                              <span className="pc-order-card__ribbon-label truncate">{branchLabel}</span>
+                            </span>
+                          ) : null}
                           <div className="pc-order-card__body min-w-0 flex-1">
-                            <p className="pc-order-card__title m-0 truncate">{order.branchNameSnapshot}</p>
+                            <p className="pc-order-card__title m-0 truncate">{storeTitle}</p>
                             <PersonalOrderFactChips
                               paymentStatus={order.paymentStatus}
                               paymentMethod={order.paymentMethod}
@@ -373,7 +415,10 @@ export function MyOrdersPage() {
                               t={t}
                             />
                             <p className="pc-order-card__schedule m-0 truncate">
-                              {new Date(order.createdAtUtc).toLocaleString()}
+                              <span className="pc-order-card__schedule-label">{t("orders.placedAt")}</span>
+                              <span className="pc-order-card__schedule-value">
+                                {new Date(order.createdAtUtc).toLocaleString()}
+                              </span>
                             </p>
                           </div>
                         </Link>
@@ -381,32 +426,15 @@ export function MyOrdersPage() {
                     );
                   })}
                 </ul>
-                <div
-                  className="my-orders-table-footer"
-                  data-testid="my-orders-list-footer"
-                  data-appearance={TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE}
-                  data-intent={TABLE_GLOBAL_DEFAULT_FOOTER_INTENT}
-                  style={
-                    {
-                      "--qfooter-bg": "var(--exits-surface-elevated, #fff)",
-                      "--qfooter-ink": "var(--exits-text, #000)",
-                    } as CSSProperties
-                  }
-                >
-                  <span className="my-orders-table-footer__range">
-                    {filteredItems.length}
-                    {search.trim() ? ` / ${items.length}` : ""}
-                  </span>
-                  {query.hasNextPage ? (
-                    <CommerceLoadMore
-                      label={t("inventory.loadMore")}
-                      loadingLabel={t("loading.label")}
-                      busy={query.isFetchingNextPage}
-                      testId="my-orders-load-more-list"
-                      onClick={() => void query.fetchNextPage()}
-                    />
-                  ) : null}
-                </div>
+                {query.hasNextPage ? (
+                  <CommerceLoadMore
+                    label={t("inventory.loadMore")}
+                    loadingLabel={t("loading.label")}
+                    busy={query.isFetchingNextPage}
+                    testId="my-orders-load-more-list"
+                    onClick={() => void query.fetchNextPage()}
+                  />
+                ) : null}
               </div>
             }
           />

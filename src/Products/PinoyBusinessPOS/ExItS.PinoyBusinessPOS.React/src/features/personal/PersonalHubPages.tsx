@@ -45,6 +45,8 @@ import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/owne
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
 import { UtangActiveAccountsTable } from "@/features/personal/utang/UtangActiveAccountsTable";
 import { PersonalTrackerCard, type PersonalTrackerTestIds } from "@/features/personal/PersonalTrackerCard";
+import { ORG_EHG_QA_GLASS_CLASS_NAME } from "@/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-qa-glass-global-default";
+import { cn } from "@/lib/cn";
 
 import { usePreferencesOverlay } from "@/features/preferences/PreferencesOverlay";
 import { PREFERENCES_DEFAULT_SECTION } from "@/features/preferences/preferences-sections";
@@ -177,10 +179,12 @@ export function PersonalUtangHubPage() {
     <div className="personal-home-metrics utang-hub-actions" data-testid="utang-hub-actions">
       <Link
         to="/personal/utang/lent"
-        className="personal-qa-glass personal-qa-glass--lent"
+        className={cn("personal-qa-glass personal-qa-glass--lent", ORG_EHG_QA_GLASS_CLASS_NAME)}
         data-testid="utang-open-lent"
+        data-shell="org-ehg"
+        data-recipe="ext org-ehg qa-glass lent md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
       >
-        <span className="personal-qa-glass__icon" aria-hidden="true">
+        <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
           <ArrowUp className="size-[0.95rem] shrink-0" aria-hidden />
         </span>
         <span className="personal-qa-glass__label">{t("personal.utang.lent")}</span>
@@ -188,10 +192,12 @@ export function PersonalUtangHubPage() {
       </Link>
       <Link
         to="/personal/utang/owe"
-        className="personal-qa-glass personal-qa-glass--owe"
+        className={cn("personal-qa-glass personal-qa-glass--owe", ORG_EHG_QA_GLASS_CLASS_NAME)}
         data-testid="utang-open-owe"
+        data-shell="org-ehg"
+        data-recipe="ext org-ehg qa-glass owe md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
       >
-        <span className="personal-qa-glass__icon" aria-hidden="true">
+        <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
           <ArrowDown className="size-[0.95rem] shrink-0" aria-hidden />
         </span>
         <span className="personal-qa-glass__label">{t("personal.utang.owe")}</span>
@@ -199,16 +205,16 @@ export function PersonalUtangHubPage() {
       </Link>
       <Link
         to="/personal/people/add"
-        className="personal-qa-glass personal-qa-glass--people"
+        className={cn("personal-qa-glass personal-qa-glass--people", ORG_EHG_QA_GLASS_CLASS_NAME)}
         data-testid="utang-open-people"
+        data-shell="org-ehg"
+        data-recipe="ext org-ehg qa-glass people md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
       >
-        <span className="personal-qa-glass__icon" aria-hidden="true">
+        <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
           <UserPlus className="size-[0.95rem] shrink-0" aria-hidden />
         </span>
         <span className="personal-qa-glass__label">{t("personal.utang.addPeople")}</span>
-        <span className="personal-qa-glass__plus personal-qa-glass__plus--people" aria-hidden="true">
-          +
-        </span>
+        <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
       </Link>
     </div>
   );
@@ -229,7 +235,11 @@ export function PersonalUtangHubPage() {
 
       {dashboard ? (
         <div className="personal-home-page">
-          <PersonalTrackerCard dashboard={dashboard} testIds={UTANG_HUB_TRACKER_TEST_IDS} footer={hubActions} />
+          <PersonalTrackerCard
+            dashboard={dashboard}
+            testIds={UTANG_HUB_TRACKER_TEST_IDS}
+            footer={hubActions}
+          />
         </div>
       ) : (
         hubActions

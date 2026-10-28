@@ -35,15 +35,25 @@ describe("OrgEhgButtonGlassPlayground", () => {
     render(wrap(<OrgEhgButtonGlassPlayground />));
     expect(screen.getByTestId("ui-standard-card-org-ehg-btn-glass-playground")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-org-ehg-btn-glass-playground")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-shadow")).toBeInTheDocument();
     const previewBtn = screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn");
     expect(previewBtn).toHaveClass("org-ehg-btn-glass--medium");
     expect(previewBtn).toHaveClass("org-ehg-btn-glass--intent-primary");
     expect(previewBtn).toHaveClass("org-ehg-btn-glass--appearance-standard");
     expect(previewBtn).toHaveClass("org-ehg-btn-glass--size-md");
+    expect(previewBtn).not.toHaveClass("org-ehg-btn-glass--no-shadow");
     expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview")).toHaveAttribute(
       "data-org-ehg-theme",
       "light",
     );
+  });
+
+  it("toggles outside shadow off on the preview button", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgButtonGlassPlayground />));
+    const previewBtn = screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn");
+    await user.click(screen.getByTestId("ui-standard-org-ehg-btn-pg-shadow"));
+    expect(previewBtn).toHaveClass("org-ehg-btn-glass--no-shadow");
   });
 
   it("updates intent and appearance like the normal button playground", async () => {

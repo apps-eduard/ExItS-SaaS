@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { symbol } from "@/components/icons/MaterialSymbol";
 
 const ArrowDownwardIcon = symbol("arrow_downward");
-const ArrowForwardIcon = symbol("arrow_forward");
 const ArrowUpwardIcon = symbol("arrow_upward");
 const BusinessCenterIcon = symbol("business_center");
 const ChevronRightIcon = symbol("chevron_right");
@@ -217,18 +216,18 @@ export function PersonalHomePage() {
 
   function attentionTitle(item: (typeof attentionItems)[number]): string {
     if (item.kind === "pendingConfirmation") {
-      return t("personal.home.attentionPending").replace("{count}", String(item.count));
+      return t("personal.home.attentionPending");
     }
     if (item.kind === "overdue") {
       if (item.displayName) {
         return t("personal.home.attentionOverdueOne").replace("{name}", item.displayName);
       }
-      return t("personal.home.attentionOverdue").replace("{count}", String(item.count));
+      return t("personal.home.attentionOverdue");
     }
     if (item.displayName) {
       return t("personal.home.attentionDueSoonOne").replace("{name}", item.displayName);
     }
-    return t("personal.home.attentionDueSoon").replace("{count}", String(item.count));
+    return t("personal.home.attentionDueSoon");
   }
 
   return (
@@ -341,10 +340,11 @@ export function PersonalHomePage() {
             >
               <Link
                 to="/personal/linked-merchants"
-                className="personal-qa-glass personal-qa-glass--stores"
+                className="personal-qa-glass personal-qa-glass--stores personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-stat-stores"
+                data-recipe="ext org-ehg qa-glass stores md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
-                <span className="personal-qa-glass__icon" aria-hidden="true">
+                <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
                   <StoreIcon className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.home.stores")}</span>
@@ -354,10 +354,11 @@ export function PersonalHomePage() {
               </Link>
               <Link
                 to="/personal/linked-merchants"
-                className="personal-qa-glass personal-qa-glass--people"
+                className="personal-qa-glass personal-qa-glass--people personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-stat-stores-active"
+                data-recipe="ext org-ehg qa-glass people md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
-                <span className="personal-qa-glass__icon" aria-hidden="true">
+                <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
                   <WalletIcon className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.home.active")}</span>
@@ -375,15 +376,11 @@ export function PersonalHomePage() {
                   <li key={`${store.organizationId}:${store.businessCustomerId}`}>
                     <Link
                       to={store.href}
-                      className="personal-stores-to-pay-row personal-home-infodata-card personal-home-infodata-card--row"
+                      className="personal-stores-to-pay-row personal-home-infodata-card personal-home-infodata-card--row personal-qa-glass--md personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                       data-testid={`personal-store-row-${store.organizationId}`}
                     >
-                      <span className="personal-home-infodata-card__circle" aria-hidden="true">
-                        <PersonAvatar
-                          name={store.displayName}
-                          size="sm"
-                          className="personal-home-infodata-card__avatar"
-                        />
+                      <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
+                        <StoreIcon className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
                       </span>
                       <span className="personal-home-infodata-card__body">
                         <span className="personal-home-infodata-card__title truncate">{store.displayName}</span>
@@ -438,7 +435,6 @@ export function PersonalHomePage() {
               data-testid="personal-attention-view-all"
             >
               {t("personal.home.viewAllUtang")}
-              <ArrowForwardIcon className="personal-needs-attention__view-all-icon" aria-hidden />
             </Link>
           </div>
           <ul className="personal-needs-attention__list m-0 grid list-none gap-2 p-0">
@@ -449,18 +445,9 @@ export function PersonalHomePage() {
                   className="personal-attention-row personal-home-infodata-card personal-home-infodata-card--row"
                   data-testid={`personal-attention-${item.kind}`}
                 >
-                  <span className="personal-home-infodata-card__circle" aria-hidden="true">
-                    {item.displayName ? (
-                      <PersonAvatar
-                        name={item.displayName}
-                        size="sm"
-                        className="personal-home-infodata-card__avatar"
-                      />
-                    ) : (
-                      <span className="personal-home-infodata-card__avatar flex items-center justify-center rounded-full bg-primary font-bold text-primary-foreground tabular-nums">
-                        {item.count}
-                      </span>
-                    )}
+                  <span className="personal-attention-row__icon" aria-hidden="true">
+                    <NotificationIcon className="personal-attention-row__bell" />
+                    <span className="personal-attention-row__count tabular-nums">{item.count}</span>
                   </span>
                   <span className="personal-home-infodata-card__body">
                     <span className="personal-home-infodata-card__title personal-attention-row__title">
@@ -505,10 +492,11 @@ export function PersonalHomePage() {
         <div className="personal-quick-actions__cards" data-testid="personal-quick-actions-cards">
           <Link
             to="/personal/businesses"
-            className="personal-qa-glass personal-qa-glass--start"
+            className="personal-qa-glass personal-qa-glass--start personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
             data-testid="personal-qa-start-business"
+            data-recipe="ext org-ehg qa-glass start md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
-            <span className="personal-qa-glass__icon" aria-hidden="true">
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
               <BusinessCenterIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionStartBusiness")}</span>
@@ -516,10 +504,11 @@ export function PersonalHomePage() {
           </Link>
           <Link
             to="/personal/utang/lent"
-            className="personal-qa-glass personal-qa-glass--lent"
+            className="personal-qa-glass personal-qa-glass--lent personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
             data-testid="personal-qa-lent"
+            data-recipe="ext org-ehg qa-glass lent md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
-            <span className="personal-qa-glass__icon" aria-hidden="true">
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
               <ArrowUpwardIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionLent")}</span>
@@ -527,10 +516,11 @@ export function PersonalHomePage() {
           </Link>
           <Link
             to="/personal/utang/owe"
-            className="personal-qa-glass personal-qa-glass--owe"
+            className="personal-qa-glass personal-qa-glass--owe personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
             data-testid="personal-qa-owe"
+            data-recipe="ext org-ehg qa-glass owe md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
-            <span className="personal-qa-glass__icon" aria-hidden="true">
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
               <ArrowDownwardIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionOwe")}</span>
@@ -538,10 +528,11 @@ export function PersonalHomePage() {
           </Link>
           <Link
             to="/personal/linked-merchants"
-            className="personal-qa-glass personal-qa-glass--stores"
+            className="personal-qa-glass personal-qa-glass--stores personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
             data-testid="personal-qa-stores"
+            data-recipe="ext org-ehg qa-glass stores md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
-            <span className="personal-qa-glass__icon" aria-hidden="true">
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
               <PaymentsIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionStores")}</span>
@@ -549,16 +540,15 @@ export function PersonalHomePage() {
           </Link>
           <Link
             to="/personal/people?add=1"
-            className="personal-qa-glass personal-qa-glass--people"
+            className="personal-qa-glass personal-qa-glass--people personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
             data-testid="personal-qa-people"
+            data-recipe="ext org-ehg qa-glass people md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
-            <span className="personal-qa-glass__icon" aria-hidden="true">
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
               <PersonAddIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionPeople")}</span>
-            <span className="personal-qa-glass__plus personal-qa-glass__plus--people" aria-hidden="true">
-              +
-            </span>
+            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
           </Link>
         </div>
       </section>
@@ -585,7 +575,6 @@ export function PersonalHomePage() {
             data-testid="personal-todo-view-all"
           >
             {t("personal.home.viewAllTodo")}
-            <ArrowForwardIcon className="personal-todo-summary__view-all-icon" aria-hidden />
           </Link>
         </div>
         {todosQuery.isPending && cachedTodos.length === 0 ? (
@@ -606,23 +595,23 @@ export function PersonalHomePage() {
             <div className="personal-todo-cards" data-testid="personal-todo-counts" role="list">
               <Link
                 to="/personal/todo?add=1"
-                className="personal-qa-glass personal-qa-glass--todo"
+                className="personal-qa-glass personal-qa-glass--todo personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-todo-add"
+                data-recipe="ext org-ehg qa-glass todo md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
               >
-                <span className="personal-qa-glass__icon" aria-hidden="true">
+                <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
                   <PlaylistAddIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.home.actionTodo")}</span>
-                <span className="personal-qa-glass__plus" aria-hidden="true">
-                  +
-                </span>
+                <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
               </Link>
               <Link
                 to={todoAgendaTabHref("today")}
-                className="personal-qa-glass personal-qa-glass--todo"
+                className="personal-qa-glass personal-qa-glass--todo personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-todo-stat-today"
+                data-recipe="ext org-ehg qa-glass todo md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
-                <span className="personal-qa-glass__icon" aria-hidden="true">
+                <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
                   <TodayIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.todo.countToday")}</span>
@@ -630,10 +619,11 @@ export function PersonalHomePage() {
               </Link>
               <Link
                 to={todoAgendaTabHref("upcoming")}
-                className="personal-qa-glass personal-qa-glass--todo"
+                className="personal-qa-glass personal-qa-glass--todo personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-todo-stat-upcoming"
+                data-recipe="ext org-ehg qa-glass todo md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
-                <span className="personal-qa-glass__icon" aria-hidden="true">
+                <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
                   <UpcomingIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.todo.countUpcoming")}</span>
@@ -641,10 +631,11 @@ export function PersonalHomePage() {
               </Link>
               <Link
                 to={todoAgendaTabHref("overdue")}
-                className="personal-qa-glass personal-qa-glass--todo-overdue"
+                className="personal-qa-glass personal-qa-glass--todo-overdue personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-todo-stat-overdue"
+                data-recipe="ext org-ehg qa-glass todo-overdue md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
-                <span className="personal-qa-glass__icon" aria-hidden="true">
+                <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
                   <OverdueIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.todo.countOverdue")}</span>

@@ -65,6 +65,7 @@ export function StoreProductCard({
         }
       }}
     >
+      <span className="sell-product-card__name">{product.name}</span>
       <div className="sell-product-card__media">
         <span className="sell-product-card__fallback" aria-hidden>
           <Package className="sell-product-card__fallback-icon" strokeWidth={1.75} />
@@ -72,7 +73,6 @@ export function StoreProductCard({
         </span>
       </div>
       <div className="sell-product-card__body">
-        <span className="sell-product-card__name">{product.name}</span>
         <div className="sell-product-card__price-row">
           <MoneyDisplay amount={product.unitPrice} className="sell-product-card__price" />
           {kilo ? (

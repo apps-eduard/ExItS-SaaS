@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Ban, Clock3, Info, Loader2, MapPin, Users } from "lucide-react";
+import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
   acceptMyCustomerOrderScheduleProposal,
@@ -18,6 +19,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { personalStoreDisplayName } from "@/features/customer-ordering/format-personal-store-label";
 import {
   isDeliveryFulfillment,
   orderCardToneClass,
@@ -61,6 +63,23 @@ export function MyOrderDetailPage() {
         signal,
       ),
   });
+
+  const merchantsQuery = useQuery({
+    queryKey: ["personal", "linked-merchants", "my-orders-store-names"],
+    enabled: tokenReady && online,
+    queryFn: ({ signal }) => listLinkedMerchants(1, 100, signal),
+  });
+
+  const storeNameByOrgId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const merchant of merchantsQuery.data?.items ?? []) {
+      map.set(
+        merchant.organizationId,
+        personalStoreDisplayName(merchant.organizationDisplayName),
+      );
+    }
+    return map;
+  }, [merchantsQuery.data?.items]);
 
   usePosRealtimeOrderWatch(query.data?.sellerOrganizationId, orderId);
 
@@ -190,6 +209,12 @@ export function MyOrderDetailPage() {
   }
 
   const order = query.data;
+  const storeTitle =
+    storeNameByOrgId.get(order.sellerOrganizationId) ?? order.branchNameSnapshot;
+  const branchLabel = order.branchNameSnapshot.trim();
+  const showBranchRibbon =
+    Boolean(branchLabel) &&
+    branchLabel.localeCompare(storeTitle, undefined, { sensitivity: "accent" }) !== 0;
   const canCancel =
     !order.pendingScheduleProposal
     && (order.status.localeCompare("Submitted", undefined, { sensitivity: "accent" }) === 0
@@ -296,8 +321,16 @@ export function MyOrderDetailPage() {
             {t(displayOrderStatusKey(order) as MessageKey)}
           </span>
         </span>
+        {showBranchRibbon ? (
+          <span
+            className="pc-order-card__ribbon pc-order-card__ribbon--branch"
+            data-testid="my-order-detail-branch-ribbon"
+          >
+            <span className="pc-order-card__ribbon-label truncate">{branchLabel}</span>
+          </span>
+        ) : null}
         <div className="pc-order-card__body min-w-0 flex-1">
-          <p className="pc-order-card__title m-0 truncate">{order.branchNameSnapshot}</p>
+          <p className="pc-order-card__title m-0 truncate">{storeTitle}</p>
           <PersonalOrderFactChips
             paymentStatus={order.paymentStatus}
             paymentMethod={order.paymentMethod}

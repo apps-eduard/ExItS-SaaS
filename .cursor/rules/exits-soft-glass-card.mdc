@@ -11,11 +11,11 @@ Lock file: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/featu
 
 Reference CSS: `.personal-qa-glass--start|lent|owe|stores|people` in `globals.css` (light + `[data-theme="dark"]`).
 
-Component: `SoftGlassQuickAction` for Soft Glass quick-action rows.
+Component: Soft Glass **cards** / ribbons use this lock. **Quick Actions** default to Org EHG (`exits-org-ehg-qa-glass.mdc`, Stores to pay · Stores) via `SoftGlassQuickAction shell="ehg"`. Pass `shell="soft-glass"` only when the user names Soft Glass Enterprise QA.
 
 ## Recipe
 
-- Pastel / transparent gradient wash (not flat solid fill)
+- Solid tinted fill (Personal main-card global — no Soft Glass wash gradient)
 - Shell radius: `SOFT_GLASS_RADIUS` = **1.1rem** (`--soft-glass-radius`; same as `TABLE_GLOBAL_SOFT_GLASS_RADIUS`)
 - 1px border: slate mixed with accent soft (`SOFT_GLASS_BORDER_SLATE` / `SOFT_GLASS_BORDER_SLATE_PCT`)
 - Inset top highlight + soft elevation (~`SOFT_GLASS_SHADOW_ACCENT_PCT`% accent)

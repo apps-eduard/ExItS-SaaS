@@ -235,6 +235,7 @@ const DEFAULTS = {
   speedDialShow: ORG_EHG_SPEED_DIAL_SHOW_DEFAULT,
   dropdown: false,
   badge: false,
+  shadow: true,
   label: "Glass button",
   focusAnimation: "none" as GlassFocusAnimation,
 };
@@ -254,6 +255,7 @@ function glassCommand(
   speedDialShow: OrgEhgSpeedDialShow,
   dropdown: boolean,
   badge: boolean,
+  shadow: boolean,
   focusAnimation: GlassFocusAnimation,
 ): string {
   const parts = ["ext", "org-ehg", "btn-glass", intensity, intent, appearance, size];
@@ -275,6 +277,7 @@ function glassCommand(
   }
   if (dropdown) parts.push("dropdown");
   if (badge) parts.push("badge");
+  if (!shadow) parts.push("no-shadow");
   if (focusAnimation !== "none") parts.push(`focus-${focusAnimation}`);
   return parts.join(" ");
 }
@@ -310,6 +313,7 @@ export function OrgEhgButtonGlassPlayground({ defaultFab = false }: { defaultFab
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [dropdown, setDropdown] = useState(DEFAULTS.dropdown);
   const [badge, setBadge] = useState(DEFAULTS.badge);
+  const [shadow, setShadow] = useState(DEFAULTS.shadow);
   const [label, setLabel] = useState(fabDefaults?.label ?? DEFAULTS.label);
   const [focusAnimation, setFocusAnimation] = useState(DEFAULTS.focusAnimation);
   const [menuChoice, setMenuChoice] = useState<string>("");
@@ -333,6 +337,7 @@ export function OrgEhgButtonGlassPlayground({ defaultFab = false }: { defaultFab
     fab ? "org-ehg-btn-glass--fab" : "",
     iconOnTop ? "org-ehg-btn-glass--icon-top" : "",
     dropdown && !fab ? "org-ehg-btn-glass--with-dropdown" : "",
+    shadow ? "" : "org-ehg-btn-glass--no-shadow",
     focusAnimation !== "none" ? `org-ehg-btn-glass--focus-${focusAnimation}` : "",
   ]
     .filter(Boolean)
@@ -355,6 +360,7 @@ export function OrgEhgButtonGlassPlayground({ defaultFab = false }: { defaultFab
     setSpeedDialOpen(false);
     setDropdown(DEFAULTS.dropdown);
     setBadge(DEFAULTS.badge);
+    setShadow(DEFAULTS.shadow);
     setLabel(fabDefaults?.label ?? DEFAULTS.label);
     setBackground(ORG_EHG_PLAYGROUND_BG_DEFAULT);
     setFocusAnimation(DEFAULTS.focusAnimation);
@@ -606,6 +612,15 @@ export function OrgEhgButtonGlassPlayground({ defaultFab = false }: { defaultFab
               data-testid="ui-standard-org-ehg-btn-pg-badge"
             />
             Badge
+          </label>
+          <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+            <Switch
+              checked={shadow}
+              onCheckedChange={setShadow}
+              aria-label="Shadow"
+              data-testid="ui-standard-org-ehg-btn-pg-shadow"
+            />
+            Shadow
           </label>
         </div>
 
@@ -925,6 +940,7 @@ export function OrgEhgButtonGlassPlayground({ defaultFab = false }: { defaultFab
             speedDialShow,
             dropdown,
             badge,
+            shadow,
             focusAnimation,
           )}
           testId="ui-standard-org-ehg-btn-pg-copy"

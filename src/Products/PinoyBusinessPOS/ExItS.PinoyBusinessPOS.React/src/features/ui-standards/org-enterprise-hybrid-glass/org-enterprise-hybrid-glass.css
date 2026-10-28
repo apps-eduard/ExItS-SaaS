@@ -1306,6 +1306,19 @@
   outline-color: #60a5fa;
 }
 
+/* Playground: Shadow off — drop outer glow only; keep inset specular (after hover/focus). */
+.org-ehg-btn-glass--no-shadow,
+.org-ehg-btn-glass--no-shadow:hover:not(:disabled),
+.org-ehg-btn-glass--no-shadow:focus-visible,
+.org-ehg-btn-glass--no-shadow.org-ehg-btn-glass--state-hover,
+.org-ehg-btn-glass--no-shadow.org-ehg-btn-glass--state-focused,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--no-shadow,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--no-shadow:hover:not(:disabled),
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--no-shadow:focus-visible {
+  --org-ehg-btn-glass-glow: none;
+  box-shadow: inset 0 1px 0 var(--org-ehg-btn-glass-specular);
+}
+
 .org-ehg-btn-glass:active:not(:disabled),
 .org-ehg-btn-glass--state-pressed {
   transform: translateY(1px);
@@ -2459,12 +2472,19 @@
 }
 
 .org-ehg-input-glass-field__control:focus-within {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+  outline: none;
+  /* Keep glass elevation; no extra ring (native input outline was the sharp rect). */
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-input-glass-specular),
+    var(--org-ehg-input-glass-glow);
+  border-color: color-mix(in srgb, #3b82f6 72%, var(--org-ehg-input-glass-edge));
 }
 
 .org-ehg-input-glass-panel[data-org-ehg-theme="dark"] .org-ehg-input-glass-field__control:focus-within {
-  outline-color: #60a5fa;
+  border-color: color-mix(in srgb, #60a5fa 70%, var(--org-ehg-input-glass-edge));
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-input-glass-specular),
+    var(--org-ehg-input-glass-glow);
 }
 
 .org-ehg-input-glass-field__input {
@@ -2472,14 +2492,28 @@
   min-width: 0;
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
   border: 0;
-  outline: none;
+  border-radius: 0;
   background: transparent;
   color: inherit;
   font: inherit;
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.2;
+  /* Kill global *:focus-visible — it drew a sharp blue rect inside the glass shell. */
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.org-ehg-input-glass-field__input:focus,
+.org-ehg-input-glass-field__input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
 }
 
 .org-ehg-input-glass-field__input::placeholder {
@@ -2580,8 +2614,11 @@
 }
 
 .org-ehg-input-glass-field--state-focused .org-ehg-input-glass-field__control {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+  outline: none;
+  border-color: color-mix(in srgb, #3b82f6 72%, var(--org-ehg-input-glass-edge));
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-input-glass-specular),
+    var(--org-ehg-input-glass-glow);
 }
 
 .org-ehg-input-glass-field--state-error {
@@ -6741,6 +6778,23 @@
     box-shadow 120ms ease;
 }
 
+/* Card shape = global Control Shape tokens (playground data-card-shape). */
+.org-ehg-qa-glass[data-card-shape="square"] {
+  --org-ehg-qa-radius: 0;
+}
+
+.org-ehg-qa-glass[data-card-shape="standard"] {
+  --org-ehg-qa-radius: var(--exits-radius-control);
+}
+
+.org-ehg-qa-glass[data-card-shape="soft"] {
+  --org-ehg-qa-radius: var(--exits-radius-soft);
+}
+
+.org-ehg-qa-glass[data-card-shape="pill"] {
+  --org-ehg-qa-radius: 9999px;
+}
+
 .org-ehg-qa-glass:hover {
   border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 42%, var(--org-ehg-qa-edge));
   box-shadow:
@@ -6762,6 +6816,13 @@
     inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent),
     0 10px 28px color-mix(in srgb, var(--org-ehg-qa-accent) 18%, #000),
     0 1px 2px color-mix(in srgb, #000 40%, transparent);
+}
+
+.org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-glass--no-shadow:hover,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass--no-shadow:hover {
+  box-shadow: none;
 }
 
 .org-ehg-qa-glass--tone-primary { --org-ehg-qa-accent: #3b82f6; }
@@ -7123,6 +7184,19 @@
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent),
     0 8px 18px color-mix(in srgb, var(--org-ehg-qa-accent) 40%, transparent);
+}
+
+/* Playground: Icon shadow off — drop outer glow; keep inset specular. */
+.org-ehg-qa-glass-icon--no-shadow,
+.org-ehg-qa-glass-icon--no-shadow.org-ehg-qa-glass-icon--filled,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass-icon--no-shadow,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon--no-shadow.org-ehg-qa-glass-icon--filled {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent);
+}
+
+.org-ehg-qa-glass__icon--no-shadow {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent);
 }
 
 .org-ehg-qa-glass-group,

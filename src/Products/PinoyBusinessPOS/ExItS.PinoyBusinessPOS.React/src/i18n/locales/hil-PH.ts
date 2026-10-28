@@ -9286,9 +9286,11 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.merchants.manageConnection": "[HIL] Manage connection",
 
+  "personal.merchants.more": "More",
+
   "personal.merchants.disconnect": "Disconnect",
 
-  "personal.merchants.disconnectAndBlock": "Disconnect and block business",
+  "personal.merchants.disconnectAndBlock": "Disconnect and block",
 
   "personal.merchants.disconnectBlockConfirm": "Disconnect and block this business? They cannot invite you again until you unblock them. Transactions held by the business are not erased.",
 

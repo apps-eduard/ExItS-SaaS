@@ -3118,8 +3118,27 @@
     0 4px 12px color-mix(in srgb, var(--sg-primary) 8%, transparent) !important;
 }
 
-.ui-standards-soft-glass-primary-fields .ui-standards-qinput__box::after {
-  border-bottom-color: var(--sg-primary);
+/*
+ * Soft Glass focus bar: bottom edge only.
+ * Outlined inset:-1px ::after draws a sharp inner rect that cuts Soft Glass radius.
+ */
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput__box::after,
+.ui-standards-soft-glass-primary-fields .ui-standards-qdropdown__field::after {
+  inset: auto !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 0 var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem))
+    var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem)) !important;
+  background: var(--sg-primary) !important;
+}
+
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput__control:focus,
+.ui-standards-soft-glass-primary-fields .ui-standards-qinput__control:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .ui-standards-soft-glass-primary-fields .ui-standards-qinput:hover .ui-standards-qinput__box,
@@ -3370,6 +3389,24 @@
 .ui-standards-soft-glass-roll-card .ui-standards-qinput__label,
 .ui-standards-soft-glass-roll-card .ui-standards-qinput__box::after {
   transition-duration: 0.45s !important;
+}
+
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__box::after {
+  inset: auto !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 0 var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem))
+    var(--soft-glass-field-radius, var(--exits-radius-soft, 0.6875rem)) !important;
+  background: var(--qinput-accent, var(--exits-primary)) !important;
+}
+
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__control:focus,
+.ui-standards-soft-glass-roll-card .ui-standards-qinput__control:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .ui-standards-soft-glass-roll-card .ui-standards-qinput__picker-icon {

@@ -1,7 +1,8 @@
 /**
  * Soft Glass Enterprise card lock — Quick Actions approved (light + dark).
  * Use when creating Personal / Utang cards and Soft Glass quick-action rows.
- * No blur, neon, lift, or scale. Change only when the user asks.
+ * Main card shells use solid tint fill (no wash gradient). No blur, neon, lift, or scale.
+ * Change only when the user asks.
  *
  * Keep `.cursor/rules/exits-soft-glass-card.mdc` and Soft Glass CSS in
  * `globals.css` aligned (shell, QA, title ribbon).
@@ -152,6 +153,15 @@ export const SOFT_GLASS_LIGHT = {
     mid: "#e0f2fe",
     ink: "#075985",
   },
+  /** New Quick Actions — Preferences primary (CSS resolves tokens). */
+  primary: {
+    chip: "var(--exits-primary)",
+    deep: "var(--exits-primary-hover)",
+    soft: "var(--exits-primary-soft, var(--exits-primary))",
+    wash: "color-mix(in srgb, var(--exits-primary) 8%, #fff)",
+    mid: "color-mix(in srgb, var(--exits-primary) 16%, #fff)",
+    ink: "var(--exits-primary)",
+  },
 } as const;
 
 /** Dark identities — restrained, no neon. */
@@ -162,6 +172,12 @@ export const SOFT_GLASS_DARK = {
   stores: { chip: "#6d28d9", deep: "#4c1d95", soft: "#c4b5fd" },
   people: { chip: "#3730a3", deep: "#1e1b4b", soft: "#a5b4fc" },
   info: { chip: "#0369a1", deep: "#0c4a6e", soft: "#7dd3fc" },
+  /** Org EHG dark keeps light primary chip (see EHG QA dark chip lock). */
+  primary: {
+    chip: "var(--exits-primary)",
+    deep: "var(--exits-primary-hover)",
+    soft: "var(--exits-primary-soft, var(--exits-primary))",
+  },
   label: "#e2e8f0",
   surfaceMid: "#1e293b",
   surfaceDeep: "#0f172a",

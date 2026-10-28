@@ -42,6 +42,10 @@ import type {
   OrgEhgQaGlassTrailing,
 } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQuickActionGlassGallery";
 import { useUiStandardsShellAppearance } from "@/features/ui-standards/UiStandardsShellAppearance";
+import {
+  CONTROL_SHAPE_OPTIONS,
+  type ControlShapePreference,
+} from "@/lib/preferences/ui-preferences";
 
 type QaIconId =
   | "plus"
@@ -102,6 +106,20 @@ const TRAILINGS: ReadonlyArray<{ label: string; value: OrgEhgQaGlassTrailing }> 
   { label: "None", value: "none" },
 ];
 
+/** Global Control Shape options, labeled Card shape for this playground. */
+const CARD_SHAPE_LABELS: Record<ControlShapePreference, string> = {
+  square: "Square",
+  standard: "Standard",
+  soft: "Soft",
+  pill: "Pill",
+};
+
+const CARD_SHAPES: ReadonlyArray<{ label: string; value: ControlShapePreference }> =
+  CONTROL_SHAPE_OPTIONS.map((value) => ({
+    label: CARD_SHAPE_LABELS[value],
+    value,
+  }));
+
 const ICONS: ReadonlyArray<{ label: string; value: QaIconId; Icon: LucideIcon }> = [
   { label: "Plus", value: "plus", Icon: Plus },
   { label: "Document", value: "file", Icon: FileText },
@@ -123,10 +141,13 @@ const DEFAULTS = {
   iconId: "plus" as QaIconId,
   iconShape: "soft" as OrgEhgQaGlassIconShape,
   size: "md" as OrgEhgQaGlassSize,
+  cardShape: "standard" as ControlShapePreference,
   label: "Add New",
   badge: false,
   ghost: false,
   split: false,
+  shadow: true,
+  iconShadow: true,
   iconOnly: false,
   iconFilled: true,
 };
@@ -136,17 +157,30 @@ function qaGlassCommand(
   trailing: OrgEhgQaGlassTrailing,
   iconShape: OrgEhgQaGlassIconShape,
   size: OrgEhgQaGlassSize,
+  cardShape: ControlShapePreference,
   iconOnly: boolean,
   badge: boolean,
   ghost: boolean,
   split: boolean,
+  shadow: boolean,
+  iconShadow: boolean,
 ): string {
-  const parts = ["ext", "org-ehg", "qa-glass", tone, size, `icon-${iconShape}`];
+  const parts = [
+    "ext",
+    "org-ehg",
+    "qa-glass",
+    tone,
+    size,
+    `icon-${iconShape}`,
+    `card-${cardShape}`,
+  ];
   if (iconOnly) parts.push("icon-only");
   else parts.push(`trail-${trailing}`);
   if (badge) parts.push("badge");
   if (ghost) parts.push("ghost");
   if (split) parts.push("split");
+  if (!shadow) parts.push("no-shadow");
+  if (!iconShadow) parts.push("no-icon-shadow");
   return parts.join(" ");
 }
 
@@ -160,16 +194,21 @@ export function OrgEhgQuickActionGlassPlayground() {
   const [iconId, setIconId] = useState(DEFAULTS.iconId);
   const [iconShape, setIconShape] = useState(DEFAULTS.iconShape);
   const [size, setSize] = useState(DEFAULTS.size);
+  const [cardShape, setCardShape] = useState(DEFAULTS.cardShape);
   const [label, setLabel] = useState(DEFAULTS.label);
   const [badge, setBadge] = useState(DEFAULTS.badge);
   const [ghost, setGhost] = useState(DEFAULTS.ghost);
   const [split, setSplit] = useState(DEFAULTS.split);
+  const [shadow, setShadow] = useState(DEFAULTS.shadow);
+  const [iconShadow, setIconShadow] = useState(DEFAULTS.iconShadow);
   const [iconOnly, setIconOnly] = useState(DEFAULTS.iconOnly);
   const [iconFilled, setIconFilled] = useState(DEFAULTS.iconFilled);
   const [toggled, setToggled] = useState(false);
 
   const Icon = ICONS.find((item) => item.value === iconId)?.Icon ?? Plus;
   const displayLabel = label.trim() || "Quick action";
+  const iconNoShadowClass = iconShadow ? "" : " org-ehg-qa-glass-icon--no-shadow";
+  const chipNoShadowClass = iconShadow ? "" : " org-ehg-qa-glass__icon--no-shadow";
 
   function resetPreview() {
     setTone(DEFAULTS.tone);
@@ -177,10 +216,13 @@ export function OrgEhgQuickActionGlassPlayground() {
     setIconId(DEFAULTS.iconId);
     setIconShape(DEFAULTS.iconShape);
     setSize(DEFAULTS.size);
+    setCardShape(DEFAULTS.cardShape);
     setLabel(DEFAULTS.label);
     setBadge(DEFAULTS.badge);
     setGhost(DEFAULTS.ghost);
     setSplit(DEFAULTS.split);
+    setShadow(DEFAULTS.shadow);
+    setIconShadow(DEFAULTS.iconShadow);
     setIconOnly(DEFAULTS.iconOnly);
     setIconFilled(DEFAULTS.iconFilled);
     setToggled(false);
@@ -229,21 +271,21 @@ export function OrgEhgQuickActionGlassPlayground() {
     >
       <button
         type="button"
-        className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action org-ehg-qa-glass-icon--tone-primary${actionSizeClass}${actionIconShapeClass}`}
+        className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action org-ehg-qa-glass-icon--tone-primary${actionSizeClass}${actionIconShapeClass}${iconNoShadowClass}`}
         aria-label="Edit"
       >
         <Pencil className="org-ehg-qa-glass__glyph" aria-hidden strokeWidth={2.25} />
       </button>
       <button
         type="button"
-        className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action org-ehg-qa-glass-icon--tone-secondary${actionSizeClass}${actionIconShapeClass}`}
+        className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action org-ehg-qa-glass-icon--tone-secondary${actionSizeClass}${actionIconShapeClass}${iconNoShadowClass}`}
         aria-label="Copy"
       >
         <Copy className="org-ehg-qa-glass__glyph" aria-hidden strokeWidth={2.25} />
       </button>
       <button
         type="button"
-        className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action org-ehg-qa-glass-icon--tone-danger${actionSizeClass}${actionIconShapeClass}`}
+        className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action org-ehg-qa-glass-icon--tone-danger${actionSizeClass}${actionIconShapeClass}${iconNoShadowClass}`}
         aria-label="Delete"
       >
         <Trash2 className="org-ehg-qa-glass__glyph" aria-hidden strokeWidth={2.25} />
@@ -254,7 +296,7 @@ export function OrgEhgQuickActionGlassPlayground() {
   const trailingActionIcon = (
     <button
       type="button"
-      className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action ${actionToneClass}${actionSizeClass}${actionIconShapeClass}`}
+      className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action ${actionToneClass}${actionSizeClass}${actionIconShapeClass}${iconNoShadowClass}`}
       aria-label={displayLabel}
       data-testid="ui-standard-org-ehg-qa-pg-preview-action-icon"
       data-icon-shape={iconShape}
@@ -270,6 +312,7 @@ export function OrgEhgQuickActionGlassPlayground() {
     `org-ehg-qa-glass--size-${size}`,
     ghost ? "org-ehg-qa-glass--ghost" : "",
     split ? "org-ehg-qa-glass--split" : "",
+    shadow ? "" : "org-ehg-qa-glass--no-shadow",
   ]
     .filter(Boolean)
     .join(" ");
@@ -278,7 +321,8 @@ export function OrgEhgQuickActionGlassPlayground() {
     <span
       className={
         "org-ehg-qa-glass__icon" +
-        (iconShape === "rounded" ? " org-ehg-qa-glass__icon--rounded" : "")
+        (iconShape === "rounded" ? " org-ehg-qa-glass__icon--rounded" : "") +
+        chipNoShadowClass
       }
       data-testid="ui-standard-org-ehg-qa-pg-preview-chip"
       data-icon-shape={iconShape}
@@ -401,6 +445,13 @@ export function OrgEhgQuickActionGlassPlayground() {
               onChange={setSize}
               testId="ui-standard-org-ehg-qa-pg-size"
             />
+            <CompactSelect
+              label="Card shape"
+              value={cardShape}
+              options={[...CARD_SHAPES]}
+              onChange={setCardShape}
+              testId="ui-standard-org-ehg-qa-pg-card-shape"
+            />
             <PlaygroundTextField
               label="Label"
               value={label}
@@ -469,6 +520,25 @@ export function OrgEhgQuickActionGlassPlayground() {
               />
               Split
             </label>
+            <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+              <Switch
+                checked={shadow}
+                onCheckedChange={setShadow}
+                aria-label="Shadow"
+                disabled={iconOnly}
+                data-testid="ui-standard-org-ehg-qa-pg-shadow"
+              />
+              Shadow
+            </label>
+            <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+              <Switch
+                checked={iconShadow}
+                onCheckedChange={setIconShadow}
+                aria-label="Icon shadow"
+                data-testid="ui-standard-org-ehg-qa-pg-icon-shadow"
+              />
+              Icon shadow
+            </label>
           </div>
 
           <div
@@ -494,6 +564,7 @@ export function OrgEhgQuickActionGlassPlayground() {
                       ? "org-ehg-qa-glass-icon--rounded"
                       : "org-ehg-qa-glass-icon--soft",
                     iconFilled ? "org-ehg-qa-glass-icon--filled" : "",
+                    iconShadow ? "" : "org-ehg-qa-glass-icon--no-shadow",
                   ]
                     .filter(Boolean)
                     .join(" ")}
@@ -510,6 +581,7 @@ export function OrgEhgQuickActionGlassPlayground() {
                   aria-label={displayLabel}
                   data-testid="ui-standard-org-ehg-qa-pg-preview-btn"
                   data-size={size}
+                  data-card-shape={cardShape}
                 >
                   {split ? (
                     <>
@@ -549,6 +621,7 @@ export function OrgEhgQuickActionGlassPlayground() {
                   className={rowClass}
                   data-testid="ui-standard-org-ehg-qa-pg-preview-btn"
                   data-size={size}
+                  data-card-shape={cardShape}
                 >
                   {iconChip}
                   <span className="org-ehg-qa-glass__label">{displayLabel}</span>
@@ -566,10 +639,13 @@ export function OrgEhgQuickActionGlassPlayground() {
               trailing,
               iconShape,
               size,
+              cardShape,
               iconOnly,
               badge,
               ghost,
               split,
+              shadow,
+              iconShadow,
             )}
             testId="ui-standard-org-ehg-qa-pg-copy"
           />

@@ -1,10 +1,9 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
   Check,
-  ChevronDown,
   Link2,
   Loader2,
   MoreHorizontal,
@@ -15,6 +14,7 @@ import {
   Truck,
   Unlink,
   Users,
+  X,
 } from "lucide-react";
 import type { LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
 import {
@@ -66,8 +66,10 @@ import {
 } from "@/features/ui-standards/table-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
-import { cn } from "@/lib/cn";
 import { useSession } from "@/session/SessionProvider";
+
+/** Shop CTA — Soft Glass primary outlined (no Org EHG btn-glass). */
+const STORE_SHOP_BTN_CLASS = "pc-store-card__action pc-store-card__action--shop";
 
 export type StoreListFilter = "all" | "can_order" | "unavailable";
 
@@ -145,11 +147,24 @@ function fulfillmentLabel(
   return ordering.canCustomerDelivery ? t("orders.delivery") : t("orders.pickup");
 }
 
-function LinkedMerchantManagePanel({ merchant }: { merchant: LinkedMerchantDto }) {
+/** Soft Glass round ⋮ / X speed dial — Purchases, Disconnect, Disconnect and block. */
+function LinkedMerchantStoreSpeedDial({
+  merchant,
+  statementTo,
+  primaryAction,
+}: {
+  merchant: LinkedMerchantDto;
+  statementTo: string;
+  primaryAction: ReactNode;
+}) {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const dial = useDismissibleOpen(false);
   const [connError, setConnError] = useState<string | null>(null);
-  const [manageOpen, setManageOpen] = useState(false);
+  const moreLabel = t("personal.merchants.more");
+  const dialOpen = dial.open;
+  const closeDial = dial.close;
 
   const disconnect = useMutation({
     mutationFn: (mode: "disconnect" | "block") =>
@@ -158,7 +173,7 @@ function LinkedMerchantManagePanel({ merchant }: { merchant: LinkedMerchantDto }
         : disconnectLinkedMerchant(merchant.organizationId),
     onSuccess: async () => {
       setConnError(null);
-      setManageOpen(false);
+      closeDial();
       await queryClient.invalidateQueries({ queryKey: ["personal", "linked-merchants"] });
       await queryClient.invalidateQueries({ queryKey: ["personal", "blocked-businesses"] });
     },
@@ -170,62 +185,118 @@ function LinkedMerchantManagePanel({ merchant }: { merchant: LinkedMerchantDto }
       ),
   });
 
-  return (
-    <div className="pc-store-card__manage">
+  useEffect(() => {
+    if (!dialOpen) {
+      return;
+    }
+    // No outside-tap dismiss: on mobile, scroll/tap outside was closing the dial.
+    // Close only via X, an action, or Escape.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDial();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [dialOpen, closeDial]);
+
+  const trigger = dialOpen ? (
+    <button
+      type="button"
+      className="pc-store-card__speed-dial-trigger"
+      aria-expanded
+      aria-haspopup="menu"
+      aria-label={moreLabel}
+      data-testid={`store-speed-dial-trigger-${merchant.organizationId}`}
+      disabled={disconnect.isPending}
+      onClick={() => dial.toggle()}
+    >
+      <X className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
+    </button>
+  ) : (
+    <ExitsTooltip content={moreLabel} placement="top">
       <button
         type="button"
-        className="pc-store-card__manage-toggle"
-        aria-expanded={manageOpen}
-        data-testid={`manage-merchant-${merchant.organizationId}`}
-        onClick={() => setManageOpen((value) => !value)}
+        className="pc-store-card__speed-dial-trigger"
+        aria-expanded={false}
+        aria-haspopup="menu"
+        aria-label={moreLabel}
+        data-testid={`store-speed-dial-trigger-${merchant.organizationId}`}
+        disabled={disconnect.isPending}
+        onClick={() => dial.toggle()}
       >
-        <span>{t("personal.merchants.manageConnection")}</span>
-        <ChevronDown
-          className={cn("size-4 shrink-0 transition-transform", manageOpen && "rotate-180")}
-          aria-hidden
-        />
+        <MoreHorizontal className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
       </button>
-      {manageOpen ? (
-        <div className="pc-store-card__manage-panel">
-          <Button
-            type="button"
-            intent="warning"
-            appearance="solid"
-            emphasis="soft"
-            className="min-h-10 min-w-0 flex-1 basis-0 whitespace-normal text-center"
-            disabled={disconnect.isPending}
-            data-testid={`disconnect-merchant-${merchant.organizationId}`}
-            onClick={() => {
-              if (window.confirm(t("personal.merchants.disconnectConfirm"))) {
-                disconnect.mutate("disconnect");
-              }
-            }}
-          >
-            {disconnect.isPending ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : null}
-            {t("personal.merchants.disconnect")}
-          </Button>
-          <Button
-            type="button"
-            intent="danger"
-            appearance="solid"
-            emphasis="soft"
-            className="min-h-10 min-w-0 flex-1 basis-0 whitespace-normal text-center"
-            disabled={disconnect.isPending}
-            data-testid={`disconnect-block-merchant-${merchant.organizationId}`}
-            onClick={() => {
-              if (window.confirm(t("personal.merchants.disconnectBlockConfirm"))) {
-                disconnect.mutate("block");
-              }
-            }}
-          >
-            {t("personal.merchants.disconnectAndBlock")}
-          </Button>
-        </div>
-      ) : null}
+    </ExitsTooltip>
+  );
+
+  return (
+    <div
+      className="pc-store-card__speed-dial"
+      data-open={dialOpen ? "true" : "false"}
+      data-testid={`store-speed-dial-${merchant.organizationId}`}
+    >
+      <div className="pc-store-card__actions-primary">
+        {primaryAction}
+        <div className="pc-store-card__speed-dial-trigger-wrap">{trigger}</div>
+      </div>
+      <div className="pc-store-card__speed-dial-actions" role="menu" aria-hidden={!dialOpen}>
+        <button
+          type="button"
+          role="menuitem"
+          className="pc-store-card__speed-dial-action pc-store-card__speed-dial-action--purchases"
+          data-testid={`open-merchant-statement-${merchant.organizationId}`}
+          disabled={!dialOpen}
+          tabIndex={dialOpen ? 0 : -1}
+          onClick={() => {
+            closeDial();
+            navigate(statementTo);
+          }}
+        >
+          <Receipt className="size-4 shrink-0" aria-hidden />
+          <span>{t("personal.merchantStatement.openPurchases")}</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="pc-store-card__speed-dial-action pc-store-card__speed-dial-action--disconnect"
+          data-testid={`disconnect-merchant-${merchant.organizationId}`}
+          disabled={!dialOpen || disconnect.isPending}
+          tabIndex={dialOpen ? 0 : -1}
+          onClick={() => {
+            if (window.confirm(t("personal.merchants.disconnectConfirm"))) {
+              disconnect.mutate("disconnect");
+            }
+          }}
+        >
+          {disconnect.isPending ? (
+            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+          ) : (
+            <Unlink className="size-4 shrink-0" aria-hidden />
+          )}
+          <span>{t("personal.merchants.disconnect")}</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className="pc-store-card__speed-dial-action pc-store-card__speed-dial-action--block"
+          data-testid={`disconnect-block-merchant-${merchant.organizationId}`}
+          disabled={!dialOpen || disconnect.isPending}
+          tabIndex={dialOpen ? 0 : -1}
+          onClick={() => {
+            if (window.confirm(t("personal.merchants.disconnectBlockConfirm"))) {
+              disconnect.mutate("block");
+            }
+          }}
+        >
+          <Ban className="size-4 shrink-0" aria-hidden />
+          <span>{t("personal.merchants.disconnectAndBlock")}</span>
+        </button>
+      </div>
       {connError ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive" role="alert">
+        <p className="pc-store-card__speed-dial-error" role="alert">
           {connError}
         </p>
       ) : null}
@@ -254,6 +325,24 @@ function LinkedMerchantStoreCard({
   const canCustomerOrder = ordering.resolved && ordering.canCustomerOrder;
   const canCustomerDelivery = ordering.resolved && ordering.canCustomerDelivery;
 
+  const primaryAction = canCustomerOrder ? (
+    <Link to={shopTo} className={STORE_SHOP_BTN_CLASS} data-testid="open-merchant-shop">
+      <ShoppingBag className="pc-store-card__action-icon size-4 shrink-0" aria-hidden strokeWidth={2.25} />
+      <span>{t("personal.shopLink")}</span>
+    </Link>
+  ) : (
+    <Button
+      asChild
+      className="pc-store-card__action pc-store-card__action--statement !h-full !min-h-[var(--exits-touch-target-min)]"
+      data-testid="open-merchant-statement"
+    >
+      <Link to={statementTo}>
+        <Receipt className="pc-store-card__action-icon size-4 shrink-0" aria-hidden />
+        {t("personal.merchantStatement.openPurchases")}
+      </Link>
+    </Button>
+  );
+
   return (
     <li
       className="pc-store-directory__item"
@@ -278,52 +367,13 @@ function LinkedMerchantStoreCard({
           }
         />
 
-        <div
-          className={
-            canCustomerOrder
-              ? "pc-store-card__actions"
-              : "pc-store-card__actions pc-store-card__actions--solo"
-          }
-        >
-          {canCustomerOrder ? (
-            <>
-              <Button
-                asChild
-                className="pc-store-card__action pc-store-card__action--shop !h-full !min-h-[var(--exits-touch-target-min)]"
-                data-testid="open-merchant-shop"
-              >
-                <Link to={shopTo}>
-                  <ShoppingBag className="pc-store-card__action-icon size-4 shrink-0" aria-hidden />
-                  {t("personal.shopLink")}
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="pc-store-card__action pc-store-card__action--statement !h-full !min-h-[var(--exits-touch-target-min)]"
-                data-testid="open-merchant-statement"
-              >
-                <Link to={statementTo}>
-                  <Receipt className="pc-store-card__action-icon size-4 shrink-0" aria-hidden />
-                  {t("personal.merchantStatement.openPurchases")}
-                </Link>
-              </Button>
-            </>
-          ) : (
-            <Button
-              asChild
-              className="pc-store-card__action pc-store-card__action--statement !h-full !min-h-[var(--exits-touch-target-min)]"
-              data-testid="open-merchant-statement"
-            >
-              <Link to={statementTo}>
-                <Receipt className="pc-store-card__action-icon size-4 shrink-0" aria-hidden />
-                {t("personal.merchantStatement.openPurchases")}
-              </Link>
-            </Button>
-          )}
+        <div className="pc-store-card__actions pc-store-card__actions--shop-dial">
+          <LinkedMerchantStoreSpeedDial
+            merchant={merchant}
+            statementTo={statementTo}
+            primaryAction={primaryAction}
+          />
         </div>
-
-        <LinkedMerchantManagePanel merchant={merchant} />
       </article>
     </li>
   );

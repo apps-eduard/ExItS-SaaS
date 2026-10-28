@@ -1,0 +1,40 @@
+---
+description: Org EHG Quick Action glass global default (Stores to pay lock)
+alwaysApply: true
+---
+
+# Org EHG Quick Action glass (LOCKED — global)
+
+**Every Quick Action** (create, convert, or restyle) uses Org EHG — Personal home → **Stores to pay → Stores** (light + dark). No Soft Glass QA wash. No plain-white QA tiles.
+
+Lock file: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-qa-glass-global-default.ts`  
+CSS: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/styles/org-ehg-qa-glass.css`
+
+The locked command is `ext org-ehg qa-glass md icon-soft card-soft trail-auto no-shadow no-icon-shadow`.
+
+## Recipe (Stores to pay · Stores)
+
+- Shell: Org EHG card-soft — glass wash matching UI Standards **Add New** (light + dark); **not** Soft Glass elevation / muted dark chips
+- Classes: `personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow`
+- Component: `SoftGlassQuickAction` — **`shell="ehg"` is the default** (do not pass `soft-glass` for QAs)
+- Link tiles: same EHG classes + `data-shell="org-ehg"` + filled soft icon
+- Radius: Soft control `0.6875rem` (`ORG_EHG_QA_GLASS_RADIUS`) — not Soft Glass `1.1rem`
+- Icon: filled soft squircle (`0.65rem`), white mark, 35% radial + inset highlight
+- Light: chip border 28% / fill 8%; hover 42% / 11%; no elevation shadow
+- Dark: keep **light** identity chip colors (not muted Soft Glass dark); ink `#f1f5f9`; chip fill 12%
+- Trailing: count badge | chevron | add (`softGlassQaTrailing`)
+
+## Color policy (LOCKED)
+
+| Case | Color |
+| --- | --- |
+| **Convert / restyle** an existing Quick Action | **Keep** its identity color (`lent` / `owe` / `stores` / `people` / `start` / `info` / …) |
+| **Create** a new Quick Action with no named job color | **`primary`** — Preferences `var(--exits-primary)` (`ORG_EHG_QA_GLASS_NEW_IDENTITY`) |
+
+Do not invent a new shell, Soft Glass wash, plain-white QA, or flat Material tile when the job is a Quick Action.
+
+## Scope
+
+- All Personal Quick Actions: home, Stores to pay, tracker metrics, Utang hub, Money summary, detail QAs
+- Soft Glass **cards** / ribbons stay under `exits-soft-glass-card.mdc` — cards are not Quick Actions
+- Change this lock only when the user asks. Update `org-ehg-qa-glass-global-default.ts`, `org-ehg-qa-glass-global-default.test.ts`, `SoftGlassQuickAction.tsx`, `org-ehg-qa-glass.css`, and this rule together.
