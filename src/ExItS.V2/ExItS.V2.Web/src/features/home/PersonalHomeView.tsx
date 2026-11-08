@@ -1,558 +1,508 @@
-import {
-  AlertCircle,
-  Building2,
-  CheckSquare,
-  ChevronDown,
-  ChevronRight,
-  Clock3,
-  HandCoins,
-  RefreshCw,
-  Store,
-  UserPlus,
-  Users,
-  Wallet,
-  X,
-} from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PersonalHomeData } from "@/api/home-personal-data";
-import { dismissGuideHomeCard } from "@/api/personal-guide";
 import type { UtangAttentionItem } from "@/api/personal-utang";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DeferredNav } from "@/features/personal/DeferredNav";
+import { MaterialIcon } from "@/features/personal/MaterialIcon";
+import { MoneyDisplay } from "@/features/personal/MoneyDisplay";
+import { PersonalBusinessSummary } from "@/features/personal/PersonalBusinessSummary";
+import { PersonalGuideHomeCard } from "@/features/personal/PersonalGuideHomeCard";
+import { PersonalTrackerCard } from "@/features/personal/PersonalTrackerCard";
+import { ORG_EHG_QA_GLASS_CLASS_NAME } from "@/features/personal/org-ehg-qa-glass";
+import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { MotionList, MotionListItem, MotionListPresence } from "@/motion/MotionList";
-import { MotionReveal } from "@/motion/MotionReveal";
-import { springSoft, tweenFast } from "@/motion/presets";
 import { WidgetMessage, isFailedWidget } from "./home-ui";
-import { UnavailableButton } from "./UnavailableAction";
-import "./personal-home.css";
 
 function greetingPeriodKey():
-  | "periodMorning"
-  | "periodAfternoon"
-  | "periodEvening" {
+  | "greetingMorning"
+  | "greetingAfternoon"
+  | "greetingEvening" {
   const hour = new Date().getHours();
-  if (hour < 12) return "periodMorning";
-  if (hour < 18) return "periodAfternoon";
-  return "periodEvening";
+  if (hour < 12) return "greetingMorning";
+  if (hour < 17) return "greetingAfternoon";
+  return "greetingEvening";
 }
 
-function AmountRow({
-  label,
-  amount,
-  tone,
-}: {
-  label: string;
-  amount: number;
-  tone: "owe" | "lent";
-}) {
-  return (
-    <UnavailableButton
-      className={cn(
-        "personal-home__amount",
-        tone === "lent" ? "personal-home__amount--lent" : "personal-home__amount--owe",
-      )}
-    >
-      <span className="personal-home__amount-label">{label}</span>
-      <span className="personal-home__amount-value">
-        {formatCurrency(amount)}
-      </span>
-    </UnavailableButton>
-  );
-}
-
-function attentionTone(kind: UtangAttentionItem["kind"]): string {
-  if (kind === "pendingConfirmation") return "personal-home__attention-row--pending";
-  if (kind === "overdue") return "personal-home__attention-row--overdue";
-  return "personal-home__attention-row--dueSoon";
-}
-
-function AttentionIcon({ kind }: { kind: UtangAttentionItem["kind"] }) {
-  if (kind === "overdue") {
-    return <AlertCircle className="size-3.5" aria-hidden />;
+function attentionTitle(
+  item: UtangAttentionItem,
+  t: (key: string) => string,
+): string {
+  if (item.kind === "pendingConfirmation") {
+    return t("personal.home.attentionPending");
   }
-  if (kind === "dueSoon") {
-    return <Clock3 className="size-3.5" aria-hidden />;
+  if (item.kind === "overdue") {
+    if (item.displayName) {
+      return t("personal.home.attentionOverdueOne").replace(
+        "{name}",
+        item.displayName,
+      );
+    }
+    return t("personal.home.attentionOverdue");
   }
-  return <CheckSquare className="size-3.5" aria-hidden />;
+  if (item.displayName) {
+    return t("personal.home.attentionDueSoonOne").replace(
+      "{name}",
+      item.displayName,
+    );
+  }
+  return t("personal.home.attentionDueSoon");
 }
 
 function PersonalHomeView({
   data,
   loading,
-  reveal = true,
   onRetry,
   onGuideDismissed,
 }: {
   data: PersonalHomeData | null;
   loading: boolean;
-  reveal?: boolean;
   onRetry: () => void;
   onGuideDismissed: () => void;
 }) {
   const { t } = useTranslation();
-  const reduced = useReducedMotion();
   const [periodKey] = useState(greetingPeriodKey);
-  const [todayLabel] = useState(() =>
+  const [dateChipLabel] = useState(() =>
     formatDate(new Date(), undefined, {
       weekday: "short",
       month: "short",
       day: "numeric",
+      year: "numeric",
     }),
   );
-  const [metricsOpen, setMetricsOpen] = useState(false);
-  const firstName = (data?.profile.displayName ?? "").split(/\s+/)[0] || "there";
 
-  const hasAttention =
-    !loading &&
-    !!data &&
-    data.attention.status === "ready" &&
-    (data.attention.data?.items.length ?? 0) > 0;
+  if (loading && !data) {
+    return (
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="personal-home-loading">
+        {t("personal.home.loading")}
+      </p>
+    );
+  }
 
-  const hasBusinesses =
-    !loading && !!data && data.businesses.status === "ready";
+  if (!data) {
+    return (
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-3">
+        <p className="m-0 font-semibold">{t("personal.home.loadErrorTitle")}</p>
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("personal.home.loadErrorDetail")}
+        </p>
+        <Button type="button" className="personal-error-retry w-full" onClick={onRetry}>
+          <MaterialIcon name="refresh" className="size-4 shrink-0" />
+          {t("personal.home.retry")}
+        </Button>
+      </div>
+    );
+  }
+
+  const displayName = data.profile.displayName;
+  const qaClass = (identity: string) =>
+    cn(
+      "personal-qa-glass",
+      `personal-qa-glass--${identity}`,
+      ORG_EHG_QA_GLASS_CLASS_NAME,
+    );
 
   return (
-    <div className="personal-home">
-      <MotionReveal index={0} animate={reveal}>
-        <header className="personal-home__header">
-          <div className="personal-home__header-meta">
-            <p className="personal-home__kicker">{todayLabel}</p>
+    <div
+      className="personal-shell personal-page personal-home-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="personal-home-page"
+    >
+      <header className="personal-home-hero" data-testid="personal-home-welcome">
+        <div className="personal-home-hero__main min-w-0">
+          <span className="personal-home-hero__avatar-wrap" aria-hidden>
+            <span className="personal-home-hero__avatar" data-testid="personal-home-avatar">
+              <Avatar className="personal-home-hero__avatar-fallback size-full">
+                <AvatarFallback>{data.profile.initials}</AvatarFallback>
+              </Avatar>
+            </span>
+          </span>
+          <div className="personal-home-hero__copy min-w-0">
+            <p className="personal-home-hero__greeting m-0">
+              {t(`personal.home.${periodKey}`)}
+            </p>
+            <h1 className="personal-home-hero__name m-0 min-w-0 truncate">
+              {displayName}{" "}
+              <span className="personal-home-hero__wave" aria-hidden>
+                👋
+              </span>
+            </h1>
+          </div>
+          <span className="personal-home-hero__info relative inline-flex shrink-0">
             <Button
               type="button"
-              size="icon"
               variant="ghost"
-              className="personal-home__refresh"
-              onClick={onRetry}
-              disabled={loading && !data}
-              aria-label={t("homeData.refresh")}
+              size="icon"
+              className="shrink-0"
+              aria-label={t("personal.info.open")}
+              title={t("personal.home.heroSubtitle")}
+              data-testid="personal-home-info"
             >
-              <RefreshCw className="size-3.5" aria-hidden />
+              <MaterialIcon name="info" className="size-5" />
             </Button>
-          </div>
-          <h1 className="personal-home__greeting">
-            {loading
-              ? t("auth.loadingSession")
-              : t("home.greeting", {
-                  period: t(`home.${periodKey}`),
-                  name: firstName,
-                })}
-          </h1>
-        </header>
-      </MotionReveal>
+          </span>
+        </div>
+        <aside className="personal-home-hero__date" data-testid="personal-home-date-chip">
+          <span className="personal-home-hero__date-icon" aria-hidden>
+            <MaterialIcon name="today" className="size-5" />
+          </span>
+          <span className="personal-home-hero__date-copy">
+            <strong className="personal-home-hero__date-label">{dateChipLabel}</strong>
+            <span className="personal-home-hero__date-tail">
+              {t("personal.home.dateChipTail")}
+            </span>
+          </span>
+        </aside>
+      </header>
 
-      {data?.showGuide ? (
-        <MotionReveal index={1} animate={reveal}>
-          <div className="personal-home__guide">
-            <div className="personal-home__guide-copy">
-              <p className="personal-home__guide-title">{t("home.guideTitle")}</p>
-              <p className="personal-home__guide-body">{t("home.guideBody")}</p>
-            </div>
-            <UnavailableButton className="personal-home__guide-cta">
-              {t("home.guideContinue")}
-            </UnavailableButton>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="size-7 shrink-0"
-              aria-label={t("common.close")}
-              onClick={() => {
-                dismissGuideHomeCard(data.profile.userId);
-                onGuideDismissed();
-              }}
-            >
-              <X className="size-3.5" />
-            </Button>
-          </div>
-        </MotionReveal>
+      {data.showGuide ? (
+        <PersonalGuideHomeCard
+          userId={data.profile.userId}
+          onDismissed={onGuideDismissed}
+        />
       ) : null}
 
-      <div className="personal-home__layout">
-        <div className="personal-home__main">
-          <MotionReveal index={2} animate={reveal}>
-            <section
-              className="personal-home__hero"
-              aria-labelledby="ph-tracker-title"
-            >
-              <h2 id="ph-tracker-title" className="personal-home__hero-title">
-                {t("home.trackerTitle")}
+      <div className="personal-home-layout" data-testid="personal-home-layout">
+        <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
+          {data.businesses.status === "ready" && data.businesses.data ? (
+            <PersonalBusinessSummary items={data.businesses.data.items} />
+          ) : null}
+
+          {isFailedWidget(data.tracker) ? (
+            <WidgetMessage status={data.tracker.status} message={data.tracker.message} />
+          ) : data.tracker.status === "ready" && data.tracker.data ? (
+            <PersonalTrackerCard dashboard={data.tracker.data} metricsOutline />
+          ) : null}
+
+          <section
+            className="catalog-form-section exits-animate-panel personal-section personal-stores-to-pay gap-3 max-md:gap-1.5"
+            aria-label={t("personal.home.storesToPay")}
+            data-testid="personal-stores-to-pay"
+          >
+            <div className="personal-stores-to-pay__header">
+              <h2
+                className="personal-stores-to-pay__title"
+                data-testid="personal-stores-to-pay-ribbon"
+              >
+                <span
+                  className="personal-stores-to-pay__pennant"
+                  aria-hidden
+                  data-testid="personal-stores-to-pay-pennant"
+                >
+                  <MaterialIcon
+                    name="store"
+                    className="personal-stores-to-pay__pennant-icon size-[1.05rem] shrink-0"
+                  />
+                </span>
+                {t("personal.home.storesToPay")}
               </h2>
-
-              {loading || !data ? (
-                <WidgetMessage status="loading" />
-              ) : isFailedWidget(data.tracker) ? (
-                <WidgetMessage
-                  status={data.tracker.status}
-                  message={data.tracker.message}
-                  onRetry={onRetry}
-                />
-              ) : (
-                <>
-                  <div className="personal-home__scopes">
-                    <div className="personal-home__scope">
-                      <p className="personal-home__scope-title">
-                        {t("home.myRecord")}
-                      </p>
-                      <div className="personal-home__amounts">
-                        <AmountRow
-                          label={t("home.iOwed")}
-                          amount={data.tracker.data!.myBorrowed}
-                          tone="owe"
-                        />
-                        <AmountRow
-                          label={t("home.iLent")}
-                          amount={data.tracker.data!.myLent}
-                          tone="lent"
-                        />
-                      </div>
-                    </div>
-                    <div className="personal-home__scope">
-                      <p className="personal-home__scope-title">
-                        {t("home.sharedWithMe")}
-                      </p>
-                      <div className="personal-home__amounts">
-                        <AmountRow
-                          label={t("home.iOwed")}
-                          amount={data.tracker.data!.sharedBorrowed}
-                          tone="owe"
-                        />
-                        <AmountRow
-                          label={t("home.iLent")}
-                          amount={data.tracker.data!.sharedLent}
-                          tone="lent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="personal-home__disclosure"
-                    aria-expanded={metricsOpen}
-                    onClick={() => setMetricsOpen((open) => !open)}
+            </div>
+            {isFailedWidget(data.storesToPay) ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("personal.home.storesUnavailable")}
+              </p>
+            ) : data.storesToPay.status === "ready" ||
+              data.storesToPay.status === "empty" ? (
+              <>
+                <div
+                  className="personal-stores-to-pay__metrics"
+                  data-testid="personal-stores-to-pay-meta"
+                >
+                  <DeferredNav
+                    className={qaClass("stores")}
+                    testId="personal-stat-stores"
+                    data-recipe="ext org-ehg qa-glass stores md icon-soft card-soft trail-count no-shadow no-icon-shadow"
                   >
-                    <span>
-                      {metricsOpen
-                        ? t("home.trackerHideDetails")
-                        : t("home.trackerShowDetails")}
+                    <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden>
+                      <MaterialIcon
+                        name="store"
+                        className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0"
+                      />
                     </span>
-                    <motion.span
-                      animate={
-                        reduced ? undefined : { rotate: metricsOpen ? 180 : 0 }
-                      }
-                      transition={tweenFast}
-                      className="inline-flex"
-                    >
-                      <ChevronDown className="size-3.5" aria-hidden />
-                    </motion.span>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {metricsOpen ? (
-                      <motion.div
-                        key="tracker-metrics"
-                        initial={
-                          reduced ? false : { height: 0, opacity: 0, y: -3 }
-                        }
-                        animate={{ height: "auto", opacity: 1, y: 0 }}
-                        exit={
-                          reduced
-                            ? undefined
-                            : { height: 0, opacity: 0, y: -2 }
-                        }
-                        transition={springSoft}
-                        className="personal-home__metrics-shell"
-                      >
-                        <div className="personal-home__metrics">
-                          <UnavailableButton className="personal-home__metric">
-                            <strong>
-                              {formatNumber(data.tracker.data!.contactCount)}
-                            </strong>
-                            <span>{t("home.metricFriends")}</span>
-                          </UnavailableButton>
-                          <UnavailableButton className="personal-home__metric">
-                            <strong>
-                              {formatNumber(data.tracker.data!.activeMine)}
-                            </strong>
-                            <span>{t("home.myRecord")}</span>
-                          </UnavailableButton>
-                          <UnavailableButton className="personal-home__metric">
-                            <strong>
-                              {formatNumber(data.tracker.data!.activeShared)}
-                            </strong>
-                            <span>{t("home.sharedWithMe")}</span>
-                          </UnavailableButton>
-                        </div>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-                </>
-              )}
-            </section>
-          </MotionReveal>
-
-          {hasAttention ? (
-            <MotionReveal index={3} animate={reveal}>
-              <section className="personal-home__section">
-                <h2 className="personal-home__label">
-                  {t("home.needsAttentionTitle")}
-                </h2>
-                <MotionListPresence>
-                  <MotionList className="personal-home__attention">
-                    {data!.attention.data!.items.map((item, index) => (
-                      <MotionListItem key={item.key} id={item.key} index={index}>
-                        <UnavailableButton
-                          className={cn(
-                            "personal-home__attention-row",
-                            attentionTone(item.kind),
-                          )}
+                    <span className="personal-qa-glass__label">
+                      {t("personal.home.stores")}
+                    </span>
+                    <strong className="personal-qa-glass__badge tabular-nums">
+                      {data.storesToPay.data?.storeCount ?? 0}
+                    </strong>
+                  </DeferredNav>
+                  <DeferredNav
+                    className={qaClass("stores")}
+                    testId="personal-stat-stores-active"
+                    data-recipe="ext org-ehg qa-glass stores md icon-soft card-soft trail-count no-shadow no-icon-shadow"
+                  >
+                    <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden>
+                      <MaterialIcon
+                        name="account_balance_wallet"
+                        className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0"
+                      />
+                    </span>
+                    <span className="personal-qa-glass__label">
+                      {t("personal.home.active")}
+                    </span>
+                    <strong className="personal-qa-glass__badge tabular-nums">
+                      {data.storesToPay.data?.activeCount ?? 0}
+                    </strong>
+                  </DeferredNav>
+                </div>
+                {(data.storesToPay.data?.preview.length ?? 0) > 0 ? (
+                  <ul
+                    className="personal-stores-to-pay-list m-0 grid list-none gap-2 p-0"
+                    data-testid="personal-stores-to-pay-list"
+                  >
+                    {data.storesToPay.data!.preview.map((store) => (
+                      <li key={`${store.organizationId}:${store.businessCustomerId}`}>
+                        <DeferredNav
+                          className="personal-stores-to-pay-row personal-home-infodata-card personal-home-infodata-card--row personal-qa-glass--stores personal-qa-glass--md personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
+                          testId={`personal-store-row-${store.organizationId}`}
+                          data-shell="org-ehg"
+                          data-recipe="ext org-ehg qa-glass stores md icon-soft no-icon-shadow"
                         >
-                          <span
-                            className="personal-home__attention-icon"
-                            aria-hidden
-                          >
-                            <AttentionIcon kind={item.kind} />
+                          <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden>
+                            <MaterialIcon
+                              name="store"
+                              className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0"
+                            />
                           </span>
-                          <div className="personal-home__attention-meta">
-                            <p className="personal-home__attention-title">
-                              {item.displayName ??
-                                t(`home.utangAttention.${item.kind}`)}
-                            </p>
-                            <p className="personal-home__attention-status">
-                              {t(`home.utangAttention.${item.kind}`)}
-                            </p>
-                          </div>
-                          <span className="personal-home__attention-count">
-                            {formatNumber(item.count)}
+                          <span className="personal-home-infodata-card__body">
+                            <span className="personal-home-infodata-card__title truncate">
+                              {store.displayName}
+                            </span>
                           </span>
-                          <ChevronRight
-                            className="personal-home__attention-chevron size-3.5"
-                            aria-hidden
-                          />
-                        </UnavailableButton>
-                      </MotionListItem>
+                          <span className="personal-stores-to-pay-row__amount shrink-0 tabular-nums">
+                            <MoneyDisplay
+                              amount={store.outstandingBalance}
+                              currency={store.currency}
+                            />
+                          </span>
+                        </DeferredNav>
+                      </li>
                     ))}
-                  </MotionList>
-                </MotionListPresence>
-              </section>
-            </MotionReveal>
-          ) : null}
-
-          <MotionReveal index={4} animate={reveal}>
-            <section className="personal-home__section">
-              <div className="personal-home__section-head">
-                <h2 className="personal-home__label">{t("home.todoTitle")}</h2>
-                <UnavailableButton className="personal-home__todo-add">
-                  {t("home.todoAdd")}
-                </UnavailableButton>
-              </div>
-              {loading || !data ? (
-                <WidgetMessage status="loading" />
-              ) : isFailedWidget(data.todos) ? (
-                <WidgetMessage
-                  status={data.todos.status}
-                  message={data.todos.message}
-                  onRetry={onRetry}
-                />
-              ) : (
-                <div className="personal-home__todo" role="group">
-                  {(
-                    [
-                      ["today", data.todos.data!.today],
-                      ["upcoming", data.todos.data!.upcoming],
-                      ["overdue", data.todos.data!.overdue],
-                    ] as const
-                  ).map(([key, count], index) => (
-                    <UnavailableButton
-                      key={key}
-                      className={cn(
-                        "personal-home__todo-cell",
-                        key === "overdue" && count > 0
-                          ? "personal-home__todo-cell--warn"
-                          : count === 0 && "personal-home__todo-cell--calm",
-                        index > 0 && "personal-home__todo-cell--divided",
-                      )}
-                    >
-                      <strong>{formatNumber(count)}</strong>
-                      <span>{t(`home.todo.${key}`)}</span>
-                    </UnavailableButton>
-                  ))}
-                </div>
-              )}
-            </section>
-          </MotionReveal>
-        </div>
-
-        <div className="personal-home__aside">
-          {hasBusinesses ? (
-            <MotionReveal index={5} animate={reveal}>
-              <section className="personal-home__section">
-                <h2 className="personal-home__label">
-                  {t("home.businessesTitle")}
-                </h2>
-                {data!.businesses.data!.items.length === 0 ? (
-                  <p className="personal-home__empty">
-                    {t("home.businessesEmpty")}
-                  </p>
+                  </ul>
                 ) : (
-                  <div className="personal-home__list">
-                    {data!.businesses.data!.items.map((biz) => (
-                      <div
-                        key={`${biz.kind}-${biz.organizationId}`}
-                        className="personal-home__list-row"
-                      >
-                        <span className="personal-home__biz-mark">
-                          <Building2 className="size-3.5" aria-hidden />
-                        </span>
-                        <div className="personal-home__biz-copy">
-                          <strong>{biz.displayName}</strong>
-                          <span>
-                            {biz.roleDisplay}
-                            {biz.planDisplayName
-                              ? ` · ${biz.planDisplayName}`
-                              : ""}
-                          </span>
-                        </div>
-                        <UnavailableButton className="personal-home__deferred">
-                          {biz.kind === "owned"
-                            ? t("home.openBusiness")
-                            : t("home.staffLogin")}
-                          <span className="sr-only">
-                            {t("homeData.quickActionUnavailable")}
-                          </span>
-                        </UnavailableButton>
-                      </div>
-                    ))}
-                  </div>
+                  <p
+                    className="personal-stores-empty m-0 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid="personal-stores-to-pay-empty"
+                  >
+                    {(data.storesToPay.data?.storeCount ?? 0) === 0
+                      ? t("personal.home.storesEmptyNone")
+                      : t("personal.home.storesEmptyClear")}
+                  </p>
                 )}
-              </section>
-            </MotionReveal>
+              </>
+            ) : null}
+          </section>
+        </div>
+
+        <aside
+          className="personal-home-layout__aside flex min-w-0 flex-col gap-3"
+          aria-label={t("personal.home.quickActions")}
+        >
+          {data.attention.status === "ready" &&
+          (data.attention.data?.items.length ?? 0) > 0 ? (
+            <section
+              className="catalog-form-section exits-animate-panel personal-section personal-needs-attention gap-2 max-md:gap-1.5"
+              aria-label={t("personal.home.needsAttention")}
+              data-testid="personal-needs-attention"
+            >
+              <div className="personal-needs-attention__header">
+                <h2
+                  className="personal-needs-attention__title"
+                  data-testid="personal-needs-attention-ribbon"
+                >
+                  <span
+                    className="personal-needs-attention__pennant"
+                    aria-hidden
+                    data-testid="personal-needs-attention-pennant"
+                  >
+                    <MaterialIcon
+                      name="notifications"
+                      className="personal-needs-attention__pennant-icon size-[1.05rem] shrink-0"
+                    />
+                  </span>
+                  {t("personal.home.needsAttention")}
+                </h2>
+                <DeferredNav
+                  className="personal-needs-attention__view-all"
+                  testId="personal-attention-view-all"
+                >
+                  {t("personal.home.viewAllUtang")}
+                </DeferredNav>
+              </div>
+              <ul className="personal-needs-attention__list m-0 grid list-none gap-2 p-0">
+                {data.attention.data!.items.map((item) => (
+                  <li key={item.key}>
+                    <DeferredNav
+                      className={cn(qaClass("warn"), "personal-attention-row")}
+                      testId={`personal-attention-${item.kind}`}
+                      data-shell="org-ehg"
+                      data-recipe="ext org-ehg qa-glass warn md icon-soft card-soft trail-count no-shadow no-icon-shadow"
+                    >
+                      <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden>
+                        <MaterialIcon name="notifications" className="size-[0.95rem] shrink-0" />
+                      </span>
+                      <span className="personal-qa-glass__label personal-attention-row__title">
+                        {attentionTitle(item, t)}
+                      </span>
+                      <strong className="personal-qa-glass__badge tabular-nums" aria-hidden>
+                        {item.count}
+                      </strong>
+                    </DeferredNav>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
 
-          <MotionReveal index={6} animate={reveal}>
-            <section className="personal-home__section">
-              <h2 className="personal-home__label">
-                {t("home.storesToPayTitle")}
+          <section
+            className="catalog-form-section exits-animate-panel personal-section personal-quick-actions gap-3 max-md:gap-1.5"
+            aria-label={t("personal.home.quickActions")}
+            data-testid="personal-quick-actions"
+          >
+            <div className="personal-quick-actions__header">
+              <h2
+                className="personal-quick-actions__title"
+                data-testid="personal-quick-actions-ribbon"
+              >
+                <span
+                  className="personal-quick-actions__pennant"
+                  aria-hidden
+                  data-testid="personal-quick-actions-pennant"
+                >
+                  <MaterialIcon
+                    name="bolt"
+                    className="personal-quick-actions__pennant-icon size-[1.05rem] shrink-0"
+                  />
+                </span>
+                {t("personal.home.quickActions")}
               </h2>
-              {loading || !data ? (
-                <WidgetMessage status="loading" />
-              ) : isFailedWidget(data.storesToPay) ? (
-                <WidgetMessage
-                  status={data.storesToPay.status}
-                  message={data.storesToPay.message}
-                  onRetry={onRetry}
-                />
-              ) : data.storesToPay.status === "empty" ||
-                data.storesToPay.data!.storeCount === 0 ? (
-                <p className="personal-home__empty">{t("homeData.zeroStores")}</p>
-              ) : (
-                <>
-                  <div className="personal-home__store-stats">
-                    <span>
-                      <strong>
-                        {formatNumber(data.storesToPay.data!.storeCount)}
-                      </strong>{" "}
-                      {t("home.storesCount")}
-                    </span>
-                    <span>
-                      <strong>
-                        {formatNumber(data.storesToPay.data!.activeCount)}
-                      </strong>{" "}
-                      {t("home.storesActive")}
-                    </span>
-                  </div>
-                  {data.storesToPay.data!.preview.length > 0 ? (
-                    <MotionListPresence>
-                      <MotionList className="personal-home__list">
-                        {data.storesToPay.data!.preview.map((row, index) => (
-                          <MotionListItem
-                            key={`${row.organizationId}-${row.businessCustomerId}`}
-                            id={`${row.organizationId}-${row.businessCustomerId}`}
-                            index={index}
-                          >
-                            <UnavailableButton className="personal-home__list-row">
-                              <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                                {row.displayName}
-                              </span>
-                              <span className="personal-home__store-amount">
-                                {formatCurrency(
-                                  row.outstandingBalance,
-                                  undefined,
-                                  row.currency,
-                                )}
-                              </span>
-                            </UnavailableButton>
-                          </MotionListItem>
-                        ))}
-                      </MotionList>
-                    </MotionListPresence>
-                  ) : (
-                    <p className="personal-home__empty">
-                      {t("homeData.zeroStoreBalances")}
-                    </p>
-                  )}
-                </>
-              )}
-            </section>
-          </MotionReveal>
+            </div>
+            <div className="personal-quick-actions__cards" data-testid="personal-quick-actions-cards">
+              {(
+                [
+                  ["start", "business_center", "actionStartBusiness", "personal-qa-start-business"],
+                  ["lent", "arrow_upward", "actionLent", "personal-qa-lent"],
+                  ["owe", "arrow_downward", "actionOwe", "personal-qa-owe"],
+                  ["stores", "payments", "actionStores", "personal-qa-stores"],
+                  ["people", "person_add", "actionPeople", "personal-qa-people"],
+                ] as const
+              ).map(([identity, icon, labelKey, testId]) => (
+                <DeferredNav
+                  key={testId}
+                  className={qaClass(identity)}
+                  testId={testId}
+                  data-recipe={`ext org-ehg qa-glass ${identity} md icon-soft card-soft trail-chevron no-shadow no-icon-shadow`}
+                >
+                  <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden>
+                    <MaterialIcon
+                      name={icon}
+                      className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0"
+                    />
+                  </span>
+                  <span className="personal-qa-glass__label">
+                    {t(`personal.home.${labelKey}`)}
+                  </span>
+                  <MaterialIcon name="chevron_right" className="personal-qa-glass__chevron" />
+                </DeferredNav>
+              ))}
+            </div>
+          </section>
 
-          <MotionReveal index={7} animate={reveal}>
-            <section className="personal-home__section">
-              <h2 className="personal-home__label">
-                {t("home.quickActionsTitle")}
+          <section
+            className="catalog-form-section exits-animate-panel personal-section personal-todo-summary gap-3 max-md:gap-1.5"
+            aria-label={t("personal.home.todoSummary")}
+            data-testid="personal-todo-summary"
+          >
+            <div className="personal-todo-summary__header">
+              <h2
+                className="personal-todo-summary__title"
+                data-testid="personal-todo-summary-ribbon"
+              >
+                <span
+                  className="personal-todo-summary__pennant"
+                  aria-hidden
+                  data-testid="personal-todo-summary-pennant"
+                >
+                  <MaterialIcon
+                    name="checklist"
+                    className="personal-todo-summary__pennant-icon size-[1.05rem] shrink-0"
+                  />
+                </span>
+                {t("personal.home.todoSummary")}
               </h2>
-              <div className="personal-home__qa">
-                <UnavailableButton className="personal-home__qa-primary">
-                  <span className="personal-home__qa-primary-icon">
-                    <Building2 className="size-4" aria-hidden />
+              <DeferredNav
+                className="personal-todo-summary__view-all"
+                testId="personal-todo-view-all"
+              >
+                {t("personal.home.viewAllTodo")}
+              </DeferredNav>
+            </div>
+            {isFailedWidget(data.todos) ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("personal.home.todoUnavailable")}
+              </p>
+            ) : data.todos.status === "ready" && data.todos.data ? (
+              <div className="personal-todo-cards" data-testid="personal-todo-counts" role="list">
+                <DeferredNav
+                  className={qaClass("todo")}
+                  testId="personal-todo-add"
+                  data-recipe="ext org-ehg qa-glass todo md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
+                >
+                  <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden>
+                    <MaterialIcon
+                      name="playlist_add"
+                      className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0"
+                    />
                   </span>
-                  <span className="personal-home__qa-primary-copy">
-                    <strong>{t("home.qaStartBusiness")}</strong>
-                    <em>{t("homeData.quickActionUnavailable")}</em>
+                  <span className="personal-qa-glass__label">
+                    {t("personal.home.actionTodo")}
                   </span>
-                </UnavailableButton>
-                <div className="personal-home__qa-secondary">
-                  {(
+                  <MaterialIcon name="chevron_right" className="personal-qa-glass__chevron" />
+                </DeferredNav>
+                {(
+                  [
+                    ["today", "today", "countToday", data.todos.data.today, "personal-todo-stat-today", "todo"],
                     [
-                      { id: "lent", label: t("home.qaILent"), icon: HandCoins },
-                      { id: "owe", label: t("home.qaIOwe"), icon: Wallet },
-                      { id: "stores", label: t("home.qaStores"), icon: Store },
-                      {
-                        id: "people",
-                        label: t("home.qaAddPeople"),
-                        icon: UserPlus,
-                      },
-                    ] as const
-                  ).map((action) => {
-                    const Icon = action.icon;
-                    return (
-                      <UnavailableButton
-                        key={action.id}
-                        className="personal-home__qa-item"
-                      >
-                        <span className="personal-home__qa-icon">
-                          <Icon className="size-3.5" aria-hidden />
-                        </span>
-                        <span>{action.label}</span>
-                      </UnavailableButton>
-                    );
-                  })}
-                </div>
+                      "upcoming",
+                      "event_upcoming",
+                      "countUpcoming",
+                      data.todos.data.upcoming,
+                      "personal-todo-stat-upcoming",
+                      "todo",
+                    ],
+                    [
+                      "overdue",
+                      "event_busy",
+                      "countOverdue",
+                      data.todos.data.overdue,
+                      "personal-todo-stat-overdue",
+                      "todo-overdue",
+                    ],
+                  ] as const
+                ).map(([, icon, labelKey, count, testId, identity]) => (
+                  <DeferredNav
+                    key={testId}
+                    className={qaClass(identity)}
+                    testId={testId}
+                    data-recipe={`ext org-ehg qa-glass ${identity} md icon-soft card-soft trail-count no-shadow no-icon-shadow`}
+                  >
+                    <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden>
+                      <MaterialIcon
+                        name={icon}
+                        className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0"
+                      />
+                    </span>
+                    <span className="personal-qa-glass__label">
+                      {t(`personal.todo.${labelKey}`)}
+                    </span>
+                    <strong className="personal-qa-glass__badge tabular-nums">{count}</strong>
+                  </DeferredNav>
+                ))}
               </div>
-            </section>
-          </MotionReveal>
-        </div>
+            ) : null}
+          </section>
+        </aside>
       </div>
-
-      <MotionReveal index={8} animate={reveal}>
-        <p className="personal-home__footnote">
-          <Users className="size-3.5 shrink-0" aria-hidden />
-          {t("home.personalNavHint")}
-        </p>
-      </MotionReveal>
     </div>
   );
 }

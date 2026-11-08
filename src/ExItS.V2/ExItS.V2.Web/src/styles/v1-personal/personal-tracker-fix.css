@@ -1,0 +1,343 @@
+/*
+ * V2 Personal Tracker layout fix.
+ * V1 scopes amount-card rules under .personal-shell; Home now carries that class.
+ * This file also restores tab/content/list rules that were cut from the CSS extract.
+ */
+
+.personal-home-page {
+  --exits-text: var(--foreground);
+  --exits-surface: var(--card);
+  --exits-border: var(--border);
+  --exits-text-md: 1rem;
+}
+
+/* DeferredNav is a <button> — reset native chrome so V1 card styles can apply. */
+.personal-home-page button.tracker-amount-card,
+.personal-home-page button.personal-qa-glass,
+.personal-home-page button.personal-stores-to-pay-row,
+.personal-home-page button.personal-attention-row {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+.personal-home-page .tracker-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+@media (min-width: 720px) {
+  .personal-home-page .tracker-summary-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.personal-home-page .tracker-summary.tracker-summary--pendant {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1rem 1rem 0.85rem;
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft, #6ee7b7));
+  background: var(--exits-surface, var(--card));
+  box-shadow: none;
+}
+
+.personal-home-page .tracker-summary.tracker-summary--pendant.tracker-summary--owed {
+  --personal-qa-chip: #10b981;
+  --personal-qa-chip-deep: #047857;
+  --personal-qa-chip-soft: #6ee7b7;
+  --personal-qa-chip-wash: #ecfdf5;
+  --personal-qa-chip-mid: #d1fae5;
+  --personal-qa-chip-ink: #065f46;
+}
+
+.personal-home-page .tracker-summary.tracker-summary--pendant.tracker-summary--owe {
+  --personal-qa-chip: #3b82f6;
+  --personal-qa-chip-deep: #1d4ed8;
+  --personal-qa-chip-soft: #93c5fd;
+  --personal-qa-chip-wash: #eff6ff;
+  --personal-qa-chip-mid: #dbeafe;
+  --personal-qa-chip-ink: #1e40af;
+}
+
+[data-theme="dark"] .personal-home-page .tracker-summary.tracker-summary--pendant {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 22%, #475569);
+  background: color-mix(in srgb, var(--card) 92%, #000);
+}
+
+.personal-home-page .tracker-summary__stage {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Icon + title sit together (override extract absolute/centered pendant). */
+.personal-home-page.personal-shell .tracker-summary__title-row,
+.personal-home-page .tracker-summary__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.personal-home-page.personal-shell .tracker-summary--pendant .tracker-summary__copy,
+.personal-home-page .tracker-summary__copy {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: start;
+}
+
+.personal-home-page .tracker-summary--pendant .tracker-amount-group__title,
+.personal-home-page .tracker-summary--pendant .tracker-summary__title {
+  margin: 0;
+  color: var(--exits-text, var(--foreground));
+  font-size: var(--exits-text-md, 1rem);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: start;
+}
+
+.personal-home-page.personal-shell .tracker-summary__pendant,
+.personal-home-page .tracker-summary__pendant {
+  display: grid;
+  place-items: center;
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  order: -1;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, #fff 55%, var(--personal-qa-chip-soft, #86efac));
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 22%, var(--personal-qa-chip)),
+      var(--personal-qa-chip) 55%,
+      var(--personal-qa-chip-deep)
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 4px 10px color-mix(in srgb, var(--personal-qa-chip) 28%, transparent);
+  transform: none;
+}
+
+.personal-home-page .tracker-summary__pendant-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  font-size: 1.05rem !important;
+  line-height: 1;
+  color: #fff;
+}
+
+.personal-home-page .tracker-balance__rule {
+  display: block;
+  height: 1px;
+  margin: 0.15rem 0 0.35rem;
+  background: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+/* Two equal amount cards side by side */
+.personal-home-page .tracker-summary--pendant .tracker-amount-list,
+.personal-home-page .tracker-summary--pendant .tracker-amount-list.utang-relationship-list {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 0.75rem;
+  margin: -0.45rem 0 0;
+  padding: 0 0.25rem 0 0;
+  list-style: none;
+}
+
+.personal-home-page .tracker-summary--pendant .tracker-amount-list > li {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.personal-home-page .tracker-amount-card {
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: none;
+}
+
+.personal-home-page .tracker-amount-card.utang-settings-card--owe {
+  --personal-qa-chip: #3b82f6;
+  --personal-qa-chip-deep: #1d4ed8;
+  --personal-qa-chip-soft: #93c5fd;
+  --personal-qa-chip-wash: #eff6ff;
+  --personal-qa-chip-mid: #dbeafe;
+  --personal-qa-chip-ink: #1e40af;
+  --qcard-settings: #3b82f6;
+  --qcard-settings-deep: #1d4ed8;
+}
+
+.personal-home-page .tracker-amount-card.utang-settings-card--lent {
+  --personal-qa-chip: #10b981;
+  --personal-qa-chip-deep: #047857;
+  --personal-qa-chip-soft: #6ee7b7;
+  --personal-qa-chip-wash: #ecfdf5;
+  --personal-qa-chip-mid: #d1fae5;
+  --personal-qa-chip-ink: #065f46;
+  --qcard-settings: #10b981;
+  --qcard-settings-deep: #047857;
+}
+
+[data-theme="dark"] .personal-home-page .tracker-amount-card.utang-settings-card--owe {
+  --personal-qa-chip-ink: #f1f5f9;
+}
+
+[data-theme="dark"] .personal-home-page .tracker-amount-card.utang-settings-card--lent {
+  --personal-qa-chip-ink: #f1f5f9;
+}
+
+.personal-home-page .tracker-amount-card .ui-standards-qcard__settings-ribbon {
+  --personal-qa-edge: color-mix(in srgb, #ffffff 78%, #94a3b8);
+  --personal-qa-fill: color-mix(in srgb, #ffffff 72%, transparent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 4.2rem;
+  margin: 0;
+  padding: 1.9rem 0.65rem 0.55rem;
+  overflow: hidden;
+  border-radius: var(--exits-radius-soft, 0.6875rem);
+  border: 1px solid color-mix(in srgb, var(--personal-qa-chip) 28%, var(--personal-qa-edge));
+  color: var(--personal-qa-chip-ink);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--personal-qa-chip) 8%, var(--personal-qa-fill));
+  box-shadow: none;
+  clip-path: none;
+}
+
+[data-theme="dark"] .personal-home-page .tracker-amount-card .ui-standards-qcard__settings-ribbon {
+  --personal-qa-edge: color-mix(in srgb, #ffffff 16%, #334155);
+  --personal-qa-fill: color-mix(in srgb, #ffffff 8%, #1a222d);
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 28%, var(--personal-qa-edge));
+  color: #f1f5f9;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 12%, var(--personal-qa-fill));
+}
+
+/* Ribbon label tab (I owed / I lent) */
+.personal-home-page .tracker-amount-card .utang-settings-card__tab {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  max-width: calc(100% - 0.5rem);
+  margin: 0;
+  padding: 0.3rem 0.75rem;
+  transform: none;
+  border: 1px solid color-mix(in srgb, var(--personal-qa-chip) 28%, var(--personal-qa-edge, #94a3b8));
+  border-top: 0;
+  border-left: 0;
+  border-radius: 0 0.45rem 0.45rem 0;
+  color: var(--personal-qa-chip-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--personal-qa-chip) 10%, #fff);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-home-page .tracker-amount-card .utang-settings-card__tab {
+  color: #f1f5f9;
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 28%, #334155);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 14%, #1a222d);
+}
+
+.personal-home-page .tracker-amount-card .utang-settings-card__content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0;
+}
+
+.personal-home-page .tracker-amount-card .utang-settings-card__meta {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: inherit;
+}
+
+.personal-home-page .tracker-amount-card .tracker-amount-card__headline,
+.personal-home-page .tracker-amount-card .utang-settings-card__headline {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+  padding-top: 0.35rem;
+  padding-bottom: 0.05rem;
+}
+
+.personal-home-page .tracker-amount-card .utang-settings-card__amount {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  color: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.personal-home-page .tracker-amount-card .utang-settings-card__amount > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+@media (max-width: 719px) {
+  .personal-home-page .tracker-summary--pendant .tracker-amount-list {
+    gap: 0.65rem;
+  }
+
+  .personal-home-page .tracker-amount-card .ui-standards-qcard__settings-ribbon {
+    padding: 1.85rem 0.55rem 0.5rem 0.65rem;
+  }
+}

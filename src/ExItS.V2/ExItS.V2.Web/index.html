@@ -12,6 +12,10 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&family=JetBrains+Mono:wght@500;600&display=swap"
       rel="stylesheet"
     />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap"
+      rel="stylesheet"
+    />
     <title>ExItS V2</title>
     <script>
       (function () {
@@ -32,6 +36,7 @@
           } else {
             document.documentElement.classList.remove("dark");
           }
+          document.documentElement.setAttribute("data-theme", mode);
           document.documentElement.style.colorScheme = mode;
         } catch (e) {}
       })();

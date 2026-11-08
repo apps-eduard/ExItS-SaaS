@@ -51,5 +51,7 @@ export function readStoredAppearance(): AppearanceMode {
 export function applyDocumentAppearance(mode: AppearanceMode) {
   const root = document.documentElement;
   root.classList.toggle("dark", mode === "dark");
+  // V1 Personal CSS uses [data-theme="dark"]; keep both for parity.
+  root.setAttribute("data-theme", mode);
   root.style.colorScheme = mode;
 }

@@ -1,0 +1,134 @@
+/*
+ * Stores to Pay row fix — V1 rules that were cut from the CSS extract.
+ * Without these, .personal-home-infodata-card__title stays white on a light glass row.
+ */
+
+.personal-home-page .personal-stores-to-pay-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.personal-home-page .personal-stores-to-pay-row.personal-home-infodata-card--row {
+  --personal-qa-chip: #8b5cf6;
+  --personal-qa-chip-deep: #6d28d9;
+  --personal-qa-chip-soft: #c4b5fd;
+  --personal-qa-chip-ink: #5b21b6;
+  --personal-infodata-size: 2.75rem;
+  --personal-infodata: var(--personal-qa-chip);
+
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 100%;
+  min-height: 3.15rem;
+  margin: 0;
+  padding: 0.55rem 0.85rem 0.55rem 0.55rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  border-radius: 1rem;
+  color: var(--personal-qa-chip-ink);
+  background: #fff;
+  background-image: none;
+  box-shadow: none;
+  text-decoration: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.personal-home-page .personal-stores-to-pay-row.personal-home-infodata-card--row:hover {
+  transform: none;
+  background: #fff;
+  background-image: none;
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft));
+  box-shadow: none;
+}
+
+.personal-home-page
+  .personal-stores-to-pay-row.personal-home-infodata-card--row
+  .personal-home-infodata-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0;
+  color: inherit;
+}
+
+.personal-home-page
+  .personal-stores-to-pay-row.personal-home-infodata-card--row
+  .personal-home-infodata-card__title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--personal-qa-chip-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-transform: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-home-page
+  .personal-stores-to-pay-row.personal-home-infodata-card--row
+  .personal-home-infodata-card__circle {
+  display: none;
+}
+
+.personal-home-page .personal-stores-to-pay-row__amount {
+  flex: 0 0 auto;
+  color: var(--personal-qa-chip-ink);
+  font-size: 0.95rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.personal-home-page .personal-stores-to-pay-row__amount > span {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+[data-theme="dark"]
+  .personal-home-page
+  .personal-stores-to-pay-row.personal-home-infodata-card--row {
+  --personal-qa-chip: #8b5cf6;
+  --personal-qa-chip-deep: #6d28d9;
+  --personal-qa-chip-soft: #c4b5fd;
+  --personal-qa-chip-ink: #f1f5f9;
+  color: var(--personal-qa-chip-ink);
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 28%, #475569);
+  background: #1e293b;
+  background-image: none;
+  box-shadow: none;
+}
+
+[data-theme="dark"]
+  .personal-home-page
+  .personal-stores-to-pay-row.personal-home-infodata-card--row:hover {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 42%, #64748b);
+  background: #1e293b;
+  background-image: none;
+  box-shadow: none;
+}
+
+[data-theme="dark"]
+  .personal-home-page
+  .personal-stores-to-pay-row.personal-home-infodata-card--row
+  .personal-home-infodata-card__title,
+[data-theme="dark"] .personal-home-page .personal-stores-to-pay-row__amount {
+  color: var(--personal-qa-chip-ink);
+}
+
+@media (max-width: 639px) {
+  .personal-home-page .personal-stores-to-pay .personal-stores-to-pay-row,
+  .personal-home-page .personal-stores-to-pay .personal-home-infodata-card--row {
+    min-height: 2.15rem;
+    padding-block: 0.35rem;
+    gap: 0.45rem;
+  }
+}

@@ -1,0 +1,77 @@
+/*
+ * Needs Attention — restore count badge chrome (missing from CSS extract)
+ * so overdue / pending / due-soon counts match other Home count badges.
+ */
+
+.personal-home-page .personal-qa-glass--warn {
+  --personal-qa-chip: #ff5722;
+  --personal-qa-chip-deep: #e64a19;
+  --personal-qa-chip-soft: #ff8a65;
+  --personal-qa-chip-ink: #9a3412;
+}
+
+.personal-home-page .personal-attention-row__title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  min-width: 0;
+}
+
+.personal-home-page .personal-attention-row__name {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+.personal-home-page .personal-qa-glass--warn .personal-qa-glass__badge,
+.personal-home-page .personal-needs-attention .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft, #ff8a65));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #ff5722) 12%, transparent)
+    ),
+    #fff;
+  color: color-mix(in srgb, #000 28%, var(--personal-qa-chip, #ff5722));
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+[data-theme="dark"] .personal-home-page .personal-qa-glass--warn .personal-qa-glass__badge,
+[data-theme="dark"] .personal-home-page .personal-needs-attention .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft, #ff8a65));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #ff5722) 12%, transparent)
+    ),
+    #fff;
+  color: color-mix(in srgb, #000 28%, var(--personal-qa-chip, #ff5722));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Also keep To-do Overdue count badge aligned with Today / Upcoming badge shape. */
+.personal-home-page .personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}

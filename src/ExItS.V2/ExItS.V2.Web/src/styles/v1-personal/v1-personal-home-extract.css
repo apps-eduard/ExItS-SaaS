@@ -1,0 +1,6372 @@
+/* V1 Personal Home CSS extract for ExItS V2 parity */
+@import "./personal-main-card-header.css";
+@import "./org-ehg-qa-glass.css";
+@import "./PersonalOwnedBusinesses.css";
+:root {
+  --exits-radius-xs: 0.25rem; --exits-radius-sm: 0.375rem; --exits-radius-md: 0.5rem;
+  --exits-radius-soft: 0.6875rem; --exits-radius-lg: 0.75rem;
+  --exits-radius-control: 0.375rem; --exits-control-radius: var(--exits-radius-control);
+  --exits-field-radius: var(--exits-radius-control);
+  --exits-text-xs: 0.75rem; --exits-text-sm: 0.875rem;
+  --exits-primary-hover: color-mix(in srgb, var(--exits-primary) 88%, #000);
+  --soft-glass-radius: 1.1rem;
+  --soft-glass-ribbon-radius: 1.1rem 1.1rem 1.1rem 0;
+  --soft-glass-field-radius: 0.6875rem;
+}
+.text-muted { color: var(--muted-foreground); }
+.catalog-form-section { display: flex; flex-direction: column; min-width: 0; }
+.exits-page { min-width: 0; }
+/* contiguous home L27901-L32550 */
+.personal-home-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.personal-home-hero__main {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.personal-home-hero__avatar-wrap {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 3.35rem;
+  height: 3.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #93c5fd 22%, #fff);
+  box-shadow: 0 0 0 0.16rem color-mix(in srgb, #bfdbfe 50%, transparent);
+}
+
+.personal-home-hero__avatar {
+  display: grid;
+  place-items: center;
+  width: 2.95rem;
+  height: 2.95rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #8b5cf6, #4f46e5);
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+}
+
+.personal-home-hero__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.personal-home-hero__avatar-fallback {
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  color: #fff !important;
+  font-size: 1.05rem !important;
+  box-shadow: none !important;
+}
+
+.personal-home-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.personal-home-hero__greeting {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--exits-text-muted);
+}
+
+.personal-home-hero__name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.personal-home-hero__wave {
+  font-weight: 500;
+}
+
+.personal-home-hero__subtitle {
+  max-width: 28rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--exits-text-muted);
+}
+
+.personal-home-hero__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.personal-home-hero__date-icon {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #2563eb;
+}
+
+.personal-home-hero__date-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.personal-home-hero__date-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.personal-home-hero__date-tail {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--exits-text-muted);
+}
+
+[data-theme="dark"] .personal-home-hero__date {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-home-hero__avatar-wrap {
+  background: color-mix(in srgb, #6366f1 18%, transparent);
+  box-shadow: 0 0 0 0.16rem color-mix(in srgb, #6366f1 14%, transparent);
+}
+
+[data-theme="dark"] .personal-home-hero__date-icon {
+  background: transparent;
+  color: #93c5fd;
+}
+
+@media (max-width: 639.98px) {
+  .personal-home-hero__date {
+    width: 100%;
+  }
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__brand--personal {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__actions--personal {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action,
+.personal-shell .app-top-bar--personal .app-top-bar__avatar,
+.personal-shell .app-top-bar--personal .shell-connection-trigger,
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"],
+.personal-shell .app-top-bar--personal [data-testid="personal-mobile-nav-toggle"] {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border-radius: var(--exits-radius-md) !important;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action svg,
+.personal-shell .app-top-bar--personal .shell-connection-trigger svg,
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"] svg,
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"] svg,
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"] svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__workspace-org,
+.personal-shell .app-top-bar--personal .app-top-bar__workspace-branch {
+  line-height: 1.2;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__workspace-branch {
+  font-size: var(--exits-text-xs);
+}
+
+.personal-bottom-nav {
+  /* Keep above page cards / sticky chrome; below drawers (z-70). */
+  z-index: 50;
+}
+
+@media (max-width: 1023.98px) {
+  .personal-mobile-nav__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    margin: 0;
+    border: 0;
+    padding: 0;
+    background: color-mix(in srgb, #0f172a 42%, transparent);
+    cursor: pointer;
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail {
+    display: flex !important;
+    position: fixed;
+    z-index: 80;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: min(18rem, 88vw);
+    height: 100dvh;
+    max-height: none;
+    flex: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .personal-sidebar {
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--exits-shell-divider, var(--exits-border));
+    border-radius: 0 var(--exits-shell-radius, 0.75rem) var(--exits-shell-radius, 0.75rem) 0;
+    background: var(--exits-shell-sidebar-bg, var(--exits-surface));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__link,
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__switch,
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__group-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__icon,
+  .personal-shell > .admin-sidebar-rail.personal-mobile-nav-rail .admin-sidebar__switch .material-symbols-outlined {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+  }
+}
+
+/*
+ * Personal desktop — full-height sidenav to Soft Glass screen top,
+ * content column holds top bar + main.
+ */
+@media (min-width: 1024px) {
+  .personal-shell .personal-sidebar.admin-sidebar {
+    border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+    border: 0;
+    border-inline-end: 0;
+    height: 100%;
+    max-height: none;
+  }
+
+  .personal-shell .admin-sidebar-rail {
+    height: 100%;
+    max-height: none;
+    align-self: stretch;
+  }
+
+  .personal-shell .personal-shell__body {
+    padding-inline: 0;
+  }
+
+  .personal-shell .app-top-bar--personal {
+    width: 100%;
+    max-width: 100%;
+    height: 4.25rem;
+    min-height: 4.25rem;
+    max-height: 4.25rem;
+    margin-inline: 0;
+    margin-right: 0;
+    padding-block: 0;
+    padding-inline: 0.35rem;
+    justify-content: center;
+    border-bottom: 0;
+    background: var(--exits-shell-content-bg, #e8ecf2);
+    box-shadow: none;
+    border-top-left-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
+    border-top-right-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__row--personal {
+    height: 100%;
+    min-height: 0;
+    gap: 0.5rem;
+  }
+
+  .personal-shell .app-top-bar--personal .app-top-bar__actions--personal {
+    gap: 0.15rem;
+  }
+
+  .personal-shell .admin-shell__content.personal-shell__content {
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding-block-start: 0.5rem;
+  }
+}
+
+.personal-shell .personal-todo-hub {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.personal-shell .personal-todo-hub > :not(.personal-todo-tasklist-layout) {
+  flex-shrink: 0;
+}
+
+/* Small screens: stretch the task card flush to the fixed bottom menu.
+   Shell already reserves bottom-nav height via pb; do not add a second pad. */
+@media (max-width: 1023.98px) {
+  .personal-shell .admin-shell__content.personal-shell__content:has(.personal-todo-hub) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-block-end: 0;
+  }
+
+  .personal-shell .personal-todo-hub > .page-header {
+    display: none;
+  }
+
+  .personal-shell .personal-todo-hub {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-layout {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-height: 0;
+    overflow: hidden;
+    margin-block-end: 0;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-rail {
+    flex: 0 0 auto;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+    margin-block-end: 0;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__search-row,
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__header,
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__create {
+    flex: 0 0 auto;
+  }
+
+  .personal-shell .personal-todo-hub .personal-todo-tasklist-card__groups,
+  .personal-shell .personal-todo-hub .personal-todo-board {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+.personal-home-page {
+  width: min(100%, 90rem);
+  margin-inline: auto;
+  gap: 1.5rem;
+}
+
+.personal-page .personal-section.catalog-form-section:not(.utang-record-card) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  color: var(--exits-text);
+}
+
+/*
+ * Received / Sent keep the Soft Glass shell. The rule above strips every
+ * personal-section, which left these ribbons hanging left of the empty card.
+ * Same corner placement as the light Utang invitations ribbon.
+ */
+.invitations-page .invitations-glass.personal-section.catalog-form-section {
+  position: relative;
+  overflow: visible;
+  padding: 3.1rem 1rem 1rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--inv-glass-soft, #a5b4fc));
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--inv-glass-wash, #eef2ff) 52%, transparent) 48%,
+    color-mix(in srgb, var(--inv-glass-mid, #e0e7ff) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--inv-glass-chip, #4169e1) 8%, transparent);
+  color: var(--inv-glass-ink, var(--exits-text));
+}
+
+[data-theme="dark"] .invitations-page .invitations-glass.personal-section.catalog-form-section {
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+  color: #e2e8f0;
+}
+
+.invitations-page .invitations-glass.personal-section.catalog-form-section > .exits-empty-state {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.personal-page .utang-balance-card,
+.personal-page .personal-section.utang-entry-card.catalog-form-section,
+.personal-page .personal-section.utang-invite-card.catalog-form-section,
+.personal-page .personal-section.utang-activity-card.catalog-form-section {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: none;
+  color: var(--exits-text);
+}
+
+.personal-page .personal-section.utang-entry-card.catalog-form-section,
+.personal-page .personal-section.utang-invite-card.catalog-form-section,
+.personal-page .personal-section.utang-activity-card.catalog-form-section {
+  padding: 1rem 1.05rem;
+}
+
+.utang-activity-amount {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  text-align: end;
+}
+
+.utang-activity-entry.utang-account-card--standard .ui-standards-qcard__settings-ribbon {
+  padding-right: 0.95rem;
+}
+
+.utang-activity-list.utang-relationship-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0.55rem;
+  padding-right: 0.45rem;
+}
+
+@media (min-width: 768px) {
+  .utang-activity-list.utang-relationship-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.25rem;
+    row-gap: 0.55rem;
+  }
+}
+
+.utang-activity-facts {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.utang-activity-facts__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: -0.35rem;
+}
+
+.utang-activity-facts > p,
+.utang-activity-facts > p .text-muted {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.utang-activity-facts > p.utang-activity-facts__created,
+.utang-activity-facts > p.utang-activity-facts__created .text-muted {
+  margin: 0;
+  flex: 1 0 100%;
+  min-width: 0;
+  font-size: var(--exits-text-xs);
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--exits-muted, #64748b);
+}
+
+@media (max-width: 719px) {
+  .utang-activity-entry .utang-activity-facts > p.utang-activity-facts__created,
+  .utang-activity-entry .utang-activity-facts > p.utang-activity-facts__created .text-muted {
+    font-size: 10px !important;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 639px) {
+  .utang-activity-list.utang-relationship-list {
+    padding-right: 0.45rem;
+  }
+
+  .utang-activity-entry .utang-settings-card__headline {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .utang-activity-entry .utang-settings-card__name {
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 1024px) {
+  .utang-activity-facts {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 1rem;
+    row-gap: 0.35rem;
+  }
+}
+
+.utang-detail-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .utang-detail-top:has(.utang-quick-actions) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 0.75rem;
+    row-gap: 0.75rem;
+    align-items: start;
+  }
+
+  .utang-detail-top:has(.utang-quick-actions) > .utang-balance-card {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .utang-detail-top:has(.utang-quick-actions) > .utang-quick-actions {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .utang-detail-top:has(.utang-quick-actions) > :not(.utang-balance-card):not(.utang-quick-actions) {
+    grid-column: 1 / -1;
+  }
+}
+
+/*
+ * Personal main cards — GLOBAL solid fill (section / Soft Glass ribbon shells only).
+ * Quick Action tiles keep Org EHG glass (match UI Standards Add New) — not flattened here.
+ */
+.personal-home-page .personal-section.catalog-form-section,
+.personal-page .personal-section.catalog-form-section,
+.utang-money-page .utang-ribbon-card.utang-money-glass,
+.utang-detail-page .utang-ribbon-card.utang-detail-glass,
+.people-page .people-list-main-glass,
+.invitations-page .invitations-glass,
+.workplaces-page .workplaces-glass,
+.personal-page [data-shell="soft-glass"].utang-ribbon-card,
+.personal-page [data-shell="soft-glass"].person-ribbon-card,
+.utang-money-page [data-shell="soft-glass"].utang-ribbon-card,
+.utang-detail-page [data-shell="soft-glass"].utang-ribbon-card {
+  background: #fff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.catalog-form-section,
+[data-theme="dark"] .personal-page .personal-section.catalog-form-section,
+[data-theme="dark"] .utang-money-page .utang-ribbon-card.utang-money-glass,
+[data-theme="dark"] .utang-detail-page .utang-ribbon-card.utang-detail-glass,
+[data-theme="dark"] .people-page .people-list-main-glass,
+[data-theme="dark"] .invitations-page .invitations-glass,
+[data-theme="dark"] .workplaces-page .workplaces-glass,
+[data-theme="dark"] .personal-page [data-shell="soft-glass"].utang-ribbon-card,
+[data-theme="dark"] .personal-page [data-shell="soft-glass"].person-ribbon-card,
+[data-theme="dark"] .utang-money-page [data-shell="soft-glass"].utang-ribbon-card,
+[data-theme="dark"] .utang-detail-page [data-shell="soft-glass"].utang-ribbon-card {
+  background: #1e293b !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
+  --personal-attention-warn: var(--exits-warning, #ff5722);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #e2e8f0 72%, #c7d2fe);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: none;
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
+  border-color: color-mix(in srgb, #64748b 38%, transparent);
+  background: #1e293b;
+  box-shadow: none;
+}
+
+.personal-needs-attention__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* Title + pennant — personal-main-card-header.css (LOCKED). */
+
+.personal-needs-attention__view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  padding: 0.2rem 0.15rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--personal-attention-warn, #ff5722);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: color 120ms ease;
+}
+
+.personal-needs-attention__view-all:hover {
+  text-decoration: none;
+  background: transparent;
+  color: color-mix(in srgb, #000 18%, var(--personal-attention-warn, #ff5722));
+  opacity: 1;
+}
+
+.personal-needs-attention__view-all:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.personal-shell .personal-needs-attention__view-all-icon.material-symbols-outlined {
+  width: 0.95rem;
+  height: 0.95rem;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+.personal-needs-attention__list {
+  margin-top: 0;
+}
+
+[data-theme="dark"] .personal-needs-attention__view-all {
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-needs-attention__view-all:hover {
+  background: transparent;
+  color: #f1f5f9;
+}
+
+.personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+  --personal-qa-warn: var(--exits-warning, #ff5722);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #e2e8f0 72%, #c7d2fe);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: none;
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+  border-color: color-mix(in srgb, #64748b 38%, transparent);
+  background: #1e293b;
+  box-shadow: none;
+}
+
+.personal-quick-actions__cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: stretch;
+  margin-top: 0;
+}
+
+.personal-quick-actions__cards > [data-testid="personal-qa-start-business"] {
+  grid-column: 1 / -1;
+}
+
+/* Start a Business — Card infodata (full width). */
+.personal-home-infodata-card {
+  --personal-infodata-size: 4.25rem;
+  --personal-infodata: var(--exits-primary);
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  /* Leave room for the overhanging circle so the bar aligns with cards above. */
+  width: calc(100% - var(--personal-infodata-size) * 0.42);
+  max-width: calc(100% - var(--personal-infodata-size) * 0.42);
+  min-width: 0;
+  height: var(--personal-infodata-size);
+  min-height: var(--personal-infodata-size);
+  margin: 0.35rem 0 0.15rem calc(var(--personal-infodata-size) * 0.42);
+  padding: 0.45rem 1.1rem 0.45rem calc(var(--personal-infodata-size) * 0.92);
+  overflow: visible;
+  border: 0;
+  border-radius: 0.2rem;
+  color: #fff;
+  text-decoration: none;
+  background-color: var(--personal-infodata);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.34),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.14)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 6px color-mix(in srgb, var(--personal-infodata) 18%, transparent);
+  transition: transform 160ms ease;
+}
+
+.personal-home-infodata-card:hover {
+  transform: scale(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 3px 8px color-mix(in srgb, var(--personal-infodata) 22%, transparent);
+  z-index: 2;
+}
+
+.personal-home-infodata-card .personal-home-infodata-card__circle {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 0.38rem var(--exits-surface),
+    0 2px 4px color-mix(in srgb, var(--personal-infodata) 18%, transparent);
+}
+
+.personal-home-infodata-card--info {
+  --personal-infodata: var(--exits-severity-info, #0ea5e9);
+}
+
+.personal-home-infodata-card--compact {
+  --personal-infodata-size: 3.25rem;
+  border-radius: 0.2rem 999px 999px 0.2rem;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, #000 28%, var(--personal-infodata)),
+    var(--personal-infodata) 48%,
+    color-mix(in srgb, #fff 28%, var(--personal-infodata))
+  );
+}
+
+.personal-shell .personal-home-infodata-card--compact .personal-home-infodata-card__icon.material-symbols-outlined {
+  font-size: 1.6rem;
+}
+
+.personal-home-infodata-card:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.personal-home-infodata-card__circle {
+  position: absolute;
+  left: calc(var(--personal-infodata-size) * -0.42);
+  top: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--personal-infodata-size);
+  height: var(--personal-infodata-size);
+  border-radius: 999px;
+  overflow: hidden;
+  color: #fff;
+  background-color: var(--personal-infodata);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 0.38rem var(--exits-surface),
+    0 2px 4px color-mix(in srgb, var(--personal-infodata) 18%, transparent);
+}
+
+.personal-home-infodata-card__circle::before {
+  content: "";
+  position: absolute;
+  top: 0.18rem;
+  left: 14%;
+  right: 14%;
+  height: 40%;
+  z-index: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+
+.personal-shell .personal-home-infodata-card__icon.material-symbols-outlined {
+  position: relative;
+  z-index: 1;
+  width: 1em;
+  height: 1em;
+  font-size: 2.15rem;
+  color: inherit;
+}
+
+.personal-home-infodata-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  max-height: 100%;
+  margin-left: 0.35rem;
+  overflow: hidden;
+  color: #fff;
+}
+
+.personal-home-infodata-card__title {
+  margin: 0;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.personal-home-infodata-card__note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-home-infodata-card,
+  .personal-home-infodata-card:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+.personal-home-index-card__badge .personal-home-index-card__icon {
+  width: 1rem;
+  height: 1rem;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.personal-home-page .personal-section.personal-todo-summary.catalog-form-section {
+  --personal-todo-info: var(--exits-severity-info, #0ea5e9);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #e2e8f0 72%, #7dd3fc);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: none;
+  /* In-panel header retained. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.personal-todo-summary.catalog-form-section {
+  --personal-todo-info: var(--exits-severity-info, #0ea5e9);
+  --personal-todo-chip: #0369a1;
+  --personal-todo-chip-deep: #0c4a6e;
+  --personal-todo-chip-soft: #7dd3fc;
+  --personal-todo-warn: #ff5722;
+  --personal-todo-warn-deep: #e64a19;
+  --personal-todo-warn-soft: #ff8a65;
+  border-color: color-mix(in srgb, #64748b 38%, transparent);
+  background: #1e293b;
+  box-shadow: none;
+}
+
+/* Quick actions in-panel header (no overhanging ribbon). */
+.personal-quick-actions__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* Title + pennant — personal-main-card-header.css (LOCKED). */
+
+/* Quick action glass tiles (rectangular — not pill). */
+.personal-qa-glass {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.65rem;
+  /* End padding tighter so caret / count sit a little farther right. */
+  padding: 0.55rem 0.5rem 0.55rem 0.6rem;
+  border: 1px solid color-mix(in srgb, #cbd5e1 55%, transparent);
+  /* Soft rounded edge. */
+  border-radius: 1rem;
+  text-decoration: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 4px 12px color-mix(in srgb, #64748b 6%, transparent);
+}
+
+.personal-quick-actions .personal-qa-glass {
+  min-height: 2.65rem;
+  padding: 0.55rem 0.5rem 0.55rem 0.6rem;
+}
+
+.personal-qa-glass:hover {
+  border-color: color-mix(in srgb, #94a3b8 45%, transparent);
+}
+
+.personal-qa-glass:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* Soft rounded-square icon chip (reference tile). */
+.personal-qa-glass__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 0.6rem;
+  border: 1px solid color-mix(in srgb, #fff 50%, #c4b5fd);
+  color: #6d28d9;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 55%),
+    color-mix(in srgb, #7c3aed 12%, #fff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 4px 10px color-mix(in srgb, #10b981 12%, transparent);
+}
+
+.personal-qa-glass__icon .material-symbols-outlined {
+  font-size: 0.95rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: inherit;
+}
+
+.personal-qa-glass__copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.personal-qa-glass__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: inherit;
+}
+
+.personal-qa-glass__info {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+}
+
+.personal-qa-glass--with-info {
+  min-height: 3.15rem;
+  align-items: center;
+}
+
+.personal-qa-glass__chevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  opacity: 0.7;
+  color: inherit;
+}
+
+.personal-qa-glass__count {
+  flex: 0 0 auto;
+  min-width: 1.5rem;
+  text-align: end;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: inherit;
+}
+
+.personal-qa-glass__count--plus {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* To-do tiles — chip identity only; Org EHG card-soft / icon-soft in org-ehg-qa-glass.css. */
+.personal-todo-summary .personal-qa-glass--todo {
+  --personal-qa-chip: #0ea5e9;
+  --personal-qa-chip-deep: #0369a1;
+  --personal-qa-chip-soft: #7dd3fc;
+  --personal-qa-chip-ink: #075985;
+}
+
+.personal-todo-summary .personal-qa-glass--todo:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__label {
+  font-size: 0.875rem;
+  color: var(--personal-qa-chip-ink);
+  font-weight: 600;
+}
+
+.personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__plus {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: inherit;
+  opacity: 0.72;
+}
+
+.personal-todo-summary .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, #7dd3fc);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, #0ea5e9 12%, transparent)
+    );
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+.personal-qa-glass__plus {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.15rem;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+/* Overdue — warn chip identity; Org EHG shell in org-ehg-qa-glass.css. */
+.personal-todo-summary .personal-qa-glass--todo-overdue {
+  --personal-qa-chip: #ff5722;
+  --personal-qa-chip-deep: #e64a19;
+  --personal-qa-chip-soft: #ff8a65;
+  --personal-qa-chip-ink: #9a3412;
+}
+
+.personal-todo-summary .personal-qa-glass--todo-overdue:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__label {
+  font-size: 0.875rem;
+  color: var(--personal-qa-chip-ink);
+  font-weight: 600;
+}
+
+.personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #e2e8f0 62%, #ff8a65);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, #ff5722 12%, transparent)
+    );
+  color: #c2410c;
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__label,
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__label {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__plus {
+  color: #e2e8f0;
+  opacity: 0.92;
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #e2e8f0 62%, #7dd3fc);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, #0ea5e9 12%, transparent)
+    ),
+    #fff;
+  color: #0369a1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo-overdue .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #e2e8f0 62%, #ff8a65);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, #ff5722 12%, transparent)
+    ),
+    #fff;
+  color: #c2410c;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/*
+ * Shared Quick action tiles — Soft Glass Enterprise (light), final premium polish.
+ * Pastel washes, top-edge highlight, restrained elevation; accent ink + filled chips.
+ */
+.personal-qa-glass--start,
+.personal-qa-glass--lent,
+.personal-qa-glass--owe,
+.personal-qa-glass--stores,
+.personal-qa-glass--people,
+.personal-qa-glass--info,
+.personal-qa-glass--primary {
+  --personal-qa-chip: #8b5cf6;
+  --personal-qa-chip-deep: #6d28d9;
+  --personal-qa-chip-soft: #c4b5fd;
+  --personal-qa-chip-wash: #f5f3ff;
+  --personal-qa-chip-mid: #ede9fe;
+  --personal-qa-chip-ink: #4c1d95;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  /* Solid fill — Personal main-card global (no wash gradient). */
+  background: color-mix(in srgb, var(--personal-qa-chip) 8%, #fff);
+  color: var(--personal-qa-chip-ink);
+  box-shadow: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.personal-qa-glass--start {
+  --personal-qa-chip: #06b6d4;
+  --personal-qa-chip-deep: #0e7490;
+  --personal-qa-chip-soft: #67e8f9;
+  --personal-qa-chip-wash: #ecfeff;
+  --personal-qa-chip-mid: #cffafe;
+  --personal-qa-chip-ink: #0f766e;
+}
+
+.personal-qa-glass--lent {
+  --personal-qa-chip: #10b981;
+  --personal-qa-chip-deep: #047857;
+  --personal-qa-chip-soft: #6ee7b7;
+  --personal-qa-chip-wash: #ecfdf5;
+  --personal-qa-chip-mid: #d1fae5;
+  --personal-qa-chip-ink: #065f46;
+}
+
+.personal-qa-glass--owe {
+  --personal-qa-chip: #3b82f6;
+  --personal-qa-chip-deep: #1d4ed8;
+  --personal-qa-chip-soft: #93c5fd;
+  --personal-qa-chip-wash: #eff6ff;
+  --personal-qa-chip-mid: #dbeafe;
+  --personal-qa-chip-ink: #1e40af;
+}
+
+.personal-qa-glass--stores {
+  --personal-qa-chip: #8b5cf6;
+  --personal-qa-chip-deep: #6d28d9;
+  --personal-qa-chip-soft: #c4b5fd;
+  --personal-qa-chip-wash: #f5f3ff;
+  --personal-qa-chip-mid: #ede9fe;
+  --personal-qa-chip-ink: #5b21b6;
+}
+
+/* Add person — royal blue (fixed identity, not theme primary). */
+.personal-qa-glass--people {
+  --personal-qa-chip: #4169e1;
+  --personal-qa-chip-deep: #1e3a8a;
+  --personal-qa-chip-soft: #a5b4fc;
+  --personal-qa-chip-wash: #eef2ff;
+  --personal-qa-chip-mid: #e0e7ff;
+  --personal-qa-chip-ink: #312e81;
+}
+
+/* Info panel / detail Quick Actions — Soft Glass info identity. */
+.personal-qa-glass--info {
+  --personal-qa-chip: #0ea5e9;
+  --personal-qa-chip-deep: #0369a1;
+  --personal-qa-chip-soft: #7dd3fc;
+  --personal-qa-chip-wash: #f0f9ff;
+  --personal-qa-chip-mid: #e0f2fe;
+  --personal-qa-chip-ink: #075985;
+}
+
+/* New Quick Actions — Preferences primary (Org EHG QA lock). */
+.personal-qa-glass--primary {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: var(--exits-primary-soft, var(--exits-primary));
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --personal-qa-chip-ink: var(--exits-primary);
+}
+
+.personal-quick-actions .personal-qa-glass__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--personal-qa-chip-ink);
+}
+
+.personal-qa-glass--start .personal-qa-glass__label,
+.personal-qa-glass--lent .personal-qa-glass__label,
+.personal-qa-glass--owe .personal-qa-glass__label,
+.personal-qa-glass--stores .personal-qa-glass__label,
+.personal-qa-glass--people .personal-qa-glass__label,
+.personal-qa-glass--info .personal-qa-glass__label {
+  color: var(--personal-qa-chip-ink);
+  font-weight: 600;
+}
+
+.personal-qa-glass--start:hover,
+.personal-qa-glass--lent:hover,
+.personal-qa-glass--owe:hover,
+.personal-qa-glass--stores:hover,
+.personal-qa-glass--people:hover,
+.personal-qa-glass--info:hover,
+.personal-qa-glass--primary:hover {
+  background: color-mix(in srgb, var(--personal-qa-chip) 11%, #fff);
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 9%, transparent);
+}
+
+.personal-qa-glass--start:active,
+.personal-qa-glass--lent:active,
+.personal-qa-glass--owe:active,
+.personal-qa-glass--stores:active,
+.personal-qa-glass--people:active,
+.personal-qa-glass--info:active,
+.personal-qa-glass--primary:active {
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--personal-qa-chip-wash) 48%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip-mid) 58%, transparent) 100%
+    );
+  border-color: color-mix(in srgb, #94a3b8 48%, var(--personal-qa-chip-soft));
+}
+
+.personal-qa-glass--start:focus-visible,
+.personal-qa-glass--lent:focus-visible,
+.personal-qa-glass--owe:focus-visible,
+.personal-qa-glass--stores:focus-visible,
+.personal-qa-glass--people:focus-visible,
+.personal-qa-glass--info:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.personal-qa-glass--start[aria-disabled="true"],
+.personal-qa-glass--lent[aria-disabled="true"],
+.personal-qa-glass--owe[aria-disabled="true"],
+.personal-qa-glass--stores[aria-disabled="true"],
+.personal-qa-glass--people[aria-disabled="true"],
+.personal-qa-glass--info[aria-disabled="true"],
+.personal-qa-glass--start:disabled,
+.personal-qa-glass--lent:disabled,
+.personal-qa-glass--owe:disabled,
+.personal-qa-glass--stores:disabled,
+.personal-qa-glass--people:disabled,
+.personal-qa-glass--info:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+}
+
+.personal-qa-glass--start .personal-qa-glass__icon,
+.personal-qa-glass--lent .personal-qa-glass__icon,
+.personal-qa-glass--owe .personal-qa-glass__icon,
+.personal-qa-glass--stores .personal-qa-glass__icon,
+.personal-qa-glass--people .personal-qa-glass__icon,
+.personal-qa-glass--info .personal-qa-glass__icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  border: 1px solid color-mix(in srgb, #fff 52%, var(--personal-qa-chip-soft));
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.34), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--personal-qa-chip)),
+      var(--personal-qa-chip) 56%,
+      var(--personal-qa-chip-deep)
+    );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+.personal-qa-glass--start .personal-qa-glass__chevron,
+.personal-qa-glass--lent .personal-qa-glass__chevron,
+.personal-qa-glass--owe .personal-qa-glass__chevron,
+.personal-qa-glass--stores .personal-qa-glass__chevron,
+.personal-qa-glass--people .personal-qa-glass__chevron,
+.personal-qa-glass--info .personal-qa-glass__chevron,
+.personal-qa-glass--start .personal-qa-glass__plus--start,
+.personal-qa-glass--lent .personal-qa-glass__plus--lent,
+.personal-qa-glass--owe .personal-qa-glass__plus--owe,
+.personal-qa-glass--stores .personal-qa-glass__plus--stores,
+.personal-qa-glass--people .personal-qa-glass__plus--people,
+.personal-qa-glass--info .personal-qa-glass__plus--info {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  color: inherit;
+  opacity: 0.72;
+}
+
+/*
+ * Soft Glass Quick Action trailing (LOCKED):
+ * count → Soft Glass circular badge; no count → chevron or plain + add.
+ */
+.personal-qa-glass--start .personal-qa-glass__badge,
+.personal-qa-glass--lent .personal-qa-glass__badge,
+.personal-qa-glass--owe .personal-qa-glass__badge,
+.personal-qa-glass--stores .personal-qa-glass__badge,
+.personal-qa-glass--people .personal-qa-glass__badge,
+.personal-qa-glass--info .personal-qa-glass__badge,
+.personal-qa-glass--primary .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip) 14%, transparent)
+    );
+  color: var(--personal-qa-chip-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Trailing add mark — plain +, same footprint as caret (not a rounded chip). */
+.personal-qa-glass--start .personal-qa-glass__plus--start,
+.personal-qa-glass--lent .personal-qa-glass__plus--lent,
+.personal-qa-glass--owe .personal-qa-glass__plus--owe,
+.personal-qa-glass--stores .personal-qa-glass__plus--stores,
+.personal-qa-glass--people .personal-qa-glass__plus--people,
+.personal-qa-glass--info .personal-qa-glass__plus--info {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 1.15rem;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: none;
+}
+
+/* Dark count badge = same light Soft Glass pill as light mode (EHG keeps light chip colors). */
+[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__badge,
+[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__badge,
+[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__badge,
+[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__badge,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__badge,
+[data-theme="dark"] .personal-qa-glass--info .personal-qa-glass__badge,
+[data-theme="dark"] .personal-qa-glass--primary .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip) 14%, transparent)
+    ),
+    #fff;
+  color: color-mix(in srgb, #000 28%, var(--personal-qa-chip));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/*
+ * Dark Quick actions — Soft Glass Enterprise (no neon).
+ * LOCKED border: SOFT_GLASS_DARK_BORDER_* (home Quick Actions).
+ * Deep navy surfaces, restrained tint, matching borders, top-edge highlight.
+ * Includes `info` (detail QA) — same recipe as home.
+ */
+[data-theme="dark"] .personal-qa-glass--start,
+[data-theme="dark"] .personal-qa-glass--lent,
+[data-theme="dark"] .personal-qa-glass--owe,
+[data-theme="dark"] .personal-qa-glass--stores,
+[data-theme="dark"] .personal-qa-glass--people,
+[data-theme="dark"] .personal-qa-glass--info,
+[data-theme="dark"] .personal-qa-glass--primary {
+  background: color-mix(in srgb, var(--personal-qa-chip) 12%, #1e293b);
+  color: #e2e8f0;
+  /* LOCKED: SOFT_GLASS_DARK_BORDER_CHIP_PCT / SOFT_GLASS_DARK_BORDER_SLATE */
+  border: 1px solid color-mix(in srgb, var(--personal-qa-chip) 16%, #475569);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-qa-glass--start:hover,
+[data-theme="dark"] .personal-qa-glass--lent:hover,
+[data-theme="dark"] .personal-qa-glass--owe:hover,
+[data-theme="dark"] .personal-qa-glass--stores:hover,
+[data-theme="dark"] .personal-qa-glass--people:hover,
+[data-theme="dark"] .personal-qa-glass--info:hover {
+  background: color-mix(in srgb, var(--personal-qa-chip) 16%, #1e293b);
+  /* LOCKED: SOFT_GLASS_DARK_BORDER_HOVER_* */
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 22%, #64748b);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-qa-glass--start:active,
+[data-theme="dark"] .personal-qa-glass--lent:active,
+[data-theme="dark"] .personal-qa-glass--owe:active,
+[data-theme="dark"] .personal-qa-glass--stores:active,
+[data-theme="dark"] .personal-qa-glass--people:active,
+[data-theme="dark"] .personal-qa-glass--info:active {
+  background: color-mix(in srgb, var(--personal-qa-chip) 14%, #1e293b);
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 20%, #475569);
+}
+
+[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__label,
+[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__label,
+[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__label,
+[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__label,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__label,
+[data-theme="dark"] .personal-qa-glass--info .personal-qa-glass__label {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__info,
+[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__info,
+[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__info,
+[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__info,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__info,
+[data-theme="dark"] .personal-qa-glass--info .personal-qa-glass__info {
+  color: color-mix(in srgb, #94a3b8 70%, var(--personal-qa-chip-soft));
+}
+
+[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__icon,
+[data-theme="dark"] .personal-qa-glass--info .personal-qa-glass__icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--personal-qa-chip) 22%, #475569);
+  color: #f1f5f9;
+  background:
+    radial-gradient(circle at 30% 24%, color-mix(in srgb, #fff 12%, transparent), transparent 55%),
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--personal-qa-chip) 40%, #334155),
+      color-mix(in srgb, var(--personal-qa-chip-deep) 56%, #1e293b)
+    );
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 11%, transparent) inset;
+}
+
+[data-theme="dark"] .personal-qa-glass--start .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--lent .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--owe .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--stores .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--info .personal-qa-glass__chevron,
+[data-theme="dark"] .personal-qa-glass--people .personal-qa-glass__plus--people,
+[data-theme="dark"] .personal-qa-glass--info .personal-qa-glass__plus--info {
+  color: #e2e8f0;
+  opacity: 0.92;
+}
+
+/* Dark accent identities — restrained, coordinated (no neon). */
+[data-theme="dark"] .personal-qa-glass--start {
+  --personal-qa-chip: #0f766e;
+  --personal-qa-chip-deep: #134e4a;
+  --personal-qa-chip-soft: #5eead4;
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 14%, #475569);
+}
+
+[data-theme="dark"] .personal-qa-glass--start:hover {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 20%, #64748b);
+}
+
+[data-theme="dark"] .personal-qa-glass--lent {
+  --personal-qa-chip: #047857;
+  --personal-qa-chip-deep: #064e3b;
+  --personal-qa-chip-soft: #6ee7b7;
+}
+
+[data-theme="dark"] .personal-qa-glass--owe {
+  --personal-qa-chip: #1d4ed8;
+  --personal-qa-chip-deep: #1e3a8a;
+  --personal-qa-chip-soft: #93c5fd;
+}
+
+[data-theme="dark"] .personal-qa-glass--stores {
+  --personal-qa-chip: #6d28d9;
+  --personal-qa-chip-deep: #4c1d95;
+  --personal-qa-chip-soft: #c4b5fd;
+}
+
+[data-theme="dark"] .personal-qa-glass--people {
+  --personal-qa-chip: #3730a3;
+  --personal-qa-chip-deep: #1e1b4b;
+  --personal-qa-chip-soft: #a5b4fc;
+}
+
+[data-theme="dark"] .personal-qa-glass--info {
+  --personal-qa-chip: #0369a1;
+  --personal-qa-chip-deep: #0c4a6e;
+  --personal-qa-chip-soft: #7dd3fc;
+}
+
+/* To-do in-panel header: check circle + title + View all. */
+.personal-todo-summary__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* Title + pennant — personal-main-card-header.css (LOCKED). */
+
+.personal-todo-summary__view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  padding: 0.2rem 0.15rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--personal-todo-info, #0ea5e9);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: color 120ms ease;
+}
+
+.personal-todo-summary__view-all:hover {
+  text-decoration: none;
+  background: transparent;
+  color: color-mix(in srgb, #000 18%, var(--personal-todo-info, #0ea5e9));
+  opacity: 1;
+}
+
+.personal-todo-summary__view-all:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.personal-shell .personal-todo-summary__view-all-icon.material-symbols-outlined {
+  width: 0.95rem;
+  height: 0.95rem;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+/* Dark To-do header — match Quick Actions header polish. */
+[data-theme="dark"] .personal-todo-summary__view-all {
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-todo-summary__view-all:hover {
+  background: transparent;
+  color: #f1f5f9;
+}
+
+.personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+  --personal-tracker-accent: var(--exits-severity-success, #22c55e);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #e2e8f0 72%, #86efac);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: none;
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+  border-color: color-mix(in srgb, #64748b 38%, transparent);
+  background: #1e293b;
+  box-shadow: none;
+}
+
+/* Outside gap around My Record / Shared — home tracker (no utang-hub-actions). */
+@media (max-width: 719px) {
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section:not(:has(.utang-hub-actions)) {
+    padding-inline: 0.85rem;
+  }
+}
+
+.personal-tracker-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* Title + pennant — personal-main-card-header.css (LOCKED). */
+
+/*
+ * Soft Glass radius tokens (LOCKED — soft-glass-card-global-default).
+ * SOFT_GLASS_RADIUS / SOFT_GLASS_RIBBON_RADIUS — command: ext soft-glass ribbon radius
+ *
+ * Crystal screen-edge tokens: UI Standards `.app-shell--full` + Personal `.personal-crystal-screen`
+ * (whole screen: top bar + sidenav + main). Color follows Preferences primary.
+ */
+:root {
+  --soft-glass-radius: 1.1rem;
+  --soft-glass-ribbon-radius: 1.1rem 1.1rem 1.1rem 0;
+  /* LOCKED: SOFT_GLASS_FIELD_RADIUS — Soft Glass input / dropdown (Soft control). */
+  --soft-glass-field-radius: 0.6875rem;
+  /*
+   * Screen-edge Soft Glass rim (Personal + UI Standards) — same recipe as Soft Glass cards:
+   * 1px slate+primary soft border, inset top highlight, soft primary elevation. No hard glow.
+   */
+  --soft-glass-crystal-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --soft-glass-crystal-edge: color-mix(in srgb, #e2e8f0 62%, var(--soft-glass-crystal-soft));
+  --soft-glass-crystal-border: 1px solid var(--soft-glass-crystal-edge);
+  --soft-glass-crystal-rim:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--exits-primary) 8%, transparent);
+}
+
+[data-theme="dark"] {
+  --soft-glass-crystal-soft: color-mix(in srgb, var(--exits-primary) 42%, #1e293b);
+  --soft-glass-crystal-edge: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  --soft-glass-crystal-rim:
+    0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset,
+    0 4px 14px rgba(0, 0, 0, 0.28);
+}
+
+/* Legacy overhanging ribbon — still used on non–Soft Glass People / Profile / workplaces. */
+.personal-tracker-card__ribbon {
+  position: absolute;
+  top: 0.45rem;
+  left: -0.7rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.2rem 0.2rem 0.2rem 0;
+  /* Success — distinct from Quick actions (warn) and Todo (info). */
+  background-color: var(--exits-severity-success, #22c55e);
+  color: var(--exits-severity-success-foreground, #fff);
+  font-size: 0.9375rem;
+  font-weight: 550;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
+/*
+ * Soft Glass title ribbon radius (LOCKED default).
+ * Same shell radius on three corners; fold corner stays 0.
+ */
+.utang-money-glass .personal-tracker-card__ribbon,
+.utang-detail-glass .personal-tracker-card__ribbon,
+.people-list-main-glass .personal-tracker-card__ribbon,
+.invitations-glass .personal-tracker-card__ribbon,
+.workplaces-glass .personal-tracker-card__ribbon,
+[data-shell="soft-glass"].utang-ribbon-card .personal-tracker-card__ribbon,
+[data-shell="soft-glass"].person-ribbon-card .personal-tracker-card__ribbon,
+.utang-ribbon-card[data-shell="soft-glass"] .personal-tracker-card__ribbon,
+.person-ribbon-card[data-shell="soft-glass"] .personal-tracker-card__ribbon {
+  border-radius: var(--soft-glass-ribbon-radius);
+}
+
+.personal-tracker-card__ribbon::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-top: 0.5rem solid color-mix(in srgb, #000 38%, var(--exits-severity-success, #22c55e));
+  border-left: 0.7rem solid transparent;
+}
+
+.personal-tracker-card__pennant {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, #fff 22%, var(--exits-severity-success, #22c55e)),
+      var(--exits-severity-success, #22c55e) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-severity-success, #22c55e))
+    );
+  box-shadow:
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-severity-success, #22c55e) 18%, #fff),
+    0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
+/* In-panel title pennant — personal-main-card-header.css (LOCKED). */
+
+.personal-tracker-card__pennant-icon {
+  color: inherit;
+}
+
+.personal-home-metrics .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft, #93c5fd));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 14%, transparent)
+    );
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+[data-theme="dark"] .personal-home-metrics .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft, #93c5fd));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 14%, transparent)
+    ),
+    #fff;
+  color: color-mix(in srgb, #000 28%, var(--personal-qa-chip, #3b82f6));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+.personal-home-page .personal-section.personal-stores-to-pay.catalog-form-section {
+  /* Stores identity — same as Stores Quick Action (Org EHG). */
+  --personal-qa-chip: #8b5cf6;
+  --personal-qa-chip-deep: #6d28d9;
+  --personal-qa-chip-soft: #c4b5fd;
+  --personal-qa-chip-ink: #5b21b6;
+  --personal-stores-info: var(--personal-qa-chip);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #e2e8f0 72%, var(--personal-qa-chip-soft));
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: none;
+  /* In-panel header — no overhanging ribbon. */
+  padding: 1rem 1.05rem 1rem;
+  gap: 0.85rem;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.personal-stores-to-pay.catalog-form-section {
+  --personal-qa-chip: #8b5cf6;
+  --personal-qa-chip-deep: #6d28d9;
+  --personal-qa-chip-soft: #c4b5fd;
+  --personal-qa-chip-ink: #f1f5f9;
+  border-color: color-mix(in srgb, #64748b 38%, transparent);
+  background: #1e293b;
+  box-shadow: none;
+}
+
+.personal-stores-to-pay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* Title + pennant — personal-main-card-header.css (LOCKED). */
+
+.personal-stores-to-pay__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.personal-stores-to-pay__metrics .personal-qa-glass__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft, #93c5fd));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 14%, transparent)
+    );
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+[data-theme="dark"] .personal-stores-to-pay__metrics .personal-qa-glass__badge {
+  border-color: color-mix(in srgb, #fff 50%, var(--personal-qa-chip-soft, #93c5fd));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fff 78%, transparent),
+      color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 14%, transparent)
+    ),
+    #fff;
+  color: color-mix(in srgb, #000 28%, var(--personal-qa-chip, #3b82f6));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Non-pendant tracker summaries only — pendant groups use glass styles below. */
+.personal-home-page .tracker-summary:not(.tracker-summary--pendant) {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: none;
+  color: var(--exits-text);
+}
+
+.personal-home-page .catalog-form-section {
+  padding: 1rem 1.05rem;
+}
+
+.personal-page .catalog-form-section__title,
+.personal-home-page .catalog-form-section__title.text-muted {
+  color: var(--exits-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.personal-profile-page .personal-profile-section.catalog-form-section {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  padding: 1rem;
+  box-shadow: none;
+}
+
+.personal-profile-page .personal-profile-section--personal.person-ribbon-card.catalog-form-section,
+.personal-profile-page .personal-profile-section--address.person-ribbon-card.catalog-form-section,
+.personal-profile-page .personal-profile-section--privacy.person-ribbon-card.catalog-form-section {
+  position: relative;
+  overflow: visible;
+  padding-top: 3.6rem;
+}
+
+.personal-address-dialog.exits-modal-panel {
+  max-width: min(48rem, calc(100vw - 2rem));
+}
+
+.personal-address-dialog-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 1rem;
+  row-gap: 0.75rem;
+  align-items: end;
+}
+
+.personal-address-slot--type { grid-area: 1 / 1; }
+.personal-address-slot--country { grid-area: 1 / 2; }
+.personal-address-slot--province { grid-area: 1 / 3; }
+.personal-address-slot--city { grid-area: 2 / 1; }
+.personal-address-slot--barangay { grid-area: 2 / 2; }
+.personal-address-slot--line1 { grid-area: 2 / 3; }
+.personal-address-slot--line2 { grid-area: 3 / 1; }
+.personal-address-slot--postal { grid-area: 3 / 2; }
+.personal-address-slot--primary { grid-area: 3 / 3; }
+
+.personal-address-slot > .ui-standards-qinput,
+.personal-address-slot > .ui-standards-qdropdown {
+  width: 100%;
+}
+
+.personal-profile-page .personal-address-add,
+.personal-profile-page .personal-address-show-all {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.75rem;
+  z-index: 3;
+  width: auto;
+}
+
+.personal-address-show-all__chevron {
+  transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0.9s !important;
+}
+
+.personal-address-show-all__chevron--open {
+  transform: rotate(180deg);
+}
+
+[data-theme="dark"] .personal-home-page .tracker-summary:not(.tracker-summary--pendant),
+[data-theme="dark"] .personal-profile-page .personal-profile-section.catalog-form-section {
+  border-color: var(--exits-border);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary__amount,
+.personal-shell .tracker-summary__stat-amount {
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary__title,
+.personal-shell .tracker-summary__stat-label {
+  color: var(--exits-text-muted);
+}
+
+.personal-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.personal-topbar__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.personal-topbar__name {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 24px;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--exits-primary) 42%, #4cbdff),
+    var(--exits-primary)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.personal-topbar__tag {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 12px;
+  color: #667791;
+}
+
+[data-theme="dark"] .personal-topbar__tag {
+  color: #c5d0e0;
+}
+
+/* Welcome header — Card true capsule (ring + pill body). */
+.personal-home-capsule {
+  --personal-capsule-size: 4.25rem;
+  --personal-capsule-ring-from: #1565c0;
+  --personal-capsule-ring-to: #1976d2;
+  --personal-capsule-soft-from: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
+  --personal-capsule-soft-to: var(--exits-surface);
+  --personal-capsule-ink: var(--exits-text);
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: calc(100% - var(--personal-capsule-size) * 0.42);
+  max-width: calc(100% - var(--personal-capsule-size) * 0.42);
+  min-width: 0;
+  height: var(--personal-capsule-size);
+  min-height: var(--personal-capsule-size);
+  max-height: var(--personal-capsule-size);
+  margin: 0.35rem 0 0.15rem calc(var(--personal-capsule-size) * 0.42);
+  padding: 0.45rem 1.1rem 0.45rem calc(var(--personal-capsule-size) * 0.92);
+  overflow: visible;
+  border: 0;
+  border-radius: 0.2rem;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--personal-capsule-ring-to) 42%, var(--exits-surface)) 0%,
+    color-mix(in srgb, var(--personal-capsule-ring-from) 18%, var(--personal-capsule-soft-from)) 28%,
+    var(--personal-capsule-soft-from) 52%,
+    var(--personal-capsule-soft-to) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 6px color-mix(in srgb, var(--personal-capsule-ring-from) 14%, transparent);
+}
+
+.personal-home-capsule__ring {
+  position: absolute;
+  left: calc(var(--personal-capsule-size) * -0.42);
+  top: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--personal-capsule-size);
+  height: var(--personal-capsule-size);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow:
+    0 0 0 0.38rem var(--exits-surface),
+    0 2px 4px color-mix(in srgb, var(--personal-capsule-ring-to) 16%, transparent);
+}
+
+.personal-home-capsule__disc {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--exits-surface);
+}
+
+.personal-home-capsule__disc {
+  position: relative;
+}
+
+.personal-home-capsule__disc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* PageHeader capsule — Personal home welcome look for child pages (Money I owe / lent). */
+.page-header--capsule {
+  --page-capsule-size: 4.25rem;
+  --page-capsule-from: #1565c0;
+  --page-capsule-to: #1976d2;
+}
+
+.page-header--capsule .page-header__main {
+  position: relative;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--page-capsule-size);
+  margin: 0.35rem 0 0.15rem calc(var(--page-capsule-size) * 0.42);
+  padding: 0.45rem 1.1rem 0.45rem calc(var(--page-capsule-size) * 0.92);
+  border-radius: 0.2rem;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--page-capsule-to) 42%, var(--exits-surface)) 0%,
+    color-mix(in srgb, var(--page-capsule-from) 18%, color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface))) 28%,
+    color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface)) 52%,
+    var(--exits-surface) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 6px color-mix(in srgb, var(--page-capsule-from) 14%, transparent);
+}
+
+/*
+ * Personal child-page header — same glass back + spacing everywhere.
+ * Home has no PageHeader, so it is excluded automatically.
+ */
+.personal-shell .page-header.page-header--capsule,
+.page-header.personal-page-header--glass {
+  --page-capsule-size: 2.35rem;
+  --page-capsule-from: var(--exits-primary);
+  --page-capsule-to: color-mix(in srgb, var(--exits-primary) 72%, #fff);
+  --personal-header-glass: var(--exits-primary);
+  --personal-header-glass-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  margin-block: 0.45rem;
+  color: var(--exits-text);
+}
+
+.personal-shell .page-header.page-header--capsule .page-header__main,
+.page-header.personal-page-header--glass.page-header--capsule .page-header__main {
+  min-height: 0;
+  margin: 0 0 0 calc(var(--page-capsule-size) * 0.42);
+  padding: 0 0 0 calc(var(--page-capsule-size) * 0.92);
+  border: none;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  justify-content: center;
+}
+
+.personal-shell .page-header.page-header--capsule .page-header-capsule__disc,
+.page-header.personal-page-header--glass .page-header-capsule__disc {
+  border: 1px solid color-mix(in srgb, #fff 55%, var(--personal-header-glass-soft));
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 22%, var(--personal-header-glass)),
+      var(--personal-header-glass) 55%,
+      var(--exits-primary-hover, var(--personal-header-glass))
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 4px 10px color-mix(in srgb, var(--personal-header-glass) 28%, transparent);
+}
+
+.personal-shell .page-header.page-header--capsule .page-header-capsule__disc svg,
+.page-header.personal-page-header--glass .page-header-capsule__disc svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.personal-shell .page-header.page-header--capsule .page-header-capsule__ring,
+.page-header.personal-page-header--glass .page-header-capsule__ring {
+  top: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--exits-surface) 88%, transparent);
+}
+
+.personal-shell .page-header.page-header--capsule .page-header-capsule__back:hover,
+.page-header.personal-page-header--glass .page-header-capsule__back:hover {
+  transform: translateY(-50%) scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-shell .page-header.page-header--capsule .page-header-capsule__back,
+  .personal-shell .page-header.page-header--capsule .page-header-capsule__back:hover,
+  .page-header.personal-page-header--glass .page-header-capsule__back,
+  .page-header.personal-page-header--glass .page-header-capsule__back:hover {
+    transform: translateY(-50%);
+  }
+}
+
+.personal-shell .page-header.page-header--capsule .page-header__title,
+.personal-shell .page-header.page-header--capsule .page-header__subtitle,
+.page-header.personal-page-header--glass .page-header__title,
+.page-header.personal-page-header--glass .page-header__subtitle {
+  color: inherit;
+}
+
+.personal-shell .page-header.page-header--capsule .page-header__info,
+.page-header.personal-page-header--glass .page-header__info {
+  border-color: transparent;
+  background: transparent;
+  color: var(--exits-text-muted);
+  box-shadow: none;
+}
+
+.personal-shell .page-header.page-header--capsule .page-header__info:hover,
+.personal-shell .page-header.page-header--capsule .page-header__info--visible,
+.page-header.personal-page-header--glass .page-header__info:hover,
+.page-header.personal-page-header--glass .page-header__info--visible {
+  background: color-mix(in srgb, var(--personal-header-glass) 10%, transparent);
+  color: var(--personal-header-glass);
+}
+
+[data-theme="dark"] .personal-shell .page-header.page-header--capsule,
+[data-theme="dark"] .page-header.personal-page-header--glass {
+  color: var(--exits-text);
+}
+
+[data-theme="dark"] .personal-shell .page-header.page-header--capsule .page-header__main,
+[data-theme="dark"] .page-header.personal-page-header--glass.page-header--capsule .page-header__main {
+  min-height: 0;
+  margin: 0 0 0 calc(var(--page-capsule-size) * 0.42);
+  padding: 0 0 0 calc(var(--page-capsule-size) * 0.92);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-shell .page-header.page-header--capsule .page-header-capsule__disc,
+[data-theme="dark"] .page-header.personal-page-header--glass .page-header-capsule__disc {
+  border-color: color-mix(in srgb, #fff 32%, var(--personal-header-glass));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #000 22%, transparent) inset,
+    0 6px 14px color-mix(in srgb, var(--personal-header-glass) 32%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .page-header.page-header--capsule .page-header-capsule__ring,
+[data-theme="dark"] .page-header.personal-page-header--glass .page-header-capsule__ring {
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, #1e293b 70%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .page-header.page-header--capsule .page-header__info,
+[data-theme="dark"] .page-header.personal-page-header--glass .page-header__info {
+  border-color: transparent;
+  background: transparent;
+  color: var(--exits-text-muted);
+  box-shadow: none;
+}
+
+.page-header-capsule__ring {
+  position: absolute;
+  top: 0;
+  left: calc(var(--page-capsule-size) * -0.42);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--page-capsule-size);
+  height: var(--page-capsule-size);
+  border-radius: 999px;
+  box-shadow: 0 0 0 0.38rem var(--exits-surface);
+}
+
+.page-header-capsule__back {
+  text-decoration: none;
+  transition: transform 150ms ease;
+}
+
+.page-header-capsule__back:hover {
+  transform: scale(1.05);
+}
+
+.page-header-capsule__back:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 0.45rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-header-capsule__back,
+  .page-header-capsule__back:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+.page-header-capsule__disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #fff;
+  background-color: var(--exits-primary);
+}
+
+.page-header-capsule__disc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.page-header--capsule .page-header__head {
+  width: 100%;
+}
+
+.page-header--capsule .page-header__title-row {
+  flex: 1 1 auto;
+}
+
+/* Round glossy primary action beside the header info icon (e.g. edit). */
+.page-header-round-action {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #fff;
+  text-decoration: none;
+  background-color: var(--exits-primary);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 2px 4px color-mix(in srgb, var(--exits-primary) 30%, transparent);
+  transition: transform 150ms ease;
+}
+
+.page-header-round-action:hover {
+  transform: scale(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 3px 6px color-mix(in srgb, var(--exits-primary) 36%, transparent);
+}
+
+.page-header-round-action:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-header-round-action,
+  .page-header-round-action:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+.page-header-capsule__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 1.35rem !important;
+}
+
+.page-header-capsule__initial {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.page-header--capsule .page-header__title {
+  flex: 1 1 auto;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--exits-text);
+}
+
+@media (min-width: 1024px) {
+  .page-header--capsule .page-header__title {
+    font-size: 1.35rem;
+  }
+}
+
+.personal-home-capsule__photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.personal-home-capsule__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 1.35rem !important;
+}
+
+.personal-home-capsule__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.personal-home-capsule__copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  margin-left: 0.35rem;
+}
+
+.personal-home-welcome__kicker,
+.personal-home-capsule__kicker {
+  margin: 0;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--personal-capsule-ink) 72%, var(--exits-text-muted));
+}
+
+.personal-home-welcome__name,
+.personal-home-capsule__name {
+  margin: 0;
+  padding: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--personal-capsule-ink);
+}
+
+.personal-home-capsule__info {
+  position: relative;
+  align-self: center;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 1024px) {
+  .personal-home-welcome__name,
+  .personal-home-capsule__name {
+    font-size: 1.35rem;
+  }
+}
+
+.personal-home-avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3.125rem;
+  height: 3.125rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--exits-primary) 24%, transparent);
+}
+
+.personal-home-avatar__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.personal-home-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .personal-home-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.85fr) minmax(17rem, 0.91fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .personal-home-layout__aside {
+    position: sticky;
+    top: 0;
+  }
+
+  .personal-home-page .personal-summary-grid--balances {
+    max-width: none;
+  }
+}
+
+.personal-shell .personal-sidebar.admin-sidebar {
+  position: relative;
+  top: auto;
+  align-self: stretch;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.35rem 0.65rem 0.75rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__nav-rule {
+  display: none;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-block {
+  margin-top: 1.15rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-icon-wrap {
+  display: none;
+}
+
+[data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__collapse-toggle,
+[data-navigation-mode="reveal"] .personal-shell .personal-sidebar .admin-sidebar__collapse-toggle {
+  display: none;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-toggle {
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.65rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__group-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link,
+.personal-shell .personal-sidebar .admin-sidebar__switch {
+  min-height: 2.75rem;
+  gap: 0.7rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.7rem;
+  border-inline-start-width: 0;
+  font-size: 0.9rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__icon,
+.personal-shell .personal-sidebar .admin-sidebar__switch svg,
+.personal-shell .personal-sidebar .admin-sidebar__switch .material-symbols-outlined,
+.personal-shell .personal-sidebar .admin-sidebar__group-chevron.material-symbols-outlined {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 1.2rem;
+}
+
+.personal-shell .material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.25rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  flex-shrink: 0;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.personal-shell .size-4.material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.personal-shell .size-5.material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.personal-shell .size-\[1\.1rem\].material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+/* Personal sidenav — no left rail; thick primary bar grows from center under the item (input focus recipe). */
+.personal-shell .personal-sidebar .admin-sidebar__link {
+  position: relative;
+  isolation: isolate;
+  border-inline-start-width: 0;
+  overflow: visible;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link::after {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  bottom: 0.15rem;
+  z-index: 1;
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--exits-shell-nav-active-border, var(--exits-primary));
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link--active {
+  background: var(--exits-shell-nav-active-bg, var(--exits-primary-soft));
+  color: var(--exits-shell-nav-active-fg, var(--exits-primary));
+  font-weight: 600;
+  border-inline-start-width: 0;
+  overflow: visible;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link--active::before {
+  content: none;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link--active::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-shell .personal-sidebar .admin-sidebar__link::after {
+    transition: none;
+  }
+}
+
+[data-motion="reduced"] .personal-shell .personal-sidebar .admin-sidebar__link::after {
+  transition: none;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link:focus-visible,
+.personal-shell .personal-sidebar .admin-sidebar__switch:focus-visible,
+.personal-shell .personal-sidebar .admin-sidebar__group-toggle:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  /* Full-height sidenav flush to Soft Glass screen top (beside top bar + main). */
+  .personal-shell.admin-shell {
+    display: flex;
+    flex-direction: row;
+    column-gap: 0;
+    padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .personal-shell > .admin-sidebar-rail {
+    margin: 0;
+    align-self: stretch;
+    height: 100%;
+    max-height: none;
+  }
+
+  [data-navigation-mode="standard"] .personal-shell > .admin-sidebar-rail {
+    width: 17rem;
+    flex: 0 0 17rem;
+    overflow: hidden;
+    visibility: visible;
+    transition:
+      width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      visibility 0s;
+  }
+
+  .personal-shell .personal-sidebar.admin-sidebar {
+    border: 0;
+    border-inline-end: 0;
+    height: 100%;
+    max-height: none;
+    /* Soft Glass radius on left and right. */
+    border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px);
+  }
+
+  .personal-shell .app-top-bar--personal {
+    border-top-left-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
+    border-top-right-radius: calc(
+      var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px
+    );
+  }
+
+  .personal-shell .app-top-bar--personal::before {
+    border-radius: calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px)
+      calc(var(--ui-standards-crystal-radius, var(--soft-glass-radius, 1.1rem)) - 1px) 0 0;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell > .admin-sidebar-rail {
+    width: 4.75rem;
+    flex: 0 0 4.75rem;
+    overflow: hidden;
+    visibility: visible;
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      visibility 0s;
+  }
+
+  [data-navigation-mode="hidden"] .personal-shell > .admin-sidebar-rail {
+    width: 0;
+    flex: 0 0 0;
+    min-width: 0;
+    overflow: hidden;
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      visibility 0s linear var(--exits-sidebar-collapse-duration);
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__nav {
+    padding: 0.5rem 0 0.75rem;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-icon-wrap {
+    display: inline-flex;
+    width: 1.35rem;
+    height: 1.35rem;
+    background: transparent;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-icon,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-icon.material-symbols-outlined {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 1.35rem;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-panel,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-panel--open {
+    display: block;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-panel-inner {
+    overflow: visible;
+    padding: 0;
+  }
+
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__link,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__switch,
+  [data-navigation-mode="compact"] .personal-shell .personal-sidebar .admin-sidebar__group-toggle {
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    margin-inline: auto;
+    padding: 0;
+  }
+}
+
+/* People search shares the button row. The outlined field keeps label space above the box. */
+.people-search-row .ui-standards-qinput {
+  width: 100%;
+  max-width: none;
+}
+
+.people-search-row .ui-standards-qinput__box {
+  box-sizing: border-box;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+}
+
+.people-search-row .ui-standards-qinput__control {
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 639px) {
+  .people-search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .people-search-row > button,
+  .people-search-row > a {
+    width: 100%;
+  }
+
+  .people-search-row .ui-standards-playground-search {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+}
+
+/*
+ * Active accounts tabs — Soft Glass (info / Active accounts accent).
+ * Same recipe as People Soft Glass filter chips; no lift, no blur.
+ */
+.utang-hub-accounts .utang-hub-filters,
+.utang-hub-filters {
+  --utang-tab-chip: var(--personal-tracker-accent, #0ea5e9);
+  --utang-tab-deep: #0369a1;
+  --utang-tab-soft: #7dd3fc;
+  --utang-tab-wash: #e0f2fe;
+  --utang-tab-mid: #bae6fd;
+  --utang-tab-ink: color-mix(in srgb, #000 28%, var(--utang-tab-chip));
+}
+
+.utang-hub-filters .exits-chip,
+.utang-hub-filters .exits-tabs__trigger {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--utang-tab-soft));
+  color: var(--utang-tab-ink);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--utang-tab-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--utang-tab-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--utang-tab-chip) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.utang-hub-filters .exits-chip:hover:not(:disabled),
+.utang-hub-filters .exits-tabs__trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--utang-tab-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--utang-tab-wash) 58%, transparent) 48%,
+    color-mix(in srgb, var(--utang-tab-mid) 52%, transparent) 100%
+  );
+  transform: none;
+}
+
+.utang-hub-filters .exits-chip--active,
+.utang-hub-filters .exits-chip[data-state="active"],
+.utang-hub-filters.exits-tabs .exits-tabs__trigger[data-selected="true"],
+.utang-hub-filters .exits-tabs__trigger[data-selected="true"] {
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--utang-tab-soft));
+  border-bottom-color: color-mix(in srgb, #e2e8f0 62%, var(--utang-tab-soft));
+  border-radius: var(--exits-control-radius);
+  color: var(--utang-tab-ink);
+  font-weight: 600;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--utang-tab-wash) 45%, transparent) 40%,
+    color-mix(in srgb, var(--utang-tab-chip) 18%, var(--utang-tab-mid)) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--utang-tab-chip) 10%, transparent);
+}
+
+.utang-hub-filters .exits-chip--active:hover:not(:disabled),
+.utang-hub-filters .exits-tabs__trigger[data-selected="true"]:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--utang-tab-soft));
+  color: var(--utang-tab-ink);
+  transform: none;
+}
+
+.utang-hub-filters .exits-chip--active .exits-chip__icon,
+.utang-hub-filters .exits-chip--active .exits-chip__label,
+.utang-hub-filters .exits-tabs__trigger[data-selected="true"] .exits-tabs__icon,
+.utang-hub-filters .exits-tabs__trigger[data-selected="true"] .exits-tabs__label {
+  color: inherit;
+}
+
+.utang-hub-filters .exits-chip--active [data-tone="primary"] {
+  border-color: color-mix(in srgb, #e2e8f0 55%, var(--utang-tab-soft));
+  background: color-mix(in srgb, var(--utang-tab-wash) 70%, transparent);
+  color: var(--utang-tab-ink);
+}
+
+[data-theme="dark"] .utang-hub-filters {
+  --utang-tab-chip: #0ea5e9;
+  --utang-tab-deep: #0c4a6e;
+  --utang-tab-soft: #7dd3fc;
+  --utang-tab-wash: color-mix(in srgb, #0ea5e9 14%, #1e293b);
+  --utang-tab-mid: color-mix(in srgb, #0ea5e9 18%, #1e293b);
+  --utang-tab-ink: #e2e8f0;
+}
+
+[data-theme="dark"] .utang-hub-filters .exits-chip,
+[data-theme="dark"] .utang-hub-filters .exits-tabs__trigger {
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  color: #e2e8f0;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--utang-tab-chip) 16%, #1e293b) 48%,
+    color-mix(in srgb, var(--utang-tab-deep) 18%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="dark"] .utang-hub-filters .exits-chip--active,
+[data-theme="dark"] .utang-hub-filters .exits-chip[data-state="active"],
+[data-theme="dark"] .utang-hub-filters .exits-tabs__trigger[data-selected="true"] {
+  border-color: color-mix(in srgb, #fff 18%, transparent);
+  color: #e2e8f0;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 10%, transparent) 0%,
+    color-mix(in srgb, var(--utang-tab-chip) 22%, #1e293b) 45%,
+    color-mix(in srgb, var(--utang-tab-deep) 28%, #0f172a) 100%
+  );
+}
+
+[data-theme="dark"] .utang-hub-filters .exits-chip--active [data-tone="primary"] {
+  border-color: color-mix(in srgb, #fff 22%, transparent);
+  background: color-mix(in srgb, var(--utang-tab-chip) 22%, transparent);
+  color: #e2e8f0;
+}
+
+/* People and Utang filters: horizontal scroll on small screens (do not wrap). */
+.people-page__filters.exits-chip-bar--scroll,
+.utang-hub-filters.exits-chip-bar--scroll {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .people-page__filters.exits-chip-bar,
+  .utang-hub-filters.exits-chip-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .people-page__filters.exits-chip-bar .exits-chip,
+  .utang-hub-filters.exits-chip-bar .exits-chip {
+    flex: 0 0 auto;
+    max-width: none;
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 1023px) {
+  .personal-home-meta--scroll {
+    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .personal-home-meta--scroll > * {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
+
+.personal-page .personal-section.catalog-form-section:nth-of-type(1) {
+  animation-delay: 50ms;
+}
+
+.personal-page .personal-section.catalog-form-section:nth-of-type(2) {
+  animation-delay: 90ms;
+}
+
+.personal-page .personal-section.catalog-form-section:nth-of-type(3) {
+  animation-delay: 130ms;
+}
+
+.personal-page .personal-section.catalog-form-section:nth-of-type(4) {
+  animation-delay: 170ms;
+}
+
+.personal-page .personal-section.catalog-form-section:nth-of-type(5) {
+  animation-delay: 210ms;
+}
+
+.personal-page .exits-list,
+.personal-page .exits-list.exits-list {
+  grid-template-columns: 1fr;
+}
+
+.personal-page .exits-animate-toolbar {
+  animation-delay: 30ms;
+}
+
+.personal-guide-card__header {
+  background: transparent;
+  border: 0;
+  color: inherit;
+}
+
+.personal-guide-card__header:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--exits-ring, var(--exits-primary));
+}
+
+.personal-guide-card--learned {
+  border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+}
+
+.personal-guide-progress {
+  min-width: 0;
+}
+
+.personal-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.personal-summary-grid--todo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.personal-summary-grid--utang {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.personal-summary-grid--balances {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.personal-shell .tracker-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+@media (min-width: 720px) {
+  .personal-shell .tracker-summary-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant.tracker-amount-group {
+  gap: 0;
+}
+
+.personal-shell .tracker-summary--pendant .tracker-amount-group__title {
+  margin: 0;
+  color: var(--exits-text);
+  font-size: var(--exits-text-md, 1rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.personal-shell .tracker-summary--pendant .tracker-amount-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: stretch;
+  /* Modest middle gap; tab clearance lives in each li, not a wide empty band. */
+  gap: 0.75rem;
+  margin-top: -0.45rem;
+  padding-left: 0;
+  padding-right: 0.25rem;
+}
+
+/* Stacked My Record / Shared: gap only before I owed + between the two cards. */
+@media (max-width: 719px) {
+  .personal-shell .tracker-summary.tracker-summary--pendant.tracker-amount-group {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-list.utang-relationship-list,
+  .personal-shell .tracker-summary--pendant .tracker-amount-list {
+    gap: 0.65rem;
+    margin-inline: 0;
+    padding-left: 0;
+    padding-right: 0.25rem;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-list > li {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: 0;
+  }
+
+  .personal-shell .tracker-amount-card .ui-standards-qcard__settings-ribbon {
+    margin-left: 0;
+    padding: 1.85rem 0.55rem 0.5rem 0.65rem;
+  }
+}
+
+.personal-shell .tracker-summary--pendant .tracker-amount-list > li {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  padding-left: 0;
+  box-sizing: border-box;
+}
+
+.personal-shell .tracker-amount-card {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  padding-left: 0;
+  padding-right: 0;
+  /* Soft Glass ribbon is the only shell — no outer card border. */
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/*
+ * Tracker I owed / I lent — Org EHG card-soft (keep lent/owe identity).
+ * Ribbon tab flush with card top + left (inside; fold on bottom-start).
+ */
+.personal-shell .tracker-amount-card .ui-standards-qcard__settings-ribbon {
+  --personal-qa-edge: color-mix(in srgb, #ffffff 78%, #94a3b8);
+  --personal-qa-fill: color-mix(in srgb, #ffffff 72%, transparent);
+  position: relative;
+  margin-left: 0;
+  padding: 1.9rem 0.65rem 0.55rem 0.65rem;
+  overflow: hidden;
+  border-radius: var(--exits-radius-soft, 0.6875rem);
+  border: 1px solid color-mix(in srgb, var(--personal-qa-chip) 28%, var(--personal-qa-edge));
+  color: var(--personal-qa-chip-ink);
+  /* Match UI Standards Org EHG Add New glass wash. */
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--personal-qa-chip) 8%, var(--personal-qa-fill));
+  box-shadow: none;
+}
+
+.personal-shell
+  .tracker-amount-card.utang-account-card--standard:hover
+  .ui-standards-qcard__settings-ribbon,
+.personal-shell
+  .tracker-amount-card.utang-account-card--standard:focus-visible
+  .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 42%, var(--personal-qa-edge));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 62%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 11%, var(--personal-qa-fill));
+  box-shadow: none;
+}
+
+.personal-shell
+  .tracker-amount-card.utang-account-card--standard
+  .utang-settings-card__tab,
+.personal-shell
+  .tracker-amount-card.utang-account-card--standard
+  .utang-settings-card__tab[data-utang-ownership] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  margin: 0;
+  transform: none;
+  /* Flush with card top + left; fold on bottom-start (parent clips top-left to EHG radius). */
+  border-top: 0;
+  border-left: 0;
+  border-radius: 0 0.45rem 0.45rem 0;
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 28%, var(--personal-qa-edge, #94a3b8));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--personal-qa-chip) 10%, #fff);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .personal-shell .tracker-amount-card .ui-standards-qcard__settings-ribbon,
+[data-theme="dark"]
+  .personal-shell
+  .tracker-amount-card.utang-account-card--standard:hover
+  .ui-standards-qcard__settings-ribbon,
+[data-theme="dark"]
+  .personal-shell
+  .tracker-amount-card.utang-account-card--standard:focus-visible
+  .ui-standards-qcard__settings-ribbon {
+  --personal-qa-chip-ink: #f1f5f9;
+  --personal-qa-edge: color-mix(in srgb, #ffffff 16%, #334155);
+  --personal-qa-fill: color-mix(in srgb, #ffffff 8%, #1a222d);
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 28%, var(--personal-qa-edge));
+  color: var(--personal-qa-chip-ink);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 12%, var(--personal-qa-fill));
+  box-shadow: none;
+}
+
+[data-theme="dark"]
+  .personal-shell
+  .tracker-amount-card.utang-account-card--standard
+  .utang-settings-card__tab,
+[data-theme="dark"]
+  .personal-shell
+  .tracker-amount-card.utang-account-card--standard
+  .utang-settings-card__tab[data-utang-ownership] {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 28%, var(--personal-qa-edge, #334155));
+  color: #f1f5f9;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 14%, #1a222d);
+  box-shadow: none;
+}
+
+.personal-shell .tracker-amount-card .tracker-amount-card__headline {
+  justify-content: flex-start;
+  padding-top: 0.35rem;
+  padding-bottom: 0.05rem;
+  min-width: 0;
+}
+
+.personal-shell .tracker-amount-card .utang-settings-card__amount {
+  font-size: 0.95rem;
+  font-weight: 600;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.personal-shell .tracker-amount-card .utang-settings-card__amount > span {
+  font-size: inherit;
+  font-weight: inherit;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.15;
+}
+
+.personal-shell .tracker-summary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 1.15rem 1.15rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 80%, transparent);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.personal-shell .tracker-summary:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.personal-shell .tracker-summary:hover {
+  transform: translateY(-1px);
+}
+
+.personal-shell .tracker-summary.tracker-summary--owed {
+  border-color: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-border));
+  border-top: 6px solid var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+.personal-shell .tracker-summary.tracker-summary--owe {
+  border-color: color-mix(in srgb, var(--exits-info) 18%, var(--exits-border));
+  border-top: 6px solid var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 6%, var(--exits-surface));
+}
+
+/* My Ledger — Soft Glass pendants premium (no ribbon). */
+.personal-shell .tracker-summary.tracker-summary--pendant {
+  --tracker-pendant: var(--exits-severity-success, #22c55e);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, #86efac);
+  border-top: 0;
+  border-radius: 1rem;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 42%, transparent) 0%,
+      color-mix(in srgb, #fff 70%, transparent) 42%,
+      color-mix(in srgb, #dcfce7 46%, transparent) 100%
+    );
+  /* Balanced inset — room for amount digits and ribbon tab clearance. */
+  padding: 2.69rem 0.75rem 0.9rem;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, #22c55e 8%, transparent);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owed {
+  --tracker-pendant: #10b981;
+  --tracker-pendant-deep: #047857;
+  --tracker-pendant-soft: #6ee7b7;
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--tracker-pendant-soft));
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 42%, transparent) 0%,
+      color-mix(in srgb, #ecfdf5 52%, transparent) 48%,
+      color-mix(in srgb, #d1fae5 46%, transparent) 100%
+    );
+  color: #065f46;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--tracker-pendant) 8%, transparent);
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owe {
+  --tracker-pendant: #3b82f6;
+  --tracker-pendant-deep: #1d4ed8;
+  --tracker-pendant-soft: #93c5fd;
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--tracker-pendant-soft));
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 42%, transparent) 0%,
+      color-mix(in srgb, #eff6ff 52%, transparent) 48%,
+      color-mix(in srgb, #dbeafe 46%, transparent) 100%
+    );
+  color: #1e40af;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--tracker-pendant) 8%, transparent);
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant:hover {
+  transform: none;
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--tracker-pendant-soft, #86efac));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--tracker-pendant) 9%, transparent);
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant:active {
+  border-color: color-mix(in srgb, #94a3b8 48%, var(--tracker-pendant-soft, #86efac));
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owed {
+  --tracker-pendant: #047857;
+  --tracker-pendant-deep: #064e3b;
+  --tracker-pendant-soft: #6ee7b7;
+}
+
+[data-theme="dark"] .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owe {
+  --tracker-pendant: #1d4ed8;
+  --tracker-pendant-deep: #1e3a8a;
+  --tracker-pendant-soft: #93c5fd;
+}
+
+[data-theme="dark"] .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owed,
+[data-theme="dark"] .personal-shell .tracker-summary.tracker-summary--pendant.tracker-summary--owe {
+  border-color: color-mix(in srgb, var(--tracker-pendant) 18%, #475569);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tracker-pendant) 14%, #1e293b),
+      color-mix(in srgb, var(--tracker-pendant-deep) 12%, #0f172a)
+    );
+  color: #e2e8f0;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 6px 14px rgba(0, 0, 0, 0.28);
+}
+
+.personal-shell .tracker-summary__title-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.personal-shell .tracker-summary__pendant {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, calc(-100% - 0.55rem));
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, #fff 55%, var(--tracker-pendant-soft, #86efac));
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.38), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 22%, var(--tracker-pendant)),
+      var(--tracker-pendant) 55%,
+      var(--tracker-pendant-deep, color-mix(in srgb, #000 18%, var(--tracker-pendant)))
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 0 0 0.2rem color-mix(in srgb, #fff 55%, transparent),
+    0 4px 10px color-mix(in srgb, var(--tracker-pendant) 28%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .tracker-summary__pendant {
+  border-color: color-mix(in srgb, #fff 32%, var(--tracker-pendant));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    0 0 0 1px color-mix(in srgb, #000 22%, transparent) inset,
+    0 0 0 0.2rem color-mix(in srgb, #1e293b 70%, transparent),
+    0 6px 14px color-mix(in srgb, var(--tracker-pendant) 32%, transparent);
+}
+
+.personal-shell .tracker-summary__pendant-icon,
+.personal-shell .tracker-summary__pendant .material-symbols-outlined,
+.personal-shell .tracker-summary__pendant svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 1.25rem;
+  color: #fff;
+}
+
+.personal-shell .tracker-summary__stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.personal-shell .tracker-summary--pendant .tracker-summary__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Small devices: pendant on the left of the title line, title starts beside it. */
+@media (max-width: 719px) {
+  .personal-shell .tracker-summary.tracker-summary--pendant,
+  .personal-shell .tracker-summary.tracker-summary--pendant.tracker-amount-group {
+    padding: 0.85rem 0.75rem;
+  }
+
+  .personal-shell .tracker-summary__title-row {
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-summary__copy {
+    flex: 0 1 auto;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: start;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-group__title {
+    margin: 0;
+    text-align: start;
+  }
+
+  .personal-shell .tracker-summary__pendant {
+    position: static;
+    left: auto;
+    right: auto;
+    top: auto;
+    order: -1;
+    flex: 0 0 auto;
+    width: 2.25rem;
+    height: 2.25rem;
+    transform: none;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.45) inset,
+      0 4px 10px color-mix(in srgb, var(--tracker-pendant) 28%, transparent);
+  }
+
+  .personal-shell .tracker-summary__pendant-icon,
+  .personal-shell .tracker-summary__pendant .material-symbols-outlined,
+  .personal-shell .tracker-summary__pendant svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    font-size: 1.05rem;
+  }
+
+  .personal-shell .tracker-summary--pendant .tracker-amount-list.utang-relationship-list,
+  .personal-shell .tracker-summary--pendant .tracker-amount-list {
+    margin-top: 0.15rem;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.personal-shell .tracker-summary--pendant .tracker-summary__title {
+  color: inherit;
+  font-weight: 700;
+}
+
+.personal-shell .tracker-summary--pendant .tracker-summary__stat {
+  align-items: center;
+  text-align: center;
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant .tracker-summary__stat-label {
+  font-weight: 700;
+}
+
+.personal-shell .tracker-summary__head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.personal-shell .tracker-summary__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--tracker-tone) 14%, var(--exits-surface));
+  color: var(--tracker-tone);
+}
+
+.personal-shell .tracker-summary__icon svg,
+.personal-shell .tracker-summary__icon .material-symbols-outlined {
+  width: 1.32rem;
+  height: 1.32rem;
+  font-size: 1.32rem;
+}
+
+.personal-shell .tracker-summary__icon--owed {
+  --tracker-tone: var(--exits-success);
+}
+
+.personal-shell .tracker-summary__icon--owe {
+  --tracker-tone: var(--exits-primary);
+}
+
+.personal-shell .tracker-summary__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.personal-shell .tracker-summary__title {
+  font-size: 1.012rem;
+  font-weight: 600;
+  color: var(--exits-text-muted);
+}
+
+.personal-shell .tracker-summary__amount {
+  font-size: 1.925rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary .tracker-balance__rule {
+  width: 100%;
+  height: 1px;
+  margin: 0.75rem 0 0.65rem;
+  background: var(--exits-border);
+}
+
+.personal-shell .tracker-summary__foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.personal-shell .tracker-summary__stat {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.personal-shell .tracker-summary__stat-label {
+  font-size: 0.858rem;
+  font-weight: 500;
+  color: var(--exits-text-muted);
+}
+
+.personal-shell .tracker-summary__stat-amount {
+  font-size: 1.155rem;
+  font-weight: 600;
+  color: var(--exits-text);
+}
+
+.personal-shell .tracker-summary__vrule {
+  width: 1px;
+  background: var(--exits-border);
+}
+
+/* Pendant ledger dividers — after base rules so they win cascade. */
+.personal-shell .tracker-summary.tracker-summary--pendant .tracker-balance__rule {
+  width: 100%;
+  height: 2px;
+  margin: 0.65rem 0;
+  background: var(--tracker-pendant);
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant .tracker-summary__vrule {
+  width: 2px;
+  background: var(--tracker-pendant);
+}
+
+.personal-shell .tracker-summary.tracker-summary--pendant .tracker-summary__foot {
+  grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr);
+}
+
+.personal-home-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.personal-home-metrics--pair {
+  grid-template-columns: repeat(2, minmax(0, 25%));
+  margin-bottom: 0.4rem;
+}
+
+/* Metrics row — Card index style (left ribbon + right count badge). */
+.personal-home-index-card {
+  --personal-index-from: #38bdf8;
+  --personal-index-to: #2563eb;
+  --personal-index-deep: #1d4ed8;
+  --personal-index-card-start: var(--personal-index-to);
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 2.35rem;
+  min-height: 2.35rem;
+  margin: 0;
+  padding: 0 0.4rem 0 2.25rem;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, var(--personal-index-card-start) 45%, var(--exits-border));
+  border-radius: 999px;
+  color: var(--exits-text);
+  /* Intent → primary, left to right (softened onto surface for dark mode). */
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--personal-index-card-start) 42%, var(--exits-surface)) 0%,
+    color-mix(in srgb, var(--exits-primary) 28%, var(--exits-surface)) 100%
+  );
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--exits-text) 10%, transparent);
+  text-decoration: none;
+  transition: transform 160ms ease;
+}
+
+.personal-home-index-card:hover {
+  transform: scale(1.035);
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--exits-text) 14%, transparent);
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-home-index-card,
+  .personal-home-index-card:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+.personal-home-index-card--secondary {
+  --personal-index-from: #4db6ac;
+  --personal-index-to: #26a69a;
+  --personal-index-deep: #00897b;
+  --personal-index-card-start: #26a69a;
+}
+
+.personal-home-index-card--success {
+  --personal-index-from: #4ade80;
+  --personal-index-to: #22c55e;
+  --personal-index-deep: #16a34a;
+  --personal-index-card-start: #22c55e;
+}
+
+.personal-home-index-card--info {
+  --personal-index-from: #38bdf8;
+  --personal-index-to: #0ea5e9;
+  --personal-index-deep: #0369a1;
+  --personal-index-card-start: #0ea5e9;
+}
+
+.personal-home-index-card--primary {
+  --personal-index-from: #42a5f5;
+  --personal-index-to: #1976d2;
+  --personal-index-deep: #1565c0;
+  --personal-index-card-start: #1976d2;
+}
+
+/* Add todo — solid fill, no body gradient. */
+.personal-home-index-card--solid {
+  background: var(--exits-surface);
+  border-color: color-mix(in srgb, var(--personal-index-card-start) 45%, var(--exits-border));
+}
+
+/* Outline — surface fill with an intent border, no shadow. */
+.personal-home-index-card--outline,
+.personal-home-index-card--outline:hover {
+  background: var(--exits-surface);
+  border-color: var(--personal-index-card-start);
+  box-shadow: none;
+}
+
+.personal-home-index-card--warn {
+  --personal-index-from: #ff8a65;
+  --personal-index-to: #ff5722;
+  --personal-index-deep: #e64a19;
+  --personal-index-card-start: #ff5722;
+}
+
+.personal-home-index-card:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.personal-home-index-card__ribbon {
+  position: absolute;
+  top: 0;
+  left: -0.5rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 100%;
+  border-radius: 0.45rem 0.45rem 0.45rem 0;
+  color: #fff;
+  background: var(--personal-index-to);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
+.personal-home-index-card__fold {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  border-top: 0.45rem solid var(--personal-index-deep);
+  border-left: 0.55rem solid transparent;
+}
+
+.personal-home-index-card__icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  font-size: 1.1rem;
+  color: inherit;
+}
+
+.personal-home-index-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-right: 0.35rem;
+}
+
+.personal-home-index-card__title {
+  margin: 0;
+  color: var(--exits-text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+}
+
+.personal-home-index-card__badge {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  align-self: center;
+  box-sizing: border-box;
+  width: 1.95rem;
+  height: 1.95rem;
+  min-width: 1.95rem;
+  margin: 0;
+  padding: 0;
+  border-radius: 999px;
+  border: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+  background-color: var(--personal-index-to);
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.42),
+      rgba(255, 255, 255, 0) 48%,
+      rgba(0, 0, 0, 0.18)
+    ),
+    linear-gradient(
+      160deg,
+      var(--personal-index-from) 0%,
+      var(--personal-index-to) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 2px 4px color-mix(in srgb, var(--personal-index-to) 26%, transparent);
+}
+
+.personal-home-index-card__badge::before {
+  content: "";
+  position: absolute;
+  top: 0.12rem;
+  left: 14%;
+  right: 14%;
+  height: 40%;
+  z-index: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+
+.personal-home-index-card__badge--standard {
+  background-color: var(--personal-index-to);
+  background-image: none;
+  box-shadow: none;
+  border-radius: 999px;
+}
+
+.personal-home-index-card__badge--standard::before {
+  content: none;
+}
+
+.personal-home-index-card__badge--ghost {
+  color: var(--personal-index-to);
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border-radius: 999px;
+  transition: background-color 150ms ease;
+}
+
+.personal-home-index-card__badge--ghost::before {
+  content: none;
+}
+
+.personal-home-index-card:not(.personal-home-index-card--solid) .personal-home-index-card__badge--ghost {
+  color: var(--personal-index-deep);
+}
+
+[data-theme="dark"] .personal-home-index-card .personal-home-index-card__badge--ghost,
+[data-theme="dark"] .personal-home-index-card .personal-home-index-card__ribbon {
+  color: #fff;
+}
+
+.personal-home-index-card:hover .personal-home-index-card__badge--ghost,
+.personal-home-index-card:focus-visible .personal-home-index-card__badge--ghost {
+  background-color: color-mix(in srgb, var(--personal-index-to) 12%, transparent);
+}
+
+.personal-home-index-card__badge--plus {
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 0;
+  padding-bottom: 0.08rem;
+}
+
+.personal-home-metric {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.personal-home-metric__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.personal-home-metric__icon svg,
+.personal-home-metric__icon .material-symbols-outlined {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 1.15rem;
+}
+
+.personal-home-metric__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.personal-home-metric__value {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  color: var(--exits-text);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.personal-home-metric strong {
+  color: var(--exits-text);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.personal-home-metric:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.personal-stores-empty {
+  padding: 0.85rem 0 0.25rem;
+}
+
+.personal-quick-actions .role-action-tile {
+  min-height: 2.75rem;
+  border-radius: var(--exits-radius-md);
+}
+
+.role-action-tile__end {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.personal-shell .personal-quick-actions__caret.material-symbols-outlined {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 1.15rem;
+  color: var(--exits-text-muted);
+}
+
+.personal-quick-actions .role-action-tile--hero {
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground);
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
+.personal-quick-actions .role-action-tile--hero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.24);
+}
+
+.personal-quick-actions .role-action-tile--hero:active {
+  transform: translateY(0);
+}
+
+.personal-quick-actions .role-action-tile--hero .role-action-tile__label {
+  flex: 0 1 auto;
+  text-align: start;
+}
+
+.personal-todo-summary .personal-todo-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+  margin-top: 0;
+}
+
+/* Small screens: densify Quick actions + To-do tiles; keep To-do header at normal size. */
+@media (max-width: 40rem) {
+  .personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  /* Keep Quick actions header roomy; densify tiles only — match To-do card gap. */
+  .personal-quick-actions__cards {
+    gap: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon .material-symbols-outlined,
+  .personal-quick-actions .personal-qa-glass__icon .personal-quick-actions__pennant-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-quick-actions .personal-qa-glass__chevron {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__plus {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 0.95rem;
+  }
+
+  /* Needs attention: densify on small screens; header stays roomy, view-all stays ghost. */
+  .personal-home-page .personal-section.personal-needs-attention.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  /* Stores to pay: densify on small screens; header stays roomy. */
+  .personal-home-page .personal-section.personal-stores-to-pay.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  /* Personal Tracker: densify on small screens; header stays roomy. */
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .personal-home-metrics .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-home-metrics .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-home-metrics .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-home-metrics .personal-qa-glass__badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.72rem;
+  }
+
+  .personal-stores-to-pay__metrics {
+    gap: 0.45rem;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-stores-to-pay__metrics .personal-qa-glass__badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.72rem;
+  }
+
+  .personal-stores-to-pay-list {
+    gap: 0.45rem;
+  }
+
+  .personal-stores-to-pay .personal-stores-to-pay-row,
+  .personal-stores-to-pay .personal-home-infodata-card--row {
+    min-height: 2.15rem;
+    padding-block: 0.35rem;
+    gap: 0.45rem;
+  }
+
+  .personal-needs-attention__list {
+    gap: 0.45rem;
+  }
+
+  .personal-needs-attention .personal-qa-glass,
+  .personal-needs-attention .personal-attention-row {
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    gap: 0.45rem;
+  }
+
+  /* To-do: densify tiles only — header stays roomy. */
+  .personal-home-page .personal-section.personal-todo-summary.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .personal-todo-summary .personal-todo-cards {
+    gap: 0.45rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__icon .material-symbols-outlined,
+  .personal-todo-summary .personal-qa-glass__icon .personal-todo-summary__pennant-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-todo-summary .personal-qa-glass__badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.72rem;
+  }
+
+  .personal-todo-summary .personal-qa-glass__plus {
+    width: 1.1rem;
+    height: 1.1rem;
+    font-size: 1.05rem;
+  }
+}
+
+.personal-todo-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  text-decoration: none;
+}
+
+.personal-todo-card__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--exits-radius-md);
+}
+
+.personal-shell .personal-todo-card__icon .material-symbols-outlined {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 1.15rem;
+}
+
+.personal-todo-card--today .personal-todo-card__icon {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+}
+
+.personal-todo-card--add {
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-text);
+}
+
+.personal-todo-card--add .personal-todo-card__icon {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 16%, var(--exits-surface));
+}
+
+.personal-todo-card--overdue .personal-todo-card__icon {
+  color: var(--exits-danger);
+  background: color-mix(in srgb, var(--exits-danger) 12%, var(--exits-surface));
+}
+
+.personal-todo-card--upcoming .personal-todo-card__icon {
+  color: var(--exits-info);
+  background: color-mix(in srgb, var(--exits-info) 12%, var(--exits-surface));
+}
+
+.personal-todo-card__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-todo-card__count {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .personal-home-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+    row-gap: 0.45rem;
+    column-gap: 0.45rem;
+  }
+
+  /* Quick actions: full-width dense rows on small devices. */
+  .personal-home-page .personal-section.personal-quick-actions.catalog-form-section {
+    border-radius: 1rem;
+    padding: 0.9rem 0.7rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .personal-quick-actions__cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.45rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__icon .material-symbols-outlined,
+  .personal-quick-actions .personal-qa-glass__icon .personal-quick-actions__pennant-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__label {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .personal-quick-actions .personal-qa-glass__chevron {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .personal-quick-actions .personal-qa-glass__plus {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 0.95rem;
+  }
+
+  /* To-do: full-width rows on small screens. */
+  .personal-todo-summary .personal-todo-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tracker-balance-split {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tracker-balance-split__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--exits-border-strong, var(--exits-border));
+}
+
+.tracker-balance-split__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: stretch;
+}
+
+.tracker-balance {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tracker-balance__outside {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.tracker-balance__card {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--exits-border);
+  border-radius: 0.85rem;
+  background: var(--exits-surface);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 2px 8px color-mix(in srgb, #0f172a 7%, transparent);
+}
+
+.tracker-balance__card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, #0f172a 10%, transparent);
+}
+
+.tracker-balance__card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--exits-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.tracker-balance__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.7rem;
+  color: #ffffff;
+}
+
+.tracker-balance__icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.tracker-balance__icon--owed {
+  background: #2ec4b6;
+  box-shadow: 0 3px 6px color-mix(in srgb, #2ec4b6 30%, transparent);
+}
+
+.tracker-balance__icon--owed-shared {
+  background: #38bdf8;
+  box-shadow: 0 3px 6px color-mix(in srgb, #38bdf8 30%, transparent);
+}
+
+.tracker-balance__icon--owe {
+  background: #f472b6;
+  box-shadow: 0 3px 6px color-mix(in srgb, #f472b6 30%, transparent);
+}
+
+.tracker-balance__icon--owe-shared {
+  background: #fb7185;
+  box-shadow: 0 3px 6px color-mix(in srgb, #fb7185 28%, transparent);
+}
+
+.tracker-balance__rule {
+  width: 1px;
+  align-self: stretch;
+  background: var(--exits-border);
+}
+
+.tracker-balance__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tracker-balance__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: var(--exits-text-muted);
+}
+
+.tracker-balance__copy .tracker-balance__amount {
+  font-size: 1.45rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--exits-text);
+}
+
+.utang-account-card {
+  width: 100%;
+}
+
+.utang-account-card--mine {
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+}
+
+.utang-account-card--mine [data-utang-ownership] {
+  color: var(--exits-primary);
+}
+
+.utang-account-card--shared {
+  border-color: color-mix(in srgb, var(--exits-info) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 7%, var(--exits-surface));
+}
+
+.utang-account-card--shared [data-utang-ownership] {
+  color: var(--exits-info);
+}
+
+.utang-summary-cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0.35rem 0 0.25rem 0.5rem;
+}
+
+@media (max-width: 1023px) {
+  .utang-summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Small: Money I owe / lent Quick Actions stack full width. */
+@media (max-width: 40rem) {
+  .utang-money-page .utang-money-summary.utang-summary-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * Money I lent / I owe — Soft Glass actions Card (ribbon + chips).
+ * Beat exits-card / personal transparent section chrome so the glass shell is visible.
+ */
+.utang-money-page .utang-money-main-card.utang-money-glass[data-shell="soft-glass"],
+.utang-money-page .utang-money-main-card.utang-ribbon-card.utang-money-glass,
+.utang-money-page .utang-money-actions-card.utang-money-glass[data-shell="soft-glass"],
+.utang-money-page .utang-money-actions-card.utang-ribbon-card.utang-money-glass {
+  /* Soft Glass shell + ribbon follow Preferences global primary. */
+  --utang-money-glass-chip: var(--exits-primary);
+  --utang-money-glass-deep: var(--exits-primary-hover);
+  --utang-money-glass-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --utang-money-glass-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --utang-money-glass-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --utang-money-glass-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+  position: relative;
+  overflow: visible;
+  margin-left: 0.9rem;
+  margin-right: 0.9rem;
+  /* Extra top: overhanging ribbon + gap before Soft Glass quick actions.
+/* balanced from L33245 */
+.utang-settings-list > li,
+.utang-settings-card {
+  min-width: 0;
+}
+/* balanced from L34535 */
+.ui-standards-qcard.ui-standards-qcard--settings-card.utang-settings-card {
+  --qcard-settings-size: 3.6rem;
+  flex: none;
+  width: 100%;
+  max-width: 100%;
+  min-height: 4.7rem;
+  margin-left: 0;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: calc(var(--qcard-settings-size) * 0.25);
+  text-decoration: none;
+}
+/* balanced from L42997 */
+.ui-standards-qcard.ui-standards-qcard--settings-card {
+  --qcard-settings-size: 4.65rem;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  flex: 0 0 calc(50% - 0.625rem);
+  width: calc(50% - 0.625rem);
+  max-width: calc(50% - 0.625rem);
+  min-width: 0;
+  min-height: 4.85rem;
+  margin-left: 0.2rem;
+  padding: 0.35rem 0 0.35rem calc(var(--qcard-settings-size) * 0.78);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+/* balanced from L1098 */
+
+/* Locked Soft Glass table shell — theme primary (table-global-default). */
+.exits-table-container[data-shell="soft-glass"] {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --personal-qa-chip-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --personal-qa-chip-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --personal-qa-chip-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+}
+/* utang-settings contiguous L33245-L34880 */
+.utang-settings-card {
+  min-width: 0;
+}
+
+.utang-settings-card__meta {
+  overflow: hidden;
+}
+
+@media (max-width: 639px) {
+  .utang-settings-list {
+    padding-left: 0.15rem;
+  }
+
+  .personal-home-page .personal-section.personal-tracker-card.catalog-form-section.utang-hub-accounts {
+    padding-inline: 0.6rem;
+  }
+
+  .utang-settings-card .utang-settings-card__tab,
+  .utang-settings-card .utang-settings-card__tab[data-utang-ownership] {
+    flex-wrap: wrap;
+    max-width: none;
+    row-gap: 0.15rem;
+    white-space: normal;
+  }
+
+  .utang-settings-card .utang-settings-card__tab .truncate {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .utang-settings-card .ui-standards-qcard__settings-ribbon .utang-settings-card__content {
+    padding-right: 0;
+  }
+
+  .utang-settings-card .utang-settings-card__meta.utang-settings-card__meta {
+    overflow: visible;
+  }
+
+  .utang-settings-card .utang-settings-card__name {
+    font-weight: 500;
+  }
+
+  .utang-settings-card__tags > * {
+    padding-inline: 0.35rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .utang-settings-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.75rem;
+  }
+
+  .utang-settings-list.utang-settings-list--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.person-detail-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem 1.25rem;
+  align-items: start;
+  padding-left: 0.7rem;
+}
+
+@media (min-width: 1024px) {
+  .person-detail-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Person detail cards — Card ribbon title overhanging the top-left corner. */
+.person-ribbon-card.person-ribbon-card,
+.utang-ribbon-card.utang-ribbon-card,
+.personal-page .personal-section.utang-ribbon-card.catalog-form-section {
+  position: relative;
+  overflow: visible;
+  padding-top: 3.1rem;
+}
+
+/*
+ * People main list card — Soft Glass shell + standard in-panel title
+ * (personal-main-card-header lock; people chip #4169e1).
+ */
+.people-page .people-list-card.people-list-main-glass[data-shell="soft-glass"] {
+  --personal-qa-chip: #4169e1;
+  --personal-qa-chip-deep: #1e3a8a;
+  --personal-qa-chip-soft: #a5b4fc;
+  --personal-qa-chip-wash: #eef2ff;
+  --personal-qa-chip-mid: #e0e7ff;
+  --personal-qa-chip-ink: #312e81;
+  --personal-main-card-header-chip: #4169e1;
+  position: relative;
+  overflow: visible;
+  padding: 1rem 1.05rem 1rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+[data-theme="dark"] .people-page .people-list-card.people-list-main-glass[data-shell="soft-glass"] {
+  --personal-qa-chip: #4169e1;
+  --personal-qa-chip-deep: #1e3a8a;
+  --personal-qa-chip-soft: #a5b4fc;
+  --personal-qa-chip-ink: #e2e8f0;
+  --personal-main-card-header-chip: #4169e1;
+  border-color: color-mix(in srgb, #64748b 38%, transparent);
+  background: #1e293b;
+  box-shadow: none;
+}
+
+/* Card title row: title + compact glass speed dial on one line. */
+.people-page .people-list-card.people-list-main-glass {
+  gap: 0.55rem;
+  overflow: visible;
+}
+
+/* Mobile: Soft Glass People card flush to content edges (cancel shell body gutters). */
+@media (max-width: 1023.98px) {
+  .people-page .people-list-card.people-list-main-glass {
+    margin-inline: calc(-1 * max(var(--exits-page-gutter-inline), env(safe-area-inset-left)))
+      calc(-1 * max(var(--exits-page-gutter-inline), env(safe-area-inset-right)));
+    width: auto;
+  }
+}
+
+.people-page .people-list-card .people-list-card__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  min-height: var(--personal-main-card-header-icon-size);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.people-page .people-list-card .people-list-card__header .personal-tracker-card__title {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  line-height: var(--personal-main-card-header-label-line-height);
+}
+
+/* Title-row Action QA — ext org-ehg qa-glass primary md icon-soft card-standard trail-chevron no-shadow */
+.people-page .people-list-card .people-add-glass-speed-dial {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  justify-content: flex-end;
+  width: auto;
+  max-width: 8.5rem;
+}
+
+.people-page .people-list-card .people-add-glass-speed-dial__trigger {
+  width: auto;
+  min-width: 0;
+  max-width: 8.5rem;
+}
+
+/* Prefer card-standard over the SoftGlassQuickAction card-soft default on this tile. */
+.people-page .people-list-card .people-add-glass-speed-dial__trigger.personal-qa-glass--card-standard {
+  border-radius: var(--exits-radius-soft, 0.6875rem);
+}
+
+/* Add local person drawer — Org EHG input glass full width in the sheet. */
+.people-add-local-sheet .people-add-local-sheet__fields .org-ehg-qa-input-glass {
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+}
+
+.people-add-local-sheet .people-add-local-sheet__fields {
+  background: transparent;
+}
+
+.people-add-menu-sheet__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.people-add-menu-sheet__row--solo {
+  grid-template-columns: 1fr;
+}
+
+.people-add-menu-sheet__row > * {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+
+.people-add-menu-sheet__export {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.15rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed color-mix(in srgb, var(--exits-border) 70%, transparent);
+}
+
+.people-add-menu-sheet__export-btn {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+
+.people-add-menu-sheet__export-btn .exits-file-format-icon {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+[data-theme="dark"] .people-add-menu-sheet__export {
+  border-top-color: color-mix(in srgb, var(--exits-border) 60%, transparent);
+}
+
+/* People toolbar actions use Org EHG btn-glass (ExitsOrgEhgButton) — no Soft Glass wash. */
+
+/* Soft Glass search field inside People main card. */
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput__box {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft)) !important;
+  border-radius: var(--exits-control-radius, 0.5rem) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent) !important;
+}
+
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput:hover .ui-standards-qinput__box,
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput:focus-within .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 52%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 60%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 54%, transparent) 100%
+  ) !important;
+}
+
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput__box::after {
+  border-bottom-color: var(--personal-qa-chip);
+}
+
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput__control {
+  color: var(--personal-qa-chip-ink);
+}
+
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput__control::placeholder {
+  color: color-mix(in srgb, var(--personal-qa-chip-ink) 55%, transparent);
+  opacity: 1;
+}
+
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput__icon,
+.people-page .people-list-main-glass .people-search-row .ui-standards-qinput__clear {
+  color: var(--personal-qa-chip);
+}
+
+[data-theme="dark"] .people-page .people-list-main-glass .people-search-row .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, #fff 16%, transparent) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip) 14%, #1e293b) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-deep) 16%, #0f172a) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26) !important;
+}
+
+[data-theme="dark"] .people-page .people-list-main-glass .people-search-row .ui-standards-qinput__control {
+  color: #e2e8f0;
+  -webkit-text-fill-color: #e2e8f0;
+}
+
+[data-theme="dark"] .people-page .people-list-main-glass .people-search-row .ui-standards-qinput__control::placeholder {
+  color: #94a3b8;
+  -webkit-text-fill-color: #94a3b8;
+}
+
+[data-theme="dark"] .people-page .people-list-main-glass .people-search-row .ui-standards-qinput__icon,
+[data-theme="dark"] .people-page .people-list-main-glass .people-search-row .ui-standards-qinput__clear {
+  color: color-mix(in srgb, var(--personal-qa-chip) 55%, #94a3b8);
+}
+
+/* Soft Glass filter chips inside People main card. */
+.people-page .people-list-main-glass .people-page__filters .exits-chip {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  color: var(--personal-qa-chip-ink);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.people-page .people-list-main-glass .people-page__filters .exits-chip:hover,
+.people-page .people-list-main-glass .people-page__filters button.exits-chip:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 58%, transparent) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-mid) 52%, transparent) 100%
+  );
+  transform: none;
+}
+
+.people-page .people-list-main-glass .people-page__filters .exits-chip--active,
+.people-page .people-list-main-glass .people-page__filters .exits-chip[data-state="active"] {
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+  color: var(--personal-qa-chip-ink);
+  font-weight: 600;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip-wash) 45%, transparent) 40%,
+    color-mix(in srgb, var(--personal-qa-chip) 18%, var(--personal-qa-chip-mid)) 100%
+  );
+}
+
+[data-theme="dark"] .people-page .people-list-main-glass .people-page__filters .exits-chip {
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  color: #e2e8f0;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--personal-qa-chip) 16%, #1e293b) 48%,
+    color-mix(in srgb, var(--personal-qa-chip-deep) 18%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+.person-detail-cards > .person-ribbon-card {
+  padding-top: 3.55rem;
+}
+
+/*
+ * Relationship detail — Soft Glass balance / quick actions / activity
+ * (global primary shell; same recipe as Money Soft Glass cards).
+ */
+.utang-detail-page .utang-balance-card.utang-detail-glass[data-shell="soft-glass"],
+.utang-detail-page .utang-balance-card.utang-ribbon-card.utang-detail-glass,
+.utang-detail-page .utang-quick-actions.utang-detail-glass[data-shell="soft-glass"],
+.utang-detail-page .utang-quick-actions.utang-ribbon-card.utang-detail-glass,
+.utang-detail-page .utang-activity-card.utang-detail-glass[data-shell="soft-glass"],
+.utang-detail-page .utang-activity-card.utang-ribbon-card.utang-detail-glass {
+  --utang-detail-glass-chip: var(--exits-primary);
+  --utang-detail-glass-deep: var(--exits-primary-hover);
+  --utang-detail-glass-soft: color-mix(in srgb, var(--exits-primary) 42%, #fff);
+  --utang-detail-glass-wash: color-mix(in srgb, var(--exits-primary) 8%, #fff);
+  --utang-detail-glass-mid: color-mix(in srgb, var(--exits-primary) 16%, #fff);
+  --utang-detail-glass-ink: color-mix(in srgb, #000 28%, var(--exits-primary));
+  position: relative;
+  overflow: visible;
+  margin-left: 0.9rem;
+  margin-right: 0.9rem;
+  padding: 4rem 0.65rem 0.9rem 0.65rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 55%, var(--utang-detail-glass-soft));
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 72%, var(--utang-detail-glass-wash)) 0%,
+    color-mix(in srgb, var(--utang-detail-glass-wash) 78%, #fff) 48%,
+    color-mix(in srgb, var(--utang-detail-glass-mid) 70%, #fff) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 6px 16px color-mix(in srgb, var(--utang-detail-glass-chip) 12%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.utang-detail-page .utang-detail-glass .personal-tracker-card__ribbon {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--utang-detail-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--utang-detail-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--utang-detail-glass-mid) 46%, transparent) 100%
+  );
+  color: var(--utang-detail-glass-ink);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--utang-detail-glass-chip) 8%, transparent);
+}
+
+.utang-detail-page .utang-detail-glass .personal-tracker-card__ribbon::after {
+  border-top-color: color-mix(in srgb, #000 38%, var(--utang-detail-glass-deep));
+}
+
+.utang-detail-page .utang-detail-glass .personal-tracker-card__pennant {
+  border-color: color-mix(in srgb, #fff 48%, var(--utang-detail-glass-soft));
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.32), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--utang-detail-glass-chip)),
+      var(--utang-detail-glass-chip) 58%,
+      var(--utang-detail-glass-deep)
+    );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+[data-theme="dark"] .utang-detail-page .utang-balance-card.utang-detail-glass[data-shell="soft-glass"],
+[data-theme="dark"] .utang-detail-page .utang-balance-card.utang-ribbon-card.utang-detail-glass,
+[data-theme="dark"] .utang-detail-page .utang-quick-actions.utang-detail-glass[data-shell="soft-glass"],
+[data-theme="dark"] .utang-detail-page .utang-quick-actions.utang-ribbon-card.utang-detail-glass,
+[data-theme="dark"] .utang-detail-page .utang-activity-card.utang-detail-glass[data-shell="soft-glass"],
+[data-theme="dark"] .utang-detail-page .utang-activity-card.utang-ribbon-card.utang-detail-glass {
+  --utang-detail-glass-chip: var(--exits-primary);
+  --utang-detail-glass-deep: var(--exits-primary-hover);
+  --utang-detail-glass-soft: color-mix(in srgb, var(--exits-primary) 55%, #94a3b8);
+  --utang-detail-glass-wash: color-mix(in srgb, var(--exits-primary) 14%, #1e293b);
+  --utang-detail-glass-mid: color-mix(in srgb, var(--exits-primary) 18%, #1e293b);
+  --utang-detail-glass-ink: #e2e8f0;
+  border-color: color-mix(in srgb, #fff 14%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 5%, #1e293b) 0%,
+    color-mix(in srgb, #fff 2%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 70%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 7%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .utang-detail-page .utang-detail-glass .personal-tracker-card__ribbon {
+  border-color: color-mix(in srgb, #fff 14%, transparent);
+  color: #fff;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 6%, transparent) 0%,
+    color-mix(in srgb, var(--utang-detail-glass-chip) 22%, #1e293b) 48%,
+    color-mix(in srgb, var(--utang-detail-glass-deep) 28%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .utang-detail-page .utang-detail-glass .personal-tracker-card__ribbon::after {
+  border-top-color: color-mix(in srgb, #000 55%, var(--utang-detail-glass-deep));
+}
+
+@media (max-width: 639px) {
+  .utang-detail-page .utang-balance-card.utang-detail-glass,
+  .utang-detail-page .utang-quick-actions.utang-detail-glass,
+  .utang-detail-page .utang-activity-card.utang-detail-glass {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+  }
+}
+
+.utang-detail-page .utang-detail-qa-cards.personal-quick-actions__cards {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  gap: 0.55rem;
+}
+
+.utang-detail-page .utang-detail-qa-cards .personal-qa-glass {
+  text-align: start;
+}
+
+.utang-detail-page .utang-activity-list.utang-relationship-list {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.utang-detail-page .utang-activity-responsive {
+  min-width: 0;
+  width: 100%;
+}
+
+.utang-detail-page .utang-activity-table.exits-table-container[data-shell="soft-glass"] {
+  margin: 0;
+}
+
+/*
+ * Activity table: auto layout so Status/Created size to content.
+ * Fixed layout crushed columns to header text; body spilled under wrong headers on h-scroll.
+ */
+.utang-activity-table .exits-table {
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+}
+
+.utang-activity-table .exits-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Activity Entry: narrower than default flex; ellipsis for long titles. */
+.utang-activity-table .utang-activity-col-entry {
+  width: 8.5rem;
+  min-width: 6.5rem;
+  max-width: 9.5rem;
+}
+
+/* Activity Status: Soft Glass tags — column width = 3 tags (one row). */
+.utang-activity-table .utang-activity-col-status {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.utang-activity-table .utang-activity-status-tags {
+  width: max-content;
+}
+
+.utang-activity-table .utang-activity-status-tags .exits-status-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Activity Due: shrink to label · date (e.g. Overdue · 10/22/2026). */
+.utang-activity-table .utang-activity-col-due {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Activity Created: full date-time, column only as wide as the value. */
+.utang-activity-table .utang-activity-col-created {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.utang-activity-table .utang-activity-created-date {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Amount can show balance-after — wider than Entry. */
+.utang-activity-table .exits-table__col--numeric,
+.utang-activity-table .utang-activity-col-amount {
+  max-width: none;
+  width: 1%;
+  min-width: 10.5rem;
+  white-space: nowrap;
+}
+
+.utang-activity-table .utang-activity-balance-after,
+.utang-activity-table .utang-activity-col-due .utang-settings-card__tab-text--danger {
+  /* Same red as overdue. */
+  color: var(--exits-severity-danger, #ef4444) !important;
+}
+
+@media (max-width: 40rem) {
+  .utang-detail-page .utang-detail-qa-cards.personal-quick-actions__cards {
+    gap: 0.45rem;
+  }
+
+  .utang-detail-page .utang-detail-qa-cards .personal-qa-glass {
+    gap: 0.4rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+}
+
+.utang-quick-actions .personal-quick-actions__cards {
+  /* Same as .utang-hub-actions — room for row icon ribbons + folds */
+  padding-left: 0.5rem;
+  gap: 0.55rem;
+}
+
+button.personal-home-index-card {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.exits-modal__ribbon .person-detail-record-name {
+  color: var(--exits-warning);
+}
+
+.person-detail-utang-actions {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.75rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  .person-detail-utang-actions {
+    position: static;
+    z-index: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .person-detail-utang-actions > * {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.person-detail-contact-edit {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.75rem;
+  z-index: 3;
+}
+
+.person-ribbon-card > .person-ribbon-card__toggle {
+  position: absolute;
+  top: 0.45rem;
+  right: 1rem;
+  left: 0;
+  width: auto;
+  min-height: 2.15rem;
+  justify-content: flex-end;
+}
+
+.person-ribbon-card__toggle .personal-tracker-card__ribbon {
+  top: 0;
+}
+
+.exits-checkbox__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.exits-checkbox__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: var(--exits-text-muted, rgba(0, 0, 0, 0.54));
+  transition: color 0.22s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.exits-checkbox__icon.exits-checkbox__icon--on {
+  color: var(--qcheckbox-color, var(--exits-primary));
+}
+
+.person-ribbon-card__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: var(--exits-text-base);
+  font-weight: 600;
+}
+
+.person-ribbon-card__checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-left: -0.6rem;
+}
+
+.person-ribbon-card__rule {
+  height: 1px;
+  margin: 0.15rem 0;
+  background: var(--exits-border);
+}
+
+.person-shared-card__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.person-shared-card__col {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.person-shared-card__divider {
+  height: 1px;
+  background: var(--exits-border);
+}
+
+@media (min-width: 640px) {
+  .person-shared-card__columns {
+    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .person-shared-card__divider {
+    width: 1px;
+    height: auto;
+    align-self: stretch;
+  }
+}
+
+.person-ribbon-card .personal-tracker-card__ribbon,
+.utang-ribbon-card .personal-tracker-card__ribbon {
+  background-color: var(--exits-primary);
+  color: var(--exits-primary-foreground, #fff);
+}
+
+.person-ribbon-card .personal-tracker-card__ribbon::after,
+.utang-ribbon-card .personal-tracker-card__ribbon::after {
+  border-top-color: color-mix(in srgb, #000 38%, var(--exits-primary));
+}
+
+.person-ribbon-card .personal-tracker-card__pennant,
+.utang-ribbon-card .personal-tracker-card__pennant {
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.42), transparent 52%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, #fff 22%, var(--exits-primary)),
+      var(--exits-primary) 48%,
+      color-mix(in srgb, #000 18%, var(--exits-primary))
+    );
+  box-shadow:
+    0 0 0 0.14rem color-mix(in srgb, var(--exits-primary) 18%, #fff),
+    0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
+.person-ribbon-card .personal-tracker-card__pennant-icon,
+.utang-ribbon-card .personal-tracker-card__pennant-icon {
+  color: var(--exits-primary-foreground, #fff);
+}
+
+/* Workplace membership cards reuse the Card pin shape. */
+.personal-workplace-pin {
+  --qcard-pin-from: var(--exits-primary);
+  --qcard-pin-to: color-mix(in srgb, var(--exits-primary) 58%, #fff);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
+  width: 50%;
+  margin-top: -0.9rem;
+  padding: 1.35rem 0 0.85rem;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.personal-workplace-pin__shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.15rem 1.05rem 2.65rem;
+  overflow: visible;
+  background: transparent;
+  color: var(--exits-text);
+}
+
+.personal-workplace-pin__shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--exits-surface);
+  pointer-events: none;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 1.85rem),
+    50% 100%,
+    0 calc(100% - 1.85rem)
+  );
+  filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.14));
+}
+
+.personal-workplace-pin__medallion {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 3.65rem;
+  height: 3.65rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  color: var(--exits-primary-foreground, #fff);
+  background: linear-gradient(to bottom, var(--qcard-pin-from) 0%, var(--qcard-pin-to) 100%);
+  box-shadow:
+    0 0 0 0.28rem var(--exits-surface),
+    0 8px 18px color-mix(in srgb, var(--qcard-pin-from) 40%, transparent);
+}
+
+.personal-workplace-pin__medallion svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.personal-workplace-pin__ribbon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% + 3.7rem);
+  margin: 0.55rem 0 0.85rem;
+  padding: 0.45rem 1rem;
+  color: var(--exits-primary-foreground, #fff);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  background: linear-gradient(to right, var(--qcard-pin-from) 0%, var(--qcard-pin-to) 100%);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--qcard-pin-from) 32%, transparent);
+}
+
+.personal-workplace-pin__fold {
+  position: absolute;
+  top: 100%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.personal-workplace-pin__fold--left {
+  left: 0;
+  border-top: 0.45rem solid color-mix(in srgb, #000 35%, var(--qcard-pin-from));
+  border-left: 0.7rem solid transparent;
+}
+
+.personal-workplace-pin__fold--right {
+  right: 0;
+  border-top: 0.45rem solid color-mix(in srgb, #000 35%, var(--qcard-pin-to));
+  border-right: 0.7rem solid transparent;
+}
+
+.personal-workplace-pin__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 80%;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: center;
+}
+
+.personal-workplace-pin__login {
+  width: 72%;
+}
+
+/*
+ * Workplaces Soft Glass — stores (mine) / info (pending).
+ * Lock: soft-glass-card-global-default. No blur, neon, or lift.
+ */
+.workplaces-page .workplaces-glass[data-shell="soft-glass"],
+.workplaces-page .workplaces-glass.person-ribbon-card {
+  --wp-glass-chip: #8b5cf6;
+  --wp-glass-deep: #6d28d9;
+  --wp-glass-soft: #c4b5fd;
+  --wp-glass-wash: #f5f3ff;
+  --wp-glass-mid: #ede9fe;
+  --wp-glass-ink: #5b21b6;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--wp-glass-soft));
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--wp-glass-mid) 46%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--wp-glass-chip) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.workplaces-page .workplaces-glass--stores {
+  --wp-glass-chip: #8b5cf6;
+  --wp-glass-deep: #6d28d9;
+  --wp-glass-soft: #c4b5fd;
+  --wp-glass-wash: #f5f3ff;
+  --wp-glass-mid: #ede9fe;
+  --wp-glass-ink: #5b21b6;
+}
+
+.workplaces-page .workplaces-glass--info {
+  --wp-glass-chip: #0ea5e9;
+  --wp-glass-deep: #0369a1;
+  --wp-glass-soft: #7dd3fc;
+  --wp-glass-wash: #f0f9ff;
+  --wp-glass-mid: #e0f2fe;
+  --wp-glass-ink: #075985;
+}
+
+.workplaces-page .workplaces-glass .personal-tracker-card__ribbon {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--wp-glass-soft));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--wp-glass-mid) 46%, transparent) 100%
+  );
+  color: var(--wp-glass-ink);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--wp-glass-chip) 8%, transparent);
+}
+
+.workplaces-page .workplaces-glass .personal-tracker-card__ribbon::after {
+  border-top-color: color-mix(in srgb, #000 38%, var(--wp-glass-deep));
+}
+
+.workplaces-page .workplaces-glass .personal-tracker-card__pennant {
+  border-color: color-mix(in srgb, #fff 48%, var(--wp-glass-soft));
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.32), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--wp-glass-chip)),
+      var(--wp-glass-chip) 58%,
+      var(--wp-glass-deep)
+    );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+.workplaces-page .workplaces-glass-item[data-shell="soft-glass"] {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--wp-glass-soft, #c4b5fd));
+  border-radius: 0.9rem;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 55%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-wash, #f5f3ff) 40%, transparent) 55%,
+    color-mix(in srgb, var(--wp-glass-mid, #ede9fe) 36%, transparent) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--wp-glass-chip, #8b5cf6) 7%, transparent);
+}
+
+.workplaces-page .workplaces-glass__btn {
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--wp-glass-soft, #c4b5fd)) !important;
+  color: var(--wp-glass-ink, #5b21b6) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-wash, #f5f3ff) 52%, transparent) 48%,
+    color-mix(in srgb, var(--wp-glass-mid, #ede9fe) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--wp-glass-chip, #8b5cf6) 8%, transparent) !important;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease !important;
+}
+
+.workplaces-page .workplaces-glass__btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--wp-glass-soft, #c4b5fd)) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 36%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-wash, #f5f3ff) 58%, transparent) 48%,
+    color-mix(in srgb, var(--wp-glass-mid, #ede9fe) 52%, transparent) 100%
+  ) !important;
+  transform: none !important;
+}
+
+.workplaces-page .workplaces-glass__btn[data-intent="danger"] {
+  --wp-btn-chip: var(--exits-warning, #ff5722);
+  --wp-btn-soft: color-mix(in srgb, var(--wp-btn-chip) 42%, #fff);
+  --wp-btn-wash: color-mix(in srgb, var(--wp-btn-chip) 10%, #fff);
+  --wp-btn-mid: color-mix(in srgb, var(--wp-btn-chip) 18%, #fff);
+  --wp-btn-ink: color-mix(in srgb, #000 22%, var(--wp-btn-chip));
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--wp-btn-soft)) !important;
+  color: var(--wp-btn-ink) !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 42%, transparent) 0%,
+    color-mix(in srgb, var(--wp-btn-wash) 52%, transparent) 48%,
+    color-mix(in srgb, var(--wp-btn-mid) 46%, transparent) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--wp-btn-chip) 8%, transparent) !important;
+}
+
+[data-theme="dark"] .workplaces-page .workplaces-glass[data-shell="soft-glass"],
+[data-theme="dark"] .workplaces-page .workplaces-glass.person-ribbon-card {
+  --wp-glass-ink: #e2e8f0;
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 7%, #1e293b) 0%,
+    color-mix(in srgb, #fff 3%, #1e293b) 48%,
+    color-mix(in srgb, #0f172a 55%, #1e293b) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .workplaces-page .workplaces-glass--stores {
+  --wp-glass-chip: #6d28d9;
+  --wp-glass-deep: #4c1d95;
+  --wp-glass-soft: #c4b5fd;
+}
+
+[data-theme="dark"] .workplaces-page .workplaces-glass--info {
+  --wp-glass-chip: #0369a1;
+  --wp-glass-deep: #0c4a6e;
+  --wp-glass-soft: #7dd3fc;
+}
+
+[data-theme="dark"] .workplaces-page .workplaces-glass .personal-tracker-card__ribbon {
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-chip) 18%, #1e293b) 48%,
+    color-mix(in srgb, var(--wp-glass-deep) 22%, #0f172a) 100%
+  );
+  color: #e2e8f0;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="dark"] .workplaces-page .workplaces-glass-item[data-shell="soft-glass"] {
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-chip, #6d28d9) 14%, #1e293b) 55%,
+    color-mix(in srgb, var(--wp-glass-deep, #4c1d95) 16%, #0f172a) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="dark"] .workplaces-page .workplaces-glass__btn {
+  border-color: color-mix(in srgb, #fff 16%, transparent) !important;
+  color: #e2e8f0 !important;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff 8%, transparent) 0%,
+    color-mix(in srgb, var(--wp-glass-chip, #6d28d9) 18%, #1e293b) 48%,
+    color-mix(in srgb, var(--wp-glass-deep, #4c1d95) 22%, #0f172a) 100%
+  ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26) !important;
+}
+
+.personal-workplaces-list.person-ribbon-card.catalog-form-section {
+  background: var(--exits-bg);
+  overflow: visible;
+  padding-bottom: 1.35rem;
+}
+
+/* Search sits in the Active accounts header (top right) — Soft Glass (info). */
+.utang-hub-accounts .personal-tracker-card__header .utang-search {
+  --personal-qa-chip: #0ea5e9;
+  --personal-qa-chip-deep: #0369a1;
+  --personal-qa-chip-soft: #7dd3fc;
+  --personal-qa-chip-wash: #f0f9ff;
+  --personal-qa-chip-mid: #e0f2fe;
+  --personal-qa-chip-ink: #075985;
+  position: static;
+  flex: 0 1 16rem;
+  width: min(16rem, 45%);
+  min-width: 0;
+  margin-left: auto;
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput {
+  width: 100%;
+  --qinput-accent: var(--personal-qa-chip);
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput__box {
+  box-sizing: border-box;
+  height: 2.35rem;
+  min-height: 2.35rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft)) !important;
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 42%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip-wash) 52%, transparent) 48%,
+      color-mix(in srgb, var(--personal-qa-chip-mid) 46%, transparent) 100%
+    ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease !important;
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput:focus-within .ui-standards-qinput__box,
+.utang-hub-accounts .utang-search .ui-standards-qinput:hover .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft)) !important;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 52%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip-wash) 60%, transparent) 48%,
+      color-mix(in srgb, var(--personal-qa-chip-mid) 54%, transparent) 100%
+    ) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip) 9%, transparent);
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput__box::after {
+  border-bottom-color: var(--personal-qa-chip);
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput__control {
+  height: 100%;
+  min-height: 0;
+  color: var(--personal-qa-chip-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput__control::placeholder {
+  color: color-mix(in srgb, var(--personal-qa-chip-ink) 55%, transparent);
+  font-weight: 500;
+  opacity: 1;
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput__icon {
+  color: var(--personal-qa-chip);
+  opacity: 0.9;
+}
+
+.utang-hub-accounts .utang-search .ui-standards-qinput__clear {
+  color: var(--personal-qa-chip);
+}
+
+[data-theme="dark"] .utang-hub-accounts .personal-tracker-card__header .utang-search {
+  --personal-qa-chip: #0369a1;
+  --personal-qa-chip-deep: #0c4a6e;
+  --personal-qa-chip-soft: #7dd3fc;
+  --personal-qa-chip-ink: #e2e8f0;
+}
+
+[data-theme="dark"] .utang-hub-accounts .utang-search .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 16%, #475569) !important;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 5%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip) 13%, #1e293b) 46%,
+      color-mix(in srgb, var(--personal-qa-chip-deep) 11%, #0f172a) 100%
+    ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="dark"] .utang-hub-accounts .utang-search .ui-standards-qinput:focus-within .ui-standards-qinput__box,
+[data-theme="dark"] .utang-hub-accounts .utang-search .ui-standards-qinput:hover .ui-standards-qinput__box {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 22%, #64748b) !important;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 6%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip) 16%, #1e293b) 46%,
+      color-mix(in srgb, var(--personal-qa-chip-deep) 13%, #0f172a) 100%
+    ) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .utang-hub-accounts .utang-search .ui-standards-qinput__control {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .utang-hub-accounts .utang-search .ui-standards-qinput__control::placeholder {
+  color: color-mix(in srgb, #94a3b8 70%, var(--personal-qa-chip-soft));
+}
+
+[data-theme="dark"] .utang-hub-accounts .utang-search .ui-standards-qinput__icon,
+[data-theme="dark"] .utang-hub-accounts .utang-search .ui-standards-qinput__clear {
+  color: #7dd3fc;
+}
+
+.utang-hub-filters__split {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.utang-hub-filters__divider {
+  width: 1px;
+  height: 1em;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+/* Active accounts "I lent | I owe" — I lent (left) | I owe (right). */
+.utang-hub-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.utang-hub-split__column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.utang-hub-split__title {
+  margin: 0;
+  color: var(--exits-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.utang-hub-split__divider {
+  height: 1px;
+  background: var(--exits-border);
+}
+
+@media (min-width: 768px) {
+  .utang-hub-split {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .utang-hub-split__divider {
+    width: 1px;
+    height: auto;
+    align-self: stretch;
+  }
+}
+
+.ui-standards-qcard.ui-standards-qcard--settings-card.utang-settings-card {
+  --qcard-settings-size: 3.6rem;
+  flex: none;
+  width: 100%;
+  max-width: 100%;
+  min-height: 4.7rem;
+  margin-left: 0;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: calc(var(--qcard-settings-size) * 0.25);
+  text-decoration: none;
+}
+
+.utang-settings-card .ui-standards-qcard__settings-ribbon {
+  min-height: 4.2rem;
+  gap: 0.2rem;
+  padding: 0.45rem 1.25rem 0.5rem 1.6rem;
+}
+
+/* Soft Glass identities — match Quick Actions lock (owe = blue, not warn). */
+.utang-settings-card--owe {
+  --qcard-settings: #3b82f6;
+  --qcard-settings-deep: #1d4ed8;
+  --personal-qa-chip: #3b82f6;
+  --personal-qa-chip-deep: #1d4ed8;
+  --personal-qa-chip-soft: #93c5fd;
+  --personal-qa-chip-wash: #eff6ff;
+  --personal-qa-chip-mid: #dbeafe;
+  --personal-qa-chip-ink: #1e40af;
+}
+
+.utang-settings-card--lent {
+  --qcard-settings: #10b981;
+  --qcard-settings-deep: #047857;
+  --personal-qa-chip: #10b981;
+  --personal-qa-chip-deep: #047857;
+  --personal-qa-chip-soft: #6ee7b7;
+  --personal-qa-chip-wash: #ecfdf5;
+  --personal-qa-chip-mid: #d1fae5;
+  --personal-qa-chip-ink: #065f46;
+}
+
+/* People list (no utang) — Soft Glass people identity (royal blue). */
+.utang-settings-card--people {
+  --qcard-settings: #4169e1;
+  --qcard-settings-deep: #1e3a8a;
+  --personal-qa-chip: #4169e1;
+  --personal-qa-chip-deep: #1e3a8a;
+  --personal-qa-chip-soft: #a5b4fc;
+  --personal-qa-chip-wash: #eef2ff;
+  --personal-qa-chip-mid: #e0e7ff;
+  --personal-qa-chip-ink: #312e81;
+}
+
+[data-theme="dark"] .utang-settings-card--owe {
+  --qcard-settings: #1d4ed8;
+  --qcard-settings-deep: #1e3a8a;
+  --personal-qa-chip: #1d4ed8;
+  --personal-qa-chip-deep: #1e3a8a;
+  --personal-qa-chip-soft: #93c5fd;
+  --personal-qa-chip-ink: #e2e8f0;
+}
+
+[data-theme="dark"] .utang-settings-card--lent {
+  --qcard-settings: #047857;
+  --qcard-settings-deep: #064e3b;
+  --personal-qa-chip: #047857;
+  --personal-qa-chip-deep: #064e3b;
+  --personal-qa-chip-soft: #6ee7b7;
+  --personal-qa-chip-ink: #e2e8f0;
+}
+
+[data-theme="dark"] .utang-settings-card--people {
+  --qcard-settings: #3730a3;
+  --qcard-settings-deep: #1e1b4b;
+  --personal-qa-chip: #3730a3;
+  --personal-qa-chip-deep: #1e1b4b;
+  --personal-qa-chip-soft: #a5b4fc;
+  --personal-qa-chip-ink: #e2e8f0;
+}
+
+.utang-settings-card.utang-account-card--shared,
+.utang-settings-card.utang-account-card--mine {
+  border: 0;
+  background: transparent;
+}
+
+.ui-standards-qcard.ui-standards-qcard--settings-card.utang-settings-card.utang-account-card--standard {
+  margin-top: 0;
+  padding-top: 0.5rem;
+  padding-bottom: 0;
+  padding-left: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.utang-settings-card .ui-standards-qcard__settings-ribbon {
+  z-index: auto;
+  clip-path: none;
+  border-radius: 0 999px 999px 0;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, #000 10%, var(--qcard-settings)),
+    var(--qcard-settings) 40%,
+    color-mix(in srgb, #fff 45%, var(--qcard-settings))
+  );
+}
+
+.utang-settings-card:hover .ui-standards-qcard__settings-ribbon,
+.utang-settings-card:focus-visible .ui-standards-qcard__settings-ribbon {
+  box-shadow:
+    0 3px 8px color-mix(in srgb, var(--qcard-settings) 36%, transparent);
+}
+
+/* Active account row — Soft Glass Enterprise (Quick Actions lock). */
+.utang-account-card--standard .ui-standards-qcard__settings-ribbon {
+  position: relative;
+  overflow: visible;
+  padding: 0.85rem 1.35rem 0.75rem 0.95rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft, #93c5fd));
+  border-radius: 1rem;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 42%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip-wash, #eff6ff) 52%, transparent) 48%,
+      color-mix(in srgb, var(--personal-qa-chip-mid, #dbeafe) 46%, transparent) 100%
+    );
+  color: var(--personal-qa-chip-ink, #1e40af);
+  clip-path: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 8%, transparent);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.utang-account-card--standard .utang-account-card__caret {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid color-mix(in srgb, #fff 52%, var(--personal-qa-chip-soft, #93c5fd));
+  border-radius: 0.6rem;
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.34), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #fff 18%, var(--personal-qa-chip, #3b82f6)),
+      var(--personal-qa-chip, #3b82f6) 56%,
+      var(--personal-qa-chip-deep, #1d4ed8)
+    );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  transform: translate(53%, -50%);
+  pointer-events: none;
+}
+
+.utang-account-card--standard:hover .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard:focus-visible .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft, #93c5fd));
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 52%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip-wash, #eff6ff) 60%, transparent) 48%,
+      color-mix(in srgb, var(--personal-qa-chip-mid, #dbeafe) 54%, transparent) 100%
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 9%, transparent);
+}
+
+.utang-account-card--standard:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.utang-account-card--standard.utang-account-card--mine .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-account-card--shared .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--lent .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--owe .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--people .ui-standards-qcard__settings-ribbon {
+  /* Identity comes from --personal-qa-chip* on lent/owe/people. */
+  border-color: color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft));
+}
+
+.utang-account-card--standard.utang-settings-card--lent:hover .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--lent:focus-visible .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--owe:hover .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--owe:focus-visible .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--people:hover .ui-standards-qcard__settings-ribbon,
+.utang-account-card--standard.utang-settings-card--people:focus-visible .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, #cbd5e1 55%, var(--personal-qa-chip-soft));
+}
+
+.utang-account-card--standard .utang-settings-card__name,
+.utang-account-card--standard .utang-settings-card__amount,
+.utang-account-card--standard .utang-settings-card__balance,
+.utang-account-card--standard .utang-settings-card__meta,
+.utang-account-card--standard .utang-settings-card__meta .text-muted {
+  color: var(--personal-qa-chip-ink, #1e40af);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .utang-account-card--standard .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 16%, #475569);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 5%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip) 13%, #1e293b) 46%,
+      color-mix(in srgb, var(--personal-qa-chip-deep) 11%, #0f172a) 100%
+    );
+  color: #e2e8f0;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 9%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="dark"] .utang-account-card--standard:hover .ui-standards-qcard__settings-ribbon,
+[data-theme="dark"] .utang-account-card--standard:focus-visible .ui-standards-qcard__settings-ribbon {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 22%, #64748b);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 6%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip) 16%, #1e293b) 46%,
+      color-mix(in srgb, var(--personal-qa-chip-deep) 13%, #0f172a) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .utang-account-card--standard .utang-account-card__caret {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 22%, #475569);
+  color: #f1f5f9;
+  background:
+    radial-gradient(circle at 30% 24%, color-mix(in srgb, #fff 12%, transparent), transparent 55%),
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--personal-qa-chip) 40%, #334155),
+      color-mix(in srgb, var(--personal-qa-chip-deep) 56%, #1e293b)
+    );
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 11%, transparent) inset;
+}
+
+[data-theme="dark"] .utang-account-card--standard .utang-settings-card__name,
+[data-theme="dark"] .utang-account-card--standard .utang-settings-card__amount,
+[data-theme="dark"] .utang-account-card--standard .utang-settings-card__balance,
+[data-theme="dark"] .utang-account-card--standard .utang-settings-card__meta,
+[data-theme="dark"] .utang-account-card--standard .utang-settings-card__meta .text-muted {
+  color: #e2e8f0;
+}
+
+.utang-account-card--standard .utang-settings-card__amount > svg {
+  color: var(--exits-muted, #64748b);
+}
+
+.utang-settings-card .ui-standards-qcard__settings-circle {
+  z-index: 5;
+  top: calc(50% + 0.3rem);
+  left: -0.35rem;
+  width: 2.24rem;
+  height: 2.24rem;
+  background: transparent;
+  box-shadow:
+    0 0 0 0.16rem var(--qcard-settings),
+    0 0 0 0.42rem var(--exits-surface);
+}
+
+.utang-settings-card .ui-standards-qcard__settings-circle-core {
+  width: 100%;
+  height: 100%;
+}
+
+.utang-settings-card__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 0.7rem !important;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42),
+    rgba(255, 255, 255, 0) 48%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.utang-settings-card__tab {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Ownership tab — Soft Glass chip (not a flat white card). */
+.utang-settings-card .utang-settings-card__tab,
+.utang-settings-card .utang-settings-card__tab[data-utang-ownership] {
+  z-index: 4;
+  margin-top: -1.1rem;
+  margin-left: calc(-1.6rem - var(--qcard-settings-size) * 0.25 - 0.3rem);
+  padding: 0.3rem 0.75rem;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-qa-chip-soft, #93c5fd));
+  border-radius: 0.55rem 0.55rem 0.55rem 0.2rem;
+  color: var(--personal-qa-chip-ink, var(--qcard-settings-deep));
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 55%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip-wash, #eff6ff) 70%, transparent) 100%
+    );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 2px 6px color-mix(in srgb, var(--personal-qa-chip, #3b82f6) 8%, transparent);
+  clip-path: none;
+}
+
+[data-theme="dark"] .utang-settings-card .utang-settings-card__tab,
+[data-theme="dark"] .utang-settings-card .utang-settings-card__tab[data-utang-ownership] {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 18%, #475569);
+  color: #e2e8f0;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #fff 6%, transparent) 0%,
+      color-mix(in srgb, var(--personal-qa-chip) 16%, #1e293b) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+    0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+.utang-account-card .utang-settings-card__tab,
+.utang-account-card .utang-settings-card__tab[data-utang-ownership] {
+  margin-left: -0.95rem;
+}
+
+/* balance fix */
+}
+

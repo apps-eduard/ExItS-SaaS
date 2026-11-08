@@ -1,0 +1,20 @@
+/*
+ * To-do summary — keep 2×2 on all widths:
+ * Add to-do | Today
+ * Upcoming  | Overdue
+ */
+
+.personal-home-page .personal-todo-summary .personal-todo-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+  margin-top: 0;
+}
+
+@media (max-width: 40rem) {
+  .personal-home-page .personal-todo-summary .personal-todo-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+}

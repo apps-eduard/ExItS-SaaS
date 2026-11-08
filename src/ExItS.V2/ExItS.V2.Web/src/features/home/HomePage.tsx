@@ -13,23 +13,20 @@ import { useSession } from "@/session/SessionProvider";
 import { PersonalHomeView } from "./PersonalHomeView";
 
 /**
- * V2 Personal-only Home.
- * BusinessHomeView / loadBusinessHome remain in the tree for future POS work
- * but are intentionally not activated here.
+ * V2 Personal-only Home — rebuilt for V1 Personal visual/information parity.
+ * BusinessHomeView remains deferred (POS V2 not in scope).
  */
 function HomePage() {
   const { t } = useTranslation();
   const { session } = useSession();
   const accountClass = sessionAccountClass(session);
   const staffLocked = isOrganizationContextLocked(session);
-  const personalHomeAllowed =
-    accountClass === "Personal" && !staffLocked;
+  const personalHomeAllowed = accountClass === "Personal" && !staffLocked;
 
   const [personal, setPersonal] = useState<PersonalHomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [reveal, setReveal] = useState(true);
   const softLoadRef = useRef(false);
 
   useEffect(() => {
@@ -59,7 +56,6 @@ function HomePage() {
       .finally(() => {
         if (!active || controller.signal.aborted) return;
         setLoading(false);
-        window.setTimeout(() => setReveal(false), soft ? 0 : 420);
       });
 
     return () => {
@@ -99,24 +95,18 @@ function HomePage() {
   return (
     <div className="space-y-3">
       {error ? (
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-          <Button type="button" size="sm" variant="outline" onClick={retry}>
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm">
+          <span className="text-destructive">{error}</span>
+          <Button type="button" variant="outline" size="sm" onClick={retry}>
             {t("homeData.retry")}
           </Button>
         </div>
       ) : null}
-
       <PersonalHomeView
         data={personal}
-        loading={loading && !personal}
-        reveal={reveal}
+        loading={loading}
         onRetry={retry}
-        onGuideDismissed={() =>
-          setPersonal((prev) => (prev ? { ...prev, showGuide: false } : prev))
-        }
+        onGuideDismissed={retry}
       />
     </div>
   );

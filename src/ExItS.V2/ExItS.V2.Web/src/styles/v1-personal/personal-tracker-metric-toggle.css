@@ -1,0 +1,159 @@
+/* Personal Tracker — show/hide for the 3 metric cards (People / My Record / Shared) */
+
+.personal-home-page .personal-tracker-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.personal-home-page .personal-tracker-metrics-collapse {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: none;
+  margin: 0;
+  padding: 0.25rem 0.45rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.personal-home-page .personal-tracker-metrics-collapse:hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.personal-home-page .personal-tracker-metrics-collapse:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.personal-home-page .personal-tracker-metrics-collapse__icon {
+  font-size: 1.1rem !important;
+  line-height: 1;
+}
+
+/* Three separate metric cards in a row (not a content filter). */
+.personal-home-page .personal-tracker-metric-toggle--cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.personal-home-page .personal-tracker-metric-toggle__item {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  min-height: 3rem;
+  margin: 0;
+  padding: 0.55rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--personal-qa-chip, var(--primary)) 22%, #e2e8f0);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--personal-qa-chip, var(--primary)) 8%, #fff);
+  color: var(--personal-qa-chip-ink, var(--foreground));
+  font: inherit;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.personal-home-page .personal-tracker-metric-toggle__label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-home-page .personal-tracker-metric-toggle__count {
+  font-size: 0.95rem;
+  font-weight: 750;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+.personal-home-page .personal-tracker-metric-toggle__item--people {
+  --personal-qa-chip: #4169e1;
+  --personal-qa-chip-ink: #312e81;
+}
+
+.personal-home-page .personal-tracker-metric-toggle__item--lent {
+  --personal-qa-chip: #10b981;
+  --personal-qa-chip-ink: #065f46;
+}
+
+.personal-home-page .personal-tracker-metric-toggle__item--owe {
+  --personal-qa-chip: #3b82f6;
+  --personal-qa-chip-ink: #1e40af;
+}
+
+.personal-home-page .personal-tracker-metric-toggle__item--selected {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 42%, #cbd5e1);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 62%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 14%, #fff);
+}
+
+.personal-home-page .personal-tracker-metric-toggle__item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] .personal-home-page .personal-tracker-metric-toggle__item--people,
+[data-theme="dark"] .personal-home-page .personal-tracker-metric-toggle__item--lent,
+[data-theme="dark"] .personal-home-page .personal-tracker-metric-toggle__item--owe {
+  --personal-qa-chip-ink: #f1f5f9;
+}
+
+[data-theme="dark"] .personal-home-page .personal-tracker-metric-toggle__item {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 28%, #475569);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 8%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 12%, #1a222d);
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .personal-home-page .personal-tracker-metric-toggle__item--selected {
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 42%, #64748b);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--personal-qa-chip) 18%, #1a222d);
+}
+
+@media (max-width: 639px) {
+  .personal-home-page .personal-tracker-metrics-collapse span:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}

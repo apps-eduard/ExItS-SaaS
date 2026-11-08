@@ -1,0 +1,134 @@
+/*
+ * Personal main-card header (LOCKED).
+ * One icon + label design/size for every Personal main card.
+ * Identity color: `--personal-main-card-header-chip` on each section.
+ * Change tokens here / in personal-main-card-header-global-default.ts only.
+ * Command: ext personal main-card-header icon-round label
+ */
+
+:root {
+  --personal-main-card-header-icon-size: 2rem;
+  --personal-main-card-header-icon-radius: 999px;
+  --personal-main-card-header-icon-mark: 1.05rem;
+  --personal-main-card-header-label-size: 1.05rem;
+  --personal-main-card-header-label-weight: 700;
+  --personal-main-card-header-label-line-height: 1.2;
+  --personal-main-card-header-label-letter-spacing: -0.01em;
+  --personal-main-card-header-gap: 0.55rem;
+  --personal-main-card-header-dark-ink: #f1f5f9;
+  --personal-main-card-header-light-label-black-pct: 28%;
+}
+
+/* Per-card identity chips (retain color; design shared). */
+.personal-home-page .personal-section.personal-stores-to-pay.catalog-form-section,
+.personal-stores-to-pay {
+  --personal-main-card-header-chip: #8b5cf6;
+}
+
+.personal-home-page .personal-section.personal-needs-attention.catalog-form-section,
+.personal-needs-attention {
+  --personal-main-card-header-chip: #ff5722;
+}
+
+.personal-home-page .personal-section.personal-quick-actions.catalog-form-section,
+.personal-quick-actions {
+  --personal-main-card-header-chip: #ff5722;
+}
+
+.personal-home-page .personal-section.personal-todo-summary.catalog-form-section,
+.personal-todo-summary {
+  --personal-main-card-header-chip: #0ea5e9;
+}
+
+.personal-home-page .personal-section.personal-tracker-card.catalog-form-section,
+.personal-tracker-card {
+  --personal-main-card-header-chip: var(--personal-tracker-accent, #22c55e);
+}
+
+.utang-money-page .utang-money-glass--owe.utang-money-glass--plain {
+  --personal-main-card-header-chip: var(--exits-primary);
+}
+
+.utang-hub-accounts {
+  --personal-main-card-header-chip: var(--personal-tracker-accent, #0ea5e9);
+}
+
+.people-page .people-list-main-glass,
+.people-page .people-list-card {
+  --personal-main-card-header-chip: #4169e1;
+}
+
+[data-theme="dark"] .people-page .people-list-main-glass,
+[data-theme="dark"] .people-page .people-list-card {
+  /* Keep bright people chip on the header disc (same design light + dark). */
+  --personal-main-card-header-chip: #4169e1;
+}
+
+/* Shared title row */
+.personal-needs-attention__title,
+.personal-quick-actions__title,
+.personal-todo-summary__title,
+.personal-tracker-card__title,
+.personal-stores-to-pay__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--personal-main-card-header-gap);
+  margin: 0;
+  min-width: 0;
+  color: color-mix(
+    in srgb,
+    #000 var(--personal-main-card-header-light-label-black-pct),
+    var(--personal-main-card-header-chip, #8b5cf6)
+  );
+  font-size: var(--personal-main-card-header-label-size);
+  font-weight: var(--personal-main-card-header-label-weight);
+  line-height: var(--personal-main-card-header-label-line-height);
+  letter-spacing: var(--personal-main-card-header-label-letter-spacing);
+}
+
+[data-theme="dark"] .personal-needs-attention__title,
+[data-theme="dark"] .personal-quick-actions__title,
+[data-theme="dark"] .personal-todo-summary__title,
+[data-theme="dark"] .personal-tracker-card__title,
+[data-theme="dark"] .personal-stores-to-pay__title {
+  color: var(--personal-main-card-header-dark-ink);
+}
+
+/* Shared rounded filled icon disc — same light + dark (chip stays bright). */
+.personal-needs-attention__pennant,
+.personal-quick-actions__pennant,
+.personal-todo-summary__pennant,
+.personal-tracker-card__title .personal-tracker-card__pennant,
+.personal-stores-to-pay__pennant,
+[data-theme="dark"] .personal-needs-attention__pennant,
+[data-theme="dark"] .personal-quick-actions__pennant,
+[data-theme="dark"] .personal-todo-summary__pennant,
+[data-theme="dark"] .personal-tracker-card__title .personal-tracker-card__pennant,
+[data-theme="dark"] .personal-stores-to-pay__pennant {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--personal-main-card-header-icon-size);
+  height: var(--personal-main-card-header-icon-size);
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--personal-main-card-header-icon-radius);
+  color: #fff;
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, #fff 35%, transparent), transparent 55%),
+    var(--personal-main-card-header-chip, #8b5cf6);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent);
+}
+
+.personal-needs-attention__pennant-icon,
+.personal-quick-actions__pennant-icon,
+.personal-todo-summary__pennant-icon,
+.personal-tracker-card__pennant-icon,
+.personal-stores-to-pay__pennant-icon,
+.personal-shell .personal-needs-attention__pennant-icon.material-symbols-outlined {
+  width: var(--personal-main-card-header-icon-mark);
+  height: var(--personal-main-card-header-icon-mark);
+  font-size: var(--personal-main-card-header-icon-mark);
+  color: inherit;
+  flex-shrink: 0;
+}
