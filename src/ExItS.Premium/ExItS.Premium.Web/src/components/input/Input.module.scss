@@ -40,6 +40,24 @@
     cursor: not-allowed;
   }
 
+  &[readonly]:not(:disabled) {
+    border-style: dashed;
+    background: color-mix(in srgb, var(--color-text) 5%, var(--color-surface));
+    color: var(--color-text-secondary);
+  }
+
+  &[data-filled="true"]:not(:disabled):not([readonly]):not([data-state]) {
+    background: color-mix(in srgb, var(--color-text) 4%, var(--color-surface));
+  }
+
+  &[data-focus-motion="border-reveal"],
+  &[data-focus-motion="soft-glow"],
+  &[data-focus-motion="running-accent"] {
+    transition:
+      border-color 220ms var(--motion-ease),
+      background-color var(--motion-fast) var(--motion-ease);
+  }
+
   &:-webkit-autofill {
     -webkit-text-fill-color: var(--color-text);
     caret-color: var(--color-text);

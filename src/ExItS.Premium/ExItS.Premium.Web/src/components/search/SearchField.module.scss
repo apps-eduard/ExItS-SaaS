@@ -5,6 +5,7 @@
 
 .icon {
   position: absolute;
+  z-index: 1;
   inset-inline-start: 0.85rem;
   top: 50%;
   transform: translateY(-50%);
@@ -28,8 +29,24 @@
     color: var(--color-text-caption);
   }
 
+  @media (hover: hover) {
+    &:hover:not(:disabled):not([data-state]) {
+      border-color: color-mix(in srgb, var(--color-text) 28%, var(--color-border-strong));
+    }
+  }
+
   &:focus-visible {
     border-color: var(--color-primary);
+  }
+
+  &[data-filled="true"]:not(:disabled):not([data-state]) {
+    background: color-mix(in srgb, var(--color-text) 4%, var(--color-surface));
+  }
+
+  &[data-focus-motion="border-reveal"],
+  &[data-focus-motion="soft-glow"],
+  &[data-focus-motion="running-accent"] {
+    transition: border-color 220ms var(--motion-ease);
   }
 
   &[data-state="error"] {
@@ -50,6 +67,7 @@
 
 .clear {
   position: absolute;
+  z-index: 1;
   inset-inline-end: 0.35rem;
   top: 50%;
   display: grid;
