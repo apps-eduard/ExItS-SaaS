@@ -1,0 +1,126 @@
+.popover {
+  position: fixed;
+  inset: unset;
+  z-index: 50;
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: min(40rem, calc(100dvh - 1rem));
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  box-shadow: var(--shadow-2);
+
+  &:popover-open,
+  &[data-open="true"] {
+    display: grid;
+    gap: var(--space-3);
+    animation: popover-in var(--motion-fast) var(--motion-ease);
+  }
+}
+
+.popover[popover]:not(:popover-open):not([data-open="true"]) {
+  display: none;
+}
+
+.popoverRange {
+  width: min(22rem, calc(100vw - 1rem));
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+}
+
+.actionsEnd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+.sheetBody {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.sheetActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-inline: calc(var(--space-4) * -1);
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .popoverRange {
+    width: min(40rem, calc(100vw - 1rem));
+  }
+}
+
+@media (min-width: 1024px) {
+  .popoverRange {
+    width: min(42rem, calc(100vw - 1rem));
+  }
+}
+
+@media (min-width: 1440px) {
+  .popoverRange {
+    width: min(44rem, calc(100vw - 2rem));
+  }
+}
+
+@media (max-width: 767px) {
+  .sheetActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .sheetActions:has(.actionsEnd) > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .sheetActions .actionsEnd {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    margin-inline-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover:popover-open,
+  .popover[data-open="true"] {
+    animation: none;
+  }
+}
