@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type FocusEvent, type ReactNode } from "react";
+import { FocusDraw } from "./FocusDraw";
 import type { InputFocusMotion } from "./focus-motion";
 import styles from "./InputMotion.module.scss";
 
@@ -10,19 +11,56 @@ type InputMotionProps = {
   children: ReactNode;
 };
 
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
 export function InputMotion({ motion, disabled = false, readOnly = false, state, children }: InputMotionProps) {
+  const [session, setSession] = useState({ id: 0, active: false });
+  const [reduced, setReduced] = useState(prefersReducedMotion);
+  const draw = motion === "focus-draw";
+
+  useEffect(() => {
+    const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!media) return;
+    const onChange = () => setReduced(media.matches);
+    media.addEventListener?.("change", onChange);
+    return () => media.removeEventListener?.("change", onChange);
+  }, []);
+
   if (motion === "none" || disabled) return children;
 
+  function onFocus() {
+    if (readOnly || !draw) return;
+    setSession((current) => (current.active ? current : { id: current.id + 1, active: true }));
+  }
+
+  function onBlur(event: FocusEvent<HTMLDivElement>) {
+    if (!draw || readOnly) return;
+    const next = event.relatedTarget;
+    if (next instanceof Node && event.currentTarget.contains(next)) return;
+    setSession((current) => ({ ...current, active: false }));
+  }
+
   return (
-    <div className={styles.shell} data-motion={motion} data-state={state} data-quiet={readOnly ? "true" : undefined}>
+    <div
+      className={styles.shell}
+      data-motion={motion}
+      data-state={state}
+      data-quiet={readOnly ? "true" : undefined}
+      data-drawn={draw && session.active ? "true" : undefined}
+      onFocus={onFocus}
+      onBlur={onBlur}
+    >
       {motion === "soft-glow" ? <span className={styles.glow} aria-hidden="true" /> : null}
-      <span className={styles.steady} aria-hidden="true" />
+      {draw ? null : <span className={styles.steady} aria-hidden="true" />}
       {motion === "running-accent" ? (
         <span className={styles.trace} aria-hidden="true">
           <span className={styles.traceSpin} />
         </span>
       ) : null}
       {children}
+      {draw && !readOnly ? <FocusDraw active={session.active} generation={session.id} reduced={reduced} /> : null}
     </div>
   );
 }

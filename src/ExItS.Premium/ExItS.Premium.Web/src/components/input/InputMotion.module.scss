@@ -10,6 +10,8 @@
   --input-accent: var(--color-primary);
   --input-reveal-duration: 220ms;
   --input-trace-duration: 680ms;
+  --input-draw-duration: 420ms;
+  overflow: visible;
 }
 
 .shell[data-state="error"] {
@@ -78,6 +80,22 @@
   mask-composite: exclude;
 }
 
+.draw {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.drawPath {
+  fill: none;
+  stroke: var(--input-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
 .traceSpin {
   position: absolute;
   inset: -100%;
@@ -115,16 +133,23 @@
   .glow,
   .trace,
   .traceSpin,
+  .drawPath,
   .shell[data-motion="border-reveal"] .steady,
   .shell[data-motion="soft-glow"] .glow {
     animation: none;
     transition: none;
   }
+
+  .shell[data-motion="focus-draw"][data-drawn="true"] .drawPath {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
 }
 
 @media (forced-colors: active) {
   .glow,
-  .trace {
+  .trace,
+  .draw {
     display: none;
   }
 

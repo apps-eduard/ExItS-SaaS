@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import motionCss from "./InputMotion.module.scss?raw";
 import {
+  INPUT_FOCUS_DRAW_MS,
   INPUT_FOCUS_MOTION_DEFAULT,
   INPUT_FOCUS_MOTION_OPTIONS,
   INPUT_FOCUS_MOTIONS,
@@ -12,9 +13,10 @@ import {
 describe("input focus motion", () => {
   it("keeps the shipped treatment as the default", () => {
     expect(INPUT_FOCUS_MOTION_DEFAULT).toBe("none");
-    expect(INPUT_FOCUS_MOTIONS).toEqual(["none", "border-reveal", "soft-glow", "running-accent"]);
-    expect(INPUT_FOCUS_MOTION_OPTIONS.map((option) => option.id)).toEqual(["border-reveal", "soft-glow", "running-accent"]);
-    expect(isInputFocusMotion("border-reveal")).toBe(true);
+    expect(INPUT_FOCUS_MOTIONS).toEqual(["none", "border-reveal", "soft-glow", "running-accent", "focus-draw"]);
+    expect(INPUT_FOCUS_MOTION_OPTIONS.map((option) => option.id)).toEqual(["border-reveal", "soft-glow", "focus-draw"]);
+    expect(isInputFocusMotion("focus-draw")).toBe(true);
+    expect(isInputFocusMotion("running-accent")).toBe(true);
     expect(isInputFocusMotion("pulse")).toBe(false);
   });
 
@@ -23,6 +25,8 @@ describe("input focus motion", () => {
     expect(INPUT_FOCUS_REVEAL_MS).toBeLessThanOrEqual(250);
     expect(motionCss).toContain(`${INPUT_FOCUS_REVEAL_MS}ms`);
     expect(motionCss).toContain(`${INPUT_FOCUS_TRACE_MS}ms`);
+    expect(motionCss).toContain(`${INPUT_FOCUS_DRAW_MS}ms`);
+    expect(motionCss).toContain("stroke: var(--input-accent)");
     expect(motionCss).toContain("linear 1 forwards");
     expect(motionCss).toContain("prefers-reduced-motion: reduce");
     expect(motionCss).not.toContain("infinite");

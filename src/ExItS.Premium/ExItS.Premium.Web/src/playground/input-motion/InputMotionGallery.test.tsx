@@ -15,12 +15,13 @@ describe("InputMotionGallery", () => {
     expect(screen.getByRole("heading", { name: "Current" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Animated Border Reveal" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Soft Focus Glow" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Running Border Accent" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Replay accent" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "ExItS Focus Draw" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Replay" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Running Border Accent" })).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Current name" }).parentElement).not.toHaveAttribute("data-motion");
     expect(screen.getByRole("textbox", { name: "Animated Border Reveal name" }).parentElement).toHaveAttribute("data-motion", "border-reveal");
     expect(screen.getByRole("textbox", { name: "Soft Focus Glow name" }).parentElement).toHaveAttribute("data-motion", "soft-glow");
-    expect(screen.getByRole("textbox", { name: "Running Border Accent name" }).parentElement).toHaveAttribute("data-motion", "running-accent");
+    expect(screen.getByRole("textbox", { name: "ExItS Focus Draw name" }).parentElement).toHaveAttribute("data-motion", "focus-draw");
     expect(screen.getByRole("textbox", { name: "Animated Border Reveal disabled" })).toBeDisabled();
     expect(screen.getAllByText("Use at least two letters.")).toHaveLength(4);
   });
@@ -37,6 +38,7 @@ describe("InputMotionGallery", () => {
     expect(screen.getByRole("textbox", { name: "Current name" }).parentElement).not.toHaveAttribute("data-motion");
     expect(screen.getByRole("textbox", { name: "Animated Border Reveal typing" })).toHaveAttribute("data-focus-motion", "border-reveal");
     expect(screen.getByRole("searchbox", { name: "Soft Focus Glow search" }).parentElement).toHaveAttribute("data-motion", "soft-glow");
-    expect(screen.getByRole("textbox", { name: "Running Border Accent name" }).parentElement).toHaveAttribute("data-motion", "running-accent");
+    expect(screen.getByRole("textbox", { name: "ExItS Focus Draw name" }).parentElement).toHaveAttribute("data-motion", "focus-draw");
+    expect(screen.getByRole("searchbox", { name: "ExItS Focus Draw search" }).parentElement).toHaveAttribute("data-motion", "focus-draw");
   });
 });
