@@ -1,8 +1,11 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { MOTION_SPRING } from "../motion/motion";
 import { Button } from "../components/button/Button";
 import { Card } from "../components/card/Card";
+import { Input } from "../components/input/Input";
+import { SearchField } from "../components/search/SearchField";
+import { Select } from "../components/select/Select";
 import { SegmentedControl } from "../components/segmented/SegmentedControl";
 import { Switch } from "../components/switch/Switch";
 import { PALETTE_LABELS } from "../theme/appearance";
@@ -101,8 +104,14 @@ function Spacing() {
   return (
     <>
       <Intro title="Spacing">
-        The scale stays fixed. Density changes control height, page padding, card padding, and the gap between stacked items.
+        The spacing scale stays fixed. Density changes control text, button text, form labels, list text, control height, padding, and the gap between stacked items. Page headings, body copy, and totals stay on the type scale.
       </Intro>
+      <h2 className="type-section">Density</h2>
+      <div className={styles.densityGrid}>
+        <DensityColumn density="compact" title="Compact" />
+        <DensityColumn density="standard" title="Standard" />
+        <DensityColumn density="large" title="Large" />
+      </div>
       <div className={styles.spaceList}>
         {steps.map((step) => (
           <div key={step} className={styles.spaceRow}>
@@ -112,6 +121,74 @@ function Spacing() {
         ))}
       </div>
     </>
+  );
+}
+
+function DensityColumn({ density, title }: { density: "compact" | "standard" | "large"; title: string }) {
+  const [query, setQuery] = useState("Market");
+  const [category, setCategory] = useState("groceries");
+  return (
+    <section className={styles.densityColumn} data-density={density} aria-label={title}>
+      <h3 className="type-section">{title}</h3>
+      <DensityMetrics />
+      <Input label="Name" placeholder="Account name" hint="Shown on the payment." />
+      <SearchField label="Search" value={query} onChange={setQuery} placeholder="Name or note" />
+      <Select label="Category" value={category} onChange={(event) => setCategory(event.target.value)}>
+        <option value="groceries">Groceries</option>
+        <option value="rent">Rent</option>
+        <option value="utilities">Utilities</option>
+      </Select>
+      <Button>Save</Button>
+      <Card title="Today">
+        <p className={styles.txn}>
+          <span>Groceries</span>
+          <span className="type-body">₱240.00</span>
+        </p>
+      </Card>
+    </section>
+  );
+}
+
+function DensityMetrics() {
+  const rootRef = useRef<HTMLDListElement>(null);
+  const [rows, setRows] = useState<Array<{ label: string; value: string }>>([]);
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const column = root?.closest("section");
+    if (!root || !column) return;
+    const measure = () => {
+      const input = column.querySelector("input");
+      const button = [...column.querySelectorAll("button")].find((node) => node.textContent?.trim() === "Save");
+      const label = column.querySelector("label");
+      const row = column.querySelector("article p");
+      if (!input || !button || !label || !row) return;
+      const inputStyle = getComputedStyle(input);
+      const columnStyle = getComputedStyle(column);
+      setRows([
+        { label: "Control text", value: inputStyle.fontSize },
+        { label: "Button text", value: getComputedStyle(button).fontSize },
+        { label: "Label", value: getComputedStyle(label).fontSize },
+        { label: "List text", value: getComputedStyle(row).fontSize },
+        { label: "Height", value: inputStyle.minHeight },
+        { label: "Padding", value: inputStyle.paddingLeft },
+        { label: "Spacing", value: columnStyle.rowGap },
+      ]);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  return (
+    <dl ref={rootRef} className={styles.densityMetrics}>
+      {rows.map((row) => (
+        <div key={row.label}>
+          <dt>{row.label}</dt>
+          <dd>{row.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

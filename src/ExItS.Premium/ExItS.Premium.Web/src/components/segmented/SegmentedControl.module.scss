@@ -6,7 +6,7 @@
 }
 
 .label {
-  font-size: var(--type-label-size);
+  font-size: var(--density-label-font);
   font-weight: var(--type-label-weight);
   line-height: var(--type-label-line);
 }
@@ -44,7 +44,7 @@
   min-height: calc(var(--control-height) - 6px);
   padding: 0 0.4rem;
   color: var(--color-text);
-  font-size: var(--type-label-size);
+  font-size: var(--density-button-font);
   font-weight: 600;
   line-height: 1.2;
   text-align: center;

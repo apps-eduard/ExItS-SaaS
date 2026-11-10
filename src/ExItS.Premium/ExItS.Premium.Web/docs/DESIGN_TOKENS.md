@@ -26,7 +26,13 @@ Do not read or write `exits.pos-client.ui-preferences.v1`.
 
 ## Density
 
-Control heights are 36, 44, and 52. Density also changes padding, page padding, card padding, and stack gap.
+Control heights are 36, 44, and 52 on desktop. On screens under 768px, Compact uses at least 44px so a primary control stays tappable. Height is a minimum: it grows with the control font so text zoom does not clip the value.
+
+Density also changes padding, page padding, card padding, and stack gap.
+
+Control text is 14, 15, and 16px. Button text is 13, 14, and 16px. Form labels and list text are 13, 14, and 15px. The tokens are `--density-control-font`, `--density-button-font`, `--density-label-font`, and `--density-list-font`, in rem.
+
+Page headings, display type, body copy, and numeric totals stay on the type scale.
 
 ## Neutral scale
 
