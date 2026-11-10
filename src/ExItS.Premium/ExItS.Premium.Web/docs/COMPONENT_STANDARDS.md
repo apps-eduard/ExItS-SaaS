@@ -8,6 +8,7 @@ Expose only states that belong to the control.
 
 - Button: variant, hover, focus-visible, pressed, disabled, loading. No error variant.
 - Input and select: error and success text, disabled. Select has no loading state.
+- Select uses a custom listbox. Error and success each use one border and a same-color focus ring. The native select stays in the form for name, value, and reset. Narrow viewports open a bottom sheet. Searchable is opt-in.
 - Search: error and clear. No success state.
 - Switch, checkbox, radio, segmented control: checked, disabled, focus-visible.
 - Dialog and bottom sheet: open, closing, dismiss.
