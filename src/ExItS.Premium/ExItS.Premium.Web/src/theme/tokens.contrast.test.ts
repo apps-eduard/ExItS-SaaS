@@ -52,9 +52,9 @@ describe("premium tokens", () => {
     expect(block('[data-radius="pill"]')["--radius-card"]).toBe("22px");
     expect(block('[data-radius="pill"]')["--radius-dialog"]).toBe("28px");
     expect(block('[data-radius="pill"]')["--radius-sheet"]).toBe("20px");
-    expect(block('[data-density="compact"]')["--control-height"]).toBe("36px");
-    expect(block('[data-density="standard"]')["--control-height"]).toBe("44px");
-    expect(block('[data-density="large"]')["--control-height"]).toBe("52px");
+    expect(block('[data-density="compact"]')["--control-height"]).toBe("max(36px, calc(var(--density-control-font) * 2.5))");
+    expect(block('[data-density="standard"]')["--control-height"]).toBe("max(44px, calc(var(--density-control-font) * 2.5))");
+    expect(block('[data-density="large"]')["--control-height"]).toBe("max(52px, calc(var(--density-control-font) * 2.5))");
   });
 
   it("keeps the neutral scale, warning fill, and five elevation levels", () => {

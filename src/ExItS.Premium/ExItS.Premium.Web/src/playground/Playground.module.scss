@@ -242,6 +242,70 @@
   }
 }
 
+.densityGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+
+  @media (max-width: 767px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.densityColumn {
+  display: grid;
+  gap: var(--stack-gap);
+  min-width: 0;
+  padding: var(--card-pad);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+
+  > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+.densityMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.2rem 0.75rem;
+  margin: 0;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  dt,
+  dd {
+    margin: 0;
+    font-size: var(--type-caption-size);
+    line-height: var(--type-caption-line);
+  }
+
+  dt {
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.txn {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--density-list-font);
+  line-height: 1.4;
+}
+
 .stageGroup {
   display: flex;
   flex-wrap: wrap;
