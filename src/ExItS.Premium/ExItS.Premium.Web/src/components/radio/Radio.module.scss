@@ -1,0 +1,65 @@
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--control-height);
+  cursor: pointer;
+}
+
+.input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+
+.text {
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line);
+}
+
+.input:checked + .dot {
+  border-color: var(--color-primary);
+}
+
+.input:checked + .dot::after {
+  content: "";
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.input:focus-visible + .dot {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.input:disabled + .dot {
+  background: var(--color-disabled-fill);
+  border-color: var(--color-border);
+}
+
+.input:disabled:checked + .dot::after {
+  background: var(--color-disabled-text);
+}
+
+.input:disabled ~ .text {
+  color: var(--color-disabled-text);
+}
+
+.choice:has(.input:disabled) {
+  cursor: not-allowed;
+}

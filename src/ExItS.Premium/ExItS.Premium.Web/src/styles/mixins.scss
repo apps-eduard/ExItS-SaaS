@@ -1,0 +1,7 @@
+@mixin reduced-press {
+  @media (prefers-reduced-motion: reduce) {
+    &:active {
+      transform: none;
+    }
+  }
+}

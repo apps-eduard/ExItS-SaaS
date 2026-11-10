@@ -1,0 +1,67 @@
+.tabs {
+  display: grid;
+  gap: var(--stack-gap);
+  width: min(100%, 28rem);
+}
+
+.list {
+  position: relative;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.tab {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: var(--control-height);
+  min-width: 0;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+
+  &[aria-selected="true"] {
+    color: var(--color-primary-foreground);
+  }
+
+  &:disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+  }
+}
+
+.indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  transform: translateX(var(--tab-x, 0px));
+  width: var(--tab-w, 0px);
+  transition:
+    transform var(--motion-base) var(--motion-ease),
+    width var(--motion-base) var(--motion-ease);
+}
+
+.panel {
+  padding: var(--card-pad);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+}

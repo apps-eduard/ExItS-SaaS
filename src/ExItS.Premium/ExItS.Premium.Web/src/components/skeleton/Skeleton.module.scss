@@ -1,0 +1,31 @@
+.skeleton {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  width: var(--skeleton-width, 100%);
+  height: var(--skeleton-height, 0.875rem);
+  border-radius: var(--radius-control);
+  background: var(--color-disabled-fill);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-surface) 72%, transparent), transparent);
+    transform: translateX(-100%);
+    animation: skeleton-sweep 1.4s var(--motion-ease) infinite;
+  }
+}
+
+@keyframes skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    opacity: 0;
+  }
+}

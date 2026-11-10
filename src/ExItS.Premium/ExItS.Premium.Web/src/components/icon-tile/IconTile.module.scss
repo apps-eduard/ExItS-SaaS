@@ -1,0 +1,29 @@
+.tile {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.85rem;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+.neutral {
+  border-color: var(--color-border);
+}
+
+.primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.feature {
+  background: color-mix(in srgb, var(--tile-ink) 16%, var(--color-surface));
+  color: var(--tile-ink);
+}
+
+.solid {
+  background: var(--tile-fill, var(--color-primary));
+  color: var(--tile-ink, var(--color-primary-foreground));
+}

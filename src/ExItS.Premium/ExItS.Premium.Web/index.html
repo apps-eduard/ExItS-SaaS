@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ExItS Premium</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var themes = ["light", "dark", "system"];
+        var palettes = ["teal", "blue", "violet", "orange", "rose"];
+        var radii = ["standard", "soft", "pill"];
+        var densities = ["compact", "standard", "large"];
+        function pick(key, allowed, fallback) {
+          var value = localStorage.getItem(key);
+          return allowed.indexOf(value) >= 0 ? value : fallback;
+        }
+        var theme = pick("exits.premium.theme", themes, "system");
+        var palette = pick("exits.premium.palette", palettes, "teal");
+        var radius = pick("exits.premium.radius", radii, "soft");
+        var density = pick("exits.premium.density", densities, "standard");
+        var systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var resolved = theme === "dark" || (theme === "system" && systemDark) ? "dark" : "light";
+        root.setAttribute("data-theme", resolved);
+        root.setAttribute("data-palette", palette);
+        root.setAttribute("data-radius", radius);
+        root.setAttribute("data-density", density);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

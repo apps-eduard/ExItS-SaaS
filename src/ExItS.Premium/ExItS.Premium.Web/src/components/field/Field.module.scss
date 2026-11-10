@@ -1,0 +1,29 @@
+.field {
+  display: grid;
+  gap: 0.375rem;
+  width: min(100%, 22rem);
+  max-width: 100%;
+  text-align: start;
+}
+
+.label {
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line);
+}
+
+.message {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+  color: var(--color-text-secondary);
+}
+
+.field[data-state="error"] .message {
+  color: var(--color-danger-ink);
+}
+
+.field[data-state="success"] .message {
+  color: var(--color-success-ink);
+}
