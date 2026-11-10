@@ -17,6 +17,16 @@ Expose only states that belong to the control.
 - Toast: info, success, warning, danger.
 - Skeleton and empty state are not interactive controls.
 
+## Elevation
+
+Use the semantic elevation token on the component. Do not paste a shadow value into a module.
+
+- Cards at rest use `--elevation-1`. A raised card uses `--elevation-2`.
+- Menus, tooltips, and toasts use `--elevation-3`.
+- Dialogs and bottom sheets use `--elevation-4`.
+- Flat lists and inputs stay at `--elevation-0` and rely on the border.
+- Do not add a user setting for elevation.
+
 ## Overlays
 
 - Dialog and bottom sheet use `<dialog>` with `showModal`.

@@ -36,7 +36,7 @@
   height: calc(var(--switch-height) - 6px);
   border-radius: 50%;
   background: var(--color-switch-thumb);
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--elevation-1);
   transition: transform var(--motion-base) var(--motion-ease);
 }
 

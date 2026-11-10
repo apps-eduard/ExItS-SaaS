@@ -1,7 +1,7 @@
 .region {
   position: fixed;
   inset: auto 1rem 1rem auto;
-  z-index: 80;
+  z-index: var(--z-toast);
   display: grid;
   gap: 0.5rem;
   width: min(22rem, calc(100vw - 2rem));
@@ -31,7 +31,7 @@
   border-radius: var(--radius-card);
   background: var(--color-surface-elevated);
   color: var(--color-text);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--elevation-3);
   animation: toast-in var(--motion-base) var(--motion-ease);
 }
 

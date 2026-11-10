@@ -32,8 +32,14 @@ function block(selector: string) {
   return vars;
 }
 
+function resolve(value: string, root = block(":root")): string {
+  const match = value?.match(/^var\((--[\w-]+)\)$/);
+  if (!match) return value;
+  return resolve(root[match[1]], root);
+}
+
 function expectTextContrast(foreground: string, background: string, label: string) {
-  const ratio = contrast(foreground, background);
+  const ratio = contrast(resolve(foreground), resolve(background));
   expect(ratio, `${label} ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
 }
 
@@ -49,6 +55,27 @@ describe("premium tokens", () => {
     expect(block('[data-density="compact"]')["--control-height"]).toBe("36px");
     expect(block('[data-density="standard"]')["--control-height"]).toBe("44px");
     expect(block('[data-density="large"]')["--control-height"]).toBe("52px");
+  });
+
+  it("keeps the neutral scale, warning fill, and five elevation levels", () => {
+    const root = block(":root");
+    expect(root["--neutral-50"]).toBe("#f5f6f8");
+    expect(root["--neutral-900"]).toBe("#111827");
+    expect(resolve("var(--palette-teal-700)", root)).toBe("#0f766e");
+    for (const theme of ["light", "dark"] as const) {
+      const colors = block(`[data-theme="${theme}"]`);
+      expect(colors["--color-warning"]).toBe("#ff5722");
+      expect(colors["--color-warning-foreground"]).toBe("#1a0a00");
+      expect(colors["--elevation-0"]).toBe("none");
+      expect(colors["--elevation-1"]).toBeTruthy();
+      expect(colors["--elevation-2"]).toBeTruthy();
+      expect(colors["--elevation-3"]).toBeTruthy();
+      expect(colors["--elevation-4"]).toBeTruthy();
+      expect(colors["--shadow-1"]).toBe("var(--elevation-1)");
+      expect(colors["--shadow-2"]).toBe("var(--elevation-3)");
+      expect(colors["--shadow-3"]).toBe("var(--elevation-4)");
+    }
+    expect(block('[data-theme="light"]')["--elevation-4"]).not.toBe(block('[data-theme="dark"]')["--elevation-4"]);
   });
 
   it("meets text contrast for surfaces, palettes, and status fills", () => {

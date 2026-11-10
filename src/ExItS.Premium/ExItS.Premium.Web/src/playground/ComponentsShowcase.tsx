@@ -141,8 +141,8 @@ function CardsSection() {
         <Card eyebrow="Personal" title="Available balance">
           <p className="type-secondary">Level 1 resting surface.</p>
         </Card>
-        <Card elevation={3} title="Raised">
-          <p className="type-secondary">Level 3 overlay surface.</p>
+        <Card elevation={2} title="Raised">
+          <p className="type-secondary">Level 2 raised surface.</p>
         </Card>
       </div>
     </>

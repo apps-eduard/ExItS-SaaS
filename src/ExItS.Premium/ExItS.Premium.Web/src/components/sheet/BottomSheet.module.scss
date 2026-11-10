@@ -9,10 +9,10 @@
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-3);
+  box-shadow: var(--elevation-4);
 
   &::backdrop {
-    background: rgba(15, 23, 42, 0.46);
+    background: var(--color-overlay);
   }
 
   &[open] {

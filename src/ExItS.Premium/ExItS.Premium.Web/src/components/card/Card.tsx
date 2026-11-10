@@ -4,7 +4,7 @@ import styles from "./Card.module.scss";
 type CardProps = {
   eyebrow?: string;
   title?: string;
-  elevation?: 0 | 1 | 2 | 3;
+  elevation?: 0 | 1 | 2 | 3 | 4;
   children?: ReactNode;
 };
 

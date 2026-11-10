@@ -4,13 +4,16 @@ Review the running playground. A passing build is not a visual review.
 
 ## Widths
 
-320, 375, 390, 768, 1024, 1440. Include light and dark, and one non-teal palette.
+320, 375, 390, 768, 1024, 1440. Include light and dark, and all five primary palettes on Colors.
 
 ## Look
 
 - No horizontal overflow (`scrollWidth` equals the viewport).
 - Spacing, type, and icons match neighboring sections.
 - Focus rings are visible.
+- Colors shows the neutral scale, five palettes, status, feature colors, and surface tokens. Copy reports the value.
+- Elevation shows levels 0–4. The shadow on each sample is the elevation token.
+- Text on solid fills stays readable in light and dark. Warning text stays dark on `#ff5722`.
 - Dialogs, sheets, menus, tooltips, and toasts stay inside the viewport.
 - Sheets can be closed without dragging.
 - Reduced motion removes entrance animation.

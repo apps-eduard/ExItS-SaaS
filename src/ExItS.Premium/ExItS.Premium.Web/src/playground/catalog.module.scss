@@ -1,0 +1,214 @@
+.section {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin-block-start: var(--space-6);
+}
+
+.lead {
+  max-width: 42rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.75rem), 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.swatch,
+.level {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.fill {
+  height: 4.5rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.name {
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line);
+}
+
+.token,
+.hex,
+.usage {
+  overflow-wrap: anywhere;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+  color: var(--color-text-secondary);
+}
+
+.copy {
+  justify-self: start;
+  min-height: 2rem;
+  margin-block-start: 0.15rem;
+  padding: 0.15rem 0.7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  font-weight: 600;
+}
+
+.copy:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.frame {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-page);
+  color: var(--color-text);
+}
+
+.examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-page);
+}
+
+.example {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.badgeRow {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.iconSample {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.level {
+  min-height: 8.5rem;
+  box-shadow: var(--elevation-1);
+}
+
+.level[data-level="0"] {
+  box-shadow: var(--elevation-0);
+}
+
+.level[data-level="1"] {
+  box-shadow: var(--elevation-1);
+}
+
+.level[data-level="2"] {
+  box-shadow: var(--elevation-2);
+}
+
+.level[data-level="3"] {
+  box-shadow: var(--elevation-3);
+}
+
+.level[data-level="4"] {
+  box-shadow: var(--elevation-4);
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-page);
+}
+
+.plate {
+  display: grid;
+  align-content: end;
+  min-height: 6.5rem;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.plate[data-level="0"] {
+  box-shadow: var(--elevation-0);
+}
+
+.plate[data-level="1"] {
+  box-shadow: var(--elevation-1);
+}
+
+.plate[data-level="2"] {
+  box-shadow: var(--elevation-2);
+}
+
+.plate[data-level="3"] {
+  box-shadow: var(--elevation-3);
+}
+
+.plate[data-level="4"] {
+  box-shadow: var(--elevation-4);
+}
+
+.note {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 42rem;
+}
+
+@media (max-width: 767px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
