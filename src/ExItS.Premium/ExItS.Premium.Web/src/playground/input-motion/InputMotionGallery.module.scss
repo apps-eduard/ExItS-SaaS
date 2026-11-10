@@ -40,10 +40,19 @@
   align-items: start;
 }
 
+.embedded {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  overflow: visible;
+}
+
 .grid {
   display: grid;
   gap: var(--space-4);
   align-items: start;
+  min-width: 0;
+  overflow: visible;
 }
 
 .card {

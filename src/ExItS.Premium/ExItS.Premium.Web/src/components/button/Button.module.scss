@@ -19,18 +19,11 @@
   transition:
     background-color var(--motion-fast) var(--motion-ease),
     border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
     transform var(--motion-fast) var(--motion-ease);
 
   &:active:not(:disabled) {
     transform: scale(0.98);
-  }
-
-  &:disabled {
-    background: var(--color-disabled-fill);
-    color: var(--color-disabled-text);
-    border-color: transparent;
-    cursor: not-allowed;
-    transform: none;
   }
 
   @include reduced-press;
@@ -109,6 +102,214 @@
   &:active:not(:disabled) {
     background: var(--color-success-pressed);
   }
+}
+
+.button[data-appearance="soft"] {
+  background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
+  color: var(--color-text);
+  border-color: transparent;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--color-text) 12%, var(--color-surface));
+    }
+  }
+
+  &:active:not(:disabled) {
+    background: color-mix(in srgb, var(--color-text) 16%, var(--color-surface));
+  }
+
+  &.primary {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-primary) 28%, var(--color-surface));
+    }
+  }
+
+  &.danger {
+    background: var(--color-danger-soft);
+    color: var(--color-danger-ink);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-danger) 20%, var(--color-surface));
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-danger) 26%, var(--color-surface));
+    }
+  }
+
+  &.success {
+    background: var(--color-success-soft);
+    color: var(--color-success-ink);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-success) 22%, var(--color-surface));
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-success) 28%, var(--color-surface));
+    }
+  }
+}
+
+.button[data-appearance="outline"] {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--color-hover);
+    }
+  }
+
+  &:active:not(:disabled) {
+    background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+  }
+
+  &.primary {
+    color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-primary) 62%, var(--color-border));
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--color-primary-soft);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-primary-selected);
+    }
+  }
+
+  &.danger {
+    color: var(--color-danger-ink);
+    border-color: color-mix(in srgb, var(--color-danger) 58%, var(--color-border));
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--color-danger-soft);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-danger) 18%, var(--color-surface));
+    }
+  }
+
+  &.success {
+    color: var(--color-success-ink);
+    border-color: color-mix(in srgb, var(--color-success) 58%, var(--color-border));
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--color-success-soft);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface));
+    }
+  }
+}
+
+.button[data-appearance="raise"],
+.button[data-appearance="solid-raise"] {
+  border-color: transparent;
+  box-shadow: var(--elevation-3);
+  transform: translateY(-2px);
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      box-shadow: var(--elevation-4);
+      transform: translateY(-3px);
+    }
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: var(--elevation-1);
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+.button[data-appearance="raise"] {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--color-hover);
+    }
+  }
+
+  &:active:not(:disabled) {
+    background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface-elevated));
+  }
+
+  &.primary {
+    color: var(--color-primary);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--color-primary-soft);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-primary-selected);
+    }
+  }
+
+  &.danger {
+    color: var(--color-danger-ink);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--color-danger-soft);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-danger) 18%, var(--color-surface-elevated));
+    }
+  }
+
+  &.success {
+    color: var(--color-success-ink);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--color-success-soft);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface-elevated));
+    }
+  }
+}
+
+.button:disabled,
+.button[data-appearance]:is(.primary, .secondary, .ghost, .danger, .success):disabled {
+  background: var(--color-disabled-fill);
+  color: var(--color-disabled-text);
+  border-color: transparent;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .loading {

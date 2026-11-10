@@ -24,4 +24,19 @@ describe("InputMotionGallery", () => {
     expect(screen.getByRole("textbox", { name: "Animated Border Reveal disabled" })).toBeDisabled();
     expect(screen.getAllByText("Use at least two letters.")).toHaveLength(4);
   });
+
+  it("embeds the three working treatments without replacing the shipped focus style", () => {
+    render(
+      <AppearanceProvider>
+        <InputMotionGallery embedded />
+      </AppearanceProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Focus motion" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Input focus motion" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Current name" }).parentElement).not.toHaveAttribute("data-motion");
+    expect(screen.getByRole("textbox", { name: "Animated Border Reveal typing" })).toHaveAttribute("data-focus-motion", "border-reveal");
+    expect(screen.getByRole("searchbox", { name: "Soft Focus Glow search" }).parentElement).toHaveAttribute("data-motion", "soft-glow");
+    expect(screen.getByRole("textbox", { name: "Running Border Accent name" }).parentElement).toHaveAttribute("data-motion", "running-accent");
+  });
 });

@@ -23,7 +23,7 @@ const CARDS: Array<{ motion: InputFocusMotion; title: string; detail: string }> 
   })),
 ];
 
-export function InputMotionGallery() {
+export function InputMotionGallery({ embedded = false }: { embedded?: boolean }) {
   const accentRef = useRef<HTMLInputElement>(null);
 
   function replayAccent() {
@@ -31,6 +31,41 @@ export function InputMotionGallery() {
     if (!node) return;
     node.blur();
     window.requestAnimationFrame(() => node.focus());
+  }
+
+  const cards = (
+    <div className={styles.grid}>
+      {CARDS.map((card) => (
+        <MotionCard
+          key={card.motion}
+          embedded={embedded}
+          motion={card.motion}
+          title={card.title}
+          detail={card.detail}
+          sampleRef={card.motion === "running-accent" ? accentRef : undefined}
+          onReplay={card.motion === "running-accent" ? replayAccent : undefined}
+        />
+      ))}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <section className={styles.embedded} aria-labelledby="input-focus-motion">
+        <div className={styles.cardCopy}>
+          <h2 id="input-focus-motion" className="type-section">
+            Focus motion
+          </h2>
+          <p className="type-secondary">
+            Compare the three treatments by focusing and typing. Appearance switches Light and Dark, all five primaries, Standard, Soft, and Pill, and Compact, Standard, and Large. None of these is the global default.
+          </p>
+        </div>
+        <p className={styles.note}>
+          Disabled fields do not animate. Read-only fields keep a dashed border and the standard focus outline. Error and success keep their message, and the focus stroke uses that status color. The running accent travels once and does not restart while typing.
+        </p>
+        {cards}
+      </section>
+    );
   }
 
   return (
@@ -49,18 +84,7 @@ export function InputMotionGallery() {
           </p>
         </header>
         <div className={styles.workspace}>
-          <div className={styles.grid}>
-            {CARDS.map((card) => (
-              <MotionCard
-                key={card.motion}
-                motion={card.motion}
-                title={card.title}
-                detail={card.detail}
-                sampleRef={card.motion === "running-accent" ? accentRef : undefined}
-                onReplay={card.motion === "running-accent" ? replayAccent : undefined}
-              />
-            ))}
-          </div>
+          {cards}
           <aside className={styles.panel} aria-label="Appearance">
             <h2 className="type-section">Appearance</h2>
             <AppearanceControls name="input-motion" />
@@ -72,18 +96,21 @@ export function InputMotionGallery() {
 }
 
 function MotionCard({
+  embedded,
   motion,
   title,
   detail,
   sampleRef,
   onReplay,
 }: {
+  embedded: boolean;
   motion: InputFocusMotion;
   title: string;
   detail: string;
   sampleRef?: RefObject<HTMLInputElement | null>;
   onReplay?: () => void;
 }) {
+  const Title = embedded ? "h3" : "h2";
   const [typed, setTyped] = useState("");
   const [query, setQuery] = useState("Market");
   const headingId = `input-motion-${motion}`;
@@ -91,9 +118,9 @@ function MotionCard({
   return (
     <section className={styles.card} aria-labelledby={headingId}>
       <div className={styles.cardCopy}>
-        <h2 id={headingId} className="type-section">
+        <Title id={headingId} className="type-section">
           {title}
-        </h2>
+        </Title>
         <p className="type-secondary">{detail}</p>
       </div>
       {onReplay ? (

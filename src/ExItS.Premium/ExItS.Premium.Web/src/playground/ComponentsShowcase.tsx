@@ -12,6 +12,7 @@ import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
 import { DateTimeSection } from "./DateTimeSection";
+import { InputMotionGallery } from "./input-motion/InputMotionGallery";
 import styles from "./Playground.module.scss";
 
 function Intro({ title, children }: { title: string; children: ReactNode }) {
@@ -53,17 +54,47 @@ function ButtonsSection() {
   return (
     <>
       <Intro title="Buttons">
-        Primary, secondary, ghost, danger, and success are real variants. Disabled and loading are separate. Buttons do not have an error state.
+        Solid, soft, outline, raise, and solid raise are appearances. Primary, secondary, ghost, danger, and success are tones. Disabled and loading are separate. Buttons do not have an error state.
       </Intro>
-      <Stage label="Variants">
+      <Stage label="Solid">
         <Button>Primary</Button>
         <Button variant="secondary">Secondary</Button>
         <Button variant="ghost">Ghost</Button>
         <Button variant="danger">Danger</Button>
         <Button variant="success">Success</Button>
       </Stage>
+      <Stage label="Soft">
+        <Button appearance="soft">Primary</Button>
+        <Button appearance="soft" variant="secondary">Secondary</Button>
+        <Button appearance="soft" variant="danger">Danger</Button>
+        <Button appearance="soft" variant="success">Success</Button>
+      </Stage>
+      <Stage label="Outline">
+        <Button appearance="outline">Primary</Button>
+        <Button appearance="outline" variant="secondary">Secondary</Button>
+        <Button appearance="outline" variant="danger">Danger</Button>
+        <Button appearance="outline" variant="success">Success</Button>
+      </Stage>
+      <Stage label="Raise">
+        <div className={styles.stageGroup}>
+          <Button appearance="raise">Primary</Button>
+          <Button appearance="raise" variant="secondary">Secondary</Button>
+          <Button appearance="raise" variant="danger">Danger</Button>
+          <Button appearance="raise" variant="success">Success</Button>
+        </div>
+        <div className={styles.stageGroup}>
+          <p className={`type-caption ${styles.stageGroupLabel}`}>Solid raise</p>
+          <Button appearance="solid-raise">Primary</Button>
+          <Button appearance="solid-raise" variant="secondary">Secondary</Button>
+          <Button appearance="solid-raise" variant="danger">Danger</Button>
+          <Button appearance="solid-raise" variant="success">Success</Button>
+        </div>
+      </Stage>
       <Stage label="States">
         <Button disabled>Disabled</Button>
+        <Button appearance="soft" disabled>Soft</Button>
+        <Button appearance="outline" disabled>Outline</Button>
+        <Button appearance="raise" disabled>Raise</Button>
         <Button loading>Saving</Button>
       </Stage>
     </>
@@ -74,14 +105,15 @@ function InputsSection() {
   return (
     <>
       <Intro title="Inputs">
-        Native fields with a visible label. Error and success include text, not color alone. Hover and focus are available on an enabled field.
+        Native fields with a visible label. Error and success include text, not color alone. Hover and focus are available on an enabled field. The first group keeps the shipped focus style.
       </Intro>
-      <Stage>
+      <Stage label="Shipped focus">
         <Input label="Name" placeholder="Account name" hint="Shown on the payment." />
         <Input label="Disabled" value="Locked" disabled onChange={() => undefined} />
         <Input label="Error" defaultValue="a" error="Use at least two letters." />
         <Input label="Success" defaultValue="Market" success="Name is available." />
       </Stage>
+      <InputMotionGallery embedded />
     </>
   );
 }

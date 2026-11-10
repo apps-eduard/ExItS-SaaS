@@ -28,4 +28,32 @@ describe("Button", () => {
     render(<Button disabled>Save</Button>);
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
+
+  it("keeps solid as the default appearance", () => {
+    render(<Button>Save</Button>);
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("data-appearance", "solid");
+  });
+
+  it("exposes soft and outline without changing the tone", () => {
+    render(
+      <>
+        <Button appearance="soft" variant="danger">
+          Soft
+        </Button>
+        <Button appearance="outline" variant="success">
+          Outline
+        </Button>
+        <Button appearance="raise" variant="primary">
+          Raise
+        </Button>
+        <Button appearance="solid-raise" variant="danger">
+          Solid raise
+        </Button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Soft" })).toHaveAttribute("data-appearance", "soft");
+    expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute("data-appearance", "outline");
+    expect(screen.getByRole("button", { name: "Raise" })).toHaveAttribute("data-appearance", "raise");
+    expect(screen.getByRole("button", { name: "Solid raise" })).toHaveAttribute("data-appearance", "solid-raise");
+  });
 });

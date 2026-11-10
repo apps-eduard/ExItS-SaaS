@@ -6,7 +6,7 @@ Build original components with React, TypeScript, and SCSS Modules. Use a native
 
 Expose only states that belong to the control.
 
-- Button: variant, hover, focus-visible, pressed, disabled, loading. No error variant.
+- Button: tone, appearance (solid, soft, outline, raise, solid raise), hover, focus-visible, pressed, disabled, loading. No error variant. Raise and solid raise sit above the surface on elevation level 3, lift to level 4 on hover, and settle to level 1 while pressed. Solid raise keeps the solid fill.
 - Input and select: error and success text, disabled. Select has no loading state.
 - Select uses a custom listbox. Error and success each use one border and a same-color focus ring. The native select stays in the form for name, value, and reset. Narrow viewports open a bottom sheet. Searchable is opt-in.
 - Search: error and clear. No success state.
