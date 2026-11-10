@@ -1,0 +1,99 @@
+.page {
+  min-height: 100%;
+  overflow: auto;
+  background: var(--color-page);
+  color: var(--color-text);
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-5);
+  width: min(100%, 88rem);
+  margin: 0 auto;
+  padding: var(--page-pad);
+}
+
+.intro {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 46rem;
+}
+
+.back {
+  justify-self: start;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.workspace {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: 0.875rem;
+  min-width: 0;
+  padding: var(--card-pad);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.cardCopy {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.fields {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--card-pad);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+@media (min-width: 720px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+
+  .panel {
+    position: sticky;
+    top: var(--space-4);
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -1,0 +1,154 @@
+// Opt-in focus treatments. Product fields stay on the shipped border until a variant is chosen.
+// The running accent is one CSS rotation masked to the border. It is not a JavaScript loop.
+
+.shell {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  width: 100%;
+  border-radius: var(--radius-control);
+  --input-accent: var(--color-primary);
+  --input-reveal-duration: 220ms;
+  --input-trace-duration: 680ms;
+}
+
+.shell[data-state="error"] {
+  --input-accent: var(--color-danger);
+}
+
+.shell[data-state="success"] {
+  --input-accent: var(--color-success);
+}
+
+.shell > input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-radius: inherit;
+}
+
+.shell:not([data-quiet="true"]) > input:focus-visible {
+  outline: none;
+}
+
+.steady,
+.glow,
+.trace {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.steady {
+  z-index: 2;
+  box-shadow: inset 0 0 0 2px var(--input-accent);
+  opacity: 0;
+  transition: opacity var(--input-reveal-duration) var(--motion-ease);
+}
+
+.shell[data-motion="border-reveal"] .steady {
+  clip-path: inset(0 44% 0 44% round var(--radius-control));
+  transition:
+    opacity var(--input-reveal-duration) var(--motion-ease),
+    clip-path var(--input-reveal-duration) var(--motion-ease);
+}
+
+.glow {
+  z-index: 0;
+  opacity: 0;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--input-accent) 32%, transparent),
+    0 0 8px color-mix(in srgb, var(--input-accent) 24%, transparent);
+  transition: opacity var(--input-reveal-duration) var(--motion-ease);
+}
+
+.trace {
+  z-index: 3;
+  padding: 3px;
+  overflow: hidden;
+  opacity: 0;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+.traceSpin {
+  position: absolute;
+  inset: -100%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 286deg,
+    color-mix(in srgb, white 82%, var(--input-accent)) 318deg,
+    color-mix(in srgb, white 28%, var(--input-accent)) 338deg,
+    transparent 360deg
+  );
+}
+
+.shell:focus-within:not([data-quiet="true"]) .steady,
+.shell[data-motion="soft-glow"]:focus-within:not([data-quiet="true"]) .glow {
+  opacity: 1;
+}
+
+.shell[data-motion="border-reveal"]:focus-within:not([data-quiet="true"]) .steady {
+  clip-path: inset(0 round var(--radius-control));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .shell[data-motion="running-accent"]:focus-within:not([data-quiet="true"]) .trace {
+    animation: input-trace-hold var(--input-trace-duration) linear 1 forwards;
+  }
+
+  .shell[data-motion="running-accent"]:focus-within:not([data-quiet="true"]) .traceSpin {
+    animation: input-trace-spin var(--input-trace-duration) linear 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .steady,
+  .glow,
+  .trace,
+  .traceSpin,
+  .shell[data-motion="border-reveal"] .steady,
+  .shell[data-motion="soft-glow"] .glow {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .glow,
+  .trace {
+    display: none;
+  }
+
+  .shell:not([data-quiet="true"]) > input:focus-visible {
+    outline: 2px solid CanvasText;
+  }
+}
+
+@keyframes input-trace-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes input-trace-hold {
+  0% {
+    opacity: 1;
+  }
+
+  84% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
