@@ -1,0 +1,107 @@
+.entry {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.part {
+  display: grid;
+  gap: 0.25rem;
+  flex: 1 1 4.5rem;
+  min-width: 0;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line);
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  min-height: max(2.75rem, var(--control-height));
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+
+  &:focus-visible {
+    border-color: var(--color-primary);
+  }
+
+  &[aria-invalid="true"] {
+    border-color: var(--color-danger);
+  }
+
+  &:disabled {
+    background: var(--color-disabled-fill);
+    color: var(--color-disabled-text);
+  }
+}
+
+.colon {
+  padding-bottom: 0.65rem;
+  color: var(--color-text-secondary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.period {
+  display: grid;
+  flex: 1.2 1 6.5rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  min-width: 0;
+  min-height: max(2.75rem, var(--control-height));
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--color-hover);
+}
+
+.periodButton {
+  min-width: 0;
+  min-height: 2.5rem;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 2px);
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+
+  &[aria-checked="true"] {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+
+  &:disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+  }
+}
+
+.hint,
+.error {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+}
+
+.hint {
+  color: var(--color-text-caption);
+}
+
+.error {
+  color: var(--color-danger-ink);
+}
