@@ -54,6 +54,7 @@ function WheelColumn({
   onSelect,
   disabled = false,
   readOnly = false,
+  autoFocus = false,
 }: {
   label: string;
   options: WheelOption[];
@@ -61,6 +62,7 @@ function WheelColumn({
   onSelect: (value: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
+  autoFocus?: boolean;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const syncing = useRef(false);
@@ -151,6 +153,7 @@ function WheelColumn({
           ref={scrollerRef}
           className={styles.scroller}
           role="listbox"
+          data-autofocus={autoFocus ? "" : undefined}
           aria-labelledby={`${listId}-label`}
           aria-activedescendant={selectedIndex >= 0 ? `${listId}-${selectedIndex}` : undefined}
           aria-disabled={disabled || undefined}
@@ -267,6 +270,7 @@ export function TimeWheel({
   return (
     <div className={styles.wheels} data-columns={hourCycle === "h12" ? "3" : "2"} aria-label="Time wheel">
       <WheelColumn
+        autoFocus
         label="Hour"
         options={hours}
         selected={parts ? (hourCycle === "h24" ? String(parts.hour) : String(toDayPeriod(parts.hour).hour12)) : null}

@@ -11,8 +11,9 @@ import { formatTimeDisplay, type HourCycle, type MinuteStep } from "../time/time
 import { useControllable } from "../time/useControllable";
 import { useViewport } from "../time/useViewport";
 import chrome from "../time/TimePicker.module.scss";
+import { DatePicker } from "../date/DatePicker";
+import { todayCalendarDate } from "../date/calendar";
 import { calendarDateMessage, formatCalendarDisplay, parseCalendarDate } from "./date";
-import { NativeDateAdapter, type DateSelectionAdapter } from "./DateSelectionAdapter";
 import {
   formatDateTimeDisplay,
   validateDateTime,
@@ -23,16 +24,6 @@ import {
 } from "./datetime";
 import { currentWallClock, type AmbiguityPolicy } from "./timezone";
 import styles from "./DateTimePicker.module.scss";
-
-export type { DateSelectionAdapter, DateSelectionAdapterProps } from "./DateSelectionAdapter";
-export { NativeDateAdapter } from "./DateSelectionAdapter";
-
-/**
- * Date field used until Agent 2's DatePicker is connected.
- * Replace this binding, or pass `dateAdapter`, without editing Agent 2's files.
- * Contract: `DateSelectionAdapterProps` in `DateSelectionAdapter.tsx`.
- */
-export const DATE_TIME_DATE_ADAPTER: DateSelectionAdapter = NativeDateAdapter;
 
 type Draft = { date: string | null; time: string | null };
 
@@ -66,8 +57,6 @@ export type DateTimePickerProps = {
   viewport?: "auto" | "desktop" | "mobile";
   /** Clock for Today and Now. Defaults to the current instant. */
   now?: () => Date;
-  /** Temporary date selector. Defaults to `DATE_TIME_DATE_ADAPTER`. */
-  dateAdapter?: DateSelectionAdapter;
 };
 
 function emptyDraft(): Draft {
@@ -103,13 +92,11 @@ export function DateTimePicker({
   placeholder = "Choose a date and time",
   viewport = "auto",
   now = () => new Date(),
-  dateAdapter = DATE_TIME_DATE_ADAPTER,
 }: DateTimePickerProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const surface = useViewport(viewport);
-  const DateSelector = dateAdapter;
   const [committed, setCommitted] = useControllable({ value, defaultValue, onChange });
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(toDraft(committed));
@@ -205,14 +192,18 @@ export function DateTimePicker({
     setDraft({ date: result.value.date, time: result.value.time });
   }
 
+  const zoneClock = currentWallClock(now(), timeZone);
+  const calendarToday = "error" in zoneClock ? todayCalendarDate() : zoneClock.date;
   const dateControl = (
-    <DateSelector
+    <DatePicker
+      embedded
       id={`${fieldId}-date`}
       label="Date"
       value={draft.date}
       min={min && parseCalendarDate(min.date) ? min.date : undefined}
       max={max && parseCalendarDate(max.date) ? max.date : undefined}
       locale={locale}
+      today={calendarToday}
       onChange={(date) => setDraft((current) => ({ ...current, date }))}
     />
   );

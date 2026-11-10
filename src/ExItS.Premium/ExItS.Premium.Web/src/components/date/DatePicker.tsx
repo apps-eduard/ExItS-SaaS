@@ -40,6 +40,13 @@ export type DatePickerProps = {
   error?: string;
   success?: string;
   clearable?: boolean;
+  /**
+   * Renders the calendar in place. No field, popover, or bottom sheet.
+   * Date selection reports through `onChange` and leaves the calendar open.
+   */
+  embedded?: boolean;
+  /** Calendar date highlighted as today. Defaults to the local calendar day. */
+  today?: CalendarDate;
 };
 
 export function DatePicker({
@@ -61,20 +68,32 @@ export function DatePicker({
   error,
   success,
   clearable = true,
+  embedded = false,
+  today: todayProp,
 }: DatePickerProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   const panelId = useId();
   const resolvedLocale = locale ?? (typeof navigator !== "undefined" ? navigator.language : "en");
   const resolvedWeek = weekStartsOn ?? localeWeekStart(resolvedLocale);
-  const today = todayCalendarDate();
+  const today = todayProp ?? todayCalendarDate();
   const [current, setCurrent] = useControllable(value, defaultValue, onChange);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<CalendarView>(() => viewOf(current ?? today));
   const [focused, setFocused] = useState<CalendarDate>(current ?? today);
   const [direction, setDirection] = useState<-1 | 0 | 1>(0);
   const compact = useCompactViewport();
-  const { anchorRef, triggerRef, popoverRef } = useDateSurface(open, compact);
+  const { anchorRef, triggerRef, popoverRef } = useDateSurface(embedded ? false : open, compact);
+  const externalDate = embedded && current ? current : "";
+  const [trackedDate, setTrackedDate] = useState(externalDate);
+  if (trackedDate !== externalDate) {
+    setTrackedDate(externalDate);
+    if (current) {
+      setView(viewOf(current));
+      setFocused(current);
+      setDirection(0);
+    }
+  }
   const constraints: DateConstraints = { min, max, disabledDates, isDateDisabled };
   const text = current ? formatDisplayDate(current, resolvedLocale) : null;
 
@@ -118,6 +137,11 @@ export function DatePicker({
 
   function selectDate(date: CalendarDate) {
     if (isDateUnavailable(date, constraints)) return;
+    setFocused(date);
+    if (embedded) {
+      setCurrent(date);
+      return;
+    }
     commit(date);
   }
 
@@ -127,6 +151,33 @@ export function DatePicker({
     setDirection(0);
     if (isDateUnavailable(today, constraints)) return;
     commit(today);
+  }
+
+  if (embedded) {
+    return (
+      <div className={surface.embedded} data-component="date-picker" data-embedded="true" role="group" aria-label={label}>
+        <CalendarMonth
+          view={view}
+          direction={direction}
+          onViewChange={(next, nextDirection) => {
+            setDirection(nextDirection);
+            setView(next);
+          }}
+          mode="single"
+          selectedDate={current}
+          rangeStart={null}
+          rangeEnd={null}
+          preview={false}
+          constraints={constraints}
+          weekStartsOn={resolvedWeek}
+          locale={resolvedLocale}
+          today={today}
+          focusedDate={focused}
+          onFocusedDate={setFocused}
+          onSelectDate={selectDate}
+        />
+      </div>
+    );
   }
 
   const panel = (

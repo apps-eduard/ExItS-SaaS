@@ -189,4 +189,14 @@ describe("DatePicker", () => {
     expect(screen.getByRole("dialog", { name: "Choose date" })).toBeInTheDocument();
     expect(document.querySelector("[data-surface='sheet']")).toBeTruthy();
   });
+
+  it("selects a date inline without opening another popover", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DatePicker embedded label="Date" value="2024-06-15" onChange={onChange} locale="en-US" />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Date" })).toBeInTheDocument();
+    await user.click(screen.getByRole("gridcell", { name: dayAriaLabel("2024-06-16", "en-US", todayCalendarDate()) }));
+    expect(onChange).toHaveBeenCalledWith("2024-06-16");
+  });
 });

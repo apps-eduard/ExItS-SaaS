@@ -1,3 +1,8 @@
+.embedded {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .popover {
   position: fixed;
   inset: unset;

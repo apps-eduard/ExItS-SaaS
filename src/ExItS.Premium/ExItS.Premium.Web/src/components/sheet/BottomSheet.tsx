@@ -52,7 +52,9 @@ export function BottomSheet({ open, title, description, onClose, children }: Bot
         restoreRef.current = document.activeElement;
       }
       showDialog(dialog);
-      dialog.querySelector<HTMLElement>("[data-autofocus], button, input, select, textarea, a[href]")?.focus();
+      const preferred = dialog.querySelector<HTMLElement>("[data-autofocus]");
+      const fallback = dialog.querySelector<HTMLElement>("button, input, select, textarea, a[href]");
+      (preferred ?? fallback)?.focus();
       return;
     }
     if (!dialog.open && !dialog.hasAttribute("open")) return;
