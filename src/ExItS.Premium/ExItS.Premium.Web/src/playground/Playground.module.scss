@@ -247,6 +247,17 @@
   gap: var(--space-3);
 }
 
+.themeSample {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--card-pad);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-page);
+  color: var(--color-text);
+}
+
 .swatchGrid,
 .spaceList,
 .radiusGrid {

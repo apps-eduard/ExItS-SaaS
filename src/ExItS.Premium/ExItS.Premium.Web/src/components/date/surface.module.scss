@@ -1,7 +1,7 @@
 .popover {
   position: fixed;
   inset: unset;
-  z-index: 50;
+  z-index: var(--z-menu);
   width: min(22rem, calc(100vw - 1rem));
   max-height: min(40rem, calc(100dvh - 1rem));
   margin: 0;

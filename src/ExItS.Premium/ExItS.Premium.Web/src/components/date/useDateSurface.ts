@@ -1,6 +1,18 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { hideOverlay, placeOverlay, showOverlay } from "../overlay/overlay";
 
+const APPEARANCE_ATTRS = ["data-theme", "data-palette", "data-radius", "data-density"] as const;
+
+function applyScopedAppearance(anchor: HTMLElement, popover: HTMLElement) {
+  for (const name of APPEARANCE_ATTRS) {
+    popover.removeAttribute(name);
+    const host = anchor.closest(`[${name}]`);
+    if (!host || host === document.documentElement) continue;
+    const value = host.getAttribute(name);
+    if (value) popover.setAttribute(name, value);
+  }
+}
+
 export function useDateSurface(open: boolean, compact: boolean) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -11,6 +23,7 @@ export function useDateSurface(open: boolean, compact: boolean) {
     const popover = popoverRef.current;
     const anchor = anchorRef.current;
     if (!popover || !anchor) return;
+    applyScopedAppearance(anchor, popover);
     showOverlay(popover);
     placeOverlay(anchor, popover, "bottom");
     popover.querySelector<HTMLElement>("[data-autofocus='true']")?.focus();

@@ -11,6 +11,7 @@ import { Select } from "../components/select/Select";
 import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
+import { DateTimeSection } from "./DateTimeSection";
 import styles from "./Playground.module.scss";
 
 function Intro({ title, children }: { title: string; children: ReactNode }) {
@@ -36,6 +37,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "inputs") return <InputsSection />;
   if (id === "search") return <SearchSection />;
   if (id === "selects") return <SelectsSection />;
+  if (id === "date-time") return <DateTimeSection />;
   if (id === "cards") return <CardsSection />;
   if (id === "badges") return <BadgesSection />;
   if (id === "toggles") return <TogglesSection />;
