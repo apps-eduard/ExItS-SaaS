@@ -24,13 +24,13 @@ const CARDS: Array<{ motion: InputFocusMotion; title: string; detail: string }> 
 ];
 
 export function InputMotionGallery({ embedded = false }: { embedded?: boolean }) {
-  const accentRef = useRef<HTMLInputElement>(null);
+  const drawRef = useRef<HTMLInputElement>(null);
 
-  function replayAccent() {
-    const node = accentRef.current;
+  function replayDraw() {
+    const node = drawRef.current;
     if (!node) return;
     node.blur();
-    window.requestAnimationFrame(() => node.focus());
+    node.focus();
   }
 
   const cards = (
@@ -42,8 +42,8 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
           motion={card.motion}
           title={card.title}
           detail={card.detail}
-          sampleRef={card.motion === "running-accent" ? accentRef : undefined}
-          onReplay={card.motion === "running-accent" ? replayAccent : undefined}
+          sampleRef={card.motion === "focus-draw" ? drawRef : undefined}
+          onReplay={card.motion === "focus-draw" ? replayDraw : undefined}
         />
       ))}
     </div>
@@ -61,7 +61,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
           </p>
         </div>
         <p className={styles.note}>
-          Disabled fields do not animate. Read-only fields keep a dashed border and the standard focus outline. Error and success keep their message, and the focus stroke uses that status color. The running accent travels once and does not restart while typing.
+          Disabled fields do not animate. Read-only fields keep a dashed border and the standard focus outline. Error and success keep their message, and the focus stroke uses that status color. Focus Draw starts at the bottom center and does not restart while typing.
         </p>
         {cards}
       </section>
@@ -125,7 +125,7 @@ function MotionCard({
       </div>
       {onReplay ? (
         <Button variant="secondary" onClick={onReplay}>
-          Replay accent
+          Replay
         </Button>
       ) : null}
       <div className={styles.fields}>

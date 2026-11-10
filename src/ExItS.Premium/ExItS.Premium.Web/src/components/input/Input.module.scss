@@ -26,6 +26,10 @@
     border-color: var(--color-primary);
   }
 
+  &[data-focus-motion="focus-draw"]:focus-visible:not([data-state]) {
+    border-color: var(--color-border-strong);
+  }
+
   &[data-state="error"] {
     border-color: var(--color-danger);
   }
