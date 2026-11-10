@@ -105,30 +105,65 @@ function SearchSection() {
 }
 
 function SelectsSection() {
-  const [value, setValue] = useState("groceries");
+  const [category, setCategory] = useState("groceries");
+  const [method, setMethod] = useState("cash");
+  const [status, setStatus] = useState("");
   return (
     <>
       <Intro title="Selects">
-        Native select, so the menu, keyboard, and screen reader behavior stay with the browser. Loading is not a select state.
+        A custom listbox with the field radius, elevation level 3, and one validation border. Below 768px the options open in a bottom sheet. Loading is not a select state.
       </Intro>
       <Stage>
-        <Select label="Category" value={value} onChange={(event) => setValue(event.target.value)}>
+        <Select label="Category" value={category} onChange={(event) => setCategory(event.target.value)}>
           <option value="groceries">Groceries</option>
           <option value="rent">Rent</option>
-          <option value="transport">Transport</option>
+          <option value="utilities">Utilities</option>
+        </Select>
+        <Select label="Focused category" value={category} onChange={(event) => setCategory(event.target.value)}>
+          <option value="groceries">Groceries</option>
+          <option value="rent">Rent</option>
+          <option value="utilities">Utilities</option>
+        </Select>
+        <Select label="Payment method" value={method} onChange={(event) => setMethod(event.target.value)}>
+          <option value="cash">Cash</option>
+          <option value="card">Card</option>
+          <option value="transfer">Transfer</option>
         </Select>
         <Select label="Disabled" value="rent" disabled onChange={() => undefined}>
           <option value="rent">Rent</option>
         </Select>
         <Select label="Error" defaultValue="" error="Choose a category.">
           <option value="">Choose</option>
+          <option value="groceries">Groceries</option>
           <option value="rent">Rent</option>
         </Select>
         <Select label="Success" defaultValue="rent" success="Category saved.">
           <option value="rent">Rent</option>
-          <option value="transport">Transport</option>
+          <option value="utilities">Utilities</option>
+        </Select>
+        <Select label="Transaction status" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <optgroup label="Open">
+            <option value="">Choose</option>
+            <option value="due">Due</option>
+            <option value="partial">Partial</option>
+          </optgroup>
+          <optgroup label="Closed">
+            <option value="paid">Paid</option>
+            <option value="void">Void</option>
+            <option value="hold" disabled>
+              Hold
+            </option>
+          </optgroup>
+        </Select>
+        <Select label="Search status" searchable defaultValue="">
+          <option value="">Choose</option>
+          <option value="paid">Paid</option>
+          <option value="due">Due</option>
+          <option value="partial">Partial</option>
+          <option value="void">Void</option>
         </Select>
       </Stage>
+      <p className="type-caption">Open a field to see the menu. On a narrow screen the same field opens a sheet. Tab to Focused category for the focus ring.</p>
     </>
   );
 }
