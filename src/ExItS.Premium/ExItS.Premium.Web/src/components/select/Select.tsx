@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type AnimationEvent as ReactAnimationEvent,
   type ChangeEvent,
   type FocusEventHandler,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -71,6 +72,10 @@ function collectOptions(children: ReactNode, group?: string, into: ParsedOption[
   return into;
 }
 
+function prefersReducedMotion() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function useNarrowViewport() {
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
@@ -117,11 +122,14 @@ export function Select({
   const panelRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const typedRef = useRef({ text: "", at: 0 });
+  const closeTimer = useRef(0);
   const [uncontrolled, setUncontrolled] = useState(defaultValue == null ? "" : String(defaultValue));
-  const [open, setOpen] = useState(false);
+  const [phase, setPhase] = useState<"closed" | "open" | "closing">("closed");
+  const [motionEpoch, setMotionEpoch] = useState(0);
   const [active, setActive] = useState(0);
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState(false);
+  const menuOpen = phase === "open";
   const selected = controlled ? String(value ?? "") : uncontrolled;
   const shown = searchable && query.trim()
     ? options.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()))
@@ -137,7 +145,8 @@ export function Select({
     const onReset = () => {
       window.setTimeout(() => {
         setUncontrolled(select.value);
-        setOpen(false);
+        window.clearTimeout(closeTimer.current);
+        setPhase("closed");
         setQuery("");
       }, 0);
     };
@@ -154,6 +163,8 @@ export function Select({
     return () => window.clearTimeout(timer);
   }, [chosen]);
 
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
   function enabledIndexes() {
     return enabled;
   }
@@ -164,17 +175,31 @@ export function Select({
 
   function openPanel() {
     if (disabled || readOnly) return;
+    window.clearTimeout(closeTimer.current);
     const current = shown.findIndex((option) => option.value === selected && !option.disabled);
     const fallback = enabledIndexes()[0] ?? 0;
     setActive(current >= 0 ? current : fallback);
     setQuery("");
-    setOpen(true);
+    setMotionEpoch((currentEpoch) => currentEpoch + 1);
+    setPhase("open");
+  }
+
+  function finishClose() {
+    window.clearTimeout(closeTimer.current);
+    setPhase("closed");
   }
 
   function closePanel(restore = true) {
-    setOpen(false);
     setQuery("");
     if (restore) triggerRef.current?.focus();
+    if (phase !== "open") return;
+    if (narrow || prefersReducedMotion()) {
+      finishClose();
+      return;
+    }
+    setPhase("closing");
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(finishClose, 160);
   }
 
   function commit(next: string) {
@@ -219,18 +244,18 @@ export function Select({
   function onTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
     onKeyDown?.(event as unknown as ReactKeyboardEvent<HTMLSelectElement>);
     if (event.defaultPrevented || disabled || readOnly) return;
-    if (!open && ["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+    if (!menuOpen && ["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
       event.preventDefault();
       openPanel();
       return;
     }
-    if (!open && event.key.length === 1 && /\S/.test(event.key)) {
+    if (!menuOpen && event.key.length === 1 && /\S/.test(event.key)) {
       event.preventDefault();
       openPanel();
       typeAhead(event.key, event.timeStamp);
       return;
     }
-    if (!open || searchable) return;
+    if (!menuOpen || searchable) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
       move(1);
@@ -279,60 +304,77 @@ export function Select({
     }
   }
 
+  function alignMenu() {
+    const panel = panelRef.current;
+    const trigger = triggerRef.current;
+    if (!panel || !trigger) return;
+    panel.style.width = `${Math.round(trigger.getBoundingClientRect().width)}px`;
+    placeOverlay(trigger, panel, "bottom");
+    const placedAbove = panel.getBoundingClientRect().top + 1 < trigger.getBoundingClientRect().top;
+    panel.dataset.placement = placedAbove ? "above" : "below";
+    panel.style.setProperty("--select-shift", placedAbove ? "8px" : "-8px");
+  }
+
+  function onMenuAnimationEnd(event: ReactAnimationEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
+    if (event.currentTarget.dataset.motion !== "exit") return;
+    finishClose();
+  }
+
   useLayoutEffect(() => {
     const panel = panelRef.current;
     const trigger = triggerRef.current;
-    if (!open || narrow || !panel || !trigger) return;
-    panel.style.width = `${Math.round(trigger.getBoundingClientRect().width)}px`;
+    if (phase === "closed" || narrow || !panel || !trigger) return;
     showOverlay(panel);
-    placeOverlay(trigger, panel, "bottom");
-    if (searchable) searchRef.current?.focus();
-  }, [open, narrow, searchable, shown.length]);
+    alignMenu();
+    if (menuOpen && searchable) searchRef.current?.focus();
+  }, [phase, menuOpen, narrow, searchable, shown.length, motionEpoch]);
 
   useEffect(() => {
-    if (!open || narrow) return;
+    if (!menuOpen || narrow) return;
     function onPointerDown(event: PointerEvent) {
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
-      setOpen(false);
       setQuery("");
-    }
-    function onPlace() {
-      const panel = panelRef.current;
-      const trigger = triggerRef.current;
-      if (!panel || !trigger) return;
-      panel.style.width = `${Math.round(trigger.getBoundingClientRect().width)}px`;
-      placeOverlay(trigger, panel, "bottom");
+      if (narrow || prefersReducedMotion()) {
+        window.clearTimeout(closeTimer.current);
+        setPhase("closed");
+        return;
+      }
+      setPhase("closing");
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = window.setTimeout(finishClose, 160);
     }
     document.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("resize", onPlace);
-    window.addEventListener("scroll", onPlace, true);
+    window.addEventListener("resize", alignMenu);
+    window.addEventListener("scroll", alignMenu, true);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("resize", onPlace);
-      window.removeEventListener("scroll", onPlace, true);
+      window.removeEventListener("resize", alignMenu);
+      window.removeEventListener("scroll", alignMenu, true);
     };
-  }, [open, narrow]);
+  }, [menuOpen, narrow]);
 
   useEffect(() => {
-    if (!open || narrow) hideOverlay(panelRef.current);
-  }, [open, narrow]);
+    if (phase !== "closed" && !narrow) return;
+    hideOverlay(panelRef.current);
+  }, [phase, narrow]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!menuOpen) return;
     const node = document.getElementById(`${listId}-option-${safeActive}`);
     if (typeof node?.scrollIntoView === "function") node.scrollIntoView({ block: "nearest" });
-  }, [open, safeActive, listId]);
+  }, [menuOpen, safeActive, listId]);
 
   useEffect(() => {
-    if (!open || !narrow) return;
+    if (!menuOpen || !narrow) return;
     const timer = window.setTimeout(() => {
       if (searchable) searchRef.current?.focus();
       else document.getElementById(`${listId}-option-${safeActive}`)?.focus();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [open, narrow, searchable, safeActive, listId]);
+  }, [menuOpen, narrow, searchable, safeActive, listId]);
 
   function onNativeChange(event: ChangeEvent<HTMLSelectElement>) {
     setUncontrolled(event.target.value);
@@ -383,8 +425,8 @@ export function Select({
         role="combobox"
         aria-autocomplete="list"
         aria-controls={listId}
-        aria-expanded={open}
-            aria-activedescendant={shown[safeActive] ? optionId(safeActive) : undefined}
+        aria-expanded={menuOpen}
+        aria-activedescendant={menuOpen && shown[safeActive] ? optionId(safeActive) : undefined}
         aria-label={`Search ${label}`}
         placeholder="Search"
         value={query}
@@ -425,16 +467,23 @@ export function Select({
         >
           {children}
         </select>
+        {/*
+          Focus Draw integration point. This trigger is the focus host and keeps the
+          existing :focus-visible border and ring in Select.module.scss.
+          When Agent 4's reusable Focus Draw is shared, attach it here
+          (data-focus-draw / focusMotion="focus-draw"). Do not add a second border trace.
+        */}
         <button
           ref={triggerRef}
           type="button"
           id={fieldId}
           className={styles.trigger}
+          data-focus-host="select-trigger"
           role={searchable ? undefined : "combobox"}
           aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-controls={open ? listId : undefined}
-          aria-activedescendant={!searchable && open && shown[safeActive] ? optionId(safeActive) : undefined}
+          aria-expanded={menuOpen}
+          aria-controls={menuOpen ? listId : undefined}
+          aria-activedescendant={!searchable && menuOpen && shown[safeActive] ? optionId(safeActive) : undefined}
           aria-label={`${label}, ${display}`}
           aria-invalid={error ? true : undefined}
           aria-describedby={message ? `${fieldId}-message` : undefined}
@@ -447,24 +496,37 @@ export function Select({
           data-placeholder={placeholder ? "true" : undefined}
           data-chosen={chosen ? "true" : undefined}
           data-readonly={readOnly ? "true" : undefined}
-          onClick={() => (open ? closePanel(false) : openPanel())}
+          onClick={() => (menuOpen ? closePanel(false) : openPanel())}
           onKeyDown={onTriggerKeyDown}
         >
           <span className={styles.value}>{display}</span>
           <ExIcon name="expand_more" className={styles.chevron} />
         </button>
       </div>
-      {open && !narrow
+      {phase !== "closed" && !narrow
         ? createPortal(
-            <div ref={panelRef} className={styles.panel} popover="manual">
-              {search}
-              {list}
+            <div
+              ref={panelRef}
+              key={motionEpoch}
+              className={styles.panel}
+              popover="manual"
+              data-component="select-menu"
+              data-motion={phase === "closing" ? "exit" : "enter"}
+              data-placement="below"
+              aria-hidden={phase === "closing" || undefined}
+              inert={phase === "closing" || undefined}
+              onAnimationEnd={onMenuAnimationEnd}
+            >
+              <div className={styles.scroller}>
+                {search}
+                {list}
+              </div>
             </div>,
             document.body,
           )
         : null}
       {narrow ? (
-        <BottomSheet open={open} title={label} onClose={() => closePanel()}>
+        <BottomSheet open={menuOpen} title={label} onClose={() => closePanel()}>
           {search}
           {list}
         </BottomSheet>

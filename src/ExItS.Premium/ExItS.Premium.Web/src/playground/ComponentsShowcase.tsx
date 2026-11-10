@@ -136,15 +136,55 @@ function SearchSection() {
   );
 }
 
+const ledgerOptions = [
+  "Groceries",
+  "Rent",
+  "Utilities",
+  "Transport",
+  "Salary",
+  "Savings",
+  "Medical",
+  "School",
+  "Household",
+  "Gifts",
+  "Travel",
+  "Other",
+];
+
+function replaySelect(id: string) {
+  const trigger = document.getElementById(id);
+  if (!(trigger instanceof HTMLButtonElement)) return;
+  if (trigger.getAttribute("aria-expanded") === "true") {
+    trigger.click();
+    window.setTimeout(() => trigger.click(), 180);
+    return;
+  }
+  trigger.click();
+}
+
 function SelectsSection() {
   const [category, setCategory] = useState("groceries");
   const [method, setMethod] = useState("cash");
   const [status, setStatus] = useState("");
+  const [ledger, setLedger] = useState("groceries");
   return (
     <>
       <Intro title="Selects">
-        A custom listbox with the field radius, elevation level 3, and one validation border. Below 768px the options open in a bottom sheet. Loading is not a select state.
+        A custom listbox with the field radius, elevation level 3, and one validation border. The menu eases out from the field, the active option follows the pointer or keyboard, and the menu eases back in when it closes. Below 768px the same options open in a bottom sheet. Loading is not a select state.
       </Intro>
+      <Stage label="Motion">
+        <Select id="select-motion-demo" label="Motion" value={category} onChange={(event) => setCategory(event.target.value)}>
+          <option value="groceries">Groceries</option>
+          <option value="rent">Rent</option>
+          <option value="utilities">Utilities</option>
+          <option value="hold" disabled>
+            Hold
+          </option>
+        </Select>
+        <Button variant="secondary" appearance="outline" onClick={() => replaySelect("select-motion-demo")}>
+          Replay open
+        </Button>
+      </Stage>
       <Stage>
         <Select label="Category" value={category} onChange={(event) => setCategory(event.target.value)}>
           <option value="groceries">Groceries</option>
@@ -194,8 +234,17 @@ function SelectsSection() {
           <option value="partial">Partial</option>
           <option value="void">Void</option>
         </Select>
+        <Select label="Ledger" value={ledger} onChange={(event) => setLedger(event.target.value)}>
+          {ledgerOptions.map((name) => (
+            <option key={name} value={name.toLowerCase()}>
+              {name}
+            </option>
+          ))}
+        </Select>
       </Stage>
-      <p className="type-caption">Open a field to see the menu. On a narrow screen the same field opens a sheet. Tab to Focused category for the focus ring.</p>
+      <p className="type-caption">
+        Replay open plays the menu again. Arrow keys move the highlight. Enter selects and the checkmark settles as the menu closes. On a narrow screen the same fields open in a sheet. Tab to Focused category for the focus ring.
+      </p>
     </>
   );
 }
