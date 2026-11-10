@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -138,5 +138,74 @@ describe("Select", () => {
     await user.click(screen.getByRole("option", { name: "Groceries" }));
     expect(screen.getByRole("combobox", { name: "Category, Groceries" })).toBeInTheDocument();
     vi.unstubAllGlobals();
+  });
+
+  it("updates the value immediately and keeps the closing menu out of the way", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<CategorySelect onChange={onChange} />);
+    await user.click(screen.getByRole("combobox", { name: "Category, Groceries" }));
+    const menu = document.querySelector("[data-component='select-menu']");
+    expect(menu).toHaveAttribute("data-motion", "enter");
+    await user.click(screen.getByRole("option", { name: "Rent" }));
+    expect(onChange).toHaveBeenCalledWith("rent");
+    expect(screen.getByRole("combobox", { name: "Category, Rent" })).toHaveFocus();
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(menu).toHaveAttribute("data-motion", "exit");
+    expect(menu).toHaveAttribute("aria-hidden", "true");
+    expect(menu).toHaveAttribute("inert");
+  });
+
+  it("reopens during the exit and closes from an outside press or a second Escape", async () => {
+    const user = userEvent.setup();
+    render(<CategorySelect />);
+    const trigger = screen.getByRole("combobox", { name: "Category, Groceries" });
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+    expect(document.querySelector("[data-component='select-menu']")).toHaveAttribute("data-motion", "exit");
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveFocus();
+    await user.click(trigger);
+    expect(screen.getByRole("listbox", { name: "Category" })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-component='select-menu']")).toHaveAttribute("data-motion", "exit");
+  });
+
+  it("removes the menu immediately when motion is reduced", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    render(<CategorySelect />);
+    const trigger = screen.getByRole("combobox", { name: "Category, Groceries" });
+    await user.click(trigger);
+    expect(screen.getByRole("listbox", { name: "Category" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(document.querySelector("[data-component='select-menu']")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    vi.unstubAllGlobals();
+  });
+
+  it("drops a closing menu when the select unmounts", async () => {
+    const user = userEvent.setup();
+    const errors: unknown[][] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      errors.push(args);
+    });
+    const view = render(<CategorySelect />);
+    await user.click(screen.getByRole("combobox", { name: "Category, Groceries" }));
+    await user.keyboard("{Escape}");
+    view.unmount();
+    await new Promise((resolve) => window.setTimeout(resolve, 220));
+    spy.mockRestore();
+    expect(errors).toEqual([]);
+    expect(document.querySelector("[data-component='select-menu']")).not.toBeInTheDocument();
   });
 });
