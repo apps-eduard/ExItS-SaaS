@@ -1,0 +1,97 @@
+.wheels {
+  --wheel-item: max(2.75rem, var(--control-height));
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+
+  &[data-columns="3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.column {
+  min-width: 0;
+}
+
+.columnLabel {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-label-weight);
+  text-align: center;
+}
+
+.viewport {
+  position: relative;
+  height: calc(var(--wheel-item) * 5);
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+}
+
+.band {
+  position: absolute;
+  z-index: 0;
+  top: calc(var(--wheel-item) * 2);
+  right: 0;
+  left: 0;
+  height: var(--wheel-item);
+  border-radius: var(--radius-control);
+  background: var(--color-primary-soft);
+  pointer-events: none;
+}
+
+.scroller {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  padding-block: calc(var(--wheel-item) * 2);
+  touch-action: pan-y;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
+}
+
+.option {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: var(--wheel-item);
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  scroll-snap-align: center;
+  cursor: pointer;
+
+  &[aria-selected="true"] {
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroller {
+    scroll-behavior: auto;
+  }
+}

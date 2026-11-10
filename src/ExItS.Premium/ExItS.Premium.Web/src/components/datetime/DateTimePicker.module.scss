@@ -1,0 +1,24 @@
+.editor {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.split {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.time {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
