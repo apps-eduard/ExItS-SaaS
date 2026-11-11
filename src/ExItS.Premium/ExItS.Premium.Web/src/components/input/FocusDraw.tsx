@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { focusDrawGeometry } from "./focus-draw";
+import { borderRevealGeometry, focusDrawGeometry } from "./focus-draw";
 import { INPUT_FOCUS_DRAW_EASING, INPUT_FOCUS_DRAW_MS, INPUT_FOCUS_DRAW_RELEASE_MS, INPUT_FOCUS_DRAW_STROKE } from "./focus-motion";
 import styles from "./InputMotion.module.scss";
 
@@ -7,13 +7,15 @@ type FocusDrawProps = {
   active: boolean;
   generation: number;
   reduced: boolean;
+  variant?: "focus-draw" | "border-reveal";
 };
 
-function readGeometry(shell: HTMLElement) {
+function readGeometry(shell: HTMLElement, variant: "focus-draw" | "border-reveal") {
   const box = shell.getBoundingClientRect();
   if (box.width < 1 || box.height < 1) return null;
   const radius = Number.parseFloat(getComputedStyle(shell).borderTopLeftRadius) || 0;
-  return focusDrawGeometry(box.width, box.height, radius);
+  const geometry = variant === "border-reveal" ? borderRevealGeometry : focusDrawGeometry;
+  return geometry(box.width, box.height, radius);
 }
 
 function cancelMotion(path: SVGPathElement) {
@@ -77,7 +79,7 @@ function release(path: SVGPathElement, stamp: number, stamps: { current: number 
   };
 }
 
-export function FocusDraw({ active, generation, reduced }: FocusDrawProps) {
+export function FocusDraw({ active, generation, reduced, variant = "focus-draw" }: FocusDrawProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const leftRef = useRef<SVGPathElement>(null);
   const rightRef = useRef<SVGPathElement>(null);
@@ -88,7 +90,7 @@ export function FocusDraw({ active, generation, reduced }: FocusDrawProps) {
     const shell = svgRef.current?.parentElement;
     if (!shell) return;
     const apply = () => {
-      const geometry = readGeometry(shell);
+      const geometry = readGeometry(shell, variant);
       const svg = svgRef.current;
       const left = leftRef.current;
       const right = rightRef.current;
@@ -114,7 +116,7 @@ export function FocusDraw({ active, generation, reduced }: FocusDrawProps) {
       observer?.disconnect();
       appearance.disconnect();
     };
-  }, []);
+  }, [variant]);
 
   useLayoutEffect(() => {
     const shell = svgRef.current?.parentElement;
@@ -131,7 +133,7 @@ export function FocusDraw({ active, generation, reduced }: FocusDrawProps) {
       return;
     }
 
-    const geometry = readGeometry(shell);
+    const geometry = readGeometry(shell, variant);
     if (geometry && svgRef.current) {
       svgRef.current.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
       left.setAttribute("d", geometry.left);
@@ -150,12 +152,12 @@ export function FocusDraw({ active, generation, reduced }: FocusDrawProps) {
     stamp.current += 1;
     play(left);
     play(right);
-  }, [active, generation, reduced]);
+  }, [active, generation, reduced, variant]);
 
   return (
     <svg ref={svgRef} className={styles.draw} data-focus-draw="true" aria-hidden="true" width="100%" height="100%">
-      <path ref={leftRef} className={styles.drawPath} data-stroke="left" strokeWidth={INPUT_FOCUS_DRAW_STROKE} />
-      <path ref={rightRef} className={styles.drawPath} data-stroke="right" strokeWidth={INPUT_FOCUS_DRAW_STROKE} />
+      <path ref={leftRef} className={styles.drawPath} data-stroke={variant === "border-reveal" ? "up" : "left"} strokeWidth={INPUT_FOCUS_DRAW_STROKE} />
+      <path ref={rightRef} className={styles.drawPath} data-stroke={variant === "border-reveal" ? "down" : "right"} strokeWidth={INPUT_FOCUS_DRAW_STROKE} />
     </svg>
   );
 }

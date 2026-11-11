@@ -21,8 +21,7 @@ describe("input focus motion", () => {
   });
 
   it("uses one short CSS pass and keeps a steady focus stroke", () => {
-    expect(INPUT_FOCUS_REVEAL_MS).toBeGreaterThanOrEqual(180);
-    expect(INPUT_FOCUS_REVEAL_MS).toBeLessThanOrEqual(250);
+    expect(INPUT_FOCUS_REVEAL_MS).toBe(INPUT_FOCUS_DRAW_MS);
     expect(motionCss).toContain(`${INPUT_FOCUS_REVEAL_MS}ms`);
     expect(motionCss).toContain(`${INPUT_FOCUS_TRACE_MS}ms`);
     expect(motionCss).toContain(`${INPUT_FOCUS_DRAW_MS}ms`);

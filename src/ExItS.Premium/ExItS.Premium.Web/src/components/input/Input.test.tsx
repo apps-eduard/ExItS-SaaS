@@ -63,7 +63,8 @@ describe("Input", () => {
     expect(screen.getByText("Read-only")).toBeVisible();
     const code = screen.getByRole("textbox", { name: "Code" });
     expect(code).toBeRequired();
-    expect(screen.getByText("Required")).toBeVisible();
+    expect(screen.getByText("*")).toBeVisible();
+    expect(screen.queryByText("Required")).not.toBeInTheDocument();
   });
 });
 

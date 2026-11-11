@@ -18,13 +18,15 @@ export function Field({ id, label, hint, error, success, required = false, readO
   return (
     <div className={styles.field} data-state={state}>
       <label className={styles.label} htmlFor={id}>
-        <span>{label}</span>
+        <span>
+          {label}
+          {!readOnly && required ? (
+            <span className={styles.required} aria-hidden="true">
+              *
+            </span>
+          ) : null}
+        </span>
         {readOnly ? <span className={styles.flag}>Read-only</span> : null}
-        {!readOnly && required ? (
-          <span className={styles.flag} aria-hidden="true">
-            Required
-          </span>
-        ) : null}
       </label>
       {children}
       {message ? (

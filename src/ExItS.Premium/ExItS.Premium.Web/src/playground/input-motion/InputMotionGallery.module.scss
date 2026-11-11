@@ -47,14 +47,6 @@
   overflow: visible;
 }
 
-.grid {
-  display: grid;
-  gap: var(--space-4);
-  align-items: start;
-  min-width: 0;
-  overflow: visible;
-}
-
 .card {
   display: grid;
   align-content: start;
@@ -72,9 +64,42 @@
   gap: 0.4rem;
 }
 
-.fields {
+.controls {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: 0.875rem;
+  align-items: end;
+}
+
+.toggles,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+}
+
+.stage {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.preview,
+.locked {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.command {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
 }
 
 .panel {
@@ -87,8 +112,8 @@
 }
 
 @media (min-width: 720px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .stage {
+    grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
   }
 }
 
@@ -102,7 +127,4 @@
     top: var(--space-4);
   }
 
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }

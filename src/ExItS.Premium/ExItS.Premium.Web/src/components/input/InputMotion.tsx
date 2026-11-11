@@ -18,7 +18,7 @@ function prefersReducedMotion() {
 export function InputMotion({ motion, disabled = false, readOnly = false, state, children }: InputMotionProps) {
   const [session, setSession] = useState({ id: 0, active: false });
   const [reduced, setReduced] = useState(prefersReducedMotion);
-  const draw = motion === "focus-draw";
+  const draw = motion === "focus-draw" || motion === "border-reveal";
 
   useEffect(() => {
     const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -60,7 +60,9 @@ export function InputMotion({ motion, disabled = false, readOnly = false, state,
         </span>
       ) : null}
       {children}
-      {draw && !readOnly ? <FocusDraw active={session.active} generation={session.id} reduced={reduced} /> : null}
+      {draw && !readOnly ? (
+        <FocusDraw active={session.active} generation={session.id} reduced={reduced} variant={motion === "border-reveal" ? "border-reveal" : "focus-draw"} />
+      ) : null}
     </div>
   );
 }

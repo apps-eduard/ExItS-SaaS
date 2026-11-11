@@ -10,7 +10,7 @@
   --input-accent: var(--color-primary);
   --input-reveal-duration: 220ms;
   --input-trace-duration: 680ms;
-  --input-draw-duration: 420ms;
+  --input-draw-duration: 1100ms;
   overflow: visible;
 }
 
@@ -50,10 +50,10 @@
 }
 
 .shell[data-motion="border-reveal"] .steady {
-  clip-path: inset(0 44% 0 44% round var(--radius-control));
+  clip-path: inset(0 calc(50% - 1px) 0 calc(50% - 1px) round 0);
   transition:
-    opacity var(--input-reveal-duration) var(--motion-ease),
-    clip-path var(--input-reveal-duration) var(--motion-ease);
+    opacity 0ms,
+    clip-path 1100ms linear;
 }
 
 .glow {

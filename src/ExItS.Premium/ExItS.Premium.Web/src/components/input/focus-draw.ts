@@ -67,3 +67,47 @@ export function focusDrawGeometry(width: number, height: number, radius: number,
     right,
   };
 }
+
+/** Mirror of the bottom stroke. Starts at the top middle and follows the real right border to the bottom middle. */
+export function borderRevealGeometry(width: number, height: number, radius: number, stroke = INPUT_FOCUS_DRAW_STROKE): FocusDrawGeometry {
+  const safeWidth = Math.max(width, stroke);
+  const safeHeight = Math.max(height, stroke);
+  const inset = stroke / 2;
+  const maxRadius = Math.max(0, Math.min(safeWidth / 2 - inset, safeHeight / 2 - inset));
+  const curve = Math.max(0, Math.min(radius, maxRadius));
+  const leftEdge = inset;
+  const rightEdge = safeWidth - inset;
+  const top = inset;
+  const bottom = safeHeight - inset;
+  const center = safeWidth / 2;
+
+  const down = [
+    `M ${px(center)} ${px(top)}`,
+    `L ${px(rightEdge - curve)} ${px(top)}`,
+    corner(curve, 1, rightEdge, top + curve),
+    `L ${px(rightEdge)} ${px(bottom - curve)}`,
+    corner(curve, 1, rightEdge - curve, bottom),
+    `L ${px(center)} ${px(bottom)}`,
+  ].join(" ");
+
+  const up = [
+    `M ${px(center)} ${px(bottom)}`,
+    `L ${px(leftEdge + curve)} ${px(bottom)}`,
+    corner(curve, 1, leftEdge, bottom - curve),
+    `L ${px(leftEdge)} ${px(top + curve)}`,
+    corner(curve, 1, leftEdge + curve, top),
+    `L ${px(center)} ${px(top)}`,
+  ].join(" ");
+
+  return {
+    width: safeWidth,
+    height: safeHeight,
+    radius: curve,
+    startX: center,
+    startY: top,
+    endX: center,
+    endY: top,
+    left: up,
+    right: down,
+  };
+}

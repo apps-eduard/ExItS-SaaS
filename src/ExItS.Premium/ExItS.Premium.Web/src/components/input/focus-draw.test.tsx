@@ -129,8 +129,8 @@ describe("focus draw interaction", () => {
     expect(started.every((call) => call.options.easing === INPUT_FOCUS_DRAW_EASING)).toBe(true);
     expect(started.every((call) => call.options.delay === 0)).toBe(true);
     expect(started.every((call) => call.options.fill === "forwards")).toBe(true);
-    expect(INPUT_FOCUS_DRAW_MS).toBeGreaterThanOrEqual(350);
-    expect(INPUT_FOCUS_DRAW_MS).toBeLessThanOrEqual(500);
+    expect(INPUT_FOCUS_DRAW_MS).toBe(1100);
+    expect(INPUT_FOCUS_DRAW_EASING).toBe("linear");
     expect(shell).toHaveAttribute("data-drawn", "true");
     expect(shell?.querySelector("[data-stroke='left']")).toHaveAttribute("d", focusDrawGeometry(280, 44, 0).left);
     expect(shell?.querySelector("[data-stroke='right']")).toHaveAttribute("d", focusDrawGeometry(280, 44, 0).right);

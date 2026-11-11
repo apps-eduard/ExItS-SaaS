@@ -16,6 +16,11 @@
   line-height: var(--type-label-line);
 }
 
+.required {
+  margin-inline-start: 0.2em;
+  color: var(--color-danger-ink);
+}
+
 .flag {
   flex: none;
   font-size: var(--type-caption-size);

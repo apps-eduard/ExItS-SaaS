@@ -105,14 +105,8 @@ function InputsSection() {
   return (
     <>
       <Intro title="Inputs">
-        Native fields with a visible label. Error and success include text, not color alone. Hover and focus are available on an enabled field. The first group keeps the shipped focus style.
+        One playground changes focus motion and field state. Default global stays the shipped input and search.
       </Intro>
-      <Stage label="Shipped focus">
-        <Input label="Name" placeholder="Account name" hint="Shown on the payment." />
-        <Input label="Disabled" value="Locked" disabled onChange={() => undefined} />
-        <Input label="Error" defaultValue="a" error="Use at least two letters." />
-        <Input label="Success" defaultValue="Market" success="Name is available." />
-      </Stage>
       <InputMotionGallery embedded />
     </>
   );

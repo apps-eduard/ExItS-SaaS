@@ -1,44 +1,57 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { AppearanceProvider } from "../../theme/AppearanceProvider";
 import { InputMotionGallery } from "./InputMotionGallery";
 
+function preview() {
+  return screen.getByRole("region", { name: "Preview" });
+}
+
+function locked() {
+  return screen.getByRole("region", { name: "Default global" });
+}
+
 describe("InputMotionGallery", () => {
-  it("shows the current treatment beside the three experimental variants", () => {
+  it("uses one preview and keeps the shipped fields in default global", () => {
     render(
       <AppearanceProvider>
         <InputMotionGallery />
       </AppearanceProvider>,
     );
 
-    expect(screen.getByRole("heading", { name: "Input focus motion" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Current" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Animated Border Reveal" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Soft Focus Glow" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "ExItS Focus Draw" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Replay" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 1, name: "Input playground" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Transition, Border Reveal" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Running Border Accent" })).not.toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Current name" }).parentElement).not.toHaveAttribute("data-motion");
-    expect(screen.getByRole("textbox", { name: "Animated Border Reveal name" }).parentElement).toHaveAttribute("data-motion", "border-reveal");
-    expect(screen.getByRole("textbox", { name: "Soft Focus Glow name" }).parentElement).toHaveAttribute("data-motion", "soft-glow");
-    expect(screen.getByRole("textbox", { name: "ExItS Focus Draw name" }).parentElement).toHaveAttribute("data-motion", "focus-draw");
-    expect(screen.getByRole("textbox", { name: "Animated Border Reveal disabled" })).toBeDisabled();
-    expect(screen.getAllByText("Use at least two letters.")).toHaveLength(4);
+    expect(within(preview()).getByRole("textbox", { name: "Name" })).toHaveAttribute("data-focus-motion", "border-reveal");
+    expect(within(preview()).getByRole("textbox", { name: "Name" }).parentElement).toHaveAttribute("data-motion", "border-reveal");
+    expect(within(locked()).getByRole("textbox", { name: "Name" }).parentElement).not.toHaveAttribute("data-motion");
+    expect(within(locked()).getByRole("searchbox", { name: "Search" }).parentElement).not.toHaveAttribute("data-motion");
+
+    expect(within(preview()).getByRole("textbox", { name: "Name" }).parentElement).toHaveAttribute("data-motion", "border-reveal");
+    expect(within(locked()).getByRole("textbox", { name: "Name" }).parentElement).not.toHaveAttribute("data-motion");
+    expect(screen.getByRole("button", { name: "Replay" })).toBeVisible();
+    expect(screen.getAllByRole("textbox", { name: "Name" })).toHaveLength(2);
   });
 
-  it("embeds the three working treatments without replacing the shipped focus style", () => {
+  it("embeds the playground and applies error only to the preview", async () => {
+    const user = userEvent.setup();
     render(
       <AppearanceProvider>
         <InputMotionGallery embedded />
       </AppearanceProvider>,
     );
 
-    expect(screen.getByRole("heading", { name: "Focus motion" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Input playground" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Input focus motion" })).not.toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Current name" }).parentElement).not.toHaveAttribute("data-motion");
-    expect(screen.getByRole("textbox", { name: "Animated Border Reveal typing" })).toHaveAttribute("data-focus-motion", "border-reveal");
-    expect(screen.getByRole("searchbox", { name: "Soft Focus Glow search" }).parentElement).toHaveAttribute("data-motion", "soft-glow");
-    expect(screen.getByRole("textbox", { name: "ExItS Focus Draw name" }).parentElement).toHaveAttribute("data-motion", "focus-draw");
-    expect(screen.getByRole("searchbox", { name: "ExItS Focus Draw search" }).parentElement).toHaveAttribute("data-motion", "focus-draw");
+    expect(screen.queryByRole("heading", { name: "Shipped focus" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Error" }));
+    expect(within(preview()).getByText("Use at least two letters.")).toBeVisible();
+    expect(within(locked()).queryByText("Use at least two letters.")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Search" }));
+    expect(within(preview()).getByRole("searchbox", { name: "Name" }).parentElement).toHaveAttribute("data-motion", "border-reveal");
+    expect(within(locked()).getByRole("searchbox", { name: "Search" })).toBeVisible();
   });
 });
