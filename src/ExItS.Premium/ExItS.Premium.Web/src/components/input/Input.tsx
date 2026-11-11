@@ -1,7 +1,7 @@
 import { useId, useState, type ChangeEvent, type InputHTMLAttributes, type Ref } from "react";
 import { Field } from "../field/Field";
 import appearanceStyles from "./appearance.module.scss";
-import { inputFocusFrame, isInputAppearance, type InputAppearance } from "./input-appearance";
+import { isInputAppearance, type InputAppearance } from "./input-appearance";
 import { isInputFocusMotion, type InputFocusMotion } from "./focus-motion";
 import { InputMotion } from "./InputMotion";
 import styles from "./Input.module.scss";
@@ -72,7 +72,7 @@ export function Input({
       disabled={Boolean(disabled)}
       placement={floating ? "float" : "stacked"}
     >
-      <InputMotion motion={motion} disabled={Boolean(disabled)} readOnly={Boolean(readOnly)} state={state} frame={inputFocusFrame(appearance)}>
+      <InputMotion motion={motion} disabled={Boolean(disabled)} readOnly={Boolean(readOnly)} state={state}>
         <input
           {...props}
           ref={ref}

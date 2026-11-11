@@ -63,12 +63,33 @@
   color: var(--color-primary);
 }
 
-.field[data-placement="float"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+.field[data-placement="float"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"])) .floatLabel,
+.field[data-placement="float"]:has([data-appearance="soft"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
   top: 0;
   padding-inline: 0.28rem;
   background: var(--color-surface);
   transform: translateY(-50%);
   line-height: 1;
+}
+
+.field[data-placement="float"]:has([data-appearance="soft"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+.field[data-placement="float"][data-state="error"]:has([data-appearance="soft"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+}
+
+.field[data-placement="float"][data-state="success"]:has([data-appearance="soft"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+}
+
+.field[data-placement="float"]:has([data-appearance="soft"][readonly]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+.field[data-placement="float"][data-disabled="true"]:is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  background: var(--color-disabled-fill);
 }
 
 .field[data-placement="float"][data-state="error"]:is(:focus-within, :has([data-filled="true"])) .floatLabel {

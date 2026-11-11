@@ -87,16 +87,6 @@
   }
 }
 
-.wrap[data-appearance]:is(:focus-within, :has([data-filled="true"])) .icon {
-  top: calc(50% + 0.45rem);
-}
-
-.wrap[data-appearance]:is(:focus-within, :has([data-filled="true"])) .clear {
-  top: auto;
-  bottom: 0.2rem;
-  transform: none;
-}
-
 .clear {
   position: absolute;
   z-index: 1;
