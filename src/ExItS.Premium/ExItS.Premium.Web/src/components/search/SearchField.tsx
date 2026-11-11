@@ -1,6 +1,8 @@
 import { useId } from "react";
 import { Field } from "../field/Field";
 import { ExIcon } from "../../icons/ExIcon";
+import appearanceStyles from "../input/appearance.module.scss";
+import { inputFocusFrame, isInputAppearance, type InputAppearance } from "../input/input-appearance";
 import { isInputFocusMotion, type InputFocusMotion } from "../input/focus-motion";
 import { InputMotion } from "../input/InputMotion";
 import styles from "./SearchField.module.scss";
@@ -14,20 +16,25 @@ type SearchFieldProps = {
   error?: string;
   /** Experimental focus treatment. Omitted fields keep the shipped focus style. */
   focusMotion?: InputFocusMotion;
+  /** Omitted fields keep the shipped stacked label. Other surfaces are opt-in. */
+  appearance?: InputAppearance;
 };
 
-export function SearchField({ label, value, onChange, placeholder, disabled, error, focusMotion = "none" }: SearchFieldProps) {
+export function SearchField({ label, value, onChange, placeholder, disabled, error, focusMotion = "none", appearance: appearanceProp = "stacked" }: SearchFieldProps) {
   const id = useId();
   const motion = isInputFocusMotion(focusMotion) ? focusMotion : "none";
+  const appearance = isInputAppearance(appearanceProp) ? appearanceProp : "stacked";
+  const floating = appearance !== "stacked";
   return (
-    <Field id={id} label={label} error={error}>
-      <div className={styles.wrap}>
+    <Field id={id} label={label} error={error} disabled={Boolean(disabled)} placement={floating ? "float" : "stacked"} icon={floating}>
+      <div className={styles.wrap} data-appearance={floating ? appearance : undefined}>
         <ExIcon name="search" className={styles.icon} />
-        <InputMotion motion={motion} disabled={Boolean(disabled)} state={error ? "error" : undefined}>
+        <InputMotion motion={motion} disabled={Boolean(disabled)} state={error ? "error" : undefined} frame={inputFocusFrame(appearance)}>
           <input
             id={id}
             type="search"
-            className={styles.control}
+            className={[styles.control, floating ? appearanceStyles.control : ""].filter(Boolean).join(" ")}
+            data-appearance={floating ? appearance : undefined}
             value={value}
             placeholder={placeholder}
             disabled={disabled}

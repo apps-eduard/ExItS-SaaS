@@ -105,7 +105,7 @@ function InputsSection() {
   return (
     <>
       <Intro title="Inputs">
-        One playground changes focus motion and field state. Default global stays the shipped input and search.
+        One playground changes appearance, focus motion, and field state. Stacked stays the shipped input. Default global does not follow the controls.
       </Intro>
       <InputMotionGallery embedded />
     </>

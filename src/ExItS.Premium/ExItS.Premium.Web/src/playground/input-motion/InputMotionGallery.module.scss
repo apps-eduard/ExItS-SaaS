@@ -94,6 +94,22 @@
   padding: var(--space-4);
 }
 
+.compare {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-top: 0.35rem;
+}
+
+.compareGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 1rem 0.875rem;
+  align-items: start;
+  min-width: 0;
+  padding-top: 0.65rem;
+}
+
 .command {
   margin: 0;
   padding-top: 0.75rem;

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "../../components/button/Button";
 import { Input } from "../../components/input/Input";
+import { INPUT_APPEARANCES, type InputAppearance } from "../../components/input/input-appearance";
 import { INPUT_FOCUS_MOTION_OPTIONS, type InputFocusMotion } from "../../components/input/focus-motion";
 import { SearchField } from "../../components/search/SearchField";
 import { SegmentedControl } from "../../components/segmented/SegmentedControl";
@@ -11,6 +12,13 @@ import styles from "./InputMotionGallery.module.scss";
 
 type FieldKind = "text" | "search";
 type FieldStatus = "none" | "error" | "success";
+
+const APPEARANCE_LABELS: Record<InputAppearance, string> = {
+  stacked: "Stacked",
+  outlined: "Outlined",
+  soft: "Soft",
+  filled: "Filled",
+};
 
 const MOTION_LABELS: Record<InputFocusMotion, string> = {
   none: "None",
@@ -25,6 +33,7 @@ const SUCCESS_MESSAGE = "Name is available.";
 
 export function InputMotionGallery({ embedded = false }: { embedded?: boolean }) {
   const previewRef = useRef<HTMLDivElement>(null);
+  const [appearance, setAppearance] = useState<InputAppearance>("stacked");
   const [motion, setMotion] = useState<InputFocusMotion>("border-reveal");
   const [kind, setKind] = useState<FieldKind>("text");
   const [status, setStatus] = useState<FieldStatus>("none");
@@ -52,6 +61,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
   }
 
   function reset() {
+    setAppearance("stacked");
     setMotion("border-reveal");
     setKind("text");
     setStatus("none");
@@ -69,6 +79,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
   }
 
   const recipe = [
+    APPEARANCE_LABELS[appearance],
     MOTION_LABELS[motion],
     kind,
     status,
@@ -79,7 +90,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
     .filter(Boolean)
     .join(" · ");
 
-  const previewKey = [motion, kind, status, disabled, readOnly, required].join(":");
+  const previewKey = [appearance, motion, kind, status, disabled, readOnly, required].join(":");
 
   const playground = (
     <section className={styles.card} aria-labelledby="input-playground-title">
@@ -90,6 +101,12 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
         <p className="type-secondary">{detail}</p>
       </div>
       <div className={styles.controls}>
+        <Select label="Appearance" value={appearance} onChange={(event) => setAppearance(event.target.value as InputAppearance)}>
+          <option value="outlined">Outlined</option>
+          <option value="soft">Soft</option>
+          <option value="filled">Filled</option>
+          <option value="stacked">Stacked</option>
+        </Select>
         <Select label="Transition" value={motion} onChange={(event) => setMotion(event.target.value as InputFocusMotion)}>
           <option value="none">None</option>
           <option value="border-reveal">Border Reveal</option>
@@ -146,12 +163,14 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
               placeholder="Name or note"
               disabled={disabled}
               error={error}
+              appearance={appearance}
               focusMotion={motion}
             />
           ) : (
             <Input
               key={previewKey}
               label={previewLabel}
+              appearance={appearance}
               focusMotion={motion}
               value={readOnly ? "Published" : text}
               onChange={(event) => setText(event.target.value)}
@@ -173,6 +192,14 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
         </div>
       </div>
       <p className={styles.command}>{recipe}</p>
+      <section className={styles.compare} aria-label="Appearance comparison">
+        <h3 className="type-section">Appearances</h3>
+        <div className={styles.compareGrid}>
+          {INPUT_APPEARANCES.map((item) => (
+            <Input key={item} appearance={item} label={APPEARANCE_LABELS[item]} defaultValue="Market" placeholder="Account name" autoComplete="off" />
+          ))}
+        </div>
+      </section>
     </section>
   );
 
@@ -180,7 +207,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
     return (
       <div className={styles.embedded}>
         <p className={styles.note}>
-          One preview follows the controls. Default global stays the shipped input and search. Disabled fields do not animate. Read-only fields keep the standard outline. Error and success keep their message.
+          One preview follows the controls. Stacked is the shipped default, and Default global does not follow the controls. Outlined, soft, and filled float the same label. Disabled fields do not animate. Error and success keep their message.
         </p>
         {playground}
       </div>
@@ -196,7 +223,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
           </a>
           <h1 className="type-page">Input playground</h1>
           <p className="type-secondary">
-            Change focus motion and field state on one preview. Default global does not follow the controls. Theme, primary, corner shape, and density stay in Appearance.
+            Change appearance and focus motion on one preview. Stacked stays the shipped default. Theme, primary, corner shape, and density stay in Appearance.
           </p>
         </header>
         <div className={styles.workspace}>
