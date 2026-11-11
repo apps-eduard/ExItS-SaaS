@@ -10,8 +10,9 @@ type FieldProps = {
   required?: boolean;
   readOnly?: boolean;
   disabled?: boolean;
-  /** Stacked is the shipped label. Float is opt-in for input appearances. */
+  /** Stacked is the shipped label. Float rests on the border. Rise starts as a placeholder and moves up. */
   placement?: "stacked" | "float";
+  labelMotion?: "rise";
   icon?: boolean;
   children: ReactNode;
 };
@@ -39,15 +40,17 @@ export function Field({
   readOnly = false,
   disabled = false,
   placement = "stacked",
+  labelMotion,
   icon = false,
   children,
 }: FieldProps) {
   const message = error ?? success ?? hint;
   const state = error ? "error" : success ? "success" : undefined;
   const floating = placement === "float";
+  const rise = labelMotion === "rise";
   const labelNode = (
     <label className={floating ? styles.floatLabel : styles.label} htmlFor={id}>
-      {floating ? (
+      {floating || rise ? (
         <LabelText label={label} required={required} readOnly={readOnly} />
       ) : (
         <>
@@ -65,10 +68,17 @@ export function Field({
       className={styles.field}
       data-state={state}
       data-placement={floating ? "float" : undefined}
-      data-disabled={floating && disabled ? "true" : undefined}
-      data-icon={floating && icon ? "true" : undefined}
+      data-label-motion={rise ? "rise" : undefined}
+      data-disabled={(floating || rise) && disabled ? "true" : undefined}
+      data-icon={(floating || rise) && icon ? "true" : undefined}
     >
-      {floating ? (
+      {rise ? (
+        <>
+          {readOnly ? <span className={styles.flag}>Read-only</span> : null}
+          {labelNode}
+          {children}
+        </>
+      ) : floating ? (
         <>
           {readOnly ? <span className={styles.flag}>Read-only</span> : null}
           <div className={styles.floatShell}>

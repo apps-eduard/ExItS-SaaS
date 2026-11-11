@@ -1,7 +1,7 @@
 import { useId, useState, type ChangeEvent, type InputHTMLAttributes, type Ref } from "react";
 import { Field } from "../field/Field";
 import appearanceStyles from "./appearance.module.scss";
-import { isInputAppearance, type InputAppearance } from "./input-appearance";
+import { inputRestsOnBorder, isInputAppearance, type InputAppearance } from "./input-appearance";
 import { isInputFocusMotion, type InputFocusMotion } from "./focus-motion";
 import { InputMotion } from "./InputMotion";
 import styles from "./Input.module.scss";
@@ -16,7 +16,7 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   success?: string;
   /** Experimental focus treatment. Omitted fields keep the shipped focus style. */
   focusMotion?: InputFocusMotion;
-  /** Omitted fields keep the shipped stacked label. Other surfaces are opt-in. */
+  /** Omitted fields keep the shipped standard label. Other surfaces are opt-in. */
   appearance?: InputAppearance;
 };
 
@@ -34,7 +34,7 @@ export function Input({
   success,
   id,
   focusMotion = "none",
-  appearance: appearanceProp = "stacked",
+  appearance: appearanceProp = "standard",
   className,
   value,
   defaultValue,
@@ -50,8 +50,10 @@ export function Input({
   const message = error ?? success ?? hint;
   const state = error ? "error" : success ? "success" : undefined;
   const motion = isInputFocusMotion(focusMotion) ? focusMotion : "none";
-  const appearance = isInputAppearance(appearanceProp) ? appearanceProp : "stacked";
-  const floating = appearance !== "stacked";
+  const appearance = isInputAppearance(appearanceProp) ? appearanceProp : "standard";
+  const onBorder = inputRestsOnBorder(appearance);
+  const rise = appearance === "floating";
+  const surfaced = onBorder || rise;
   const [uncontrolledFilled, setUncontrolledFilled] = useState(() => hasText(defaultValue));
   const filled = value !== undefined ? hasText(value) : uncontrolledFilled;
 
@@ -70,15 +72,16 @@ export function Input({
       required={Boolean(required)}
       readOnly={Boolean(readOnly)}
       disabled={Boolean(disabled)}
-      placement={floating ? "float" : "stacked"}
+      placement={onBorder ? "float" : "stacked"}
+      labelMotion={rise ? "rise" : undefined}
     >
       <InputMotion motion={motion} disabled={Boolean(disabled)} readOnly={Boolean(readOnly)} state={state}>
         <input
           {...props}
           ref={ref}
           id={fieldId}
-          className={[styles.control, floating ? appearanceStyles.control : "", className].filter(Boolean).join(" ")}
-          data-appearance={floating ? appearance : undefined}
+          className={[styles.control, surfaced ? appearanceStyles.control : "", className].filter(Boolean).join(" ")}
+          data-appearance={surfaced ? appearance : undefined}
           value={value}
           defaultValue={value === undefined ? defaultValue : undefined}
           disabled={disabled}
