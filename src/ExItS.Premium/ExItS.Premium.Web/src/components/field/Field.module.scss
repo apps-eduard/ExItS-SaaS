@@ -54,6 +54,9 @@
 .field[data-label-motion="rise"] .label {
   position: relative;
   z-index: 2;
+  justify-self: start;
+  justify-content: flex-start;
+  gap: 0;
   width: fit-content;
   max-width: calc(100% - 0.5rem);
   transform: translateY(calc(50% + 0.375rem + var(--control-height) / 2));
