@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SearchField } from "../search/SearchField";
 import { Input } from "./Input";
+import type { InputAppearance } from "./input-appearance";
 
 describe("Input", () => {
   it("keeps the shipped focus treatment unless a variant is requested", () => {
@@ -68,7 +69,7 @@ describe("Input", () => {
     expect(screen.queryByText("Required")).not.toBeInTheDocument();
   });
 
-  it("keeps one label and opts into outlined, soft, and filled", () => {
+  it("keeps one label and opts into outlined and soft", () => {
     const { rerender } = render(<Input label="Name" appearance="outlined" />);
     const outlined = screen.getByRole("textbox", { name: "Name" });
     expect(outlined).toHaveAttribute("data-appearance", "outlined");
@@ -79,14 +80,14 @@ describe("Input", () => {
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("data-appearance", "soft");
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("data-filled", "true");
 
-    rerender(<Input label="Name" appearance="filled" focusMotion="focus-draw" />);
-    const filled = screen.getByRole("textbox", { name: "Name" });
-    expect(filled).toHaveAttribute("data-appearance", "filled");
-    expect(filled.parentElement).toHaveAttribute("data-frame", "baseline");
-    expect(filled.parentElement?.querySelector("[data-focus-draw]")).toBeNull();
+    rerender(<Input label="Name" appearance={"filled" as unknown as InputAppearance} focusMotion="focus-draw" />);
+    const retired = screen.getByRole("textbox", { name: "Name" });
+    expect(retired).not.toHaveAttribute("data-appearance");
+    expect(retired.parentElement?.querySelector("[data-focus-draw]")).not.toBeNull();
 
     rerender(<Input label="Name" appearance="outlined" focusMotion="focus-draw" />);
     const drawn = screen.getByRole("textbox", { name: "Name" });
+    expect(drawn.parentElement).not.toHaveAttribute("data-frame");
     expect(drawn.parentElement?.querySelector("[data-focus-draw]")).not.toBeNull();
   });
 

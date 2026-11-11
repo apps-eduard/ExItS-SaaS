@@ -2,7 +2,7 @@ import { useId } from "react";
 import { Field } from "../field/Field";
 import { ExIcon } from "../../icons/ExIcon";
 import appearanceStyles from "../input/appearance.module.scss";
-import { inputFocusFrame, isInputAppearance, type InputAppearance } from "../input/input-appearance";
+import { isInputAppearance, type InputAppearance } from "../input/input-appearance";
 import { isInputFocusMotion, type InputFocusMotion } from "../input/focus-motion";
 import { InputMotion } from "../input/InputMotion";
 import styles from "./SearchField.module.scss";
@@ -29,7 +29,7 @@ export function SearchField({ label, value, onChange, placeholder, disabled, err
     <Field id={id} label={label} error={error} disabled={Boolean(disabled)} placement={floating ? "float" : "stacked"} icon={floating}>
       <div className={styles.wrap} data-appearance={floating ? appearance : undefined}>
         <ExIcon name="search" className={styles.icon} />
-        <InputMotion motion={motion} disabled={Boolean(disabled)} state={error ? "error" : undefined} frame={inputFocusFrame(appearance)}>
+        <InputMotion motion={motion} disabled={Boolean(disabled)} state={error ? "error" : undefined}>
           <input
             id={id}
             type="search"

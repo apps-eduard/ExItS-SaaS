@@ -14,10 +14,9 @@ type FieldKind = "text" | "search";
 type FieldStatus = "none" | "error" | "success";
 
 const APPEARANCE_LABELS: Record<InputAppearance, string> = {
-  stacked: "Stacked",
   outlined: "Outlined",
   soft: "Soft",
-  filled: "Filled",
+  stacked: "Stacked",
 };
 
 const MOTION_LABELS: Record<InputFocusMotion, string> = {
@@ -102,10 +101,11 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
       </div>
       <div className={styles.controls}>
         <Select label="Appearance" value={appearance} onChange={(event) => setAppearance(event.target.value as InputAppearance)}>
-          <option value="outlined">Outlined</option>
-          <option value="soft">Soft</option>
-          <option value="filled">Filled</option>
-          <option value="stacked">Stacked</option>
+          {INPUT_APPEARANCES.map((item) => (
+            <option key={item} value={item}>
+              {APPEARANCE_LABELS[item]}
+            </option>
+          ))}
         </Select>
         <Select label="Transition" value={motion} onChange={(event) => setMotion(event.target.value as InputFocusMotion)}>
           <option value="none">None</option>
@@ -207,7 +207,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
     return (
       <div className={styles.embedded}>
         <p className={styles.note}>
-          One preview follows the controls. Stacked is the shipped default, and Default global does not follow the controls. Outlined, soft, and filled float the same label. Disabled fields do not animate. Error and success keep their message.
+          One preview follows the controls. Stacked is the shipped default, and Default global does not follow the controls. Outlined and soft float the label on the border. Disabled fields do not animate. Error and success keep their message.
         </p>
         {playground}
       </div>
