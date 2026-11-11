@@ -51,6 +51,38 @@
   white-space: nowrap;
 }
 
+.field[data-label-motion="rise"] .label {
+  position: relative;
+  z-index: 2;
+  width: fit-content;
+  max-width: calc(100% - 0.5rem);
+  transform: translateY(calc(50% + 0.375rem + var(--control-height) / 2));
+  color: var(--color-text-caption);
+  pointer-events: none;
+  transition:
+    transform 200ms var(--motion-ease),
+    color 200ms var(--motion-ease),
+    padding-inline-start 200ms var(--motion-ease);
+}
+
+.field[data-label-motion="rise"]:not(:focus-within):not(:has([data-filled="true"])) .label {
+  padding-inline-start: var(--control-pad-x);
+}
+
+.field[data-label-motion="rise"][data-icon="true"]:not(:focus-within):not(:has([data-filled="true"])) .label {
+  padding-inline-start: calc(var(--control-pad-x) + 1.6rem);
+}
+
+.field[data-label-motion="rise"]:is(:focus-within, :has([data-filled="true"])) .label {
+  transform: none;
+  padding-inline-start: 0;
+  color: inherit;
+}
+
+.field[data-label-motion="rise"][data-disabled="true"] .label {
+  color: var(--color-disabled-text);
+}
+
 .field[data-icon="true"] .floatLabel {
   inset-inline-start: calc(var(--control-pad-x) + 1.75rem);
   max-width: calc(100% - 3.5rem);
@@ -105,7 +137,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floatLabel {
+  .floatLabel,
+  .field[data-label-motion="rise"] .label {
     transition: none;
   }
 }

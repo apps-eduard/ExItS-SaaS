@@ -16,7 +16,8 @@ type FieldStatus = "none" | "error" | "success";
 const APPEARANCE_LABELS: Record<InputAppearance, string> = {
   outlined: "Outlined",
   soft: "Soft",
-  stacked: "Stacked",
+  standard: "Standard",
+  floating: "Floating label",
 };
 
 const MOTION_LABELS: Record<InputFocusMotion, string> = {
@@ -32,7 +33,7 @@ const SUCCESS_MESSAGE = "Name is available.";
 
 export function InputMotionGallery({ embedded = false }: { embedded?: boolean }) {
   const previewRef = useRef<HTMLDivElement>(null);
-  const [appearance, setAppearance] = useState<InputAppearance>("stacked");
+  const [appearance, setAppearance] = useState<InputAppearance>("standard");
   const [motion, setMotion] = useState<InputFocusMotion>("border-reveal");
   const [kind, setKind] = useState<FieldKind>("text");
   const [status, setStatus] = useState<FieldStatus>("none");
@@ -60,7 +61,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
   }
 
   function reset() {
-    setAppearance("stacked");
+    setAppearance("standard");
     setMotion("border-reveal");
     setKind("text");
     setStatus("none");
@@ -207,7 +208,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
     return (
       <div className={styles.embedded}>
         <p className={styles.note}>
-          One preview follows the controls. Stacked is the shipped default, and Default global does not follow the controls. Outlined and soft float the label on the border. Disabled fields do not animate. Error and success keep their message.
+          One preview follows the controls. Standard is the shipped default, and Default global does not follow the controls. Floating label uses that same field and moves the placeholder label up. Outlined and soft float the label on the border. Disabled fields do not animate. Error and success keep their message.
         </p>
         {playground}
       </div>
@@ -223,7 +224,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
           </a>
           <h1 className="type-page">Input playground</h1>
           <p className="type-secondary">
-            Change appearance and focus motion on one preview. Stacked stays the shipped default. Theme, primary, corner shape, and density stay in Appearance.
+            Change appearance and focus motion on one preview. Standard stays the shipped default. Theme, primary, corner shape, and density stay in Appearance.
           </p>
         </header>
         <div className={styles.workspace}>

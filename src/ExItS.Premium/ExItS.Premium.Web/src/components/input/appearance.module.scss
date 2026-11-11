@@ -1,6 +1,6 @@
-// Opt-in surfaces. Omitted appearance keeps the shipped stacked control rules.
-// The floated label sits on the border, so these controls keep the stacked height
-// and even vertical padding. Focus motion stays on InputMotion.
+// Opt-in surfaces. Omitted appearance keeps the shipped standard control.
+// Outlined and soft rest the label on the border. Floating label uses the standard
+// control and moves that label up from the placeholder. Focus motion stays on InputMotion.
 
 .control[data-appearance] {
   border-radius: var(--radius-control);
@@ -15,7 +15,8 @@
   }
 }
 
-:global([data-placement="float"]:focus-within) .control[data-appearance]::placeholder {
+:global([data-placement="float"]:focus-within) .control[data-appearance]::placeholder,
+:global([data-label-motion="rise"]:focus-within) .control[data-appearance="floating"]::placeholder {
   color: var(--color-text-caption);
 }
 

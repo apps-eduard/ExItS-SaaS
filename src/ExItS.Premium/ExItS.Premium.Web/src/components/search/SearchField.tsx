@@ -2,7 +2,7 @@ import { useId } from "react";
 import { Field } from "../field/Field";
 import { ExIcon } from "../../icons/ExIcon";
 import appearanceStyles from "../input/appearance.module.scss";
-import { isInputAppearance, type InputAppearance } from "../input/input-appearance";
+import { inputRestsOnBorder, isInputAppearance, type InputAppearance } from "../input/input-appearance";
 import { isInputFocusMotion, type InputFocusMotion } from "../input/focus-motion";
 import { InputMotion } from "../input/InputMotion";
 import styles from "./SearchField.module.scss";
@@ -16,25 +16,27 @@ type SearchFieldProps = {
   error?: string;
   /** Experimental focus treatment. Omitted fields keep the shipped focus style. */
   focusMotion?: InputFocusMotion;
-  /** Omitted fields keep the shipped stacked label. Other surfaces are opt-in. */
+  /** Omitted fields keep the shipped standard label. Other surfaces are opt-in. */
   appearance?: InputAppearance;
 };
 
-export function SearchField({ label, value, onChange, placeholder, disabled, error, focusMotion = "none", appearance: appearanceProp = "stacked" }: SearchFieldProps) {
+export function SearchField({ label, value, onChange, placeholder, disabled, error, focusMotion = "none", appearance: appearanceProp = "standard" }: SearchFieldProps) {
   const id = useId();
   const motion = isInputFocusMotion(focusMotion) ? focusMotion : "none";
-  const appearance = isInputAppearance(appearanceProp) ? appearanceProp : "stacked";
-  const floating = appearance !== "stacked";
+  const appearance = isInputAppearance(appearanceProp) ? appearanceProp : "standard";
+  const onBorder = inputRestsOnBorder(appearance);
+  const rise = appearance === "floating";
+  const surfaced = onBorder || rise;
   return (
-    <Field id={id} label={label} error={error} disabled={Boolean(disabled)} placement={floating ? "float" : "stacked"} icon={floating}>
-      <div className={styles.wrap} data-appearance={floating ? appearance : undefined}>
+    <Field id={id} label={label} error={error} disabled={Boolean(disabled)} placement={onBorder ? "float" : "stacked"} labelMotion={rise ? "rise" : undefined} icon={surfaced}>
+      <div className={styles.wrap} data-appearance={surfaced ? appearance : undefined}>
         <ExIcon name="search" className={styles.icon} />
         <InputMotion motion={motion} disabled={Boolean(disabled)} state={error ? "error" : undefined}>
           <input
             id={id}
             type="search"
-            className={[styles.control, floating ? appearanceStyles.control : ""].filter(Boolean).join(" ")}
-            data-appearance={floating ? appearance : undefined}
+            className={[styles.control, surfaced ? appearanceStyles.control : ""].filter(Boolean).join(" ")}
+            data-appearance={surfaced ? appearance : undefined}
             value={value}
             placeholder={placeholder}
             disabled={disabled}

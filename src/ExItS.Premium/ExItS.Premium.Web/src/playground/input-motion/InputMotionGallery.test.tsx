@@ -21,7 +21,7 @@ describe("InputMotionGallery", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1, name: "Input playground" })).toBeVisible();
-    expect(screen.getByRole("combobox", { name: "Appearance, Stacked" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Appearance, Standard" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Transition, Border Reveal" })).toBeVisible();
     expect(within(preview()).getByRole("textbox", { name: "Name" })).not.toHaveAttribute("data-appearance");
     expect(screen.getByRole("region", { name: "Appearance comparison" })).toBeVisible();
@@ -53,7 +53,7 @@ describe("InputMotionGallery", () => {
     expect(within(preview()).getByText("Use at least two letters.")).toBeVisible();
     expect(within(locked()).queryByText("Use at least two letters.")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("combobox", { name: "Appearance, Stacked" }));
+    await user.click(screen.getByRole("combobox", { name: "Appearance, Standard" }));
     await user.click(screen.getByRole("option", { name: "Outlined" }));
     expect(within(preview()).getByRole("textbox", { name: "Name" })).toHaveAttribute("data-appearance", "outlined");
     expect(within(locked()).getByRole("textbox", { name: "Name" })).not.toHaveAttribute("data-appearance");

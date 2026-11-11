@@ -85,6 +85,15 @@ describe("Input", () => {
     expect(retired).not.toHaveAttribute("data-appearance");
     expect(retired.parentElement?.querySelector("[data-focus-draw]")).not.toBeNull();
 
+    rerender(<Input label="Name" appearance="standard" />);
+    expect(screen.getByRole("textbox", { name: "Name" })).not.toHaveAttribute("data-appearance");
+
+    rerender(<Input label="Name" appearance="floating" />);
+    const floating = screen.getByRole("textbox", { name: "Name" });
+    expect(floating).toHaveAttribute("data-appearance", "floating");
+    expect(floating.closest("[data-label-motion='rise']")).not.toBeNull();
+    expect(floating.closest("[data-placement='float']")).toBeNull();
+
     rerender(<Input label="Name" appearance="outlined" focusMotion="focus-draw" />);
     const drawn = screen.getByRole("textbox", { name: "Name" });
     expect(drawn.parentElement).not.toHaveAttribute("data-frame");
