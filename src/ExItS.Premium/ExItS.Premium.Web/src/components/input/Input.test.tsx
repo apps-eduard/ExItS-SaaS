@@ -9,6 +9,7 @@ describe("Input", () => {
     render(<Input label="Name" placeholder="Account name" />);
     const field = screen.getByRole("textbox", { name: "Name" });
     expect(field).toHaveAttribute("data-focus-motion", "none");
+    expect(field).not.toHaveAttribute("data-appearance");
     expect(field.parentElement).not.toHaveAttribute("data-motion");
     expect(screen.queryByText("Required")).not.toBeInTheDocument();
     expect(screen.queryByText("Read-only")).not.toBeInTheDocument();
@@ -65,6 +66,39 @@ describe("Input", () => {
     expect(code).toBeRequired();
     expect(screen.getByText("*")).toBeVisible();
     expect(screen.queryByText("Required")).not.toBeInTheDocument();
+  });
+
+  it("keeps one label and opts into outlined, soft, and filled", () => {
+    const { rerender } = render(<Input label="Name" appearance="outlined" />);
+    const outlined = screen.getByRole("textbox", { name: "Name" });
+    expect(outlined).toHaveAttribute("data-appearance", "outlined");
+    expect(screen.getAllByText("Name")).toHaveLength(1);
+    expect(outlined.closest("[data-placement='float']")).not.toBeNull();
+
+    rerender(<Input label="Name" appearance="soft" value="Market" onChange={() => undefined} />);
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("data-appearance", "soft");
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("data-filled", "true");
+
+    rerender(<Input label="Name" appearance="filled" focusMotion="focus-draw" />);
+    const filled = screen.getByRole("textbox", { name: "Name" });
+    expect(filled).toHaveAttribute("data-appearance", "filled");
+    expect(filled.parentElement).toHaveAttribute("data-frame", "baseline");
+    expect(filled.parentElement?.querySelector("[data-focus-draw]")).toBeNull();
+
+    rerender(<Input label="Name" appearance="outlined" focusMotion="focus-draw" />);
+    const drawn = screen.getByRole("textbox", { name: "Name" });
+    expect(drawn.parentElement?.querySelector("[data-focus-draw]")).not.toBeNull();
+  });
+
+  it("returns the floated label copy to one accessible name when cleared", async () => {
+    const user = userEvent.setup();
+    render(<Input label="Name" appearance="outlined" />);
+    const field = screen.getByRole("textbox", { name: "Name" });
+    await user.type(field, "Jo");
+    expect(field).toHaveAttribute("data-filled", "true");
+    await user.clear(field);
+    expect(field).not.toHaveAttribute("data-filled");
+    expect(screen.getByRole("textbox", { name: "Name" })).toBe(field);
   });
 });
 

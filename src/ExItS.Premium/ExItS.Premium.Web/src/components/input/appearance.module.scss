@@ -1,0 +1,159 @@
+// Opt-in surfaces. Omitted appearance keeps the shipped stacked control rules.
+// Focus motion stays on InputMotion; these rules only change the resting surface.
+
+.control[data-appearance] {
+  min-height: max(var(--control-height), calc(0.42rem + var(--density-label-font) * 1.25 + var(--density-control-font) * 1.35 + 0.7rem));
+  border-radius: var(--radius-control);
+  box-shadow: none;
+  transition:
+    background-color 200ms var(--motion-ease),
+    border-color 200ms var(--motion-ease),
+    color 200ms var(--motion-ease);
+
+  &::placeholder {
+    color: transparent;
+  }
+}
+
+:global([data-placement="float"]:focus-within) .control[data-appearance]::placeholder {
+  color: var(--color-text-caption);
+}
+
+:global([data-placement="float"]:is(:focus-within, :has([data-filled="true"]))) .control[data-appearance] {
+  padding-top: calc(0.42rem + var(--density-label-font) * 1.25 + 0.15rem);
+}
+
+:global([data-placement="float"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"]))) .control[data-appearance="outlined"] {
+  padding-top: 0.9rem;
+}
+
+.control[data-appearance="outlined"] {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-text) 34%, var(--color-border));
+}
+
+.control[data-appearance="soft"] {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+  color: var(--color-text);
+}
+
+.control[data-appearance="filled"] {
+  background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
+  border-width: 0 0 2px;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--color-text) 32%, var(--color-border));
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+}
+
+.control[data-appearance="outlined"][data-focus-motion="none"]:focus:not([readonly]),
+.control[data-appearance="outlined"]:focus-visible:not([data-state]) {
+  outline: none;
+  border-color: var(--color-primary);
+  background: transparent;
+  box-shadow: none;
+}
+
+.control[data-appearance="soft"][data-focus-motion="none"]:focus:not([readonly]),
+.control[data-appearance="soft"]:focus-visible:not([data-state]) {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-primary) 62%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  box-shadow: none;
+}
+
+.control[data-appearance="filled"][data-focus-motion="none"]:focus:not([readonly]),
+.control[data-appearance="filled"]:focus-visible:not([data-state]) {
+  outline: none;
+  border-bottom-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
+  box-shadow: none;
+}
+
+.control[data-appearance="soft"]:hover:not(:disabled):not([data-state]),
+.control[data-appearance="outlined"]:hover:not(:disabled):not([data-state]) {
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
+}
+
+.control[data-appearance="filled"]:hover:not(:disabled):not([data-state]) {
+  border-bottom-color: color-mix(in srgb, var(--color-text) 48%, var(--color-border));
+}
+
+.control[data-appearance="soft"][data-focus-motion="focus-draw"]:focus-visible:not([data-state]),
+.control[data-appearance="soft"][data-focus-motion="border-reveal"]:focus-visible:not([data-state]) {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  box-shadow: none;
+}
+
+.control[data-appearance="filled"][data-focus-motion="focus-draw"]:focus-visible:not([data-state]),
+.control[data-appearance="filled"][data-focus-motion="border-reveal"]:focus-visible:not([data-state]),
+.control[data-appearance="outlined"][data-focus-motion="focus-draw"]:focus-visible:not([data-state]),
+.control[data-appearance="outlined"][data-focus-motion="border-reveal"]:focus-visible:not([data-state]) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.control[data-appearance="filled"][data-focus-motion="focus-draw"]:focus-visible:not([data-state]),
+.control[data-appearance="filled"][data-focus-motion="border-reveal"]:focus-visible:not([data-state]) {
+  background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
+}
+
+.control[data-appearance][data-state="error"] {
+  border-color: var(--color-danger);
+}
+
+.control[data-appearance="soft"][data-state="error"] {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+}
+
+.control[data-appearance][data-state="success"] {
+  border-color: var(--color-success);
+}
+
+.control[data-appearance="soft"][data-state="success"] {
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+}
+
+.control[data-appearance][data-state="error"][data-focus-motion="none"]:focus,
+.control[data-appearance][data-state="success"][data-focus-motion="none"]:focus {
+  box-shadow: none;
+}
+
+.control[data-appearance]:disabled {
+  background: var(--color-disabled-fill);
+  color: var(--color-disabled-text);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.control[data-appearance][readonly]:not(:disabled) {
+  border-style: dashed;
+  color: var(--color-text-secondary);
+}
+
+.control[data-appearance="soft"][readonly]:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+.control[data-appearance="filled"][readonly]:not(:disabled) {
+  border-bottom-style: dashed;
+  background: color-mix(in srgb, var(--color-text) 6%, var(--color-surface));
+}
+
+.control[data-appearance="outlined"]:-webkit-autofill {
+  box-shadow: 0 0 0 1000px var(--color-surface) inset;
+}
+
+.control[data-appearance="soft"]:-webkit-autofill {
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--color-primary) 12%, var(--color-surface)) inset;
+}
+
+.control[data-appearance="filled"]:-webkit-autofill {
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--color-text) 8%, var(--color-surface)) inset;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control[data-appearance] {
+    transition: none;
+  }
+}

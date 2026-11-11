@@ -1,5 +1,7 @@
 import { useId, useState, type ChangeEvent, type InputHTMLAttributes, type Ref } from "react";
 import { Field } from "../field/Field";
+import appearanceStyles from "./appearance.module.scss";
+import { inputFocusFrame, isInputAppearance, type InputAppearance } from "./input-appearance";
 import { isInputFocusMotion, type InputFocusMotion } from "./focus-motion";
 import { InputMotion } from "./InputMotion";
 import styles from "./Input.module.scss";
@@ -14,6 +16,8 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   success?: string;
   /** Experimental focus treatment. Omitted fields keep the shipped focus style. */
   focusMotion?: InputFocusMotion;
+  /** Omitted fields keep the shipped stacked label. Other surfaces are opt-in. */
+  appearance?: InputAppearance;
 };
 
 function hasText(value: InputValue) {
@@ -30,6 +34,7 @@ export function Input({
   success,
   id,
   focusMotion = "none",
+  appearance: appearanceProp = "stacked",
   className,
   value,
   defaultValue,
@@ -45,6 +50,8 @@ export function Input({
   const message = error ?? success ?? hint;
   const state = error ? "error" : success ? "success" : undefined;
   const motion = isInputFocusMotion(focusMotion) ? focusMotion : "none";
+  const appearance = isInputAppearance(appearanceProp) ? appearanceProp : "stacked";
+  const floating = appearance !== "stacked";
   const [uncontrolledFilled, setUncontrolledFilled] = useState(() => hasText(defaultValue));
   const filled = value !== undefined ? hasText(value) : uncontrolledFilled;
 
@@ -62,13 +69,16 @@ export function Input({
       success={success}
       required={Boolean(required)}
       readOnly={Boolean(readOnly)}
+      disabled={Boolean(disabled)}
+      placement={floating ? "float" : "stacked"}
     >
-      <InputMotion motion={motion} disabled={Boolean(disabled)} readOnly={Boolean(readOnly)} state={state}>
+      <InputMotion motion={motion} disabled={Boolean(disabled)} readOnly={Boolean(readOnly)} state={state} frame={inputFocusFrame(appearance)}>
         <input
           {...props}
           ref={ref}
           id={fieldId}
-          className={[styles.control, className].filter(Boolean).join(" ")}
+          className={[styles.control, floating ? appearanceStyles.control : "", className].filter(Boolean).join(" ")}
+          data-appearance={floating ? appearance : undefined}
           value={value}
           defaultValue={value === undefined ? defaultValue : undefined}
           disabled={disabled}

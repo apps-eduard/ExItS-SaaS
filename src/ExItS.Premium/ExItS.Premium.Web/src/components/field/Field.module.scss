@@ -16,6 +16,79 @@
   line-height: var(--type-label-line);
 }
 
+.floatShell {
+  position: relative;
+  width: 100%;
+}
+
+.floatLabel {
+  position: absolute;
+  z-index: 3;
+  inset-inline-start: var(--control-pad-x);
+  top: 50%;
+  display: inline-flex;
+  align-items: baseline;
+  max-width: calc(100% - 1.5rem);
+  margin: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transform-origin: left center;
+  font-size: var(--density-control-font);
+  font-weight: var(--type-label-weight);
+  line-height: 1.2;
+  color: var(--color-text-caption);
+  transition:
+    top 200ms var(--motion-ease),
+    transform 200ms var(--motion-ease),
+    font-size 200ms var(--motion-ease),
+    color 200ms var(--motion-ease);
+}
+
+.labelText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field[data-icon="true"] .floatLabel {
+  inset-inline-start: calc(var(--control-pad-x) + 1.75rem);
+  max-width: calc(100% - 3.5rem);
+}
+
+.field[data-placement="float"]:is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  top: 0.42rem;
+  transform: translateY(0);
+  font-size: var(--density-label-font);
+  color: var(--color-primary);
+}
+
+.field[data-placement="float"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  top: 0;
+  padding-inline: 0.28rem;
+  background: var(--color-surface);
+  transform: translateY(-50%);
+  line-height: 1;
+}
+
+.field[data-placement="float"][data-state="error"]:is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  color: var(--color-danger-ink);
+}
+
+.field[data-placement="float"][data-state="success"]:is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  color: var(--color-success-ink);
+}
+
+.field[data-placement="float"][data-disabled="true"] .floatLabel {
+  color: var(--color-disabled-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floatLabel {
+    transition: none;
+  }
+}
+
 .required {
   margin-inline-start: 0.2em;
   color: var(--color-danger-ink);

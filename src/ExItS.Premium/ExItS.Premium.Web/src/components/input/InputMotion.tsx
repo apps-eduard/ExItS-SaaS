@@ -8,6 +8,8 @@ type InputMotionProps = {
   disabled?: boolean;
   readOnly?: boolean;
   state?: "error" | "success";
+  /** Box follows the rounded border. Baseline is the bottom edge used by Filled. */
+  frame?: "box" | "baseline";
   children: ReactNode;
 };
 
@@ -15,10 +17,11 @@ function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
-export function InputMotion({ motion, disabled = false, readOnly = false, state, children }: InputMotionProps) {
+export function InputMotion({ motion, disabled = false, readOnly = false, state, frame = "box", children }: InputMotionProps) {
   const [session, setSession] = useState({ id: 0, active: false });
   const [reduced, setReduced] = useState(prefersReducedMotion);
-  const draw = motion === "focus-draw" || motion === "border-reveal";
+  const draw = frame === "box" && (motion === "focus-draw" || motion === "border-reveal");
+  const baseline = frame === "baseline" && (motion === "focus-draw" || motion === "border-reveal");
 
   useEffect(() => {
     const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -47,13 +50,15 @@ export function InputMotion({ motion, disabled = false, readOnly = false, state,
       className={styles.shell}
       data-motion={motion}
       data-state={state}
+      data-frame={frame === "baseline" ? "baseline" : undefined}
       data-quiet={readOnly ? "true" : undefined}
       data-drawn={draw && session.active ? "true" : undefined}
       onFocus={onFocus}
       onBlur={onBlur}
     >
       {motion === "soft-glow" ? <span className={styles.glow} aria-hidden="true" /> : null}
-      {draw ? null : <span className={styles.steady} aria-hidden="true" />}
+      {draw || frame === "baseline" ? null : <span className={styles.steady} aria-hidden="true" />}
+      {baseline ? <span className={styles.baseline} aria-hidden="true" /> : null}
       {motion === "running-accent" ? (
         <span className={styles.trace} aria-hidden="true">
           <span className={styles.traceSpin} />
