@@ -12,7 +12,7 @@ import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
 import { DateTimeSection } from "./DateTimeSection";
-import { InputMotionGallery } from "./input-motion/InputMotionGallery";
+import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
 import styles from "./Playground.module.scss";
 
@@ -103,14 +103,7 @@ function ButtonsSection() {
 }
 
 function InputsSection() {
-  return (
-    <>
-      <Intro title="Inputs">
-        One playground changes appearance, focus motion, and field state. Outlined, soft, standard, and floating label are the appearances. Standard stays the shipped input. Default global does not follow the controls.
-      </Intro>
-      <InputMotionGallery embedded />
-    </>
-  );
+  return <InputPlayground />;
 }
 
 function SearchSection() {
