@@ -36,14 +36,14 @@ export function PlaygroundShell({
       </header>
 
       <div className={styles.workspace}>
-        <div className={styles.previewPane}>
-          <h2 className={styles.paneLabel}>{previewLabel}</h2>
-          <div className={styles.previewSurface}>{preview}</div>
-        </div>
         <aside className={styles.propertiesPane} aria-label={propertiesLabel}>
           <h2 className={styles.paneLabel}>{propertiesLabel}</h2>
           <div className={styles.propertiesSurface}>{properties}</div>
         </aside>
+        <div className={styles.previewPane}>
+          <h2 className={styles.paneLabel}>{previewLabel}</h2>
+          <div className={styles.previewSurface}>{preview}</div>
+        </div>
       </div>
 
       {examples ? (
