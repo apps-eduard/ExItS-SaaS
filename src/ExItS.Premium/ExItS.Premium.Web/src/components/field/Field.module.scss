@@ -54,10 +54,15 @@
   white-space: nowrap;
 }
 
-/* Ellipsis stays horizontal; padding keeps glyph descenders inside the clip box. */
+/*
+  Float labels sit on the outlined border notch. overflow:hidden + line-height:1
+  clipped descenders (g/y/p/q/j). Keep the text unclipped; truncate on the label shell.
+*/
 .floatLabel .labelText {
+  overflow: visible;
+  text-overflow: clip;
   line-height: inherit;
-  padding-block: 0.05em 0.22em;
+  padding-block: 0.12em 0.28em;
 }
 
 .field[data-label-motion="rise"] .label {
@@ -110,8 +115,10 @@
 .field[data-placement="float"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
   top: 0;
   padding-inline: 0.28rem;
+  padding-block: 0.08em;
   /* Surface mask must cover full glyph height so the outline never crosses label text. */
   background: var(--color-surface);
+  background-clip: padding-box;
   transform: translateY(-50%);
   line-height: var(--type-label-line);
 }
