@@ -22,14 +22,16 @@
   --input-accent: var(--color-success);
 }
 
-.shell > input {
+.shell > input,
+.shell > button {
   position: relative;
   z-index: 1;
   width: 100%;
   border-radius: inherit;
 }
 
-.shell:not([data-quiet="true"]) > input:focus-visible {
+.shell:not([data-quiet="true"]) > input:focus-visible,
+.shell:not([data-quiet="true"]) > button:focus-visible {
   outline: none;
 }
 
@@ -110,20 +112,25 @@
 }
 
 .shell:focus-within:not([data-quiet="true"]) .steady,
-.shell[data-motion="soft-glow"]:focus-within:not([data-quiet="true"]) .glow {
+.shell[data-held="true"]:not([data-quiet="true"]) .steady,
+.shell[data-motion="soft-glow"]:focus-within:not([data-quiet="true"]) .glow,
+.shell[data-motion="soft-glow"][data-held="true"]:not([data-quiet="true"]) .glow {
   opacity: 1;
 }
 
-.shell[data-motion="border-reveal"]:focus-within:not([data-quiet="true"]) .steady {
+.shell[data-motion="border-reveal"]:focus-within:not([data-quiet="true"]) .steady,
+.shell[data-motion="border-reveal"][data-held="true"]:not([data-quiet="true"]) .steady {
   clip-path: inset(0 round var(--radius-control));
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .shell[data-motion="running-accent"]:focus-within:not([data-quiet="true"]) .trace {
+  .shell[data-motion="running-accent"]:focus-within:not([data-quiet="true"]) .trace,
+  .shell[data-motion="running-accent"][data-held="true"]:not([data-quiet="true"]) .trace {
     animation: input-trace-hold var(--input-trace-duration) linear 1 forwards;
   }
 
-  .shell[data-motion="running-accent"]:focus-within:not([data-quiet="true"]) .traceSpin {
+  .shell[data-motion="running-accent"]:focus-within:not([data-quiet="true"]) .traceSpin,
+  .shell[data-motion="running-accent"][data-held="true"]:not([data-quiet="true"]) .traceSpin {
     animation: input-trace-spin var(--input-trace-duration) linear 1;
   }
 }
