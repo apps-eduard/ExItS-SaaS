@@ -9,7 +9,7 @@ Expose only states that belong to the control.
 - Button: tone, appearance (solid, soft, outline, raise, solid raise), hover, focus-visible, pressed, disabled, loading. No error variant. Raise and solid raise sit above the surface on elevation level 3, lift to level 4 on hover, and settle to level 1 while pressed. Solid raise keeps the solid fill.
 - Input and select: error and success text, disabled. Select has no loading state.
 - Input appearance is separate from focus motion. Standard is the default: the label stays above the bordered control. Floating label uses that same control, with the label starting in the placeholder and moving up. Outlined floats the label on the border. Soft keeps a primary tint and floats its label inside the field. Neither changes the control height. Focus Draw and Border Reveal follow the rounded border. Theme, primary, radius, and density stay on the shared tokens.
-- Select uses a custom listbox. Error and success each use one border and a same-color focus ring. The native select stays in the form for name, value, and reset. Narrow viewports open a bottom sheet. Searchable is opt-in.
+- Select uses the same field height, type, radius, border, and density as Input. Stacked keeps the label above. Outlined floats the label on the border. Soft keeps the label inside the tint. The menu matches the trigger width, opens below, and flips above when space is short. Option rows follow Compact, Standard, and Large. Searchable and multiple are opt-in. Narrow viewports open a bottom sheet. The native select stays in the form for name, value, and reset.
 - Search: error and clear. No success state.
 - Switch, checkbox, radio, segmented control: checked, disabled, focus-visible.
 - Dialog and bottom sheet: open, closing, dismiss.
