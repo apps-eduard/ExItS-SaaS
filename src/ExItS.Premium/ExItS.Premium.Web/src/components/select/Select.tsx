@@ -374,8 +374,8 @@ export function Select({
     const trigger = triggerRef.current;
     if (!panel || !trigger) return;
     const anchor = trigger.getBoundingClientRect();
-    // Keep the menu snug to the trigger border so expand motion reads as opening from the field.
-    const gap = 2;
+    // Match V1 select-glass menuGapPx=1 — menu sits against the select border.
+    const gap = 1;
     const margin = 8;
     const width = Math.round(anchor.width);
     panel.style.width = `${width}px`;
@@ -395,7 +395,7 @@ export function Select({
     panel.style.top = `${Math.round(top)}px`;
     panel.style.left = `${Math.round(left)}px`;
     panel.dataset.placement = placeAbove ? "above" : "below";
-    panel.style.setProperty("--select-shift", placeAbove ? "4px" : "-4px");
+    panel.style.setProperty("--select-shift", placeAbove ? "2px" : "-2px");
   }
 
   function onMenuAnimationEnd(event: ReactAnimationEvent<HTMLDivElement>) {

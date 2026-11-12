@@ -28,7 +28,7 @@ const FOCUS_LABELS: Record<InputFocusMotion, string> = {
 export function SelectPlayground() {
   const [appearance, setAppearance] = useState<SelectAppearance>("stacked");
   const [focusMotion, setFocusMotion] = useState<InputFocusMotion>("none");
-  const [menuMotion, setMenuMotion] = useState<SelectMenuMotion>("flip-down");
+  const [menuMotion, setMenuMotion] = useState<SelectMenuMotion>("scale");
   const [searchable, setSearchable] = useState(false);
   const [multiple, setMultiple] = useState(false);
   const [value, setValue] = useState("groceries");
