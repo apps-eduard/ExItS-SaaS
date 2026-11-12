@@ -8,12 +8,12 @@ import { Radio } from "../components/radio/Radio";
 import { SearchField } from "../components/search/SearchField";
 import { SegmentedControl } from "../components/segmented/SegmentedControl";
 import { Select } from "../components/select/Select";
-import type { SelectMenuMotion } from "../components/select/select-menu-motion";
 import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
 import { DateTimeSection } from "./DateTimeSection";
 import { InputMotionGallery } from "./input-motion/InputMotionGallery";
+import { SelectPlayground } from "./select/SelectPlayground";
 import styles from "./Playground.module.scss";
 
 function Intro({ title, children }: { title: string; children: ReactNode }) {
@@ -38,7 +38,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "buttons") return <ButtonsSection />;
   if (id === "inputs") return <InputsSection />;
   if (id === "search") return <SearchSection />;
-  if (id === "selects") return <SelectsSection />;
+  if (id === "selects") return <SelectPlayground />;
   if (id === "date-time") return <DateTimeSection />;
   if (id === "cards") return <CardsSection />;
   if (id === "badges") return <BadgesSection />;
@@ -127,161 +127,6 @@ function SearchSection() {
         <SearchField label="Disabled" value="Locked" onChange={() => undefined} disabled />
         <SearchField label="Error" value="?" onChange={() => undefined} error="Enter at least two letters." />
       </Stage>
-    </>
-  );
-}
-
-const ledgerOptions = [
-  "Groceries",
-  "Rent",
-  "Utilities",
-  "Transport",
-  "Salary",
-  "Savings",
-  "Medical",
-  "School",
-  "Household",
-  "Gifts",
-  "Travel",
-  "Other",
-];
-
-function replaySelect(id: string) {
-  const trigger = document.getElementById(id);
-  if (!(trigger instanceof HTMLButtonElement)) return;
-  if (trigger.getAttribute("aria-expanded") === "true") {
-    trigger.click();
-    window.setTimeout(() => trigger.click(), 180);
-    return;
-  }
-  trigger.click();
-}
-
-function SelectsSection() {
-  const [category, setCategory] = useState("groceries");
-  const [method, setMethod] = useState("cash");
-  const [status, setStatus] = useState("");
-  const [ledger, setLedger] = useState("groceries");
-  const [previewAppearance, setPreviewAppearance] = useState("stacked");
-  const [previewMotion, setPreviewMotion] = useState<SelectMenuMotion>("flip-down");
-  const [previewSearch, setPreviewSearch] = useState(false);
-  const [previewMultiple, setPreviewMultiple] = useState(false);
-  const [previewValue, setPreviewValue] = useState("groceries");
-  const [previewMany, setPreviewMany] = useState<string[]>(["groceries"]);
-  return (
-    <>
-      <Intro title="Selects">
-        The field uses the same height, type, radius, and border as Input. Stacked keeps the label above, Outlined floats it on the border, and Soft keeps it inside the tint. The menu matches the field width, opens just below it, and flips above when the viewport is short. Option rows follow the global density. Below 768px the same options open in a bottom sheet.
-      </Intro>
-      <Stage label="Preview">
-        <Select label="Appearance" value={previewAppearance} onChange={(event) => setPreviewAppearance(event.target.value)}>
-          <option value="outlined">Outlined</option>
-          <option value="soft">Soft</option>
-          <option value="stacked">Stacked</option>
-        </Select>
-        <Select label="Transition" value={previewMotion} onChange={(event) => setPreviewMotion(event.target.value as SelectMenuMotion)}>
-          <option value="flip-up">Flip Up</option>
-          <option value="flip-down">Flip Down</option>
-          <option value="scale">Scale</option>
-          <option value="jump-up">Jump Up</option>
-        </Select>
-        <Switch label="Searchable" checked={previewSearch} onChange={(event) => setPreviewSearch(event.target.checked)} />
-        <Switch label="Multiple" checked={previewMultiple} onChange={(event) => setPreviewMultiple(event.target.checked)} />
-        <Select
-          label="Category"
-          appearance={previewAppearance as "outlined" | "soft" | "stacked"}
-          menuMotion={previewMotion}
-          searchable={previewSearch}
-          multiple={previewMultiple}
-          value={previewMultiple ? previewMany : previewValue}
-          onChange={(event) => {
-            if (previewMultiple) {
-              setPreviewMany([...event.target.selectedOptions].map((option) => option.value));
-              return;
-            }
-            setPreviewValue(event.target.value);
-          }}
-        >
-          <option value="">Choose</option>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-          <option value="transfer">Transfer</option>
-        </Select>
-      </Stage>
-      <Stage label="Motion">
-        <Select id="select-motion-demo" label="Motion" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-          <option value="hold" disabled>
-            Hold
-          </option>
-        </Select>
-        <Button variant="secondary" appearance="outline" onClick={() => replaySelect("select-motion-demo")}>
-          Replay open
-        </Button>
-      </Stage>
-      <Stage>
-        <Select label="Category" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-        </Select>
-        <Select label="Focused category" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-        </Select>
-        <Select label="Payment method" value={method} onChange={(event) => setMethod(event.target.value)}>
-          <option value="cash">Cash</option>
-          <option value="card">Card</option>
-          <option value="transfer">Transfer</option>
-        </Select>
-        <Select label="Disabled" value="rent" disabled onChange={() => undefined}>
-          <option value="rent">Rent</option>
-        </Select>
-        <Select label="Error" defaultValue="" error="Choose a category.">
-          <option value="">Choose</option>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-        </Select>
-        <Select label="Success" defaultValue="rent" success="Category saved.">
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-        </Select>
-        <Select label="Transaction status" value={status} onChange={(event) => setStatus(event.target.value)}>
-          <optgroup label="Open">
-            <option value="">Choose</option>
-            <option value="due">Due</option>
-            <option value="partial">Partial</option>
-          </optgroup>
-          <optgroup label="Closed">
-            <option value="paid">Paid</option>
-            <option value="void">Void</option>
-            <option value="hold" disabled>
-              Hold
-            </option>
-          </optgroup>
-        </Select>
-        <Select label="Search status" searchable defaultValue="">
-          <option value="">Choose</option>
-          <option value="paid">Paid</option>
-          <option value="due">Due</option>
-          <option value="partial">Partial</option>
-          <option value="void">Void</option>
-        </Select>
-        <Select label="Ledger" value={ledger} onChange={(event) => setLedger(event.target.value)}>
-          {ledgerOptions.map((name) => (
-            <option key={name} value={name.toLowerCase()}>
-              {name}
-            </option>
-          ))}
-        </Select>
-      </Stage>
-      <p className="type-caption">
-        Replay open plays the menu again. Arrow keys move the highlight. Enter selects and the checkmark settles as the menu closes. On a narrow screen the same fields open in a sheet. Tab to Focused category for the focus ring.
-      </p>
     </>
   );
 }

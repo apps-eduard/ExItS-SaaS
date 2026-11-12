@@ -1,0 +1,23 @@
+.previewField {
+  width: min(100%, 22rem);
+  justify-self: center;
+}
+
+.toggles {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.example {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.exampleLabel {
+  margin: 0;
+  color: var(--color-text-caption);
+  font-size: var(--type-caption-size);
+  font-weight: 600;
+  line-height: var(--type-caption-line);
+}
