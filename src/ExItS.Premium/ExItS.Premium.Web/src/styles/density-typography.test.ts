@@ -93,7 +93,9 @@ describe("density typography", () => {
     expect(field).toContain(".floatLabel {");
     expect(field).toContain("line-height: var(--type-label-line);");
     expect(field).toContain(".floatLabel .labelText {");
-    expect(field).toContain("padding-block: 0.05em 0.22em;");
+    expect(field).toContain("overflow: visible;");
+    expect(field).toContain("padding-block: 0.12em 0.28em;");
+    expect(field).toContain("padding-block: 0.08em;");
     expect(field).not.toMatch(
       /\[data-appearance="outlined"\][\s\S]*?\.floatLabel \{[\s\S]*?line-height:\s*1;/,
     );
