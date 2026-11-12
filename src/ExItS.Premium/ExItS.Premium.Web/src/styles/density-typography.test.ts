@@ -87,4 +87,18 @@ describe("density typography", () => {
     expect(button).toContain("font-size: var(--density-button-font)");
     expect(field).toContain("font-size: var(--density-label-font)");
   });
+
+  it("keeps outlined float-label descenders unclipped for Input and Select", () => {
+    expect(tokens).toContain("--type-label-line: 1.3;");
+    expect(field).toContain(".floatLabel {");
+    expect(field).toContain("line-height: var(--type-label-line);");
+    expect(field).toContain(".floatLabel .labelText {");
+    expect(field).toContain("padding-block: 0.05em 0.22em;");
+    expect(field).not.toMatch(
+      /\[data-appearance="outlined"\][\s\S]*?\.floatLabel \{[\s\S]*?line-height:\s*1;/,
+    );
+    expect(field).not.toMatch(
+      /\[data-appearance="soft"\][\s\S]*?\.floatLabel \{[\s\S]*?line-height:\s*1;/,
+    );
+  });
 });

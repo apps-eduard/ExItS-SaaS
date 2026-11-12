@@ -19,6 +19,7 @@
 .floatShell {
   position: relative;
   width: 100%;
+  overflow: visible;
 }
 
 .floatLabel {
@@ -31,11 +32,13 @@
   max-width: calc(100% - 1.5rem);
   margin: 0;
   pointer-events: none;
+  overflow: visible;
   transform: translateY(-50%);
   transform-origin: left center;
   font-size: var(--density-control-font);
   font-weight: var(--type-label-weight);
-  line-height: 1.2;
+  /* Keep room for descenders (g/y/p/q/j). Do not use line-height: 1 with overflow clip. */
+  line-height: var(--type-label-line);
   color: var(--color-text-caption);
   transition:
     top 200ms var(--motion-ease),
@@ -49,6 +52,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Ellipsis stays horizontal; padding keeps glyph descenders inside the clip box. */
+.floatLabel .labelText {
+  line-height: inherit;
+  padding-block: 0.05em 0.22em;
 }
 
 .field[data-label-motion="rise"] .label {
@@ -101,9 +110,10 @@
 .field[data-placement="float"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
   top: 0;
   padding-inline: 0.28rem;
+  /* Surface mask must cover full glyph height so the outline never crosses label text. */
   background: var(--color-surface);
   transform: translateY(-50%);
-  line-height: 1;
+  line-height: var(--type-label-line);
 }
 
 .field[data-placement="float"]:has([data-appearance="soft"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
@@ -111,7 +121,7 @@
   padding-inline: 0;
   background: transparent;
   transform: none;
-  line-height: 1;
+  line-height: var(--type-label-line);
 }
 
 .field[data-placement="float"][data-disabled="true"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
