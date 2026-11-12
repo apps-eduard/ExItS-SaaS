@@ -208,7 +208,7 @@ export function InputMotionGallery({ embedded = false }: { embedded?: boolean })
     return (
       <div className={styles.embedded}>
         <p className={styles.note}>
-          One preview follows the controls. Standard is the shipped default, and Default global does not follow the controls. Floating label uses that same field and moves the placeholder label up. Outlined and soft float the label on the border. Disabled fields do not animate. Error and success keep their message.
+          One preview follows the controls. Standard is the shipped default, and Default global does not follow the controls. Floating label uses that same field and moves the placeholder label up. Outlined floats the label on the border. Soft keeps the label inside the tint. Disabled fields do not animate. Error and success keep their message.
         </p>
         {playground}
       </div>
