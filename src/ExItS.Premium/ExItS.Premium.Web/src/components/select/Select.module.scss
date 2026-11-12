@@ -146,7 +146,7 @@
 }
 
 .panel {
-  --select-shift: -8px;
+  --select-shift: -4px;
   --select-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --select-ease-exit: cubic-bezier(0.4, 0, 0.2, 1);
   position: fixed;
@@ -228,7 +228,7 @@
   }
 
   &[data-transition="scale"][data-motion="enter"] {
-    animation: select-scale-in 180ms var(--select-ease-out) both;
+    animation: select-scale-in 220ms var(--select-ease-out) both;
   }
 
   &[data-transition="scale"][data-motion="exit"] {
@@ -507,27 +507,28 @@
   }
 }
 
+/* Expand from the select border (transform-origin top/bottom), not a centered pop. */
 @keyframes select-scale-in {
   from {
     opacity: 0;
-    transform: scale(0.94);
+    transform: scaleY(0.72) scaleX(0.985);
   }
 
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scaleY(1) scaleX(1);
   }
 }
 
 @keyframes select-scale-out {
   from {
     opacity: 1;
-    transform: scale(1);
+    transform: scaleY(1) scaleX(1);
   }
 
   to {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scaleY(0.86) scaleX(0.99);
   }
 }
 
