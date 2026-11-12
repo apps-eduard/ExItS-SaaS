@@ -228,6 +228,24 @@ describe("Select", () => {
     expect(stacked.closest("[data-placement='float']")).toBeNull();
   });
 
+  it("reuses Input focus motion on the trigger", async () => {
+    const user = userEvent.setup();
+    render(
+      <Select label="Category" appearance="soft" focusMotion="focus-draw" menuMotion="scale" defaultValue="rent">
+        <option value="rent">Rent</option>
+        <option value="groceries">Groceries</option>
+      </Select>,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Category, Rent" });
+    expect(trigger).toHaveAttribute("data-focus-motion", "focus-draw");
+    expect(trigger.parentElement).toHaveAttribute("data-motion", "focus-draw");
+    trigger.focus();
+    expect(trigger.parentElement?.querySelector("[data-focus-draw]")).not.toBeNull();
+    await user.click(trigger);
+    expect(document.querySelector("[data-component='select-menu']")).toHaveAttribute("data-transition", "scale");
+    expect(trigger.parentElement).toHaveAttribute("data-held", "true");
+  });
+
   it("plays the selected menu transition", async () => {
     const user = userEvent.setup();
     const { rerender } = render(

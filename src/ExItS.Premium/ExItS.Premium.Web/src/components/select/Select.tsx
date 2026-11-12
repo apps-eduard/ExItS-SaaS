@@ -21,11 +21,14 @@ import { ExIcon } from "../../icons/ExIcon";
 import { BottomSheet } from "../sheet/BottomSheet";
 import { Field } from "../field/Field";
 import appearanceStyles from "../input/appearance.module.scss";
+import { inputRestsOnBorder, isInputAppearance, type InputAppearance } from "../input/input-appearance";
+import { isInputFocusMotion, type InputFocusMotion } from "../input/focus-motion";
+import { InputMotion } from "../input/InputMotion";
 import { hideOverlay, showOverlay } from "../overlay/overlay";
 import styles from "./Select.module.scss";
 import { applySelectValues, SELECT_MENU_MOTION_DEFAULT, type SelectMenuMotion } from "./select-menu-motion";
 
-type SelectAppearance = "outlined" | "soft" | "standard" | "stacked";
+type SelectAppearance = InputAppearance | "stacked";
 
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
@@ -35,6 +38,7 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   readOnly?: boolean;
   searchable?: boolean;
   appearance?: SelectAppearance;
+  focusMotion?: InputFocusMotion;
   menuMotion?: SelectMenuMotion;
   children: ReactNode;
 };
@@ -97,9 +101,10 @@ function listed(value: unknown) {
   return Array.isArray(value) ? value.map(String) : null;
 }
 
-function resolveAppearance(value: SelectAppearance | undefined) {
-  if (value === "outlined" || value === "soft") return value;
-  return "standard" as const;
+function resolveAppearance(value: SelectAppearance | undefined): InputAppearance {
+  if (value === "stacked") return "standard";
+  if (value && isInputAppearance(value)) return value;
+  return "standard";
 }
 
 function prefersReducedMotion() {
@@ -127,6 +132,7 @@ export function Select({
   readOnly = false,
   searchable = false,
   appearance: appearanceProp,
+  focusMotion = "none",
   menuMotion = SELECT_MENU_MOTION_DEFAULT,
   multiple = false,
   id,
@@ -157,7 +163,10 @@ export function Select({
   const typedRef = useRef({ text: "", at: 0 });
   const closeTimer = useRef(0);
   const appearance = resolveAppearance(appearanceProp);
-  const onBorder = appearance === "outlined" || appearance === "soft";
+  const motion = isInputFocusMotion(focusMotion) ? focusMotion : "none";
+  const onBorder = inputRestsOnBorder(appearance);
+  const rise = appearance === "floating";
+  const surfaced = onBorder || rise;
   const [uncontrolled, setUncontrolled] = useState(defaultValue == null || Array.isArray(defaultValue) ? "" : String(defaultValue));
   const [multi, setMulti] = useState<string[]>(() => listed(defaultValue) ?? listed(value) ?? []);
   const [phase, setPhase] = useState<"closed" | "open" | "closing">("closed");
@@ -543,7 +552,9 @@ export function Select({
       success={success}
       required={props.required}
       readOnly={readOnly}
+      disabled={Boolean(disabled)}
       placement={onBorder ? "float" : "stacked"}
+      labelMotion={rise ? "rise" : undefined}
     >
       <div className={styles.wrap} data-state={state}>
         <select
@@ -561,43 +572,40 @@ export function Select({
         >
           {multiple ? markOptions(children, selectedMany) : children}
         </select>
-        {/*
-          Focus Draw integration point. This trigger is the focus host and keeps the
-          existing :focus-visible border and ring in Select.module.scss.
-          When Agent 4's reusable Focus Draw is shared, attach it here
-          (data-focus-draw / focusMotion="focus-draw"). Do not add a second border trace.
-        */}
-        <button
-          ref={triggerRef}
-          type="button"
-          id={fieldId}
-          className={[styles.trigger, onBorder ? appearanceStyles.control : ""].filter(Boolean).join(" ")}
-          data-focus-host="select-trigger"
-          role={searchable ? undefined : "combobox"}
-          aria-haspopup="listbox"
-          aria-expanded={menuOpen}
-          aria-controls={menuOpen ? listId : undefined}
-          aria-activedescendant={!searchable && menuOpen && shown[safeActive] ? optionId(safeActive) : undefined}
-          aria-label={`${label}, ${display}`}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={message ? `${fieldId}-message` : undefined}
-          aria-readonly={readOnly || undefined}
-          disabled={disabled}
-          autoFocus={autoFocus}
-          onFocus={onFocus as FocusEventHandler<HTMLButtonElement> | undefined}
-          onBlur={onBlur as FocusEventHandler<HTMLButtonElement> | undefined}
-          data-appearance={onBorder ? appearance : undefined}
-          data-filled={placeholder ? undefined : "true"}
-          data-state={state}
-          data-placeholder={placeholder ? "true" : undefined}
-          data-chosen={chosen ? "true" : undefined}
-          data-readonly={readOnly ? "true" : undefined}
-          onClick={() => (menuOpen ? closePanel(false) : openPanel())}
-          onKeyDown={onTriggerKeyDown}
-        >
-          <span className={styles.value}>{display}</span>
-          <ExIcon name="expand_more" className={styles.chevron} />
-        </button>
+        <InputMotion motion={motion} disabled={Boolean(disabled)} readOnly={readOnly} held={menuOpen} state={state}>
+          <button
+            ref={triggerRef}
+            type="button"
+            id={fieldId}
+            className={[styles.trigger, surfaced ? appearanceStyles.control : ""].filter(Boolean).join(" ")}
+            data-focus-host="select-trigger"
+            role={searchable ? undefined : "combobox"}
+            aria-haspopup="listbox"
+            aria-expanded={menuOpen}
+            aria-controls={menuOpen ? listId : undefined}
+            aria-activedescendant={!searchable && menuOpen && shown[safeActive] ? optionId(safeActive) : undefined}
+            aria-label={`${label}, ${display}`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={message ? `${fieldId}-message` : undefined}
+            aria-readonly={readOnly || undefined}
+            disabled={disabled}
+            autoFocus={autoFocus}
+            onFocus={onFocus as FocusEventHandler<HTMLButtonElement> | undefined}
+            onBlur={onBlur as FocusEventHandler<HTMLButtonElement> | undefined}
+            data-appearance={surfaced ? appearance : undefined}
+            data-focus-motion={motion}
+            data-filled={placeholder ? undefined : "true"}
+            data-state={state}
+            data-placeholder={placeholder ? "true" : undefined}
+            data-chosen={chosen ? "true" : undefined}
+            data-readonly={readOnly ? "true" : undefined}
+            onClick={() => (menuOpen ? closePanel(false) : openPanel())}
+            onKeyDown={onTriggerKeyDown}
+          >
+            <span className={styles.value}>{display}</span>
+            <ExIcon name="expand_more" className={styles.chevron} />
+          </button>
+        </InputMotion>
       </div>
       {phase !== "closed" && !narrow
         ? createPortal(

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { INPUT_FOCUS_MOTION_OPTIONS, type InputFocusMotion } from "../../components/input/focus-motion";
 import { Select } from "../../components/select/Select";
 import type { SelectMenuMotion } from "../../components/select/select-menu-motion";
 import { Switch } from "../../components/switch/Switch";
@@ -16,9 +17,18 @@ const OPTIONS = (
   </>
 );
 
+const FOCUS_LABELS: Record<InputFocusMotion, string> = {
+  none: "None",
+  "border-reveal": "Border Reveal",
+  "soft-glow": "Soft Glow",
+  "running-accent": "Running Accent",
+  "focus-draw": "Focus Draw",
+};
+
 export function SelectPlayground() {
   const [appearance, setAppearance] = useState<SelectAppearance>("stacked");
-  const [motion, setMotion] = useState<SelectMenuMotion>("flip-down");
+  const [focusMotion, setFocusMotion] = useState<InputFocusMotion>("none");
+  const [menuMotion, setMenuMotion] = useState<SelectMenuMotion>("flip-down");
   const [searchable, setSearchable] = useState(false);
   const [multiple, setMultiple] = useState(false);
   const [value, setValue] = useState("groceries");
@@ -27,13 +37,14 @@ export function SelectPlayground() {
   return (
     <PlaygroundShell
       title="Selects"
-      description="One live field that matches Input height, type, radius, and border. Stacked keeps the label above, Outlined floats it on the border, and Soft keeps it inside the tint. The menu matches the trigger, follows density, and opens in a bottom sheet below 768px."
+      description="Select reuses Input appearance and focus motion. Soft keeps the label inside the tint, Outlined floats it on the border, and Stacked keeps it above. Dropdown transitions stay independent of the focus treatment."
       preview={
         <div className={styles.previewField}>
           <Select
             label="Category"
             appearance={appearance}
-            menuMotion={motion}
+            focusMotion={focusMotion}
+            menuMotion={menuMotion}
             searchable={searchable}
             multiple={multiple}
             value={multiple ? many : value}
@@ -57,7 +68,16 @@ export function SelectPlayground() {
             <option value="soft">Soft</option>
             <option value="stacked">Stacked</option>
           </Select>
-          <Select label="Transition" value={motion} onChange={(event) => setMotion(event.target.value as SelectMenuMotion)}>
+          <Select label="Focus Animation" value={focusMotion} onChange={(event) => setFocusMotion(event.target.value as InputFocusMotion)}>
+            <option value="none">{FOCUS_LABELS.none}</option>
+            {INPUT_FOCUS_MOTION_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {FOCUS_LABELS[option.id]}
+              </option>
+            ))}
+            <option value="running-accent">{FOCUS_LABELS["running-accent"]}</option>
+          </Select>
+          <Select label="Dropdown Transition" value={menuMotion} onChange={(event) => setMenuMotion(event.target.value as SelectMenuMotion)}>
             <option value="flip-up">Flip Up</option>
             <option value="flip-down">Flip Down</option>
             <option value="scale">Scale</option>
@@ -79,7 +99,7 @@ export function SelectPlayground() {
           </article>
           <article className={styles.example}>
             <p className={styles.exampleLabel}>Focused</p>
-            <Select label="Focused category" defaultValue="rent">
+            <Select label="Focused category" defaultValue="rent" focusMotion="focus-draw">
               {OPTIONS}
             </Select>
           </article>
