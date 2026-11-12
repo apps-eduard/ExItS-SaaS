@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -107,10 +107,16 @@ describe("Select", () => {
     );
     expect(screen.queryByRole("combobox", { name: "Search Status" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Status, Choose" }));
+    expect(screen.queryByRole("option", { name: "Choose" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Paid" })).toBeInTheDocument();
     const search = screen.getByRole("combobox", { name: "Search Status" });
     await user.type(search, "zz");
     expect(screen.getByText("No matches")).toBeInTheDocument();
-    await user.clear(search);
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    await waitFor(() => expect(search).toHaveFocus());
+    expect(search).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Paid" })).toBeInTheDocument();
+    expect(screen.getByRole("listbox", { name: "Status" })).toBeInTheDocument();
     await user.type(search, "due");
     await user.keyboard("{Enter}");
     expect(screen.getByRole("button", { name: "Status, Due" })).toBeInTheDocument();

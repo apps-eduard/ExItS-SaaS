@@ -168,9 +168,10 @@ export function Select({
   const menuOpen = phase === "open";
   const selected = controlled && !Array.isArray(value) ? String(value ?? "") : uncontrolled;
   const selectedMany = listed(value) ?? multi;
+  const menuOptions = options.filter((option) => option.value !== "");
   const shown = searchable && query.trim()
-    ? options.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()))
-    : options;
+    ? menuOptions.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : menuOptions;
   const selectedOption = options.find((option) => option.value === selected);
   const selectedLabels = options.filter((option) => option.value !== "" && selectedMany.includes(option.value)).map((option) => option.label);
   const display = multiple
@@ -492,9 +493,15 @@ export function Select({
     })
   );
 
+  function clearSearch() {
+    setQuery("");
+    setActive(0);
+    window.requestAnimationFrame(() => searchRef.current?.focus());
+  }
+
   const search = searchable ? (
     <div className={styles.search}>
-      <ExIcon name="search" className={styles.searchIcon} />
+      <ExIcon name="search" className={styles.searchIcon} size={18} />
       <input
         ref={searchRef}
         id={searchId}
@@ -514,8 +521,8 @@ export function Select({
         onKeyDown={onSearchKeyDown}
       />
       {query ? (
-        <button type="button" className={styles.clear} aria-label="Clear search" onClick={() => setQuery("")}>
-          <ExIcon name="close" />
+        <button type="button" className={styles.clear} aria-label="Clear search" onClick={clearSearch}>
+          <ExIcon name="close" size={16} />
         </button>
       ) : null}
     </div>
