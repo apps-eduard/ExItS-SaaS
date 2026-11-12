@@ -146,9 +146,11 @@
 }
 
 .panel {
+  /* V1 select-glass menu motion tokens (ui-standards-qmenu-*). */
   --select-shift: -4px;
-  --select-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --select-ease-exit: cubic-bezier(0.4, 0, 0.2, 1);
+  --select-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --select-ease-exit: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --select-menu-duration: 0.3s;
   position: fixed;
   inset: unset;
   z-index: var(--z-menu);
@@ -175,20 +177,19 @@
   }
 
   &[data-motion="enter"]:not([data-transition]) {
-    animation: select-in 180ms var(--select-ease-out) both;
+    animation: select-in var(--select-menu-duration) var(--select-ease-out) both;
   }
 
   &[data-motion="exit"]:not([data-transition]) {
     pointer-events: none;
-    animation: select-out 160ms var(--select-ease-exit) both;
+    animation: select-out var(--select-menu-duration) var(--select-ease-exit) both;
   }
 
-  &[data-transition="flip-down"] {
-    transform-origin: top center;
-  }
-
+  /* Match V1 Org EHG select-glass / qmenu origins. */
+  &[data-transition="flip-down"],
   &[data-transition="flip-up"] {
-    transform-origin: bottom center;
+    transform-origin: center center;
+    backface-visibility: hidden;
   }
 
   &[data-transition="scale"] {
@@ -196,53 +197,47 @@
   }
 
   &[data-transition="jump-up"] {
-    transform-origin: bottom center;
+    transform-origin: center center;
   }
 
-  &[data-placement="above"][data-transition="flip-down"],
   &[data-placement="above"][data-transition="scale"] {
     transform-origin: bottom center;
   }
 
-  &[data-placement="above"][data-transition="flip-up"],
-  &[data-placement="above"][data-transition="jump-up"] {
-    transform-origin: top center;
-  }
-
   &[data-transition="flip-down"][data-motion="enter"] {
-    animation: select-flip-down-in 180ms var(--select-ease-out) both;
+    animation: select-flip-down-in var(--select-menu-duration) linear both;
   }
 
   &[data-transition="flip-down"][data-motion="exit"] {
     pointer-events: none;
-    animation: select-flip-down-out 160ms var(--select-ease-exit) both;
+    animation: select-flip-down-out var(--select-menu-duration) linear both;
   }
 
   &[data-transition="flip-up"][data-motion="enter"] {
-    animation: select-flip-up-in 180ms var(--select-ease-out) both;
+    animation: select-flip-up-in var(--select-menu-duration) linear both;
   }
 
   &[data-transition="flip-up"][data-motion="exit"] {
     pointer-events: none;
-    animation: select-flip-up-out 160ms var(--select-ease-exit) both;
+    animation: select-flip-up-out var(--select-menu-duration) linear both;
   }
 
   &[data-transition="scale"][data-motion="enter"] {
-    animation: select-scale-in 220ms var(--select-ease-out) both;
+    animation: select-scale-in var(--select-menu-duration) var(--select-ease-out) both;
   }
 
   &[data-transition="scale"][data-motion="exit"] {
     pointer-events: none;
-    animation: select-scale-out 160ms var(--select-ease-exit) both;
+    animation: select-scale-out var(--select-menu-duration) var(--select-ease-exit) both;
   }
 
   &[data-transition="jump-up"][data-motion="enter"] {
-    animation: select-jump-in 180ms var(--select-ease-out) both;
+    animation: select-jump-in var(--select-menu-duration) linear both;
   }
 
   &[data-transition="jump-up"][data-motion="exit"] {
     pointer-events: none;
-    animation: select-jump-out 160ms var(--select-ease-exit) both;
+    animation: select-jump-out var(--select-menu-duration) linear both;
   }
 }
 
@@ -435,124 +430,117 @@
   font-size: var(--type-secondary-size);
 }
 
+/* Fallback enter/exit — same expand recipe as V1 scale. */
 @keyframes select-in {
   from {
     opacity: 0;
-    transform: translateY(var(--select-shift)) scale(0.97);
+    transform: scale3d(0, 0, 1);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale3d(1, 1, 1);
   }
 }
 
 @keyframes select-out {
   from {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale3d(1, 1, 1);
   }
 
   to {
     opacity: 0;
-    transform: translateY(calc(var(--select-shift) * 0.65)) scale(0.985);
+    transform: scale3d(0, 0, 1);
   }
 }
 
+/* Copied from V1 ui-standards-qmenu-* (select-glass / dropdown). */
 @keyframes select-flip-down-in {
   from {
-    opacity: 0;
-    transform: perspective(28rem) rotateX(-14deg) translateY(-4px);
+    transform: perspective(400px) rotate3d(1, 0, 0, 180deg);
   }
 
   to {
-    opacity: 1;
-    transform: perspective(28rem) rotateX(0) translateY(0);
+    transform: perspective(400px) rotate3d(1, 0, 0, 0deg);
   }
 }
 
 @keyframes select-flip-down-out {
   from {
-    opacity: 1;
-    transform: perspective(28rem) rotateX(0) translateY(0);
+    transform: perspective(400px) rotate3d(1, 0, 0, 0deg);
   }
 
   to {
-    opacity: 0;
-    transform: perspective(28rem) rotateX(-10deg) translateY(-4px);
+    transform: perspective(400px) rotate3d(1, 0, 0, -180deg);
   }
 }
 
 @keyframes select-flip-up-in {
   from {
-    opacity: 0;
-    transform: perspective(28rem) rotateX(14deg) translateY(4px);
+    transform: perspective(400px) rotate3d(1, 0, 0, -180deg);
   }
 
   to {
-    opacity: 1;
-    transform: perspective(28rem) rotateX(0) translateY(0);
+    transform: perspective(400px) rotate3d(1, 0, 0, 0deg);
   }
 }
 
 @keyframes select-flip-up-out {
   from {
-    opacity: 1;
-    transform: perspective(28rem) rotateX(0) translateY(0);
+    transform: perspective(400px) rotate3d(1, 0, 0, 0deg);
   }
 
   to {
-    opacity: 0;
-    transform: perspective(28rem) rotateX(10deg) translateY(4px);
+    transform: perspective(400px) rotate3d(1, 0, 0, 180deg);
   }
 }
 
-/* Expand from the select border (transform-origin top/bottom), not a centered pop. */
 @keyframes select-scale-in {
   from {
     opacity: 0;
-    transform: scaleY(0.72) scaleX(0.985);
+    transform: scale3d(0, 0, 1);
   }
 
   to {
     opacity: 1;
-    transform: scaleY(1) scaleX(1);
+    transform: scale3d(1, 1, 1);
   }
 }
 
 @keyframes select-scale-out {
   from {
     opacity: 1;
-    transform: scaleY(1) scaleX(1);
+    transform: scale3d(1, 1, 1);
   }
 
   to {
     opacity: 0;
-    transform: scaleY(0.86) scaleX(0.99);
+    transform: scale3d(0, 0, 1);
   }
 }
 
 @keyframes select-jump-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translate3d(0, 15px, 0);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes select-jump-out {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 
   to {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translate3d(0, -15px, 0);
   }
 }
 

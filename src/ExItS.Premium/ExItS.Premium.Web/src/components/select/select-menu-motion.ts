@@ -2,7 +2,8 @@ export const SELECT_MENU_MOTIONS = ["flip-up", "flip-down", "scale", "jump-up"] 
 
 export type SelectMenuMotion = (typeof SELECT_MENU_MOTIONS)[number];
 
-export const SELECT_MENU_MOTION_DEFAULT: SelectMenuMotion = "flip-down";
+/** Same default as V1 Org EHG select-glass (`ORG_EHG_SELECT_GLASS_DEFAULT_MENU_TRANSITION`). */
+export const SELECT_MENU_MOTION_DEFAULT: SelectMenuMotion = "scale";
 
 export function isSelectMenuMotion(value: string): value is SelectMenuMotion {
   return (SELECT_MENU_MOTIONS as readonly string[]).includes(value);

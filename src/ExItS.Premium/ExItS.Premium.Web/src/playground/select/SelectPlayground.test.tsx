@@ -12,7 +12,7 @@ describe("SelectPlayground", () => {
     expect(screen.queryByRole("button", { name: "Replay open" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "States & examples", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Focus Animation, None" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Dropdown Transition, Flip Down" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Dropdown Transition, Scale" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("switch", { name: "Searchable" }));
     await user.click(screen.getByRole("switch", { name: "Multiple" }));
@@ -22,5 +22,6 @@ describe("SelectPlayground", () => {
     expect(screen.getByRole("combobox", { name: "Search Category" })).toBeInTheDocument();
     expect(screen.getByRole("listbox", { name: "Category" })).toHaveAttribute("aria-multiselectable", "true");
     expect(screen.queryByRole("option", { name: "Choose" })).not.toBeInTheDocument();
+    expect(document.querySelector("[data-component='select-menu']")).toHaveAttribute("data-transition", "scale");
   });
 });
