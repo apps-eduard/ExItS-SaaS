@@ -4,7 +4,7 @@ import { PlaygroundShell } from "./PlaygroundShell";
 
 describe("PlaygroundShell", () => {
   it("renders the preview, properties, and examples layout", () => {
-    render(
+    const { container } = render(
       <PlaygroundShell
         title="Selects"
         description="Live field with properties."
@@ -22,5 +22,10 @@ describe("PlaygroundShell", () => {
     expect(screen.getByText("Property controls")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "States & examples", level: 2 })).toBeInTheDocument();
     expect(screen.getByText("State gallery")).toBeInTheDocument();
+
+    const workspace = container.querySelector("[class*='workspace']");
+    const panes = workspace ? [...workspace.children].map((node) => node.getAttribute("aria-label") || node.querySelector("h2")?.textContent) : [];
+    expect(panes[0]).toBe("Properties");
+    expect(panes[1]).toBe("Preview");
   });
 });

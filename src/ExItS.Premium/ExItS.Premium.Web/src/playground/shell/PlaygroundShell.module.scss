@@ -12,7 +12,8 @@
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.85fr) minmax(16rem, 1fr);
+  /* Properties left, Preview right. */
+  grid-template-columns: minmax(16rem, 1fr) minmax(0, 1.85fr);
   gap: var(--space-4);
   align-items: start;
   min-width: 0;
