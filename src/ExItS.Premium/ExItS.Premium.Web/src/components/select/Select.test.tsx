@@ -193,6 +193,88 @@ describe("Select", () => {
     vi.unstubAllGlobals();
   });
 
+  it("matches outlined and soft fields and keeps stacked above the control", () => {
+    const { rerender } = render(
+      <Select label="Category" appearance="outlined" defaultValue="rent">
+        <option value="rent">Rent</option>
+      </Select>,
+    );
+    const outlined = screen.getByRole("combobox", { name: "Category, Rent" });
+    expect(outlined).toHaveAttribute("data-appearance", "outlined");
+    expect(outlined.closest("[data-placement='float']")).not.toBeNull();
+
+    rerender(
+      <Select label="Category" appearance="soft" defaultValue="rent">
+        <option value="rent">Rent</option>
+      </Select>,
+    );
+    const soft = screen.getByRole("combobox", { name: "Category, Rent" });
+    expect(soft).toHaveAttribute("data-appearance", "soft");
+    expect(soft).toHaveAttribute("data-filled", "true");
+
+    rerender(
+      <Select label="Category" appearance="stacked" defaultValue="rent">
+        <option value="rent">Rent</option>
+      </Select>,
+    );
+    const stacked = screen.getByRole("combobox", { name: "Category, Rent" });
+    expect(stacked).not.toHaveAttribute("data-appearance");
+    expect(stacked.closest("[data-placement='float']")).toBeNull();
+  });
+
+  it("plays the selected menu transition", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <Select label="Category" menuMotion="scale" defaultValue="rent">
+        <option value="rent">Rent</option>
+        <option value="groceries">Groceries</option>
+      </Select>,
+    );
+    await user.click(screen.getByRole("combobox", { name: "Category, Rent" }));
+    expect(document.querySelector("[data-component='select-menu']")).toHaveAttribute("data-transition", "scale");
+    await user.keyboard("{Escape}");
+    rerender(
+      <Select label="Category" menuMotion="jump-up" defaultValue="rent">
+        <option value="rent">Rent</option>
+        <option value="groceries">Groceries</option>
+      </Select>,
+    );
+    await user.click(screen.getByRole("combobox", { name: "Category, Rent" }));
+    expect(document.querySelector("[data-component='select-menu']")).toHaveAttribute("data-transition", "jump-up");
+    expect(document.querySelector("[data-component='select-menu']")).toHaveAttribute("data-motion", "enter");
+  });
+
+  it("filters and keeps a multiple list open", async () => {
+    const user = userEvent.setup();
+    function Many() {
+      const [value, setValue] = useState<string[]>(["groceries"]);
+      return (
+        <Select
+          label="Category"
+          multiple
+          searchable
+          value={value}
+          onChange={(event) => setValue([...event.target.selectedOptions].map((option) => option.value))}
+        >
+          <option value="groceries">Groceries</option>
+          <option value="rent">Rent</option>
+          <option value="utilities">Utilities</option>
+        </Select>
+      );
+    }
+    render(<Many />);
+    await user.click(screen.getByRole("button", { name: "Category, Groceries" }));
+    expect(screen.getByRole("listbox", { name: "Category" })).toHaveAttribute("aria-multiselectable", "true");
+    await user.click(screen.getByRole("option", { name: "Rent" }));
+    expect(screen.getByRole("listbox", { name: "Category" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Category, Groceries, Rent" })).toBeInTheDocument();
+    const search = screen.getByRole("combobox", { name: "Search Category" });
+    await user.type(search, "util");
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("button", { name: "Category, 3 selected" })).toBeInTheDocument();
+    expect(screen.getByRole("listbox", { name: "Category" })).toBeInTheDocument();
+  });
+
   it("drops a closing menu when the select unmounts", async () => {
     const user = userEvent.setup();
     const errors: unknown[][] = [];

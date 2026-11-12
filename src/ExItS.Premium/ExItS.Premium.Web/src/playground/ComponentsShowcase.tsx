@@ -8,6 +8,7 @@ import { Radio } from "../components/radio/Radio";
 import { SearchField } from "../components/search/SearchField";
 import { SegmentedControl } from "../components/segmented/SegmentedControl";
 import { Select } from "../components/select/Select";
+import type { SelectMenuMotion } from "../components/select/select-menu-motion";
 import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
@@ -161,11 +162,53 @@ function SelectsSection() {
   const [method, setMethod] = useState("cash");
   const [status, setStatus] = useState("");
   const [ledger, setLedger] = useState("groceries");
+  const [previewAppearance, setPreviewAppearance] = useState("stacked");
+  const [previewMotion, setPreviewMotion] = useState<SelectMenuMotion>("flip-down");
+  const [previewSearch, setPreviewSearch] = useState(false);
+  const [previewMultiple, setPreviewMultiple] = useState(false);
+  const [previewValue, setPreviewValue] = useState("groceries");
+  const [previewMany, setPreviewMany] = useState<string[]>(["groceries"]);
   return (
     <>
       <Intro title="Selects">
-        A custom listbox with the field radius, elevation level 3, and one validation border. The menu eases out from the field, the active option follows the pointer or keyboard, and the menu eases back in when it closes. Below 768px the same options open in a bottom sheet. Loading is not a select state.
+        The field uses the same height, type, radius, and border as Input. Stacked keeps the label above, Outlined floats it on the border, and Soft keeps it inside the tint. The menu matches the field width, opens just below it, and flips above when the viewport is short. Option rows follow the global density. Below 768px the same options open in a bottom sheet.
       </Intro>
+      <Stage label="Preview">
+        <Select label="Appearance" value={previewAppearance} onChange={(event) => setPreviewAppearance(event.target.value)}>
+          <option value="outlined">Outlined</option>
+          <option value="soft">Soft</option>
+          <option value="stacked">Stacked</option>
+        </Select>
+        <Select label="Transition" value={previewMotion} onChange={(event) => setPreviewMotion(event.target.value as SelectMenuMotion)}>
+          <option value="flip-up">Flip Up</option>
+          <option value="flip-down">Flip Down</option>
+          <option value="scale">Scale</option>
+          <option value="jump-up">Jump Up</option>
+        </Select>
+        <Switch label="Searchable" checked={previewSearch} onChange={(event) => setPreviewSearch(event.target.checked)} />
+        <Switch label="Multiple" checked={previewMultiple} onChange={(event) => setPreviewMultiple(event.target.checked)} />
+        <Select
+          label="Category"
+          appearance={previewAppearance as "outlined" | "soft" | "stacked"}
+          menuMotion={previewMotion}
+          searchable={previewSearch}
+          multiple={previewMultiple}
+          value={previewMultiple ? previewMany : previewValue}
+          onChange={(event) => {
+            if (previewMultiple) {
+              setPreviewMany([...event.target.selectedOptions].map((option) => option.value));
+              return;
+            }
+            setPreviewValue(event.target.value);
+          }}
+        >
+          <option value="">Choose</option>
+          <option value="groceries">Groceries</option>
+          <option value="rent">Rent</option>
+          <option value="utilities">Utilities</option>
+          <option value="transfer">Transfer</option>
+        </Select>
+      </Stage>
       <Stage label="Motion">
         <Select id="select-motion-demo" label="Motion" value={category} onChange={(event) => setCategory(event.target.value)}>
           <option value="groceries">Groceries</option>
