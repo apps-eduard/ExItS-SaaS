@@ -1,6 +1,6 @@
 // Opt-in surfaces. Omitted appearance keeps the shipped standard control.
-// Outlined and soft rest the label on the border. Floating label uses the standard
-// control and moves that label up from the placeholder. Focus motion stays on InputMotion.
+// Outlined rests the label on the border. Soft keeps its label inside the tint.
+// Floating label uses the standard control and moves that label up from the placeholder.
 
 .control[data-appearance] {
   border-radius: var(--radius-control);
@@ -18,6 +18,12 @@
 :global([data-placement="float"]:focus-within) .control[data-appearance]::placeholder,
 :global([data-label-motion="rise"]:focus-within) .control[data-appearance="floating"]::placeholder {
   color: var(--color-text-caption);
+}
+
+:global([data-placement="float"]:is(:focus-within, :has([data-filled="true"]))) .control[data-appearance="soft"] {
+  padding-top: calc(var(--density-label-font) + 0.2rem);
+  padding-bottom: 0;
+  line-height: 1;
 }
 
 .control[data-appearance="outlined"] {
