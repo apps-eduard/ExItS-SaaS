@@ -62,7 +62,7 @@ describe("premium tokens", () => {
       expect(colors["--color-warning-foreground"]).toBe("#1a0a00");
       expect(colors["--color-success"]).toBe("oklch(0.64 0.22 160)");
       expect(colors["--color-info"]).toBe("oklch(0.69 0.22 220)");
-      expect(colors["--color-help"]).toMatch(/^oklch\(/);
+      expect(colors["--color-help"]).toBe("#9333ea");
       expect(colors["--elevation-0"]).toBe("none");
       expect(colors["--elevation-1"]).toBeTruthy();
       expect(colors["--elevation-2"]).toBeTruthy();
