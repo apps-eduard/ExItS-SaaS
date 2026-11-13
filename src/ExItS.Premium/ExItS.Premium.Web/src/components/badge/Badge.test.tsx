@@ -8,6 +8,8 @@ describe("Badge", () => {
     const badge = screen.getByText("Neutral");
     expect(badge).toHaveAttribute("data-tone", "neutral");
     expect(badge).toHaveAttribute("data-appearance", "soft");
+    expect(badge).toHaveAttribute("data-all-caps", "false");
+    expect(badge).toHaveAttribute("data-indicator", "false");
   });
 
   it("applies tone and appearance", () => {
@@ -43,5 +45,24 @@ describe("Badge", () => {
     expect(screen.getByText("Accent")).toHaveAttribute("data-tone", "accent");
     expect(screen.getByText("Help")).toHaveAttribute("data-tone", "help");
     expect(screen.getByText("Contrast")).toHaveAttribute("data-tone", "contrast");
+  });
+
+  it("supports all caps and indicator", () => {
+    render(
+      <Badge tone="success" allCaps indicator>
+        Paid
+      </Badge>,
+    );
+    const badge = screen.getByText("Paid");
+    expect(badge).toHaveAttribute("data-all-caps", "true");
+    expect(badge).toHaveAttribute("data-indicator", "true");
+    expect(badge.querySelector("[aria-hidden='true']")).toBeTruthy();
+  });
+
+  it("renders indicator-only when there is no label", () => {
+    const { container } = render(<Badge tone="danger" indicator aria-label="Failed" />);
+    const badge = container.querySelector("[data-indicator-only='true']");
+    expect(badge).toHaveAttribute("data-tone", "danger");
+    expect(badge).toHaveAttribute("aria-label", "Failed");
   });
 });

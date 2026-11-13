@@ -41,5 +41,16 @@ describe("BadgePlayground", () => {
     await user.click(screen.getByRole("option", { name: "Warning" }));
     expect(within(preview!).getByText("Due")).toHaveAttribute("data-tone", "warning");
     expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge warning solid");
+
+    await user.click(screen.getByRole("switch", { name: "All caps" }));
+    expect(within(preview!).getByText("Due")).toHaveAttribute("data-all-caps", "true");
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge warning solid all-caps");
+
+    await user.click(screen.getByRole("switch", { name: "Indicator" }));
+    expect(within(preview!).getByText("Due")).toHaveAttribute("data-indicator", "true");
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext badge warning solid all-caps indicator",
+    );
   });
 });

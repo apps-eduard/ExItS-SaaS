@@ -9,6 +9,7 @@ import {
 import { Button } from "../../components/button/Button";
 import { Input } from "../../components/input/Input";
 import { Select } from "../../components/select/Select";
+import { Switch } from "../../components/switch/Switch";
 import { CursorCopyCommand } from "../CursorCopyCommand";
 import { PlaygroundShell } from "../shell/PlaygroundShell";
 import { badgeCursorCommand } from "./badge-cursor-command";
@@ -52,14 +53,18 @@ export function BadgePlayground() {
   const [tone, setTone] = useState<BadgeTone>("success");
   const [appearance, setAppearance] = useState<BadgeAppearance>("soft");
   const [label, setLabel] = useState("Paid");
+  const [allCaps, setAllCaps] = useState(false);
+  const [indicator, setIndicator] = useState(false);
 
   const previewLabel = label.trim() || SAMPLE_LABELS[tone];
-  const cursorCommand = badgeCursorCommand({ tone, appearance });
+  const cursorCommand = badgeCursorCommand({ tone, appearance, allCaps, indicator });
 
   function reset() {
     setTone("success");
     setAppearance("soft");
     setLabel("Paid");
+    setAllCaps(false);
+    setIndicator(false);
   }
 
   function chooseTone(next: BadgeTone) {
@@ -70,13 +75,13 @@ export function BadgePlayground() {
   return (
     <PlaygroundShell
       title="Badges"
-      description="Status badges follow tone and appearance. Tone includes neutral plus the full semantic set (primary, secondary, accent, success, info, warning, help, danger, contrast). Soft is the default tint. Emphasis is a stronger wash with bolder ink. Solid fills the chip, outline keeps a border, and ghost is ink only."
+      description="Status badges follow tone and appearance. Tone includes neutral plus the full semantic set. Soft is the default tint. Emphasis is a stronger wash with bolder ink. Solid fills the chip, outline keeps a border, and ghost is ink only. All caps uppercases the label. Indicator adds a leading status pip."
       panes="equal"
       propertiesColumns={2}
       preview={
         <div className={styles.previewStack}>
           <div className={styles.previewField}>
-            <Badge tone={tone} appearance={appearance}>
+            <Badge tone={tone} appearance={appearance} allCaps={allCaps} indicator={indicator}>
               {previewLabel}
             </Badge>
           </div>
@@ -104,6 +109,10 @@ export function BadgePlayground() {
             ))}
           </Select>
           <Input label="Label" value={label} onChange={(event) => setLabel(event.target.value)} autoComplete="off" />
+          <div className={`${styles.toggles} ${styles.spanFull}`}>
+            <Switch label="All caps" checked={allCaps} onChange={(event) => setAllCaps(event.target.checked)} />
+            <Switch label="Indicator" checked={indicator} onChange={(event) => setIndicator(event.target.checked)} />
+          </div>
           <div className={`${styles.actions} ${styles.spanFull}`}>
             <Button variant="secondary" onClick={reset}>
               Default global
@@ -127,6 +136,34 @@ export function BadgePlayground() {
               </div>
             </article>
           ))}
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>All caps</p>
+            <div className={styles.exampleRow}>
+              {BADGE_TONES.map((toneItem) => (
+                <Badge key={toneItem} tone={toneItem} allCaps>
+                  {SAMPLE_LABELS[toneItem]}
+                </Badge>
+              ))}
+            </div>
+          </article>
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>Indicator</p>
+            <div className={styles.exampleRow}>
+              {BADGE_TONES.map((toneItem) => (
+                <Badge key={toneItem} tone={toneItem} indicator>
+                  {SAMPLE_LABELS[toneItem]}
+                </Badge>
+              ))}
+            </div>
+          </article>
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>Indicator only</p>
+            <div className={styles.exampleRow}>
+              {BADGE_TONES.map((toneItem) => (
+                <Badge key={toneItem} tone={toneItem} indicator aria-label={SAMPLE_LABELS[toneItem]} />
+              ))}
+            </div>
+          </article>
         </div>
       }
     />
