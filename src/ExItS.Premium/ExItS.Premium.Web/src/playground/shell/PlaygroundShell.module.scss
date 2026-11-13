@@ -19,6 +19,10 @@
   min-width: 0;
 }
 
+.shell[data-panes="equal"] .workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .previewPane,
 .propertiesPane,
 .examples {
@@ -63,6 +67,12 @@
   padding: var(--space-4);
 }
 
+.shell[data-properties-columns="2"] .propertiesSurface {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.75rem;
+  row-gap: 0.875rem;
+}
+
 .examplesSurface {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
@@ -82,6 +92,10 @@
 
 @media (max-width: 519px) {
   .examplesSurface {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell[data-properties-columns="2"] .propertiesSurface {
     grid-template-columns: minmax(0, 1fr);
   }
 }

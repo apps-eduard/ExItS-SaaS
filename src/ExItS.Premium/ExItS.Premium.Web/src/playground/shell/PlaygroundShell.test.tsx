@@ -28,4 +28,21 @@ describe("PlaygroundShell", () => {
     expect(panes[0]).toBe("Properties");
     expect(panes[1]).toBe("Preview");
   });
+
+  it("exposes equal panes and two property columns when requested", () => {
+    const { container } = render(
+      <PlaygroundShell
+        title="Button"
+        description="Equal layout."
+        panes="equal"
+        propertiesColumns={2}
+        preview={<div>Preview</div>}
+        properties={<div>Props</div>}
+      />,
+    );
+
+    const shell = container.querySelector("section");
+    expect(shell).toHaveAttribute("data-panes", "equal");
+    expect(shell).toHaveAttribute("data-properties-columns", "2");
+  });
 });

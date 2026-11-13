@@ -60,6 +60,8 @@ export function ButtonPlayground() {
     <PlaygroundShell
       title="Button"
       description="One preview follows semantic tone and appearance. Soft, outline, raise, and solid raise stay on the API. Ghost is chrome-only. Disabled and loading sit in States."
+      panes="equal"
+      propertiesColumns={2}
       preview={
         <div className={styles.previewField}>
           <Button
@@ -98,14 +100,16 @@ export function ButtonPlayground() {
               </option>
             ))}
           </Select>
-          <Input label="Label" value={label} onChange={(event) => setLabel(event.target.value)} autoComplete="off" />
-          <div className={styles.toggles}>
+          <div className={styles.spanFull}>
+            <Input label="Label" value={label} onChange={(event) => setLabel(event.target.value)} autoComplete="off" />
+          </div>
+          <div className={`${styles.toggles} ${styles.spanFull}`}>
             <Switch label="Disabled" checked={disabled} onChange={(event) => setDisabled(event.target.checked)} />
             <Switch label="Loading" checked={loading} onChange={(event) => setLoading(event.target.checked)} />
             <Switch label="Icon only" checked={iconOnly} onChange={(event) => setIconOnly(event.target.checked)} />
             <Switch label="Full width" checked={fullWidth} onChange={(event) => setFullWidth(event.target.checked)} />
           </div>
-          <div className={styles.actions}>
+          <div className={`${styles.actions} ${styles.spanFull}`}>
             <Button variant="secondary" onClick={reset}>
               Default global
             </Button>
