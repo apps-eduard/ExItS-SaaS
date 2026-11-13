@@ -9,6 +9,7 @@ describe("playground nav", () => {
     if (!buttons || !isNavBranch(buttons)) return;
 
     expect(buttons.children.map((child) => child.id)).toEqual(["button", "button-group", "button-dropdown"]);
+    expect(buttons.children.map((child) => child.status)).toEqual(["ready", "next", "planned"]);
     expect(branchContains(buttons, "button-dropdown")).toBe(true);
     expect(branchContains(buttons, "inputs")).toBe(false);
     expect(resolveSectionId("buttons")).toBe("button");

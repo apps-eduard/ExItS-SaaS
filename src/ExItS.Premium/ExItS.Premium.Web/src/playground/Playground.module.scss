@@ -176,6 +176,31 @@
   min-height: 2.25rem;
 }
 
+.navStatusDot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-inline: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-text-caption);
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 12%, transparent);
+
+  &[data-status="ready"] {
+    background: var(--color-success);
+    box-shadow: 0 0 0 2px var(--color-success-soft);
+  }
+
+  &[data-status="next"] {
+    background: var(--color-warning);
+    box-shadow: 0 0 0 2px var(--color-warning-soft);
+  }
+
+  &[data-status="planned"] {
+    background: var(--color-info);
+    box-shadow: 0 0 0 2px var(--color-info-soft);
+  }
+}
+
 .navLabel {
   font-size: var(--type-label-size);
   font-weight: 600;

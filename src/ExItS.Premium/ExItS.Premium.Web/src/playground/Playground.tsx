@@ -8,9 +8,11 @@ import {
   branchContains,
   isNavBranch,
   NAV_GROUPS,
+  NAV_STATUS_LABELS,
   navLeaves,
   resolveSectionId,
   type NavBranch,
+  type NavStatus,
   type SectionId,
 } from "./nav";
 import { PersonalConcept } from "./PersonalConcept";
@@ -19,6 +21,12 @@ import styles from "./Playground.module.scss";
 function sectionFromLocation(): SectionId {
   const value = window.location.hash.replace("#", "");
   return resolveSectionId(value) ?? "overview";
+}
+
+function NavStatusDot({ status }: { status: NavStatus }) {
+  return (
+    <span className={styles.navStatusDot} data-status={status} title={NAV_STATUS_LABELS[status]} aria-hidden="true" />
+  );
 }
 
 function NavBranchItem({
@@ -60,7 +68,7 @@ function NavBranchItem({
             aria-current={child.id === current ? "page" : undefined}
             onClick={() => onSelect(child.id)}
           >
-            <AppIcon name={child.icon} />
+            <NavStatusDot status={child.status ?? "planned"} />
             <span className={styles.navLabel}>{child.label}</span>
           </button>
         ))}

@@ -30,16 +30,26 @@ export const SECTION_IDS = [
 
 export type SectionId = (typeof SECTION_IDS)[number];
 
+/** Submenu readiness — shown as a colored status dot. */
+export type NavStatus = "ready" | "next" | "planned";
+
 export type NavLeaf = {
   id: SectionId;
   label: string;
   icon: IconName;
+  status?: NavStatus;
 };
 
 export type NavBranch = {
   label: string;
   icon: IconName;
   children: NavLeaf[];
+};
+
+export const NAV_STATUS_LABELS: Record<NavStatus, string> = {
+  ready: "Ready",
+  next: "Coming next",
+  planned: "Planned",
 };
 
 export type NavEntry = NavLeaf | NavBranch;
@@ -71,9 +81,9 @@ export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
         label: "Buttons",
         icon: "left_click",
         children: [
-          { id: "button", label: "Button", icon: "left_click" },
-          { id: "button-group", label: "Button group", icon: "view_column" },
-          { id: "button-dropdown", label: "Button dropdown", icon: "unfold_more" },
+          { id: "button", label: "Button", icon: "left_click", status: "ready" },
+          { id: "button-group", label: "Button group", icon: "view_column", status: "next" },
+          { id: "button-dropdown", label: "Button dropdown", icon: "unfold_more", status: "planned" },
         ],
       },
       { id: "inputs", label: "Inputs", icon: "edit_note" },
