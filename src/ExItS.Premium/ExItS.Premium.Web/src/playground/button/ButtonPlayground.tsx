@@ -113,47 +113,32 @@ export function ButtonPlayground() {
         </>
       }
       examples={
-        <>
-          <article className={styles.example}>
-            <p className={styles.exampleLabel}>Semantic</p>
-            <div className={styles.exampleRow}>
-              {BUTTON_SEMANTIC_VARIANTS.map((item) => (
-                <Button key={item} variant={item}>
-                  {TONE_LABELS[item]}
-                </Button>
-              ))}
-            </div>
-          </article>
+        <div className={styles.examplesStack}>
           {BUTTON_APPEARANCES.map((item) => (
             <article key={item} className={styles.example}>
-              <p className={styles.exampleLabel}>{APPEARANCE_LABELS[item]}</p>
+              <p className={styles.exampleLabel}>
+                {item === "solid" ? "Semantic · Solid" : APPEARANCE_LABELS[item]}
+              </p>
               <div className={styles.exampleRow}>
-                <Button appearance={item} variant="primary">
-                  Primary
-                </Button>
-                <Button appearance={item} variant="danger">
-                  Danger
-                </Button>
-                <Button appearance={item} variant="success">
-                  Success
-                </Button>
+                {BUTTON_SEMANTIC_VARIANTS.map((tone) => (
+                  <Button key={tone} appearance={item} variant={tone}>
+                    {TONE_LABELS[tone]}
+                  </Button>
+                ))}
               </div>
             </article>
           ))}
           <article className={styles.example}>
-            <p className={styles.exampleLabel}>Disabled</p>
+            <p className={styles.exampleLabel}>States</p>
             <div className={styles.exampleRow}>
               <Button disabled>Disabled</Button>
               <Button variant="secondary" disabled>
                 Secondary
               </Button>
+              <Button loading>Saving</Button>
             </div>
           </article>
-          <article className={styles.example}>
-            <p className={styles.exampleLabel}>Loading</p>
-            <Button loading>Saving</Button>
-          </article>
-        </>
+        </div>
       }
     />
   );
