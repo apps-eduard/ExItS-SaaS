@@ -87,6 +87,11 @@
   }
 }
 
+.wrap[data-appearance="soft"]:is(:focus-within, :has([data-filled="true"])) .icon,
+.wrap[data-appearance="soft"]:is(:focus-within, :has([data-filled="true"])) .clear {
+  top: calc(50% + (var(--density-label-font) + 0.2rem) / 2);
+}
+
 .clear {
   position: absolute;
   z-index: 1;

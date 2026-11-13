@@ -12,7 +12,12 @@ import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
 import { DateTimeSection } from "./DateTimeSection";
-import { InputMotionGallery } from "./input-motion/InputMotionGallery";
+import { BadgePlayground } from "./badge/BadgePlayground";
+import { BreadcrumbPlayground } from "./breadcrumb/BreadcrumbPlayground";
+import { ButtonPlayground } from "./button/ButtonPlayground";
+import { InputPlayground } from "./input/InputPlayground";
+import { SelectPlayground } from "./select/SelectPlayground";
+import { ToastPlayground } from "./toast/ToastPlayground";
 import styles from "./Playground.module.scss";
 
 function Intro({ title, children }: { title: string; children: ReactNode }) {
@@ -34,14 +39,18 @@ function Stage({ label, children }: { label?: string; children: ReactNode }) {
 }
 
 export function ComponentsShowcase({ id }: { id: SectionId }) {
-  if (id === "buttons") return <ButtonsSection />;
+  if (id === "button") return <ButtonPlayground />;
+  if (id === "button-group") return <ButtonGroupStub />;
+  if (id === "button-dropdown") return <ButtonDropdownStub />;
   if (id === "inputs") return <InputsSection />;
   if (id === "search") return <SearchSection />;
-  if (id === "selects") return <SelectsSection />;
+  if (id === "selects") return <SelectPlayground />;
   if (id === "date-time") return <DateTimeSection />;
   if (id === "cards") return <CardsSection />;
-  if (id === "badges") return <BadgesSection />;
+  if (id === "badges") return <BadgePlayground />;
+  if (id === "breadcrumbs") return <BreadcrumbPlayground />;
   if (id === "toggles") return <TogglesSection />;
+  if (id === "toasts") return <ToastPlayground />;
   if (id === "checkboxes") return <CheckboxesSection />;
   if (id === "radio") return <RadioSection />;
   if (id === "segmented") return <SegmentedSection />;
@@ -50,66 +59,34 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   return null;
 }
 
-function ButtonsSection() {
+function ButtonGroupStub() {
   return (
     <>
-      <Intro title="Buttons">
-        Solid, soft, outline, raise, and solid raise are appearances. Primary, secondary, ghost, danger, and success are tones. Disabled and loading are separate. Buttons do not have an error state.
+      <Intro title="Button group">
+        Attached or segmented actions that share height and borders. This page is a playground shell — the ButtonGroup component is not built yet.
       </Intro>
-      <Stage label="Solid">
-        <Button>Primary</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="ghost">Ghost</Button>
-        <Button variant="danger">Danger</Button>
-        <Button variant="success">Success</Button>
+      <Stage label="Coming next">
+        <p className="type-secondary">Use adjacent primary/secondary actions here once ButtonGroup ships. Until then, compose single Buttons.</p>
       </Stage>
-      <Stage label="Soft">
-        <Button appearance="soft">Primary</Button>
-        <Button appearance="soft" variant="secondary">Secondary</Button>
-        <Button appearance="soft" variant="danger">Danger</Button>
-        <Button appearance="soft" variant="success">Success</Button>
-      </Stage>
-      <Stage label="Outline">
-        <Button appearance="outline">Primary</Button>
-        <Button appearance="outline" variant="secondary">Secondary</Button>
-        <Button appearance="outline" variant="danger">Danger</Button>
-        <Button appearance="outline" variant="success">Success</Button>
-      </Stage>
-      <Stage label="Raise">
-        <div className={styles.stageGroup}>
-          <Button appearance="raise">Primary</Button>
-          <Button appearance="raise" variant="secondary">Secondary</Button>
-          <Button appearance="raise" variant="danger">Danger</Button>
-          <Button appearance="raise" variant="success">Success</Button>
-        </div>
-        <div className={styles.stageGroup}>
-          <p className={`type-caption ${styles.stageGroupLabel}`}>Solid raise</p>
-          <Button appearance="solid-raise">Primary</Button>
-          <Button appearance="solid-raise" variant="secondary">Secondary</Button>
-          <Button appearance="solid-raise" variant="danger">Danger</Button>
-          <Button appearance="solid-raise" variant="success">Success</Button>
-        </div>
-      </Stage>
-      <Stage label="States">
-        <Button disabled>Disabled</Button>
-        <Button appearance="soft" disabled>Soft</Button>
-        <Button appearance="outline" disabled>Outline</Button>
-        <Button appearance="raise" disabled>Raise</Button>
-        <Button loading>Saving</Button>
+    </>
+  );
+}
+
+function ButtonDropdownStub() {
+  return (
+    <>
+      <Intro title="Button dropdown">
+        A primary action with a caret menu (or split button). This page is a playground shell — the menu button API is not built yet.
+      </Intro>
+      <Stage label="Coming next">
+        <p className="type-secondary">Reserve this section for Save ▾ / overflow menus. Keyboard and mobile menu behavior will land with the component.</p>
       </Stage>
     </>
   );
 }
 
 function InputsSection() {
-  return (
-    <>
-      <Intro title="Inputs">
-        One playground changes appearance, focus motion, and field state. Outlined, soft, standard, and floating label are the appearances. Standard stays the shipped input. Default global does not follow the controls.
-      </Intro>
-      <InputMotionGallery embedded />
-    </>
-  );
+  return <InputPlayground />;
 }
 
 function SearchSection() {
@@ -130,119 +107,6 @@ function SearchSection() {
   );
 }
 
-const ledgerOptions = [
-  "Groceries",
-  "Rent",
-  "Utilities",
-  "Transport",
-  "Salary",
-  "Savings",
-  "Medical",
-  "School",
-  "Household",
-  "Gifts",
-  "Travel",
-  "Other",
-];
-
-function replaySelect(id: string) {
-  const trigger = document.getElementById(id);
-  if (!(trigger instanceof HTMLButtonElement)) return;
-  if (trigger.getAttribute("aria-expanded") === "true") {
-    trigger.click();
-    window.setTimeout(() => trigger.click(), 180);
-    return;
-  }
-  trigger.click();
-}
-
-function SelectsSection() {
-  const [category, setCategory] = useState("groceries");
-  const [method, setMethod] = useState("cash");
-  const [status, setStatus] = useState("");
-  const [ledger, setLedger] = useState("groceries");
-  return (
-    <>
-      <Intro title="Selects">
-        A custom listbox with the field radius, elevation level 3, and one validation border. The menu eases out from the field, the active option follows the pointer or keyboard, and the menu eases back in when it closes. Below 768px the same options open in a bottom sheet. Loading is not a select state.
-      </Intro>
-      <Stage label="Motion">
-        <Select id="select-motion-demo" label="Motion" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-          <option value="hold" disabled>
-            Hold
-          </option>
-        </Select>
-        <Button variant="secondary" appearance="outline" onClick={() => replaySelect("select-motion-demo")}>
-          Replay open
-        </Button>
-      </Stage>
-      <Stage>
-        <Select label="Category" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-        </Select>
-        <Select label="Focused category" value={category} onChange={(event) => setCategory(event.target.value)}>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-        </Select>
-        <Select label="Payment method" value={method} onChange={(event) => setMethod(event.target.value)}>
-          <option value="cash">Cash</option>
-          <option value="card">Card</option>
-          <option value="transfer">Transfer</option>
-        </Select>
-        <Select label="Disabled" value="rent" disabled onChange={() => undefined}>
-          <option value="rent">Rent</option>
-        </Select>
-        <Select label="Error" defaultValue="" error="Choose a category.">
-          <option value="">Choose</option>
-          <option value="groceries">Groceries</option>
-          <option value="rent">Rent</option>
-        </Select>
-        <Select label="Success" defaultValue="rent" success="Category saved.">
-          <option value="rent">Rent</option>
-          <option value="utilities">Utilities</option>
-        </Select>
-        <Select label="Transaction status" value={status} onChange={(event) => setStatus(event.target.value)}>
-          <optgroup label="Open">
-            <option value="">Choose</option>
-            <option value="due">Due</option>
-            <option value="partial">Partial</option>
-          </optgroup>
-          <optgroup label="Closed">
-            <option value="paid">Paid</option>
-            <option value="void">Void</option>
-            <option value="hold" disabled>
-              Hold
-            </option>
-          </optgroup>
-        </Select>
-        <Select label="Search status" searchable defaultValue="">
-          <option value="">Choose</option>
-          <option value="paid">Paid</option>
-          <option value="due">Due</option>
-          <option value="partial">Partial</option>
-          <option value="void">Void</option>
-        </Select>
-        <Select label="Ledger" value={ledger} onChange={(event) => setLedger(event.target.value)}>
-          {ledgerOptions.map((name) => (
-            <option key={name} value={name.toLowerCase()}>
-              {name}
-            </option>
-          ))}
-        </Select>
-      </Stage>
-      <p className="type-caption">
-        Replay open plays the menu again. Arrow keys move the highlight. Enter selects and the checkmark settles as the menu closes. On a narrow screen the same fields open in a sheet. Tab to Focused category for the focus ring.
-      </p>
-    </>
-  );
-}
-
 function CardsSection() {
   return (
     <>
@@ -257,24 +121,6 @@ function CardsSection() {
           <p className="type-secondary">Level 2 raised surface.</p>
         </Card>
       </div>
-    </>
-  );
-}
-
-function BadgesSection() {
-  return (
-    <>
-      <Intro title="Badges">
-        Status badges are soft tints with contrast-safe ink. Warning is a solid fill because its hue is too light for small text on a pale background.
-      </Intro>
-      <Stage>
-        <Badge>Neutral</Badge>
-        <Badge tone="primary">Primary</Badge>
-        <Badge tone="success">Paid</Badge>
-        <Badge tone="warning">Due</Badge>
-        <Badge tone="danger">Failed</Badge>
-        <Badge tone="info">Info</Badge>
-      </Stage>
     </>
   );
 }

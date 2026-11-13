@@ -1,0 +1,37 @@
+.previewStack {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  align-content: center;
+}
+
+.previewField {
+  width: min(100%, 22rem);
+  justify-self: center;
+}
+
+.spanFull {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.example {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.exampleLabel {
+  margin: 0;
+  color: var(--color-text-caption);
+  font-size: var(--type-caption-size);
+  font-weight: 600;
+  line-height: var(--type-caption-line);
+}

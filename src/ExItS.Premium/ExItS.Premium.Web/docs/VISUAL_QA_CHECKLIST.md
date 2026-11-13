@@ -11,7 +11,7 @@ Review the running playground. A passing build is not a visual review.
 - No horizontal overflow (`scrollWidth` equals the viewport).
 - Spacing, type, and icons match neighboring sections.
 - Focus rings are visible.
-- Colors shows the neutral scale, five palettes, status, feature colors, and surface tokens. Copy reports the value.
+- Colors shows Semantic (9 roles), Foundation, Neutral Scale, five theme palettes, and the 40-family reference library. Copy reports HEX or leaf OKLCH. See [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md).
 - Elevation shows levels 0–4. The shadow on each sample is the elevation token.
 - Text on solid fills stays readable in light and dark. Warning text stays dark on `#ff5722`.
 - Dialogs, sheets, menus, tooltips, and toasts stay inside the viewport.

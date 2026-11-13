@@ -9,14 +9,18 @@ export const SECTION_IDS = [
   "elevation",
   "motion",
   "icons",
-  "buttons",
+  "button",
+  "button-group",
+  "button-dropdown",
   "inputs",
   "search",
   "selects",
   "date-time",
   "cards",
   "badges",
+  "breadcrumbs",
   "toggles",
+  "toasts",
   "checkboxes",
   "radio",
   "segmented",
@@ -28,13 +32,37 @@ export const SECTION_IDS = [
 
 export type SectionId = (typeof SECTION_IDS)[number];
 
-export type NavItem = {
+/** Submenu readiness — shown as a colored status dot. */
+export type NavStatus = "ready" | "next" | "planned";
+
+export type NavLeaf = {
   id: SectionId;
   label: string;
   icon: IconName;
+  status?: NavStatus;
 };
 
-export const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+export type NavBranch = {
+  label: string;
+  icon: IconName;
+  children: NavLeaf[];
+};
+
+export const NAV_STATUS_LABELS: Record<NavStatus, string> = {
+  ready: "Ready",
+  next: "Coming next",
+  planned: "Planned",
+};
+
+export type NavEntry = NavLeaf | NavBranch;
+
+export type NavItem = NavLeaf;
+
+export function isNavBranch(entry: NavEntry): entry is NavBranch {
+  return "children" in entry;
+}
+
+export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
   {
     label: "Foundations",
     items: [
@@ -51,18 +79,34 @@ export const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Components",
     items: [
-      { id: "buttons", label: "Buttons", icon: "left_click" },
-      { id: "inputs", label: "Inputs", icon: "edit_note" },
-      { id: "search", label: "Search", icon: "search" },
-      { id: "selects", label: "Selects", icon: "unfold_more" },
-      { id: "date-time", label: "Date & Time Pickers", icon: "edit_note" },
-      { id: "cards", label: "Cards", icon: "credit_card" },
+      { id: "advanced", label: "Advanced Components", icon: "widgets" },
       { id: "badges", label: "Badges", icon: "sell" },
-      { id: "toggles", label: "Toggles", icon: "toggle_on" },
+      { id: "breadcrumbs", label: "Breadcrumbs", icon: "arrow_outward" },
+      {
+        label: "Buttons",
+        icon: "left_click",
+        children: [
+          { id: "button", label: "Button", icon: "left_click", status: "ready" },
+          { id: "button-dropdown", label: "Button dropdown", icon: "unfold_more", status: "planned" },
+          { id: "button-group", label: "Button group", icon: "view_column", status: "next" },
+        ],
+      },
+      { id: "cards", label: "Cards", icon: "credit_card" },
       { id: "checkboxes", label: "Checkboxes", icon: "check_box" },
+      { id: "date-time", label: "Date & Time Pickers", icon: "edit_note" },
+      {
+        label: "Inputs",
+        icon: "edit_note",
+        children: [
+          { id: "inputs", label: "Input", icon: "edit_note", status: "ready" },
+          { id: "search", label: "Search", icon: "search", status: "ready" },
+        ],
+      },
       { id: "radio", label: "Radio", icon: "radio_button_checked" },
       { id: "segmented", label: "Segmented Controls", icon: "view_column" },
-      { id: "advanced", label: "Advanced Components", icon: "widgets" },
+      { id: "selects", label: "Selects", icon: "unfold_more" },
+      { id: "toasts", label: "Toasts", icon: "notifications" },
+      { id: "toggles", label: "Toggles", icon: "toggle_on" },
     ],
   },
   {
@@ -75,6 +119,23 @@ export const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   },
 ];
 
+/** Flatten leaves for lookup / active title. */
+export function navLeaves(groups: typeof NAV_GROUPS = NAV_GROUPS): NavLeaf[] {
+  return groups.flatMap((group) =>
+    group.items.flatMap((entry) => (isNavBranch(entry) ? entry.children : [entry])),
+  );
+}
+
+export function branchContains(branch: NavBranch, section: SectionId) {
+  return branch.children.some((child) => child.id === section);
+}
+
 export function isSectionId(value: string): value is SectionId {
   return (SECTION_IDS as readonly string[]).includes(value);
+}
+
+/** Legacy `#buttons` opens the Button page. */
+export function resolveSectionId(value: string): SectionId | null {
+  if (value === "buttons") return "button";
+  return isSectionId(value) ? value : null;
 }

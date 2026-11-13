@@ -7,6 +7,8 @@ type InputMotionProps = {
   motion: InputFocusMotion;
   disabled?: boolean;
   readOnly?: boolean;
+  /** Keep the focus treatment active while a portaled menu or sheet holds interaction. */
+  held?: boolean;
   state?: "error" | "success";
   children: ReactNode;
 };
@@ -15,10 +17,11 @@ function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
-export function InputMotion({ motion, disabled = false, readOnly = false, state, children }: InputMotionProps) {
+export function InputMotion({ motion, disabled = false, readOnly = false, held = false, state, children }: InputMotionProps) {
   const [session, setSession] = useState({ id: 0, active: false });
   const [reduced, setReduced] = useState(prefersReducedMotion);
   const draw = motion === "focus-draw" || motion === "border-reveal";
+  const drawn = draw && (session.active || held);
 
   useEffect(() => {
     const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -48,7 +51,8 @@ export function InputMotion({ motion, disabled = false, readOnly = false, state,
       data-motion={motion}
       data-state={state}
       data-quiet={readOnly ? "true" : undefined}
-      data-drawn={draw && session.active ? "true" : undefined}
+      data-held={held ? "true" : undefined}
+      data-drawn={drawn ? "true" : undefined}
       onFocus={onFocus}
       onBlur={onBlur}
     >
@@ -61,7 +65,12 @@ export function InputMotion({ motion, disabled = false, readOnly = false, state,
       ) : null}
       {children}
       {draw && !readOnly ? (
-        <FocusDraw active={session.active} generation={session.id} reduced={reduced} variant={motion === "border-reveal" ? "border-reveal" : "focus-draw"} />
+        <FocusDraw
+          active={drawn}
+          generation={session.id || (held ? 1 : 0)}
+          reduced={reduced}
+          variant={motion === "border-reveal" ? "border-reveal" : "focus-draw"}
+        />
       ) : null}
     </div>
   );

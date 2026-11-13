@@ -1,43 +1,283 @@
+$semantic-tones: primary, secondary, accent, success, info, warning, help, danger, contrast;
+
 .badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.5rem;
-  padding: 0 0.55rem;
+  box-sizing: border-box;
+  gap: 0;
+  height: var(--badge-height);
+  min-height: var(--badge-height);
+  max-height: var(--badge-height);
+  padding: 0 var(--badge-pad-x);
+  border: 1px solid transparent;
   border-radius: var(--radius-badge);
-  font-size: var(--density-list-font);
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: var(--type-badge-size);
+  font-weight: var(--type-badge-weight);
   line-height: 1;
-  letter-spacing: 0.01em;
+  letter-spacing: var(--type-badge-tracking);
   white-space: nowrap;
+  color: var(--color-text);
+  vertical-align: middle;
 }
 
-.neutral {
+.label {
+  display: block;
+  line-height: 1;
+}
+
+.badge[data-all-caps="true"] {
+  text-transform: uppercase;
+  letter-spacing: var(--type-badge-tracking-caps);
+}
+
+.badge[data-count="true"] .label {
+  font-variant-numeric: tabular-nums;
+}
+
+.badge[data-indicator="true"] {
+  gap: var(--badge-gap);
+}
+
+.badge[data-removable="true"] {
+  gap: 0.28rem;
+  padding-inline-end: 0.2rem;
+}
+
+.badge[data-indicator="true"][data-removable="true"] {
+  gap: 0.28rem;
+}
+
+.badge[data-indicator-only="true"] {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Count — compact numeric chip */
+.badge[data-count="true"] {
+  min-width: var(--badge-height);
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  font-weight: var(--type-badge-weight-emphasis);
+}
+
+.indicator {
+  width: var(--badge-indicator-size);
+  height: var(--badge-indicator-size);
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.badge[data-indicator-only="true"] .indicator {
+  width: var(--badge-indicator-only-size);
+  height: var(--badge-indicator-only-size);
+}
+
+.badge[data-indicator-only="true"].neutral .indicator {
+  background: var(--color-text);
+}
+
+@each $tone in $semantic-tones {
+  .badge[data-indicator-only="true"].#{$tone} .indicator {
+    background: var(--color-#{$tone});
+  }
+}
+
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--badge-remove-size);
+  height: var(--badge-remove-size);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 0;
+  opacity: 0.72;
+  transition: opacity var(--motion-fast) ease, background-color var(--motion-fast) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .remove {
+    transition: none;
+  }
+}
+
+.remove:hover,
+.remove:focus-visible {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  outline: none;
+}
+
+.remove:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-focus) 45%, transparent);
+}
+
+/* Soft (default) — quiet tint + ink */
+.badge[data-appearance="soft"].neutral {
   background: var(--color-hover);
   color: var(--color-text);
 }
 
-.primary {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+@each $tone in $semantic-tones {
+  .badge[data-appearance="soft"].#{$tone} {
+    background: var(--color-#{$tone}-soft);
+    color: var(--color-#{$tone}-ink);
+  }
 }
 
-.success {
-  background: var(--color-success-soft);
-  color: var(--color-success-ink);
+/* Dark soft — stronger wash for slate surfaces, token ink for AA */
+[data-theme="dark"] {
+  .badge[data-appearance="soft"].neutral {
+    background: color-mix(in srgb, var(--color-text) 12%, var(--color-surface));
+    color: var(--color-text-secondary);
+  }
+
+  @each $tone in $semantic-tones {
+    .badge[data-appearance="soft"].#{$tone} {
+      background: color-mix(in srgb, var(--color-#{$tone}) 22%, var(--color-surface));
+      color: var(--color-#{$tone}-ink);
+    }
+  }
+
+  .badge[data-appearance="soft"].secondary {
+    background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+    color: var(--color-text-secondary);
+  }
 }
 
-.warning {
-  background: var(--color-warning);
-  color: var(--color-warning-foreground);
+/* Emphasis — stronger wash + bold label (Soft stays 500). */
+.badge[data-appearance="emphasis"] {
+  font-weight: var(--type-badge-weight-emphasis);
 }
 
-.danger {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-ink);
+.badge[data-appearance="emphasis"].neutral {
+  background: color-mix(in srgb, var(--color-text) 12%, var(--color-surface));
+  color: var(--color-text);
 }
 
-.info {
-  background: var(--color-info-soft);
-  color: var(--color-info-ink);
+@each $tone in $semantic-tones {
+  .badge[data-appearance="emphasis"].#{$tone} {
+    background: color-mix(in srgb, var(--color-#{$tone}) 20%, var(--color-surface));
+    color: color-mix(in srgb, var(--color-#{$tone}) 28%, var(--color-#{$tone}-ink));
+  }
+}
+
+[data-theme="dark"] {
+  .badge[data-appearance="emphasis"].neutral {
+    background: color-mix(in srgb, var(--color-text) 16%, var(--color-surface));
+    color: var(--color-text);
+  }
+
+  @each $tone in $semantic-tones {
+    .badge[data-appearance="emphasis"].#{$tone} {
+      background: color-mix(in srgb, var(--color-#{$tone}) 20%, var(--color-surface));
+      color: var(--color-#{$tone}-ink);
+    }
+  }
+}
+
+/* Solid — filled tone + white label */
+.badge[data-appearance="solid"].neutral {
+  background: var(--color-text);
+  color: #ffffff;
+}
+
+@each $tone in $semantic-tones {
+  .badge[data-appearance="solid"].#{$tone} {
+    background: var(--color-#{$tone});
+    color: #ffffff;
+
+    @if $tone == secondary {
+      /* Secondary surface is light — use ink fill so white label stays readable. */
+      background: var(--color-text-secondary);
+      border-color: var(--color-secondary-border);
+    }
+
+    @if $tone == accent {
+      /* Accent wash is light — use primary fill for solid + white. */
+      background: var(--color-primary);
+    }
+  }
+}
+
+[data-theme="dark"] {
+  .badge[data-appearance="solid"].secondary {
+    background: color-mix(in srgb, var(--color-text) 72%, var(--color-surface));
+    color: #ffffff;
+    border-color: var(--color-border-strong);
+  }
+
+  .badge[data-appearance="solid"].accent {
+    background: var(--color-primary);
+    color: #ffffff;
+  }
+}
+
+/* Outline — crisp 1px border, transparent fill */
+.badge[data-appearance="outline"].neutral {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+@each $tone in $semantic-tones {
+  .badge[data-appearance="outline"].#{$tone} {
+    background: transparent;
+    color: var(--color-#{$tone}-ink);
+    border-color: var(--color-#{$tone}-border);
+  }
+}
+
+[data-theme="dark"] {
+  .badge[data-appearance="outline"].neutral {
+    border-color: var(--color-border-strong);
+    color: var(--color-text-secondary);
+  }
+
+  @each $tone in $semantic-tones {
+    .badge[data-appearance="outline"].#{$tone} {
+      border-color: color-mix(in srgb, var(--color-#{$tone}) 48%, var(--color-border));
+      color: var(--color-#{$tone}-ink);
+    }
+  }
+}
+
+/* Ghost — ink only; keep badge dimensions */
+.badge[data-appearance="ghost"].neutral {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+@each $tone in $semantic-tones {
+  .badge[data-appearance="ghost"].#{$tone} {
+    background: transparent;
+    color: var(--color-#{$tone}-ink);
+  }
+}
+
+/* Indicator-only must stay transparent after appearance rules (no !important) */
+.badge[data-indicator-only="true"][data-appearance="soft"],
+.badge[data-indicator-only="true"][data-appearance="emphasis"],
+.badge[data-indicator-only="true"][data-appearance="solid"],
+.badge[data-indicator-only="true"][data-appearance="outline"],
+.badge[data-indicator-only="true"][data-appearance="ghost"] {
+  background: transparent;
+  border-color: transparent;
 }

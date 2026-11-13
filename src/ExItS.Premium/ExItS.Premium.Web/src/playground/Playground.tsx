@@ -1,16 +1,83 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { Breadcrumb } from "../components/breadcrumb";
 import { Button } from "../components/button/Button";
 import { AppIcon } from "../icons/ExIcon";
 import { AppearanceControls } from "./AppearanceControls";
+import { playgroundBreadcrumbTrail } from "./breadcrumb-trail";
 import { ComponentsShowcase } from "./ComponentsShowcase";
 import { Foundations } from "./Foundations";
-import { isSectionId, NAV_GROUPS, type SectionId } from "./nav";
+import {
+  branchContains,
+  isNavBranch,
+  NAV_GROUPS,
+  NAV_STATUS_LABELS,
+  navLeaves,
+  resolveSectionId,
+  type NavBranch,
+  type NavStatus,
+  type SectionId,
+} from "./nav";
 import { PersonalConcept } from "./PersonalConcept";
 import styles from "./Playground.module.scss";
 
 function sectionFromLocation(): SectionId {
   const value = window.location.hash.replace("#", "");
-  return isSectionId(value) ? value : "overview";
+  return resolveSectionId(value) ?? "overview";
+}
+
+function NavStatusDot({ status }: { status: NavStatus }) {
+  return (
+    <span className={styles.navStatusDot} data-status={status} title={NAV_STATUS_LABELS[status]} aria-hidden="true" />
+  );
+}
+
+function NavBranchItem({
+  item,
+  current,
+  onSelect,
+}: {
+  item: NavBranch;
+  current: SectionId;
+  onSelect: (id: SectionId) => void;
+}) {
+  const panelId = useId();
+  const active = branchContains(item, current);
+  const [open, setOpen] = useState(active);
+  const [wasActive, setWasActive] = useState(active);
+  if (active !== wasActive) {
+    setWasActive(active);
+    if (active) setOpen(true);
+  }
+
+  return (
+    <div className={styles.navSubgroup} data-open={open ? "true" : undefined} data-active={active ? "true" : undefined}>
+      <button
+        type="button"
+        className={styles.navBranch}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <AppIcon name={item.icon} />
+        <span className={styles.navLabel}>{item.label}</span>
+        <AppIcon name="expand_more" className={styles.navChevron} />
+      </button>
+      <div id={panelId} className={styles.navChildren} hidden={!open} role="group" aria-label={item.label}>
+        {item.children.map((child) => (
+          <button
+            key={child.id}
+            type="button"
+            className={`${styles.navButton} ${styles.navChild}`}
+            aria-current={child.id === current ? "page" : undefined}
+            onClick={() => onSelect(child.id)}
+          >
+            <NavStatusDot status={child.status ?? "planned"} />
+            <span className={styles.navLabel}>{child.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Sidebar({
@@ -37,7 +104,10 @@ function Sidebar({
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className={styles.groupLabel}>{group.label}</p>
-            {group.items.map((item) => (
+            {group.items.map((item) =>
+              isNavBranch(item) ? (
+                <NavBranchItem key={item.label} item={item} current={current} onSelect={onSelect} />
+              ) : (
                 <button
                   key={item.id}
                   type="button"
@@ -48,7 +118,8 @@ function Sidebar({
                   <AppIcon name={item.icon} />
                   <span className={styles.navLabel}>{item.label}</span>
                 </button>
-              ))}
+              ),
+            )}
           </div>
         ))}
       </nav>
@@ -91,7 +162,7 @@ export function Playground() {
     document.getElementById("content")?.focus();
   }
 
-  const current = NAV_GROUPS.flatMap((group) => group.items).find((item) => item.id === section);
+  const current = navLeaves().find((item) => item.id === section);
 
   return (
     <div className={styles.shell} data-collapsed={collapsed ? "true" : "false"}>
@@ -127,6 +198,9 @@ export function Playground() {
         </header>
         <main id="content" tabIndex={-1} className={styles.main}>
           <div className={styles.content}>
+            <div className={styles.breadcrumbSlot}>
+              <Breadcrumb items={playgroundBreadcrumbTrail(section)} />
+            </div>
             <Foundations id={section} />
             <ComponentsShowcase id={section} />
             {section === "mobile-preview" ? (

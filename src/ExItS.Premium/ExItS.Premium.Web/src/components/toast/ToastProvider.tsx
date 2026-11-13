@@ -5,9 +5,25 @@ import { Button } from "../button/Button";
 import { hideOverlay, showOverlay } from "../overlay/overlay";
 import styles from "./Toast.module.scss";
 
-export type ToastTone = "info" | "success" | "warning" | "danger";
+export const TOAST_TONES = ["info", "success", "warning", "danger"] as const;
 
-type ToastInput = {
+export type ToastTone = (typeof TOAST_TONES)[number];
+
+/** Where the toast stack anchors in the viewport. Default: bottom-end. */
+export const TOAST_POSITIONS = [
+  "top-start",
+  "top-center",
+  "top-end",
+  "bottom-start",
+  "bottom-center",
+  "bottom-end",
+] as const;
+
+export type ToastPosition = (typeof TOAST_POSITIONS)[number];
+
+export const TOAST_DEFAULT_POSITION: ToastPosition = "bottom-end";
+
+export type ToastInput = {
   title: string;
   description?: string;
   tone?: ToastTone;
@@ -17,6 +33,8 @@ type ToastRecord = ToastInput & { id: number; tone: ToastTone };
 
 type ToastContextValue = {
   push: (toast: ToastInput) => void;
+  position: ToastPosition;
+  setPosition: (position: ToastPosition) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -27,11 +45,30 @@ const ICONS: Record<ToastTone, IconName> = {
   danger: "error",
 };
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({
+  children,
+  position: positionProp,
+  defaultPosition = TOAST_DEFAULT_POSITION,
+}: {
+  children: ReactNode;
+  /** Controlled stack position. */
+  position?: ToastPosition;
+  /** Uncontrolled initial position. */
+  defaultPosition?: ToastPosition;
+}) {
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
+  const [uncontrolledPosition, setUncontrolledPosition] = useState<ToastPosition>(defaultPosition);
+  const position = positionProp ?? uncontrolledPosition;
   const regionRef = useRef<HTMLDivElement>(null);
   const timers = useRef(new Map<number, number>());
   const nextId = useRef(1);
+
+  const setPosition = useCallback(
+    (next: ToastPosition) => {
+      if (positionProp === undefined) setUncontrolledPosition(next);
+    },
+    [positionProp],
+  );
 
   const dismiss = useCallback((id: number) => {
     const timer = timers.current.get(id);
@@ -65,16 +102,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const region = regionRef.current;
     if (!region) return;
-    if (toasts.length > 0) showOverlay(region);
-    else hideOverlay(region);
+    if (toasts.length > 0) {
+      showOverlay(region);
+      /* Fallback when showPopover no-ops — CSS needs data-open or :popover-open. */
+      region.dataset.open = "true";
+    } else {
+      hideOverlay(region);
+    }
   }, [toasts.length]);
 
-  const value = useMemo(() => ({ push }), [push]);
+  const value = useMemo(() => ({ push, position, setPosition }), [push, position, setPosition]);
 
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div ref={regionRef} className={styles.region} popover="manual" aria-label="Notifications">
+      <div
+        ref={regionRef}
+        className={styles.region}
+        data-position={position}
+        popover="manual"
+        aria-label="Notifications"
+      >
         {toasts.map((toast) => (
           <div
             key={toast.id}
@@ -86,12 +134,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }}
             onMouseLeave={() => schedule(toast.id)}
           >
-            <ExIcon name={ICONS[toast.tone]} />
+            <span className={styles.icon} aria-hidden="true">
+              <ExIcon name={ICONS[toast.tone]} size={18} />
+            </span>
             <div className={styles.copy}>
-              <strong className="type-label">{toast.title}</strong>
-              {toast.description ? <span className="type-caption">{toast.description}</span> : null}
+              <strong className={styles.title}>{toast.title}</strong>
+              {toast.description ? <span className={styles.description}>{toast.description}</span> : null}
             </div>
-            <Button variant="ghost" iconOnly aria-label="Dismiss notification" onClick={() => dismiss(toast.id)} icon={<ExIcon name="close" size={18} />} />
+            <Button
+              className={styles.dismiss}
+              variant="ghost"
+              iconOnly
+              aria-label="Dismiss notification"
+              onClick={() => dismiss(toast.id)}
+              icon={<ExIcon name="close" size={16} />}
+            />
           </div>
         ))}
       </div>

@@ -51,46 +51,20 @@ Page headings, display type, body copy, and numeric totals stay on the type scal
 | 800 | `#1e293b` | Surface, dark |
 | 900 | `#111827` | Text, light |
 
-## Primary palettes
+## Color system (semantic + foundation + primary)
 
-Each palette has `--palette-{name}-50` through `900` in `:root`. Light and dark `--color-primary`, `--color-primary-hover`, and `--color-primary-pressed` point at those stops. Do not copy the hex into a component.
+Full tables (9 semantic roles, foundation, Light/Dark values, OKLCH Success/Info, Danger `#dc2626`, Help purple-600, reference library rules, component examples): **[UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md)**.
 
-Teal is the default. Light palettes use 700 / 800 / 900 for primary / hover / pressed. Dark teal uses 400 / 300 / 500. The other dark palettes use 300 / 200 / 400. Foreground stays a separate token when the readable ink is white or a dark page color.
+Short index:
 
-`--color-primary-soft` is the subtle background. `--color-primary-selected` is the selected background. `--color-focus` follows primary.
-
-Stops that are not referenced by those roles are catalog steps only.
-
-## Semantic colors
-
-Success, warning, danger, and information have solid, hover, pressed, foreground, ink, soft, and border tokens. They do not change with the primary palette.
-
-Warning solid is `#ff5722` in both themes. Foreground is `#1a0a00`. White on that fill fails text contrast.
+- **Primary:** five palettes via `data-palette`; soft / selected / focus / ink / border in `[data-theme]`.
+- **Semantic (palette-independent):** Primary (dynamic), Secondary, Accent, Success, Info, Warning `#ff5722`, Help `#9333ea`, Danger `#dc2626`, Contrast.
+- **Foundation:** page, surface, text, border, disabled, overlay.
+- **Reference library:** 40×10 swatches in playground only — not a theme.
 
 ## Personal identity colors
 
 Lent, owe, people, stores, and reminders have fill, foreground, ink, and soft tokens. Soft is a tint of the ink on the surface. They do not follow the selected primary palette.
-
-## Surfaces, text, and borders
-
-| Role | Token |
-| --- | --- |
-| Page | `--color-page` |
-| Card and input | `--color-surface` |
-| Elevated | `--color-surface-elevated` |
-| Hover | `--color-hover` |
-| Selected | `--color-primary-selected` |
-| Overlay scrim | `--color-overlay` |
-| Primary text | `--color-text` |
-| Secondary text | `--color-text-secondary` |
-| Muted text | `--color-text-caption` |
-| Disabled text | `--color-disabled-text` |
-| Inverse text | `--color-text-inverse` |
-| Border | `--color-border` |
-| Subtle border | `--color-border-subtle` |
-| Strong border | `--color-border-strong` |
-| Focus border | `--color-focus` |
-| Error border | `--color-danger` |
 
 ## Elevation
 
@@ -110,4 +84,4 @@ Stacking is separate: `--z-sticky` 20, `--z-dropdown` 40, `--z-menu` 50, `--z-to
 
 ## Contrast
 
-Text on a solid fill, including primary, status, and feature foreground, must reach 4.5:1. Status and feature ink on the page and on a surface use the same bar. `tokens.contrast.test.ts` locks those pairs.
+Text on a solid fill, including primary, status, and feature foreground, must reach 4.5:1. Status and feature ink on the page and on a surface use the same bar. `tokens.contrast.test.ts` locks those pairs (OKLCH-aware). See [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md#accessibility).
