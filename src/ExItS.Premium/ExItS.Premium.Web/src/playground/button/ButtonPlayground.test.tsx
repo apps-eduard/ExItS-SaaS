@@ -24,6 +24,7 @@ describe("ButtonPlayground", () => {
 
     expect(screen.getByRole("combobox", { name: "Tone, Primary" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Appearance, Solid" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Icon, None" })).toBeInTheDocument();
 
     const preview = screen.getByRole("heading", { name: "Preview", level: 2 }).parentElement;
     expect(preview).not.toBeNull();
@@ -32,6 +33,10 @@ describe("ButtonPlayground", () => {
     await user.click(screen.getByRole("combobox", { name: "Appearance, Solid" }));
     await user.click(screen.getByRole("option", { name: "Soft" }));
     expect(within(preview!).getByRole("button", { name: "Save" })).toHaveAttribute("data-appearance", "soft");
+
+    await user.click(screen.getByRole("combobox", { name: "Icon, None" }));
+    await user.click(screen.getByRole("option", { name: "Check" }));
+    expect(within(within(preview!).getByRole("button", { name: "Save" })).getByText("check")).toBeInTheDocument();
 
     await user.click(screen.getByRole("switch", { name: "Disabled" }));
     expect(within(preview!).getByRole("button", { name: "Save" })).toBeDisabled();
