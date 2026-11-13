@@ -10,6 +10,10 @@ export type PlaygroundShellProps = {
   previewLabel?: string;
   propertiesLabel?: string;
   examplesLabel?: string;
+  /** Default keeps Preview wider. Equal is 50/50. */
+  panes?: "preview-wide" | "equal";
+  /** Columns inside the Properties surface. */
+  propertiesColumns?: 1 | 2;
   className?: string;
 };
 
@@ -22,12 +26,19 @@ export function PlaygroundShell({
   previewLabel = "Preview",
   propertiesLabel = "Properties",
   examplesLabel = "States & examples",
+  panes = "preview-wide",
+  propertiesColumns = 1,
   className,
 }: PlaygroundShellProps) {
   const titleId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "component"}-playground-title`;
 
   return (
-    <section className={[styles.shell, className].filter(Boolean).join(" ")} aria-labelledby={titleId}>
+    <section
+      className={[styles.shell, className].filter(Boolean).join(" ")}
+      data-panes={panes}
+      data-properties-columns={propertiesColumns}
+      aria-labelledby={titleId}
+    >
       <header className={styles.intro}>
         <h1 id={titleId} className="type-page">
           {title}
