@@ -25,6 +25,7 @@ const TONE_LABELS: Record<BadgeTone, string> = {
 
 const APPEARANCE_LABELS: Record<BadgeAppearance, string> = {
   soft: "Soft",
+  emphasis: "Emphasis",
   solid: "Solid",
   outline: "Outline",
   ghost: "Ghost",
@@ -61,7 +62,7 @@ export function BadgePlayground() {
   return (
     <PlaygroundShell
       title="Badges"
-      description="Status badges follow tone and appearance. Soft is the default tint. Solid fills the chip, outline keeps a border, and ghost is ink only. Prefer solid for warning when soft tint contrast is too low."
+      description="Status badges follow tone and appearance. Soft is the default tint. Emphasis is a stronger wash with bolder ink. Solid fills the chip, outline keeps a border, and ghost is ink only. Prefer solid for warning when soft tint contrast is too low."
       panes="equal"
       propertiesColumns={2}
       preview={

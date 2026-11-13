@@ -44,6 +44,41 @@
   color: var(--color-info-ink);
 }
 
+/* Emphasis — bolder ink on a stronger wash than soft */
+.badge[data-appearance="emphasis"] {
+  font-weight: 700;
+}
+
+.badge[data-appearance="emphasis"].neutral {
+  background: color-mix(in srgb, var(--color-text) 12%, var(--color-surface));
+  color: var(--color-text);
+}
+
+.badge[data-appearance="emphasis"].primary {
+  background: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
+  color: var(--color-primary);
+}
+
+.badge[data-appearance="emphasis"].success {
+  background: color-mix(in srgb, var(--color-success) 22%, var(--color-surface));
+  color: color-mix(in srgb, var(--color-success) 40%, var(--color-success-ink));
+}
+
+.badge[data-appearance="emphasis"].warning {
+  background: color-mix(in srgb, var(--color-warning) 22%, var(--color-surface));
+  color: color-mix(in srgb, var(--color-warning) 35%, var(--color-warning-ink));
+}
+
+.badge[data-appearance="emphasis"].danger {
+  background: color-mix(in srgb, var(--color-danger) 20%, var(--color-surface));
+  color: color-mix(in srgb, var(--color-danger) 40%, var(--color-danger-ink));
+}
+
+.badge[data-appearance="emphasis"].info {
+  background: color-mix(in srgb, var(--color-info) 22%, var(--color-surface));
+  color: color-mix(in srgb, var(--color-info) 40%, var(--color-info-ink));
+}
+
 /* Solid — filled tone + foreground */
 .badge[data-appearance="solid"].neutral {
   background: var(--color-text);
