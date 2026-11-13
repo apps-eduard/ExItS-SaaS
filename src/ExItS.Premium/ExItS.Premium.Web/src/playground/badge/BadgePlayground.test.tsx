@@ -59,26 +59,35 @@ describe("BadgePlayground", () => {
     expect(within(preview!).getByText(/Removed/i)).toBeInTheDocument();
   });
 
-  it("keeps Count samples in examples with a copyable Cursor command", async () => {
+  it("orders Count above Indicator and keeps Cursor copy samples", async () => {
     const user = userEvent.setup();
     render(<BadgePlayground />);
 
     const examples = screen.getByRole("heading", { name: "States & examples", level: 2 }).parentElement;
     expect(examples).not.toBeNull();
-    expect(within(examples!).getByText("Count")).toBeInTheDocument();
-    expect(within(examples!).getByText("99+")).toHaveAttribute("data-count", "true");
-    expect(within(examples!).getByText("12")).toHaveAttribute("data-count", "true");
-    expect(screen.queryByRole("switch", { name: "Count" })).not.toBeInTheDocument();
 
-    const preview = screen.getByRole("heading", { name: "Preview", level: 2 }).parentElement;
-    expect(within(preview!).getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge success");
-    expect(within(preview!).getByTestId("cursor-copy-command").getAttribute("data-command")).not.toMatch(/count/);
+    const labels = [...examples!.querySelectorAll("p")].map((node) => node.textContent);
+    const countIndex = labels.indexOf("Count");
+    const indicatorIndex = labels.indexOf("Indicator");
+    const indicatorOnlyIndex = labels.indexOf("Indicator only");
+    expect(countIndex).toBeGreaterThan(-1);
+    expect(indicatorIndex).toBeGreaterThan(countIndex);
+    expect(indicatorOnlyIndex).toBeGreaterThan(indicatorIndex);
 
-    const countCommands = within(examples!).getAllByTestId("cursor-copy-command");
-    expect(countCommands).toHaveLength(1);
-    expect(countCommands[0]).toHaveAttribute("data-command", "ext badge primary solid count");
+    const exampleCursors = within(examples!).getAllByTestId("cursor-copy-command");
+    expect(exampleCursors).toHaveLength(3);
+    expect(exampleCursors[0]).toHaveAttribute("data-command", "ext badge primary solid count");
+    expect(exampleCursors[1]).toHaveAttribute("data-command", "ext badge success indicator");
+    expect(exampleCursors[2]).toHaveAttribute("data-command", "ext badge danger indicator-only");
 
     await user.click(screen.getByRole("button", { name: "Count sample danger solid" }));
-    expect(countCommands[0]).toHaveAttribute("data-command", "ext badge danger solid count");
+    expect(exampleCursors[0]).toHaveAttribute("data-command", "ext badge danger solid count");
+
+    await user.click(screen.getByRole("button", { name: "Indicator sample warning" }));
+    expect(exampleCursors[1]).toHaveAttribute("data-command", "ext badge warning indicator");
+
+    await user.click(screen.getByRole("button", { name: "Indicator only sample info" }));
+    expect(exampleCursors[2]).toHaveAttribute("data-command", "ext badge info indicator-only");
   });
 });
+

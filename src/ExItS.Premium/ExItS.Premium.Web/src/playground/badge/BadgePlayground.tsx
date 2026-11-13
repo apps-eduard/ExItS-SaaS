@@ -69,6 +69,8 @@ export function BadgePlayground() {
   const [removable, setRemovable] = useState(false);
   const [removed, setRemoved] = useState(false);
   const [countSample, setCountSample] = useState(COUNT_SAMPLES[0]);
+  const [indicatorSample, setIndicatorSample] = useState<BadgeTone>("success");
+  const [indicatorOnlySample, setIndicatorOnlySample] = useState<BadgeTone>("danger");
 
   const previewLabel = label.trim() || SAMPLE_LABELS[tone];
   const cursorCommand = badgeCursorCommand({ tone, appearance, allCaps, indicator, removable });
@@ -80,7 +82,21 @@ export function BadgePlayground() {
     removable: false,
     count: true,
   });
-
+  const indicatorCursorCommand = badgeCursorCommand({
+    tone: indicatorSample,
+    appearance: "soft",
+    allCaps: false,
+    indicator: true,
+    removable: false,
+  });
+  const indicatorOnlyCursorCommand = badgeCursorCommand({
+    tone: indicatorOnlySample,
+    appearance: "soft",
+    allCaps: false,
+    indicator: true,
+    removable: false,
+    indicatorOnly: true,
+  });
 
   function reset() {
     setTone("success");
@@ -106,7 +122,7 @@ export function BadgePlayground() {
   return (
     <PlaygroundShell
       title="Badges"
-      description="Status badges follow tone and appearance in light and dark. Soft and emphasis washes mix against the theme surface. Solid uses tone fill plus contrast-safe foreground. Outline and ghost use theme ink. All caps uppercases the label. Indicator adds a leading pip. Remove adds a trailing dismiss control."
+      description="Status badges follow tone and appearance in light and dark. Soft and emphasis washes mix against the theme surface. Solid uses tone fill plus contrast-safe foreground. Outline and ghost use theme ink. All caps uppercases the label. Indicator adds a leading pip. Remove adds a trailing dismiss control. Count and Indicator samples below include Cursor copy commands."
       panes="equal"
       propertiesColumns={2}
       preview={
@@ -194,24 +210,6 @@ export function BadgePlayground() {
             </div>
           </article>
           <article className={styles.example}>
-            <p className={styles.exampleLabel}>Indicator</p>
-            <div className={styles.exampleRow}>
-              {BADGE_TONES.map((toneItem) => (
-                <Badge key={toneItem} tone={toneItem} indicator>
-                  {SAMPLE_LABELS[toneItem]}
-                </Badge>
-              ))}
-            </div>
-          </article>
-          <article className={styles.example}>
-            <p className={styles.exampleLabel}>Indicator only</p>
-            <div className={styles.exampleRow}>
-              {BADGE_TONES.map((toneItem) => (
-                <Badge key={toneItem} tone={toneItem} indicator aria-label={SAMPLE_LABELS[toneItem]} />
-              ))}
-            </div>
-          </article>
-          <article className={styles.example}>
             <p className={styles.exampleLabel}>Remove</p>
             <div className={styles.exampleRow}>
               {BADGE_TONES.map((toneItem) => (
@@ -233,7 +231,7 @@ export function BadgePlayground() {
                   <button
                     key={`${sample.tone}-${sample.appearance}-${sample.count}`}
                     type="button"
-                    className={styles.countSample}
+                    className={styles.samplePick}
                     data-selected={selected ? "true" : "false"}
                     aria-pressed={selected}
                     aria-label={`Count sample ${sample.tone} ${sample.appearance}`}
@@ -244,7 +242,51 @@ export function BadgePlayground() {
                 );
               })}
             </div>
-            <CursorCopyCommand standard="Badge" command={countCursorCommand} className={styles.countCursor} />
+            <CursorCopyCommand standard="Badge" command={countCursorCommand} className={styles.sampleCursor} />
+          </article>
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>Indicator</p>
+            <div className={styles.exampleRow}>
+              {BADGE_TONES.map((toneItem) => (
+                <button
+                  key={toneItem}
+                  type="button"
+                  className={styles.samplePick}
+                  data-selected={indicatorSample === toneItem ? "true" : "false"}
+                  aria-pressed={indicatorSample === toneItem}
+                  aria-label={`Indicator sample ${toneItem}`}
+                  onClick={() => setIndicatorSample(toneItem)}
+                >
+                  <Badge tone={toneItem} indicator>
+                    {SAMPLE_LABELS[toneItem]}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+            <CursorCopyCommand standard="Badge" command={indicatorCursorCommand} className={styles.sampleCursor} />
+          </article>
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>Indicator only</p>
+            <div className={styles.exampleRow}>
+              {BADGE_TONES.map((toneItem) => (
+                <button
+                  key={toneItem}
+                  type="button"
+                  className={styles.samplePick}
+                  data-selected={indicatorOnlySample === toneItem ? "true" : "false"}
+                  aria-pressed={indicatorOnlySample === toneItem}
+                  aria-label={`Indicator only sample ${toneItem}`}
+                  onClick={() => setIndicatorOnlySample(toneItem)}
+                >
+                  <Badge tone={toneItem} indicator aria-label={SAMPLE_LABELS[toneItem]} />
+                </button>
+              ))}
+            </div>
+            <CursorCopyCommand
+              standard="Badge"
+              command={indicatorOnlyCursorCommand}
+              className={styles.sampleCursor}
+            />
           </article>
         </div>
       }

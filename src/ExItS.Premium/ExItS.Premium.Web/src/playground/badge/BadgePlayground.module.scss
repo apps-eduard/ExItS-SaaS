@@ -71,7 +71,7 @@
   padding-block: 0.1rem;
 }
 
-.countSample {
+.samplePick {
   display: inline-flex;
   margin: 0;
   padding: 0.15rem;
@@ -82,16 +82,16 @@
   color: inherit;
 }
 
-.countSample[data-selected="true"] {
+.samplePick[data-selected="true"] {
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
-.countSample:focus-visible {
+.samplePick:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
-.countCursor {
+.sampleCursor {
   max-width: 32rem;
 }
