@@ -41,7 +41,7 @@ function Sidebar({
               isNavBranch(item) ? (
                 <div key={item.label} className={styles.navSubgroup}>
                   <p className={styles.navSubgroupLabel}>
-                    <AppIcon name={item.icon} />
+                    <AppIcon name={item.icon} aria-hidden="true" />
                     <span className={styles.navLabel}>{item.label}</span>
                   </p>
                   {item.children.map((child) => (
