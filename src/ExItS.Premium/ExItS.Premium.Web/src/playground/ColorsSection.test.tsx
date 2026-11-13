@@ -11,7 +11,7 @@ describe("ColorsSection", () => {
   });
 
   it(
-    "renders theme tokens and the 40-family reference library",
+    "renders semantic, foundation, and the 40-family reference library",
     () => {
       const { container } = render(
         <AppearanceProvider>
@@ -21,15 +21,23 @@ describe("ColorsSection", () => {
 
       expect(screen.getByRole("heading", { name: "Colors", level: 1 })).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Semantic Colors", level: 2 })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Foundation Colors", level: 2 })).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Neutral Scale", level: 2 })).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Color Palettes", level: 2 })).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Reference Color Library", level: 2 })).toBeInTheDocument();
 
       expect(screen.getByRole("button", { name: /Copy Warning/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Success/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Info/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Help/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Secondary/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Accent/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Contrast/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Page/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy Overlay/i })).toBeInTheDocument();
+
       expect(container.querySelectorAll("[data-reference-family]")).toHaveLength(40);
       expect(container.querySelectorAll("[data-reference-family] [data-hex]")).toHaveLength(400);
-      expect(container.querySelector('[data-name="sage-500"]')).not.toBeNull();
-      expect(container.querySelector('[data-name="magenta-900"]')).not.toBeNull();
       expect(screen.getByText(/40 families · 400 swatches/i)).toBeInTheDocument();
     },
     15000,

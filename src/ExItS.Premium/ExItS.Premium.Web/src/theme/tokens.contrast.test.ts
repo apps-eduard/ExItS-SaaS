@@ -1,21 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { parseColorChannels, relativeLuminance } from "../playground/color";
 import scss from "../styles/tokens.scss?raw";
 
-function channel(value: number) {
-  const scaled = value / 255;
-  return scaled <= 0.04045 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
-}
-
 function contrast(foreground: string, background: string) {
-  const luminance = (hex: string) => {
-    const value = hex.replace("#", "");
-    const red = channel(Number.parseInt(value.slice(0, 2), 16));
-    const green = channel(Number.parseInt(value.slice(2, 4), 16));
-    const blue = channel(Number.parseInt(value.slice(4, 6), 16));
-    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-  };
-  const lighter = Math.max(luminance(foreground), luminance(background));
-  const darker = Math.min(luminance(foreground), luminance(background));
+  const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background));
+  const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background));
   return (lighter + 0.05) / (darker + 0.05);
 }
 
@@ -32,14 +21,19 @@ function block(selector: string) {
   return vars;
 }
 
-function resolve(value: string, root = block(":root")): string {
+function resolve(value: string, scopes: Array<Record<string, string>>): string {
   const match = value?.match(/^var\((--[\w-]+)\)$/);
   if (!match) return value;
-  return resolve(root[match[1]], root);
+  for (const scope of scopes) {
+    if (scope[match[1]]) return resolve(scope[match[1]], scopes);
+  }
+  throw new Error(`Unresolved ${value}`);
 }
 
 function expectTextContrast(foreground: string, background: string, label: string) {
-  const ratio = contrast(resolve(foreground), resolve(background));
+  expect(parseColorChannels(foreground), `${label} foreground parse`).not.toBeNull();
+  expect(parseColorChannels(background), `${label} background parse`).not.toBeNull();
+  const ratio = contrast(foreground, background);
   expect(ratio, `${label} ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
 }
 
@@ -57,15 +51,18 @@ describe("premium tokens", () => {
     expect(block('[data-density="large"]')["--control-height"]).toBe("max(52px, calc(var(--density-control-font) * 2.5))");
   });
 
-  it("keeps the neutral scale, warning fill, and five elevation levels", () => {
+  it("keeps the neutral scale, warning fill, OKLCH success/info, and five elevation levels", () => {
     const root = block(":root");
     expect(root["--neutral-50"]).toBe("#f5f6f8");
     expect(root["--neutral-900"]).toBe("#111827");
-    expect(resolve("var(--palette-teal-700)", root)).toBe("#0f766e");
+    expect(resolve("var(--palette-teal-700)", [root])).toBe("#0f766e");
     for (const theme of ["light", "dark"] as const) {
       const colors = block(`[data-theme="${theme}"]`);
       expect(colors["--color-warning"]).toBe("#ff5722");
       expect(colors["--color-warning-foreground"]).toBe("#1a0a00");
+      expect(colors["--color-success"]).toBe("oklch(0.64 0.22 160)");
+      expect(colors["--color-info"]).toBe("oklch(0.69 0.22 220)");
+      expect(colors["--color-help"]).toMatch(/^oklch\(/);
       expect(colors["--elevation-0"]).toBe("none");
       expect(colors["--elevation-1"]).toBeTruthy();
       expect(colors["--elevation-2"]).toBeTruthy();
@@ -79,31 +76,67 @@ describe("premium tokens", () => {
   });
 
   it("meets text contrast for surfaces, palettes, and status fills", () => {
+    const root = block(":root");
+    const shared = block("[data-theme]");
     for (const theme of ["light", "dark"] as const) {
       const colors = block(`[data-theme="${theme}"]`);
-      expectTextContrast(colors["--color-text"], colors["--color-page"], `${theme} text/page`);
-      expectTextContrast(colors["--color-text"], colors["--color-surface"], `${theme} text/surface`);
-      expectTextContrast(colors["--color-text"], colors["--color-surface-elevated"], `${theme} text/elevated`);
-      expectTextContrast(colors["--color-text-secondary"], colors["--color-page"], `${theme} secondary`);
-      expectTextContrast(colors["--color-text-caption"], colors["--color-page"], `${theme} caption`);
-      expectTextContrast(colors["--color-disabled-text"], colors["--color-disabled-fill"], `${theme} disabled`);
-      for (const name of ["success", "warning", "danger", "info"]) {
-        expectTextContrast(colors[`--color-${name}-foreground`], colors[`--color-${name}`], `${theme} ${name}`);
-        expectTextContrast(colors[`--color-${name}-foreground`], colors[`--color-${name}-hover`], `${theme} ${name} hover`);
-        expectTextContrast(colors[`--color-${name}-foreground`], colors[`--color-${name}-pressed`], `${theme} ${name} pressed`);
-        expectTextContrast(colors[`--color-${name}-ink`], colors["--color-page"], `${theme} ${name} ink/page`);
-        expectTextContrast(colors[`--color-${name}-ink`], colors["--color-surface"], `${theme} ${name} ink/surface`);
+      const scopes = [colors, shared, root];
+      const page = resolve(colors["--color-page"], scopes);
+      const surface = resolve(colors["--color-surface"], scopes);
+      const elevated = resolve(colors["--color-surface-elevated"], scopes);
+
+      expectTextContrast(resolve(colors["--color-text"], scopes), page, `${theme} text/page`);
+      expectTextContrast(resolve(colors["--color-text"], scopes), surface, `${theme} text/surface`);
+      expectTextContrast(resolve(colors["--color-text"], scopes), elevated, `${theme} text/elevated`);
+      expectTextContrast(resolve(colors["--color-text-secondary"], scopes), page, `${theme} secondary`);
+      expectTextContrast(resolve(colors["--color-text-caption"], scopes), page, `${theme} caption`);
+      expectTextContrast(
+        resolve(colors["--color-disabled-text"], scopes),
+        resolve(colors["--color-disabled-fill"], scopes),
+        `${theme} disabled`,
+      );
+
+      for (const name of ["success", "warning", "danger", "info", "help"] as const) {
+        expectTextContrast(
+          resolve(colors[`--color-${name}-foreground`], scopes),
+          resolve(colors[`--color-${name}`], scopes),
+          `${theme} ${name}`,
+        );
+        expectTextContrast(
+          resolve(colors[`--color-${name}-foreground`], scopes),
+          resolve(colors[`--color-${name}-hover`], scopes),
+          `${theme} ${name} hover`,
+        );
+        expectTextContrast(
+          resolve(colors[`--color-${name}-foreground`], scopes),
+          resolve(colors[`--color-${name}-pressed`], scopes),
+          `${theme} ${name} pressed`,
+        );
+        expectTextContrast(resolve(colors[`--color-${name}-ink`], scopes), page, `${theme} ${name} ink/page`);
+        expectTextContrast(resolve(colors[`--color-${name}-ink`], scopes), surface, `${theme} ${name} ink/surface`);
       }
+
+      expectTextContrast(
+        resolve(shared["--color-contrast-foreground"], [...scopes]),
+        resolve(shared["--color-contrast"], [...scopes]),
+        `${theme} contrast`,
+      );
+
       for (const tone of ["lent", "owe", "people", "stores", "reminders"]) {
-        expectTextContrast(colors[`--color-feature-${tone}-foreground`], colors[`--color-feature-${tone}`], `${theme} ${tone}`);
-        expectTextContrast(colors[`--color-feature-${tone}-ink`], colors["--color-surface"], `${theme} ${tone} ink`);
+        expectTextContrast(
+          resolve(colors[`--color-feature-${tone}-foreground`], scopes),
+          resolve(colors[`--color-feature-${tone}`], scopes),
+          `${theme} ${tone}`,
+        );
+        expectTextContrast(resolve(colors[`--color-feature-${tone}-ink`], scopes), surface, `${theme} ${tone} ink`);
       }
+
       for (const palette of ["teal", "blue", "violet", "orange", "rose"]) {
         const primary = block(`[data-theme="${theme}"][data-palette="${palette}"]`);
         for (const state of ["", "-hover", "-pressed"]) {
           expectTextContrast(
-            primary["--color-primary-foreground"],
-            primary[`--color-primary${state}`],
+            resolve(primary["--color-primary-foreground"], [primary, colors, shared, root]),
+            resolve(primary[`--color-primary${state}`], [primary, colors, shared, root]),
             `${theme} ${palette}${state || " base"}`,
           );
         }
