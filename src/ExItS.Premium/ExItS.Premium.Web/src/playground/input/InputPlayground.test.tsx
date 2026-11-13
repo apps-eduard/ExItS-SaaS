@@ -14,6 +14,8 @@ describe("InputPlayground", () => {
     expect(screen.getByRole("heading", { name: "States & examples", level: 2 })).toBeInTheDocument();
     expect(container.querySelector("section")).toHaveAttribute("data-panes", "equal");
     expect(container.querySelector("section")).toHaveAttribute("data-properties-columns", "2");
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext input border-reveal");
+    expect(screen.getByText("ext input border-reveal")).toBeInTheDocument();
 
     const workspace = container.querySelector("[class*='workspace']");
     const panes = workspace

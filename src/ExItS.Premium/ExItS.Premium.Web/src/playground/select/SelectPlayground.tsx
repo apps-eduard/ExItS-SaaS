@@ -3,7 +3,9 @@ import { INPUT_FOCUS_MOTION_OPTIONS, type InputFocusMotion } from "../../compone
 import { Select } from "../../components/select/Select";
 import type { SelectMenuMotion } from "../../components/select/select-menu-motion";
 import { Switch } from "../../components/switch/Switch";
+import { CursorCopyCommand } from "../CursorCopyCommand";
 import { PlaygroundShell } from "../shell/PlaygroundShell";
+import { selectCursorCommand } from "./select-cursor-command";
 import styles from "./SelectPlayground.module.scss";
 
 type SelectAppearance = "outlined" | "soft" | "stacked";
@@ -33,6 +35,13 @@ export function SelectPlayground() {
   const [multiple, setMultiple] = useState(false);
   const [value, setValue] = useState("groceries");
   const [many, setMany] = useState<string[]>(["groceries"]);
+  const cursorCommand = selectCursorCommand({
+    appearance,
+    focusMotion,
+    menuMotion,
+    searchable,
+    multiple,
+  });
 
   return (
     <PlaygroundShell
@@ -41,26 +50,29 @@ export function SelectPlayground() {
       panes="equal"
       propertiesColumns={2}
       preview={
-        <div className={styles.previewField}>
-          <Select
-            label="Category"
-            appearance={appearance}
-            focusMotion={focusMotion}
-            menuMotion={menuMotion}
-            searchable={searchable}
-            multiple={multiple}
-            value={multiple ? many : value}
-            onChange={(event) => {
-              if (multiple) {
-                setMany([...event.target.selectedOptions].map((option) => option.value));
-                return;
-              }
-              setValue(event.target.value);
-            }}
-          >
-            <option value="">Choose</option>
-            {OPTIONS}
-          </Select>
+        <div className={styles.previewStack}>
+          <div className={styles.previewField}>
+            <Select
+              label="Category"
+              appearance={appearance}
+              focusMotion={focusMotion}
+              menuMotion={menuMotion}
+              searchable={searchable}
+              multiple={multiple}
+              value={multiple ? many : value}
+              onChange={(event) => {
+                if (multiple) {
+                  setMany([...event.target.selectedOptions].map((option) => option.value));
+                  return;
+                }
+                setValue(event.target.value);
+              }}
+            >
+              <option value="">Choose</option>
+              {OPTIONS}
+            </Select>
+          </div>
+          <CursorCopyCommand standard="Select" command={cursorCommand} />
         </div>
       }
       properties={

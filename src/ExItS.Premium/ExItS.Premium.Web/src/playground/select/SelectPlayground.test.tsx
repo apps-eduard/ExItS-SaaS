@@ -13,6 +13,8 @@ describe("SelectPlayground", () => {
     expect(screen.getByRole("heading", { name: "States & examples", level: 2 })).toBeInTheDocument();
     expect(container.querySelector("section")).toHaveAttribute("data-panes", "equal");
     expect(container.querySelector("section")).toHaveAttribute("data-properties-columns", "2");
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext dropdown");
+    expect(screen.getByText("ext dropdown")).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Focus Animation, None" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Dropdown Transition, Scale" })).toBeInTheDocument();
 

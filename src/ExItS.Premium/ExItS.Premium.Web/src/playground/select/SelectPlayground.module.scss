@@ -1,3 +1,11 @@
+.previewStack {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  align-content: center;
+}
+
 .previewField {
   width: min(100%, 22rem);
   justify-self: center;
