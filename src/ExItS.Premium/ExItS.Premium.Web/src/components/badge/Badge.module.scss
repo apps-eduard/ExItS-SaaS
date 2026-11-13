@@ -162,7 +162,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
-/* Emphasis — restrained stronger wash; weight 600 not 700 */
+/* Emphasis — stronger wash + bold label (Soft stays 500). */
 .badge[data-appearance="emphasis"] {
   font-weight: var(--type-badge-weight-emphasis);
 }
