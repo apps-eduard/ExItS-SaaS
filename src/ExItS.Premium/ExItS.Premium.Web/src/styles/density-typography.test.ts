@@ -49,11 +49,17 @@ describe("density typography", () => {
   });
 
   it("lets controls grow with the font and keeps compact tappable on a phone", () => {
-    expect(block(tokens, '[data-density="compact"]')["--control-height"]).toBe("max(36px, calc(var(--density-control-font) * 2.5))");
-    expect(block(tokens, '[data-density="standard"]')["--control-height"]).toBe("max(44px, calc(var(--density-control-font) * 2.5))");
-    expect(block(tokens, '[data-density="large"]')["--control-height"]).toBe("max(52px, calc(var(--density-control-font) * 2.5))");
+    expect(block(tokens, '[data-density="compact"]')["--control-height"]).toBe("max(34px, calc(var(--density-control-font) * 2.4))");
+    expect(block(tokens, '[data-density="standard"]')["--control-height"]).toBe("max(40px, calc(var(--density-control-font) * 2.4))");
+    expect(block(tokens, '[data-density="large"]')["--control-height"]).toBe("max(52px, calc(var(--density-control-font) * 2.4))");
+    expect(block(tokens, '[data-density="compact"]')["--switch-width"]).toBe("36px");
+    expect(block(tokens, '[data-density="compact"]')["--switch-height"]).toBe("20px");
+    expect(block(tokens, '[data-density="standard"]')["--switch-width"]).toBe("40px");
+    expect(block(tokens, '[data-density="standard"]')["--switch-height"]).toBe("24px");
+    expect(block(tokens, '[data-density="large"]')["--switch-width"]).toBe("52px");
+    expect(block(tokens, '[data-density="large"]')["--switch-height"]).toBe("32px");
     expect(tokens).toContain('@media (max-width: 767px)');
-    expect(tokens).toContain("max(44px, calc(var(--density-control-font) * 2.5))");
+    expect(tokens).toContain("max(44px, calc(var(--density-control-font) * 2.4))");
   });
 
   it("computes different font sizes when density changes", () => {

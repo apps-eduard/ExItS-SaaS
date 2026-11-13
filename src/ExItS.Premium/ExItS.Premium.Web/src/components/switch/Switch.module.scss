@@ -65,6 +65,13 @@
   cursor: not-allowed;
 }
 
+@media (max-width: 767px) {
+  .switch {
+    min-height: max(44px, var(--control-height));
+    min-width: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .thumb,
   .track {

@@ -171,6 +171,8 @@ function DensityMetrics() {
         { label: "Label", value: getComputedStyle(label).fontSize },
         { label: "List text", value: getComputedStyle(row).fontSize },
         { label: "Height", value: inputStyle.minHeight },
+        { label: "Button", value: getComputedStyle(button).minHeight },
+        { label: "Switch", value: `${columnStyle.getPropertyValue("--switch-width").trim()} × ${columnStyle.getPropertyValue("--switch-height").trim()}` },
         { label: "Padding", value: inputStyle.paddingLeft },
         { label: "Spacing", value: columnStyle.rowGap },
       ]);

@@ -11,7 +11,7 @@ Layout is mobile-first. Use the existing breakpoints in `Playground.module.scss`
 ## Rules
 
 - Content uses `minmax(0, 1fr)` and `max-width: 100%` so a flex child cannot widen the page.
-- Controls use the density height, which stays at least 36px.
+- Desktop control heights are 34, 40, and 52. Under 768px, Compact and Standard controls grow to at least 44px. The switch track stays at its density size, and the switch control is the touch target.
 - Dialogs use `min(28rem, calc(100vw - 2rem))`.
 - Bottom sheets use `min(40rem, 100%)`, stick to the bottom, and scroll their body.
 - Menus and tooltips reposition inside an 8px viewport margin.

@@ -26,7 +26,7 @@ Do not read or write `exits.pos-client.ui-preferences.v1`.
 
 ## Density
 
-Control heights are 36, 44, and 52 on desktop. On screens under 768px, Compact uses at least 44px so a primary control stays tappable. Height is a minimum: it grows with the control font so text zoom does not clip the value.
+Control heights are 34, 40, and 52 on desktop. On screens under 768px, Compact and Standard use at least 44px so a primary control stays tappable. The switch track stays 36×20, 40×24, and 52×32; the switch control itself supplies the larger touch area. Height is a minimum: it grows with the control font so text zoom does not clip the value.
 
 Density also changes padding, page padding, card padding, and stack gap.
 

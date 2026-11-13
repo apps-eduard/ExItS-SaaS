@@ -240,6 +240,10 @@
     max-width: 100%;
     min-width: min(100%, 8.5rem);
   }
+
+  > button {
+    min-width: 0;
+  }
 }
 
 .densityGrid {
@@ -265,6 +269,12 @@
   > * {
     max-width: 100%;
     min-width: 0;
+  }
+
+  > button {
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
   }
 }
 
@@ -316,7 +326,7 @@
 
   > button {
     max-width: 100%;
-    min-width: min(100%, 8.5rem);
+    min-width: 0;
   }
 }
 
