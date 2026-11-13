@@ -1,9 +1,16 @@
 .region {
+  --toast-max-width: 26rem;
+  --toast-gap: 0.5rem;
+  --toast-pad: 0.8125rem;
+  --toast-radius: 0.75rem;
+  --toast-accent: 0.21875rem;
+  --toast-motion: 200ms;
+  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: fixed;
   z-index: var(--z-toast);
   display: grid;
-  gap: 0.5rem;
-  width: min(22rem, calc(100vw - 2rem));
+  gap: var(--toast-gap);
+  width: min(var(--toast-max-width), calc(100vw - 2rem));
   margin: 0;
   padding: 0;
   border: 0;
@@ -47,17 +54,36 @@
 }
 
 .toast {
+  --toast-tone: var(--color-text-secondary);
+  --toast-wash: 8%;
+  --toast-border-mix: 22%;
+  --toast-icon-mix: 14%;
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 0.75rem;
+  gap: 0.65rem;
   align-items: start;
-  padding: 0.85rem 0.75rem 0.85rem 0.9rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface-elevated);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--toast-pad) 0.5rem var(--toast-pad) 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--toast-tone) var(--toast-border-mix), var(--color-border));
+  border-radius: var(--toast-radius);
+  background: color-mix(in srgb, var(--toast-tone) var(--toast-wash), var(--color-surface-elevated));
   color: var(--color-text);
-  box-shadow: var(--elevation-3);
-  animation: toast-in-up var(--motion-base) var(--motion-ease);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 55%, transparent),
+    0 6px 18px color-mix(in srgb, #0f172a 10%, transparent);
+  overflow: hidden;
+  animation: toast-in-up var(--toast-motion) var(--toast-ease) both;
+}
+
+.toast::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--toast-accent);
+  background: var(--toast-tone);
+  border-radius: var(--toast-radius) 0 0 var(--toast-radius);
 }
 
 .region[data-position^="top"] .toast {
@@ -66,51 +92,97 @@
 
 .icon {
   display: inline-flex;
-  color: var(--color-text-secondary);
-}
-
-.success {
-  border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-border));
-}
-
-.success .icon {
-  color: var(--color-success);
-}
-
-.warning {
-  border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
-}
-
-.warning .icon {
-  color: var(--color-warning);
-}
-
-.danger {
-  border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
-}
-
-.danger .icon {
-  color: var(--color-danger);
-}
-
-.info {
-  border-color: color-mix(in srgb, var(--color-info) 45%, var(--color-border));
-}
-
-.info .icon {
-  color: var(--color-info);
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-top: 0.05rem;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--toast-tone) var(--toast-icon-mix), var(--color-surface-elevated));
+  color: var(--toast-tone);
+  flex-shrink: 0;
 }
 
 .copy {
   display: grid;
-  gap: 0.15rem;
+  gap: 0.2rem;
   min-width: 0;
+  padding-top: 0.1rem;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.description {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.dismiss {
+  width: 2.125rem;
+  height: 2.125rem;
+  margin: -0.15rem -0.05rem 0 0;
+  color: var(--color-text-secondary);
+}
+
+.success {
+  --toast-tone: var(--color-success);
+  --toast-wash: 9%;
+  --toast-border-mix: 28%;
+  --toast-icon-mix: 16%;
+}
+
+.warning {
+  --toast-tone: var(--color-warning);
+  --toast-wash: 10%;
+  --toast-border-mix: 30%;
+  --toast-icon-mix: 16%;
+}
+
+.danger {
+  --toast-tone: var(--color-danger);
+  --toast-wash: 9%;
+  --toast-border-mix: 28%;
+  --toast-icon-mix: 16%;
+}
+
+.info {
+  --toast-tone: var(--color-info);
+  --toast-wash: 9%;
+  --toast-border-mix: 28%;
+  --toast-icon-mix: 16%;
+}
+
+[data-theme="dark"] .toast {
+  --toast-wash: 14%;
+  --toast-border-mix: 34%;
+  --toast-icon-mix: 20%;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 6%, transparent),
+    0 10px 28px color-mix(in srgb, #000 42%, transparent);
+}
+
+[data-theme="dark"] .description {
+  color: color-mix(in srgb, var(--color-text) 68%, transparent);
 }
 
 @keyframes toast-in-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(0.45rem);
   }
 
   to {
@@ -122,7 +194,7 @@
 @keyframes toast-in-down {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-0.45rem);
   }
 
   to {

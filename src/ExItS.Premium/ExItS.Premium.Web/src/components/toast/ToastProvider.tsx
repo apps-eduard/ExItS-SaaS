@@ -130,13 +130,20 @@ export function ToastProvider({
             onMouseLeave={() => schedule(toast.id)}
           >
             <span className={styles.icon} aria-hidden="true">
-              <ExIcon name={ICONS[toast.tone]} />
+              <ExIcon name={ICONS[toast.tone]} size={18} />
             </span>
             <div className={styles.copy}>
-              <strong className="type-label">{toast.title}</strong>
-              {toast.description ? <span className="type-caption">{toast.description}</span> : null}
+              <strong className={styles.title}>{toast.title}</strong>
+              {toast.description ? <span className={styles.description}>{toast.description}</span> : null}
             </div>
-            <Button variant="ghost" iconOnly aria-label="Dismiss notification" onClick={() => dismiss(toast.id)} icon={<ExIcon name="close" size={18} />} />
+            <Button
+              className={styles.dismiss}
+              variant="ghost"
+              iconOnly
+              aria-label="Dismiss notification"
+              onClick={() => dismiss(toast.id)}
+              icon={<ExIcon name="close" size={16} />}
+            />
           </div>
         ))}
       </div>
