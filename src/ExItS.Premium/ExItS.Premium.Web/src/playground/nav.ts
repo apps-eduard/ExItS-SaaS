@@ -86,8 +86,14 @@ export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
           { id: "button-dropdown", label: "Button dropdown", icon: "unfold_more", status: "planned" },
         ],
       },
-      { id: "inputs", label: "Inputs", icon: "edit_note" },
-      { id: "search", label: "Search", icon: "search" },
+      {
+        label: "Inputs",
+        icon: "edit_note",
+        children: [
+          { id: "inputs", label: "Input", icon: "edit_note", status: "ready" },
+          { id: "search", label: "Search", icon: "search", status: "ready" },
+        ],
+      },
       { id: "selects", label: "Selects", icon: "unfold_more" },
       { id: "date-time", label: "Date & Time Pickers", icon: "edit_note" },
       { id: "cards", label: "Cards", icon: "credit_card" },

@@ -17,4 +17,17 @@ describe("playground nav", () => {
     expect(navLeaves().some((leaf) => leaf.id === "button")).toBe(true);
     expect(navLeaves().some((leaf) => leaf.id === "buttons" as never)).toBe(false);
   });
+
+  it("nests Input and Search under Inputs", () => {
+    const components = NAV_GROUPS.find((group) => group.label === "Components");
+    const inputs = components?.items.find((entry) => isNavBranch(entry) && entry.label === "Inputs");
+    expect(inputs && isNavBranch(inputs)).toBe(true);
+    if (!inputs || !isNavBranch(inputs)) return;
+
+    expect(inputs.children.map((child) => child.id)).toEqual(["inputs", "search"]);
+    expect(inputs.children.map((child) => child.label)).toEqual(["Input", "Search"]);
+    expect(inputs.children.map((child) => child.status)).toEqual(["ready", "ready"]);
+    expect(branchContains(inputs, "search")).toBe(true);
+    expect(navLeaves().some((leaf) => leaf.id === "search")).toBe(true);
+  });
 });
