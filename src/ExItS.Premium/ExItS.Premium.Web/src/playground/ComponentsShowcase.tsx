@@ -13,6 +13,7 @@ import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
 import { DateTimeSection } from "./DateTimeSection";
 import { BadgePlayground } from "./badge/BadgePlayground";
+import { BreadcrumbPlayground } from "./breadcrumb/BreadcrumbPlayground";
 import { ButtonPlayground } from "./button/ButtonPlayground";
 import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
@@ -47,6 +48,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "date-time") return <DateTimeSection />;
   if (id === "cards") return <CardsSection />;
   if (id === "badges") return <BadgePlayground />;
+  if (id === "breadcrumbs") return <BreadcrumbPlayground />;
   if (id === "toggles") return <TogglesSection />;
   if (id === "toasts") return <ToastPlayground />;
   if (id === "checkboxes") return <CheckboxesSection />;
