@@ -7,8 +7,8 @@ ExItS Premium is a Modern Solid interface for the Personal module. The reference
 - Page, surface, and elevated surface come from theme tokens.
 - Borders are 1px. Elevation is five levels, 0 through 4. Level 0 is flat. Shadows stay short and are tuned separately for light and dark.
 - Default corners are Soft. Pill rounds controls, and keeps cards, dialogs, and sheets practical.
-- One primary palette colors interactive fills. Success, warning, danger, information, and Personal feature colors do not change with that palette.
-- Warning fill stays `#ff5722`. Its text is `#1a0a00` because white fails contrast.
+- One primary palette colors interactive fills. Status roles (Success, Info, Warning, Help, Danger), Secondary/Contrast, and Personal feature colors do not become extra Primary themes.
+- Color detail: [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md). Warning stays `#ff5722` with dark text; Danger is `#dc2626`; Success/Info use OKLCH with dark foregrounds on the bright fills.
 - Text on a fill needs a 4.5:1 contrast ratio. Status and feature ink on page and surface uses the same bar.
 
 ## Type
