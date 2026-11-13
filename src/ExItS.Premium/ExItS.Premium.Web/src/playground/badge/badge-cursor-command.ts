@@ -6,6 +6,8 @@ export type BadgeCursorCommandOptions = {
   allCaps: boolean;
   indicator: boolean;
   removable: boolean;
+  /** Count chips — examples-only recipe (not a playground Properties switch). */
+  count?: boolean;
 };
 
 /** Compact Cursor recipe for the Premium Badge playground (`ext badge …`). */
@@ -15,6 +17,7 @@ export function badgeCursorCommand({
   allCaps,
   indicator,
   removable,
+  count = false,
 }: BadgeCursorCommandOptions) {
   const parts = ["ext badge"];
   if (tone !== "neutral") parts.push(tone);
@@ -22,5 +25,6 @@ export function badgeCursorCommand({
   if (allCaps) parts.push("all-caps");
   if (indicator) parts.push("indicator");
   if (removable) parts.push("remove");
+  if (count) parts.push("count");
   return parts.join(" ");
 }

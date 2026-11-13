@@ -25,5 +25,8 @@ describe("badgeCursorCommand", () => {
       "ext badge success all-caps indicator",
     );
     expect(badgeCursorCommand({ ...base, tone: "info", removable: true })).toBe("ext badge info remove");
+    expect(badgeCursorCommand({ ...base, tone: "danger", appearance: "solid", count: true })).toBe(
+      "ext badge danger solid count",
+    );
   });
 });

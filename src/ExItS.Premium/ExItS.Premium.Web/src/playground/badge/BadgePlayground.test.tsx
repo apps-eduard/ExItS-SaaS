@@ -24,10 +24,12 @@ describe("BadgePlayground", () => {
 
     expect(screen.getByRole("combobox", { name: "Tone, Success" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Appearance, Soft" })).toBeInTheDocument();
-    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge success");
 
     const preview = screen.getByRole("heading", { name: "Preview", level: 2 }).parentElement;
     expect(preview).not.toBeNull();
+    const previewCursor = within(preview!).getByTestId("cursor-copy-command");
+    expect(previewCursor).toHaveAttribute("data-command", "ext badge success");
+
     const paid = within(preview!).getByText("Paid");
     expect(paid).toHaveAttribute("data-tone", "success");
     expect(paid).toHaveAttribute("data-appearance", "soft");
@@ -35,35 +37,30 @@ describe("BadgePlayground", () => {
     await user.click(screen.getByRole("combobox", { name: "Appearance, Soft" }));
     await user.click(screen.getByRole("option", { name: "Solid" }));
     expect(within(preview!).getByText("Paid")).toHaveAttribute("data-appearance", "solid");
-    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge success solid");
+    expect(previewCursor).toHaveAttribute("data-command", "ext badge success solid");
 
     await user.click(screen.getByRole("combobox", { name: "Tone, Success" }));
     await user.click(screen.getByRole("option", { name: "Warning" }));
     expect(within(preview!).getByText("Due")).toHaveAttribute("data-tone", "warning");
-    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge warning solid");
+    expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid");
 
     await user.click(screen.getByRole("switch", { name: "All caps" }));
     expect(within(preview!).getByText("Due")).toHaveAttribute("data-all-caps", "true");
-    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge warning solid all-caps");
+    expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid all-caps");
 
     await user.click(screen.getByRole("switch", { name: "Indicator" }));
     expect(within(preview!).getByText("Due")).toHaveAttribute("data-indicator", "true");
-    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute(
-      "data-command",
-      "ext badge warning solid all-caps indicator",
-    );
+    expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid all-caps indicator");
 
     await user.click(screen.getByRole("switch", { name: "Remove" }));
     expect(within(preview!).getByText("Due")).toHaveAttribute("data-removable", "true");
-    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute(
-      "data-command",
-      "ext badge warning solid all-caps indicator remove",
-    );
+    expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid all-caps indicator remove");
     await user.click(within(preview!).getByRole("button", { name: "Remove" }));
     expect(within(preview!).getByText(/Removed/i)).toBeInTheDocument();
   });
 
-  it("shows Count samples in examples only — not in Cursor command", () => {
+  it("keeps Count samples in examples with a copyable Cursor command", async () => {
+    const user = userEvent.setup();
     render(<BadgePlayground />);
 
     const examples = screen.getByRole("heading", { name: "States & examples", level: 2 }).parentElement;
@@ -71,8 +68,17 @@ describe("BadgePlayground", () => {
     expect(within(examples!).getByText("Count")).toBeInTheDocument();
     expect(within(examples!).getByText("99+")).toHaveAttribute("data-count", "true");
     expect(within(examples!).getByText("12")).toHaveAttribute("data-count", "true");
-
     expect(screen.queryByRole("switch", { name: "Count" })).not.toBeInTheDocument();
-    expect(screen.getByTestId("cursor-copy-command").getAttribute("data-command")).not.toMatch(/count/);
+
+    const preview = screen.getByRole("heading", { name: "Preview", level: 2 }).parentElement;
+    expect(within(preview!).getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge success");
+    expect(within(preview!).getByTestId("cursor-copy-command").getAttribute("data-command")).not.toMatch(/count/);
+
+    const countCommands = within(examples!).getAllByTestId("cursor-copy-command");
+    expect(countCommands).toHaveLength(1);
+    expect(countCommands[0]).toHaveAttribute("data-command", "ext badge primary solid count");
+
+    await user.click(screen.getByRole("button", { name: "Count sample danger solid" }));
+    expect(countCommands[0]).toHaveAttribute("data-command", "ext badge danger solid count");
   });
 });

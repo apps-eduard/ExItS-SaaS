@@ -49,6 +49,17 @@ const SAMPLE_LABELS: Record<BadgeTone, string> = {
   contrast: "Contrast",
 };
 
+const COUNT_SAMPLES: Array<{ tone: BadgeTone; appearance: BadgeAppearance; count: number }> = [
+  { tone: "primary", appearance: "solid", count: 1 },
+  { tone: "success", appearance: "solid", count: 9 },
+  { tone: "info", appearance: "solid", count: 12 },
+  { tone: "warning", appearance: "solid", count: 42 },
+  { tone: "danger", appearance: "solid", count: 99 },
+  { tone: "help", appearance: "solid", count: 128 },
+  { tone: "neutral", appearance: "soft", count: 0 },
+  { tone: "accent", appearance: "emphasis", count: 3 },
+];
+
 export function BadgePlayground() {
   const [tone, setTone] = useState<BadgeTone>("success");
   const [appearance, setAppearance] = useState<BadgeAppearance>("soft");
@@ -57,9 +68,19 @@ export function BadgePlayground() {
   const [indicator, setIndicator] = useState(false);
   const [removable, setRemovable] = useState(false);
   const [removed, setRemoved] = useState(false);
+  const [countSample, setCountSample] = useState(COUNT_SAMPLES[0]);
 
   const previewLabel = label.trim() || SAMPLE_LABELS[tone];
   const cursorCommand = badgeCursorCommand({ tone, appearance, allCaps, indicator, removable });
+  const countCursorCommand = badgeCursorCommand({
+    tone: countSample.tone,
+    appearance: countSample.appearance,
+    allCaps: false,
+    indicator: false,
+    removable: false,
+    count: true,
+  });
+
 
   function reset() {
     setTone("success");
@@ -203,15 +224,27 @@ export function BadgePlayground() {
           <article className={styles.example}>
             <p className={styles.exampleLabel}>Count</p>
             <div className={styles.exampleRow}>
-              <Badge tone="primary" appearance="solid" count={1} />
-              <Badge tone="success" appearance="solid" count={9} />
-              <Badge tone="info" appearance="solid" count={12} />
-              <Badge tone="warning" appearance="solid" count={42} />
-              <Badge tone="danger" appearance="solid" count={99} />
-              <Badge tone="help" appearance="solid" count={128} />
-              <Badge tone="neutral" appearance="soft" count={0} />
-              <Badge tone="accent" appearance="emphasis" count={3} />
+              {COUNT_SAMPLES.map((sample) => {
+                const selected =
+                  sample.tone === countSample.tone &&
+                  sample.appearance === countSample.appearance &&
+                  sample.count === countSample.count;
+                return (
+                  <button
+                    key={`${sample.tone}-${sample.appearance}-${sample.count}`}
+                    type="button"
+                    className={styles.countSample}
+                    data-selected={selected ? "true" : "false"}
+                    aria-pressed={selected}
+                    aria-label={`Count sample ${sample.tone} ${sample.appearance}`}
+                    onClick={() => setCountSample(sample)}
+                  >
+                    <Badge tone={sample.tone} appearance={sample.appearance} count={sample.count} />
+                  </button>
+                );
+              })}
             </div>
+            <CursorCopyCommand standard="Badge" command={countCursorCommand} className={styles.countCursor} />
           </article>
         </div>
       }
