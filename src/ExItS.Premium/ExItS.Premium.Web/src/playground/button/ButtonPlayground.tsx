@@ -11,7 +11,9 @@ import { Select } from "../../components/select/Select";
 import { Switch } from "../../components/switch/Switch";
 import { AppIcon } from "../../icons/ExIcon";
 import type { IconName } from "../../icons/registry";
+import { CursorCopyCommand } from "../CursorCopyCommand";
 import { PlaygroundShell } from "../shell/PlaygroundShell";
+import { buttonCursorCommand } from "./button-cursor-command";
 import styles from "./ButtonPlayground.module.scss";
 
 const TONE_LABELS: Record<ButtonVariant, string> = {
@@ -81,6 +83,16 @@ export function ButtonPlayground() {
   const resolvedIcon: IconName = iconName === "none" ? "add" : iconName;
   const showIcon = iconOnly || iconName !== "none";
   const previewKey = [variant, appearance, iconName, disabled, loading, iconOnly, fullWidth, ripple].join(":");
+  const cursorCommand = buttonCursorCommand({
+    variant,
+    appearance,
+    icon: iconName,
+    iconOnly,
+    fullWidth,
+    loading,
+    disabled,
+    ripple,
+  });
 
   function reset() {
     setVariant("primary");
@@ -106,21 +118,24 @@ export function ButtonPlayground() {
       panes="equal"
       propertiesColumns={2}
       preview={
-        <div className={styles.previewField}>
-          <Button
-            key={previewKey}
-            variant={variant}
-            appearance={appearance}
-            disabled={disabled}
-            loading={loading}
-            ripple={ripple}
-            iconOnly={iconOnly}
-            fullWidth={fullWidth}
-            icon={showIcon ? <AppIcon name={resolvedIcon} /> : undefined}
-            aria-label={iconOnly ? previewLabel : undefined}
-          >
-            {iconOnly ? null : previewLabel}
-          </Button>
+        <div className={styles.previewStack}>
+          <div className={styles.previewField}>
+            <Button
+              key={previewKey}
+              variant={variant}
+              appearance={appearance}
+              disabled={disabled}
+              loading={loading}
+              ripple={ripple}
+              iconOnly={iconOnly}
+              fullWidth={fullWidth}
+              icon={showIcon ? <AppIcon name={resolvedIcon} /> : undefined}
+              aria-label={iconOnly ? previewLabel : undefined}
+            >
+              {iconOnly ? null : previewLabel}
+            </Button>
+          </div>
+          <CursorCopyCommand standard="Button" command={cursorCommand} />
         </div>
       }
       properties={
