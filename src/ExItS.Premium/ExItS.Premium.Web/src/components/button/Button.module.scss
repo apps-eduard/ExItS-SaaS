@@ -23,6 +23,31 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
+@mixin gradient-tone($tone) {
+  &.#{$tone} {
+    background-image: linear-gradient(to bottom, var(--color-#{$tone}), var(--color-#{$tone}-hover));
+    background-color: var(--color-#{$tone});
+    color: var(--color-#{$tone}-foreground);
+    border-color: transparent;
+
+    @if $tone == secondary {
+      border-color: var(--color-secondary-border);
+    }
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background-image: linear-gradient(to bottom, var(--color-#{$tone}-hover), var(--color-#{$tone}-pressed));
+        background-color: var(--color-#{$tone}-hover);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background-image: none;
+      background-color: var(--color-#{$tone}-pressed);
+    }
+  }
+}
+
 @mixin soft-tone($tone) {
   &.#{$tone} {
     background: var(--color-#{$tone}-soft);
@@ -194,6 +219,14 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
+.button[data-appearance="gradient"] {
+  border-color: transparent;
+
+  @each $tone in $semantic-tones {
+    @include gradient-tone($tone);
+  }
+}
+
 .button[data-appearance="soft"],
 .button[data-appearance="soft-raise"] {
   background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
@@ -297,6 +330,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 .button:disabled,
 .button[data-appearance]:is(.primary, .secondary, .accent, .success, .info, .warning, .help, .danger, .contrast, .ghost):disabled {
   background: var(--color-disabled-fill);
+  background-image: none;
   color: var(--color-disabled-text);
   border-color: transparent;
   box-shadow: none;

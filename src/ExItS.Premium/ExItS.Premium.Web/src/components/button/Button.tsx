@@ -14,6 +14,7 @@ export type ButtonVariant =
   | "ghost";
 export type ButtonAppearance =
   | "solid"
+  | "gradient"
   | "soft"
   | "outline"
   | "ghost"
@@ -23,6 +24,7 @@ export type ButtonAppearance =
 
 export const BUTTON_APPEARANCES = [
   "solid",
+  "gradient",
   "soft",
   "outline",
   "ghost",
