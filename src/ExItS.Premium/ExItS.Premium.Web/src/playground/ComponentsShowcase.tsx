@@ -12,6 +12,7 @@ import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
 import { DateTimeSection } from "./DateTimeSection";
+import { BadgePlayground } from "./badge/BadgePlayground";
 import { ButtonPlayground } from "./button/ButtonPlayground";
 import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
@@ -44,7 +45,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "selects") return <SelectPlayground />;
   if (id === "date-time") return <DateTimeSection />;
   if (id === "cards") return <CardsSection />;
-  if (id === "badges") return <BadgesSection />;
+  if (id === "badges") return <BadgePlayground />;
   if (id === "toggles") return <TogglesSection />;
   if (id === "checkboxes") return <CheckboxesSection />;
   if (id === "radio") return <RadioSection />;
@@ -116,24 +117,6 @@ function CardsSection() {
           <p className="type-secondary">Level 2 raised surface.</p>
         </Card>
       </div>
-    </>
-  );
-}
-
-function BadgesSection() {
-  return (
-    <>
-      <Intro title="Badges">
-        Status badges are soft tints with contrast-safe ink. Warning is a solid fill because its hue is too light for small text on a pale background.
-      </Intro>
-      <Stage>
-        <Badge>Neutral</Badge>
-        <Badge tone="primary">Primary</Badge>
-        <Badge tone="success">Paid</Badge>
-        <Badge tone="warning">Due</Badge>
-        <Badge tone="danger">Failed</Badge>
-        <Badge tone="info">Info</Badge>
-      </Stage>
     </>
   );
 }
