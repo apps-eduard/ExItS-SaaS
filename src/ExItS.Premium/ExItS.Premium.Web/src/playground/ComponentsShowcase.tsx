@@ -12,6 +12,7 @@ import { Switch } from "../components/switch/Switch";
 import type { SectionId } from "./nav";
 import { AdvancedShowcase } from "./AdvancedShowcase";
 import { DateTimeSection } from "./DateTimeSection";
+import { ButtonPlayground } from "./button/ButtonPlayground";
 import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
 import styles from "./Playground.module.scss";
@@ -35,7 +36,7 @@ function Stage({ label, children }: { label?: string; children: ReactNode }) {
 }
 
 export function ComponentsShowcase({ id }: { id: SectionId }) {
-  if (id === "button") return <ButtonSection />;
+  if (id === "button") return <ButtonPlayground />;
   if (id === "button-group") return <ButtonGroupStub />;
   if (id === "button-dropdown") return <ButtonDropdownStub />;
   if (id === "inputs") return <InputsSection />;
@@ -51,32 +52,6 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "advanced") return <AdvancedShowcase />;
   if (id === "component-states") return <StatesSection />;
   return null;
-}
-
-function ButtonSection() {
-  return (
-    <>
-      <Intro title="Button">
-        One solid card for the nine semantic roles from Colors. Appearances (soft, outline, raise) stay on the API. Ghost is chrome-only. Disabled and loading sit in States.
-      </Intro>
-      <Stage label="Semantic">
-        <Button variant="primary">Primary</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="accent">Accent</Button>
-        <Button variant="success">Success</Button>
-        <Button variant="info">Info</Button>
-        <Button variant="warning">Warning</Button>
-        <Button variant="help">Help</Button>
-        <Button variant="danger">Danger</Button>
-        <Button variant="contrast">Contrast</Button>
-      </Stage>
-      <Stage label="States">
-        <Button disabled>Disabled</Button>
-        <Button variant="secondary" disabled>Secondary</Button>
-        <Button loading>Saving</Button>
-      </Stage>
-    </>
-  );
 }
 
 function ButtonGroupStub() {
