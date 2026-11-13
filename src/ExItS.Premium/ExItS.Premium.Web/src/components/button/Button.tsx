@@ -12,12 +12,20 @@ export type ButtonVariant =
   | "danger"
   | "contrast"
   | "ghost";
-export type ButtonAppearance = "solid" | "soft" | "outline" | "raise" | "soft-raise" | "solid-raise";
+export type ButtonAppearance =
+  | "solid"
+  | "soft"
+  | "outline"
+  | "ghost"
+  | "raise"
+  | "soft-raise"
+  | "solid-raise";
 
 export const BUTTON_APPEARANCES = [
   "solid",
   "soft",
   "outline",
+  "ghost",
   "raise",
   "soft-raise",
   "solid-raise",

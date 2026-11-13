@@ -58,6 +58,24 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
+@mixin ghost-tone($tone) {
+  &.#{$tone} {
+    color: var(--color-#{$tone}-ink);
+    background: transparent;
+    border-color: transparent;
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--color-#{$tone}-soft);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--color-#{$tone}) 18%, var(--color-surface));
+    }
+  }
+}
+
 @mixin raise-tone($tone) {
   &.#{$tone} {
     color: var(--color-#{$tone}-ink);
@@ -164,6 +182,26 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 
   @each $tone in $semantic-tones {
     @include outline-tone($tone);
+  }
+}
+
+.button[data-appearance="ghost"] {
+  background: transparent;
+  color: var(--color-text);
+  border-color: transparent;
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--color-hover);
+    }
+  }
+
+  &:active:not(:disabled) {
+    background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+  }
+
+  @each $tone in $semantic-tones {
+    @include ghost-tone($tone);
   }
 }
 

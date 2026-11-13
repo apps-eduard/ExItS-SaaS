@@ -31,6 +31,7 @@ const APPEARANCE_LABELS: Record<ButtonAppearance, string> = {
   solid: "Solid",
   soft: "Soft",
   outline: "Outline",
+  ghost: "Ghost",
   raise: "Raise",
   "soft-raise": "Soft raise",
   "solid-raise": "Solid raise",
