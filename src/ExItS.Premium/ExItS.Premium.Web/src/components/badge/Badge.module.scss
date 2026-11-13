@@ -28,7 +28,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   align-items: center;
   justify-content: center;
   line-height: 1;
-  translate: 0 0.5px;
+  translate: 0 1px;
 }
 
 .badge[data-all-caps="true"] {
@@ -38,11 +38,11 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 
 .badge[data-all-caps="true"] .label {
   /* Caps have no descenders — nudge a touch more so they don't sit high. */
-  translate: 0 0.75px;
+  translate: 0 1.25px;
 }
 
 .badge[data-count="true"] .label {
-  translate: 0 0.5px;
+  translate: 0 1px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -122,10 +122,11 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   transition: opacity var(--motion-fast) ease, background-color var(--motion-fast) ease;
 }
 
-.remove > span {
+.remove > span,
+.remove > svg {
   display: block;
   line-height: 1;
-  translate: 0 0.5px;
+  translate: 0 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {
