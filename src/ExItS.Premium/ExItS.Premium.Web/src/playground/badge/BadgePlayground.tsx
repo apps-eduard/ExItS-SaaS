@@ -17,10 +17,14 @@ import styles from "./BadgePlayground.module.scss";
 const TONE_LABELS: Record<BadgeTone, string> = {
   neutral: "Neutral",
   primary: "Primary",
+  secondary: "Secondary",
+  accent: "Accent",
   success: "Success",
-  warning: "Warning",
-  danger: "Danger",
   info: "Info",
+  warning: "Warning",
+  help: "Help",
+  danger: "Danger",
+  contrast: "Contrast",
 };
 
 const APPEARANCE_LABELS: Record<BadgeAppearance, string> = {
@@ -34,10 +38,14 @@ const APPEARANCE_LABELS: Record<BadgeAppearance, string> = {
 const SAMPLE_LABELS: Record<BadgeTone, string> = {
   neutral: "Neutral",
   primary: "Primary",
+  secondary: "Secondary",
+  accent: "Accent",
   success: "Paid",
-  warning: "Due",
-  danger: "Failed",
   info: "Info",
+  warning: "Due",
+  help: "Help",
+  danger: "Failed",
+  contrast: "Contrast",
 };
 
 export function BadgePlayground() {
@@ -62,7 +70,7 @@ export function BadgePlayground() {
   return (
     <PlaygroundShell
       title="Badges"
-      description="Status badges follow tone and appearance. Soft is the default tint. Emphasis is a stronger wash with bolder ink. Solid fills the chip, outline keeps a border, and ghost is ink only. Prefer solid for warning when soft tint contrast is too low."
+      description="Status badges follow tone and appearance. Tone includes neutral plus the full semantic set (primary, secondary, accent, success, info, warning, help, danger, contrast). Soft is the default tint. Emphasis is a stronger wash with bolder ink. Solid fills the chip, outline keeps a border, and ghost is ink only."
       panes="equal"
       propertiesColumns={2}
       preview={
