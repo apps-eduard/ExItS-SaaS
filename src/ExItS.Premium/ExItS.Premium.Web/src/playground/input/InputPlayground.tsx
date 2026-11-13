@@ -77,6 +77,8 @@ export function InputPlayground() {
     <PlaygroundShell
       title="Inputs"
       description="One preview follows appearance, focus motion, and field state. Soft keeps the label inside the tint, Outlined floats it on the border, Floating label rises from the placeholder, and Standard stays the shipped field."
+      panes="equal"
+      propertiesColumns={2}
       preview={
         <div className={styles.previewField} ref={previewRef}>
           {kind === "search" ? (
@@ -144,13 +146,15 @@ export function InputPlayground() {
               Success
             </option>
           </Select>
-          <Input label="Label" value={label} onChange={(event) => setLabel(event.target.value)} autoComplete="off" />
-          <div className={styles.toggles}>
+          <div className={styles.spanFull}>
+            <Input label="Label" value={label} onChange={(event) => setLabel(event.target.value)} autoComplete="off" />
+          </div>
+          <div className={`${styles.toggles} ${styles.spanFull}`}>
             <Switch label="Disabled" checked={disabled} onChange={(event) => setDisabled(event.target.checked)} />
             <Switch label="Read-only" checked={readOnly} disabled={kind === "search"} onChange={(event) => setReadOnly(event.target.checked)} />
             <Switch label="Required" checked={required} disabled={kind === "search"} onChange={(event) => setRequired(event.target.checked)} />
           </div>
-          <div className={styles.actions}>
+          <div className={`${styles.actions} ${styles.spanFull}`}>
             <Button variant="secondary" onClick={reset}>
               Default global
             </Button>
