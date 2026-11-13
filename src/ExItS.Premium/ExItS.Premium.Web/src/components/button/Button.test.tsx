@@ -56,4 +56,21 @@ describe("Button", () => {
     expect(screen.getByRole("button", { name: "Raise" })).toHaveAttribute("data-appearance", "raise");
     expect(screen.getByRole("button", { name: "Solid raise" })).toHaveAttribute("data-appearance", "solid-raise");
   });
+
+  it("covers every semantic role", () => {
+    render(
+      <>
+        <Button variant="accent">Accent</Button>
+        <Button variant="info">Info</Button>
+        <Button variant="warning">Warning</Button>
+        <Button variant="help">Help</Button>
+        <Button variant="contrast">Contrast</Button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Accent" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Info" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Warning" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Help" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Contrast" })).toBeEnabled();
+  });
 });
