@@ -57,6 +57,9 @@ describe("Button", () => {
   it("exposes soft and outline without changing the tone", () => {
     render(
       <>
+        <Button appearance="gradient" variant="primary">
+          Gradient
+        </Button>
         <Button appearance="soft" variant="danger">
           Soft
         </Button>
@@ -77,6 +80,7 @@ describe("Button", () => {
         </Button>
       </>,
     );
+    expect(screen.getByRole("button", { name: "Gradient" })).toHaveAttribute("data-appearance", "gradient");
     expect(screen.getByRole("button", { name: "Soft" })).toHaveAttribute("data-appearance", "soft");
     expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute("data-appearance", "outline");
     expect(screen.getByRole("button", { name: "Ghost" })).toHaveAttribute("data-appearance", "ghost");

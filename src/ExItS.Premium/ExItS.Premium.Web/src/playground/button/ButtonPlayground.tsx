@@ -29,6 +29,7 @@ const TONE_LABELS: Record<ButtonVariant, string> = {
 
 const APPEARANCE_LABELS: Record<ButtonAppearance, string> = {
   solid: "Solid",
+  gradient: "Gradient",
   soft: "Soft",
   outline: "Outline",
   ghost: "Ghost",
