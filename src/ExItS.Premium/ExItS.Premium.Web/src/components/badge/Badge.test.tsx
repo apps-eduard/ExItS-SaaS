@@ -6,7 +6,7 @@ import { Badge, formatBadgeCount } from "./Badge";
 describe("Badge", () => {
   it("defaults to soft appearance and neutral tone", () => {
     render(<Badge>Neutral</Badge>);
-    const badge = screen.getByText("Neutral");
+    const badge = screen.getByText("Neutral").closest("[data-tone]");
     expect(badge).toHaveAttribute("data-tone", "neutral");
     expect(badge).toHaveAttribute("data-appearance", "soft");
     expect(badge).toHaveAttribute("data-all-caps", "false");
@@ -20,7 +20,7 @@ describe("Badge", () => {
         Due
       </Badge>,
     );
-    const badge = screen.getByText("Due");
+    const badge = screen.getByText("Due").closest("[data-tone]");
     expect(badge).toHaveAttribute("data-tone", "warning");
     expect(badge).toHaveAttribute("data-appearance", "solid");
   });
@@ -31,7 +31,7 @@ describe("Badge", () => {
         Paid
       </Badge>,
     );
-    expect(screen.getByText("Paid")).toHaveAttribute("data-appearance", "emphasis");
+    expect(screen.getByText("Paid").closest("[data-tone]")).toHaveAttribute("data-appearance", "emphasis");
   });
 
   it("covers the full semantic tone set", () => {
@@ -43,10 +43,10 @@ describe("Badge", () => {
         <Badge tone="contrast">Contrast</Badge>
       </>,
     );
-    expect(screen.getByText("Secondary")).toHaveAttribute("data-tone", "secondary");
-    expect(screen.getByText("Accent")).toHaveAttribute("data-tone", "accent");
-    expect(screen.getByText("Help")).toHaveAttribute("data-tone", "help");
-    expect(screen.getByText("Contrast")).toHaveAttribute("data-tone", "contrast");
+    expect(screen.getByText("Secondary").closest("[data-tone]")).toHaveAttribute("data-tone", "secondary");
+    expect(screen.getByText("Accent").closest("[data-tone]")).toHaveAttribute("data-tone", "accent");
+    expect(screen.getByText("Help").closest("[data-tone]")).toHaveAttribute("data-tone", "help");
+    expect(screen.getByText("Contrast").closest("[data-tone]")).toHaveAttribute("data-tone", "contrast");
   });
 
   it("supports all caps and indicator", () => {
@@ -55,10 +55,10 @@ describe("Badge", () => {
         Paid
       </Badge>,
     );
-    const badge = screen.getByText("Paid");
+    const badge = screen.getByText("Paid").closest("[data-tone]");
     expect(badge).toHaveAttribute("data-all-caps", "true");
     expect(badge).toHaveAttribute("data-indicator", "true");
-    expect(badge.querySelector("[aria-hidden='true']")).toBeTruthy();
+    expect(badge?.querySelector("[aria-hidden='true']")).toBeTruthy();
   });
 
   it("renders indicator-only when there is no label", () => {
@@ -76,7 +76,7 @@ describe("Badge", () => {
         Tag
       </Badge>,
     );
-    expect(screen.getByText("Tag")).toHaveAttribute("data-removable", "true");
+    expect(screen.getByText("Tag").closest("[data-tone]")).toHaveAttribute("data-removable", "true");
     await user.click(screen.getByRole("button", { name: "Remove" }));
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
@@ -88,7 +88,7 @@ describe("Badge", () => {
     expect(formatBadgeCount(128)).toBe("99+");
 
     render(<Badge tone="danger" appearance="solid" count={128} />);
-    const badge = screen.getByText("99+");
+    const badge = screen.getByText("99+").closest("[data-tone]");
     expect(badge).toHaveAttribute("data-count", "true");
     expect(badge).toHaveAttribute("data-removable", "false");
   });

@@ -77,7 +77,7 @@ export function Badge({
       data-removable={showRemove ? "true" : "false"}
     >
       {indicator && !isCount ? <span className={styles.indicator} aria-hidden="true" /> : null}
-      {isCount ? countLabel : hasLabel ? children : null}
+      {isCount || hasLabel ? <span className={styles.label}>{isCount ? countLabel : children}</span> : null}
       {showRemove ? (
         <button
           type="button"
