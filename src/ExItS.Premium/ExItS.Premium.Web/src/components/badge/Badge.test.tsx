@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { Badge } from "./Badge";
+import { Badge, formatBadgeCount } from "./Badge";
 
 describe("Badge", () => {
   it("defaults to soft appearance and neutral tone", () => {
@@ -80,4 +80,17 @@ describe("Badge", () => {
     await user.click(screen.getByRole("button", { name: "Remove" }));
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
+
+  it("formats count chips and caps at 99+", () => {
+    expect(formatBadgeCount(0)).toBe("0");
+    expect(formatBadgeCount(12)).toBe("12");
+    expect(formatBadgeCount(99)).toBe("99");
+    expect(formatBadgeCount(128)).toBe("99+");
+
+    render(<Badge tone="danger" appearance="solid" count={128} />);
+    const badge = screen.getByText("99+");
+    expect(badge).toHaveAttribute("data-count", "true");
+    expect(badge).toHaveAttribute("data-removable", "false");
+  });
 });
+
