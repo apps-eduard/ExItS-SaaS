@@ -16,13 +16,24 @@ import { ReferenceShadeButton, type ReferenceCopyMode } from "./ReferenceShadeBu
 const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
 
 const SEMANTIC = [
-  ["Page", "--color-page"],
-  ["Text", "--color-text"],
   ["Primary", "--color-primary"],
+  ["Secondary", "--color-secondary"],
+  ["Accent", "--color-accent"],
   ["Success", "--color-success"],
+  ["Info", "--color-info"],
   ["Warning", "--color-warning"],
+  ["Help", "--color-help"],
   ["Danger", "--color-danger"],
-  ["Information", "--color-info"],
+  ["Contrast", "--color-contrast"],
+] as const;
+
+const FOUNDATION = [
+  ["Page", "--color-page"],
+  ["Surface", "--color-surface"],
+  ["Text", "--color-text"],
+  ["Border", "--color-border"],
+  ["Disabled", "--color-disabled-fill"],
+  ["Overlay", "--color-overlay"],
 ] as const;
 
 function TokenColorFamily({ title, prefix, tokenPrefix }: { title: string; prefix: string; tokenPrefix: string }) {
@@ -35,6 +46,16 @@ function TokenColorFamily({ title, prefix, tokenPrefix }: { title: string; prefi
         ))}
       </div>
     </article>
+  );
+}
+
+function SwatchGrid({ items }: { items: readonly (readonly [string, string])[] }) {
+  return (
+    <div className={styles.semanticGrid}>
+      {items.map(([name, token]) => (
+        <ColorShadeButton key={token} label={name} token={token} variant="semantic" />
+      ))}
+    </div>
   );
 }
 
@@ -53,18 +74,21 @@ export function ColorsSection() {
     <div className={styles.page}>
       <header className={`${page.intro} ${styles.intro}`}>
         <h1 className="type-page">Colors</h1>
-        <p className="type-secondary">Theme tokens stay separate from the reference library. Warning stays #FF5722.</p>
+        <p className="type-secondary">Semantic roles · foundation · theme palettes · reference library. Warning stays #FF5722.</p>
       </header>
 
       <section className={styles.section} aria-labelledby="semantic-colors">
         <h2 id="semantic-colors" className={styles.sectionTitle}>
           Semantic Colors
         </h2>
-        <div className={styles.semanticGrid}>
-          {SEMANTIC.map(([name, token]) => (
-            <ColorShadeButton key={token} label={name} token={token} variant="semantic" />
-          ))}
-        </div>
+        <SwatchGrid items={SEMANTIC} />
+      </section>
+
+      <section className={styles.section} aria-labelledby="foundation-colors">
+        <h2 id="foundation-colors" className={styles.sectionTitle}>
+          Foundation Colors
+        </h2>
+        <SwatchGrid items={FOUNDATION} />
       </section>
 
       <section className={styles.section} aria-labelledby="neutral-scale">

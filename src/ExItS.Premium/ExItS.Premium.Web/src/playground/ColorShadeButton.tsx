@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useAppearance } from "../theme/AppearanceProvider";
-import { copyText, inkForHex, toColorText } from "./color";
+import { copyText, inkForColor, resolveSwatchValue } from "./color";
 import styles from "./colors-page.module.scss";
 
 type ColorShadeButtonProps = {
@@ -9,24 +9,23 @@ type ColorShadeButtonProps = {
   variant?: "shade" | "semantic";
 };
 
+function readTokenValue(token: string) {
+  return getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+}
+
 export function ColorShadeButton({ label, token, variant = "shade" }: ColorShadeButtonProps) {
   const { resolvedTheme, palette } = useAppearance();
   const fillRef = useRef<HTMLButtonElement>(null);
-  const [hex, setHex] = useState("");
+  const [value, setValue] = useState("");
   const [copied, setCopied] = useState(false);
   const [announce, setAnnounce] = useState("");
 
   useLayoutEffect(() => {
     const node = fillRef.current;
     if (!node) return;
-    const computed = getComputedStyle(node).backgroundColor;
-    const fromPaint = toColorText(computed);
-    if (fromPaint && !/^rgba?\(\s*0[,\s]+0[,\s]+0(?:[,\s/]+0(?:\.0+)?)?\s*\)$/i.test(fromPaint)) {
-      setHex(fromPaint);
-      return;
-    }
-    const fromToken = toColorText(getComputedStyle(document.documentElement).getPropertyValue(token).trim());
-    setHex(fromToken || fromPaint || token);
+    const authored = readTokenValue(token);
+    const resolved = resolveSwatchValue(authored, getComputedStyle(node).backgroundColor);
+    setValue(resolved || token);
   }, [token, resolvedTheme, palette]);
 
   useLayoutEffect(() => {
@@ -38,14 +37,14 @@ export function ColorShadeButton({ label, token, variant = "shade" }: ColorShade
     return () => window.clearTimeout(timer);
   }, [copied]);
 
-  const ink = hex.startsWith("#") ? inkForHex(hex) : "#111827";
-  const title = hex ? `${token} · ${hex}` : token;
+  const ink = value ? inkForColor(value) : "#111827";
+  const title = value ? `${token} · ${value}` : token;
 
   async function onCopy() {
-    const value = hex || token;
-    const ok = await copyText(value);
+    const next = value || token;
+    const ok = await copyText(next);
     setCopied(ok);
-    setAnnounce(ok ? `Copied ${value}` : `Could not copy ${label}`);
+    setAnnounce(ok ? `Copied ${next}` : `Could not copy ${label}`);
   }
 
   return (
@@ -55,19 +54,21 @@ export function ColorShadeButton({ label, token, variant = "shade" }: ColorShade
       className={variant === "semantic" ? styles.semantic : styles.shade}
       style={{ background: `var(${token})`, color: ink }}
       title={title}
-      aria-label={`Copy ${label} ${hex || token}`}
+      aria-label={`Copy ${label} ${value || token}`}
       data-copied={copied ? "true" : undefined}
+      data-token={token}
+      data-value={value || undefined}
       onClick={onCopy}
     >
       {variant === "semantic" ? (
         <>
           <span className={styles.semanticName}>{label}</span>
-          <span className={styles.semanticMeta}>{copied ? "Copied" : hex || token}</span>
+          <span className={styles.semanticMeta}>{copied ? "Copied" : value || token}</span>
         </>
       ) : (
         <>
           <span className={styles.shadeLabel}>{label}</span>
-          <span className={styles.shadeMeta}>{hex || token}</span>
+          <span className={styles.shadeMeta}>{value || token}</span>
         </>
       )}
       {copied && variant === "shade" ? <span className={styles.copied}>Copied</span> : null}

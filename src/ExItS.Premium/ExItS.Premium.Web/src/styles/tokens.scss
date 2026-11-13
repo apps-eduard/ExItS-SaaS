@@ -221,11 +221,12 @@
   --color-disabled-text: #4b5563;
   --color-border: #e4e7ec;
   --color-border-strong: #d0d5dd;
-  --color-success: #166534;
-  --color-success-hover: #14532d;
-  --color-success-pressed: #052e16;
-  --color-success-foreground: #ffffff;
-  --color-success-ink: #166534;
+  /* Bright OKLCH fills use dark foregrounds — white text fails AA on these bases. */
+  --color-success: oklch(0.64 0.22 160);
+  --color-success-hover: oklch(0.58 0.22 160);
+  --color-success-pressed: oklch(0.55 0.21 160);
+  --color-success-foreground: oklch(0.18 0.04 160);
+  --color-success-ink: oklch(0.4 0.16 160);
   --color-warning: #ff5722;
   --color-warning-hover: #f4511e;
   --color-warning-pressed: #e64a19;
@@ -236,11 +237,16 @@
   --color-danger-pressed: #7f1d1d;
   --color-danger-foreground: #ffffff;
   --color-danger-ink: #b91c1c;
-  --color-info: #075985;
-  --color-info-hover: #0c4a6e;
-  --color-info-pressed: #082f49;
-  --color-info-foreground: #ffffff;
-  --color-info-ink: #075985;
+  --color-info: oklch(0.69 0.22 220);
+  --color-info-hover: oklch(0.63 0.22 220);
+  --color-info-pressed: oklch(0.56 0.21 220);
+  --color-info-foreground: oklch(0.16 0.05 220);
+  --color-info-ink: oklch(0.4 0.16 220);
+  --color-help: oklch(0.45 0.14 305);
+  --color-help-hover: oklch(0.4 0.14 305);
+  --color-help-pressed: oklch(0.35 0.13 305);
+  --color-help-foreground: #ffffff;
+  --color-help-ink: oklch(0.42 0.14 305);
   --color-feature-lent: #166534;
   --color-feature-lent-foreground: #ffffff;
   --color-feature-lent-ink: #166534;
@@ -279,11 +285,12 @@
   --color-disabled-text: #cbd5e1;
   --color-border: #334155;
   --color-border-strong: #475569;
-  --color-success: #4ade80;
-  --color-success-hover: #86efac;
-  --color-success-pressed: #22c55e;
-  --color-success-foreground: #052e16;
-  --color-success-ink: #4ade80;
+  /* Same bright OKLCH bases as light; dark FG on fill, bright ink on dark surfaces. */
+  --color-success: oklch(0.64 0.22 160);
+  --color-success-hover: oklch(0.7 0.2 160);
+  --color-success-pressed: oklch(0.58 0.22 160);
+  --color-success-foreground: oklch(0.18 0.04 160);
+  --color-success-ink: oklch(0.72 0.18 160);
   --color-warning: #ff5722;
   --color-warning-hover: #f4511e;
   --color-warning-pressed: #e64a19;
@@ -294,11 +301,16 @@
   --color-danger-pressed: #7f1d1d;
   --color-danger-foreground: #ffffff;
   --color-danger-ink: #fca5a5;
-  --color-info: #075985;
-  --color-info-hover: #0c4a6e;
-  --color-info-pressed: #082f49;
-  --color-info-foreground: #ffffff;
-  --color-info-ink: #7dd3fc;
+  --color-info: oklch(0.69 0.22 220);
+  --color-info-hover: oklch(0.75 0.2 220);
+  --color-info-pressed: oklch(0.63 0.22 220);
+  --color-info-foreground: oklch(0.16 0.05 220);
+  --color-info-ink: oklch(0.78 0.14 220);
+  --color-help: oklch(0.72 0.12 305);
+  --color-help-hover: oklch(0.78 0.11 305);
+  --color-help-pressed: oklch(0.66 0.13 305);
+  --color-help-foreground: oklch(0.22 0.06 305);
+  --color-help-ink: oklch(0.78 0.1 305);
   --color-feature-lent: #4ade80;
   --color-feature-lent-foreground: #052e16;
   --color-feature-lent-ink: #4ade80;
@@ -397,18 +409,51 @@
 
 [data-theme] {
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  --color-primary-ink: var(--color-primary);
+  --color-primary-border: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
   --color-hover: color-mix(in srgb, var(--color-text) 6%, var(--color-surface));
   --color-focus: var(--color-primary);
+
+  /* Secondary reuses surface / border foundation (matches Button secondary). */
+  --color-secondary: var(--color-surface);
+  --color-secondary-hover: var(--color-hover);
+  --color-secondary-pressed: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+  --color-secondary-foreground: var(--color-text);
+  --color-secondary-soft: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
+  --color-secondary-ink: var(--color-text-secondary);
+  --color-secondary-border: var(--color-border-strong);
+
+  /* Accent is a primary-derived emphasis wash — not a sixth Primary theme. */
+  --color-accent: var(--color-primary-selected);
+  --color-accent-hover: color-mix(in srgb, var(--color-primary) 26%, var(--color-surface));
+  --color-accent-pressed: color-mix(in srgb, var(--color-primary) 32%, var(--color-surface));
+  --color-accent-foreground: var(--color-text);
+  --color-accent-soft: var(--color-primary-soft);
+  --color-accent-ink: var(--color-primary);
+  --color-accent-border: var(--color-primary-border);
+
   --color-success-soft: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
   --color-warning-soft: color-mix(in srgb, var(--color-warning) 16%, var(--color-surface));
   --color-danger-soft: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
   --color-info-soft: color-mix(in srgb, var(--color-info) 14%, var(--color-surface));
+  --color-help-soft: color-mix(in srgb, var(--color-help) 14%, var(--color-surface));
   --color-primary-selected: color-mix(in srgb, var(--color-primary) 20%, var(--color-surface));
   --color-border-subtle: color-mix(in srgb, var(--color-border) 55%, var(--color-surface));
   --color-success-border: color-mix(in srgb, var(--color-success) 42%, var(--color-border));
   --color-warning-border: color-mix(in srgb, var(--color-warning) 46%, var(--color-border));
   --color-danger-border: color-mix(in srgb, var(--color-danger) 42%, var(--color-border));
   --color-info-border: color-mix(in srgb, var(--color-info) 42%, var(--color-border));
+  --color-help-border: color-mix(in srgb, var(--color-help) 42%, var(--color-border));
+
+  /* Contrast reuses inverse text pairing for high-contrast surfaces/actions. */
+  --color-contrast: var(--color-text);
+  --color-contrast-hover: color-mix(in srgb, var(--color-text) 88%, var(--color-page));
+  --color-contrast-pressed: color-mix(in srgb, var(--color-text) 78%, var(--color-page));
+  --color-contrast-foreground: var(--color-text-inverse);
+  --color-contrast-soft: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+  --color-contrast-ink: var(--color-text);
+  --color-contrast-border: var(--color-border-strong);
+
   --color-feature-lent-soft: color-mix(in srgb, var(--color-feature-lent-ink) 16%, var(--color-surface));
   --color-feature-owe-soft: color-mix(in srgb, var(--color-feature-owe-ink) 16%, var(--color-surface));
   --color-feature-people-soft: color-mix(in srgb, var(--color-feature-people-ink) 16%, var(--color-surface));
