@@ -12,6 +12,8 @@ describe("InputPlayground", () => {
     expect(screen.getByRole("complementary", { name: "Properties" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Preview", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "States & examples", level: 2 })).toBeInTheDocument();
+    expect(container.querySelector("section")).toHaveAttribute("data-panes", "equal");
+    expect(container.querySelector("section")).toHaveAttribute("data-properties-columns", "2");
 
     const workspace = container.querySelector("[class*='workspace']");
     const panes = workspace

@@ -38,6 +38,8 @@ export function SelectPlayground() {
     <PlaygroundShell
       title="Selects"
       description="Select reuses Input appearance and focus motion. Soft keeps the label inside the tint, Outlined floats it on the border, and Stacked keeps it above. Dropdown transitions stay independent of the focus treatment."
+      panes="equal"
+      propertiesColumns={2}
       preview={
         <div className={styles.previewField}>
           <Select
@@ -77,13 +79,15 @@ export function SelectPlayground() {
             ))}
             <option value="running-accent">{FOCUS_LABELS["running-accent"]}</option>
           </Select>
-          <Select label="Dropdown Transition" value={menuMotion} onChange={(event) => setMenuMotion(event.target.value as SelectMenuMotion)}>
-            <option value="flip-up">Flip Up</option>
-            <option value="flip-down">Flip Down</option>
-            <option value="scale">Scale</option>
-            <option value="jump-up">Jump Up</option>
-          </Select>
-          <div className={styles.toggles}>
+          <div className={styles.spanFull}>
+            <Select label="Dropdown Transition" value={menuMotion} onChange={(event) => setMenuMotion(event.target.value as SelectMenuMotion)}>
+              <option value="flip-up">Flip Up</option>
+              <option value="flip-down">Flip Down</option>
+              <option value="scale">Scale</option>
+              <option value="jump-up">Jump Up</option>
+            </Select>
+          </div>
+          <div className={`${styles.toggles} ${styles.spanFull}`}>
             <Switch label="Searchable" checked={searchable} onChange={(event) => setSearchable(event.target.checked)} />
             <Switch label="Multiple" checked={multiple} onChange={(event) => setMultiple(event.target.checked)} />
           </div>
