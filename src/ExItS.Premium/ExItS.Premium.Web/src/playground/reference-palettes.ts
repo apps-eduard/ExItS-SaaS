@@ -8,8 +8,8 @@ export type ReferenceFamilyId =
   | "slate"
   | "gray"
   | "zinc"
-  | "stone"
   | "neutral"
+  | "stone"
   | "red"
   | "rose"
   | "pink"
@@ -29,7 +29,22 @@ export type ReferenceFamilyId =
   | "orange"
   | "brown"
   | "olive"
-  | "mint";
+  | "mint"
+  | "charcoal"
+  | "ivory"
+  | "coral"
+  | "peach"
+  | "terracotta"
+  | "burgundy"
+  | "gold"
+  | "sage"
+  | "forest"
+  | "turquoise"
+  | "azure"
+  | "navy"
+  | "lavender"
+  | "periwinkle"
+  | "magenta";
 
 export type ReferenceFamily = {
   id: ReferenceFamilyId;
@@ -37,7 +52,7 @@ export type ReferenceFamily = {
   shades: Record<ReferenceShadeStep, string>;
 };
 
-/** Curated HEX scales (Tailwind-aligned neutrals/chromatics + ExItS brown/olive/mint). */
+/** Curated HEX scales for visual reference only. */
 export const REFERENCE_PALETTES: readonly ReferenceFamily[] = [
   {
     id: "slate",
@@ -88,22 +103,6 @@ export const REFERENCE_PALETTES: readonly ReferenceFamily[] = [
     },
   },
   {
-    id: "stone",
-    label: "Stone",
-    shades: {
-      50: "#fafaf9",
-      100: "#f5f5f4",
-      200: "#e7e5e4",
-      300: "#d6d3d1",
-      400: "#a8a29e",
-      500: "#78716c",
-      600: "#57534e",
-      700: "#44403c",
-      800: "#292524",
-      900: "#1c1917",
-    },
-  },
-  {
     id: "neutral",
     label: "Neutral",
     shades: {
@@ -117,6 +116,22 @@ export const REFERENCE_PALETTES: readonly ReferenceFamily[] = [
       700: "#404040",
       800: "#262626",
       900: "#171717",
+    },
+  },
+  {
+    id: "stone",
+    label: "Stone",
+    shades: {
+      50: "#fafaf9",
+      100: "#f5f5f4",
+      200: "#e7e5e4",
+      300: "#d6d3d1",
+      400: "#a8a29e",
+      500: "#78716c",
+      600: "#57534e",
+      700: "#44403c",
+      800: "#292524",
+      900: "#1c1917",
     },
   },
   {
@@ -439,10 +454,254 @@ export const REFERENCE_PALETTES: readonly ReferenceFamily[] = [
       900: "#123a2d",
     },
   },
+  {
+    id: "charcoal",
+    label: "Charcoal",
+    shades: {
+      50: "#f4f5f6",
+      100: "#e4e6e9",
+      200: "#c8ccd2",
+      300: "#a3aab4",
+      400: "#7a8491",
+      500: "#5b6572",
+      600: "#464f5b",
+      700: "#363d47",
+      800: "#252a31",
+      900: "#16191e",
+    },
+  },
+  {
+    id: "ivory",
+    label: "Ivory",
+    shades: {
+      50: "#fffcf5",
+      100: "#faf5e8",
+      200: "#f3ead0",
+      300: "#e8d9b0",
+      400: "#d8c28a",
+      500: "#c4a86a",
+      600: "#a8894f",
+      700: "#876b3d",
+      800: "#65502f",
+      900: "#433520",
+    },
+  },
+  {
+    id: "coral",
+    label: "Coral",
+    shades: {
+      50: "#fff5f3",
+      100: "#ffe6e1",
+      200: "#ffc9bf",
+      300: "#ffa394",
+      400: "#ff7a66",
+      500: "#f2553d",
+      600: "#d63c26",
+      700: "#b12f1e",
+      800: "#8a2619",
+      900: "#5e1a11",
+    },
+  },
+  {
+    id: "peach",
+    label: "Peach",
+    shades: {
+      50: "#fff7f2",
+      100: "#ffeadc",
+      200: "#ffd2b5",
+      300: "#ffb388",
+      400: "#ff935c",
+      500: "#f2753a",
+      600: "#d45a24",
+      700: "#ae461c",
+      800: "#853616",
+      900: "#58240f",
+    },
+  },
+  {
+    id: "terracotta",
+    label: "Terracotta",
+    shades: {
+      50: "#fbf4f0",
+      100: "#f4e2d8",
+      200: "#e7c3b0",
+      300: "#d59e82",
+      400: "#c07a58",
+      500: "#a85c3b",
+      600: "#8c482e",
+      700: "#6f3925",
+      800: "#532b1c",
+      900: "#371c13",
+    },
+  },
+  {
+    id: "burgundy",
+    label: "Burgundy",
+    shades: {
+      50: "#faf3f5",
+      100: "#f1dfe5",
+      200: "#e0b9c5",
+      300: "#c88a9d",
+      400: "#ad5f78",
+      500: "#8f3f5b",
+      600: "#75324a",
+      700: "#5c273b",
+      800: "#431c2b",
+      900: "#2c121c",
+    },
+  },
+  {
+    id: "gold",
+    label: "Gold",
+    shades: {
+      50: "#fffbeb",
+      100: "#fef3c7",
+      200: "#fde68a",
+      300: "#fcd34d",
+      400: "#f0b429",
+      500: "#d97706",
+      600: "#b45309",
+      700: "#92400e",
+      800: "#78350f",
+      900: "#5a280b",
+    },
+  },
+  {
+    id: "sage",
+    label: "Sage",
+    shades: {
+      50: "#f4f7f4",
+      100: "#e4ebe4",
+      200: "#c6d5c7",
+      300: "#a3bba5",
+      400: "#7f9c84",
+      500: "#628068",
+      600: "#4e6753",
+      700: "#3e5243",
+      800: "#2e3c32",
+      900: "#1e2822",
+    },
+  },
+  {
+    id: "forest",
+    label: "Forest",
+    shades: {
+      50: "#f1f7f2",
+      100: "#dcecde",
+      200: "#b5d6ba",
+      300: "#86b990",
+      400: "#569c68",
+      500: "#357d49",
+      600: "#28643a",
+      700: "#1f4f2f",
+      800: "#173b23",
+      900: "#0f2718",
+    },
+  },
+  {
+    id: "turquoise",
+    label: "Turquoise",
+    shades: {
+      50: "#f0fdff",
+      100: "#ccfbfb",
+      200: "#99f3f3",
+      300: "#5ee6e6",
+      400: "#2bd4d4",
+      500: "#14b8b8",
+      600: "#0d9494",
+      700: "#0f7676",
+      800: "#115e5e",
+      900: "#134e4e",
+    },
+  },
+  {
+    id: "azure",
+    label: "Azure",
+    shades: {
+      50: "#f0f7ff",
+      100: "#dcecff",
+      200: "#b6d6ff",
+      300: "#85b8ff",
+      400: "#4f95ff",
+      500: "#2674f0",
+      600: "#1859c9",
+      700: "#1446a0",
+      800: "#123578",
+      900: "#0e2350",
+    },
+  },
+  {
+    id: "navy",
+    label: "Navy",
+    shades: {
+      50: "#f2f5fb",
+      100: "#e0e7f4",
+      200: "#c0cde6",
+      300: "#96aad2",
+      400: "#6a86bb",
+      500: "#4a68a0",
+      600: "#385284",
+      700: "#2c4169",
+      800: "#1f2e4c",
+      900: "#141e33",
+    },
+  },
+  {
+    id: "lavender",
+    label: "Lavender",
+    shades: {
+      50: "#f7f5ff",
+      100: "#ece8ff",
+      200: "#d7d0ff",
+      300: "#b9adff",
+      400: "#9784f5",
+      500: "#7a63e0",
+      600: "#634dbf",
+      700: "#4f3d99",
+      800: "#3b2e73",
+      900: "#281f4d",
+    },
+  },
+  {
+    id: "periwinkle",
+    label: "Periwinkle",
+    shades: {
+      50: "#f4f6ff",
+      100: "#e5eaff",
+      200: "#c9d3ff",
+      300: "#a7b6ff",
+      400: "#8394f5",
+      500: "#6777e0",
+      600: "#515fc0",
+      700: "#404c99",
+      800: "#2f3872",
+      900: "#1f254c",
+    },
+  },
+  {
+    id: "magenta",
+    label: "Magenta",
+    shades: {
+      50: "#fdf2f9",
+      100: "#fce7f4",
+      200: "#f9c7e6",
+      300: "#f39ad2",
+      400: "#e86bb8",
+      500: "#d946a6",
+      600: "#b92d88",
+      700: "#95236d",
+      800: "#711b53",
+      900: "#4c1238",
+    },
+  },
 ] as const;
 
 export function referenceShadeName(familyId: string, step: ReferenceShadeStep) {
   return `${familyId}-${step}`;
+}
+
+export function referenceShadeLabel(familyLabel: string, step: ReferenceShadeStep) {
+  return `${familyLabel} ${step}`;
 }
 
 export type FilteredReferenceFamily = ReferenceFamily & {
@@ -453,20 +712,25 @@ export function filterReferencePalettes(
   query: string,
   families: readonly ReferenceFamily[] = REFERENCE_PALETTES,
 ): FilteredReferenceFamily[] {
-  const needle = query.trim().toLowerCase().replace(/^#/, "");
+  const raw = query.trim().toLowerCase();
+  const needle = raw.replace(/^#/, "");
 
   return families
     .map((family) => {
       const matchingSteps = needle
         ? REFERENCE_SHADE_STEPS.filter((step) => {
             const name = referenceShadeName(family.id, step);
-            const hex = family.shades[step].toLowerCase().replace(/^#/, "");
+            const display = referenceShadeLabel(family.label, step).toLowerCase();
+            const hex = family.shades[step].toLowerCase();
+            const hexBare = hex.replace(/^#/, "");
             return (
               family.id.includes(needle) ||
               family.label.toLowerCase().includes(needle) ||
               name.includes(needle) ||
+              display.includes(needle) ||
               String(step).includes(needle) ||
-              hex.includes(needle)
+              hex.includes(raw) ||
+              hexBare.includes(needle)
             );
           })
         : [...REFERENCE_SHADE_STEPS];
