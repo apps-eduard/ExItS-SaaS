@@ -242,11 +242,11 @@
   --color-info-pressed: oklch(0.56 0.21 220);
   --color-info-foreground: oklch(0.16 0.05 220);
   --color-info-ink: oklch(0.4 0.16 220);
-  --color-help: oklch(0.45 0.14 305);
-  --color-help-hover: oklch(0.4 0.14 305);
-  --color-help-pressed: oklch(0.35 0.13 305);
+  --color-help: #9333ea; /* purple-600 */
+  --color-help-hover: #7e22ce; /* purple-700 */
+  --color-help-pressed: #6b21a8; /* purple-800 */
   --color-help-foreground: #ffffff;
-  --color-help-ink: oklch(0.42 0.14 305);
+  --color-help-ink: #7e22ce;
   --color-feature-lent: #166534;
   --color-feature-lent-foreground: #ffffff;
   --color-feature-lent-ink: #166534;
@@ -306,11 +306,11 @@
   --color-info-pressed: oklch(0.63 0.22 220);
   --color-info-foreground: oklch(0.16 0.05 220);
   --color-info-ink: oklch(0.78 0.14 220);
-  --color-help: oklch(0.72 0.12 305);
-  --color-help-hover: oklch(0.78 0.11 305);
-  --color-help-pressed: oklch(0.66 0.13 305);
-  --color-help-foreground: oklch(0.22 0.06 305);
-  --color-help-ink: oklch(0.78 0.1 305);
+  --color-help: #9333ea; /* purple-600 */
+  --color-help-hover: #7e22ce; /* purple-700 */
+  --color-help-pressed: #6b21a8; /* purple-800 */
+  --color-help-foreground: #ffffff;
+  --color-help-ink: #c084fc; /* purple-400 */
   --color-feature-lent: #4ade80;
   --color-feature-lent-foreground: #052e16;
   --color-feature-lent-ink: #4ade80;
