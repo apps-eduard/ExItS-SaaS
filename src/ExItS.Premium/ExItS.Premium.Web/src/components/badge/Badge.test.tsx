@@ -20,4 +20,13 @@ describe("Badge", () => {
     expect(badge).toHaveAttribute("data-tone", "warning");
     expect(badge).toHaveAttribute("data-appearance", "solid");
   });
+
+  it("supports emphasis appearance", () => {
+    render(
+      <Badge tone="success" appearance="emphasis">
+        Paid
+      </Badge>,
+    );
+    expect(screen.getByText("Paid")).toHaveAttribute("data-appearance", "emphasis");
+  });
 });

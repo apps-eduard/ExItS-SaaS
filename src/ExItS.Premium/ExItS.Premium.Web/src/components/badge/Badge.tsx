@@ -3,7 +3,7 @@ import styles from "./Badge.module.scss";
 
 export const BADGE_TONES = ["neutral", "primary", "success", "warning", "danger", "info"] as const;
 
-export const BADGE_APPEARANCES = ["soft", "solid", "outline", "ghost"] as const;
+export const BADGE_APPEARANCES = ["soft", "emphasis", "solid", "outline", "ghost"] as const;
 
 export type BadgeTone = (typeof BADGE_TONES)[number];
 export type BadgeAppearance = (typeof BADGE_APPEARANCES)[number];

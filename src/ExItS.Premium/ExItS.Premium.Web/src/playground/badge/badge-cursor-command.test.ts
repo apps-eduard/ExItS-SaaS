@@ -10,5 +10,6 @@ describe("badgeCursorCommand", () => {
     expect(badgeCursorCommand({ tone: "success", appearance: "soft" })).toBe("ext badge success");
     expect(badgeCursorCommand({ tone: "warning", appearance: "solid" })).toBe("ext badge warning solid");
     expect(badgeCursorCommand({ tone: "danger", appearance: "outline" })).toBe("ext badge danger outline");
+    expect(badgeCursorCommand({ tone: "success", appearance: "emphasis" })).toBe("ext badge success emphasis");
   });
 });
