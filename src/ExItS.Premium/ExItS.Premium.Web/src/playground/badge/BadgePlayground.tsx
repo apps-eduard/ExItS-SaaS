@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { BADGE_TONES, Badge, type BadgeTone } from "../../components/badge/Badge";
+import {
+  BADGE_APPEARANCES,
+  BADGE_TONES,
+  Badge,
+  type BadgeAppearance,
+  type BadgeTone,
+} from "../../components/badge/Badge";
 import { Button } from "../../components/button/Button";
 import { Input } from "../../components/input/Input";
 import { Select } from "../../components/select/Select";
@@ -17,6 +23,13 @@ const TONE_LABELS: Record<BadgeTone, string> = {
   info: "Info",
 };
 
+const APPEARANCE_LABELS: Record<BadgeAppearance, string> = {
+  soft: "Soft",
+  solid: "Solid",
+  outline: "Outline",
+  ghost: "Ghost",
+};
+
 const SAMPLE_LABELS: Record<BadgeTone, string> = {
   neutral: "Neutral",
   primary: "Primary",
@@ -28,13 +41,15 @@ const SAMPLE_LABELS: Record<BadgeTone, string> = {
 
 export function BadgePlayground() {
   const [tone, setTone] = useState<BadgeTone>("success");
+  const [appearance, setAppearance] = useState<BadgeAppearance>("soft");
   const [label, setLabel] = useState("Paid");
 
   const previewLabel = label.trim() || SAMPLE_LABELS[tone];
-  const cursorCommand = badgeCursorCommand({ tone });
+  const cursorCommand = badgeCursorCommand({ tone, appearance });
 
   function reset() {
     setTone("success");
+    setAppearance("soft");
     setLabel("Paid");
   }
 
@@ -46,13 +61,15 @@ export function BadgePlayground() {
   return (
     <PlaygroundShell
       title="Badges"
-      description="Status badges use soft tints with contrast-safe ink. Warning stays a solid fill because its hue is too light for small text on a pale background."
+      description="Status badges follow tone and appearance. Soft is the default tint. Solid fills the chip, outline keeps a border, and ghost is ink only. Prefer solid for warning when soft tint contrast is too low."
       panes="equal"
       propertiesColumns={2}
       preview={
         <div className={styles.previewStack}>
           <div className={styles.previewField}>
-            <Badge tone={tone}>{previewLabel}</Badge>
+            <Badge tone={tone} appearance={appearance}>
+              {previewLabel}
+            </Badge>
           </div>
           <CursorCopyCommand standard="Badge" command={cursorCommand} />
         </div>
@@ -66,6 +83,17 @@ export function BadgePlayground() {
               </option>
             ))}
           </Select>
+          <Select
+            label="Appearance"
+            value={appearance}
+            onChange={(event) => setAppearance(event.target.value as BadgeAppearance)}
+          >
+            {BADGE_APPEARANCES.map((item) => (
+              <option key={item} value={item}>
+                {APPEARANCE_LABELS[item]}
+              </option>
+            ))}
+          </Select>
           <Input label="Label" value={label} onChange={(event) => setLabel(event.target.value)} autoComplete="off" />
           <div className={`${styles.actions} ${styles.spanFull}`}>
             <Button variant="secondary" onClick={reset}>
@@ -76,16 +104,20 @@ export function BadgePlayground() {
       }
       examples={
         <div className={styles.examplesStack}>
-          <article className={styles.example}>
-            <p className={styles.exampleLabel}>Semantic tones</p>
-            <div className={styles.exampleRow}>
-              {BADGE_TONES.map((item) => (
-                <Badge key={item} tone={item}>
-                  {SAMPLE_LABELS[item]}
-                </Badge>
-              ))}
-            </div>
-          </article>
+          {BADGE_APPEARANCES.map((item) => (
+            <article key={item} className={styles.example}>
+              <p className={styles.exampleLabel}>
+                {item === "soft" ? "Semantic · Soft" : APPEARANCE_LABELS[item]}
+              </p>
+              <div className={styles.exampleRow}>
+                {BADGE_TONES.map((toneItem) => (
+                  <Badge key={toneItem} tone={toneItem} appearance={item}>
+                    {SAMPLE_LABELS[toneItem]}
+                  </Badge>
+                ))}
+              </div>
+            </article>
+          ))}
         </div>
       }
     />
