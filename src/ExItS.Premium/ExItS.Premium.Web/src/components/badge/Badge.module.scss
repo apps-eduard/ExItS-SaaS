@@ -9,8 +9,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   height: var(--badge-height);
   min-height: var(--badge-height);
   max-height: var(--badge-height);
-  /* Extra top pad — Latin ink sits high in the em box; keeps indicator/label/remove aligned. */
-  padding: 2px var(--badge-pad-x) 0;
+  padding: 0 var(--badge-pad-x);
   border: 1px solid transparent;
   border-radius: var(--radius-badge);
   font-family: var(--font-sans);
@@ -24,9 +23,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 }
 
 .label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   line-height: 1;
 }
 
@@ -66,7 +63,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 /* Count — compact numeric chip */
 .badge[data-count="true"] {
   min-width: var(--badge-height);
-  padding: 2px 0.4rem 0;
+  padding: 0 0.4rem;
   border-radius: 999px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
