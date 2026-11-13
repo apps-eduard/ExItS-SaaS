@@ -77,15 +77,20 @@ export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
   {
     label: "Components",
     items: [
+      { id: "advanced", label: "Advanced Components", icon: "widgets" },
+      { id: "badges", label: "Badges", icon: "sell" },
       {
         label: "Buttons",
         icon: "left_click",
         children: [
           { id: "button", label: "Button", icon: "left_click", status: "ready" },
-          { id: "button-group", label: "Button group", icon: "view_column", status: "next" },
           { id: "button-dropdown", label: "Button dropdown", icon: "unfold_more", status: "planned" },
+          { id: "button-group", label: "Button group", icon: "view_column", status: "next" },
         ],
       },
+      { id: "cards", label: "Cards", icon: "credit_card" },
+      { id: "checkboxes", label: "Checkboxes", icon: "check_box" },
+      { id: "date-time", label: "Date & Time Pickers", icon: "edit_note" },
       {
         label: "Inputs",
         icon: "edit_note",
@@ -94,15 +99,10 @@ export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
           { id: "search", label: "Search", icon: "search", status: "ready" },
         ],
       },
-      { id: "selects", label: "Selects", icon: "unfold_more" },
-      { id: "date-time", label: "Date & Time Pickers", icon: "edit_note" },
-      { id: "cards", label: "Cards", icon: "credit_card" },
-      { id: "badges", label: "Badges", icon: "sell" },
-      { id: "toggles", label: "Toggles", icon: "toggle_on" },
-      { id: "checkboxes", label: "Checkboxes", icon: "check_box" },
       { id: "radio", label: "Radio", icon: "radio_button_checked" },
       { id: "segmented", label: "Segmented Controls", icon: "view_column" },
-      { id: "advanced", label: "Advanced Components", icon: "widgets" },
+      { id: "selects", label: "Selects", icon: "unfold_more" },
+      { id: "toggles", label: "Toggles", icon: "toggle_on" },
     ],
   },
   {
