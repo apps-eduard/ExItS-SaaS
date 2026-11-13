@@ -1,7 +1,9 @@
 import { useEffect, useId, useState } from "react";
+import { Breadcrumb } from "../components/breadcrumb";
 import { Button } from "../components/button/Button";
 import { AppIcon } from "../icons/ExIcon";
 import { AppearanceControls } from "./AppearanceControls";
+import { playgroundBreadcrumbTrail } from "./breadcrumb-trail";
 import { ComponentsShowcase } from "./ComponentsShowcase";
 import { Foundations } from "./Foundations";
 import {
@@ -41,10 +43,11 @@ function NavBranchItem({
   const panelId = useId();
   const active = branchContains(item, current);
   const [open, setOpen] = useState(active);
-
-  useEffect(() => {
+  const [wasActive, setWasActive] = useState(active);
+  if (active !== wasActive) {
+    setWasActive(active);
     if (active) setOpen(true);
-  }, [active]);
+  }
 
   return (
     <div className={styles.navSubgroup} data-open={open ? "true" : undefined} data-active={active ? "true" : undefined}>
@@ -195,6 +198,9 @@ export function Playground() {
         </header>
         <main id="content" tabIndex={-1} className={styles.main}>
           <div className={styles.content}>
+            <div className={styles.breadcrumbSlot}>
+              <Breadcrumb items={playgroundBreadcrumbTrail(section)} />
+            </div>
             <Foundations id={section} />
             <ComponentsShowcase id={section} />
             {section === "mobile-preview" ? (

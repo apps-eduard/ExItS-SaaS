@@ -1,0 +1,128 @@
+.nav {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  order: 1;
+}
+
+.item[data-current="true"] {
+  order: 3;
+}
+
+.collapse {
+  display: none;
+  align-items: center;
+  order: 2;
+  min-width: 0;
+}
+
+.separator {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  margin-inline: 0.2rem;
+  color: var(--color-text-caption, var(--color-text-secondary));
+  opacity: 0.72;
+}
+
+.ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  padding-inline: 0.1rem;
+  color: var(--color-text-secondary);
+  font-size: var(--type-caption-size, 0.8125rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.link,
+.current {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 12rem;
+  padding: 0.15rem 0.2rem;
+  border-radius: var(--radius-control, 0.5rem);
+  font-family: var(--font-sans);
+  font-size: var(--type-caption-size, 0.8125rem);
+  line-height: var(--type-caption-line, 1.4);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.link {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  transition: color var(--motion-fast, 120ms) ease;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--color-primary);
+}
+
+.link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-focus, var(--color-primary)) 45%, transparent);
+}
+
+.current {
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: default;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon {
+  flex: none;
+  color: inherit;
+}
+
+@media (max-width: 767px) {
+  .item[data-middle="true"] {
+    display: none;
+  }
+
+  .collapse {
+    display: inline-flex;
+  }
+
+  .link,
+  .current {
+    max-width: 9.5rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .link,
+  .current {
+    max-width: 7.5rem;
+  }
+}
