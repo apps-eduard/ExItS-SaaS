@@ -37,4 +37,14 @@ describe("playground nav", () => {
     const labels = components!.items.map((entry) => entry.label);
     expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
   });
+
+  it("exposes Breadcrumbs in the Components sidenav", () => {
+    const components = NAV_GROUPS.find((group) => group.label === "Components");
+    const crumbs = components?.items.find((entry) => !isNavBranch(entry) && entry.id === "breadcrumbs");
+    expect(crumbs && !isNavBranch(crumbs)).toBe(true);
+    if (!crumbs || isNavBranch(crumbs)) return;
+    expect(crumbs.label).toBe("Breadcrumbs");
+    expect(resolveSectionId("breadcrumbs")).toBe("breadcrumbs");
+    expect(navLeaves().some((leaf) => leaf.id === "breadcrumbs")).toBe(true);
+  });
 });
