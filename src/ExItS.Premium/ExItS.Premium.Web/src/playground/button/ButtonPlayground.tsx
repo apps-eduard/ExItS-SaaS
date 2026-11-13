@@ -102,7 +102,7 @@ export function ButtonPlayground() {
   return (
     <PlaygroundShell
       title="Button"
-      description="One preview follows semantic tone, appearance, and ripple. Soft, outline, ghost, raise, and solid raise stay on the API. Tone ghost stays for chrome. Disabled and loading sit in States."
+      description="One preview follows semantic tone, appearance, and ripple. Soft, outline, ghost, raise, and solid raise stay on the API. Ghost is an appearance, not a tone. Disabled and loading sit in States."
       panes="equal"
       propertiesColumns={2}
       preview={
@@ -131,7 +131,6 @@ export function ButtonPlayground() {
                 {TONE_LABELS[item]}
               </option>
             ))}
-            <option value="ghost">{TONE_LABELS.ghost}</option>
           </Select>
           <Select
             label="Appearance"
