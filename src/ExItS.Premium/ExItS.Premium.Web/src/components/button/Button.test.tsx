@@ -34,6 +34,26 @@ describe("Button", () => {
     expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("data-appearance", "solid");
   });
 
+  it("ripples from the press point by default", async () => {
+    const user = userEvent.setup();
+    render(<Button>Save</Button>);
+    const button = screen.getByRole("button", { name: "Save" });
+    expect(button).toHaveAttribute("data-ripple", "true");
+    await user.pointer({ keys: "[MouseLeft>]", target: button });
+    expect(button.querySelectorAll("[data-ripple-wave]").length).toBeGreaterThan(0);
+    await user.pointer({ keys: "[/MouseLeft]", target: button });
+  });
+
+  it("can turn ripple off", async () => {
+    const user = userEvent.setup();
+    render(<Button ripple={false}>Save</Button>);
+    const button = screen.getByRole("button", { name: "Save" });
+    expect(button).toHaveAttribute("data-ripple", "false");
+    await user.pointer({ keys: "[MouseLeft>]", target: button });
+    expect(button.querySelector("[data-ripple-wave]")).not.toBeInTheDocument();
+    await user.pointer({ keys: "[/MouseLeft]", target: button });
+  });
+
   it("exposes soft and outline without changing the tone", () => {
     render(
       <>

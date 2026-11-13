@@ -74,11 +74,12 @@ export function ButtonPlayground() {
   const [loading, setLoading] = useState(false);
   const [iconOnly, setIconOnly] = useState(false);
   const [fullWidth, setFullWidth] = useState(false);
+  const [ripple, setRipple] = useState(true);
 
   const previewLabel = label.trim() || "Save";
   const resolvedIcon: IconName = iconName === "none" ? "add" : iconName;
   const showIcon = iconOnly || iconName !== "none";
-  const previewKey = [variant, appearance, iconName, disabled, loading, iconOnly, fullWidth].join(":");
+  const previewKey = [variant, appearance, iconName, disabled, loading, iconOnly, fullWidth, ripple].join(":");
 
   function reset() {
     setVariant("primary");
@@ -89,6 +90,7 @@ export function ButtonPlayground() {
     setLoading(false);
     setIconOnly(false);
     setFullWidth(false);
+    setRipple(true);
   }
 
   function chooseIconOnly(next: boolean) {
@@ -99,7 +101,7 @@ export function ButtonPlayground() {
   return (
     <PlaygroundShell
       title="Button"
-      description="One preview follows semantic tone and appearance. Soft, outline, raise, and solid raise stay on the API. Ghost is chrome-only. Disabled and loading sit in States."
+      description="One preview follows semantic tone, appearance, and ripple. Soft, outline, ghost, raise, and solid raise stay on the API. Tone ghost stays for chrome. Disabled and loading sit in States."
       panes="equal"
       propertiesColumns={2}
       preview={
@@ -110,6 +112,7 @@ export function ButtonPlayground() {
             appearance={appearance}
             disabled={disabled}
             loading={loading}
+            ripple={ripple}
             iconOnly={iconOnly}
             fullWidth={fullWidth}
             icon={showIcon ? <AppIcon name={resolvedIcon} /> : undefined}
@@ -158,6 +161,7 @@ export function ButtonPlayground() {
             <Switch label="Loading" checked={loading} onChange={(event) => setLoading(event.target.checked)} />
             <Switch label="Icon only" checked={iconOnly} onChange={(event) => chooseIconOnly(event.target.checked)} />
             <Switch label="Full width" checked={fullWidth} onChange={(event) => setFullWidth(event.target.checked)} />
+            <Switch label="Ripple" checked={ripple} onChange={(event) => setRipple(event.target.checked)} />
           </div>
           <div className={`${styles.actions} ${styles.spanFull}`}>
             <Button variant="secondary" onClick={reset}>
