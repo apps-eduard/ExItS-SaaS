@@ -28,5 +28,9 @@ describe("badgeCursorCommand", () => {
     expect(badgeCursorCommand({ ...base, tone: "danger", appearance: "solid", count: true })).toBe(
       "ext badge danger solid count",
     );
+    expect(badgeCursorCommand({ ...base, tone: "info", indicator: true, indicatorOnly: true })).toBe(
+      "ext badge info indicator-only",
+    );
   });
 });
+
