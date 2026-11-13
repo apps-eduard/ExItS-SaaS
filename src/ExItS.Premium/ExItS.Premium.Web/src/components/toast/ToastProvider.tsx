@@ -102,8 +102,13 @@ export function ToastProvider({
   useEffect(() => {
     const region = regionRef.current;
     if (!region) return;
-    if (toasts.length > 0) showOverlay(region);
-    else hideOverlay(region);
+    if (toasts.length > 0) {
+      showOverlay(region);
+      /* Fallback when showPopover no-ops — CSS needs data-open or :popover-open. */
+      region.dataset.open = "true";
+    } else {
+      hideOverlay(region);
+    }
   }, [toasts.length]);
 
   const value = useMemo(() => ({ push, position, setPosition }), [push, position, setPosition]);
