@@ -28,6 +28,19 @@
   --type-caption-size: 0.8125rem;
   --type-caption-line: 1.4;
   --type-caption-weight: 500;
+  /* Badge — Standard density target ~13px / medium weight (does not change global density). */
+  --type-badge-size: 0.8125rem;
+  --type-badge-line: 1;
+  --type-badge-weight: 500;
+  --type-badge-weight-emphasis: 600;
+  --type-badge-tracking: 0.01em;
+  --type-badge-tracking-caps: 0.045em;
+  --badge-height: 1.5rem;
+  --badge-pad-x: 0.625rem;
+  --badge-gap: 0.35rem;
+  --badge-indicator-size: 0.4rem;
+  --badge-indicator-only-size: 0.5rem;
+  --badge-remove-size: 1.125rem;
   --type-numeric-size: clamp(1.75rem, 1.4rem + 0.8vw, 2.25rem);
   --type-numeric-line: 1.1;
   --type-numeric-weight: 700;
@@ -166,6 +179,9 @@
   --density-button-font: 0.8125rem;
   --density-label-font: 0.8125rem;
   --density-list-font: 0.8125rem;
+  --type-badge-size: 0.75rem;
+  --badge-height: 1.375rem;
+  --badge-pad-x: 0.5rem;
   --control-height: max(36px, calc(var(--density-control-font) * 2.5));
   --control-pad-x: 0.75rem;
   --page-pad: 1rem;
@@ -194,6 +210,9 @@
   --density-button-font: 1rem;
   --density-label-font: 0.9375rem;
   --density-list-font: 0.9375rem;
+  --type-badge-size: 0.875rem;
+  --badge-height: 1.625rem;
+  --badge-pad-x: 0.7rem;
   --control-height: max(52px, calc(var(--density-control-font) * 2.5));
   --control-pad-x: 1.25rem;
   --page-pad: 1.75rem;

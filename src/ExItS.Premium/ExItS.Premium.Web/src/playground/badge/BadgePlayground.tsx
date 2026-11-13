@@ -122,7 +122,7 @@ export function BadgePlayground() {
   return (
     <PlaygroundShell
       title="Badges"
-      description="Status badges follow tone and appearance in light and dark. Soft and emphasis washes mix against the theme surface. Solid uses tone fill plus contrast-safe foreground. Outline and ghost use theme ink. All caps uppercases the label. Indicator adds a leading pip. Remove adds a trailing dismiss control. Count and Indicator samples below include Cursor copy commands."
+      description="Premium status badges for light and dark. Soft and Emphasis use surface-mixed washes with theme ink. Solid fills with contrast-safe foreground. Outline keeps a 1px border; Ghost is ink only. All caps, Indicator, and Remove stay on the live preview. Count and Indicator samples below include Cursor copy commands."
       panes="equal"
       propertiesColumns={2}
       preview={
