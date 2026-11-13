@@ -4,6 +4,7 @@
   justify-content: center;
   min-height: 1.5rem;
   padding: 0 0.55rem;
+  border: 1px solid transparent;
   border-radius: var(--radius-badge);
   font-size: var(--density-list-font);
   font-weight: 600;
@@ -12,32 +13,132 @@
   white-space: nowrap;
 }
 
-.neutral {
+/* Soft (default) — tint fill + ink */
+.badge[data-appearance="soft"].neutral {
   background: var(--color-hover);
   color: var(--color-text);
 }
 
-.primary {
+.badge[data-appearance="soft"].primary {
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
-.success {
+.badge[data-appearance="soft"].success {
   background: var(--color-success-soft);
   color: var(--color-success-ink);
 }
 
-.warning {
-  background: var(--color-warning);
-  color: var(--color-warning-foreground);
+.badge[data-appearance="soft"].warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-ink);
 }
 
-.danger {
+.badge[data-appearance="soft"].danger {
   background: var(--color-danger-soft);
   color: var(--color-danger-ink);
 }
 
-.info {
+.badge[data-appearance="soft"].info {
   background: var(--color-info-soft);
+  color: var(--color-info-ink);
+}
+
+/* Solid — filled tone + foreground */
+.badge[data-appearance="solid"].neutral {
+  background: var(--color-text);
+  color: var(--color-surface);
+}
+
+.badge[data-appearance="solid"].primary {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.badge[data-appearance="solid"].success {
+  background: var(--color-success);
+  color: var(--color-success-foreground);
+}
+
+.badge[data-appearance="solid"].warning {
+  background: var(--color-warning);
+  color: var(--color-warning-foreground);
+}
+
+.badge[data-appearance="solid"].danger {
+  background: var(--color-danger);
+  color: var(--color-danger-foreground);
+}
+
+.badge[data-appearance="solid"].info {
+  background: var(--color-info);
+  color: var(--color-info-foreground);
+}
+
+/* Outline — border + ink */
+.badge[data-appearance="outline"].neutral {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.badge[data-appearance="outline"].primary {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary-border);
+}
+
+.badge[data-appearance="outline"].success {
+  background: transparent;
+  color: var(--color-success-ink);
+  border-color: var(--color-success-border);
+}
+
+.badge[data-appearance="outline"].warning {
+  background: transparent;
+  color: var(--color-warning-ink);
+  border-color: var(--color-warning-border);
+}
+
+.badge[data-appearance="outline"].danger {
+  background: transparent;
+  color: var(--color-danger-ink);
+  border-color: var(--color-danger-border);
+}
+
+.badge[data-appearance="outline"].info {
+  background: transparent;
+  color: var(--color-info-ink);
+  border-color: var(--color-info-border);
+}
+
+/* Ghost — ink only */
+.badge[data-appearance="ghost"].neutral {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.badge[data-appearance="ghost"].primary {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.badge[data-appearance="ghost"].success {
+  background: transparent;
+  color: var(--color-success-ink);
+}
+
+.badge[data-appearance="ghost"].warning {
+  background: transparent;
+  color: var(--color-warning-ink);
+}
+
+.badge[data-appearance="ghost"].danger {
+  background: transparent;
+  color: var(--color-danger-ink);
+}
+
+.badge[data-appearance="ghost"].info {
+  background: transparent;
   color: var(--color-info-ink);
 }

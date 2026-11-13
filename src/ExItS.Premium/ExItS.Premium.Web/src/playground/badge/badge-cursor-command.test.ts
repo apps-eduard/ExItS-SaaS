@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { badgeCursorCommand } from "./badge-cursor-command";
 
 describe("badgeCursorCommand", () => {
-  it("omits the default neutral tone", () => {
-    expect(badgeCursorCommand({ tone: "neutral" })).toBe("ext badge");
+  it("omits default tone and soft appearance", () => {
+    expect(badgeCursorCommand({ tone: "neutral", appearance: "soft" })).toBe("ext badge");
   });
 
-  it("includes non-default tones", () => {
-    expect(badgeCursorCommand({ tone: "success" })).toBe("ext badge success");
-    expect(badgeCursorCommand({ tone: "warning" })).toBe("ext badge warning");
+  it("includes tone and non-default appearance", () => {
+    expect(badgeCursorCommand({ tone: "success", appearance: "soft" })).toBe("ext badge success");
+    expect(badgeCursorCommand({ tone: "warning", appearance: "solid" })).toBe("ext badge warning solid");
+    expect(badgeCursorCommand({ tone: "danger", appearance: "outline" })).toBe("ext badge danger outline");
   });
 });

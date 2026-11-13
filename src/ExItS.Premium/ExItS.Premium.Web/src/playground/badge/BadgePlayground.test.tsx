@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { BadgePlayground } from "./BadgePlayground";
 
 describe("BadgePlayground", () => {
-  it("arranges Properties left of Preview and updates the live badge", async () => {
+  it("arranges Properties left of Preview and updates tone and appearance", async () => {
     const user = userEvent.setup();
     const { container } = render(<BadgePlayground />);
 
@@ -23,16 +23,23 @@ describe("BadgePlayground", () => {
     expect(panes[1]).toBe("Preview");
 
     expect(screen.getByRole("combobox", { name: "Tone, Success" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Appearance, Soft" })).toBeInTheDocument();
     expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge success");
-    expect(screen.getByText("ext badge success")).toBeInTheDocument();
 
     const preview = screen.getByRole("heading", { name: "Preview", level: 2 }).parentElement;
     expect(preview).not.toBeNull();
-    expect(within(preview!).getByText("Paid")).toHaveAttribute("data-tone", "success");
+    const paid = within(preview!).getByText("Paid");
+    expect(paid).toHaveAttribute("data-tone", "success");
+    expect(paid).toHaveAttribute("data-appearance", "soft");
+
+    await user.click(screen.getByRole("combobox", { name: "Appearance, Soft" }));
+    await user.click(screen.getByRole("option", { name: "Solid" }));
+    expect(within(preview!).getByText("Paid")).toHaveAttribute("data-appearance", "solid");
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge success solid");
 
     await user.click(screen.getByRole("combobox", { name: "Tone, Success" }));
     await user.click(screen.getByRole("option", { name: "Warning" }));
     expect(within(preview!).getByText("Due")).toHaveAttribute("data-tone", "warning");
-    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge warning");
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext badge warning solid");
   });
 });
