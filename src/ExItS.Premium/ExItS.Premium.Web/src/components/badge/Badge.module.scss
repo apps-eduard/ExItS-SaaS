@@ -4,6 +4,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0;
   min-height: 1.5rem;
   padding: 0 0.55rem;
   border: 1px solid transparent;
@@ -13,6 +14,47 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   line-height: 1;
   letter-spacing: 0.01em;
   white-space: nowrap;
+}
+
+.badge[data-all-caps="true"] {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge[data-indicator="true"] {
+  gap: 0.35rem;
+}
+
+.badge[data-indicator-only="true"] {
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.indicator {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.badge[data-indicator-only="true"] .indicator {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.badge[data-indicator-only="true"].neutral .indicator {
+  background: var(--color-text);
+}
+
+@each $tone in $semantic-tones {
+  .badge[data-indicator-only="true"].#{$tone} .indicator {
+    background: var(--color-#{$tone});
+  }
 }
 
 /* Soft (default) — tint fill + ink */
