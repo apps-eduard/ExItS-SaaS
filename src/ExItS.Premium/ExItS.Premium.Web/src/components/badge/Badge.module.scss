@@ -15,16 +15,35 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   font-family: var(--font-sans);
   font-size: var(--type-badge-size);
   font-weight: var(--type-badge-weight);
-  line-height: var(--type-badge-line);
+  line-height: 1;
   letter-spacing: var(--type-badge-tracking);
   white-space: nowrap;
   color: var(--color-text);
   vertical-align: middle;
 }
 
+/* Label box — flex-center + optical nudge (Latin metrics leave unused descender space). */
+.label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  translate: 0 0.5px;
+}
+
 .badge[data-all-caps="true"] {
   text-transform: uppercase;
   letter-spacing: var(--type-badge-tracking-caps);
+}
+
+.badge[data-all-caps="true"] .label {
+  /* Caps have no descenders — nudge a touch more so they don't sit high. */
+  translate: 0 0.75px;
+}
+
+.badge[data-count="true"] .label {
+  translate: 0 0.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .badge[data-indicator="true"] {
@@ -98,8 +117,15 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   color: inherit;
   cursor: pointer;
   flex-shrink: 0;
+  line-height: 0;
   opacity: 0.72;
   transition: opacity var(--motion-fast) ease, background-color var(--motion-fast) ease;
+}
+
+.remove > span {
+  display: block;
+  line-height: 1;
+  translate: 0 0.5px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -30,30 +30,30 @@ describe("BadgePlayground", () => {
     const previewCursor = within(preview!).getByTestId("cursor-copy-command");
     expect(previewCursor).toHaveAttribute("data-command", "ext badge success");
 
-    const paid = within(preview!).getByText("Paid");
+    const paid = within(preview!).getByText("Paid").closest("[data-tone]");
     expect(paid).toHaveAttribute("data-tone", "success");
     expect(paid).toHaveAttribute("data-appearance", "soft");
 
     await user.click(screen.getByRole("combobox", { name: "Appearance, Soft" }));
     await user.click(screen.getByRole("option", { name: "Solid" }));
-    expect(within(preview!).getByText("Paid")).toHaveAttribute("data-appearance", "solid");
+    expect(within(preview!).getByText("Paid").closest("[data-tone]")).toHaveAttribute("data-appearance", "solid");
     expect(previewCursor).toHaveAttribute("data-command", "ext badge success solid");
 
     await user.click(screen.getByRole("combobox", { name: "Tone, Success" }));
     await user.click(screen.getByRole("option", { name: "Warning" }));
-    expect(within(preview!).getByText("Due")).toHaveAttribute("data-tone", "warning");
+    expect(within(preview!).getByText("Due").closest("[data-tone]")).toHaveAttribute("data-tone", "warning");
     expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid");
 
     await user.click(screen.getByRole("switch", { name: "All caps" }));
-    expect(within(preview!).getByText("Due")).toHaveAttribute("data-all-caps", "true");
+    expect(within(preview!).getByText("Due").closest("[data-tone]")).toHaveAttribute("data-all-caps", "true");
     expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid all-caps");
 
     await user.click(screen.getByRole("switch", { name: "Indicator" }));
-    expect(within(preview!).getByText("Due")).toHaveAttribute("data-indicator", "true");
+    expect(within(preview!).getByText("Due").closest("[data-tone]")).toHaveAttribute("data-indicator", "true");
     expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid all-caps indicator");
 
     await user.click(screen.getByRole("switch", { name: "Remove" }));
-    expect(within(preview!).getByText("Due")).toHaveAttribute("data-removable", "true");
+    expect(within(preview!).getByText("Due").closest("[data-tone]")).toHaveAttribute("data-removable", "true");
     expect(previewCursor).toHaveAttribute("data-command", "ext badge warning solid all-caps indicator remove");
     await user.click(within(preview!).getByRole("button", { name: "Remove" }));
     expect(within(preview!).getByText(/Removed/i)).toBeInTheDocument();
