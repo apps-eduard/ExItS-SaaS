@@ -14,6 +14,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   line-height: 1;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  color: var(--color-text);
 }
 
 .badge[data-all-caps="true"] {
@@ -23,6 +24,15 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 
 .badge[data-indicator="true"] {
   gap: 0.35rem;
+}
+
+.badge[data-removable="true"] {
+  gap: 0.3rem;
+  padding-inline-end: 0.25rem;
+}
+
+.badge[data-indicator="true"][data-removable="true"] {
+  gap: 0.3rem;
 }
 
 .badge[data-indicator-only="true"] {
@@ -57,7 +67,35 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
-/* Soft (default) — tint fill + ink */
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.78;
+}
+
+.remove:hover,
+.remove:focus-visible {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  outline: none;
+}
+
+.remove:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 35%, transparent);
+}
+
+/* Soft (default) — tint fill + ink (tokens already theme via surface mix) */
 .badge[data-appearance="soft"].neutral {
   background: var(--color-hover);
   color: var(--color-text);
@@ -67,6 +105,21 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   .badge[data-appearance="soft"].#{$tone} {
     background: var(--color-#{$tone}-soft);
     color: var(--color-#{$tone}-ink);
+  }
+}
+
+/* Dark soft — slightly stronger wash so chips stay visible on slate surfaces */
+[data-theme="dark"] {
+  @each $tone in $semantic-tones {
+    .badge[data-appearance="soft"].#{$tone} {
+      background: color-mix(in srgb, var(--color-#{$tone}) 20%, var(--color-surface));
+      color: var(--color-#{$tone}-ink);
+    }
+  }
+
+  .badge[data-appearance="soft"].neutral {
+    background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+    color: var(--color-text);
   }
 }
 
@@ -87,6 +140,21 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
+/* Dark emphasis — use theme ink directly (avoid muddy mixes on slate) */
+[data-theme="dark"] {
+  .badge[data-appearance="emphasis"].neutral {
+    background: color-mix(in srgb, var(--color-text) 14%, var(--color-surface));
+    color: var(--color-text);
+  }
+
+  @each $tone in $semantic-tones {
+    .badge[data-appearance="emphasis"].#{$tone} {
+      background: color-mix(in srgb, var(--color-#{$tone}) 18%, var(--color-surface));
+      color: var(--color-#{$tone}-ink);
+    }
+  }
+}
+
 /* Solid — filled tone + foreground */
 .badge[data-appearance="solid"].neutral {
   background: var(--color-text);
@@ -104,6 +172,20 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
+/* Dark solid — keep AA ink on bright fills; secondary stays bordered surface */
+[data-theme="dark"] {
+  .badge[data-appearance="solid"].secondary {
+    background: var(--color-surface-elevated);
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+  }
+
+  .badge[data-appearance="solid"].accent {
+    background: color-mix(in srgb, var(--color-primary) 28%, var(--color-surface));
+    color: var(--color-text);
+  }
+}
+
 /* Outline — border + ink */
 .badge[data-appearance="outline"].neutral {
   background: transparent;
@@ -116,6 +198,15 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
     background: transparent;
     color: var(--color-#{$tone}-ink);
     border-color: var(--color-#{$tone}-border);
+  }
+}
+
+[data-theme="dark"] {
+  @each $tone in $semantic-tones {
+    .badge[data-appearance="outline"].#{$tone} {
+      border-color: color-mix(in srgb, var(--color-#{$tone}) 55%, var(--color-border));
+      color: var(--color-#{$tone}-ink);
+    }
   }
 }
 

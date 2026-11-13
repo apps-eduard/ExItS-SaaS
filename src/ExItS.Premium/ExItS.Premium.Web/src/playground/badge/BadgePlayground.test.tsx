@@ -52,5 +52,14 @@ describe("BadgePlayground", () => {
       "data-command",
       "ext badge warning solid all-caps indicator",
     );
+
+    await user.click(screen.getByRole("switch", { name: "Remove" }));
+    expect(within(preview!).getByText("Due")).toHaveAttribute("data-removable", "true");
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext badge warning solid all-caps indicator remove",
+    );
+    await user.click(within(preview!).getByRole("button", { name: "Remove" }));
+    expect(within(preview!).getByText(/Removed/i)).toBeInTheDocument();
   });
 });
