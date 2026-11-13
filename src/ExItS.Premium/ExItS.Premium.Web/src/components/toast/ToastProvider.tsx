@@ -5,9 +5,11 @@ import { Button } from "../button/Button";
 import { hideOverlay, showOverlay } from "../overlay/overlay";
 import styles from "./Toast.module.scss";
 
-export type ToastTone = "info" | "success" | "warning" | "danger";
+export const TOAST_TONES = ["info", "success", "warning", "danger"] as const;
 
-type ToastInput = {
+export type ToastTone = (typeof TOAST_TONES)[number];
+
+export type ToastInput = {
   title: string;
   description?: string;
   tone?: ToastTone;
@@ -86,7 +88,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }}
             onMouseLeave={() => schedule(toast.id)}
           >
-            <ExIcon name={ICONS[toast.tone]} />
+            <span className={styles.icon} aria-hidden="true">
+              <ExIcon name={ICONS[toast.tone]} />
+            </span>
             <div className={styles.copy}>
               <strong className="type-label">{toast.title}</strong>
               {toast.description ? <span className="type-caption">{toast.description}</span> : null}

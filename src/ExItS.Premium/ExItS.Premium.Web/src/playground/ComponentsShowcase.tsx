@@ -16,6 +16,7 @@ import { BadgePlayground } from "./badge/BadgePlayground";
 import { ButtonPlayground } from "./button/ButtonPlayground";
 import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
+import { ToastPlayground } from "./toast/ToastPlayground";
 import styles from "./Playground.module.scss";
 
 function Intro({ title, children }: { title: string; children: ReactNode }) {
@@ -47,6 +48,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "cards") return <CardsSection />;
   if (id === "badges") return <BadgePlayground />;
   if (id === "toggles") return <TogglesSection />;
+  if (id === "toasts") return <ToastPlayground />;
   if (id === "checkboxes") return <CheckboxesSection />;
   if (id === "radio") return <RadioSection />;
   if (id === "segmented") return <SegmentedSection />;

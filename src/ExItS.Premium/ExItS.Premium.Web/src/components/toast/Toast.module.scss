@@ -35,20 +35,41 @@
   animation: toast-in var(--motion-base) var(--motion-ease);
 }
 
+.icon {
+  display: inline-flex;
+  color: var(--color-text-secondary);
+}
+
 .success {
   border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-border));
+}
+
+.success .icon {
+  color: var(--color-success);
 }
 
 .warning {
   border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
 }
 
+.warning .icon {
+  color: var(--color-warning);
+}
+
 .danger {
   border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
 }
 
+.danger .icon {
+  color: var(--color-danger);
+}
+
 .info {
   border-color: color-mix(in srgb, var(--color-info) 45%, var(--color-border));
+}
+
+.info .icon {
+  color: var(--color-info);
 }
 
 .copy {
