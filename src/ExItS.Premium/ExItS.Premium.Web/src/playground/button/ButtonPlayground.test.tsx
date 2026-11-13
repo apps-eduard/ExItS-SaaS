@@ -25,6 +25,8 @@ describe("ButtonPlayground", () => {
     expect(screen.getByRole("combobox", { name: "Tone, Primary" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Appearance, Solid" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Icon, None" })).toBeInTheDocument();
+    expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext btn ripple");
+    expect(screen.getByText("ext btn ripple")).toBeInTheDocument();
 
     const preview = screen.getByRole("heading", { name: "Preview", level: 2 }).parentElement;
     expect(preview).not.toBeNull();
