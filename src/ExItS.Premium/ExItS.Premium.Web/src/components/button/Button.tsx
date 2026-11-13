@@ -12,9 +12,16 @@ export type ButtonVariant =
   | "danger"
   | "contrast"
   | "ghost";
-export type ButtonAppearance = "solid" | "soft" | "outline" | "raise" | "solid-raise";
+export type ButtonAppearance = "solid" | "soft" | "outline" | "raise" | "soft-raise" | "solid-raise";
 
-export const BUTTON_APPEARANCES = ["solid", "soft", "outline", "raise", "solid-raise"] as const satisfies readonly ButtonAppearance[];
+export const BUTTON_APPEARANCES = [
+  "solid",
+  "soft",
+  "outline",
+  "raise",
+  "soft-raise",
+  "solid-raise",
+] as const satisfies readonly ButtonAppearance[];
 
 export const BUTTON_SEMANTIC_VARIANTS = [
   "primary",
