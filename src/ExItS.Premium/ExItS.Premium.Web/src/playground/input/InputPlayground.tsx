@@ -6,7 +6,9 @@ import { INPUT_FOCUS_MOTION_OPTIONS, type InputFocusMotion } from "../../compone
 import { SearchField } from "../../components/search/SearchField";
 import { Select } from "../../components/select/Select";
 import { Switch } from "../../components/switch/Switch";
+import { CursorCopyCommand } from "../CursorCopyCommand";
 import { PlaygroundShell } from "../shell/PlaygroundShell";
+import { inputCursorCommand } from "./input-cursor-command";
 import styles from "./InputPlayground.module.scss";
 
 type FieldKind = "text" | "search";
@@ -47,6 +49,15 @@ export function InputPlayground() {
   const error = status === "error" ? ERROR_MESSAGE : undefined;
   const success = status === "success" && kind === "text" ? SUCCESS_MESSAGE : undefined;
   const previewKey = [appearance, focusMotion, kind, status, disabled, readOnly, required].join(":");
+  const cursorCommand = inputCursorCommand({
+    appearance,
+    focusMotion,
+    kind,
+    status,
+    disabled,
+    readOnly,
+    required,
+  });
 
   function replay() {
     const node = previewRef.current?.querySelector("input");
@@ -80,37 +91,40 @@ export function InputPlayground() {
       panes="equal"
       propertiesColumns={2}
       preview={
-        <div className={styles.previewField} ref={previewRef}>
-          {kind === "search" ? (
-            <SearchField
-              key={previewKey}
-              label={previewLabel}
-              value={query}
-              onChange={setQuery}
-              placeholder="Name or note"
-              disabled={disabled}
-              error={error}
-              appearance={appearance}
-              focusMotion={focusMotion}
-            />
-          ) : (
-            <Input
-              key={previewKey}
-              label={previewLabel}
-              appearance={appearance}
-              focusMotion={focusMotion}
-              value={readOnly ? "Published" : text}
-              onChange={(event) => setText(event.target.value)}
-              placeholder="Account name"
-              autoComplete="off"
-              disabled={disabled}
-              readOnly={readOnly}
-              required={required}
-              error={error}
-              success={success}
-              hint={status === "none" && !readOnly ? "Shown on the payment." : undefined}
-            />
-          )}
+        <div className={styles.previewStack}>
+          <div className={styles.previewField} ref={previewRef}>
+            {kind === "search" ? (
+              <SearchField
+                key={previewKey}
+                label={previewLabel}
+                value={query}
+                onChange={setQuery}
+                placeholder="Name or note"
+                disabled={disabled}
+                error={error}
+                appearance={appearance}
+                focusMotion={focusMotion}
+              />
+            ) : (
+              <Input
+                key={previewKey}
+                label={previewLabel}
+                appearance={appearance}
+                focusMotion={focusMotion}
+                value={readOnly ? "Published" : text}
+                onChange={(event) => setText(event.target.value)}
+                placeholder="Account name"
+                autoComplete="off"
+                disabled={disabled}
+                readOnly={readOnly}
+                required={required}
+                error={error}
+                success={success}
+                hint={status === "none" && !readOnly ? "Shown on the payment." : undefined}
+              />
+            )}
+          </div>
+          <CursorCopyCommand standard="Input" command={cursorCommand} />
         </div>
       }
       properties={
