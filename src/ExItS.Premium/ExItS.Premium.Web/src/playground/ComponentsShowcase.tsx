@@ -57,47 +57,22 @@ function ButtonSection() {
   return (
     <>
       <Intro title="Button">
-        Solid, soft, outline, raise, and solid raise are appearances. Primary, secondary, ghost, danger, and success are tones. Disabled and loading are separate. Buttons do not have an error state.
+        One solid card for the nine semantic roles from Colors. Appearances (soft, outline, raise) stay on the API. Ghost is chrome-only. Disabled and loading sit in States.
       </Intro>
-      <Stage label="Solid">
-        <Button>Primary</Button>
+      <Stage label="Semantic">
+        <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
-        <Button variant="ghost">Ghost</Button>
-        <Button variant="danger">Danger</Button>
+        <Button variant="accent">Accent</Button>
         <Button variant="success">Success</Button>
-      </Stage>
-      <Stage label="Soft">
-        <Button appearance="soft">Primary</Button>
-        <Button appearance="soft" variant="secondary">Secondary</Button>
-        <Button appearance="soft" variant="danger">Danger</Button>
-        <Button appearance="soft" variant="success">Success</Button>
-      </Stage>
-      <Stage label="Outline">
-        <Button appearance="outline">Primary</Button>
-        <Button appearance="outline" variant="secondary">Secondary</Button>
-        <Button appearance="outline" variant="danger">Danger</Button>
-        <Button appearance="outline" variant="success">Success</Button>
-      </Stage>
-      <Stage label="Raise">
-        <div className={styles.stageGroup}>
-          <Button appearance="raise">Primary</Button>
-          <Button appearance="raise" variant="secondary">Secondary</Button>
-          <Button appearance="raise" variant="danger">Danger</Button>
-          <Button appearance="raise" variant="success">Success</Button>
-        </div>
-        <div className={styles.stageGroup}>
-          <p className={`type-caption ${styles.stageGroupLabel}`}>Solid raise</p>
-          <Button appearance="solid-raise">Primary</Button>
-          <Button appearance="solid-raise" variant="secondary">Secondary</Button>
-          <Button appearance="solid-raise" variant="danger">Danger</Button>
-          <Button appearance="solid-raise" variant="success">Success</Button>
-        </div>
+        <Button variant="info">Info</Button>
+        <Button variant="warning">Warning</Button>
+        <Button variant="help">Help</Button>
+        <Button variant="danger">Danger</Button>
+        <Button variant="contrast">Contrast</Button>
       </Stage>
       <Stage label="States">
         <Button disabled>Disabled</Button>
-        <Button appearance="soft" disabled>Soft</Button>
-        <Button appearance="outline" disabled>Outline</Button>
-        <Button appearance="raise" disabled>Raise</Button>
+        <Button variant="secondary" disabled>Secondary</Button>
         <Button loading>Saving</Button>
       </Stage>
     </>

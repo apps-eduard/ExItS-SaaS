@@ -1,8 +1,30 @@
 import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import styles from "./Button.module.scss";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "accent"
+  | "success"
+  | "info"
+  | "warning"
+  | "help"
+  | "danger"
+  | "contrast"
+  | "ghost";
 export type ButtonAppearance = "solid" | "soft" | "outline" | "raise" | "solid-raise";
+
+export const BUTTON_SEMANTIC_VARIANTS = [
+  "primary",
+  "secondary",
+  "accent",
+  "success",
+  "info",
+  "warning",
+  "help",
+  "danger",
+  "contrast",
+] as const satisfies readonly ButtonVariant[];
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   ref?: Ref<HTMLButtonElement>;
