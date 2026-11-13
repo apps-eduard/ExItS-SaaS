@@ -32,18 +32,25 @@ describe("ToastPlayground", () => {
     expect(screen.getByRole("status")).toHaveTextContent("The change is local to this preview.");
   });
 
-  it("updates the Cursor command when tone and description change", async () => {
+  it("updates the Cursor command when tone, position, and description change", async () => {
     const user = userEvent.setup();
     renderPlayground();
 
     const preview = screen.getByRole("heading", { name: "Preview", level: 2 }).parentElement;
     const previewCursor = within(preview!).getByTestId("cursor-copy-command");
 
+    expect(screen.getByRole("combobox", { name: "Position, Bottom end" })).toBeInTheDocument();
+
     await user.click(screen.getByRole("combobox", { name: "Tone, Success" }));
     await user.click(screen.getByRole("option", { name: "Danger" }));
     expect(previewCursor).toHaveAttribute("data-command", "ext toast danger description");
 
+    await user.click(screen.getByRole("combobox", { name: "Position, Bottom end" }));
+    await user.click(screen.getByRole("option", { name: "Top start" }));
+    expect(previewCursor).toHaveAttribute("data-command", "ext toast danger top-start description");
+    expect(screen.getByLabelText("Notifications")).toHaveAttribute("data-position", "top-start");
+
     await user.click(screen.getByRole("switch", { name: "Description" }));
-    expect(previewCursor).toHaveAttribute("data-command", "ext toast danger");
+    expect(previewCursor).toHaveAttribute("data-command", "ext toast danger top-start");
   });
 });
