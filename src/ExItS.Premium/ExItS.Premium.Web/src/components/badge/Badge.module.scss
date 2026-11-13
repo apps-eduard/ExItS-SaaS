@@ -9,7 +9,8 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   height: var(--badge-height);
   min-height: var(--badge-height);
   max-height: var(--badge-height);
-  padding: 0 var(--badge-pad-x);
+  /* Extra top pad — Latin ink sits high in the em box; keeps indicator/label/remove aligned. */
+  padding: 2px var(--badge-pad-x) 0;
   border: 1px solid transparent;
   border-radius: var(--radius-badge);
   font-family: var(--font-sans);
@@ -22,13 +23,11 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   vertical-align: middle;
 }
 
-/* Label box — flex-center + optical nudge (Latin metrics leave unused descender space). */
 .label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  translate: 0 1px;
 }
 
 .badge[data-all-caps="true"] {
@@ -36,13 +35,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   letter-spacing: var(--type-badge-tracking-caps);
 }
 
-.badge[data-all-caps="true"] .label {
-  /* Caps have no descenders — nudge a touch more so they don't sit high. */
-  translate: 0 1.25px;
-}
-
 .badge[data-count="true"] .label {
-  translate: 0 1px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -73,7 +66,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 /* Count — compact numeric chip */
 .badge[data-count="true"] {
   min-width: var(--badge-height);
-  padding: 0 0.4rem;
+  padding: 2px 0.4rem 0;
   border-radius: 999px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
@@ -120,13 +113,6 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   line-height: 0;
   opacity: 0.72;
   transition: opacity var(--motion-fast) ease, background-color var(--motion-fast) ease;
-}
-
-.remove > span,
-.remove > svg {
-  display: block;
-  line-height: 1;
-  translate: 0 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {
