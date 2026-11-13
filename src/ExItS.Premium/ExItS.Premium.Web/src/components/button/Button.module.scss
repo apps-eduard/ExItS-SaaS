@@ -126,7 +126,8 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
-.button[data-appearance="soft"] {
+.button[data-appearance="soft"],
+.button[data-appearance="soft-raise"] {
   background: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
   color: var(--color-text);
   border-color: transparent;
@@ -167,6 +168,7 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
 }
 
 .button[data-appearance="raise"],
+.button[data-appearance="soft-raise"],
 .button[data-appearance="solid-raise"] {
   border-color: transparent;
   box-shadow: var(--elevation-3);
