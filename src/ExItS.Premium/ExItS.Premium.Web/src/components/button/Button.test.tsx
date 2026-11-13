@@ -43,6 +43,9 @@ describe("Button", () => {
         <Button appearance="outline" variant="success">
           Outline
         </Button>
+        <Button appearance="ghost" variant="warning">
+          Ghost
+        </Button>
         <Button appearance="raise" variant="primary">
           Raise
         </Button>
@@ -56,6 +59,7 @@ describe("Button", () => {
     );
     expect(screen.getByRole("button", { name: "Soft" })).toHaveAttribute("data-appearance", "soft");
     expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute("data-appearance", "outline");
+    expect(screen.getByRole("button", { name: "Ghost" })).toHaveAttribute("data-appearance", "ghost");
     expect(screen.getByRole("button", { name: "Raise" })).toHaveAttribute("data-appearance", "raise");
     expect(screen.getByRole("button", { name: "Soft raise" })).toHaveAttribute("data-appearance", "soft-raise");
     expect(screen.getByRole("button", { name: "Solid raise" })).toHaveAttribute("data-appearance", "solid-raise");
