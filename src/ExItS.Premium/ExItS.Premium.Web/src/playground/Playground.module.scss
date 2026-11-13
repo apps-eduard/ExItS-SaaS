@@ -128,15 +128,47 @@
   margin: 0.15rem 0 0.35rem;
 }
 
-.navSubgroupLabel {
+.navBranch {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  margin: 0.35rem 0.55rem 0.2rem;
-  color: var(--color-text-caption);
-  font-size: var(--type-caption-size);
-  font-weight: 650;
-  line-height: 1.2;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0 0.55rem 0 0.65rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--color-text);
+  text-align: start;
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--color-hover);
+    }
+  }
+}
+
+.navSubgroup[data-active="true"] .navBranch {
+  color: var(--color-primary);
+}
+
+.navChevron {
+  margin-inline-start: auto;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.navSubgroup[data-open="true"] .navChevron {
+  transform: rotate(180deg);
+}
+
+.navChildren {
+  display: grid;
+  gap: 0.1rem;
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .navChild {
@@ -620,7 +652,7 @@
   .brandText,
   .groupLabel,
   .navLabel,
-  .navSubgroupLabel {
+  .navChevron {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -630,11 +662,13 @@
 
   .brand,
   .navButton,
+  .navBranch,
   .sidebarTools {
     justify-content: center;
   }
 
-  .navButton {
+  .navButton,
+  .navBranch {
     padding-inline: 0;
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NAV_GROUPS, isNavBranch, navLeaves, resolveSectionId } from "./nav";
+import { NAV_GROUPS, branchContains, isNavBranch, navLeaves, resolveSectionId } from "./nav";
 
 describe("playground nav", () => {
   it("exposes Buttons children and aliases legacy #buttons", () => {
@@ -9,6 +9,8 @@ describe("playground nav", () => {
     if (!buttons || !isNavBranch(buttons)) return;
 
     expect(buttons.children.map((child) => child.id)).toEqual(["button", "button-group", "button-dropdown"]);
+    expect(branchContains(buttons, "button-dropdown")).toBe(true);
+    expect(branchContains(buttons, "inputs")).toBe(false);
     expect(resolveSectionId("buttons")).toBe("button");
     expect(resolveSectionId("button-group")).toBe("button-group");
     expect(navLeaves().some((leaf) => leaf.id === "button")).toBe(true);

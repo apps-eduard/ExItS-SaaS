@@ -1,16 +1,72 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "../components/button/Button";
 import { AppIcon } from "../icons/ExIcon";
 import { AppearanceControls } from "./AppearanceControls";
 import { ComponentsShowcase } from "./ComponentsShowcase";
 import { Foundations } from "./Foundations";
-import { isNavBranch, NAV_GROUPS, navLeaves, resolveSectionId, type SectionId } from "./nav";
+import {
+  branchContains,
+  isNavBranch,
+  NAV_GROUPS,
+  navLeaves,
+  resolveSectionId,
+  type NavBranch,
+  type SectionId,
+} from "./nav";
 import { PersonalConcept } from "./PersonalConcept";
 import styles from "./Playground.module.scss";
 
 function sectionFromLocation(): SectionId {
   const value = window.location.hash.replace("#", "");
   return resolveSectionId(value) ?? "overview";
+}
+
+function NavBranchItem({
+  item,
+  current,
+  onSelect,
+}: {
+  item: NavBranch;
+  current: SectionId;
+  onSelect: (id: SectionId) => void;
+}) {
+  const panelId = useId();
+  const active = branchContains(item, current);
+  const [open, setOpen] = useState(active);
+
+  useEffect(() => {
+    if (active) setOpen(true);
+  }, [active]);
+
+  return (
+    <div className={styles.navSubgroup} data-open={open ? "true" : undefined} data-active={active ? "true" : undefined}>
+      <button
+        type="button"
+        className={styles.navBranch}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <AppIcon name={item.icon} />
+        <span className={styles.navLabel}>{item.label}</span>
+        <AppIcon name="expand_more" className={styles.navChevron} />
+      </button>
+      <div id={panelId} className={styles.navChildren} hidden={!open} role="group" aria-label={item.label}>
+        {item.children.map((child) => (
+          <button
+            key={child.id}
+            type="button"
+            className={`${styles.navButton} ${styles.navChild}`}
+            aria-current={child.id === current ? "page" : undefined}
+            onClick={() => onSelect(child.id)}
+          >
+            <AppIcon name={child.icon} />
+            <span className={styles.navLabel}>{child.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Sidebar({
@@ -39,24 +95,7 @@ function Sidebar({
             <p className={styles.groupLabel}>{group.label}</p>
             {group.items.map((item) =>
               isNavBranch(item) ? (
-                <div key={item.label} className={styles.navSubgroup}>
-                  <p className={styles.navSubgroupLabel}>
-                    <AppIcon name={item.icon} aria-hidden="true" />
-                    <span className={styles.navLabel}>{item.label}</span>
-                  </p>
-                  {item.children.map((child) => (
-                    <button
-                      key={child.id}
-                      type="button"
-                      className={`${styles.navButton} ${styles.navChild}`}
-                      aria-current={child.id === current ? "page" : undefined}
-                      onClick={() => onSelect(child.id)}
-                    >
-                      <AppIcon name={child.icon} />
-                      <span className={styles.navLabel}>{child.label}</span>
-                    </button>
-                  ))}
-                </div>
+                <NavBranchItem key={item.label} item={item} current={current} onSelect={onSelect} />
               ) : (
                 <button
                   key={item.id}
