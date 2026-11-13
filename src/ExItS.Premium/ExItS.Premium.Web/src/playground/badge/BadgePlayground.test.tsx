@@ -62,4 +62,17 @@ describe("BadgePlayground", () => {
     await user.click(within(preview!).getByRole("button", { name: "Remove" }));
     expect(within(preview!).getByText(/Removed/i)).toBeInTheDocument();
   });
+
+  it("shows Count samples in examples only — not in Cursor command", () => {
+    render(<BadgePlayground />);
+
+    const examples = screen.getByRole("heading", { name: "States & examples", level: 2 }).parentElement;
+    expect(examples).not.toBeNull();
+    expect(within(examples!).getByText("Count")).toBeInTheDocument();
+    expect(within(examples!).getByText("99+")).toHaveAttribute("data-count", "true");
+    expect(within(examples!).getByText("12")).toHaveAttribute("data-count", "true");
+
+    expect(screen.queryByRole("switch", { name: "Count" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("cursor-copy-command").getAttribute("data-command")).not.toMatch(/count/);
+  });
 });

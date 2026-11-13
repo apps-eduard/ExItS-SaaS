@@ -21,6 +21,12 @@ export const BADGE_APPEARANCES = ["soft", "emphasis", "solid", "outline", "ghost
 export type BadgeTone = (typeof BADGE_TONES)[number];
 export type BadgeAppearance = (typeof BADGE_APPEARANCES)[number];
 
+/** Compact count label — caps at 99+. */
+export function formatBadgeCount(count: number) {
+  const value = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  return value > 99 ? "99+" : String(value);
+}
+
 type BadgeProps = {
   tone?: BadgeTone;
   appearance?: BadgeAppearance;
@@ -28,6 +34,8 @@ type BadgeProps = {
   allCaps?: boolean;
   /** Leading status pip (or pip-only when there is no label). */
   indicator?: boolean;
+  /** Compact numeric count chip (sample / nav counts — not a playground Cursor flag). */
+  count?: number;
   /** Show a trailing remove control. */
   removable?: boolean;
   /** Called when the remove control is activated. */
@@ -42,6 +50,7 @@ export function Badge({
   appearance = "soft",
   allCaps = false,
   indicator = false,
+  count,
   removable = false,
   onRemove,
   removeLabel = "Remove",
@@ -49,9 +58,11 @@ export function Badge({
   className,
   ...rest
 }: BadgeProps) {
-  const hasLabel = children != null && children !== false && children !== "";
+  const isCount = typeof count === "number";
+  const countLabel = isCount ? formatBadgeCount(count) : null;
+  const hasLabel = isCount || (children != null && children !== false && children !== "");
   const indicatorOnly = indicator && !hasLabel;
-  const showRemove = removable && !indicatorOnly;
+  const showRemove = removable && !indicatorOnly && !isCount;
 
   return (
     <span
@@ -62,10 +73,11 @@ export function Badge({
       data-all-caps={allCaps ? "true" : "false"}
       data-indicator={indicator ? "true" : "false"}
       data-indicator-only={indicatorOnly ? "true" : "false"}
+      data-count={isCount ? "true" : "false"}
       data-removable={showRemove ? "true" : "false"}
     >
-      {indicator ? <span className={styles.indicator} aria-hidden="true" /> : null}
-      {hasLabel ? children : null}
+      {indicator && !isCount ? <span className={styles.indicator} aria-hidden="true" /> : null}
+      {isCount ? countLabel : hasLabel ? children : null}
       {showRemove ? (
         <button
           type="button"

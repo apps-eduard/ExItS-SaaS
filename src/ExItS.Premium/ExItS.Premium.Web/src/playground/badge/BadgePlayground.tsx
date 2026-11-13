@@ -200,6 +200,19 @@ export function BadgePlayground() {
               ))}
             </div>
           </article>
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>Count</p>
+            <div className={styles.exampleRow}>
+              <Badge tone="primary" appearance="solid" count={1} />
+              <Badge tone="success" appearance="solid" count={9} />
+              <Badge tone="info" appearance="solid" count={12} />
+              <Badge tone="warning" appearance="solid" count={42} />
+              <Badge tone="danger" appearance="solid" count={99} />
+              <Badge tone="help" appearance="solid" count={128} />
+              <Badge tone="neutral" appearance="soft" count={0} />
+              <Badge tone="accent" appearance="emphasis" count={3} />
+            </div>
+          </article>
         </div>
       }
     />

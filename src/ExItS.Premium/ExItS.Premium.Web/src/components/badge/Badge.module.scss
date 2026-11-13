@@ -44,6 +44,16 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   border-color: transparent !important;
 }
 
+/* Count — compact numeric chip (examples only; not a Cursor playground flag) */
+.badge[data-count="true"] {
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
 .indicator {
   width: 0.45rem;
   height: 0.45rem;
