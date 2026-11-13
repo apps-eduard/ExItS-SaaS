@@ -8,6 +8,7 @@ import {
   REFERENCE_PALETTES,
   countReferenceSwatches,
   filterReferencePalettes,
+  referenceShadeLabel,
   referenceShadeName,
 } from "./reference-palettes";
 import { ReferenceShadeButton, type ReferenceCopyMode } from "./ReferenceShadeButton";
@@ -152,6 +153,7 @@ export function ColorsSection() {
                       <ReferenceShadeButton
                         key={name}
                         name={name}
+                        label={referenceShadeLabel(family.label, step)}
                         hex={family.shades[step]}
                         copyMode={copyMode}
                       />

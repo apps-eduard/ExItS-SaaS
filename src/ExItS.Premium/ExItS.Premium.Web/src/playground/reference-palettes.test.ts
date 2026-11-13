@@ -4,13 +4,57 @@ import {
   REFERENCE_SHADE_STEPS,
   countReferenceSwatches,
   filterReferencePalettes,
+  referenceShadeLabel,
   referenceShadeName,
 } from "./reference-palettes";
 
+const EXPECTED_IDS = [
+  "slate",
+  "gray",
+  "zinc",
+  "neutral",
+  "stone",
+  "red",
+  "rose",
+  "pink",
+  "fuchsia",
+  "purple",
+  "violet",
+  "indigo",
+  "blue",
+  "sky",
+  "cyan",
+  "teal",
+  "emerald",
+  "green",
+  "lime",
+  "yellow",
+  "amber",
+  "orange",
+  "brown",
+  "olive",
+  "mint",
+  "charcoal",
+  "ivory",
+  "coral",
+  "peach",
+  "terracotta",
+  "burgundy",
+  "gold",
+  "sage",
+  "forest",
+  "turquoise",
+  "azure",
+  "navy",
+  "lavender",
+  "periwinkle",
+  "magenta",
+] as const;
+
 describe("reference-palettes", () => {
-  it("exposes 25 families with 250 curated hex swatches", () => {
-    expect(REFERENCE_PALETTES).toHaveLength(25);
-    expect(countReferenceSwatches()).toBe(250);
+  it("exposes 40 families with 400 curated hex swatches", () => {
+    expect(REFERENCE_PALETTES).toHaveLength(40);
+    expect(countReferenceSwatches()).toBe(400);
 
     for (const family of REFERENCE_PALETTES) {
       expect(Object.keys(family.shades)).toHaveLength(10);
@@ -21,39 +65,15 @@ describe("reference-palettes", () => {
   });
 
   it("includes the required family ids in order", () => {
-    expect(REFERENCE_PALETTES.map((family) => family.id)).toEqual([
-      "slate",
-      "gray",
-      "zinc",
-      "stone",
-      "neutral",
-      "red",
-      "rose",
-      "pink",
-      "fuchsia",
-      "purple",
-      "violet",
-      "indigo",
-      "blue",
-      "sky",
-      "cyan",
-      "teal",
-      "emerald",
-      "green",
-      "lime",
-      "yellow",
-      "amber",
-      "orange",
-      "brown",
-      "olive",
-      "mint",
-    ]);
+    expect(REFERENCE_PALETTES.map((family) => family.id)).toEqual([...EXPECTED_IDS]);
   });
 
   it("filters by name, shade, and hex", () => {
+    expect(filterReferencePalettes("sage").map((f) => f.id)).toEqual(["sage"]);
+    expect(filterReferencePalettes("500").every((f) => f.matchingSteps.includes(500))).toBe(true);
+    expect(filterReferencePalettes("#22c55e").map((f) => f.id)).toEqual(["green"]);
     expect(filterReferencePalettes("mint-500").map((f) => f.id)).toEqual(["mint"]);
-    expect(filterReferencePalettes("700").every((f) => f.matchingSteps.includes(700))).toBe(true);
-    expect(filterReferencePalettes("8f5a3c").map((f) => f.id)).toEqual(["brown"]);
-    expect(referenceShadeName("brown", 700)).toBe("brown-700");
+    expect(referenceShadeName("sage", 500)).toBe("sage-500");
+    expect(referenceShadeLabel("Sage", 500)).toBe("Sage 500");
   });
 });
