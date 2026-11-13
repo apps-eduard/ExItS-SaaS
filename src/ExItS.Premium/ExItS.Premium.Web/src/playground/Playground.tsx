@@ -4,13 +4,13 @@ import { AppIcon } from "../icons/ExIcon";
 import { AppearanceControls } from "./AppearanceControls";
 import { ComponentsShowcase } from "./ComponentsShowcase";
 import { Foundations } from "./Foundations";
-import { isSectionId, NAV_GROUPS, type SectionId } from "./nav";
+import { isNavBranch, NAV_GROUPS, navLeaves, resolveSectionId, type SectionId } from "./nav";
 import { PersonalConcept } from "./PersonalConcept";
 import styles from "./Playground.module.scss";
 
 function sectionFromLocation(): SectionId {
   const value = window.location.hash.replace("#", "");
-  return isSectionId(value) ? value : "overview";
+  return resolveSectionId(value) ?? "overview";
 }
 
 function Sidebar({
@@ -37,7 +37,27 @@ function Sidebar({
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className={styles.groupLabel}>{group.label}</p>
-            {group.items.map((item) => (
+            {group.items.map((item) =>
+              isNavBranch(item) ? (
+                <div key={item.label} className={styles.navSubgroup}>
+                  <p className={styles.navSubgroupLabel}>
+                    <AppIcon name={item.icon} />
+                    <span className={styles.navLabel}>{item.label}</span>
+                  </p>
+                  {item.children.map((child) => (
+                    <button
+                      key={child.id}
+                      type="button"
+                      className={`${styles.navButton} ${styles.navChild}`}
+                      aria-current={child.id === current ? "page" : undefined}
+                      onClick={() => onSelect(child.id)}
+                    >
+                      <AppIcon name={child.icon} />
+                      <span className={styles.navLabel}>{child.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
                 <button
                   key={item.id}
                   type="button"
@@ -48,7 +68,8 @@ function Sidebar({
                   <AppIcon name={item.icon} />
                   <span className={styles.navLabel}>{item.label}</span>
                 </button>
-              ))}
+              ),
+            )}
           </div>
         ))}
       </nav>
@@ -91,7 +112,7 @@ export function Playground() {
     document.getElementById("content")?.focus();
   }
 
-  const current = NAV_GROUPS.flatMap((group) => group.items).find((item) => item.id === section);
+  const current = navLeaves().find((item) => item.id === section);
 
   return (
     <div className={styles.shell} data-collapsed={collapsed ? "true" : "false"}>

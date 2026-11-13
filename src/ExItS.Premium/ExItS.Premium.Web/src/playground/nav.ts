@@ -9,7 +9,9 @@ export const SECTION_IDS = [
   "elevation",
   "motion",
   "icons",
-  "buttons",
+  "button",
+  "button-group",
+  "button-dropdown",
   "inputs",
   "search",
   "selects",
@@ -28,13 +30,27 @@ export const SECTION_IDS = [
 
 export type SectionId = (typeof SECTION_IDS)[number];
 
-export type NavItem = {
+export type NavLeaf = {
   id: SectionId;
   label: string;
   icon: IconName;
 };
 
-export const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+export type NavBranch = {
+  label: string;
+  icon: IconName;
+  children: NavLeaf[];
+};
+
+export type NavEntry = NavLeaf | NavBranch;
+
+export type NavItem = NavLeaf;
+
+export function isNavBranch(entry: NavEntry): entry is NavBranch {
+  return "children" in entry;
+}
+
+export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
   {
     label: "Foundations",
     items: [
@@ -51,7 +67,15 @@ export const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Components",
     items: [
-      { id: "buttons", label: "Buttons", icon: "left_click" },
+      {
+        label: "Buttons",
+        icon: "left_click",
+        children: [
+          { id: "button", label: "Button", icon: "left_click" },
+          { id: "button-group", label: "Button group", icon: "view_column" },
+          { id: "button-dropdown", label: "Button dropdown", icon: "unfold_more" },
+        ],
+      },
       { id: "inputs", label: "Inputs", icon: "edit_note" },
       { id: "search", label: "Search", icon: "search" },
       { id: "selects", label: "Selects", icon: "unfold_more" },
@@ -75,6 +99,19 @@ export const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   },
 ];
 
+/** Flatten leaves for lookup / active title. */
+export function navLeaves(groups: typeof NAV_GROUPS = NAV_GROUPS): NavLeaf[] {
+  return groups.flatMap((group) =>
+    group.items.flatMap((entry) => (isNavBranch(entry) ? entry.children : [entry])),
+  );
+}
+
 export function isSectionId(value: string): value is SectionId {
   return (SECTION_IDS as readonly string[]).includes(value);
+}
+
+/** Legacy `#buttons` opens the Button page. */
+export function resolveSectionId(value: string): SectionId | null {
+  if (value === "buttons") return "button";
+  return isSectionId(value) ? value : null;
 }

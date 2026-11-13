@@ -122,6 +122,28 @@
   }
 }
 
+.navSubgroup {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.navSubgroupLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.35rem 0.55rem 0.2rem;
+  color: var(--color-text-caption);
+  font-size: var(--type-caption-size);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.navChild {
+  padding-inline-start: 1.15rem;
+  min-height: 2.25rem;
+}
+
 .navLabel {
   font-size: var(--type-label-size);
   font-weight: 600;
@@ -597,7 +619,8 @@
 .sidebarInner[data-collapsed="true"] {
   .brandText,
   .groupLabel,
-  .navLabel {
+  .navLabel,
+  .navSubgroupLabel {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -613,6 +636,10 @@
 
   .navButton {
     padding-inline: 0;
+  }
+
+  .navChild {
+    padding-inline-start: 0;
   }
 }
 

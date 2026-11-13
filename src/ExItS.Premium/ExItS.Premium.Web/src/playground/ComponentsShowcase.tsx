@@ -35,7 +35,9 @@ function Stage({ label, children }: { label?: string; children: ReactNode }) {
 }
 
 export function ComponentsShowcase({ id }: { id: SectionId }) {
-  if (id === "buttons") return <ButtonsSection />;
+  if (id === "button") return <ButtonSection />;
+  if (id === "button-group") return <ButtonGroupStub />;
+  if (id === "button-dropdown") return <ButtonDropdownStub />;
   if (id === "inputs") return <InputsSection />;
   if (id === "search") return <SearchSection />;
   if (id === "selects") return <SelectPlayground />;
@@ -51,10 +53,10 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   return null;
 }
 
-function ButtonsSection() {
+function ButtonSection() {
   return (
     <>
-      <Intro title="Buttons">
+      <Intro title="Button">
         Solid, soft, outline, raise, and solid raise are appearances. Primary, secondary, ghost, danger, and success are tones. Disabled and loading are separate. Buttons do not have an error state.
       </Intro>
       <Stage label="Solid">
@@ -97,6 +99,32 @@ function ButtonsSection() {
         <Button appearance="outline" disabled>Outline</Button>
         <Button appearance="raise" disabled>Raise</Button>
         <Button loading>Saving</Button>
+      </Stage>
+    </>
+  );
+}
+
+function ButtonGroupStub() {
+  return (
+    <>
+      <Intro title="Button group">
+        Attached or segmented actions that share height and borders. This page is a playground shell — the ButtonGroup component is not built yet.
+      </Intro>
+      <Stage label="Coming next">
+        <p className="type-secondary">Use adjacent primary/secondary actions here once ButtonGroup ships. Until then, compose single Buttons.</p>
+      </Stage>
+    </>
+  );
+}
+
+function ButtonDropdownStub() {
+  return (
+    <>
+      <Intro title="Button dropdown">
+        A primary action with a caret menu (or split button). This page is a playground shell — the menu button API is not built yet.
+      </Intro>
+      <Stage label="Coming next">
+        <p className="type-secondary">Reserve this section for Save ▾ / overflow menus. Keyboard and mobile menu behavior will land with the component.</p>
       </Stage>
     </>
   );
