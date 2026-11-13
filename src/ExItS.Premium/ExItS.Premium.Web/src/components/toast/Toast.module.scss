@@ -1,6 +1,5 @@
 .region {
   position: fixed;
-  inset: auto 1rem 1rem auto;
   z-index: var(--z-toast);
   display: grid;
   gap: 0.5rem;
@@ -15,6 +14,32 @@
   &[data-open="true"] {
     display: grid;
   }
+}
+
+.region[data-position="bottom-end"] {
+  inset: auto 1rem 1rem auto;
+}
+
+.region[data-position="bottom-start"] {
+  inset: auto auto 1rem 1rem;
+}
+
+.region[data-position="bottom-center"] {
+  inset: auto 50% 1rem auto;
+  translate: 50% 0;
+}
+
+.region[data-position="top-end"] {
+  inset: 1rem 1rem auto auto;
+}
+
+.region[data-position="top-start"] {
+  inset: 1rem auto auto 1rem;
+}
+
+.region[data-position="top-center"] {
+  inset: 1rem 50% auto auto;
+  translate: 50% 0;
 }
 
 .region[popover]:not(:popover-open):not([data-open="true"]) {
@@ -32,7 +57,11 @@
   background: var(--color-surface-elevated);
   color: var(--color-text);
   box-shadow: var(--elevation-3);
-  animation: toast-in var(--motion-base) var(--motion-ease);
+  animation: toast-in-up var(--motion-base) var(--motion-ease);
+}
+
+.region[data-position^="top"] .toast {
+  animation-name: toast-in-down;
 }
 
 .icon {
@@ -78,10 +107,22 @@
   min-width: 0;
 }
 
-@keyframes toast-in {
+@keyframes toast-in-up {
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
   }
 
   to {

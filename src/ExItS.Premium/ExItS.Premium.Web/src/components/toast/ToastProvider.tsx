@@ -9,6 +9,20 @@ export const TOAST_TONES = ["info", "success", "warning", "danger"] as const;
 
 export type ToastTone = (typeof TOAST_TONES)[number];
 
+/** Where the toast stack anchors in the viewport. Default: bottom-end. */
+export const TOAST_POSITIONS = [
+  "top-start",
+  "top-center",
+  "top-end",
+  "bottom-start",
+  "bottom-center",
+  "bottom-end",
+] as const;
+
+export type ToastPosition = (typeof TOAST_POSITIONS)[number];
+
+export const TOAST_DEFAULT_POSITION: ToastPosition = "bottom-end";
+
 export type ToastInput = {
   title: string;
   description?: string;
@@ -19,6 +33,8 @@ type ToastRecord = ToastInput & { id: number; tone: ToastTone };
 
 type ToastContextValue = {
   push: (toast: ToastInput) => void;
+  position: ToastPosition;
+  setPosition: (position: ToastPosition) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -29,11 +45,30 @@ const ICONS: Record<ToastTone, IconName> = {
   danger: "error",
 };
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({
+  children,
+  position: positionProp,
+  defaultPosition = TOAST_DEFAULT_POSITION,
+}: {
+  children: ReactNode;
+  /** Controlled stack position. */
+  position?: ToastPosition;
+  /** Uncontrolled initial position. */
+  defaultPosition?: ToastPosition;
+}) {
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
+  const [uncontrolledPosition, setUncontrolledPosition] = useState<ToastPosition>(defaultPosition);
+  const position = positionProp ?? uncontrolledPosition;
   const regionRef = useRef<HTMLDivElement>(null);
   const timers = useRef(new Map<number, number>());
   const nextId = useRef(1);
+
+  const setPosition = useCallback(
+    (next: ToastPosition) => {
+      if (positionProp === undefined) setUncontrolledPosition(next);
+    },
+    [positionProp],
+  );
 
   const dismiss = useCallback((id: number) => {
     const timer = timers.current.get(id);
@@ -71,12 +106,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     else hideOverlay(region);
   }, [toasts.length]);
 
-  const value = useMemo(() => ({ push }), [push]);
+  const value = useMemo(() => ({ push, position, setPosition }), [push, position, setPosition]);
 
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div ref={regionRef} className={styles.region} popover="manual" aria-label="Notifications">
+      <div
+        ref={regionRef}
+        className={styles.region}
+        data-position={position}
+        popover="manual"
+        aria-label="Notifications"
+      >
         {toasts.map((toast) => (
           <div
             key={toast.id}
