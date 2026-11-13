@@ -106,6 +106,10 @@ export function navLeaves(groups: typeof NAV_GROUPS = NAV_GROUPS): NavLeaf[] {
   );
 }
 
+export function branchContains(branch: NavBranch, section: SectionId) {
+  return branch.children.some((child) => child.id === section);
+}
+
 export function isSectionId(value: string): value is SectionId {
   return (SECTION_IDS as readonly string[]).includes(value);
 }
