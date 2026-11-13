@@ -2,8 +2,17 @@
 export function toColorText(value: string) {
   const trimmed = value.trim().replace(/\s+/g, " ");
   if (!trimmed) return "";
-  if (/^oklch\(/i.test(trimmed) || /^oklab\(/i.test(trimmed) || /^color\(/i.test(trimmed)) {
+  if (/^oklch\(/i.test(trimmed) || /^oklab\(/i.test(trimmed)) {
     return trimmed;
+  }
+  const srgb = trimmed.match(/^color\(\s*srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\s*\)$/i);
+  if (srgb) {
+    const alpha = srgb[4] === undefined ? 1 : Number(srgb[4]);
+    if (alpha < 1) return trimmed;
+    const hex = [srgb[1], srgb[2], srgb[3]]
+      .map((channel) => Math.round(Number(channel) * 255).toString(16).padStart(2, "0"))
+      .join("");
+    return `#${hex}`;
   }
   const match = trimmed.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)/);
   if (!match) return trimmed;
@@ -94,16 +103,20 @@ export function inkForColor(color: string) {
   return inkForHex(color);
 }
 
-/** Prefer authored token text (oklch/hex); fall back to computed paint. */
+/** Prefer leaf authored oklch/hex; resolve var()/color-mix via computed paint. */
 export function resolveSwatchValue(tokenValue: string, computedBackground: string) {
-  const authored = toColorText(tokenValue);
-  if (/^oklch\(/i.test(authored) || /^#/i.test(authored) || /^rgba?\(/i.test(authored)) {
-    return authored;
-  }
+  const raw = tokenValue.trim();
+  const authored = toColorText(raw);
+  const isLeaf =
+    /^oklch\(/i.test(authored) ||
+    (/^#/i.test(authored) && !/^var\(/i.test(raw) && !/^color-mix\(/i.test(raw));
+  if (isLeaf) return authored;
+
   const fromPaint = toColorText(computedBackground);
   if (fromPaint && !/^rgba?\(\s*0[,\s]+0[,\s]+0(?:[,\s/]+0(?:\.0+)?)?\s*\)$/i.test(fromPaint)) {
     return fromPaint;
   }
+  if (/^rgba?\(/i.test(authored) || /^#/i.test(authored)) return authored;
   return authored || fromPaint;
 }
 
