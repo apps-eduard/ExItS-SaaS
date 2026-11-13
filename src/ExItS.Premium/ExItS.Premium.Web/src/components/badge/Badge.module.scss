@@ -193,33 +193,40 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   }
 }
 
-/* Solid — filled tone + contrast-safe foreground */
+/* Solid — filled tone + white label */
 .badge[data-appearance="solid"].neutral {
   background: var(--color-text);
-  color: var(--color-surface);
+  color: #ffffff;
 }
 
 @each $tone in $semantic-tones {
   .badge[data-appearance="solid"].#{$tone} {
     background: var(--color-#{$tone});
-    color: var(--color-#{$tone}-foreground);
+    color: #ffffff;
 
     @if $tone == secondary {
+      /* Secondary surface is light — use ink fill so white label stays readable. */
+      background: var(--color-text-secondary);
       border-color: var(--color-secondary-border);
+    }
+
+    @if $tone == accent {
+      /* Accent wash is light — use primary fill for solid + white. */
+      background: var(--color-primary);
     }
   }
 }
 
 [data-theme="dark"] {
   .badge[data-appearance="solid"].secondary {
-    background: var(--color-surface-elevated);
-    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-text) 72%, var(--color-surface));
+    color: #ffffff;
     border-color: var(--color-border-strong);
   }
 
   .badge[data-appearance="solid"].accent {
-    background: color-mix(in srgb, var(--color-primary) 32%, var(--color-surface));
-    color: var(--color-text);
+    background: var(--color-primary);
+    color: #ffffff;
   }
 }
 
