@@ -1,3 +1,5 @@
+$semantic-tones: primary, secondary, accent, success, info, warning, help, danger, contrast;
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -19,29 +21,11 @@
   color: var(--color-text);
 }
 
-.badge[data-appearance="soft"].primary {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.badge[data-appearance="soft"].success {
-  background: var(--color-success-soft);
-  color: var(--color-success-ink);
-}
-
-.badge[data-appearance="soft"].warning {
-  background: var(--color-warning-soft);
-  color: var(--color-warning-ink);
-}
-
-.badge[data-appearance="soft"].danger {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-ink);
-}
-
-.badge[data-appearance="soft"].info {
-  background: var(--color-info-soft);
-  color: var(--color-info-ink);
+@each $tone in $semantic-tones {
+  .badge[data-appearance="soft"].#{$tone} {
+    background: var(--color-#{$tone}-soft);
+    color: var(--color-#{$tone}-ink);
+  }
 }
 
 /* Emphasis — bolder ink on a stronger wash than soft */
@@ -54,29 +38,11 @@
   color: var(--color-text);
 }
 
-.badge[data-appearance="emphasis"].primary {
-  background: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
-  color: var(--color-primary);
-}
-
-.badge[data-appearance="emphasis"].success {
-  background: color-mix(in srgb, var(--color-success) 22%, var(--color-surface));
-  color: color-mix(in srgb, var(--color-success) 40%, var(--color-success-ink));
-}
-
-.badge[data-appearance="emphasis"].warning {
-  background: color-mix(in srgb, var(--color-warning) 22%, var(--color-surface));
-  color: color-mix(in srgb, var(--color-warning) 35%, var(--color-warning-ink));
-}
-
-.badge[data-appearance="emphasis"].danger {
-  background: color-mix(in srgb, var(--color-danger) 20%, var(--color-surface));
-  color: color-mix(in srgb, var(--color-danger) 40%, var(--color-danger-ink));
-}
-
-.badge[data-appearance="emphasis"].info {
-  background: color-mix(in srgb, var(--color-info) 22%, var(--color-surface));
-  color: color-mix(in srgb, var(--color-info) 40%, var(--color-info-ink));
+@each $tone in $semantic-tones {
+  .badge[data-appearance="emphasis"].#{$tone} {
+    background: color-mix(in srgb, var(--color-#{$tone}) 22%, var(--color-surface));
+    color: color-mix(in srgb, var(--color-#{$tone}) 40%, var(--color-#{$tone}-ink));
+  }
 }
 
 /* Solid — filled tone + foreground */
@@ -85,29 +51,15 @@
   color: var(--color-surface);
 }
 
-.badge[data-appearance="solid"].primary {
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
-}
+@each $tone in $semantic-tones {
+  .badge[data-appearance="solid"].#{$tone} {
+    background: var(--color-#{$tone});
+    color: var(--color-#{$tone}-foreground);
 
-.badge[data-appearance="solid"].success {
-  background: var(--color-success);
-  color: var(--color-success-foreground);
-}
-
-.badge[data-appearance="solid"].warning {
-  background: var(--color-warning);
-  color: var(--color-warning-foreground);
-}
-
-.badge[data-appearance="solid"].danger {
-  background: var(--color-danger);
-  color: var(--color-danger-foreground);
-}
-
-.badge[data-appearance="solid"].info {
-  background: var(--color-info);
-  color: var(--color-info-foreground);
+    @if $tone == secondary {
+      border-color: var(--color-secondary-border);
+    }
+  }
 }
 
 /* Outline — border + ink */
@@ -117,34 +69,12 @@
   border-color: var(--color-border-strong);
 }
 
-.badge[data-appearance="outline"].primary {
-  background: transparent;
-  color: var(--color-primary);
-  border-color: var(--color-primary-border);
-}
-
-.badge[data-appearance="outline"].success {
-  background: transparent;
-  color: var(--color-success-ink);
-  border-color: var(--color-success-border);
-}
-
-.badge[data-appearance="outline"].warning {
-  background: transparent;
-  color: var(--color-warning-ink);
-  border-color: var(--color-warning-border);
-}
-
-.badge[data-appearance="outline"].danger {
-  background: transparent;
-  color: var(--color-danger-ink);
-  border-color: var(--color-danger-border);
-}
-
-.badge[data-appearance="outline"].info {
-  background: transparent;
-  color: var(--color-info-ink);
-  border-color: var(--color-info-border);
+@each $tone in $semantic-tones {
+  .badge[data-appearance="outline"].#{$tone} {
+    background: transparent;
+    color: var(--color-#{$tone}-ink);
+    border-color: var(--color-#{$tone}-border);
+  }
 }
 
 /* Ghost — ink only */
@@ -153,27 +83,9 @@
   color: var(--color-text);
 }
 
-.badge[data-appearance="ghost"].primary {
-  background: transparent;
-  color: var(--color-primary);
-}
-
-.badge[data-appearance="ghost"].success {
-  background: transparent;
-  color: var(--color-success-ink);
-}
-
-.badge[data-appearance="ghost"].warning {
-  background: transparent;
-  color: var(--color-warning-ink);
-}
-
-.badge[data-appearance="ghost"].danger {
-  background: transparent;
-  color: var(--color-danger-ink);
-}
-
-.badge[data-appearance="ghost"].info {
-  background: transparent;
-  color: var(--color-info-ink);
+@each $tone in $semantic-tones {
+  .badge[data-appearance="ghost"].#{$tone} {
+    background: transparent;
+    color: var(--color-#{$tone}-ink);
+  }
 }

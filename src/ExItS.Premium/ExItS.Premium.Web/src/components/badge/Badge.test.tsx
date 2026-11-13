@@ -29,4 +29,19 @@ describe("Badge", () => {
     );
     expect(screen.getByText("Paid")).toHaveAttribute("data-appearance", "emphasis");
   });
+
+  it("covers the full semantic tone set", () => {
+    render(
+      <>
+        <Badge tone="secondary">Secondary</Badge>
+        <Badge tone="accent">Accent</Badge>
+        <Badge tone="help">Help</Badge>
+        <Badge tone="contrast">Contrast</Badge>
+      </>,
+    );
+    expect(screen.getByText("Secondary")).toHaveAttribute("data-tone", "secondary");
+    expect(screen.getByText("Accent")).toHaveAttribute("data-tone", "accent");
+    expect(screen.getByText("Help")).toHaveAttribute("data-tone", "help");
+    expect(screen.getByText("Contrast")).toHaveAttribute("data-tone", "contrast");
+  });
 });

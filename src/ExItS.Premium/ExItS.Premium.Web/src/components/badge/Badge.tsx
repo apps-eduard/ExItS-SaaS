@@ -1,7 +1,19 @@
 import type { ReactNode } from "react";
 import styles from "./Badge.module.scss";
 
-export const BADGE_TONES = ["neutral", "primary", "success", "warning", "danger", "info"] as const;
+/** Neutral plus the same semantic set as Button (ghost stays an appearance). */
+export const BADGE_TONES = [
+  "neutral",
+  "primary",
+  "secondary",
+  "accent",
+  "success",
+  "info",
+  "warning",
+  "help",
+  "danger",
+  "contrast",
+] as const;
 
 export const BADGE_APPEARANCES = ["soft", "emphasis", "solid", "outline", "ghost"] as const;
 
