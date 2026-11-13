@@ -55,9 +55,11 @@ export function BadgePlayground() {
   const [label, setLabel] = useState("Paid");
   const [allCaps, setAllCaps] = useState(false);
   const [indicator, setIndicator] = useState(false);
+  const [removable, setRemovable] = useState(false);
+  const [removed, setRemoved] = useState(false);
 
   const previewLabel = label.trim() || SAMPLE_LABELS[tone];
-  const cursorCommand = badgeCursorCommand({ tone, appearance, allCaps, indicator });
+  const cursorCommand = badgeCursorCommand({ tone, appearance, allCaps, indicator, removable });
 
   function reset() {
     setTone("success");
@@ -65,25 +67,44 @@ export function BadgePlayground() {
     setLabel("Paid");
     setAllCaps(false);
     setIndicator(false);
+    setRemovable(false);
+    setRemoved(false);
   }
 
   function chooseTone(next: BadgeTone) {
     setTone(next);
     setLabel(SAMPLE_LABELS[next]);
+    setRemoved(false);
+  }
+
+  function chooseRemovable(next: boolean) {
+    setRemovable(next);
+    if (!next) setRemoved(false);
   }
 
   return (
     <PlaygroundShell
       title="Badges"
-      description="Status badges follow tone and appearance. Tone includes neutral plus the full semantic set. Soft is the default tint. Emphasis is a stronger wash with bolder ink. Solid fills the chip, outline keeps a border, and ghost is ink only. All caps uppercases the label. Indicator adds a leading status pip."
+      description="Status badges follow tone and appearance in light and dark. Soft and emphasis washes mix against the theme surface. Solid uses tone fill plus contrast-safe foreground. Outline and ghost use theme ink. All caps uppercases the label. Indicator adds a leading pip. Remove adds a trailing dismiss control."
       panes="equal"
       propertiesColumns={2}
       preview={
         <div className={styles.previewStack}>
           <div className={styles.previewField}>
-            <Badge tone={tone} appearance={appearance} allCaps={allCaps} indicator={indicator}>
-              {previewLabel}
-            </Badge>
+            {removed ? (
+              <p className={styles.removedNote}>Removed — toggle Remove off or Default global to restore.</p>
+            ) : (
+              <Badge
+                tone={tone}
+                appearance={appearance}
+                allCaps={allCaps}
+                indicator={indicator}
+                removable={removable}
+                onRemove={() => setRemoved(true)}
+              >
+                {previewLabel}
+              </Badge>
+            )}
           </div>
           <CursorCopyCommand standard="Badge" command={cursorCommand} />
         </div>
@@ -112,6 +133,11 @@ export function BadgePlayground() {
           <div className={`${styles.toggles} ${styles.spanFull}`}>
             <Switch label="All caps" checked={allCaps} onChange={(event) => setAllCaps(event.target.checked)} />
             <Switch label="Indicator" checked={indicator} onChange={(event) => setIndicator(event.target.checked)} />
+            <Switch
+              label="Remove"
+              checked={removable}
+              onChange={(event) => chooseRemovable(event.target.checked)}
+            />
           </div>
           <div className={`${styles.actions} ${styles.spanFull}`}>
             <Button variant="secondary" onClick={reset}>
@@ -161,6 +187,16 @@ export function BadgePlayground() {
             <div className={styles.exampleRow}>
               {BADGE_TONES.map((toneItem) => (
                 <Badge key={toneItem} tone={toneItem} indicator aria-label={SAMPLE_LABELS[toneItem]} />
+              ))}
+            </div>
+          </article>
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>Remove</p>
+            <div className={styles.exampleRow}>
+              {BADGE_TONES.map((toneItem) => (
+                <Badge key={toneItem} tone={toneItem} removable onRemove={() => undefined}>
+                  {SAMPLE_LABELS[toneItem]}
+                </Badge>
               ))}
             </div>
           </article>

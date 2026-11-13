@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import { AppIcon } from "../../icons/ExIcon";
 import styles from "./Badge.module.scss";
 
 /** Neutral plus the same semantic set as Button (ghost stays an appearance). */
@@ -27,6 +28,12 @@ type BadgeProps = {
   allCaps?: boolean;
   /** Leading status pip (or pip-only when there is no label). */
   indicator?: boolean;
+  /** Show a trailing remove control. */
+  removable?: boolean;
+  /** Called when the remove control is activated. */
+  onRemove?: () => void;
+  /** Accessible name for the remove control. */
+  removeLabel?: string;
   children?: ReactNode;
 } & Omit<HTMLAttributes<HTMLSpanElement>, "children" | "color">;
 
@@ -35,12 +42,16 @@ export function Badge({
   appearance = "soft",
   allCaps = false,
   indicator = false,
+  removable = false,
+  onRemove,
+  removeLabel = "Remove",
   children,
   className,
   ...rest
 }: BadgeProps) {
   const hasLabel = children != null && children !== false && children !== "";
   const indicatorOnly = indicator && !hasLabel;
+  const showRemove = removable && !indicatorOnly;
 
   return (
     <span
@@ -51,9 +62,23 @@ export function Badge({
       data-all-caps={allCaps ? "true" : "false"}
       data-indicator={indicator ? "true" : "false"}
       data-indicator-only={indicatorOnly ? "true" : "false"}
+      data-removable={showRemove ? "true" : "false"}
     >
       {indicator ? <span className={styles.indicator} aria-hidden="true" /> : null}
       {hasLabel ? children : null}
+      {showRemove ? (
+        <button
+          type="button"
+          className={styles.remove}
+          aria-label={removeLabel}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove?.();
+          }}
+        >
+          <AppIcon name="close" size={12} label="" />
+        </button>
+      ) : null}
     </span>
   );
 }

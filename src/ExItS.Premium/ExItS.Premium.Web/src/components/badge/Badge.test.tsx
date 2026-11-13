@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { Badge } from "./Badge";
 
 describe("Badge", () => {
@@ -10,6 +11,7 @@ describe("Badge", () => {
     expect(badge).toHaveAttribute("data-appearance", "soft");
     expect(badge).toHaveAttribute("data-all-caps", "false");
     expect(badge).toHaveAttribute("data-indicator", "false");
+    expect(badge).toHaveAttribute("data-removable", "false");
   });
 
   it("applies tone and appearance", () => {
@@ -64,5 +66,18 @@ describe("Badge", () => {
     const badge = container.querySelector("[data-indicator-only='true']");
     expect(badge).toHaveAttribute("data-tone", "danger");
     expect(badge).toHaveAttribute("aria-label", "Failed");
+  });
+
+  it("calls onRemove from the remove control", async () => {
+    const user = userEvent.setup();
+    const onRemove = vi.fn();
+    render(
+      <Badge tone="info" removable onRemove={onRemove}>
+        Tag
+      </Badge>,
+    );
+    expect(screen.getByText("Tag")).toHaveAttribute("data-removable", "true");
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    expect(onRemove).toHaveBeenCalledTimes(1);
   });
 });

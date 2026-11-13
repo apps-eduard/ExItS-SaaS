@@ -6,6 +6,7 @@ const base = {
   appearance: "soft" as const,
   allCaps: false,
   indicator: false,
+  removable: false,
 };
 
 describe("badgeCursorCommand", () => {
@@ -23,5 +24,6 @@ describe("badgeCursorCommand", () => {
     expect(badgeCursorCommand({ ...base, tone: "success", allCaps: true, indicator: true })).toBe(
       "ext badge success all-caps indicator",
     );
+    expect(badgeCursorCommand({ ...base, tone: "info", removable: true })).toBe("ext badge info remove");
   });
 });
