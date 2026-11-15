@@ -12,10 +12,9 @@ describe("date picker responsive styles", () => {
     expect(calendarCss).toContain("prefers-reduced-motion: reduce");
     expect(rangeCss).toContain("min-width: 768px");
     expect(rangeCss).toContain("max-width: 767px");
-    expect(rangeCss).toContain("min-width: 1024px");
     expect(surfaceCss).toContain("min-width: 768px");
     expect(surfaceCss).toContain("min-width: 1024px");
-    expect(surfaceCss).toContain("min-width: 1440px");
+    expect(surfaceCss).toContain("min(35rem");
     expect(surfaceCss).toContain("max-width: 767px");
     expect(surfaceCss).toContain("prefers-reduced-motion: reduce");
     expect(surfaceCss).not.toMatch(/#[0-9a-fA-F]{3,8}/);

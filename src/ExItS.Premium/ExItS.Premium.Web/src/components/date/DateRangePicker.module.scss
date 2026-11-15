@@ -33,12 +33,14 @@
 
 @media (min-width: 768px) {
   .layout {
-    grid-template-columns: minmax(9.5rem, 11.5rem) minmax(0, 1fr);
+    grid-template-columns: 10.25rem minmax(0, 1fr);
     align-items: start;
+    gap: var(--space-3);
   }
 
   .presets {
     flex-direction: column;
+    gap: 0.15rem;
     overflow: visible;
     padding-bottom: 0;
   }
@@ -49,6 +51,7 @@
 
   .preset :global(button) {
     width: 100%;
+    min-height: 2rem;
   }
 }
 
@@ -59,11 +62,5 @@
 
   .preset {
     scroll-snap-align: start;
-  }
-}
-
-@media (min-width: 1024px) {
-  .layout {
-    gap: var(--space-4);
   }
 }
