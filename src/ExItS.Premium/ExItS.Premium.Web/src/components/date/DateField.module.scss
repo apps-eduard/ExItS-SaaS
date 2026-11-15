@@ -85,6 +85,20 @@
       background: var(--color-hover);
     }
   }
+
+  @media (max-width: 767px) {
+    z-index: 1;
+
+    &::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+    }
+  }
 }
 
 .hidden {

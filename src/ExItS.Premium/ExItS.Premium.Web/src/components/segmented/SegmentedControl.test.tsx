@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
+import segmentedCss from "./SegmentedControl.module.scss?raw";
 import { SegmentedControl } from "./SegmentedControl";
 
 function Example() {
@@ -47,5 +48,12 @@ describe("SegmentedControl", () => {
     expect(screen.getByRole("radio", { name: "Week" })).toBeDisabled();
     await user.click(screen.getByRole("radio", { name: "Week" }));
     expect(screen.getByRole("radio", { name: "Day" })).toBeChecked();
+  });
+
+  it("keeps the visual option height and widens only the mobile hit area to 44px within each segment", () => {
+    expect(segmentedCss).toContain("min-height: calc(var(--control-height) - 6px)");
+    expect(segmentedCss).toMatch(
+      /@media \(max-width: 767px\)[\s\S]*\.option input\s*\{[^}]*left:\s*0;[^}]*height:\s*max\(44px, 100%\);[^}]*transform:\s*translateY\(-50%\);/,
+    );
   });
 });

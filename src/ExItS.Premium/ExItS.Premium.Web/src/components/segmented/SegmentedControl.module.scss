@@ -81,6 +81,17 @@
   }
 }
 
+@media (max-width: 767px) {
+  .option input {
+    top: 50%;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    height: max(44px, 100%);
+    transform: translateY(-50%);
+  }
+}
+
 .group[data-disabled="true"] .thumb {
   background: var(--color-disabled-fill);
 }
