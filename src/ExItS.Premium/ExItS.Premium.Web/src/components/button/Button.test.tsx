@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Button } from "./Button";
+import buttonCss from "./Button.module.scss?raw";
 
 describe("Button", () => {
   it("renders an enabled button", () => {
@@ -87,6 +88,23 @@ describe("Button", () => {
     expect(screen.getByRole("button", { name: "Raise" })).toHaveAttribute("data-appearance", "raise");
     expect(screen.getByRole("button", { name: "Soft raise" })).toHaveAttribute("data-appearance", "soft-raise");
     expect(screen.getByRole("button", { name: "Solid raise" })).toHaveAttribute("data-appearance", "solid-raise");
+  });
+
+  it("keeps convex solid opt-in and leaves the solid fill flat", () => {
+    render(
+      <>
+        <Button>Save</Button>
+        <Button appearance="convex-solid" variant="success">
+          Convex
+        </Button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("data-appearance", "solid");
+    expect(screen.getByRole("button", { name: "Convex" })).toHaveAttribute("data-appearance", "convex-solid");
+    expect(buttonCss).toContain('[data-appearance="convex-solid"]');
+    expect(buttonCss).toContain("radial-gradient(");
+    expect(buttonCss).not.toContain('[data-appearance="solid"]');
+    expect(buttonCss).not.toContain("backdrop-filter");
   });
 
   it("covers every semantic role", () => {

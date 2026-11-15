@@ -20,7 +20,8 @@ export type ButtonAppearance =
   | "ghost"
   | "raise"
   | "soft-raise"
-  | "solid-raise";
+  | "solid-raise"
+  | "convex-solid";
 
 export const BUTTON_APPEARANCES = [
   "solid",
@@ -31,6 +32,7 @@ export const BUTTON_APPEARANCES = [
   "raise",
   "soft-raise",
   "solid-raise",
+  "convex-solid",
 ] as const satisfies readonly ButtonAppearance[];
 
 export const BUTTON_SEMANTIC_VARIANTS = [

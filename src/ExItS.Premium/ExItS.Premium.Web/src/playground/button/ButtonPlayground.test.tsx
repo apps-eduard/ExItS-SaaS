@@ -24,6 +24,15 @@ describe("ButtonPlayground", () => {
 
     expect(screen.getByRole("combobox", { name: "Tone, Primary" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Appearance, Solid" })).toBeInTheDocument();
+    const compare = screen.getByText("Compare").parentElement;
+    expect(compare).not.toBeNull();
+    expect(within(compare!).getAllByRole("button")).toHaveLength(4);
+    expect(within(compare!).getAllByRole("button").map((button) => button.getAttribute("data-appearance"))).toEqual([
+      "solid",
+      "gradient",
+      "solid-raise",
+      "convex-solid",
+    ]);
     expect(screen.getByRole("combobox", { name: "Icon, None" })).toBeInTheDocument();
     expect(screen.getByTestId("cursor-copy-command")).toHaveAttribute("data-command", "ext btn ripple");
     expect(screen.getByText("ext btn ripple")).toBeInTheDocument();

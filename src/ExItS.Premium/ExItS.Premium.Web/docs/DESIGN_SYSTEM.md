@@ -125,6 +125,28 @@ Reviewed against [Apple’s Entering Data guidance](https://developer.apple.com/
 - Drag-and-drop into fields. Paste and the calendar cover the data these controls accept.
 - A second formatter. Do not invent amounts, names, or dates the person did not enter.
 
+## Button
+
+**LOCKED.** Default appearance is `solid`. Convex Solid is opt-in. Do not replace Solid with Convex Solid, and do not restyle Solid, Gradient, Soft, Outline, Ghost, Raise, Soft Raise, or Solid Raise to match it.
+
+### Preserve
+
+- Tones are primary, secondary, accent, success, info, warning, help, danger, contrast, and ghost. Appearances are solid, gradient, soft, outline, ghost, raise, soft-raise, solid-raise, and convex-solid.
+- A button with no appearance uses `solid`. Solid is a flat fill of the tone token and the tone foreground. It has no radial, no gradient image, and no drop shadow.
+- Gradient runs from the tone to the hover token, top to bottom. Secondary keeps `--color-secondary-border`.
+- Raise, soft raise, and solid raise sit on elevation 3, lift to elevation 4 on hover, and settle to elevation 1 while pressed. Solid raise keeps the solid fill.
+- Convex Solid (`appearance="convex-solid"`) keeps the center as the exact semantic color. The rim is a radial ellipse, 92% by 100% at 50% 38%, ending in a 72% mix of the pressed token into the tone. Hover moves that ellipse to 50% 32% and mixes 8% white into the upper middle. Pressed clears the image and uses the pressed fill. Disabled uses the disabled fill, disabled text, no image, and no shadow. There is no shadow under the button and no backdrop blur.
+- Radius follows `--radius-button`: 8px Standard, 14px Soft, 999px Pill. Height follows density: 34px Compact, 40px Standard, 52px Large.
+- Hover, pressed, loading, disabled, focus, and the ripple stay on the shared button rules. Reduced motion removes the press transform and the ripple.
+- The playground compares Solid, Gradient, Solid Raise, and Convex Solid with one shared label.
+
+### Do not adopt
+
+- A lighter center on Convex Solid. The center stays the semantic color so the tone foreground keeps its contrast. Help’s solid fill is already at that floor.
+- A drop shadow, blur, or a looping animation as the raised center.
+- Painting Solid, Gradient, Soft, Outline, Ghost, Raise, Soft Raise, or Solid Raise with the Convex Solid radial.
+- `!important` on a button fill.
+
 ## Select dropdown
 
 **LOCKED.** One menu for a searchable or plain Select, including Pill. The trigger follows Standard, Soft, and Pill. The menu stays a card. `DropdownMenu` is a command menu and is not this lock.

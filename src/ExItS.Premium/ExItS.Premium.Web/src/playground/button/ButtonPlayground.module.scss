@@ -62,3 +62,10 @@
   overflow-x: auto;
   padding-block: 0.1rem;
 }
+
+.compareItem {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  min-width: 0;
+}

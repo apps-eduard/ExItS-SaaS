@@ -38,7 +38,10 @@ const APPEARANCE_LABELS: Record<ButtonAppearance, string> = {
   raise: "Raise",
   "soft-raise": "Soft raise",
   "solid-raise": "Solid raise",
+  "convex-solid": "Convex Solid",
 };
+
+const COMPARE_APPEARANCES = ["solid", "gradient", "solid-raise", "convex-solid"] as const satisfies readonly ButtonAppearance[];
 
 const BUTTON_ICONS = [
   "add",
@@ -201,6 +204,19 @@ export function ButtonPlayground() {
               </div>
             </article>
           ))}
+          <article className={styles.example}>
+            <p className={styles.exampleLabel}>Compare</p>
+            <div className={styles.exampleRow}>
+              {COMPARE_APPEARANCES.map((item) => (
+                <div key={item} className={styles.compareItem}>
+                  <p className={styles.exampleLabel}>{APPEARANCE_LABELS[item]}</p>
+                  <Button appearance={item} variant={variant === "ghost" ? "primary" : variant}>
+                    {label.trim() || APPEARANCE_LABELS[item]}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </article>
           <article className={styles.example}>
             <p className={styles.exampleLabel}>States</p>
             <div className={styles.exampleRow}>

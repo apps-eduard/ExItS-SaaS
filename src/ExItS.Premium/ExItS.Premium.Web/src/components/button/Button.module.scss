@@ -209,6 +209,49 @@ $semantic-tones: primary, secondary, accent, success, info, warning, help, dange
   @include solid-tone($tone);
 }
 
+@mixin convex-tone($tone) {
+  &.#{$tone} {
+    background-color: var(--color-#{$tone});
+    background-image: radial-gradient(
+      ellipse 92% 100% at 50% 38%,
+      var(--color-#{$tone}) 0%,
+      var(--color-#{$tone}) 42%,
+      color-mix(in srgb, var(--color-#{$tone}-pressed) 72%, var(--color-#{$tone})) 100%
+    );
+    color: var(--color-#{$tone}-foreground);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background-color: var(--color-#{$tone}-hover);
+        background-image: radial-gradient(
+          ellipse 92% 100% at 50% 32%,
+          color-mix(in srgb, white 8%, var(--color-#{$tone}-hover)) 0%,
+          var(--color-#{$tone}-hover) 46%,
+          color-mix(in srgb, var(--color-#{$tone}-pressed) 64%, var(--color-#{$tone}-hover)) 100%
+        );
+      }
+    }
+
+    &:active:not(:disabled) {
+      background-image: none;
+      background-color: var(--color-#{$tone}-pressed);
+    }
+  }
+}
+
+.button[data-appearance="convex-solid"] {
+  @each $tone in $semantic-tones {
+    @include convex-tone($tone);
+  }
+
+  &:is(.primary, .secondary, .accent, .success, .info, .warning, .help, .danger, .contrast):disabled {
+    background-color: var(--color-disabled-fill);
+    background-image: none;
+    color: var(--color-disabled-text);
+    box-shadow: none;
+  }
+}
+
 .ghost {
   background: transparent;
 
