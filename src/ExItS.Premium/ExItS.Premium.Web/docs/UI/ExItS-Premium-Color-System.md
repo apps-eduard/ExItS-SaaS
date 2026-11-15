@@ -115,13 +115,13 @@ Separate from semantic roles on the Colors page.
 | --- | --- | --- | --- |
 | Page | `--color-page` | `#f5f6f8` | `#0f172a` |
 | Surface | `--color-surface` | `#ffffff` | `#1e293b` |
-| Elevated | `--color-surface-elevated` | `#ffffff` | `#263449` |
+| Elevated | `--color-surface-elevated` | `#ffffff` | `#31445f` |
 | Text | `--color-text` | `#111827` | `#f8fafc` |
 | Text secondary | `--color-text-secondary` | `#4b5563` | `#cbd5e1` |
 | Caption | `--color-text-caption` | `#5c6778` | `#94a3b8` |
 | Inverse | `--color-text-inverse` | `#f8fafc` | `#0f172a` |
-| Border | `--color-border` | `#e4e7ec` | `#334155` |
-| Strong border | `--color-border-strong` | `#d0d5dd` | `#475569` |
+| Border | `--color-border` | `#e4e7ec` | `#3d4f68` |
+| Strong border | `--color-border-strong` | `#d0d5dd` | `#5b6d86` |
 | Disabled fill | `--color-disabled-fill` | `#e5e7eb` | `#334155` |
 | Disabled text | `--color-disabled-text` | `#4b5563` | `#cbd5e1` |
 | Overlay | `--color-overlay` | `rgba(15, 23, 42, 0.46)` | same (`:root`) |
@@ -185,3 +185,49 @@ Do **not** auto-add Help / Accent / Contrast variants to every component — onl
 3. Keep Warning `#ff5722` + dark FG; Danger `#dc2626`; Help `#9333ea`; Success/Info OKLCH as above.
 4. Never promote reference swatches into runtime themes.
 5. Update this doc when tokens change; keep `DESIGN_TOKENS.md` as the short index pointing here for color detail.
+
+---
+
+## Apple Color review
+
+Reviewed against [Apple’s Color guidance](https://developer.apple.com/design/human-interface-guidelines/color). Inspection only. `tokens.scss` and component code were not changed.
+
+### Preserve
+
+- Five palettes on `data-palette`: teal, blue, violet, orange, rose. Light uses the 700 stop and a white foreground. Dark uses a lighter stop and a dark foreground. Status roles do not follow the palette.
+- Light, Dark, and System. The attribute is `light` or `dark`, never the string `system`.
+- Nine semantic roles and the foundation tokens in this document. Warning stays `#ff5722` with dark text. Danger stays `#dc2626`. Help stays `#9333ea`. Success and Info stay OKLCH with dark foregrounds.
+- Dark page, surface, and elevated surface stay three separate fills. Five elevations stay 0 through 4.
+- Buttons use `--color-{role}-foreground` on solid fills. The contrast test covers those pairs, plus ink on page and surface, for every palette in Light and Dark.
+- Focus is `--color-focus` (the primary). Hover is the text wash. Disabled fill and text are their own tokens. Error and success on fields use danger and success ink, with the message as words. Selected calendar days use the primary fill and foreground. Today adds a dot and a ring, so it is not color alone.
+- Toasts pair info, success, warning, and danger with an icon and a title. Danger uses `role="alert"`.
+- Financial amounts in the playground use the text color. A transaction row does not inherit a status color.
+
+### Adopt as rules, using the current tokens
+
+- One color, one meaning. Primary is the main action. Success, Warning, and Danger are statuses. Accent is a selected wash, not a sixth palette.
+- Keep one primary action visually ahead of secondary and ghost actions.
+- Do not use color as the only signal when a status has no visible word. Toasts already add an icon. A new status chip needs a word, and an icon when the word is absent.
+- Money stays on `--color-text`. Do not paint a balance with primary, success, or danger. Put Paid, Due, or Failed in a status that uses the matching role.
+
+### Refine after approval
+
+- Solid badges set `color: #ffffff` for every semantic tone, including Warning, Success, and Info, and for Dark primary. The color system already says white text fails on those fills, and Dark primary foregrounds are dark. Buttons follow the foreground token. Solid badges should use `--color-{role}-foreground` (and the primary foreground for a solid primary or accent badge). Do not change the badge until this is approved.
+- Dark reminders fill `#fdba74` is the same hex as `--palette-orange-300`, which is the Dark orange primary. On the orange palette those two fills match. A later token change can separate reminders from that stop. Do not add a palette to fix it.
+- Orange primary and Warning are both warm, and teal primary sits near Success. The tokens are already different. Keep the words on the status so the palette cannot be read as the status.
+- `prefers-contrast` is not implemented. Surfaces are already opaque. A later pass can thicken the focus ring and the 1px border when the system asks for more contrast. That is not a new theme.
+
+### Do not adopt
+
+- Apple’s system color values, SwiftUI color names, or a native color API.
+- Liquid Glass, blur, or a translucent material system.
+- A sixth palette, a second theme attribute, or duplicate tokens for the same role.
+- Increased Contrast as a separate `data-theme` value.
+- Coloring numeric totals green or red.
+
+### Decisions before a color lock
+
+1. Approve the solid-badge foreground correction, or leave the white label and record it as an exception.
+2. Approve a distinct Dark reminders color, or accept the match with Dark orange primary.
+3. Decide whether `prefers-contrast` should thicken focus and borders. No new palette either way.
+4. Confirm the money rule: text color for amounts, status roles only beside a word.

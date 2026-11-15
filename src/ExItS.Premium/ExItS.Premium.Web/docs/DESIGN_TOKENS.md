@@ -34,6 +34,12 @@ Control text is 14, 15, and 16px. Button text is 13, 14, and 16px. Form labels a
 
 Page headings, display type, body copy, and numeric totals stay on the type scale.
 
+## Typography scale (LOCKED)
+
+Do not add tokens. Roles already in `:root` are the official scale. See Design system → Type. Caption (`0.8125rem`) is the smallest product chrome size. Density changes only `--density-*-font` and `--type-badge-size`. Time-wheel `1.25rem` remains a pending exception.
+
+Financial numeric is locked: `--type-numeric-size` is `clamp(1.625rem, 1.3rem + 0.7vw, 2rem)` (26–32px), `--type-numeric-weight` is 600, `--type-numeric-line` is 1.1. Figures are tabular lining numerals. Amounts use the text color. The earlier 28–36px weight 700 size is not production.
+
 ## Neutral scale
 
 `--neutral-50` through `--neutral-900` document the existing page, border, and text hex values. They are not a second palette. The dark page `#0f172a` stays on `--color-page` because it is slightly deeper than `--neutral-900` (`#111827`).
@@ -53,7 +59,7 @@ Page headings, display type, body copy, and numeric totals stay on the type scal
 
 ## Color system (semantic + foundation + primary)
 
-Full tables (9 semantic roles, foundation, Light/Dark values, OKLCH Success/Info, Danger `#dc2626`, Help purple-600, reference library rules, component examples): **[UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md)**.
+Full tables (9 semantic roles, foundation, Light/Dark values, OKLCH Success/Info, Danger `#dc2626`, Help purple-600, reference library rules, component examples, and the Apple Color review): **[UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md)**.
 
 Short index:
 
@@ -79,6 +85,8 @@ Shadows are `--elevation-0` through `--elevation-4`. Light and dark define them 
 | 4 | Overlay | Dialogs and sheets. |
 
 `--shadow-1`, `--shadow-2`, and `--shadow-3` alias levels 1, 3, and 4 so older references stay aligned. New surfaces should use `--elevation-*`.
+
+Spatial layout is reviewed in the design system. These five levels stay the only depth scale. visionOS windows, volumes, and gaze are out of scope.
 
 Stacking is separate: `--z-sticky` 20, `--z-dropdown` 40, `--z-menu` 50, `--z-toast` 80. Dialogs and sheets use the browser top layer.
 

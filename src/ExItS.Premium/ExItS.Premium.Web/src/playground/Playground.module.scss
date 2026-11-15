@@ -443,6 +443,125 @@
   gap: var(--space-3);
 }
 
+.typeScale {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.typeRow {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--color-border);
+
+  &:last-child {
+    padding-block-end: 0;
+    border-block-end: 0;
+  }
+}
+
+.typeMeta {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.typeFacts {
+  font-variant-numeric: tabular-nums;
+}
+
+.typeSample,
+.wrapSample {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.behaviorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.numericCompare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.numericReview {
+  min-width: 0;
+  overflow-wrap: break-word;
+  line-height: var(--type-numeric-line);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.numericPreview[data-numeric="previous"] {
+  font-size: clamp(1.75rem, 1.4rem + 0.8vw, 2.25rem);
+  font-weight: 700;
+}
+
+.numericPreview[data-numeric="minimal"] {
+  font-size: clamp(1.625rem, 1.5rem + 0.25vw, 1.75rem);
+  font-weight: 500;
+}
+
+.typeDensity {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+
+.typeBadge {
+  justify-self: start;
+}
+
+.typeMetrics {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  min-width: 0;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  dt,
+  dd {
+    margin: 0;
+    font-size: var(--type-caption-size);
+    font-weight: var(--type-caption-weight);
+    line-height: var(--type-caption-line);
+  }
+
+  dt {
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.truncateSample {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.primaryInk {
+  color: var(--color-primary);
+}
+
 .pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

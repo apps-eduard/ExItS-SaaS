@@ -41,9 +41,9 @@
   --badge-indicator-size: 0.4rem;
   --badge-indicator-only-size: 0.5rem;
   --badge-remove-size: 1.125rem;
-  --type-numeric-size: clamp(1.75rem, 1.4rem + 0.8vw, 2.25rem);
+  --type-numeric-size: clamp(1.625rem, 1.3rem + 0.7vw, 2rem);
   --type-numeric-line: 1.1;
-  --type-numeric-weight: 700;
+  --type-numeric-weight: 600;
 
   --density-control-font: 0.9375rem;
   --density-button-font: 0.875rem;
@@ -300,14 +300,16 @@
   color-scheme: dark;
   --color-page: #0f172a;
   --color-surface: #1e293b;
-  --color-surface-elevated: #263449;
+  /* Elevated overlays sit a clear step above cards. */
+  --color-surface-elevated: #31445f;
   --color-text: #f8fafc;
   --color-text-secondary: #cbd5e1;
   --color-text-caption: #94a3b8;
   --color-disabled-fill: #334155;
   --color-disabled-text: #cbd5e1;
-  --color-border: #334155;
-  --color-border-strong: #475569;
+  --color-border: #3d4f68;
+  --color-border-strong: #5b6d86;
+  --color-overlay: rgba(2, 6, 23, 0.62);
   /* Same bright OKLCH bases as light; dark FG on fill, bright ink on dark surfaces. */
   --color-success: oklch(0.64 0.22 160);
   --color-success-hover: oklch(0.7 0.2 160);
