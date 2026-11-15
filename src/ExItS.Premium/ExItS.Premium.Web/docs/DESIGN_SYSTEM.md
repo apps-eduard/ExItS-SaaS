@@ -125,6 +125,25 @@ Reviewed against [Apple’s Entering Data guidance](https://developer.apple.com/
 - Drag-and-drop into fields. Paste and the calendar cover the data these controls accept.
 - A second formatter. Do not invent amounts, names, or dates the person did not enter.
 
+## Select dropdown
+
+**LOCKED.** One menu for a searchable or plain Select, including Pill. The trigger follows Standard, Soft, and Pill. The menu stays a card. `DropdownMenu` is a command menu and is not this lock.
+
+### Preserve
+
+- The panel width matches the trigger. It opens below and flips above when space is short. Elevation is `--elevation-3`. The corner is `min(var(--radius-control), var(--radius-card))`: 8px Standard, 12px Soft, 22px Pill. Pill does not turn the panel into a capsule.
+- Options follow the global radius on the row, not a second scale. Standard is 8px, Soft is 12px, and Pill is fully rounded. Desktop height is 36px Compact, 40px Standard, and 48px Large. These heights are on the option only. Do not change `--control-height` to get them. At 767px and below the option and the search row are at least 44px tall.
+- The list padding is `--space-2`, so a highlight does not touch the panel edge. A selected row is an 8% primary tint and a checkmark. It has no left accent bar. Hover, keyboard, and selected stay distinct. A keyboard row uses a 1px primary ring. A selected keyboard row keeps the tint and adds that ring.
+- Search is borderless and only present when `searchable` is true. The icon and the field sit on the menu surface. There is no second pill inside the menu. A hairline divider sits under the search row. Keyboard focus turns the search icon `--color-focus`. It does not draw a box around the field. The accessible name is “Search {label}”. A query with nothing left says “No matches”.
+- A narrow viewport opens the same menu in the bottom sheet. Single and multiple selection, keyboard movement, filtering, light, dark, and the five palettes stay.
+
+### Do not adopt
+
+- A bordered search field, a focus rectangle on the search row, or a second pill inside a Pill select.
+- A left accent on the selected option.
+- Option pills on Standard or Soft. Only Pill options are fully rounded.
+- A separate dropdown component for this menu.
+
 ## Date and time pickers
 
 **LOCKED.** Reviewed against [Apple’s Pickers guidance](https://developer.apple.com/design/human-interface-guidelines/pickers). Compact, graphical, and wheel styles stay split by surface. Do not add a clock face, a date library, or a second picker.

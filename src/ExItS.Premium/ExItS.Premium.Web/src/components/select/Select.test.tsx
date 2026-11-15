@@ -123,9 +123,21 @@ describe("Select", () => {
     expect(screen.getByRole("button", { name: "Status, Due" })).toBeInTheDocument();
   });
 
-  it("keeps the shared focus ring on menu search and the menu elevation", () => {
-    expect(selectCss).not.toMatch(/searchInput[\s\S]*outline:\s*none/);
-    expect(selectCss).toMatch(/\.searchInput:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--color-focus\)/);
+  it("keeps the shared focus ring on the search control and the menu elevation", () => {
+    expect(selectCss).toMatch(/\.searchControl:has\(\.searchInput:focus-visible\)\s*\{[^}]*outline:\s*none/);
+    expect(selectCss).toMatch(/\.searchControl:has\(\.searchInput:focus-visible\) \.searchIcon\s*\{[^}]*color:\s*var\(--color-focus\)/);
+    expect(selectCss).not.toMatch(/searchControl:has\(\.searchInput:focus-visible\)\s*\{[^}]*outline:\s*2px/);
+    expect(selectCss).not.toMatch(/\.searchControl:has\(\.searchInput:is\(:focus/);
+    expect(selectCss).toMatch(/\.searchControl\s*\{[^}]*border:\s*0/);
+    expect(selectCss).toMatch(/\.searchControl\s*\{[^}]*border-radius:\s*min\(var\(--radius-control\), 0\.375rem\)/);
+    expect(selectCss).toMatch(/\.searchInput:focus-visible\s*\{[^}]*outline:\s*none/);
+    expect(selectCss).toMatch(/\.list\s*\{[^}]*padding:\s*var\(--space-2\)/);
+    expect(selectCss).toMatch(/\.panel\s*\{[^}]*border-radius:\s*min\(var\(--radius-control\), var\(--radius-card\)\)/);
+    expect(selectCss).toMatch(/\.option\s*\{[^}]*height:\s*40px/);
+    expect(selectCss).toMatch(/\.option\s*\{[^}]*border-radius:\s*var\(--radius-control\)/);
+    expect(selectCss).toMatch(/data-density="compact"[\s\S]*?height:\s*36px/);
+    expect(selectCss).toMatch(/data-density="large"[\s\S]*?height:\s*48px/);
+    expect(selectCss).not.toMatch(/inset 3px 0 0 var\(--color-primary\)/);
     expect(selectCss).toContain("box-shadow: var(--elevation-3)");
     expect(selectCss).not.toContain("!important");
     expect(selectCss).toContain("width: 1.75rem");

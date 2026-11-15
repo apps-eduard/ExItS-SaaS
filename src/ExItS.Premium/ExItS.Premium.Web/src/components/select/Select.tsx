@@ -511,30 +511,32 @@ export function Select({
 
   const search = searchable ? (
     <div className={styles.search}>
-      <ExIcon name="search" className={styles.searchIcon} size={18} />
-      <input
-        ref={searchRef}
-        id={searchId}
-        className={styles.searchInput}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-controls={listId}
-        aria-expanded={menuOpen}
-        aria-activedescendant={menuOpen && shown[safeActive] ? optionId(safeActive) : undefined}
-        aria-label={`Search ${label}`}
-        placeholder="Search"
-        value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setActive(0);
-        }}
-        onKeyDown={onSearchKeyDown}
-      />
-      {query ? (
-        <button type="button" className={styles.clear} aria-label="Clear search" onClick={clearSearch}>
-          <ExIcon name="close" size={16} />
-        </button>
-      ) : null}
+      <div className={styles.searchControl}>
+        <ExIcon name="search" className={styles.searchIcon} size={18} />
+        <input
+          ref={searchRef}
+          id={searchId}
+          className={styles.searchInput}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={listId}
+          aria-expanded={menuOpen}
+          aria-activedescendant={menuOpen && shown[safeActive] ? optionId(safeActive) : undefined}
+          aria-label={`Search ${label}`}
+          placeholder="Search"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setActive(0);
+          }}
+          onKeyDown={onSearchKeyDown}
+        />
+        {query ? (
+          <button type="button" className={styles.clear} aria-label="Clear search" onClick={clearSearch}>
+            <ExIcon name="close" size={16} />
+          </button>
+        ) : null}
+      </div>
     </div>
   ) : null;
 

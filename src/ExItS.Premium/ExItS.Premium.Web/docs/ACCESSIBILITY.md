@@ -3,7 +3,7 @@
 - Use native buttons, inputs, selects, checkboxes, radios, and dialogs.
 - Name icon-only buttons with `aria-label`. Decorative icons set `aria-hidden`.
 - Meaningful icons set `role="img"` and `aria-label`.
-- Focus uses the shared `:focus-visible` ring, 2px in the primary color. Select menu search keeps that ring. It does not remove it with `!important`.
+- Focus uses the shared `:focus-visible` ring, 2px in the primary color. Select menu search does not draw that box. Keyboard focus colors the search icon with `--color-focus`. It does not remove a ring with `!important`.
 - Dialogs and sheets move focus inside and restore it on close.
 - Menus and tabs use arrow keys. Disabled items and tabs are skipped.
 - Tooltips are supplementary. The trigger keeps its own name.
