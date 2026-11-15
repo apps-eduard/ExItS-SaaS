@@ -25,6 +25,7 @@ Before changing UI, read the document that matches the work:
 - Corner shape: Standard, Soft (default), Pill. Pill does not turn cards, dialogs, or sheets into ovals.
 - Density: Compact, Standard (default), Large.
 - Mobile-first layout. Layout and organization is locked in `docs/LAYOUT_ORGANIZATION.md`. Keep the sidebar, top bar, drawer, inspector, and breakpoints. Drawer rows stay at least 44px. Do not add a second safe-area inset. Do not add a list or table until a product screen needs one. A notched-phone safe-area check is not verified. Motion follows the system reduced-motion setting.
+- Content is locked in `docs/CONTENT_REVIEW.md`. Use the approved type and financial numeric tokens. Informational text stays readable and selectable. Keep `ExIcon`, accessible names, and text contrast. Keep the single-line `Input` until a workflow needs a longer note. Do not add a chart, image, or web-view library until a screen needs that content. Charts, photos, logos, product images, and multiline notes can be added when a real workflow requires them.
 - Personal module only. Do not call Personal APIs from this playground.
 - Do not change backend contracts, V1, POS, or ports 5177 and 5178.
 

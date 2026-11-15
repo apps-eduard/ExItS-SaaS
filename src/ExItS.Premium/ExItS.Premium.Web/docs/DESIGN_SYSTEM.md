@@ -85,9 +85,17 @@ Known exception: the safe-area inset on a real notched phone is **NOT VERIFIED**
 
 ## Content
 
-Reviewed against [Apple’s Content guidance](https://developer.apple.com/design/human-interface-guidelines/content). Inspection only. Not locked.
+**LOCKED.** Reviewed against [Apple’s Content guidance](https://developer.apple.com/design/human-interface-guidelines/content). Detail is in [CONTENT_REVIEW.md](./CONTENT_REVIEW.md).
 
-Detail is in [CONTENT_REVIEW.md](./CONTENT_REVIEW.md). There is no chart, photo view, multiline text view, or embedded web page. Keep `ExIcon`, the single-line `Input`, and selectable informational text. Do not add a chart library, an image component, a rich-text editor, or a web view until a product screen names the content.
+Use the approved type and financial numeric tokens. Informational text stays readable and selectable. Keep `ExIcon` and Material Symbols Rounded, with accessible names and text contrast. Keep the existing single-line `Input`. Content must fit without horizontal overflow. Do not add a chart, image, or web-view library while the current screens do not need one.
+
+Charts, profile photos, business logos, product images, and multiline notes stay deferred until a workflow requires them. They are not prohibited.
+
+## Components
+
+Reviewed against [Apple’s Components guidance](https://developer.apple.com/design/human-interface-guidelines/components). Not locked. Detail is in [COMPONENTS_REVIEW.md](./COMPONENTS_REVIEW.md).
+
+Keep the existing buttons, menus, search, selects, navigation, dialogs, sheets, fields, toggles, pickers, badges, and toasts. Do not add an Apple-only system component. Layout and Content stay locked.
 
 ## Motion
 
