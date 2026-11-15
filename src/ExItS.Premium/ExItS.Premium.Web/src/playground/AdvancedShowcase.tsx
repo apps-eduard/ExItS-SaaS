@@ -134,7 +134,7 @@ export function AdvancedShowcase() {
           onChange={setTab}
           tabs={[
             { value: "paid", label: "Paid", content: <p>Paid items use the success color, not the primary palette.</p> },
-            { value: "due", label: "Due", content: <p>Due items keep the warning color at #ff5722.</p> },
+            { value: "due", label: "Due", content: <p>Due items use the warning color, not the primary palette.</p> },
           ]}
         />
       </Stage>

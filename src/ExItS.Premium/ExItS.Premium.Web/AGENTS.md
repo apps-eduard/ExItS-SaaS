@@ -21,7 +21,7 @@ Before changing UI, read the document that matches the work:
 - Google Material Symbols Rounded, self-hosted, through `ExIcon`.
 - Colored icon tiles only for feature actions. Navigation icons stay monochrome.
 - Theme: Light, Dark, System. Default System.
-- Primary palettes: Teal (default), Blue, Violet, Orange, Rose.
+- Primary palettes: Mint (default, stored as teal), Blue, Purple (stored as violet), Orange, Rose.
 - Corner shape: Standard, Soft (default), Pill. Pill does not turn cards, dialogs, or sheets into ovals.
 - Density: Compact, Standard (default), Large.
 - Mobile-first layout. Motion follows the system reduced-motion setting.

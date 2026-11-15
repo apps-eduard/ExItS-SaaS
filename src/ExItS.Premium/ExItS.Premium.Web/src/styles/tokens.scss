@@ -78,16 +78,17 @@
   --neutral-800: #1e293b;
   --neutral-900: #111827;
 
-  --palette-teal-50: #f0fdfa;
-  --palette-teal-100: #ccfbf1;
-  --palette-teal-200: #99f6e4;
-  --palette-teal-300: #5eead4;
-  --palette-teal-400: #2dd4bf;
-  --palette-teal-500: #14b8a6;
-  --palette-teal-600: #0d9488;
-  --palette-teal-700: #0f766e;
-  --palette-teal-800: #115e59;
-  --palette-teal-900: #134e4a;
+  /* Mint scale. Key stays teal so saved preferences keep working. 400 is the reference #00c8b3. */
+  --palette-teal-50: #e6faf7;
+  --palette-teal-100: #c7f3ee;
+  --palette-teal-200: #9eeae2;
+  --palette-teal-300: #66ded1;
+  --palette-teal-400: #00c8b3;
+  --palette-teal-500: #02a796;
+  --palette-teal-600: #03897c;
+  --palette-teal-700: #1b756c;
+  --palette-teal-800: #146158;
+  --palette-teal-900: #0e4a43;
 
   --palette-blue-50: #eff6ff;
   --palette-blue-100: #dbeafe;
@@ -100,16 +101,17 @@
   --palette-blue-800: #1e40af;
   --palette-blue-900: #1e3a8a;
 
-  --palette-violet-50: #f5f3ff;
-  --palette-violet-100: #ede9fe;
-  --palette-violet-200: #ddd6fe;
-  --palette-violet-300: #c4b5fd;
-  --palette-violet-400: #a78bfa;
-  --palette-violet-500: #8b5cf6;
-  --palette-violet-600: #7c3aed;
-  --palette-violet-700: #6d28d9;
-  --palette-violet-800: #5b21b6;
-  --palette-violet-900: #4c1d95;
+  /* Purple scale. Key stays violet. 500 is the reference #cb30e0. */
+  --palette-violet-50: #fbeefd;
+  --palette-violet-100: #f6daf9;
+  --palette-violet-200: #eebdf5;
+  --palette-violet-300: #e598f0;
+  --palette-violet-400: #da6ae9;
+  --palette-violet-500: #cb30e0;
+  --palette-violet-600: #a829c5;
+  --palette-violet-700: #9a22ab;
+  --palette-violet-800: #7c1b8a;
+  --palette-violet-900: #5e1469;
 
   --palette-orange-50: #fff7ed;
   --palette-orange-100: #ffedd5;
@@ -244,27 +246,27 @@
   --color-disabled-text: #4b5563;
   --color-border: #e4e7ec;
   --color-border-strong: #d0d5dd;
-  /* Bright OKLCH fills use dark foregrounds — white text fails AA on these bases. */
-  --color-success: oklch(0.64 0.22 160);
-  --color-success-hover: oklch(0.58 0.22 160);
-  --color-success-pressed: oklch(0.55 0.21 160);
-  --color-success-foreground: oklch(0.18 0.04 160);
-  --color-success-ink: oklch(0.4 0.16 160);
-  --color-warning: #ff5722;
-  --color-warning-hover: #f4511e;
-  --color-warning-pressed: #e64a19;
+  /* Status fills stay near the Apple references. Foregrounds are dark because white fails AA on these bases. */
+  --color-success: #34c759;
+  --color-success-hover: #2db250;
+  --color-success-pressed: #2aa54a;
+  --color-success-foreground: #052e16;
+  --color-success-ink: #166534;
+  --color-warning: #ff8d28;
+  --color-warning-hover: #da7822;
+  --color-warning-pressed: #c36b1e;
   --color-warning-foreground: #1a0a00;
-  --color-warning-ink: #1a0a00;
-  --color-danger: #dc2626;
-  --color-danger-hover: #b91c1c;
-  --color-danger-pressed: #991b1b;
-  --color-danger-foreground: #ffffff;
-  --color-danger-ink: #b91c1c; /* darker than fill for AA on page */
-  --color-info: oklch(0.69 0.22 220);
-  --color-info-hover: oklch(0.63 0.22 220);
-  --color-info-pressed: oklch(0.56 0.21 220);
-  --color-info-foreground: oklch(0.16 0.05 220);
-  --color-info-ink: oklch(0.4 0.16 220);
+  --color-warning-ink: #9a3412;
+  --color-danger: #ff383c;
+  --color-danger-hover: #f23539;
+  --color-danger-pressed: #ec3337;
+  --color-danger-foreground: #2a0506;
+  --color-danger-ink: #b42318;
+  --color-info: #0088ff;
+  --color-info-hover: #0081f2;
+  --color-info-pressed: #007eeb;
+  --color-info-foreground: #041426;
+  --color-info-ink: #1d4ed8;
   --color-help: #9333ea; /* purple-600 */
   --color-help-hover: #7e22ce; /* purple-700 */
   --color-help-pressed: #6b21a8; /* purple-800 */
@@ -310,27 +312,27 @@
   --color-border: #3d4f68;
   --color-border-strong: #5b6d86;
   --color-overlay: rgba(2, 6, 23, 0.62);
-  /* Same bright OKLCH bases as light; dark FG on fill, bright ink on dark surfaces. */
-  --color-success: oklch(0.64 0.22 160);
-  --color-success-hover: oklch(0.7 0.2 160);
-  --color-success-pressed: oklch(0.58 0.22 160);
-  --color-success-foreground: oklch(0.18 0.04 160);
-  --color-success-ink: oklch(0.72 0.18 160);
-  --color-warning: #ff5722;
-  --color-warning-hover: #f4511e;
-  --color-warning-pressed: #e64a19;
+  /* Same reference fills as light. Hover lifts; ink is a lighter tint that clears the dark surface. */
+  --color-success: #34c759;
+  --color-success-hover: #59d177;
+  --color-success-pressed: #2fb852;
+  --color-success-foreground: #052e16;
+  --color-success-ink: #5ee08a;
+  --color-warning: #ff8d28;
+  --color-warning-hover: #ff9f4a;
+  --color-warning-pressed: #e88024;
   --color-warning-foreground: #1a0a00;
-  --color-warning-ink: #ffab91;
-  --color-danger: #dc2626;
-  --color-danger-hover: #b91c1c;
-  --color-danger-pressed: #991b1b;
-  --color-danger-foreground: #ffffff;
-  --color-danger-ink: #fca5a5;
-  --color-info: oklch(0.69 0.22 220);
-  --color-info-hover: oklch(0.75 0.2 220);
-  --color-info-pressed: oklch(0.63 0.22 220);
-  --color-info-foreground: oklch(0.16 0.05 220);
-  --color-info-ink: oklch(0.78 0.14 220);
+  --color-warning-ink: #ffb36b;
+  --color-danger: #ff383c;
+  --color-danger-hover: #ff585b;
+  --color-danger-pressed: #f43539;
+  --color-danger-foreground: #2a0506;
+  --color-danger-ink: #ffb4b6;
+  --color-info: #0088ff;
+  --color-info-hover: #2e9dff;
+  --color-info-pressed: #0082f4;
+  --color-info-foreground: #041426;
+  --color-info-ink: #7dd3fc;
   --color-help: #9333ea; /* purple-600 */
   --color-help-hover: #7e22ce; /* purple-700 */
   --color-help-pressed: #6b21a8; /* purple-800 */

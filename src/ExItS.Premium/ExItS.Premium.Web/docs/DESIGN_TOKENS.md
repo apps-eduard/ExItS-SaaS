@@ -9,7 +9,7 @@ Set on `document.documentElement`:
 | Attribute | Values | Default |
 | --- | --- | --- |
 | `data-theme` | `light`, `dark` | resolved from System |
-| `data-palette` | `teal`, `blue`, `violet`, `orange`, `rose` | `teal` |
+| `data-palette` | `teal` (Mint), `blue`, `violet` (Purple), `orange`, `rose` | `teal` |
 | `data-radius` | `standard`, `soft`, `pill` | `soft` |
 | `data-density` | `compact`, `standard`, `large` | `standard` |
 
@@ -59,12 +59,12 @@ Financial numeric is locked: `--type-numeric-size` is `clamp(1.625rem, 1.3rem + 
 
 ## Color system (semantic + foundation + primary)
 
-Full tables (9 semantic roles, foundation, Light/Dark values, OKLCH Success/Info, Danger `#dc2626`, Help purple-600, reference library rules, component examples, and the Apple Color review): **[UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md)**.
+**LOCKED.** Full tables (9 semantic roles, Mint/Purple scales, Light/Dark status variants, Help `#9333ea`, reference library rules): **[UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md)**.
 
 Short index:
 
-- **Primary:** five palettes via `data-palette`; soft / selected / focus / ink / border in `[data-theme]`.
-- **Semantic (palette-independent):** Primary (dynamic), Secondary, Accent, Success, Info, Warning `#ff5722`, Help `#9333ea`, Danger `#dc2626`, Contrast.
+- **Primary:** Mint, Blue, Purple, Orange, Rose via `data-palette`. Saved values remain `teal` and `violet`.
+- **Semantic (palette-independent):** Success `#34c759`, Warning `#ff8d28`, Danger `#ff383c`, Info `#0088ff`, Help `#9333ea`. Dark text on those fills. Contrast and Secondary stay derived.
 - **Foundation:** page, surface, text, border, disabled, overlay.
 - **Reference library:** 40×10 swatches in playground only — not a theme.
 

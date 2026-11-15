@@ -8,18 +8,18 @@ ExItS Premium is a Modern Solid interface for the Personal module. The reference
 - Borders are 1px. Elevation is five levels, 0 through 4. Level 0 is flat. Shadows stay short and are tuned separately for light and dark.
 - Default corners are Soft. Pill rounds controls, and keeps cards, dialogs, and sheets practical.
 - One primary palette colors interactive fills. Status roles (Success, Info, Warning, Help, Danger), Secondary/Contrast, and Personal feature colors do not become extra Primary themes.
-- Color detail: [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md). Warning stays `#ff5722` with dark text; Danger is `#dc2626`; Success/Info use OKLCH with dark foregrounds on the bright fills.
+- Color detail: [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md). Success `#34c759`, Warning `#ff8d28`, Danger `#ff383c`, and Info `#0088ff` use dark foregrounds. Help stays `#9333ea`.
 - Text on a fill needs a 4.5:1 contrast ratio. Status and feature ink on page and surface uses the same bar.
 
 ## Color
 
-Reviewed against [Apple’s Color guidance](https://developer.apple.com/design/human-interface-guidelines/color). No tokens or components were changed. The classification is in [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md#apple-color-review).
+**LOCKED.** Reviewed against [Apple’s Color guidance](https://developer.apple.com/design/human-interface-guidelines/color) and checked in `tokens.contrast.test.ts`. Detail is in [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md).
 
-Preserve the five palettes, Light/Dark/System, the nine semantic roles, the foundation colors, and the five elevations. Do not copy Apple’s RGB values, add a palette, or add Liquid Glass.
+Five palettes: Mint (stored `teal`, default), Blue, Purple (stored `violet`), Orange, Rose. Light primary is the 700 stop with white text. Dark Mint is the 400 stop `#00c8b3` with dark text. Dark Purple is the 300 stop with dark text. Blue, Orange, and Rose scales are unchanged.
 
-The contrast test locks foreground-on-fill for every status role and every palette. Buttons follow those foreground tokens. Solid badges do not: they set `#ffffff` on Warning, Success, Info, and on Dark primary fills that are specified with a dark foreground. That is the correction to approve before any color edit.
+Success, Warning, Danger, and Info use the reference fills above, with Light and Dark hover, pressed, and ink variants. They do not follow the selected palette. Help, feature colors, foundation surfaces, and the five elevations are unchanged.
 
-Amounts stay on the text color. Success, Warning, and Danger name a status. They do not recolor a balance.
+Buttons and solid badges use `--color-{role}-foreground`. Amounts stay on the text color. Do not add a palette or Liquid Glass.
 
 ## Type
 
@@ -167,6 +167,52 @@ Use a short action label, sentence case, and the same word for the same action. 
 ### Do not adopt
 
 Apple’s system wording, a second language catalog, and rewrites of labels that are already specific.
+
+## Searching
+
+Reviewed against [Apple’s Searching guidance](https://developer.apple.com/design/human-interface-guidelines/searching). Inspection only. No search component, token, or string was changed.
+
+### Preserve
+
+- `SearchField` is the shared search control. It is a labeled `type="search"` field with the search icon, the visible label, an optional placeholder, error text, and a clear button named “Clear search”. It has no success state. Theme, type, density, radius, and icons stay on the existing tokens.
+- The search icon is decorative. The label is the accessible name. The browser’s native search-cancel glyph is hidden so only “Clear search” clears the field.
+- Select search is not a second search component. `searchable` is opt-in. The query filters that menu by label, the accessible name is “Search {label}”, and “No matches” appears when nothing remains. Arrow keys move, Enter chooses, Escape closes, and clear returns focus to the query. On a narrow viewport the same search sits in the bottom sheet.
+- The color reference library filters its own 400 swatches and says how many are showing. That behavior stays local to that page.
+- Playground navigation stays a section list. There is no global search and no stored search history.
+- “No matches” and “Clear search” stay the approved words.
+
+### Adopt as rules, using the current controls
+
+- Put search at the top of the list it filters. One list, one search. Do not add a search field that does not change that list.
+- The placeholder names the scope, as in “Name or note” and “Name, shade, or HEX”. The visible label stays. The placeholder is not the name of the field.
+- Search is local. The caller filters the current collection. `SearchField` does not search by itself.
+- An empty filtered list says “No matches”. The clear control is the way back to the full list.
+- Do not add suggestions or search history unless a later task names the list and the privacy rule.
+
+### Refine after approval
+
+- The personal sample and the component gallery render `SearchField` but do not filter a list. The color library and a searchable select are the only working searches.
+- Empty copy is not one sentence. Select says “No matches”. The color library says “No reference shades match that search.”
+- The color library announces a count. A searchable select does not.
+- `SearchField` does not clear on Escape. Select Escape closes the menu instead of clearing the query.
+- The select placeholder is the generic word “Search”. The scope is only in the accessible name.
+- The clear control is 2rem. Compact and Standard fields grow to at least 44px under 768px. The clear mark does not.
+- Select and the reference library render every match. There is no paging or windowing for a large list.
+
+### Do not adopt
+
+- A global search across the design system or future Personal screens.
+- Spotlight, a native search framework, or a second search component.
+- Predictive text, saved queries, or search history.
+- New tokens or a search-specific type size.
+
+### Decisions before a search lock
+
+1. Use “No matches” for every filtered list, or allow a scoped sentence when the collection name matters.
+2. Decide whether Escape clears `SearchField`. Select Escape already closes the menu.
+3. Decide whether a filtered list must show a count.
+4. Decide whether the 2rem clear control is an exception to the 44px touch height.
+5. Keep `SearchField` presentational. The screen that owns the list does the filtering.
 
 ## Icons
 

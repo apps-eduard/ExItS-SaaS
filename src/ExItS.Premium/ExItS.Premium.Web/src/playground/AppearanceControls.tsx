@@ -54,7 +54,7 @@ export function AppearanceControls({ name }: { name: string }) {
       <Button variant="secondary" fullWidth onClick={appearance.reset}>
         Reset to defaults
       </Button>
-      <p className="type-caption">Defaults are System, Teal, Soft, and Standard. Stored only under ExItS Premium keys.</p>
+      <p className="type-caption">Defaults are System, Mint, Soft, and Standard. Stored only under ExItS Premium keys. Mint keeps the saved value teal. Purple keeps violet.</p>
     </div>
   );
 }

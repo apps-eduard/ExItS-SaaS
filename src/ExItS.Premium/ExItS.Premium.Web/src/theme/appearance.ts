@@ -32,10 +32,11 @@ export const DEFAULT_APPEARANCE: Appearance = {
   density: "standard",
 };
 
+/** Stored values stay teal and violet. Labels are the visible palette names. */
 export const PALETTE_LABELS: Record<Palette, string> = {
-  teal: "Teal",
+  teal: "Mint",
   blue: "Blue",
-  violet: "Violet",
+  violet: "Purple",
   orange: "Orange",
   rose: "Rose",
 };

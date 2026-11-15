@@ -51,17 +51,21 @@ describe("premium tokens", () => {
     expect(block('[data-density="large"]')["--control-height"]).toBe("max(52px, calc(var(--density-control-font) * 2.4))");
   });
 
-  it("keeps the neutral scale, warning fill, OKLCH success/info, and five elevation levels", () => {
+  it("keeps the neutral scale, status reference fills, and five elevation levels", () => {
     const root = block(":root");
     expect(root["--neutral-50"]).toBe("#f5f6f8");
     expect(root["--neutral-900"]).toBe("#111827");
-    expect(resolve("var(--palette-teal-700)", [root])).toBe("#0f766e");
+    expect(resolve("var(--palette-teal-400)", [root])).toBe("#00c8b3");
+    expect(resolve("var(--palette-teal-700)", [root])).toBe("#1b756c");
+    expect(resolve("var(--palette-violet-500)", [root])).toBe("#cb30e0");
+    expect(resolve("var(--palette-violet-700)", [root])).toBe("#9a22ab");
     for (const theme of ["light", "dark"] as const) {
       const colors = block(`[data-theme="${theme}"]`);
-      expect(colors["--color-warning"]).toBe("#ff5722");
+      expect(colors["--color-warning"]).toBe("#ff8d28");
       expect(colors["--color-warning-foreground"]).toBe("#1a0a00");
-      expect(colors["--color-success"]).toBe("oklch(0.64 0.22 160)");
-      expect(colors["--color-info"]).toBe("oklch(0.69 0.22 220)");
+      expect(colors["--color-success"]).toBe("#34c759");
+      expect(colors["--color-danger"]).toBe("#ff383c");
+      expect(colors["--color-info"]).toBe("#0088ff");
       expect(colors["--color-help"]).toBe("#9333ea");
       expect(colors["--elevation-0"]).toBe("none");
       expect(colors["--elevation-1"]).toBeTruthy();
@@ -84,6 +88,15 @@ describe("premium tokens", () => {
       const page = resolve(colors["--color-page"], scopes);
       const surface = resolve(colors["--color-surface"], scopes);
       const elevated = resolve(colors["--color-surface-elevated"], scopes);
+      const pageLum = relativeLuminance(page);
+      const surfaceLum = relativeLuminance(surface);
+      const elevatedLum = relativeLuminance(elevated);
+      if (theme === "dark") {
+        expect(surfaceLum, "dark card above page").toBeGreaterThan(pageLum);
+        expect(elevatedLum, "dark overlay above card").toBeGreaterThan(surfaceLum);
+      } else {
+        expect(surfaceLum).toBeGreaterThanOrEqual(pageLum);
+      }
 
       expectTextContrast(resolve(colors["--color-text"], scopes), page, `${theme} text/page`);
       expectTextContrast(resolve(colors["--color-text"], scopes), surface, `${theme} text/surface`);

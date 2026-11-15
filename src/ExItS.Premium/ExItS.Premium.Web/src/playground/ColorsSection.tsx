@@ -74,7 +74,9 @@ export function ColorsSection() {
     <div className={styles.page}>
       <header className={`${page.intro} ${styles.intro}`}>
         <h1 className="type-page">Colors</h1>
-        <p className="type-secondary">Semantic roles · foundation · theme palettes · reference library. Warning stays #FF5722.</p>
+        <p className="type-secondary">
+          Semantic roles · foundation · Mint, Blue, Purple, Orange, and Rose. Status colors do not follow the primary palette.
+        </p>
       </header>
 
       <section className={styles.section} aria-labelledby="semantic-colors">
@@ -109,7 +111,7 @@ export function ColorsSection() {
             <TokenColorFamily
               key={palette}
               title={palette === "teal" ? `${PALETTE_LABELS[palette]} · default` : PALETTE_LABELS[palette]}
-              prefix={palette}
+              prefix={PALETTE_LABELS[palette].toLowerCase()}
               tokenPrefix={`--palette-${palette}`}
             />
           ))}

@@ -1,6 +1,8 @@
 # ExItS Premium color system
 
-Authoritative runtime values live in `src/styles/tokens.scss`. Playground: `http://127.0.0.1:5180/design-system#colors`. Contrast lock: `src/theme/tokens.contrast.test.ts`.
+**LOCKED** after contrast tests, component tests, typecheck, and the production build. Authoritative runtime values live in `src/styles/tokens.scss`. Playground: `http://127.0.0.1:5180/design-system#colors`. Contrast lock: `src/theme/tokens.contrast.test.ts`.
+
+Apple references are the visual targets, not the fill for every state. White text fails WCAG AA on those bright references, so solid labels use a dark foreground and the interactive stops are the accessible neighbors.
 
 **Rule:** components consume `var(--color-*)` / `var(--palette-*)`. Do not hardcode hex/OKLCH in SCSS modules unless documenting a one-off sample. Do not wire the 40-family reference library into themes or components.
 
@@ -11,7 +13,7 @@ Authoritative runtime values live in `src/styles/tokens.scss`. Playground: `http
 | Attribute | Values | Notes |
 | --- | --- | --- |
 | `data-theme` | `light` \| `dark` | Resolved from System; never the string `system` |
-| `data-palette` | `teal` \| `blue` \| `violet` \| `orange` \| `rose` | Default `teal` |
+| `data-palette` | `teal` (Mint) \| `blue` \| `violet` (Purple) \| `orange` \| `rose` | Default `teal` |
 
 Storage keys: `exits.premium.theme`, `exits.premium.palette` (not V1 POS prefs).
 
@@ -30,53 +32,43 @@ Shared pattern (where defined):
 | **Accent** | Subtle selected/highlight wash | Yes (derived from Primary) |
 | **Success** | Positive / paid / saved | No |
 | **Info** | Neutral information | No |
-| **Warning** | Due / caution | No — locked `#ff5722` |
+| **Warning** | Due / caution | No — `#ff8d28`, dark text |
 | **Help** | Assistance / tutorial | No — purple-600 `#9333ea` |
-| **Danger** | Error / destructive | No — `#dc2626` |
+| **Danger** | Error / destructive | No — `#ff383c`, dark text |
 | **Contrast** | High-contrast fill/action | No (aliases text / inverse) |
 
 Status roles (Success, Info, Warning, Help, Danger) **must not** change when the user switches Primary.
 
-### Success / Info (OKLCH)
+### Success / Warning / Danger / Info
 
-Bright fills use **dark** foregrounds — white text fails AA on these bases.
+Reference fills: Success `#34c759`, Warning `#ff8d28`, Danger `#ff383c`, Info `#0088ff`. White text fails AA on each, so the foreground stays dark. Hover and pressed are nearby shades. Ink is darker on light surfaces and lighter on dark surfaces.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--color-success` | `oklch(0.64 0.22 160)` | same base |
-| `--color-success-hover` | `oklch(0.58 0.22 160)` | `oklch(0.7 0.2 160)` |
-| `--color-success-pressed` | `oklch(0.55 0.21 160)` | `oklch(0.58 0.22 160)` |
-| `--color-success-foreground` | `oklch(0.18 0.04 160)` | same |
-| `--color-success-ink` | `oklch(0.4 0.16 160)` | `oklch(0.72 0.18 160)` |
-| `--color-info` | `oklch(0.69 0.22 220)` | same base |
-| `--color-info-hover` | `oklch(0.63 0.22 220)` | `oklch(0.75 0.2 220)` |
-| `--color-info-pressed` | `oklch(0.56 0.21 220)` | `oklch(0.63 0.22 220)` |
-| `--color-info-foreground` | `oklch(0.16 0.05 220)` | same |
-| `--color-info-ink` | `oklch(0.4 0.16 220)` | `oklch(0.78 0.14 220)` |
+| `--color-success` | `#34c759` | `#34c759` |
+| `--color-success-hover` | `#2db250` | `#59d177` |
+| `--color-success-pressed` | `#2aa54a` | `#2fb852` |
+| `--color-success-foreground` | `#052e16` | `#052e16` |
+| `--color-success-ink` | `#166534` | `#5ee08a` |
+| `--color-warning` | `#ff8d28` | `#ff8d28` |
+| `--color-warning-hover` | `#da7822` | `#ff9f4a` |
+| `--color-warning-pressed` | `#c36b1e` | `#e88024` |
+| `--color-warning-foreground` | `#1a0a00` | `#1a0a00` |
+| `--color-warning-ink` | `#9a3412` | `#ffb36b` |
+| `--color-danger` | `#ff383c` | `#ff383c` |
+| `--color-danger-hover` | `#f23539` | `#ff585b` |
+| `--color-danger-pressed` | `#ec3337` | `#f43539` |
+| `--color-danger-foreground` | `#2a0506` | `#2a0506` |
+| `--color-danger-ink` | `#b42318` | `#ffb4b6` |
+| `--color-info` | `#0088ff` | `#0088ff` |
+| `--color-info-hover` | `#0081f2` | `#2e9dff` |
+| `--color-info-pressed` | `#007eeb` | `#0082f4` |
+| `--color-info-foreground` | `#041426` | `#041426` |
+| `--color-info-ink` | `#1d4ed8` | `#7dd3fc` |
 
 Soft / border (both themes): `color-mix` of the role into `--color-surface` / `--color-border` (see `[data-theme]` block).
 
-### Warning (locked)
-
-| Token | Light | Dark |
-| --- | --- | --- |
-| `--color-warning` | `#ff5722` | `#ff5722` |
-| `--color-warning-hover` | `#f4511e` | `#f4511e` |
-| `--color-warning-pressed` | `#e64a19` | `#e64a19` |
-| `--color-warning-foreground` | `#1a0a00` | `#1a0a00` |
-| `--color-warning-ink` | `#1a0a00` | `#ffab91` |
-
-Never use white text on Warning fill.
-
-### Danger
-
-| Token | Light | Dark |
-| --- | --- | --- |
-| `--color-danger` | `#dc2626` | `#dc2626` |
-| `--color-danger-hover` | `#b91c1c` | `#b91c1c` |
-| `--color-danger-pressed` | `#991b1b` | `#991b1b` |
-| `--color-danger-foreground` | `#ffffff` | `#ffffff` |
-| `--color-danger-ink` | `#b91c1c` | `#fca5a5` |
+Never use white text on Success, Warning, Danger, or Info fills.
 
 `--color-danger-soft`: `color-mix(in srgb, var(--color-danger) 12%, var(--color-surface))`.
 
@@ -93,7 +85,7 @@ Never use white text on Warning fill.
 ### Primary (dynamic)
 
 Light: palette **700 / 800 / 900** + white foreground.  
-Dark teal: **400 / 300 / 500**; other dark palettes **300 / 200 / 400** + dark foreground tokens per palette.
+Dark Mint (`teal`): **400 / 300 / 500**. Dark Purple and the other palettes: **300 / 200 / 400**. Dark foregrounds are per palette.
 
 Also: `--color-primary-soft`, `--color-primary-selected`, `--color-primary-ink`, `--color-primary-border`, `--color-focus` → primary.
 
@@ -133,13 +125,15 @@ Neutral scale `--neutral-50`…`900` documents shared greys; dark page stays on 
 
 ## Five Primary themes
 
-| Palette | Light primary stop | Dark primary stop (teal vs others) |
-| --- | --- | --- |
-| Teal (default) | 700 | 400 |
-| Blue | 700 | 300 |
-| Violet | 700 | 300 |
-| Orange | 700 | 300 |
-| Rose | 700 | 300 |
+| Palette | Stored value | Reference stop | Light primary | Dark primary |
+| --- | --- | --- | --- | --- |
+| Mint (default) | `teal` | 400 `#00c8b3` | 700 `#1b756c` | 400 `#00c8b3` |
+| Blue | `blue` | unchanged | 700 | 300 |
+| Purple | `violet` | 500 `#cb30e0` | 700 `#9a22ab` | 300 `#e598f0` |
+| Orange | `orange` | unchanged | 700 | 300 |
+| Rose | `rose` | unchanged | 700 | 300 |
+
+Saved `teal` and `violet` still select Mint and Purple. No preference migration is required. `#cb30e0` is the scale’s 500 stop. It is not the button fill, because neither black nor white text reaches 4.5:1 on it.
 
 Stops live as `--palette-{name}-50`…`900` in `:root`. Components never embed those hexes.
 
@@ -169,7 +163,7 @@ Stops live as `--palette-{name}-50`…`900` in `:root`. Components never embed t
 | --- | --- |
 | **Button** | `primary` / `secondary` / `ghost` / `danger` / `success` → semantic fills + foreground. Secondary uses surface + border-strong (not `--color-secondary*` yet, but tokens match that recipe). |
 | **Input / Select** | Borders: default border; error → `--color-danger`; success → `--color-success`. Messages/ink: `--color-*-ink`. Focus accent → `--color-primary` / motion shell. |
-| **Badge** | `neutral` hover wash; `primary` soft+ink; `success`/`danger`/`info` soft+ink; `warning` solid + dark FG. |
+| **Badge** | Soft and outline use ink. Solid uses the role foreground on the role fill. Solid accent uses the primary fill and primary foreground. |
 | **Toast / alerts** | Tones `info` \| `success` \| `warning` \| `danger` — border tint from `--color-{tone}`. |
 | **Select selected row** | Primary soft / selected washes. |
 | **Future Personal Home** | Prefer semantic roles + feature tokens (`--color-feature-lent|owe|people|stores|reminders-*`). Do not invent new hexes or import reference-library colors. |
@@ -182,7 +176,7 @@ Do **not** auto-add Help / Accent / Contrast variants to every component — onl
 
 1. Read `tokens.scss` before changing colors.
 2. Use semantic/foundation tokens in new UI.
-3. Keep Warning `#ff5722` + dark FG; Danger `#dc2626`; Help `#9333ea`; Success/Info OKLCH as above.
+3. Keep Success `#34c759`, Warning `#ff8d28`, Danger `#ff383c`, Info `#0088ff`, and Help `#9333ea`, with the Light/Dark variants in this document.
 4. Never promote reference swatches into runtime themes.
 5. Update this doc when tokens change; keep `DESIGN_TOKENS.md` as the short index pointing here for color detail.
 
@@ -190,13 +184,13 @@ Do **not** auto-add Help / Accent / Contrast variants to every component — onl
 
 ## Apple Color review
 
-Reviewed against [Apple’s Color guidance](https://developer.apple.com/design/human-interface-guidelines/color). Inspection only. `tokens.scss` and component code were not changed.
+Reviewed against [Apple’s Color guidance](https://developer.apple.com/design/human-interface-guidelines/color). The approved finalization is the tables above.
 
 ### Preserve
 
-- Five palettes on `data-palette`: teal, blue, violet, orange, rose. Light uses the 700 stop and a white foreground. Dark uses a lighter stop and a dark foreground. Status roles do not follow the palette.
+- Five palettes on `data-palette`: `teal` (Mint), `blue`, `violet` (Purple), `orange`, `rose`. Light uses the 700 stop and a white foreground. Dark uses a lighter stop and a dark foreground. Status roles do not follow the palette.
 - Light, Dark, and System. The attribute is `light` or `dark`, never the string `system`.
-- Nine semantic roles and the foundation tokens in this document. Warning stays `#ff5722` with dark text. Danger stays `#dc2626`. Help stays `#9333ea`. Success and Info stay OKLCH with dark foregrounds.
+- Nine semantic roles and the foundation tokens. Success, Warning, Danger, and Info use the reference fills with dark foregrounds. Help stays `#9333ea`.
 - Dark page, surface, and elevated surface stay three separate fills. Five elevations stay 0 through 4.
 - Buttons use `--color-{role}-foreground` on solid fills. The contrast test covers those pairs, plus ink on page and surface, for every palette in Light and Dark.
 - Focus is `--color-focus` (the primary). Hover is the text wash. Disabled fill and text are their own tokens. Error and success on fields use danger and success ink, with the message as words. Selected calendar days use the primary fill and foreground. Today adds a dot and a ring, so it is not color alone.
@@ -210,24 +204,24 @@ Reviewed against [Apple’s Color guidance](https://developer.apple.com/design/h
 - Do not use color as the only signal when a status has no visible word. Toasts already add an icon. A new status chip needs a word, and an icon when the word is absent.
 - Money stays on `--color-text`. Do not paint a balance with primary, success, or danger. Put Paid, Due, or Failed in a status that uses the matching role.
 
-### Refine after approval
+### Applied in this lock
 
-- Solid badges set `color: #ffffff` for every semantic tone, including Warning, Success, and Info, and for Dark primary. The color system already says white text fails on those fills, and Dark primary foregrounds are dark. Buttons follow the foreground token. Solid badges should use `--color-{role}-foreground` (and the primary foreground for a solid primary or accent badge). Do not change the badge until this is approved.
-- Dark reminders fill `#fdba74` is the same hex as `--palette-orange-300`, which is the Dark orange primary. On the orange palette those two fills match. A later token change can separate reminders from that stop. Do not add a palette to fix it.
-- Orange primary and Warning are both warm, and teal primary sits near Success. The tokens are already different. Keep the words on the status so the palette cannot be read as the status.
-- `prefers-contrast` is not implemented. Surfaces are already opaque. A later pass can thicken the focus ring and the 1px border when the system asks for more contrast. That is not a new theme.
+- Solid badges use `--color-{role}-foreground`. Solid accent uses the primary foreground. Neutral solid uses inverse text.
+- Orange primary and Warning are both warm, and Mint sits near Success. The fills differ. Keep the words on the status.
+- Dark reminders `#fdba74` still matches Dark orange primary. That was left unchanged.
+- `prefers-contrast` is not implemented.
 
 ### Do not adopt
 
-- Apple’s system color values, SwiftUI color names, or a native color API.
+- A second copy of Apple’s system colors, SwiftUI names, or a native color API. The reference hexes above are the status bases and the Mint/Purple scale anchors only.
 - Liquid Glass, blur, or a translucent material system.
 - A sixth palette, a second theme attribute, or duplicate tokens for the same role.
 - Increased Contrast as a separate `data-theme` value.
 - Coloring numeric totals green or red.
 
-### Decisions before a color lock
+### Recorded decisions
 
-1. Approve the solid-badge foreground correction, or leave the white label and record it as an exception.
-2. Approve a distinct Dark reminders color, or accept the match with Dark orange primary.
-3. Decide whether `prefers-contrast` should thicken focus and borders. No new palette either way.
-4. Confirm the money rule: text color for amounts, status roles only beside a word.
+1. Solid badges use the role foreground. Done.
+2. Dark reminders stay `#fdba74` and can match Dark orange primary.
+3. `prefers-contrast` does not add a theme or thicker chrome in this lock.
+4. Amounts stay on the text color. Status roles sit beside a word.

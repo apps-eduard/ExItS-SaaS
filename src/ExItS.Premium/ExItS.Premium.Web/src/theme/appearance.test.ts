@@ -29,6 +29,14 @@ describe("premium appearance storage", () => {
     expect(readAppearance(storage)).toEqual(DEFAULT_APPEARANCE);
   });
 
+  it("keeps saved teal and violet values for Mint and Purple", () => {
+    const storage = window.localStorage;
+    storage.setItem(PREMIUM_STORAGE_KEYS.palette, "teal");
+    expect(readAppearance(storage).palette).toBe("teal");
+    storage.setItem(PREMIUM_STORAGE_KEYS.palette, "violet");
+    expect(readAppearance(storage).palette).toBe("violet");
+  });
+
   it("ignores invalid stored values", () => {
     const storage = window.localStorage;
     storage.setItem(PREMIUM_STORAGE_KEYS.theme, "sepia");

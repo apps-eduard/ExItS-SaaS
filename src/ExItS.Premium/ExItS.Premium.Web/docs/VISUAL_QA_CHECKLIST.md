@@ -13,7 +13,7 @@ Review the running playground. A passing build is not a visual review.
 - Focus rings are visible.
 - Colors shows Semantic (9 roles), Foundation, Neutral Scale, five theme palettes, and the 40-family reference library. Copy reports HEX or leaf OKLCH. See [UI/ExItS-Premium-Color-System.md](./UI/ExItS-Premium-Color-System.md).
 - Elevation shows levels 0–4. The shadow on each sample is the elevation token.
-- Text on solid fills stays readable in light and dark. Warning text stays dark on `#ff5722`.
+- Text on solid fills stays readable in light and dark. Warning text stays dark on `#ff8d28`.
 - Dialogs, sheets, menus, tooltips, and toasts stay inside the viewport.
 - Sheets can be closed without dragging.
 - Reduced motion removes entrance animation.
