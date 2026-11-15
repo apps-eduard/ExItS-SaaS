@@ -37,6 +37,7 @@ describe("date and time validation", () => {
       timeZone: "America/New_York",
     });
     expect(gap.code).toBe("nonexistent");
+    expect(gap.message).not.toBe("Unable to use this date and time.");
     expect(gap.instantUtcMs).toBeUndefined();
 
     const overlap = validateDateTime({
@@ -44,6 +45,7 @@ describe("date and time validation", () => {
       timeZone: "America/New_York",
     });
     expect(overlap.code).toBe("ambiguous");
+    expect(overlap.message).not.toBe("Unable to use this date and time.");
     expect(overlap.instantUtcMs).toBeUndefined();
 
     const later = validateDateTime({
@@ -53,6 +55,8 @@ describe("date and time validation", () => {
     });
     expect(later.valid).toBe(true);
     expect(later.instantUtcMs).toBe(Date.UTC(2024, 10, 3, 6, 30));
-    expect(validateDateTime({ value: { date: "2024-05-02", time: "09:00" }, timeZone: "Not/AZone" }).code).toBe("invalid-timezone");
+    const unknownZone = validateDateTime({ value: { date: "2024-05-02", time: "09:00" }, timeZone: "Not/AZone" });
+    expect(unknownZone.code).toBe("invalid-timezone");
+    expect(unknownZone.message).not.toBe("Unable to use this date and time.");
   });
 });

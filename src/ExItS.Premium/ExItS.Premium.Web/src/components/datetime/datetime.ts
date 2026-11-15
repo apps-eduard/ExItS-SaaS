@@ -101,7 +101,7 @@ export function validateDateTime(input: {
     return { valid: false, code: code ?? "invalid-time", message: timeResult.message };
   }
   if (input.minuteStep !== undefined && !isMinuteStep(input.minuteStep)) {
-    return { valid: false, code: "step", message: "Choose a minute step of 1, 5, 10, 15, or 30." };
+    return { valid: false, code: "step", message: "That minute interval is not available." };
   }
   if (input.min && (!parseCalendarDate(input.min.date) || !parseTimeValue(input.min.time))) {
     return { valid: false, code: "range", message: "The earliest date and time is not valid." };
@@ -128,11 +128,11 @@ export function validateDateTime(input: {
       valid: false,
       code: "unsupported",
       resolution,
-      message: "This browser cannot resolve named time zones. Choose a date and time without a time zone, or use a runtime with IANA time zone data.",
+      message: "This browser can't use that time zone.",
     };
   }
   if (resolution.status === "invalid-timezone") {
-    return { valid: false, code: "invalid-timezone", resolution, message: `"${input.timeZone}" is not a valid IANA time zone.` };
+    return { valid: false, code: "invalid-timezone", resolution, message: "That time zone is not recognized." };
   }
   if (resolution.status === "nonexistent") {
     return {
@@ -148,10 +148,10 @@ export function validateDateTime(input: {
       valid: false,
       code: "ambiguous",
       resolution,
-      message: `This clock time happens twice in ${input.timeZone}. It was not chosen for you. Set the ambiguity policy to earlier or later to select the earlier or later instant.`,
+      message: "This time happens twice. Choose a different time.",
     };
   }
-  if (!("utcMs" in chosen)) return { valid: false, code: "invalid-time", resolution, message: "This date and time could not be resolved." };
+  if (!("utcMs" in chosen)) return { valid: false, code: "invalid-time", resolution, message: "Unable to use this date and time." };
   return { valid: true, resolution, instantUtcMs: chosen.utcMs, offsetMinutes: chosen.offsetMinutes };
 }
 

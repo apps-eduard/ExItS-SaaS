@@ -63,7 +63,6 @@ export function DateTimeSection() {
               onChange={setStart}
               locale="en-US"
               hourCycle="h12"
-              minuteStep={5}
               min="06:00"
               max="22:00"
               hint="12-hour time. On a phone, scroll the wheel or type the time. Apply saves it."

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { dayAriaLabel, formatDisplayDate, todayCalendarDate } from "./calendar";
 import { DatePicker } from "./DatePicker";
+import month from "./CalendarMonth.module.scss";
 import surface from "./surface.module.scss";
 
 function installMatchMedia(compact: boolean) {
@@ -147,8 +148,16 @@ describe("DatePicker", () => {
     const today = todayCalendarDate();
     render(<DatePicker label="Date" locale="en-US" />);
     await openDate(user, "Date");
-    expect(screen.getByRole("gridcell", { name: dayAriaLabel(today, "en-US", today) })).toHaveAttribute("aria-current", "date");
-    await user.click(screen.getByRole("button", { name: "Today" }));
+    const todayCell = screen.getByRole("gridcell", { name: dayAriaLabel(today, "en-US", today) });
+    expect(todayCell).toHaveAttribute("aria-current", "date");
+    expect(todayCell.closest(`.${month.calendar}`)).toHaveClass(month.calendarControl);
+    const todayButton = screen.getByRole("button", { name: "Today" });
+    const clearButton = screen.getByRole("button", { name: "Clear" });
+    expect(todayButton).toHaveAttribute("data-appearance", "outline");
+    expect(clearButton).toHaveAttribute("data-appearance", "outline");
+    expect(todayButton.className).toContain("secondary");
+    expect(clearButton.className).toContain("secondary");
+    await user.click(todayButton);
     expect(screen.getByRole("button", { name: `Date, ${formatDisplayDate(today, "en-US")}` })).toBeInTheDocument();
   });
 
@@ -185,7 +194,7 @@ describe("DatePicker", () => {
     render(<DatePicker label="Date" locale="en-US" />);
     expect(screen.getByRole("button", { name: "Date" }).closest("[data-viewport]")).toHaveAttribute("data-viewport", "compact");
     await user.click(screen.getByRole("button", { name: "Date" }));
-    expect(screen.getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Close" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("dialog", { name: "Choose date" })).toBeInTheDocument();
     expect(document.querySelector("[data-surface='sheet']")).toBeTruthy();
   });

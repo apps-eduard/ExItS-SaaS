@@ -16,6 +16,7 @@ export const SECTION_IDS = [
   "search",
   "selects",
   "date-time",
+  "dialogs",
   "cards",
   "badges",
   "breadcrumbs",
@@ -94,6 +95,7 @@ export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
       { id: "cards", label: "Cards", icon: "credit_card" },
       { id: "checkboxes", label: "Checkboxes", icon: "check_box" },
       { id: "date-time", label: "Date & Time Pickers", icon: "edit_note" },
+      { id: "dialogs", label: "Dialogs", icon: "inbox" },
       {
         label: "Inputs",
         icon: "edit_note",

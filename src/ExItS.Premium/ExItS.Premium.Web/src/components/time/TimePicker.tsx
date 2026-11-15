@@ -1,12 +1,14 @@
 import { useId, useRef, useState } from "react";
 import { ExIcon } from "../../icons/ExIcon";
+import { ClockGlyph } from "../date/glyphs";
 import { Button } from "../button/Button";
 import { Field } from "../field/Field";
 import { BottomSheet } from "../sheet/BottomSheet";
 import { AnchoredPopover } from "./AnchoredPopover";
 import { TimeInput, type TimeEntrySnapshot } from "./TimeInput";
+import { TimeColumns } from "./TimeColumns";
 import { TimeWheel } from "./TimeWheel";
-import { formatTimeDisplay, validateTime, type HourCycle, type MinuteStep } from "./time";
+import { floorMinute, formatTimeDisplay, formatTimeValue, validateTime, type HourCycle, type MinuteStep } from "./time";
 import { useControllable } from "./useControllable";
 import { useViewport } from "./useViewport";
 import styles from "./TimePicker.module.scss";
@@ -36,6 +38,8 @@ export type TimePickerProps = {
   placeholder?: string;
   /** `auto` uses a bottom sheet at 767px and below. */
   viewport?: "auto" | "desktop" | "mobile";
+  /** Clock for Now. Defaults to the current instant. */
+  now?: () => Date;
 };
 
 export function TimePicker({
@@ -60,6 +64,7 @@ export function TimePicker({
   locale,
   placeholder = "Choose a time",
   viewport = "auto",
+  now,
 }: TimePickerProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
@@ -68,6 +73,7 @@ export function TimePicker({
   const [committed, setCommitted] = useControllable({ value, defaultValue, onChange });
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(committed);
+  const [live, setLive] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [entryError, setEntryError] = useState<string | null>(null);
   const entryRef = useRef<TimeEntrySnapshot>({ value: committed, error: null, pending: false });
@@ -79,6 +85,7 @@ export function TimePicker({
 
   function openEditor() {
     if (locked) return;
+    setLive(null);
     setDraft(committed);
     setEntryError(null);
     entryRef.current = { value: committed, error: null, pending: false };
@@ -86,7 +93,9 @@ export function TimePicker({
   }
 
   function cancel() {
+    setLive(null);
     setDraft(committed);
+    setEntryError(null);
     setOpen(false);
   }
 
@@ -97,17 +106,34 @@ export function TimePicker({
       setTouched(true);
       return;
     }
-    const candidate = entry.value ?? draft;
+    const candidate = live ?? entry.value ?? draft;
     const result = validateTime({ value: candidate, ...validationInput });
     if (!result.valid) {
       setEntryError(result.message ?? null);
       setTouched(true);
       return;
     }
+    setLive(null);
     setDraft(candidate);
     setCommitted(candidate);
+    setEntryError(null);
     setTouched(true);
     setOpen(false);
+  }
+
+  function choose(next: string | null) {
+    setLive(null);
+    setDraft(next);
+    entryRef.current = { value: next, error: null, pending: false };
+  }
+
+  function preview(next: string) {
+    setLive((current) => (current === next ? current : next));
+  }
+
+  function applyNow() {
+    const clock = (now ?? (() => new Date()))();
+    choose(formatTimeValue({ hour: clock.getHours(), minute: floorMinute(clock.getMinutes(), minuteStep) }));
   }
 
   function clear(event: { stopPropagation: () => void }) {
@@ -118,16 +144,58 @@ export function TimePicker({
     setOpen(false);
   }
 
-  const shown = committed ? (formatTimeDisplay(committed, hourCycle, locale) ?? committed) : placeholder;
+  const active = open ? (live ?? draft) : committed;
+  const activeLabel = active ? (formatTimeDisplay(active, hourCycle, locale) ?? active) : null;
+  const shown = activeLabel ?? placeholder;
   const editor = (
     <div className={styles.editor}>
       <p className={styles.preview} aria-live="polite">
-        {draft ? (formatTimeDisplay(draft, hourCycle, locale) ?? draft) : "No time selected"}
+        {activeLabel ?? "No time selected"}
       </p>
       {surface === "mobile" ? (
-        <TimeWheel
+        <>
+          <TimeWheel
+            value={draft}
+            onChange={(next) => {
+              setLive(null);
+              setDraft(next);
+            }}
+            onPreview={preview}
+            hourCycle={hourCycle}
+            minuteStep={minuteStep}
+            min={min}
+            max={max}
+            disabledTimes={disabledTimes}
+            isTimeDisabled={isTimeDisabled}
+            locale={locale}
+          />
+          <div className={styles.typed} role="group" aria-label="Type a time">
+            <p className={styles.typedLabel}>Type a time</p>
+            <TimeInput
+              value={draft}
+              onChange={(next) => {
+                setLive(null);
+                setDraft(next);
+              }}
+              hourCycle={hourCycle}
+              minuteStep={minuteStep}
+              locale={locale}
+              hideMessage
+              onInvalidChange={setEntryError}
+              onSnapshot={(snapshot) => {
+                entryRef.current = snapshot;
+                setEntryError(null);
+              }}
+              hourLabel="Hour typed"
+              minuteLabel="Minute typed"
+            />
+          </div>
+        </>
+      ) : (
+        <TimeColumns
           value={draft}
-          onChange={setDraft}
+          onChange={choose}
+          onPreview={preview}
           hourCycle={hourCycle}
           minuteStep={minuteStep}
           min={min}
@@ -136,25 +204,12 @@ export function TimePicker({
           isTimeDisabled={isTimeDisabled}
           locale={locale}
         />
-      ) : null}
-      <div className={styles.typed} role="group" aria-label="Type a time">
-        {surface === "mobile" ? <p className={styles.typedLabel}>Type a time</p> : null}
-        <TimeInput
-          value={draft}
-          onChange={setDraft}
-          hourCycle={hourCycle}
-          minuteStep={minuteStep}
-          locale={locale}
-          autoFocus={surface === "desktop"}
-          onInvalidChange={setEntryError}
-          onSnapshot={(snapshot) => {
-            entryRef.current = snapshot;
-          }}
-          hourLabel={surface === "mobile" ? "Hour typed" : "Hour"}
-          minuteLabel={surface === "mobile" ? "Minute typed" : "Minute"}
-        />
-      </div>
-      {!draftValidation.valid && draftValidation.message ? (
+      )}
+      {entryRef.current.pending && entryError ? (
+        <p className={styles.error} role="alert">
+          {entryError}
+        </p>
+      ) : !draftValidation.valid && draftValidation.message ? (
         <p className={styles.error} role="alert">
           {draftValidation.message}
         </p>
@@ -163,16 +218,21 @@ export function TimePicker({
           {entryError}
         </p>
       ) : null}
-      <div className={styles.actions}>
+      <div className={surface === "desktop" ? `${styles.actions} ${styles.actionsGrid}` : styles.actions}>
         {clearable ? (
-          <Button variant="ghost" className={styles.action} onClick={() => setDraft(null)}>
+          <Button variant="secondary" appearance="outline" className={styles.action} onClick={() => choose(null)}>
             Clear
           </Button>
         ) : null}
-        <Button variant="secondary" className={styles.action} onClick={cancel}>
+        <Button variant="secondary" appearance="outline" className={styles.action} onClick={cancel}>
           Cancel
         </Button>
-        <Button variant="primary" className={styles.action} onClick={apply}>
+        {surface === "desktop" ? (
+          <Button variant="primary" appearance="soft" className={styles.action} onClick={applyNow}>
+            Now
+          </Button>
+        ) : null}
+        <Button variant="primary" appearance="solid" className={styles.action} onClick={apply}>
           Apply
         </Button>
       </div>
@@ -182,12 +242,14 @@ export function TimePicker({
   return (
     <Field id={fieldId} label={label} hint={fieldError ? undefined : hint} error={fieldError}>
       <div className={styles.control} data-component="time-picker">
+        <span className={styles.icon}>
+          <ClockGlyph />
+        </span>
         <button
           ref={triggerRef}
           id={fieldId}
           type="button"
           className={styles.trigger}
-          data-empty={committed ? undefined : "true"}
           data-state={fieldError ? "error" : undefined}
           disabled={disabled}
           aria-readonly={readOnly || undefined}
@@ -201,8 +263,7 @@ export function TimePicker({
             else openEditor();
           }}
         >
-          <span>{shown}</span>
-          <ExIcon name="expand_more" />
+          <span className={activeLabel ? styles.value : `${styles.value} ${styles.placeholder}`}>{shown}</span>
         </button>
         {clearable && committed && !locked ? (
           <button type="button" className={styles.clear} aria-label={`Clear ${label}`} onClick={clear}>

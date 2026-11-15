@@ -44,6 +44,14 @@ describe("playgroundBreadcrumbTrail", () => {
     ]);
   });
 
+  it("maps Dialogs through the Components group", () => {
+    expect(playgroundBreadcrumbTrail("dialogs").map((item) => item.label)).toEqual([
+      "Design System",
+      "Components",
+      "Dialogs",
+    ]);
+  });
+
   it("treats overview as the Design System root", () => {
     const trail = playgroundBreadcrumbTrail("overview");
     expect(trail).toHaveLength(1);

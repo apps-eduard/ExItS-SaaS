@@ -41,11 +41,11 @@ export type CalculatedPresetId = Exclude<RangePresetId, "custom">;
 export const RANGE_PRESET_LABELS: Record<RangePresetId, string> = {
   today: "Today",
   yesterday: "Yesterday",
-  last7: "Last 7 Days",
-  last30: "Last 30 Days",
-  thisWeek: "This Week",
-  thisMonth: "This Month",
-  lastMonth: "Last Month",
+  last7: "Last 7 days",
+  last30: "Last 30 days",
+  thisWeek: "This week",
+  thisMonth: "This month",
+  lastMonth: "Last month",
   custom: "Custom",
 };
 

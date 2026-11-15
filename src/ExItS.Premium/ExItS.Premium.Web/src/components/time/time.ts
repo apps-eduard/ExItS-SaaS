@@ -223,7 +223,7 @@ export function validateTime(input: {
     return { valid: true };
   }
   if (input.minuteStep !== undefined && !isMinuteStep(input.minuteStep)) {
-    return { valid: false, code: "step", message: "Choose a minute step of 1, 5, 10, 15, or 30." };
+    return { valid: false, code: "step", message: "That minute interval is not available." };
   }
   const step = input.minuteStep ?? 1;
   const parts = parseTimeValue(input.value);
@@ -232,10 +232,10 @@ export function validateTime(input: {
     return { valid: false, code: "step", message: `Minutes must be in steps of ${step}.` };
   }
   if (input.min && !parseTimeValue(input.min)) {
-    return { valid: false, code: "range", message: "The earliest time is not a valid HH:mm value." };
+    return { valid: false, code: "range", message: "The earliest time is not valid." };
   }
   if (input.max && !parseTimeValue(input.max)) {
-    return { valid: false, code: "range", message: "The latest time is not a valid HH:mm value." };
+    return { valid: false, code: "range", message: "The latest time is not valid." };
   }
   if (input.min && input.max && compareTime(input.min, input.max) > 0) {
     return { valid: false, code: "range", message: "The earliest time is after the latest time." };

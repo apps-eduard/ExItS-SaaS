@@ -80,7 +80,7 @@ describe("DateRangePicker", () => {
     );
     await user.click(screen.getByRole("button", { name: "Range" }));
     expect(screen.getByRole("button", { name: "Yesterday" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Last 7 Days" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Last 7 days" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Today" }));
     expect(screen.getByRole("status")).toHaveTextContent(formatRangeLabel({ start: today, end: today }, "en-US"));
     await user.click(screen.getByRole("button", { name: "Apply" }));
@@ -123,7 +123,7 @@ describe("DateRangePicker", () => {
     expect(screen.getByRole("button", { name: "Range" }).closest("[data-viewport]")).toHaveAttribute("data-viewport", "compact");
     await user.click(screen.getByRole("button", { name: "Range" }));
     const dialog = screen.getByRole("dialog", { name: "Choose dates" });
-    expect(screen.getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Close" }).length).toBeGreaterThan(0);
     expect(dialog.querySelector("[data-surface='sheet']")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();

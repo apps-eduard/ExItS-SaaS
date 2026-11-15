@@ -43,6 +43,24 @@ textarea {
 
 button {
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+p,
+h1,
+h2,
+h3,
+dd,
+.type-display,
+.type-page,
+.type-section,
+.type-card,
+.type-body,
+.type-secondary,
+.type-caption,
+.type-numeric {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 img,

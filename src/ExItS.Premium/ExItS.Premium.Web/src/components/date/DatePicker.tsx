@@ -60,7 +60,7 @@ export function DatePicker({
   isDateDisabled,
   weekStartsOn,
   locale,
-  placeholder = "Select a date",
+  placeholder = "Choose a date",
   disabled = false,
   name,
   id,
@@ -175,6 +175,7 @@ export function DatePicker({
           focusedDate={focused}
           onFocusedDate={setFocused}
           onSelectDate={selectDate}
+          cellRadius="control"
         />
       </div>
     );
@@ -201,12 +202,13 @@ export function DatePicker({
         focusedDate={focused}
         onFocusedDate={setFocused}
         onSelectDate={selectDate}
+        cellRadius="control"
       />
       <div className={compact ? surface.sheetActions : surface.actions}>
-        <Button variant="ghost" onClick={selectToday} disabled={isDateUnavailable(today, constraints)}>
+        <Button variant="secondary" appearance="outline" onClick={selectToday} disabled={isDateUnavailable(today, constraints)}>
           Today
         </Button>
-        <Button variant="ghost" onClick={() => commit(null)} disabled={!current}>
+        <Button variant="secondary" appearance="outline" onClick={() => commit(null)} disabled={!current}>
           Clear
         </Button>
       </div>

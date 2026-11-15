@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { dayAriaLabel, todayCalendarDate } from "../date/calendar";
@@ -32,9 +32,8 @@ describe("DateTimePicker", () => {
     render(<Harness />);
     await user.click(screen.getByRole("button", { name: /Choose a date and time/ }));
     await chooseDate(user, "2024", "May", "2024-05-02");
-    await user.type(screen.getByLabelText("Hour"), "14");
-    await user.type(screen.getByLabelText("Minute"), "30");
-    await user.tab();
+    await user.click(within(screen.getByRole("listbox", { name: "Hour" })).getByRole("option", { name: "14" }));
+    await user.click(within(screen.getByRole("listbox", { name: "Minute" })).getByRole("option", { name: "30" }));
     expect(screen.getByText(/May 2, 2024, 14:30/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(screen.getByText("2024-05-02 14:30")).toBeInTheDocument();
@@ -91,8 +90,7 @@ describe("DateTimePicker", () => {
     await user.click(screen.getByRole("button", { name: /Choose a date and time/ }));
     await chooseDate(user, "2024", "May", "2024-05-02");
     expect(screen.getByRole("gridcell", { name: dayAriaLabel("2024-05-01", "en-US", todayCalendarDate()) })).toHaveAttribute("aria-disabled", "true");
-    await user.type(screen.getByLabelText("Hour"), "08");
-    await user.type(screen.getByLabelText("Minute"), "00");
+    fireEvent.paste(screen.getByRole("listbox", { name: "Hour" }), { clipboardData: { getData: () => "08:00" } });
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(/09:00|or later/i);
@@ -106,11 +104,32 @@ describe("DateTimePicker", () => {
     );
     await user.click(screen.getByRole("button", { name: /Choose a date and time/ }));
     await chooseDate(user, "2024", "March", "2024-03-10");
-    await user.type(screen.getByLabelText("Hour"), "02");
-    await user.type(screen.getByLabelText("Minute"), "30");
+    await user.click(within(screen.getByRole("listbox", { name: "Hour" })).getByRole("option", { name: "02" }));
+    await user.click(within(screen.getByRole("listbox", { name: "Minute" })).getByRole("option", { name: "30" }));
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(/does not exist/i);
+  });
+
+  it("waits to report a required date and time until Apply", async () => {
+    const user = userEvent.setup();
+    render(<DateTimePicker label="Appointment" locale="en-US" hourCycle="h24" viewport="desktop" required />);
+    await user.click(screen.getByRole("button", { name: /Choose a date and time/ }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose a date and time.");
+  });
+
+  it("moves to the time step before reporting a missing time", async () => {
+    const user = userEvent.setup();
+    render(<DateTimePicker label="Appointment" locale="en-US" hourCycle="h24" viewport="mobile" />);
+    await user.click(screen.getByRole("button", { name: /Choose a date and time/ }));
+    await chooseDate(user, "2024", "May", "2024-05-02");
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(screen.getByRole("radio", { name: "Time" })).toBeChecked();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose a time.");
   });
 
   it("uses the shared calendar inside the mobile sheet", async () => {

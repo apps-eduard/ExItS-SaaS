@@ -1,11 +1,13 @@
 import { useId, useRef, useState } from "react";
 import { ExIcon } from "../../icons/ExIcon";
+import { DateTimeGlyph } from "../date/glyphs";
 import { Button } from "../button/Button";
 import { Field } from "../field/Field";
 import { SegmentedControl } from "../segmented/SegmentedControl";
 import { BottomSheet } from "../sheet/BottomSheet";
 import { AnchoredPopover } from "../time/AnchoredPopover";
 import { TimeInput, type TimeEntrySnapshot } from "../time/TimeInput";
+import { TimeColumns } from "../time/TimeColumns";
 import { TimeWheel } from "../time/TimeWheel";
 import { formatTimeDisplay, type HourCycle, type MinuteStep } from "../time/time";
 import { useControllable } from "../time/useControllable";
@@ -103,6 +105,7 @@ export function DateTimePicker({
   const [step, setStep] = useState<"date" | "time">("date");
   const [touched, setTouched] = useState(false);
   const [shortcutError, setShortcutError] = useState<string | null>(null);
+  const [submitAttempt, setSubmitAttempt] = useState(false);
   const [entryError, setEntryError] = useState<string | null>(null);
   const timeEntryRef = useRef<TimeEntrySnapshot>({ value: committed?.time ?? null, error: null, pending: false });
   const locked = disabled || readOnly;
@@ -134,6 +137,7 @@ export function DateTimePicker({
     setStep("date");
     setShortcutError(null);
     setEntryError(null);
+    setSubmitAttempt(false);
     timeEntryRef.current = { value: committed?.time ?? null, error: null, pending: false };
     setOpen(true);
   }
@@ -141,6 +145,8 @@ export function DateTimePicker({
   function cancel() {
     setDraft(toDraft(committed));
     setShortcutError(null);
+    setEntryError(null);
+    setSubmitAttempt(false);
     setOpen(false);
   }
 
@@ -154,9 +160,16 @@ export function DateTimePicker({
     const next = { date: draft.date, time: entry.value ?? draft.time };
     const result = inspect(next);
     if (!result.valid) {
+      if (surface === "mobile" && step === "date" && result.code === "invalid-time") {
+        setStep("time");
+        return;
+      }
+      setSubmitAttempt(true);
       setTouched(true);
       return;
     }
+    setSubmitAttempt(false);
+    setEntryError(null);
     setDraft(next);
     setCommitted(next.date && next.time ? { date: next.date, time: next.time } : null);
     setTouched(true);
@@ -175,7 +188,7 @@ export function DateTimePicker({
   function applyToday() {
     const wall = currentWallClock(now(), timeZone);
     if ("error" in wall) {
-      setShortcutError(wall.error === "unsupported" ? "This browser cannot resolve named time zones." : `"${timeZone}" is not a valid IANA time zone.`);
+      setShortcutError(wall.error === "unsupported" ? "This browser can't use that time zone." : "That time zone is not recognized.");
       return;
     }
     setShortcutError(null);
@@ -185,7 +198,7 @@ export function DateTimePicker({
   function applyNow() {
     const result = zonedNow(now(), minuteStep, timeZone);
     if ("error" in result) {
-      setShortcutError(result.error === "unsupported" ? "This browser cannot resolve named time zones." : `"${timeZone}" is not a valid IANA time zone.`);
+      setShortcutError(result.error === "unsupported" ? "This browser can't use that time zone." : "That time zone is not recognized.");
       return;
     }
     setShortcutError(null);
@@ -208,12 +221,57 @@ export function DateTimePicker({
     />
   );
 
+  function clearDraft() {
+    setDraft(emptyDraft());
+    timeEntryRef.current = { value: null, error: null, pending: false };
+    setEntryError(null);
+  }
+
+  function chooseTime(time: string) {
+    setDraft((current) => ({ ...current, time }));
+    timeEntryRef.current = { value: time, error: null, pending: false };
+    setEntryError(null);
+  }
+
   const timeControl = (
     <div className={styles.time}>
       {surface === "mobile" ? (
-        <TimeWheel
+        <>
+          <TimeWheel
+            value={draft.time}
+            onChange={chooseTime}
+            hourCycle={hourCycle}
+            minuteStep={minuteStep}
+            min={timeMin}
+            max={timeMax}
+            disabledTimes={disabledTimes}
+            isTimeDisabled={isTimeDisabled}
+            locale={locale}
+          />
+          <div className={chrome.typed} role="group" aria-label="Type a time">
+            <p className={chrome.typedLabel}>Type a time</p>
+            <TimeInput
+              idPrefix={`${fieldId}-time`}
+              value={draft.time}
+              onChange={(time) => setDraft((current) => ({ ...current, time }))}
+              hourCycle={hourCycle}
+              minuteStep={minuteStep}
+              locale={locale}
+              hideMessage
+              onInvalidChange={setEntryError}
+              onSnapshot={(snapshot) => {
+                timeEntryRef.current = snapshot;
+                setEntryError(null);
+              }}
+              hourLabel="Hour typed"
+              minuteLabel="Minute typed"
+            />
+          </div>
+        </>
+      ) : (
+        <TimeColumns
           value={draft.time}
-          onChange={(time) => setDraft((current) => ({ ...current, time }))}
+          onChange={chooseTime}
           hourCycle={hourCycle}
           minuteStep={minuteStep}
           min={timeMin}
@@ -222,24 +280,7 @@ export function DateTimePicker({
           isTimeDisabled={isTimeDisabled}
           locale={locale}
         />
-      ) : null}
-      <div className={chrome.typed} role="group" aria-label="Type a time">
-        {surface === "mobile" ? <p className={chrome.typedLabel}>Type a time</p> : null}
-        <TimeInput
-          idPrefix={`${fieldId}-time`}
-          value={draft.time}
-          onChange={(time) => setDraft((current) => ({ ...current, time }))}
-          hourCycle={hourCycle}
-          minuteStep={minuteStep}
-          locale={locale}
-          onInvalidChange={setEntryError}
-          onSnapshot={(snapshot) => {
-            timeEntryRef.current = snapshot;
-          }}
-          hourLabel={surface === "mobile" ? "Hour typed" : "Hour"}
-          minuteLabel={surface === "mobile" ? "Minute typed" : "Minute"}
-        />
-      </div>
+      )}
     </div>
   );
 
@@ -268,7 +309,7 @@ export function DateTimePicker({
           {timeControl}
         </div>
       )}
-      {!draftValidation.valid && draftValidation.message ? (
+      {submitAttempt && !draftValidation.valid && draftValidation.message && !(surface === "mobile" && step !== "time" && draftValidation.code === "invalid-time") ? (
         <p className={chrome.error} role="alert">
           {draftValidation.message}
         </p>
@@ -290,7 +331,7 @@ export function DateTimePicker({
           Now
         </Button>
         {clearable ? (
-          <Button variant="ghost" className={chrome.action} onClick={() => setDraft(emptyDraft())}>
+          <Button variant="secondary" appearance="soft" className={chrome.action} onClick={clearDraft}>
             Clear
           </Button>
         ) : null}
@@ -307,12 +348,14 @@ export function DateTimePicker({
   return (
     <Field id={fieldId} label={label} hint={fieldError ? undefined : hint} error={fieldError}>
       <div className={chrome.control} data-component="datetime-picker">
+        <span className={chrome.icon}>
+          <DateTimeGlyph />
+        </span>
         <button
           ref={triggerRef}
           id={fieldId}
           type="button"
           className={chrome.trigger}
-          data-empty={committed ? undefined : "true"}
           data-state={fieldError ? "error" : undefined}
           disabled={disabled}
           aria-readonly={readOnly || undefined}
@@ -326,8 +369,7 @@ export function DateTimePicker({
             else openEditor();
           }}
         >
-          <span>{shown}</span>
-          <ExIcon name="expand_more" />
+          <span className={committed ? chrome.value : `${chrome.value} ${chrome.placeholder}`}>{shown}</span>
         </button>
         {clearable && committed && !locked ? (
           <button type="button" className={chrome.clear} aria-label={`Clear ${label}`} onClick={clear}>

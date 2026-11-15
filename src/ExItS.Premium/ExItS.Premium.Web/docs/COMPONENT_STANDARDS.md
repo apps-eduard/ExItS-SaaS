@@ -25,7 +25,7 @@ Use the semantic elevation token on the component. Do not paste a shadow value i
 
 - Cards at rest use `--elevation-1`. A raised card uses `--elevation-2`.
 - Menus, tooltips, and toasts use `--elevation-3`.
-- Dialogs and bottom sheets use `--elevation-4`.
+- Bottom sheets use `--elevation-4`. Dark dialogs use `--elevation-4`. The light dialog panel keeps its inset highlight and two-layer shadow. That is a pending visual exception, not a new elevation level, and it stays until the look is approved.
 - Flat lists and inputs stay at `--elevation-0` and rely on the border.
 - Do not add a user setting for elevation.
 

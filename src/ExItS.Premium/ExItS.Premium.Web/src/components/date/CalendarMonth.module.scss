@@ -179,6 +179,11 @@
   }
 }
 
+.calendarControl .day[data-selected="true"],
+.calendarControl .day[data-today="true"] {
+  border-radius: var(--radius-control);
+}
+
 .choiceGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

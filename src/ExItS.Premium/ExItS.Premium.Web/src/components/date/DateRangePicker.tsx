@@ -78,7 +78,7 @@ export function DateRangePicker({
   weekStartsOn,
   locale,
   presets = RANGE_PRESET_IDS,
-  placeholder = "Select dates",
+  placeholder = "Choose dates",
   disabled = false,
   name,
   id,
@@ -239,7 +239,7 @@ export function DateRangePicker({
         </div>
       </div>
       <div className={compact ? surface.sheetActions : surface.actions}>
-        <Button variant="ghost" onClick={clearDraft}>
+        <Button variant="secondary" appearance="soft" onClick={clearDraft}>
           Clear
         </Button>
         <div className={surface.actionsEnd}>

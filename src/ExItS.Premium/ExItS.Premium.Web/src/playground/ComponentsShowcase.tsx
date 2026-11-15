@@ -15,6 +15,7 @@ import { DateTimeSection } from "./DateTimeSection";
 import { BadgePlayground } from "./badge/BadgePlayground";
 import { BreadcrumbPlayground } from "./breadcrumb/BreadcrumbPlayground";
 import { ButtonPlayground } from "./button/ButtonPlayground";
+import { DialogPlayground } from "./dialog/DialogPlayground";
 import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
 import { ToastPlayground } from "./toast/ToastPlayground";
@@ -49,6 +50,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "cards") return <CardsSection />;
   if (id === "badges") return <BadgePlayground />;
   if (id === "breadcrumbs") return <BreadcrumbPlayground />;
+  if (id === "dialogs") return <DialogPlayground />;
   if (id === "toggles") return <TogglesSection />;
   if (id === "toasts") return <ToastPlayground />;
   if (id === "checkboxes") return <CheckboxesSection />;

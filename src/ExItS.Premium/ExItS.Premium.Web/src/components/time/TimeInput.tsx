@@ -32,6 +32,8 @@ export type TimeInputProps = {
   minuteLabel?: string;
   idPrefix?: string;
   autoFocus?: boolean;
+  /** The parent picker shows the message. The fields still mark themselves invalid. */
+  hideMessage?: boolean;
   onInvalidChange?: (message: string | null) => void;
   /** Latest typed entry, including incomplete text. Used so Apply does not wait for blur. */
   onSnapshot?: (snapshot: TimeEntrySnapshot) => void;
@@ -73,6 +75,7 @@ export function TimeInput({
   minuteLabel = "Minute",
   idPrefix,
   autoFocus = false,
+  hideMessage = false,
   onInvalidChange,
   onSnapshot,
 }: TimeInputProps) {
@@ -88,34 +91,34 @@ export function TimeInput({
   );
   const [minuteText, setMinuteText] = useState(initialParts ? String(initialParts.minute).padStart(2, "0") : "");
   const [error, setError] = useState<string | null>(null);
-
-  if (tracked !== track) {
-    setTracked(track);
-    const parsed = parseTimeValue(value);
-    setError(null);
-    if (!parsed) {
-      setHourText("");
-      setMinuteText("");
-    } else {
-      setHourText(hourCycle === "h24" ? String(parsed.hour).padStart(2, "0") : String(toDayPeriod(parsed.hour).hour12));
-      setMinuteText(String(parsed.minute).padStart(2, "0"));
-    }
-  }
-
+  const hourRef = useRef(hourText);
+  const minuteRef = useRef(minuteText);
+  hourRef.current = hourText;
+  minuteRef.current = minuteText;
   const onSnapshotRef = useRef(onSnapshot);
   useEffect(() => {
     onSnapshotRef.current = onSnapshot;
   }, [onSnapshot]);
 
+  if (tracked !== track) {
+    setTracked(track);
+    const parsed = parseTimeValue(value);
+    setError(null);
+    const nextHour = parsed ? (hourCycle === "h24" ? String(parsed.hour).padStart(2, "0") : String(toDayPeriod(parsed.hour).hour12)) : "";
+    const nextMinute = parsed ? String(parsed.minute).padStart(2, "0") : "";
+    const nextPeriod = parsed ? toDayPeriod(parsed.hour).period : null;
+    hourRef.current = nextHour;
+    minuteRef.current = nextMinute;
+    setHourText(nextHour);
+    setMinuteText(nextMinute);
+    onSnapshotRef.current?.(readTimeEntry(nextHour, nextMinute, nextPeriod, hourCycle, minuteStep));
+  }
+
   function publish(nextHour: string, nextMinute: string, nextPeriod: DayPeriod | null) {
     const snapshot = readTimeEntry(nextHour, nextMinute, nextPeriod, hourCycle, minuteStep);
     onSnapshotRef.current?.(snapshot);
-    setError(snapshot.error);
+    setError(null);
   }
-
-  useEffect(() => {
-    onSnapshotRef.current?.(readTimeEntry(hourText, minuteText, period, hourCycle, minuteStep));
-  }, [hourText, minuteText, period, hourCycle, minuteStep]);
 
   useEffect(() => {
     onInvalidChange?.(error);
@@ -131,6 +134,8 @@ export function TimeInput({
   }
 
   function commitTexts(nextHour: string, nextMinute: string, nextPeriod: DayPeriod | null) {
+    const snapshot = readTimeEntry(nextHour, nextMinute, nextPeriod, hourCycle, minuteStep);
+    onSnapshotRef.current?.(snapshot);
     if (!nextHour.trim() || !nextMinute.trim()) {
       setError("Enter an hour and minute.");
       return;
@@ -216,13 +221,14 @@ export function TimeInput({
             value={hourText}
             onChange={(event) => {
               const next = event.target.value.replace(/\D/g, "").slice(0, 2);
+              hourRef.current = next;
               setHourText(next);
-              publish(next, minuteText, period);
+              publish(next, minuteRef.current, period);
             }}
             onBlur={(event) => {
               const next = event.relatedTarget;
               if (next instanceof Node && event.currentTarget.closest(`.${styles.entry}`)?.contains(next)) return;
-              if (hourText || minuteText) commitTexts(hourText, minuteText, period);
+              if (hourRef.current || minuteRef.current) commitTexts(hourRef.current, minuteRef.current, period);
             }}
             onKeyDown={onHourKeyDown}
             onPaste={onPaste}
@@ -251,13 +257,14 @@ export function TimeInput({
             value={minuteText}
             onChange={(event) => {
               const next = event.target.value.replace(/\D/g, "").slice(0, 2);
+              minuteRef.current = next;
               setMinuteText(next);
-              publish(hourText, next, period);
+              publish(hourRef.current, next, period);
             }}
             onBlur={(event) => {
               const next = event.relatedTarget;
               if (next instanceof Node && event.currentTarget.closest(`.${styles.entry}`)?.contains(next)) return;
-              if (hourText || minuteText) commitTexts(hourText, minuteText, period);
+              if (hourRef.current || minuteRef.current) commitTexts(hourRef.current, minuteRef.current, period);
             }}
             onKeyDown={onMinuteKeyDown}
             onPaste={onPaste}
@@ -289,7 +296,7 @@ export function TimeInput({
           </div>
         ) : null}
       </div>
-      {error ? (
+      {!hideMessage && error ? (
         <p className={styles.error} role="alert">
           {error}
         </p>

@@ -125,7 +125,7 @@ export function BottomSheet({ open, title, description, onClose, children }: Bot
       <button
         type="button"
         className={styles.handle}
-        aria-label="Dismiss"
+        aria-label="Close"
         onClick={() => {
           if (!dragRef.current.moved) requestClose();
         }}

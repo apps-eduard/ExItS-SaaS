@@ -46,6 +46,8 @@ type CalendarMonthProps = {
   onFocusedDate: (date: CalendarDate) => void;
   onSelectDate: (date: CalendarDate) => void;
   onHoverDate?: (date: CalendarDate | null) => void;
+  /** Selected and today cells. DatePicker uses the control radius. Range stays on the badge radius. */
+  cellRadius?: "badge" | "control";
 };
 
 type Panel = "days" | "months" | "years";
@@ -73,6 +75,7 @@ export function CalendarMonth({
   onFocusedDate,
   onSelectDate,
   onHoverDate,
+  cellRadius = "badge",
 }: CalendarMonthProps) {
   const [panel, setPanel] = useState<Panel>("days");
   const [yearAnchor, setYearAnchor] = useState(view.year);
@@ -136,7 +139,7 @@ export function CalendarMonth({
   const ordered = rangeStart && rangeEnd ? orderRange(rangeStart, rangeEnd) : null;
 
   return (
-    <div className={styles.calendar}>
+    <div className={cx(styles.calendar, cellRadius === "control" && styles.calendarControl)}>
       {panel === "days" ? (
         <div className={styles.header}>
           <Button variant="ghost" iconOnly aria-label="Previous month" disabled={atFirstMonth} onClick={() => goMonth(-1)} icon={<ChevronGlyph direction="previous" />} />

@@ -39,6 +39,10 @@ type TimeWheelProps = {
   disabled?: boolean;
   readOnly?: boolean;
   locale?: string;
+  /** `compact` is the desktop popover. The default touch size is the phone wheel. */
+  size?: "touch" | "compact";
+  /** Centered value while a column is scrolling. Does not replace `onChange`. */
+  onPreview?: (value: string) => void;
 };
 
 function itemSize(scroller: HTMLElement): number {
@@ -55,6 +59,7 @@ function WheelColumn({
   disabled = false,
   readOnly = false,
   autoFocus = false,
+  onCenter,
 }: {
   label: string;
   options: WheelOption[];
@@ -63,10 +68,12 @@ function WheelColumn({
   disabled?: boolean;
   readOnly?: boolean;
   autoFocus?: boolean;
+  onCenter?: (value: string) => void;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const syncing = useRef(false);
   const onSelectRef = useRef(onSelect);
+  const onCenterRef = useRef(onCenter);
   const listId = useId();
   const selectedIndex = options.findIndex((option) => option.value === selected);
   const optionKey = options.map((option) => `${option.value}:${option.disabled ? 1 : 0}`).join("|");
@@ -74,8 +81,9 @@ function WheelColumn({
 
   useEffect(() => {
     onSelectRef.current = onSelect;
+    onCenterRef.current = onCenter;
     optionsRef.current = options;
-  }, [onSelect, options]);
+  }, [onCenter, onSelect, options]);
 
   useLayoutEffect(() => {
     const scroller = scrollerRef.current;
@@ -83,7 +91,9 @@ function WheelColumn({
     const top = selectedIndex * itemSize(scroller);
     if (Math.abs(scroller.scrollTop - top) <= 1) return;
     syncing.current = true;
+    scroller.style.scrollBehavior = "auto";
     scroller.scrollTop = top;
+    scroller.style.scrollBehavior = "";
     const frame = window.requestAnimationFrame(() => {
       syncing.current = false;
     });
@@ -111,7 +121,9 @@ function WheelColumn({
       const top = enabled * size;
       if (Math.abs(scroller.scrollTop - top) > 1) {
         syncing.current = true;
+        scroller.style.scrollBehavior = "auto";
         scroller.scrollTop = top;
+        scroller.style.scrollBehavior = "";
         window.requestAnimationFrame(() => {
           syncing.current = false;
         });
@@ -121,6 +133,9 @@ function WheelColumn({
     };
     const onScroll = () => {
       if (syncing.current) return;
+      const current = optionsRef.current;
+      const centered = current[indexFromScroll(scroller.scrollTop, itemSize(scroller), current.length)];
+      if (centered) onCenterRef.current?.(centered.value);
       window.clearTimeout(timer);
       timer = window.setTimeout(settle, 80);
     };
@@ -148,7 +163,6 @@ function WheelColumn({
         {label}
       </div>
       <div className={styles.viewport}>
-        <div className={styles.band} aria-hidden="true" />
         <div
           ref={scrollerRef}
           className={styles.scroller}
@@ -217,10 +231,27 @@ export function TimeWheel({
   disabled = false,
   readOnly = false,
   locale,
+  size = "touch",
+  onPreview,
 }: TimeWheelProps) {
+  const onPreviewRef = useRef(onPreview);
+  const seen = useRef<{ hour24: number; minute: number } | null>(null);
+  useEffect(() => {
+    onPreviewRef.current = onPreview;
+  }, [onPreview]);
   const parts = parseTimeValue(value);
+  const valueRef = useRef(value);
+  if (valueRef.current !== value) {
+    valueRef.current = value;
+    seen.current = parts ? { hour24: parts.hour, minute: parts.minute } : null;
+  }
   const constraints: TimeConstraints = { minuteStep, min, max, disabledTimes, isTimeDisabled };
   const period = parts ? toDayPeriod(parts.hour).period : null;
+
+  function preview(hour24: number, minute: number) {
+    seen.current = { hour24, minute };
+    onPreviewRef.current?.(formatTimeValue({ hour: hour24, minute }));
+  }
 
   function commit(hour24: number, minute: number) {
     if (disabled || readOnly) return;
@@ -268,7 +299,8 @@ export function TimeWheel({
   });
 
   return (
-    <div className={styles.wheels} data-columns={hourCycle === "h12" ? "3" : "2"} aria-label="Time wheel">
+    <div className={styles.wheels} data-columns={hourCycle === "h12" ? "3" : "2"} data-size={size === "compact" ? "compact" : undefined} aria-label="Time wheel">
+      <div className={styles.band} aria-hidden="true" />
       <WheelColumn
         autoFocus
         label="Hour"
@@ -276,6 +308,13 @@ export function TimeWheel({
         selected={parts ? (hourCycle === "h24" ? String(parts.hour) : String(toDayPeriod(parts.hour).hour12)) : null}
         disabled={disabled}
         readOnly={readOnly}
+        onCenter={(next) => {
+          const hourNumber = Number(next);
+          const minute = seen.current?.minute ?? parts?.minute ?? 0;
+          const currentPeriod = seen.current ? toDayPeriod(seen.current.hour24).period : (period ?? "AM");
+          const hour24 = hourCycle === "h24" ? hourNumber : fromDayPeriod(hourNumber, currentPeriod);
+          preview(hour24, minute);
+        }}
         onSelect={(next) => {
           const hourNumber = Number(next);
           const minute = parts?.minute ?? 0;
@@ -289,6 +328,7 @@ export function TimeWheel({
         selected={parts ? String(parts.minute) : null}
         disabled={disabled}
         readOnly={readOnly}
+        onCenter={(next) => preview(seen.current?.hour24 ?? parts?.hour ?? 0, Number(next))}
         onSelect={(next) => commit(parts?.hour ?? (hourCycle === "h12" ? 0 : 0), Number(next))}
       />
       {hourCycle === "h12" ? (
@@ -298,7 +338,11 @@ export function TimeWheel({
           selected={period}
           disabled={disabled}
           readOnly={readOnly}
-          onSelect={(next) => {
+          onCenter={(next) => {
+            const hour24 = seen.current?.hour24 ?? parts?.hour ?? 0;
+            preview(fromDayPeriod(toDayPeriod(hour24).hour12, next as DayPeriod), seen.current?.minute ?? parts?.minute ?? 0);
+          }}
+        onSelect={(next) => {
             const hour12 = parts ? toDayPeriod(parts.hour).hour12 : 12;
             commit(fromDayPeriod(hour12, next as DayPeriod), parts?.minute ?? 0);
           }}

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Select } from "./Select";
+import selectCss from "./Select.module.scss?raw";
 
 function CategorySelect({ onChange }: { onChange?: (value: string) => void }) {
   const [value, setValue] = useState("groceries");
@@ -120,6 +121,15 @@ describe("Select", () => {
     await user.type(search, "due");
     await user.keyboard("{Enter}");
     expect(screen.getByRole("button", { name: "Status, Due" })).toBeInTheDocument();
+  });
+
+  it("keeps the shared focus ring on menu search and the menu elevation", () => {
+    expect(selectCss).not.toMatch(/searchInput[\s\S]*outline:\s*none/);
+    expect(selectCss).toMatch(/\.searchInput:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--color-focus\)/);
+    expect(selectCss).toContain("box-shadow: var(--elevation-3)");
+    expect(selectCss).not.toContain("!important");
+    expect(selectCss).toContain("width: 1.75rem");
+    expect(selectCss).toMatch(/@media \(max-width: 767px\)[\s\S]*\.clear::before\s*\{[^}]*width:\s*44px;\s*height:\s*44px;/);
   });
 
   it("opens a sheet on a narrow viewport", async () => {

@@ -47,4 +47,15 @@ describe("playground nav", () => {
     expect(resolveSectionId("breadcrumbs")).toBe("breadcrumbs");
     expect(navLeaves().some((leaf) => leaf.id === "breadcrumbs")).toBe(true);
   });
+
+  it("exposes Dialogs in the Components sidenav", () => {
+    const components = NAV_GROUPS.find((group) => group.label === "Components");
+    const dialogs = components?.items.find((entry) => !isNavBranch(entry) && entry.id === "dialogs");
+    expect(dialogs && !isNavBranch(dialogs)).toBe(true);
+    if (!dialogs || isNavBranch(dialogs)) return;
+    expect(dialogs.label).toBe("Dialogs");
+    expect(dialogs.icon).toBe("inbox");
+    expect(resolveSectionId("dialogs")).toBe("dialogs");
+    expect(navLeaves().some((leaf) => leaf.id === "dialogs")).toBe(true);
+  });
 });

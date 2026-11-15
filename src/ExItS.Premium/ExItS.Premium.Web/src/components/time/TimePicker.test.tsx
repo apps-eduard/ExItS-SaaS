@@ -3,7 +3,8 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { TimePicker } from "./TimePicker";
-import { TimeWheel } from "./TimeWheel";
+import { TimeWheel, WHEEL_ITEM_PX } from "./TimeWheel";
+import { formatTimeDisplay } from "./time";
 
 describe("TimeWheel", () => {
   it("selects the value shown in the hour and minute columns", async () => {
@@ -65,30 +66,60 @@ describe("TimePicker", () => {
     const onChange = vi.fn();
     render(<TimePicker label="Start" locale="en-US" hourCycle="h24" viewport="desktop" defaultValue="09:00" onChange={onChange} />);
     await user.click(screen.getByRole("button", { name: /09:00/ }));
-    await user.clear(screen.getByLabelText("Hour"));
-    await user.type(screen.getByLabelText("Hour"), "10");
-    await user.clear(screen.getByLabelText("Minute"));
-    await user.type(screen.getByLabelText("Minute"), "15");
+    await user.click(within(screen.getByRole("listbox", { name: "Hour" })).getByRole("option", { name: "10" }));
+    await user.click(within(screen.getByRole("listbox", { name: "Minute" })).getByRole("option", { name: "15" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /Start, 09:00/ })).toHaveFocus();
 
     await user.click(screen.getByRole("button", { name: /Start, 09:00/ }));
-    await user.clear(screen.getByLabelText("Hour"));
-    await user.type(screen.getByLabelText("Hour"), "10");
-    await user.clear(screen.getByLabelText("Minute"));
-    await user.type(screen.getByLabelText("Minute"), "15");
+    await user.click(within(screen.getByRole("listbox", { name: "Hour" })).getByRole("option", { name: "10" }));
+    await user.click(within(screen.getByRole("listbox", { name: "Minute" })).getByRole("option", { name: "15" }));
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(onChange).toHaveBeenCalledWith("10:15");
     expect(screen.getByRole("button", { name: /Start, 10:15/ })).toBeInTheDocument();
   });
 
-  it("commits a typed time on Apply before the field blurs", () => {
+  it("lists every minute and sets Now beside Apply without committing", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <TimePicker
+        label="Start"
+        locale="en-US"
+        hourCycle="h24"
+        viewport="desktop"
+        onChange={onChange}
+        now={() => new Date(2026, 10, 15, 14, 7, 40)}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Choose a time/ }));
+    const minutes = within(screen.getByRole("listbox", { name: "Minute" })).getAllByRole("option");
+    expect(minutes).toHaveLength(60);
+    expect(minutes[0]).toHaveTextContent("00");
+    expect(minutes[59]).toHaveTextContent("59");
+    await user.click(screen.getByRole("button", { name: "Now" }));
+    expect(screen.getAllByText("14:07").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("button", { name: /Start, 14:07/ })).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(onChange).toHaveBeenCalledWith("14:07");
+  });
+
+  it("does not show an error just because the desktop columns open", async () => {
+    const user = userEvent.setup();
+    render(<TimePicker label="Start" locale="en-US" hourCycle="h24" viewport="desktop" />);
+    await user.click(screen.getByRole("button", { name: /Choose a time/ }));
+    expect(screen.getByRole("listbox", { name: "Hour" })).toBeInTheDocument();
+    expect(screen.queryByText(/Arrow keys step/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("commits a pasted time on Apply", () => {
     const onChange = vi.fn();
     render(<TimePicker label="Close" locale="en-US" hourCycle="h24" viewport="desktop" minuteStep={15} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: /Choose a time/ }));
-    fireEvent.change(screen.getByLabelText("Hour"), { target: { value: "18" } });
-    fireEvent.change(screen.getByLabelText("Minute"), { target: { value: "45" } });
+    fireEvent.paste(screen.getByRole("listbox", { name: "Hour" }), { clipboardData: { getData: () => "18:45" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     expect(onChange).toHaveBeenCalledWith("18:45");
     expect(screen.getByRole("button", { name: /Close, 18:45/ })).toBeInTheDocument();
@@ -111,22 +142,19 @@ describe("TimePicker", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: /Choose a time/ }));
-    await user.type(screen.getByLabelText("Hour"), "08");
-    await user.type(screen.getByLabelText("Minute"), "00");
+    fireEvent.paste(screen.getByRole("listbox", { name: "Hour" }), { clipboardData: { getData: () => "08:00" } });
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(/or later/i);
 
-    await user.clear(screen.getByLabelText("Hour"));
-    await user.type(screen.getByLabelText("Hour"), "10");
-    await user.clear(screen.getByLabelText("Minute"));
-    await user.type(screen.getByLabelText("Minute"), "00");
+    fireEvent.paste(screen.getByRole("listbox", { name: "Hour" }), { clipboardData: { getData: () => "10:00" } });
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(screen.getByRole("alert")).toHaveTextContent(/unavailable/i);
     expect(onChange).not.toHaveBeenCalled();
 
-    await user.clear(screen.getByLabelText("Minute"));
-    await user.type(screen.getByLabelText("Minute"), "10");
+    const minute = screen.getByRole("listbox", { name: "Minute" });
+    fireEvent.keyDown(minute, { key: "1" });
+    fireEvent.keyDown(minute, { key: "0" });
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(screen.getByText(/steps of 15/i)).toBeInTheDocument();
   });
@@ -142,9 +170,9 @@ describe("TimePicker", () => {
       <TimePicker label="Visit" locale="en-US" hourCycle="h12" viewport="desktop" defaultValue={null} onChange={() => undefined} />,
     );
     await user.click(screen.getByRole("button", { name: /Choose a time/ }));
-    await user.type(screen.getByLabelText("Hour"), "12");
-    await user.type(screen.getByLabelText("Minute"), "00");
-    await user.click(screen.getByRole("radio", { name: "AM" }));
+    await user.click(within(screen.getByRole("listbox", { name: "Hour" })).getByRole("option", { name: "12" }));
+    await user.click(within(screen.getByRole("listbox", { name: "Minute" })).getByRole("option", { name: "00" }));
+    await user.click(within(screen.getByRole("listbox", { name: "AM or PM" })).getByRole("option", { name: "AM" }));
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(screen.getByRole("button", { name: /12:00\sAM/ })).toBeInTheDocument();
 
@@ -152,6 +180,33 @@ describe("TimePicker", () => {
     expect(screen.getByRole("button", { name: /07:45/ })).toHaveAttribute("aria-readonly", "true");
     await user.click(screen.getByRole("button", { name: /07:45/ }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("previews a scrolled time in the field and header until Apply", () => {
+    const onChange = vi.fn();
+    render(<TimePicker label="Start" name="start" locale="en-US" hourCycle="h24" viewport="desktop" defaultValue="09:00" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /Start, 09:00/ }));
+    const hour = screen.getByRole("listbox", { name: "Hour" });
+    hour.scrollTop = WHEEL_ITEM_PX * 11;
+    fireEvent.scroll(hour);
+    const preview = formatTimeDisplay("11:00", "h24", "en-US") ?? "11:00";
+    expect(screen.getByRole("button", { name: `Start, ${preview}` })).toBeInTheDocument();
+    expect(screen.getAllByText(preview).length).toBeGreaterThanOrEqual(2);
+    expect(document.querySelector("input[name='start']")).toHaveValue("09:00");
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: /Start, 09:00/ })).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Start, 09:00/ }));
+    const hourAgain = screen.getByRole("listbox", { name: "Hour" });
+    hourAgain.scrollTop = WHEEL_ITEM_PX * 11;
+    fireEvent.scroll(hourAgain);
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith("11:00");
+    expect(document.querySelector("input[name='start']")).toHaveValue("11:00");
   });
 
   it("closes from Escape without committing", async () => {
@@ -171,6 +226,11 @@ describe("TimePicker", () => {
     await user.click(screen.getByRole("button", { name: /Choose a time/ }));
     expect(screen.getByRole("dialog", { name: "Start" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Type a time" })).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Hour typed"), "9");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter an hour and minute.");
+    await user.type(screen.getByLabelText("Minute typed"), "15");
     await user.click(within(screen.getByRole("listbox", { name: "Hour" })).getByRole("option", { name: "08" }));
     await user.click(within(screen.getByRole("listbox", { name: "Minute" })).getByRole("option", { name: "15" }));
     await user.click(screen.getByRole("button", { name: "Apply" }));

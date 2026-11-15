@@ -61,7 +61,7 @@ Reviewed against [Apple’s Spatial Layout guidance](https://developer.apple.com
 
 Already covered:
 
-- Five elevations, `--elevation-0` through `--elevation-4`. Flat lists and inputs stay at 0. Cards rest at 1 and raise to 2. Menus, tooltips, and toasts use 3. Dialogs and sheets use 4.
+- Five elevations, `--elevation-0` through `--elevation-4`. Flat lists and inputs stay at 0. Cards rest at 1 and raise to 2. Menus, tooltips, and toasts use 3. Sheets use 4. Dark dialogs use 4. The light dialog panel still uses its own inset highlight and two-layer shadow. That exception is pending approval.
 - Page, card surface, and elevated dialog fills stay the Light/Dark tokens in the color system. Dark mode separates page, surface, and elevated fill. Light mode uses the same white for surface and elevated, and separates overlays with the short shadow and the 1px border.
 - Text on those fills stays at the existing 4.5:1 bar.
 
@@ -74,6 +74,20 @@ Adopted as principles, using the current system:
 Out of scope: visionOS windows and volumes, eye tracking, gaze, and visionOS scale or position. Do not add an elevation system or a 3D framework.
 
 No layout gap turned up. The desktop dialog spring is a motion exception, documented in [MOTION_STANDARDS.md](./MOTION_STANDARDS.md), not a spatial-layout change.
+
+## Layout and organization
+
+**LOCKED.** Reviewed against [Apple’s Layout and Organization guidance](https://developer.apple.com/design/human-interface-guidelines/layout-and-organization). Detail is in [LAYOUT_ORGANIZATION.md](./LAYOUT_ORGANIZATION.md).
+
+Keep the mobile-first shell: sidebar, top bar, drawer, inspector, and the current breakpoints. Keep cards, breadcrumbs, tabs, segmented controls, and the navigation hierarchy. Amounts, errors, and informational text stay selectable. Drawer rows stay at least 44px under 768px. Each surface keeps one safe-area inset. Light and Dark share this layout. Do not add a column browser, an outline table, a tvOS lockup, a resizable splitter, Liquid Glass, or a list or table until a product screen needs one.
+
+Known exception: the safe-area inset on a real notched phone is **NOT VERIFIED**.
+
+## Content
+
+Reviewed against [Apple’s Content guidance](https://developer.apple.com/design/human-interface-guidelines/content). Inspection only. Not locked.
+
+Detail is in [CONTENT_REVIEW.md](./CONTENT_REVIEW.md). There is no chart, photo view, multiline text view, or embedded web page. Keep `ExIcon`, the single-line `Input`, and selectable informational text. Do not add a chart library, an image component, a rich-text editor, or a web view until a product screen names the content.
 
 ## Motion
 
@@ -196,7 +210,7 @@ Reviewed against [Apple’s Searching guidance](https://developer.apple.com/desi
 - The color library announces a count. A searchable select does not.
 - `SearchField` does not clear on Escape. Select Escape closes the menu instead of clearing the query.
 - The select placeholder is the generic word “Search”. The scope is only in the accessible name.
-- The clear control is 2rem. Compact and Standard fields grow to at least 44px under 768px. The clear mark does not.
+- The painted clear control stays 2rem on Search and 1.75rem on Select. Under 768px the touch area extends to 44px. The icon size stays 20px on Search and 16px on Select.
 - Select and the reference library render every match. There is no paging or windowing for a large list.
 
 ### Do not adopt
@@ -211,7 +225,7 @@ Reviewed against [Apple’s Searching guidance](https://developer.apple.com/desi
 1. Use “No matches” for every filtered list, or allow a scoped sentence when the collection name matters.
 2. Decide whether Escape clears `SearchField`. Select Escape already closes the menu.
 3. Decide whether a filtered list must show a count.
-4. Decide whether the 2rem clear control is an exception to the 44px touch height.
+4. Resolved: the painted clear control stays 2rem on Search and 1.75rem on Select. Under 768px the touch area is 44px.
 5. Keep `SearchField` presentational. The screen that owns the list does the filtering.
 
 ## Icons

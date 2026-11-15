@@ -1,0 +1,62 @@
+---
+description: ExItS Premium UX — keep Premium tokens and components; apply Apple HIG for usability, dark mode, layout, buttons, safe areas, and motion
+globs: src/ExItS.Premium/ExItS.Premium.Web/**/*.{tsx,ts,css,scss}
+alwaysApply: false
+---
+
+# ExItS Premium UX + Apple HIG
+
+Applies only to ExItS Premium Web (`src/ExItS.Premium/ExItS.Premium.Web`, port 5180). PinoyBusinessPOS rules and files stay unchanged. Do not restyle shipped Premium screens to match this rule.
+
+## Priority
+
+1. Premium design system owns visual identity: `src/styles/tokens.scss`, `[data-theme]`, `[data-palette]`, `[data-radius]`, `[data-density]`, and components under `src/components/`.
+2. Apple HIG ([Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/), [Layout](https://developer.apple.com/design/human-interface-guidelines/layout), [Dark Mode](https://developer.apple.com/design/human-interface-guidelines/dark-mode)) guides usability, accessibility, and interaction quality.
+3. Do not change business logic or validation to satisfy layout. Do not import PinoyBusinessPOS Org EHG, Personal Soft Glass, or Tailwind into Premium.
+
+## Keep Premium identity
+
+- Reuse Premium Button, Input, Select, Dialog, Toast, Card, Date/Time, and Bottom Sheet. No new UI library.
+- Primary follows the active palette. Light, Dark, and System stay on `[data-theme]`.
+- Icons stay Material Symbols Rounded. Corners, five elevations, and compact / standard / large density stay on existing tokens.
+- Keep current springs and dialog transitions. Do not add Liquid Glass.
+
+## Usability and accessibility
+
+- One primary action per view. Secondary actions are quieter. Destructive actions use the danger treatment and a confirmation.
+- Icon-only controls keep their visual size. Give them about a **44×44 CSS px** hit target via padding, not by changing `--control-height`.
+- Text and icons meet contrast on the surface they sit on. Focus uses `--color-focus` (primary). Keyboard reaches every action. Icon-only controls have an accessible name.
+- Show field errors next to the field. Do not clear input on a failed submit.
+
+## Buttons and interactions
+
+- Use Premium `Button`. One filled primary action; secondary and ghost stay visually behind it.
+- Press, hover, and disabled states use existing semantic tokens (`--color-primary-hover`, `--color-disabled-fill`, `--color-disabled-text`).
+- Feedback is visible and short. Do not invent a second press animation.
+
+## Layout, safe areas, and keyboard
+
+- Align and group with existing spacing and surface tokens. Reveal secondary detail through the current dialog, sheet, or disclosure.
+- Size from the container. The same action must work on mobile, tablet, and desktop. Wrap or scroll on the block axis. Do not clip labels or add a horizontal page scrollbar.
+- Keep content inside the safe area. When the keyboard opens, scroll the field into view and leave the primary action reachable.
+- Use logical properties (`margin-inline`, `padding-inline`, `inline-start`) so RTL alignment flips. Do not add a language switcher. English remains the catalog.
+
+## Dark Mode
+
+Use `[data-theme="dark"]` tokens. Do not add a second dark palette or hardcoded slate.
+
+- Page, then card (`--color-surface`), then elevated overlay (`--color-surface-elevated`) stay in that order.
+- Dialogs, Bottom Sheets, Toasts, menus, and inputs use those surfaces. Inputs stay distinguishable from the sheet behind them.
+- Primary stays the palette color for actions and focus, not for large fills.
+- Avoid washed-out gray-on-gray, heavy blur, and neon accents.
+
+## Motion
+
+- Motion explains a change, then settles. Honor `prefers-reduced-motion`. Premium `useReducedMotion` follows that setting.
+- Do not remove the existing dialog spring or sheet slide for reduced motion; the reduced variants already skip them.
+
+## Do not
+
+- Redesign Premium components or copy PinoyBusinessPOS chrome.
+- Add dependencies or `!important` theme overrides.
+- Weaken tests to match a visual preference.
