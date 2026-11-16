@@ -1,0 +1,151 @@
+.block {
+  min-width: 0;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-3);
+  width: min(100%, 28rem);
+  min-width: 0;
+}
+
+.choiceStack {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.tooltipSamples {
+  display: grid;
+  gap: 4.5rem;
+  justify-items: start;
+  width: 100%;
+  min-width: 0;
+  padding-top: 4.5rem;
+}
+
+.detailList {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.detailList div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.detailList dt {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+}
+
+.detailList dd {
+  margin: 0;
+}
+
+.edgeRow {
+  display: flex;
+  flex: 1 1 100%;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.navFrame {
+  width: min(100%, 16rem);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.navFrame[data-collapsed="true"] {
+  width: 4.75rem;
+}
+
+.results {
+  display: grid;
+  gap: 0.35rem;
+  width: min(100%, 22rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.resultName,
+.resultNote {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transaction {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.meta,
+.name,
+.note,
+.lineAmount,
+.amount {
+  min-width: 0;
+  margin: 0;
+}
+
+.name {
+  font-size: var(--type-body-size);
+  font-weight: var(--type-card-weight);
+  line-height: var(--type-body-line);
+}
+
+.lineAmount {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.row,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.notes {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: 1.15rem;
+  max-width: 42rem;
+}

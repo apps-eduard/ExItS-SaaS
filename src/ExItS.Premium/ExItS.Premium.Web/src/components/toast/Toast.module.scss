@@ -54,6 +54,7 @@
 }
 
 .toast {
+  --toast-dismiss: 4000ms;
   --toast-tone: var(--color-text-secondary);
   --toast-wash: 8%;
   --toast-border-mix: 22%;
@@ -132,10 +133,32 @@
 }
 
 .dismiss {
+  position: relative;
+  z-index: 1;
   width: 2.125rem;
   height: 2.125rem;
   margin: -0.15rem -0.05rem 0 0;
   color: var(--color-text-secondary);
+}
+
+.countdown {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--toast-tone);
+  pointer-events: none;
+}
+
+.toast[data-countdown="run"] .countdown {
+  animation: toast-countdown var(--toast-dismiss) linear forwards;
+}
+
+.toast[data-paused="true"] .countdown {
+  animation-play-state: paused;
 }
 
 .success {
@@ -201,8 +224,24 @@
   }
 }
 
+@keyframes toast-countdown {
+  from {
+    height: 100%;
+  }
+
+  to {
+    height: 0%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .toast {
+    animation: none;
+  }
+
+  .toast[data-countdown="run"] .countdown,
+  .countdown {
+    display: none;
     animation: none;
   }
 }

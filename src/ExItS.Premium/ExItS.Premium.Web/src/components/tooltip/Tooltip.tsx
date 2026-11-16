@@ -1,6 +1,6 @@
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { hideOverlay, placeOverlay, showOverlay } from "../overlay/overlay";
+import { hideOverlay, placeTooltip, showOverlay } from "../overlay/overlay";
 import styles from "./Tooltip.module.scss";
 
 type TooltipProps = {
@@ -27,10 +27,25 @@ export function Tooltip({ content, children }: TooltipProps) {
       const anchor = anchorRef.current;
       if (!tip || !anchor) return;
       showOverlay(tip);
-      placeOverlay(anchor, tip, "top");
+      placeTooltip(anchor, tip);
       setOpen(true);
     }, delay);
   }
+
+  useEffect(() => {
+    if (!open) return;
+    function place() {
+      const tip = tipRef.current;
+      const anchor = anchorRef.current;
+      if (tip && anchor) placeTooltip(anchor, tip);
+    }
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
 
   function hide() {
     clearTimer();

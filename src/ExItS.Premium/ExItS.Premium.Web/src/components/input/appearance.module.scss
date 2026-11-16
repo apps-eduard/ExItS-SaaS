@@ -20,7 +20,7 @@
   color: var(--color-text-caption);
 }
 
-:global([data-placement="float"]:is(:focus-within, :has([data-filled="true"]))) .control[data-appearance="soft"] {
+:global([data-placement="float"]:is(:focus-within, :has([data-filled="true"]))) .control[data-appearance="soft"]:not([data-soft-input="true"]) {
   padding-top: calc(var(--density-label-font) + 0.2rem);
   padding-bottom: 0;
   line-height: 1;

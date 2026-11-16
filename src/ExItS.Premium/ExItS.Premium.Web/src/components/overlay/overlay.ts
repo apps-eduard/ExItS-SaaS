@@ -1,16 +1,37 @@
+/**
+ * Chrome starts a CSS animation while a popover is still `display: none`, then
+ * shows the finished frame. Restart it after the popover is actually open.
+ * Reduced motion stays off: the stylesheet animation name is `none`.
+ */
+export function replayOverlayMotion(element: HTMLElement | null) {
+  if (!element) return;
+  if (typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const name = getComputedStyle(element).animationName;
+  if (!name || name === "none") return;
+  element.style.animationName = "none";
+  void element.offsetWidth;
+  element.style.removeProperty("animation-name");
+}
+
 export function showOverlay(element: HTMLElement | null) {
   if (!element) return;
   const withPopover = element as HTMLElement & { showPopover?: () => void };
+  let revealed = false;
   if (typeof withPopover.showPopover === "function") {
     try {
-      if (!element.matches(":popover-open")) withPopover.showPopover();
-      return;
+      if (!element.matches(":popover-open")) {
+        withPopover.showPopover();
+        revealed = true;
+      }
     } catch {
+      revealed = element.dataset.open !== "true";
       element.dataset.open = "true";
-      return;
     }
+  } else if (element.dataset.open !== "true") {
+    element.dataset.open = "true";
+    revealed = true;
   }
-  element.dataset.open = "true";
+  if (revealed) replayOverlayMotion(element);
 }
 
 export function hideOverlay(element: HTMLElement | null) {
@@ -29,7 +50,27 @@ export function hideOverlay(element: HTMLElement | null) {
 export function placeOverlay(anchor: HTMLElement, overlay: HTMLElement, prefer: "top" | "bottom" = "bottom") {
   const anchorBox = anchor.getBoundingClientRect();
   const overlayBox = overlay.getBoundingClientRect();
-  const gap = 8;
+  const placed = placeAnchored(anchorBox, overlayBox, prefer, 8);
+  overlay.style.top = `${placed.top}px`;
+  overlay.style.left = `${placed.left}px`;
+}
+
+/** Tooltip placement. Same edge rules as `placeOverlay`, with room for the tail. */
+export function placeTooltip(anchor: HTMLElement, overlay: HTMLElement) {
+  const anchorBox = anchor.getBoundingClientRect();
+  const overlayBox = overlay.getBoundingClientRect();
+  const placed = placeAnchored(anchorBox, overlayBox, "top", 10);
+  const width = overlayBox.width;
+  const inset = width > 0 ? Math.min(14, width / 2) : 0;
+  const center = anchorBox.left + anchorBox.width / 2 - placed.left;
+  const tail = width > 0 ? Math.round(Math.max(inset, Math.min(center, width - inset))) : 0;
+  overlay.style.top = `${placed.top}px`;
+  overlay.style.left = `${placed.left}px`;
+  overlay.dataset.side = placed.side;
+  overlay.style.setProperty("--tooltip-tail", `${tail}px`);
+}
+
+function placeAnchored(anchorBox: DOMRect, overlayBox: DOMRect, prefer: "top" | "bottom", gap: number) {
   const margin = 8;
   let top = prefer === "bottom" ? anchorBox.bottom + gap : anchorBox.top - overlayBox.height - gap;
   let left = anchorBox.left;
@@ -38,6 +79,6 @@ export function placeOverlay(anchor: HTMLElement, overlay: HTMLElement, prefer: 
   if (top < margin) top = margin;
   if (left + overlayBox.width > window.innerWidth - margin) left = window.innerWidth - overlayBox.width - margin;
   if (left < margin) left = margin;
-  overlay.style.top = `${Math.round(top)}px`;
-  overlay.style.left = `${Math.round(left)}px`;
+  const side = top >= anchorBox.bottom - 1 ? "bottom" : "top";
+  return { top: Math.round(top), left: Math.round(left), side };
 }

@@ -1,7 +1,6 @@
 import {
   Children,
   Fragment,
-  cloneElement,
   isValidElement,
   useEffect,
   useId,
@@ -24,7 +23,7 @@ import appearanceStyles from "../input/appearance.module.scss";
 import { inputRestsOnBorder, isInputAppearance, type InputAppearance } from "../input/input-appearance";
 import { isInputFocusMotion, type InputFocusMotion } from "../input/focus-motion";
 import { InputMotion } from "../input/InputMotion";
-import { hideOverlay, showOverlay } from "../overlay/overlay";
+import { hideOverlay, replayOverlayMotion, showOverlay } from "../overlay/overlay";
 import styles from "./Select.module.scss";
 import { applySelectValues, SELECT_MENU_MOTION_DEFAULT, type SelectMenuMotion } from "./select-menu-motion";
 
@@ -81,20 +80,6 @@ function collectOptions(children: ReactNode, group?: string, into: ParsedOption[
     }
   });
   return into;
-}
-
-function markOptions(children: ReactNode, values: readonly string[]): ReactNode {
-  return Children.map(children, (child) => {
-    if (!isValidElement<{ value?: string | number; children?: ReactNode; selected?: boolean }>(child)) return child;
-    if (child.type === Fragment || child.type === "optgroup") {
-      return cloneElement(child, undefined, markOptions(child.props.children, values));
-    }
-    if (child.type === "option") {
-      const optionValue = child.props.value == null ? optionText(child.props.children, "") : String(child.props.value);
-      return cloneElement(child, { selected: values.includes(optionValue) });
-    }
-    return child;
-  });
 }
 
 function listed(value: unknown) {
@@ -198,7 +183,7 @@ export function Select({
     if (!select || !form) return;
     const onReset = () => {
       window.setTimeout(() => {
-        if (multiple) setMulti([...select.selectedOptions].map((option) => option.value));
+        if (multiple) setMulti(listed(defaultValue) ?? []);
         else setUncontrolled(select.value);
         window.clearTimeout(closeTimer.current);
         setPhase("closed");
@@ -207,7 +192,7 @@ export function Select({
     };
     form.addEventListener("reset", onReset);
     return () => form.removeEventListener("reset", onReset);
-  }, [multiple]);
+  }, [defaultValue, multiple]);
 
   const enabled = shown.flatMap((option, index) => (option.disabled ? [] : [index]));
   const safeActive = enabled.includes(active) ? active : (enabled[0] ?? 0);
@@ -409,6 +394,7 @@ export function Select({
     const trigger = triggerRef.current;
     if (phase === "closed" || narrow || !panel || !trigger) return;
     showOverlay(panel);
+    replayOverlayMotion(panel);
     alignMenu();
     if (menuOpen && searchable) searchRef.current?.focus();
   }, [phase, menuOpen, narrow, searchable, shown.length, motionEpoch]);
@@ -569,11 +555,11 @@ export function Select({
           aria-hidden="true"
           disabled={disabled}
           multiple={multiple || undefined}
-          value={multiple ? undefined : controlled ? selected : undefined}
+          value={multiple ? selectedMany : controlled ? selected : undefined}
           defaultValue={multiple || controlled ? undefined : defaultValue}
           onChange={onNativeChange}
         >
-          {multiple ? markOptions(children, selectedMany) : children}
+          {children}
         </select>
         <InputMotion motion={motion} disabled={Boolean(disabled)} readOnly={readOnly} held={menuOpen} state={state}>
           <button

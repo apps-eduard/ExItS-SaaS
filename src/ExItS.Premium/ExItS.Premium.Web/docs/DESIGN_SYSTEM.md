@@ -93,13 +93,13 @@ Charts, profile photos, business logos, product images, and multiline notes stay
 
 ## Components
 
-Reviewed against [Apple’s Components guidance](https://developer.apple.com/design/human-interface-guidelines/components). Not locked. Detail is in [COMPONENTS_REVIEW.md](./COMPONENTS_REVIEW.md).
+Reviewed against [Apple’s Components guidance](https://developer.apple.com/design/human-interface-guidelines/components). The category is not locked. Menus & Actions, Navigation & Search, Presentation, Selection & Input, Status, and System experiences are locked on their own below. Detail is in [COMPONENTS_REVIEW.md](./COMPONENTS_REVIEW.md).
 
 Keep the existing buttons, menus, search, selects, navigation, dialogs, sheets, fields, toggles, pickers, badges, and toasts. Do not add an Apple-only system component. Layout and Content stay locked.
 
 ## Motion
 
-Review only. Durations stay 120 / 180 / 280ms. Detail and the Apple comparison are in [MOTION_STANDARDS.md](./MOTION_STANDARDS.md). Preserve the current springs, control feedback, and Reduce Motion behavior. The one justified gap is that dialog sheets spring while picker sheets ease. Do not add page transitions or a second motion scale.
+Review only. The playground review is `#hig-motion` and is not locked. Foundations Motion stays at `#motion`. Durations stay 120 / 180 / 280ms. Detail and the Apple comparison are in [MOTION_STANDARDS.md](./MOTION_STANDARDS.md). Preserve the current springs, control feedback, and Reduce Motion behavior. The one justified gap is that dialog sheets spring while picker sheets ease. Do not add page transitions or a second motion scale.
 
 ## Entering data
 
@@ -165,6 +165,149 @@ Reviewed against [Apple’s Entering Data guidance](https://developer.apple.com/
 - A left accent on the selected option.
 - Option pills on Standard or Soft. Only Pill options are fully rounded.
 - A separate dropdown component for this menu.
+
+## Menus and actions
+
+**LOCKED.** Ordinary `DropdownMenu` and `ActionMenu` stay one popover. Opening one closes any other ordinary menu and does not move focus to the menu that closed.
+
+Future changes keep this pattern unless a change is explicitly approved, fixes a verified bug, or addresses an accessibility or security defect. A defect correction is allowed.
+
+### Preserve
+
+- One ordinary menu is open at a time. Select, tooltip, and date or time popovers are not in that set. `ActionMenu` is the icon-only form of `DropdownMenu`, not a second menu.
+- Escape closes the active menu and returns focus to its trigger. An outside click closes it. Tab closes it and leaves focus to move on. Arrow Up and Arrow Down move. Home and End jump. Disabled items are skipped and cannot be chosen. Choosing an item runs its callback once.
+- A row may include an icon. A normal row uses the text color. A danger row uses the danger token. Hover and keyboard focus use the hover wash. The panel uses `--radius-card`, elevation 3, and the elevated surface. The row uses `--radius-control`. Standard is 12px on the panel and 8px on the row. Soft is 18px and 12px. Pill is 22px and fully rounded.
+- The menu stays a popover at every width. It does not become a bottom sheet. At 767px and below each row is at least 44px. Long labels wrap inside the panel. Placement shifts inward so the panel stays in the viewport.
+- The review page keeps the standard menu, the three-dot action menu, disabled and danger rows, and the long-label menu at the row end.
+
+### Do not adopt
+
+- A second menu implementation, a context menu, or an action sheet.
+- Button dropdown and button group. Both stay deferred. They are not approved components.
+- Moving focus to a trigger that closed only because another menu opened.
+
+## Navigation and search
+
+**LOCKED.** The sidebar, drawer, breadcrumb, and `SearchField` stay on the components already in the playground. Searchable Select stays on the Select dropdown lock.
+
+Future changes keep this pattern unless a change is explicitly approved, fixes a verified bug, or addresses an accessibility or security defect. A defect correction is allowed. This lock does not change the Layout and Organization foundation.
+
+### Preserve
+
+- The shell sidebar expands and collapses. The active item uses `aria-current="page"`. Nested groups open and close. Under 768px that sidebar is hidden and the same list opens in the drawer. Closing the drawer returns focus to the control that opened it. Drawer rows stay at least 44px.
+- A breadcrumb link is a previous crumb. The current page uses `aria-current="page"`. Long labels truncate. When the trail is narrower than 36rem, or the viewport is 767px or below, the middle crumbs collapse and the current page stays readable.
+- `SearchField` covers empty, filled, disabled, and error. Clear is named “Clear search” and resets the query. A disabled field cannot be edited. The field does not filter, suggest, or store history. The screen that owns the list filters it. An empty filtered list says “No matches”.
+- Searchable Select remains the locked Select. It is not a second search field.
+
+### Do not adopt
+
+- A second sidebar, drawer, breadcrumb, or search component.
+- Filtering, suggestions, or history inside `SearchField`.
+- A global search.
+
+### Still separate
+
+The Searching section below still has open decisions: whether Escape clears `SearchField`, whether a filtered list shows a count, and whether empty copy may name the collection. Those decisions are not part of this lock. The 18×18 badge remove control, the light dialog shadow, and the Time/Dialog lint stay unrelated. Dialog Tab containment is part of the Presentation lock.
+
+## Presentation
+
+**LOCKED.** Cards, tooltips, popovers, dialogs, confirmations, and sheets stay on the components already in the playground. The Components category stays unlocked.
+
+Future changes keep this pattern unless a change is explicitly approved, fixes a verified bug, or addresses an accessibility or security defect. A defect correction is allowed.
+
+### Preserve
+
+- A card rests on `--color-surface`. In dark mode that is `#1e293b`. Elevation 1 uses `--elevation-1`. Elevation 2 uses `--elevation-2` on that same surface. Do not brighten elevation 2. Light cards stay on the light surface.
+- Tooltip and popover share `--color-surface-elevated`. In dark mode that is `#31445f`. Use the token. Do not paste the hex into a component. Borders stay `--color-border`. Text stays `--color-text`. Light mode stays on the light elevated surface.
+- The tooltip radius is `min(var(--radius-control), 12px)`: 8px Standard, 12px Soft, and 12px Pill. A small directional tail points at the trigger and covers the panel border where it joins. The popover has no tail. The tip is not interactive. Hover waits 300ms. Focus waits 40ms. Escape hides it. It prefers the top and flips below.
+- The popover uses `--radius-card` and `--shadow-2`, which is elevation 3. It stays interactive, shifts inside the viewport, closes on an outside click or Escape, and returns focus to the trigger.
+- Dialog and ConfirmDialog keep their current panel, backdrop, and footer. This lock does not recolor the dialog. The review samples are Edit transaction, Delete transaction, and Transaction details. Tab and Shift+Tab stay inside. Escape and Cancel dismiss. Focus returns to the trigger. Save and Delete run once. When `mobilePresentation="sheet"`, the same dialog docks under 640px. The body scrolls and the footer stays visible.
+- Empty state, badge, and skeleton stay the existing samples. A skeleton is a loading state, not a dialog.
+
+### Do not adopt
+
+- A second dark fill for the tooltip or the popover.
+- A tail on the popover.
+- A brighter elevation 2 card, a gradient, or a heavier card border.
+- A new dialog color or a second dialog component.
+
+### Still separate
+
+`Dialog.tsx` still fails ESLint because `setOpenCycle` calls setState inside an effect (`react-hooks/set-state-in-effect`). This lock does not treat that lint as passed. The light dialog shadow, the 18×18 badge remove control, and the Time picker lint stay unrelated.
+
+Context menus, button dropdown, button group, token fields, sliders, steppers, determinate progress, page controls, action sheets, and platform widgets stay deferred or not adopted. Do not add them to fill this page.
+
+## Selection and input
+
+**LOCKED.** Text fields, single and multiple selects, checkboxes, radios, switches, segmented controls, and the existing date and time pickers stay on the components already in the playground. The Components category stays unlocked.
+
+Future changes keep this pattern unless a change is explicitly approved, fixes a verified bug, or addresses an accessibility or security defect. A defect correction is allowed.
+
+### Preserve
+
+- Input appearances stay standard, floating, outlined, and soft. Soft input uses its own height: 48px Compact, 56px Standard, and 64px Large. An empty unfocused label stays centered. Focus or a value scales it and shifts it over 360ms. Search fields and selects do not use that taller field.
+- Running accent is one 960ms lap. Border reveal and focus draw stay on their existing durations.
+- Select stays single, multiple, searchable, and disabled on the locked dropdown. A multiple select stores the choice on the select `value`. The menu does not change.
+- Checkbox can be indeterminate. Radio groups name the choice. A switch exposes on and off. A segmented control can disable one option. Year stays disabled in the review sample.
+- Date, range, time, and date-time stay on the date and time picker lock. This lock does not restyle them.
+- Validation stays with the caller. The review Save checks the draft once. Clear removes it. Preferences update the sentence beside them.
+- Light and dark, Compact, Standard, and Large, and Standard, Soft, and Pill stay on the shared tokens. At 320, 390, 768, and 1440 the review page does not overflow. Choice rows stay at least 44px under 768px. Reduced motion removes the soft-label travel and the segmented indicator travel.
+
+### Do not adopt
+
+- A second input, select, checkbox, radio, switch, segmented control, or picker.
+- A visual change to the locked dropdown or the locked date and time pickers.
+
+### Still separate
+
+`Dialog.tsx` still fails ESLint because `setOpenCycle` calls setState inside an effect. The Time picker lint stays open. The light dialog shadow, the 18×18 badge remove control, and a real notched-phone safe area stay unrelated.
+
+## Status
+
+**LOCKED.** Badges, indeterminate loading, toasts, and empty states stay on the components already in the playground. The Components category stays unlocked. Motion stays unlocked.
+
+Future changes keep this pattern unless a change is explicitly approved, fixes a verified bug, or addresses an accessibility or security defect. A defect correction is allowed.
+
+### Preserve
+
+- Paid, Pending, Overdue, Scheduled, and Draft each keep a word, a pip, and an icon. Color is not the only signal.
+- There is no progress bar. Save receipt uses the button spinner. Stop save ends it. Show payment rows uses the existing skeletons.
+- Success, warning, danger, and info feedback use the existing toast. Dismiss closes it. A danger toast is an alert. The others are status. An auto-dismiss toast keeps the locked right-edge countdown: 6px, the toast tone, full height shrinking toward the top over the 4000ms dismiss clock. Hover or keyboard focus pauses that clock. Reduced motion hides the countdown and keeps the dismiss timing.
+- No records, failed loading, and no search results use `EmptyState` with an action.
+- Light and dark, Compact, Standard, and Large, and Standard, Soft, and Pill stay on the shared tokens. At 320, 390, 768, and 1440 the review page does not overflow. Save receipt stays at least 44px at 390. Reduced motion removes the button spinner spin and the skeleton sweep.
+
+### Do not adopt
+
+- A determinate progress bar, a separate spinner, or a second snackbar.
+- A visual change to Badge, Button, Skeleton, Toast, or EmptyState. The right-edge countdown is part of the locked toast.
+
+### Still separate
+
+The 18×18 badge remove control stays. The Dialog and Time picker lint stay open. A real notched-phone safe area stays unverified.
+
+## System experiences
+
+**LOCKED.** Confirmations, sample access, connection recovery, and session recovery stay on the dialogs, toasts, badges, skeletons, and empty states already in the playground. The Components category stays unlocked. Motion stays unlocked.
+
+Future changes keep this pattern unless a change is explicitly approved, fixes a verified bug, or addresses an accessibility or security defect. A defect correction is allowed.
+
+### Preserve
+
+- Delete uses the danger confirm. Leave and cancel use the safer confirm. Cancel on the dialog returns without that action and restores focus to the trigger.
+- Permission required, permission denied, and restricted feature explain the next step. They do not change a device permission.
+- An offline or failed send keeps the payment note in the field. Retry records it only on this device.
+- Session expired can recover the local draft or discard it. Discard removes it from the page only.
+- A local sync uses the pending badge and skeleton, then the existing success or danger toast.
+- Light and dark, and 320, 390, 768, and 1440, do not overflow. Delete transaction stays at least 44px at 390. Reduced motion follows the existing dialog and skeleton behavior.
+
+### Do not adopt
+
+- A second confirm dialog, a real permission prompt, or a server call.
+- A visual change to Dialog, ConfirmDialog, Button, Toast, Badge, Skeleton, or EmptyState. The right-edge countdown is part of the locked toast.
+
+### Still separate
+
+`Dialog.tsx` still fails ESLint because `setOpenCycle` calls setState inside an effect. That lint is not part of this lock. The light dialog shadow stays unrelated.
 
 ## Date and time pickers
 

@@ -29,6 +29,13 @@ export const SECTION_IDS = [
   "mobile-preview",
   "component-states",
   "personal-concept",
+  "menus-actions",
+  "navigation-search",
+  "presentation",
+  "selection-input",
+  "status",
+  "system-experiences",
+  "hig-motion",
 ] as const;
 
 export type SectionId = (typeof SECTION_IDS)[number];
@@ -109,6 +116,18 @@ export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
       { id: "selects", label: "Selects", icon: "unfold_more" },
       { id: "toasts", label: "Toasts", icon: "notifications" },
       { id: "toggles", label: "Toggles", icon: "toggle_on" },
+    ],
+  },
+  {
+    label: "Apple HIG reviews",
+    items: [
+      { id: "menus-actions", label: "Menus & Actions", icon: "menu" },
+      { id: "navigation-search", label: "Navigation & Search", icon: "search" },
+      { id: "presentation", label: "Presentation", icon: "widgets" },
+      { id: "selection-input", label: "Selection & Input", icon: "checklist" },
+      { id: "status", label: "Status", icon: "notifications" },
+      { id: "system-experiences", label: "System experiences", icon: "info" },
+      { id: "hig-motion", label: "Motion", icon: "animation" },
     ],
   },
   {

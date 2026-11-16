@@ -44,6 +44,16 @@ describe("playgroundBreadcrumbTrail", () => {
     ]);
   });
 
+  it("maps Apple HIG review pages through their group", () => {
+    expect(playgroundBreadcrumbTrail("menus-actions").map((item) => item.label)).toEqual([
+      "Design System",
+      "Apple HIG reviews",
+      "Menus & Actions",
+    ]);
+    expect(playgroundBreadcrumbTrail("navigation-search")[2]?.href).toBeUndefined();
+    expect(playgroundBreadcrumbTrail("navigation-search")[1]?.href).toBe("#menus-actions");
+  });
+
   it("maps Dialogs through the Components group", () => {
     expect(playgroundBreadcrumbTrail("dialogs").map((item) => item.label)).toEqual([
       "Design System",

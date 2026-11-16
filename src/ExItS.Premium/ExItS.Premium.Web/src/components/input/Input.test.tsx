@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import fieldCss from "../field/Field.module.scss?raw";
 import { SearchField } from "../search/SearchField";
 import { Input } from "./Input";
+import inputCss from "./Input.module.scss?raw";
 import type { InputAppearance } from "./input-appearance";
 
 describe("Input", () => {
@@ -77,8 +79,11 @@ describe("Input", () => {
     expect(outlined.closest("[data-placement='float']")).not.toBeNull();
 
     rerender(<Input label="Name" appearance="soft" value="Market" onChange={() => undefined} />);
-    expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("data-appearance", "soft");
-    expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("data-filled", "true");
+    const soft = screen.getByRole("textbox", { name: "Name" });
+    expect(soft).toHaveAttribute("data-appearance", "soft");
+    expect(soft).toHaveAttribute("data-soft-input", "true");
+    expect(soft).toHaveAttribute("data-filled", "true");
+    expect(soft.closest("[data-placement='float']")).not.toBeNull();
 
     rerender(<Input label="Name" appearance={"filled" as unknown as InputAppearance} focusMotion="focus-draw" />);
     const retired = screen.getByRole("textbox", { name: "Name" });
@@ -98,6 +103,21 @@ describe("Input", () => {
     const drawn = screen.getByRole("textbox", { name: "Name" });
     expect(drawn.parentElement).not.toHaveAttribute("data-frame");
     expect(drawn.parentElement?.querySelector("[data-focus-draw]")).not.toBeNull();
+  });
+
+  it("keeps the taller floating label on soft input only", () => {
+    expect(inputCss).toContain('&[data-soft-input="true"]');
+    expect(inputCss).toContain("var(--soft-input-height, 56px)");
+    expect(fieldCss).toContain("--soft-input-height: 48px");
+    expect(fieldCss).toContain("--soft-input-height: 56px");
+    expect(fieldCss).toContain("--soft-input-height: 64px");
+    expect(fieldCss).toContain("--soft-label-scale: 0.8");
+    expect(fieldCss).toContain("--soft-label-motion: 360ms");
+    expect(fieldCss).toContain("translateY(-50%) scale(1)");
+    expect(fieldCss).toContain("scale(var(--soft-label-scale))");
+    expect(fieldCss).toMatch(/prefers-reduced-motion: reduce[\s\S]*data-soft-input[\s\S]*transition: none/);
+    render(<Input label="Name" />);
+    expect(screen.getByRole("textbox", { name: "Name" })).not.toHaveAttribute("data-soft-input");
   });
 
   it("returns the floated label copy to one accessible name when cleared", async () => {

@@ -48,6 +48,26 @@ describe("playground nav", () => {
     expect(navLeaves().some((leaf) => leaf.id === "breadcrumbs")).toBe(true);
   });
 
+  it("adds Apple HIG review pages without moving component pages", () => {
+    const reviews = NAV_GROUPS.find((group) => group.label === "Apple HIG reviews");
+    expect(reviews?.items.map((entry) => (isNavBranch(entry) ? entry.label : entry.id))).toEqual([
+      "menus-actions",
+      "navigation-search",
+      "presentation",
+      "selection-input",
+      "status",
+      "system-experiences",
+      "hig-motion",
+    ]);
+    const leaves = navLeaves();
+    expect(leaves.find((leaf) => leaf.id === "menus-actions")?.label).toBe("Menus & Actions");
+    expect(leaves.find((leaf) => leaf.id === "navigation-search")?.icon).toBe("search");
+    expect(resolveSectionId("menus-actions")).toBe("menus-actions");
+    expect(resolveSectionId("navigation-search")).toBe("navigation-search");
+    const components = NAV_GROUPS.find((group) => group.label === "Components");
+    expect(components?.items.some((entry) => !isNavBranch(entry) && entry.id === "date-time")).toBe(true);
+  });
+
   it("exposes Dialogs in the Components sidenav", () => {
     const components = NAV_GROUPS.find((group) => group.label === "Components");
     const dialogs = components?.items.find((entry) => !isNavBranch(entry) && entry.id === "dialogs");

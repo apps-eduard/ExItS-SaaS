@@ -159,3 +159,18 @@
   flex: 1 1 6.5rem;
   min-width: 0;
 }
+
+.actions .action[data-appearance="outline"] {
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--color-border-strong) 72%, var(--color-surface));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 64%, transparent),
+    var(--elevation-1);
+}
+
+.actions .action[data-appearance="soft"] {
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 46%, transparent),
+    var(--elevation-1);
+}

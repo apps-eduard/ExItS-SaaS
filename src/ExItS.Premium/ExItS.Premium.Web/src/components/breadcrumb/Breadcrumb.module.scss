@@ -1,6 +1,9 @@
 .nav {
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  container-type: inline-size;
+  container-name: breadcrumb;
 }
 
 .list {
@@ -103,6 +106,16 @@
 .icon {
   flex: none;
   color: inherit;
+}
+
+@container breadcrumb (max-width: 36rem) {
+  .item[data-middle="true"] {
+    display: none;
+  }
+
+  .collapse {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 767px) {

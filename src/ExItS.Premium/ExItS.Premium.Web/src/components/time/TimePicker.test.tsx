@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { TimePicker } from "./TimePicker";
+import timeCss from "./TimePicker.module.scss?raw";
 import { TimeWheel, WHEEL_ITEM_PX } from "./TimeWheel";
 import { formatTimeDisplay } from "./time";
 
@@ -235,5 +236,20 @@ describe("TimePicker", () => {
     await user.click(within(screen.getByRole("listbox", { name: "Minute" })).getByRole("option", { name: "15" }));
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(onChange).toHaveBeenCalledWith("08:15");
+  });
+
+  it("keeps footer depth on the Time Picker actions only", async () => {
+    const user = userEvent.setup();
+    render(<TimePicker label="Start" locale="en-US" hourCycle="h12" viewport="desktop" defaultValue="09:30" clearable />);
+    await user.click(screen.getByRole("button", { name: /9:30 AM/ }));
+    expect(screen.getByRole("button", { name: "Clear" })).toHaveAttribute("data-appearance", "outline");
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveAttribute("data-appearance", "outline");
+    expect(screen.getByRole("button", { name: "Now" })).toHaveAttribute("data-appearance", "soft");
+    expect(screen.getByRole("button", { name: "Apply" })).toHaveAttribute("data-appearance", "solid");
+    expect(timeCss).toContain('.actions .action[data-appearance="outline"]');
+    expect(timeCss).toContain('.actions .action[data-appearance="soft"]');
+    expect(timeCss).not.toContain('data-appearance="gradient"');
+    expect(timeCss).not.toContain('data-appearance="solid"');
+    expect(timeCss).not.toContain("backdrop-filter");
   });
 });

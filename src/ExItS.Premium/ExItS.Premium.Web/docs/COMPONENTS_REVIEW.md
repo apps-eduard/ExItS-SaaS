@@ -1,8 +1,10 @@
 # Components
 
-Reviewed against [Apple’s Components guidance](https://developer.apple.com/design/human-interface-guidelines/components) and the category pages for menus and actions, navigation and search, presentation, selection and input, status, and system experiences. The three approved mobile hit-area corrections are recorded below. Components stay unlocked.
+Reviewed against [Apple’s Components guidance](https://developer.apple.com/design/human-interface-guidelines/components) and the category pages for menus and actions, navigation and search, presentation, selection and input, status, and system experiences. The three approved mobile hit-area corrections are recorded below. The Components category stays unlocked.
 
-This is not locked. Layout and organization stays locked in [LAYOUT_ORGANIZATION.md](./LAYOUT_ORGANIZATION.md). Content stays locked in [CONTENT_REVIEW.md](./CONTENT_REVIEW.md). Those decisions are not reopened here.
+Menus & Actions, Navigation & Search, Presentation, Selection & Input, Status, and System experiences are locked in [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md). Motion stays unlocked. Button dropdown, button group, and context menus stay deferred. This file does not lock the rest of the category.
+
+Layout and organization stays locked in [LAYOUT_ORGANIZATION.md](./LAYOUT_ORGANIZATION.md). Content stays locked in [CONTENT_REVIEW.md](./CONTENT_REVIEW.md). Those decisions are not reopened here.
 
 Apple-only pieces that do not transfer: menu bars, Dock menus, Home Screen quick actions, ornaments, windows, UIKit sheets, SF Symbols, color wells, digit entry views, virtual keyboards, activity rings, gauges, status bars, widgets, Live Activities, complications, Top Shelf, and Watch faces.
 
@@ -37,39 +39,39 @@ Approved corrections. Measured on the running playground. Light and Dark. Overfl
 | Apple category | Existing ExItS | Decision | Issue / Reason | Priority |
 | --- | --- | --- | --- | --- |
 | Buttons | `Button` — tone, appearance, loading, icon-only | Preserve | Initiates an action. Primary, danger, and quieter styles exist. Loading and disabled exist. Tests exist; this review did not rerun them | None |
-| Menus | `DropdownMenu` | Preserve | Opens on demand, skips disabled items, supports arrows and Escape in source, danger tone exists | None |
+| Menus | `DropdownMenu` | Locked | Menus & Actions lock in `DESIGN_SYSTEM.md`. One ordinary menu is open at a time | None |
 | Pull-down / pop-up buttons | `Select` for a value. `DropdownMenu` for a command | Preserve | A value picker and a command menu stay separate. Do not merge them | None |
 | Context menus | None | Defer | No row yet needs a right-click or long-press menu. `DropdownMenu` covers an explicit action menu | Later |
 | Button dropdown / button group | Nav marks them planned and next. `DropdownMenu` already exists | Defer | Do not add a second menu. A group waits until a screen needs adjacent actions | Later |
 | Menu bar, Dock menu, Home Screen quick actions, ornaments | None | Do not adopt | Desktop and platform chrome. The PWA uses the sidebar and top bar | None |
 | Toolbars | Playground top bar | Preserve | Layout lock already keeps the top bar. Do not add a second toolbar component | None |
-| Search fields | `SearchField` | Preserve | Presentational field with a clear control. Filtering stays with the caller. The searching decisions stay as already written | None |
-| Sidebars | Playground sidebar and drawer | Preserve | Layout lock. Drawer rows are already 44px under 768px | None |
+| Search fields | `SearchField` | Locked | Navigation & Search lock in `DESIGN_SYSTEM.md`. Filtering stays with the caller. Open searching decisions stay separate | None |
+| Sidebars | Playground sidebar and drawer | Locked | Layout lock, plus the Navigation & Search lock in `DESIGN_SYSTEM.md`. Drawer rows are already 44px under 768px | None |
 | Tab bars / tab views | `Tabs` | Preserve | `tablist` and `aria-selected` in source. Tests exist. This review did not rerun them | None |
-| Path controls | `Breadcrumb` | Preserve | Current page uses `aria-current="page"`. Collapse exists for long trails | None |
+| Path controls | `Breadcrumb` | Locked | Navigation & Search lock in `DESIGN_SYSTEM.md`. Current page uses `aria-current="page"`. Narrow trails collapse the middle crumbs | None |
 | Token fields | None | Defer | Search stays a single field until a workflow needs editable tokens | Later |
-| Sheets | `BottomSheet` and dialog sheet | Preserve | Modal `<dialog>`, Escape, backdrop, and close in source. Sheet tests exist. This review did not rerun them | None |
-| Alerts | `ConfirmDialog` | Preserve | Critical confirm, including destructive copy on the dialog playground. Escape closed the open sample. Tab can leave the open dialog; that keyboard gap stays open | Medium |
-| Popovers | `AnchoredPopover`, menus, tooltips | Preserve | Popover API with viewport placement. Menus and tooltips use elevation 3 | None |
+| Sheets | `BottomSheet` and dialog sheet | Locked | Presentation lock in `DESIGN_SYSTEM.md`. A narrow payment note uses the existing dialog sheet. Desktop stays centered | None |
+| Alerts | `ConfirmDialog` | Locked | Presentation lock in `DESIGN_SYSTEM.md`. System experiences reuses it for delete, leave, cancel, and discard. Tab stays inside the dialog | None |
+| Popovers | `AnchoredPopover`, menus, tooltips | Locked | Presentation lock in `DESIGN_SYSTEM.md`. Tooltip and popover share `--color-surface-elevated`. The tooltip has a tail. The popover does not | None |
 | Panels | Inspector | Preserve | Layout lock. Supplementary, not a second modal system | None |
 | Scroll views | Page and dialog body scroll | Preserve | No custom scroll component. Dialog long-content sample exists | None |
 | Page controls | None | Do not adopt | No carousel or paged story | None |
 | Windows | None | Do not adopt | One web document. Dialogs and sheets are the temporary views | None |
 | Action sheets | `DropdownMenu` and `ConfirmDialog` | Do not adopt | A separate action sheet would duplicate the menu and the confirm dialog | None |
-| Text fields | `Input` and `Field` | Preserve | Label, error, disabled, and `aria-invalid` exist. Single-line input stays under the content lock | None |
-| Toggles | `Switch`, `Checkbox`, `Radio` | Preserve | Opposing or exclusive states. Switch, checkbox, and radio rows measured at least 44px at 390. No component test file for these three | Low |
-| Segmented controls | `SegmentedControl` | Preserve | Mobile hit area is 44px. The visible option stays `calc(var(--control-height) - 6px)`. Adjacent segments do not overlap | None |
-| Pickers | Date, range, time, and date-time | Preserve | Already locked. Their clear controls use the same mobile 44px hit extension as Search. The Time/Dialog lint gate stays separate | None |
+| Text fields | `Input` and `Field` | Locked | Selection & Input lock in `DESIGN_SYSTEM.md`. Soft input is 48 / 56 / 64. Single-line input stays under the content lock | None |
+| Toggles | `Switch`, `Checkbox`, `Radio` | Locked | Selection & Input lock in `DESIGN_SYSTEM.md`. Switch, checkbox, and radio rows measured at least 44px at 390 | None |
+| Segmented controls | `SegmentedControl` | Locked | Selection & Input lock in `DESIGN_SYSTEM.md`. Mobile hit area is 44px. Adjacent segments do not overlap | None |
+| Pickers | Date, range, time, and date-time | Locked | Date and time picker lock, used again by the Selection & Input lock. The Time/Dialog lint gate stays separate | None |
 | Sliders, steppers, rating indicators | None | Defer | No quantity, rating, or continuous value in the current product | Later |
-| Combo boxes | `Select` searchable | Preserve | In-menu filter. Do not add a second combo component | None |
+| Combo boxes | `Select` searchable | Locked | Selection & Input lock in `DESIGN_SYSTEM.md`. In-menu filter. Do not add a second combo component | None |
 | Color wells, digit entry, image wells, virtual keyboards | None | Do not adopt | Palette choice is an app setting. Amounts and times use the existing fields. Photos stay deferred under the content lock | None |
-| Progress indicators | `Button` loading and `Skeleton` | Defer | Indeterminate loading exists. A determinate bar waits until a task has a known duration | Later |
-| Badges | `Badge` | Constraint | Status chip is correct. Remove stays 18×18. A 44×44 hit area would cover the label and the next badge, so it was not added | None |
-| Empty states | `EmptyState` | Preserve | Title, description, and an optional action. Not an alert | None |
-| Notifications | `Toast` | Preserve | In-app, non-modal. Danger uses `role="alert"` in the component standard. This is not an operating-system notification | None |
+| Progress indicators | `Button` loading and `Skeleton` | Locked | Status lock in `DESIGN_SYSTEM.md`. Indeterminate only. A determinate bar stays deferred | Later |
+| Badges | `Badge` | Locked | Status lock in `DESIGN_SYSTEM.md`. The word, pip, and icon stay. Remove stays 18×18 | None |
+| Empty states | `EmptyState` | Locked | Presentation lock in `DESIGN_SYSTEM.md`. Status and System experiences reuse it. Title, description, and an optional action | None |
+| Notifications | `Toast` | Locked | Status and System experiences locks in `DESIGN_SYSTEM.md`. In-app, non-modal. Danger uses `role="alert"`. The right-edge countdown is locked with the toast | None |
 | Activity rings, gauges, rating indicators, status bars | None | Do not adopt | No fitness, sensor, or system-status surface | None |
 | Widgets, Live Activities, complications, App Shortcuts, Top Shelf, Watch faces | None | Do not adopt | Platform shells outside the PWA | None |
-| Help | `Tooltip` | Preserve | Focus shows the tip and sets `aria-describedby`. Escape hides it. A focused test covers that contract | None |
+| Help | `Tooltip` | Locked | Presentation lock in `DESIGN_SYSTEM.md`. Radius caps at 12px. The tail points at the trigger. Focus sets `aria-describedby`. Escape hides it | None |
 
 ## Keyboard focus
 
@@ -82,7 +84,7 @@ Headless Chrome on the running playground, using real Tab and Shift+Tab key even
 | Select | PASS | Shift+Tab returned to “Appearance, Stacked”. `:focus-visible`. The trigger sets `outline: none` and uses the inset primary band |
 | Segmented control | PASS | Tab reached the Day radio. `:focus-visible` with a solid 2px outline |
 | Tooltip | PASS | Shift+Tab returned to “More information” with a solid 2px outline. `aria-describedby` pointed at “Collapse is not available in this row” |
-| Dialog | FAIL | The open dialog focused Continue. Tab then moved focus to the page body while the dialog stayed open. Shift+Tab returned to Continue with a solid 2px outline |
+| Dialog | PASS | The earlier Tab leak is closed. `Dialog` wraps Tab and Shift+Tab inside the modal. `Dialog.test.tsx` covers that wrap, Escape, and focus return |
 
 Light and Dark overflow was 0 at 390 on Button, Inputs, Selects, Segmented, Dialogs, and Advanced. Reduced motion set the segmented thumb transition to 0s. The focus token on Mint was `#1b756c`.
 
@@ -93,8 +95,8 @@ The component decisions can be locked only with these exceptions written down. T
 - Badge remove stays 18×18. Future removal belongs on the parent row.
 - The light dialog panel keeps its custom shadow.
 - A real notched-phone safe area is not verified.
-- Tab can leave an open dialog. That is an open defect, not an accepted pattern.
-- The Time/Dialog ESLint gate stays open and is separate.
+- Dialog Tab containment is closed in the Presentation lock. `Dialog.tsx` still fails ESLint on `setOpenCycle` inside an effect. That lint gate stays open and is separate.
+- The Time picker ESLint gate stays open and is separate.
 
 Do not build a context menu, token field, slider, stepper, progress bar, page control, action sheet, or system widget until a product screen names it.
 

@@ -73,6 +73,16 @@
     color: var(--color-text-secondary);
   }
 
+  /* Soft only. Height stays fixed so the floating label can sit above the value. */
+  &[data-soft-input="true"] {
+    box-sizing: border-box;
+    height: var(--soft-input-height, 56px);
+    min-height: var(--soft-input-height, 56px);
+    padding-top: var(--soft-input-pad-top, 1.65rem);
+    padding-bottom: var(--soft-input-pad-bottom, 0.35rem);
+    line-height: 1.25;
+  }
+
 
   &[data-focus-motion="border-reveal"]:focus-visible:not([data-state]) {
     border-color: var(--color-primary);

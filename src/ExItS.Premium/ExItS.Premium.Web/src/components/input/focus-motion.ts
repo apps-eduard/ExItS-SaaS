@@ -9,7 +9,7 @@ export const INPUT_FOCUS_MOTION_DEFAULT: InputFocusMotion = "none";
 export const INPUT_FOCUS_REVEAL_MS = 1100;
 
 /** One lap of the running accent. It does not repeat while the field stays focused. */
-export const INPUT_FOCUS_TRACE_MS = 680;
+export const INPUT_FOCUS_TRACE_MS = 960;
 
 /** Signature draw from the bottom center to the top center. Starts on focus, with no delay. */
 export const INPUT_FOCUS_DRAW_MS = 1100;

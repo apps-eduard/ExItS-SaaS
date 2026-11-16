@@ -36,6 +36,22 @@ describe("Dialog", () => {
     expect(screen.getByRole("button", { name: "Open note" })).toHaveFocus();
   });
 
+  it("keeps Tab and Shift+Tab inside the dialog", async () => {
+    const user = userEvent.setup();
+    render(wrap(<Harness />));
+    await user.click(screen.getByRole("button", { name: "Open note" }));
+    const close = screen.getByRole("button", { name: "Close" });
+    const save = screen.getByRole("button", { name: "Save note" });
+    expect(close).toHaveFocus();
+    await user.tab();
+    expect(save).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(save).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Open note" })).not.toHaveFocus();
+  });
+
   it("closes from Escape", async () => {
     const user = userEvent.setup();
     render(wrap(<Harness />));

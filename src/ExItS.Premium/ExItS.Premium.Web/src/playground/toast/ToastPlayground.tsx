@@ -92,7 +92,7 @@ export function ToastPlayground() {
   return (
     <PlaygroundShell
       title="Toasts"
-      description="Transient notifications anchored by Position (six corners and centers). Info, Success, Warning, and Danger share elevation and dismiss. Hover pauses auto-dismiss. Show Toast fires the live stack — Cursor copy captures the recipe."
+      description="Transient notifications anchored by Position (six corners and centers). Info, Success, Warning, and Danger share elevation and dismiss. The right edge counts down until auto-dismiss. Hover or keyboard focus pauses that clock and the indicator together. Show Toast fires the live stack — Cursor copy captures the recipe."
       panes="equal"
       propertiesColumns={2}
       preview={

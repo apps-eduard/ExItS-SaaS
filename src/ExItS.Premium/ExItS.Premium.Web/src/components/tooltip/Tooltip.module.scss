@@ -12,7 +12,7 @@
   margin: 0;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
+  border-radius: min(var(--radius-control), 12px);
   background: var(--color-surface-elevated);
   color: var(--color-text);
   box-shadow: var(--elevation-3);
@@ -20,10 +20,59 @@
   font-weight: var(--type-caption-weight);
   line-height: var(--type-caption-line);
   pointer-events: none;
+  overflow: visible;
 
   &:popover-open,
   &[data-open="true"] {
     display: block;
+  }
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    left: var(--tooltip-tail, 1rem);
+    pointer-events: none;
+    background: var(--color-surface-elevated);
+    transform: translateX(-50%);
+  }
+
+  /* Cover the panel border where the tail joins, so the border does not cut the tail. */
+  &[data-side="top"]::before,
+  &[data-side="bottom"]::before {
+    z-index: 1;
+    width: 10px;
+    height: 2px;
+    transform: translateX(-50%);
+  }
+
+  /* 10px diamond. The outer point sits about 6px past the edge, overlapping the border. */
+  &[data-side="top"]::after,
+  &[data-side="bottom"]::after {
+    z-index: 0;
+    width: 10px;
+    height: 10px;
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  &[data-side="top"]::before {
+    bottom: -1px;
+  }
+
+  &[data-side="top"]::after {
+    bottom: -4px;
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  &[data-side="bottom"]::before {
+    top: -1px;
+  }
+
+  &[data-side="bottom"]::after {
+    top: -4px;
+    border-top: 1px solid var(--color-border);
+    border-left: 1px solid var(--color-border);
   }
 }
 

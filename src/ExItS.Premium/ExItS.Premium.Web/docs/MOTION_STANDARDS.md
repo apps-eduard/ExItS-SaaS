@@ -51,5 +51,9 @@ Dialog sheets and picker sheets are the same kind of motion with two implementat
 
 - Desktop dialog spring and the gentle sheet settle stay as they are until the sheet alignment above is approved.
 - Select menus keep their existing 300ms menu motion and local ease. Reduce Motion sets that animation to none.
-- Toast uses a local 200ms ease (`--toast-motion`). It is the same order as `--motion-base` and is not a second product scale.
+- Toast uses a local 200ms ease (`--toast-motion`). It is the same order as `--motion-base` and is not a second product scale. The entrance and exit stay as locked. The right-edge countdown is locked: linear 4000ms, the same clock as dismissal. Reduced motion hides that countdown.
 - Opt-in focus draw is 1100ms and linear. It is not the default focus treatment.
+
+## Playground review
+
+The Apple HIG review is `#hig-motion`. Foundations Motion stays at `#motion`. The review is not locked. It mounts the existing dialog, popover, tooltip, menu, sheet, button, soft input, select, segmented control, switch, toast, button spinner, and skeleton. It does not change their durations, easing, or reduced-motion rules. There is still no page transition. Aligning the dialog sheet spring with the picker sheet remains unapproved and is not done here.

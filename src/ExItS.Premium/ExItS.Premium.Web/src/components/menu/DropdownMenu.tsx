@@ -25,12 +25,34 @@ function enabledIndexes(items: MenuItem[]) {
   return items.flatMap((item, index) => (item.disabled ? [] : [index]));
 }
 
+/** Ordinary menus only. Select, tooltip, and picker popovers stay out of this set. */
+const openMenus = new Set<() => void>();
+
+function claimMenu(close: () => void) {
+  for (const other of openMenus) {
+    if (other !== close) other();
+  }
+  openMenus.add(close);
+}
+
 export function DropdownMenu({ label, items, onSelect, iconOnly = false }: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const quietlyClose = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const close = () => {
+      openMenus.delete(close);
+      setOpen(false);
+    };
+    quietlyClose.current = close;
+    return () => {
+      openMenus.delete(close);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -65,8 +87,15 @@ export function DropdownMenu({ label, items, onSelect, iconOnly = false }: Dropd
   }, [open]);
 
   useEffect(() => {
-    if (!open) hideOverlay(menuRef.current);
+    if (open) return;
+    openMenus.delete(quietlyClose.current);
+    hideOverlay(menuRef.current);
   }, [open]);
+
+  function openThis() {
+    claimMenu(quietlyClose.current);
+    setOpen(true);
+  }
 
   function close(restore = true) {
     setOpen(false);
@@ -98,7 +127,10 @@ export function DropdownMenu({ label, items, onSelect, iconOnly = false }: Dropd
       aria-expanded={open}
       aria-controls={menuId}
       aria-label={iconOnly ? label : undefined}
-      onClick={() => setOpen((value) => !value)}
+      onClick={() => {
+        if (open) close(false);
+        else openThis();
+      }}
     >
       {iconOnly ? null : label}
     </Button>

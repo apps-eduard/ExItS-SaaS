@@ -82,6 +82,7 @@ export function Input({
           id={fieldId}
           className={[styles.control, surfaced ? appearanceStyles.control : "", className].filter(Boolean).join(" ")}
           data-appearance={surfaced ? appearance : undefined}
+          data-soft-input={appearance === "soft" ? "true" : undefined}
           value={value}
           defaultValue={value === undefined ? defaultValue : undefined}
           disabled={disabled}

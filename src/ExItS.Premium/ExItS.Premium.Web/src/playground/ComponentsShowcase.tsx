@@ -18,6 +18,13 @@ import { ButtonPlayground } from "./button/ButtonPlayground";
 import { DialogPlayground } from "./dialog/DialogPlayground";
 import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
+import { MenusActionsReview } from "./hig/MenusActionsReview";
+import { NavigationSearchReview } from "./hig/NavigationSearchReview";
+import { PresentationReview } from "./hig/PresentationReview";
+import { SelectionInputReview } from "./hig/SelectionInputReview";
+import { StatusReview } from "./hig/StatusReview";
+import { SystemExperiencesReview } from "./hig/SystemExperiencesReview";
+import { MotionReview } from "./hig/MotionReview";
 import { ToastPlayground } from "./toast/ToastPlayground";
 import styles from "./Playground.module.scss";
 
@@ -57,6 +64,13 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "radio") return <RadioSection />;
   if (id === "segmented") return <SegmentedSection />;
   if (id === "advanced") return <AdvancedShowcase />;
+  if (id === "menus-actions") return <MenusActionsReview />;
+  if (id === "navigation-search") return <NavigationSearchReview />;
+  if (id === "presentation") return <PresentationReview />;
+  if (id === "selection-input") return <SelectionInputReview />;
+  if (id === "status") return <StatusReview />;
+  if (id === "system-experiences") return <SystemExperiencesReview />;
+  if (id === "hig-motion") return <MotionReview />;
   if (id === "component-states") return <StatesSection />;
   return null;
 }

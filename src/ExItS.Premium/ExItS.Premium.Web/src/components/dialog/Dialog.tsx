@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 import { motion, useReducedMotion } from "motion/react";
 import { ExIcon } from "../../icons/ExIcon";
 import type { IconName } from "../../icons/registry";
+import { trapTab } from "../date/focus";
 import { Button } from "../button/Button";
 import {
   DIALOG_TRANSITION_DEFAULT,
@@ -155,17 +156,24 @@ export function Dialog({
     });
   }, [open]);
 
-  // After the panel has laid out at y:100%, advance to open (setTimeout survives rAF throttling).
+  // Chrome paints a top-layer dialog a frame after showModal. Wait two frames so
+  // Motion measures the initial pose on a visible panel, then starts the open tween.
   useEffect(() => {
     if (phase !== "mounted") return;
-    const timer = window.setTimeout(() => {
-      setPhase((current) => (current === "mounted" ? "open" : current));
-    }, 0);
-    return () => window.clearTimeout(timer);
+    let second = 0;
+    const first = window.requestAnimationFrame(() => {
+      second = window.requestAnimationFrame(() => {
+        setPhase((current) => (current === "mounted" ? "open" : current));
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(first);
+      if (second) window.cancelAnimationFrame(second);
+    };
   }, [phase]);
 
   useLayoutEffect(() => {
-    if (phase !== "mounted" && phase !== "open") return;
+    if (phase !== "mounted") return;
     const dialog = dialogRef.current;
     if (!dialog?.open) return;
     const target =
@@ -238,7 +246,9 @@ export function Dialog({
         if (event.key === "Escape") {
           event.preventDefault();
           if (dismissible) requestClose();
+          return;
         }
+        trapTab(event, event.currentTarget);
       }}
       onClick={(event) => {
         if (!dismissible) return;
@@ -246,6 +256,7 @@ export function Dialog({
         requestClose();
       }}
     >
+      <div className={styles.scene}>
       <motion.div
         key={openCycle}
         ref={panelRef}
@@ -287,6 +298,7 @@ export function Dialog({
         {children ? <div className={styles.body}>{children}</div> : null}
         {footer ? <div className={styles.footer}>{footer}</div> : null}
       </motion.div>
+      </div>
     </dialog>
   );
 }

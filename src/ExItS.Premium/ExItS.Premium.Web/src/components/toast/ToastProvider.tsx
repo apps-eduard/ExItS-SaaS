@@ -23,6 +23,9 @@ export type ToastPosition = (typeof TOAST_POSITIONS)[number];
 
 export const TOAST_DEFAULT_POSITION: ToastPosition = "bottom-end";
 
+/** Auto-dismiss length. The right-edge countdown uses this same value. */
+export const TOAST_DISMISS_MS = 4000;
+
 export type ToastInput = {
   title: string;
   description?: string;
@@ -45,6 +48,101 @@ const ICONS: Record<ToastTone, IconName> = {
   danger: "error",
 };
 
+function ToastCard({ toast, onDismiss }: { toast: ToastRecord; onDismiss: (id: number) => void }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const hold = useRef({ hover: false, focus: false });
+  const clock = useRef<{ pause: () => void; resume: () => void } | null>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    let timer = 0;
+    let frame = 0;
+    let remaining = TOAST_DISMISS_MS;
+    let started = 0;
+    let paused = false;
+    let running = false;
+
+    const clearTimer = () => window.clearTimeout(timer);
+
+    const arm = (ms: number) => {
+      clearTimer();
+      remaining = ms;
+      started = performance.now();
+      running = true;
+      timer = window.setTimeout(() => onDismiss(toast.id), ms);
+    };
+
+    const pause = () => {
+      if (paused) return;
+      if (running) {
+        remaining = Math.max(0, remaining - (performance.now() - started));
+        clearTimer();
+        running = false;
+      }
+      paused = true;
+      root?.setAttribute("data-paused", "true");
+    };
+
+    const resume = () => {
+      if (!paused) return;
+      paused = false;
+      root?.removeAttribute("data-paused");
+      arm(remaining);
+    };
+
+    clock.current = { pause, resume };
+    frame = window.requestAnimationFrame(() => {
+      root?.setAttribute("data-countdown", "run");
+      if (!paused) arm(remaining);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      clearTimer();
+      clock.current = null;
+    };
+  }, [onDismiss, toast.id]);
+
+  function setHold(kind: "hover" | "focus", active: boolean) {
+    hold.current[kind] = active;
+    if (hold.current.hover || hold.current.focus) clock.current?.pause();
+    else clock.current?.resume();
+  }
+
+  return (
+    <div
+      ref={rootRef}
+      className={`${styles.toast} ${styles[toast.tone]}`}
+      role={toast.tone === "danger" ? "alert" : "status"}
+      onMouseEnter={() => setHold("hover", true)}
+      onMouseLeave={() => setHold("hover", false)}
+      onFocusCapture={() => setHold("focus", true)}
+      onBlurCapture={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        setHold("focus", false);
+      }}
+    >
+      <span className={styles.icon} aria-hidden="true">
+        <ExIcon name={ICONS[toast.tone]} size={18} />
+      </span>
+      <div className={styles.copy}>
+        <strong className={styles.title}>{toast.title}</strong>
+        {toast.description ? <span className={styles.description}>{toast.description}</span> : null}
+      </div>
+      <Button
+        className={styles.dismiss}
+        variant="ghost"
+        iconOnly
+        aria-label="Dismiss notification"
+        onClick={() => onDismiss(toast.id)}
+        icon={<ExIcon name="close" size={16} />}
+      />
+      <span className={styles.countdown} data-toast-countdown="" aria-hidden="true" />
+    </div>
+  );
+}
+
 export function ToastProvider({
   children,
   position: positionProp,
@@ -60,7 +158,6 @@ export function ToastProvider({
   const [uncontrolledPosition, setUncontrolledPosition] = useState<ToastPosition>(defaultPosition);
   const position = positionProp ?? uncontrolledPosition;
   const regionRef = useRef<HTMLDivElement>(null);
-  const timers = useRef(new Map<number, number>());
   const nextId = useRef(1);
 
   const setPosition = useCallback(
@@ -71,33 +168,14 @@ export function ToastProvider({
   );
 
   const dismiss = useCallback((id: number) => {
-    const timer = timers.current.get(id);
-    if (timer) window.clearTimeout(timer);
-    timers.current.delete(id);
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const schedule = useCallback(
-    (id: number) => {
-      const existing = timers.current.get(id);
-      if (existing) window.clearTimeout(existing);
-      timers.current.set(
-        id,
-        window.setTimeout(() => dismiss(id), 4000),
-      );
-    },
-    [dismiss],
-  );
-
-  const push = useCallback(
-    (toast: ToastInput) => {
-      const id = nextId.current;
-      nextId.current += 1;
-      setToasts((current) => [...current, { ...toast, id, tone: toast.tone ?? "info" }].slice(-4));
-      schedule(id);
-    },
-    [schedule],
-  );
+  const push = useCallback((toast: ToastInput) => {
+    const id = nextId.current;
+    nextId.current += 1;
+    setToasts((current) => [...current, { ...toast, id, tone: toast.tone ?? "info" }].slice(-4));
+  }, []);
 
   useEffect(() => {
     const region = regionRef.current;
@@ -124,32 +202,7 @@ export function ToastProvider({
         aria-label="Notifications"
       >
         {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`${styles.toast} ${styles[toast.tone]}`}
-            role={toast.tone === "danger" ? "alert" : "status"}
-            onMouseEnter={() => {
-              const timer = timers.current.get(toast.id);
-              if (timer) window.clearTimeout(timer);
-            }}
-            onMouseLeave={() => schedule(toast.id)}
-          >
-            <span className={styles.icon} aria-hidden="true">
-              <ExIcon name={ICONS[toast.tone]} size={18} />
-            </span>
-            <div className={styles.copy}>
-              <strong className={styles.title}>{toast.title}</strong>
-              {toast.description ? <span className={styles.description}>{toast.description}</span> : null}
-            </div>
-            <Button
-              className={styles.dismiss}
-              variant="ghost"
-              iconOnly
-              aria-label="Dismiss notification"
-              onClick={() => dismiss(toast.id)}
-              icon={<ExIcon name="close" size={16} />}
-            />
-          </div>
+          <ToastCard key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
       </div>
     </ToastContext.Provider>

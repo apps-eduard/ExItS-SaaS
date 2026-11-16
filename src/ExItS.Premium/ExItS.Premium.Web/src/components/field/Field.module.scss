@@ -123,12 +123,62 @@
   line-height: var(--type-label-line);
 }
 
-.field[data-placement="float"]:has([data-appearance="soft"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+.field[data-placement="float"]:has([data-appearance="soft"]:not([data-soft-input="true"])):is(:focus-within, :has([data-filled="true"])) .floatLabel {
   top: 0.2rem;
   padding-inline: 0;
   background: transparent;
   transform: none;
   line-height: var(--type-label-line);
+}
+
+.field:has([data-soft-input="true"]) {
+  --soft-input-height: 56px;
+  --soft-label-scale: 0.8;
+  --soft-label-shift: -72%;
+  --soft-input-pad-top: 1.65rem;
+  --soft-input-pad-bottom: 0.35rem;
+  --soft-label-motion: 360ms;
+}
+
+:global([data-density="compact"]) .field:has([data-soft-input="true"]) {
+  --soft-input-height: 48px;
+  --soft-label-scale: 0.79;
+  --soft-label-shift: -78%;
+  --soft-input-pad-top: 1.4rem;
+  --soft-input-pad-bottom: 0.25rem;
+}
+
+:global([data-density="large"]) .field:has([data-soft-input="true"]) {
+  --soft-input-height: 64px;
+  --soft-label-scale: 0.81;
+  --soft-label-shift: -64%;
+  --soft-input-pad-top: 1.85rem;
+  --soft-input-pad-bottom: 0.4rem;
+}
+
+.field[data-placement="float"]:has([data-soft-input="true"]) .floatLabel {
+  top: 50%;
+  font-size: var(--density-control-font);
+  line-height: 1.2;
+  transform: translateY(-50%) scale(1);
+  transform-origin: left top;
+  transition:
+    transform var(--soft-label-motion) var(--motion-ease),
+    color var(--soft-label-motion) var(--motion-ease);
+}
+
+.field[data-placement="float"]:has([data-soft-input="true"]) .floatLabel .labelText {
+  padding-block: 0;
+}
+
+.field[data-placement="float"]:has([data-soft-input="true"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
+  top: 50%;
+  padding-inline: 0;
+  background: transparent;
+  font-size: var(--density-control-font);
+  line-height: 1.2;
+  transform: translateY(calc(-50% + var(--soft-label-shift))) scale(var(--soft-label-scale));
+  transform-origin: left top;
 }
 
 .field[data-placement="float"][data-disabled="true"]:has([data-appearance="outlined"]):is(:focus-within, :has([data-filled="true"])) .floatLabel {
@@ -149,7 +199,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .floatLabel,
-  .field[data-label-motion="rise"] .label {
+  .field[data-label-motion="rise"] .label,
+  .field[data-placement="float"]:has([data-soft-input="true"]) .floatLabel {
     transition: none;
   }
 }
