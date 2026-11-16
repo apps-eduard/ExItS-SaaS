@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import {
   DEFAULT_APPEARANCE,
+  PREMIUM_STORAGE_KEYS,
+  appearancesMatch,
   applyAppearanceAttributes,
   readAppearance,
   resolveTheme,
@@ -27,6 +29,18 @@ const AppearanceContext = createContext<AppearanceContextValue | null>(null);
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const [appearance, setAppearance] = useState<Appearance>(() => readAppearance(window.localStorage));
   const [systemDark, setSystemDark] = useState(systemPrefersDark);
+
+  useEffect(() => {
+    function onStorage(event: StorageEvent) {
+      if (event.storageArea && event.storageArea !== window.localStorage) return;
+      const keys = Object.values(PREMIUM_STORAGE_KEYS) as string[];
+      if (event.key && !keys.includes(event.key)) return;
+      const next = readAppearance(window.localStorage);
+      setAppearance((current) => (appearancesMatch(current, next) ? current : next));
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   useEffect(() => {
     const query = window.matchMedia?.("(prefers-color-scheme: dark)");

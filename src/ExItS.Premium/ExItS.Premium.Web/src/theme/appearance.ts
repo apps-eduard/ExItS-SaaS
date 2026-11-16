@@ -47,6 +47,10 @@ function pick<T extends string>(value: string | null, allowed: readonly T[], fal
   return allowed.includes(value as T) ? (value as T) : fallback;
 }
 
+export function appearancesMatch(left: Appearance, right: Appearance) {
+  return left.theme === right.theme && left.palette === right.palette && left.radius === right.radius && left.density === right.density;
+}
+
 export function readAppearance(storage: Pick<Storage, "getItem">): Appearance {
   return {
     theme: pick(storage.getItem(PREMIUM_STORAGE_KEYS.theme), THEMES, DEFAULT_APPEARANCE.theme),
