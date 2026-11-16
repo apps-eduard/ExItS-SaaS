@@ -23,7 +23,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/theme/AppearanceProvider.tsx", "src/components/toast/ToastProvider.tsx", "src/components/menu/DropdownMenu.tsx", "src/icons/ExIcon.tsx"],
+    files: ["src/theme/AppearanceProvider.tsx", "src/components/toast/ToastProvider.tsx", "src/components/menu/DropdownMenu.tsx", "src/icons/ExIcon.tsx", "src/auth/SessionProvider.tsx"],
     rules: {
       "react-refresh/only-export-components": "off",
     },

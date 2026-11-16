@@ -23,6 +23,7 @@ export const ICON_NAMES = [
   "left_click",
   "left_panel_close",
   "left_panel_open",
+  "lock",
   "menu",
   "more_vert",
   "notifications",
@@ -41,6 +42,8 @@ export const ICON_NAMES = [
   "tune",
   "unfold_more",
   "view_column",
+  "visibility",
+  "visibility_off",
   "warning",
   "widgets",
 ] as const;

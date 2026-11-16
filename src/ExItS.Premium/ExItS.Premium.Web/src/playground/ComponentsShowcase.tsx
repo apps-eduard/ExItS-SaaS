@@ -18,6 +18,7 @@ import { ButtonPlayground } from "./button/ButtonPlayground";
 import { DialogPlayground } from "./dialog/DialogPlayground";
 import { InputPlayground } from "./input/InputPlayground";
 import { SelectPlayground } from "./select/SelectPlayground";
+import { AuthenticationPlayground } from "./authentication/AuthenticationPlayground";
 import { ToastPlayground } from "./toast/ToastPlayground";
 import styles from "./Playground.module.scss";
 
@@ -58,6 +59,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "segmented") return <SegmentedSection />;
   if (id === "advanced") return <AdvancedShowcase />;
   if (id === "component-states") return <StatesSection />;
+  if (id === "authentication") return <AuthenticationPlayground />;
   return null;
 }
 

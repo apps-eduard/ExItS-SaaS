@@ -1,0 +1,26 @@
+.properties {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.states {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.full {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-primary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-primary-hover);
+  }
+}
