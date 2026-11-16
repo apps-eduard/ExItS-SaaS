@@ -188,6 +188,9 @@ export function Playground() {
             aria-label="Appearance"
             onClick={() => setAppearanceOpen(true)}
           />
+          <a className={styles.homeLink} href="/personal/home" aria-label="Personal home">
+            <AppIcon name="dashboard" />
+          </a>
         </div>
       </aside>
       <div className={styles.center}>

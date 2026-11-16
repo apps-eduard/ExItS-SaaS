@@ -37,6 +37,7 @@ export const SECTION_IDS = [
   "status",
   "system-experiences",
   "hig-motion",
+  "authentication",
 ] as const;
 
 export type SectionId = (typeof SECTION_IDS)[number];
@@ -135,6 +136,7 @@ export const NAV_GROUPS: Array<{ label: string; items: NavEntry[] }> = [
   {
     label: "Previews",
     items: [
+      { id: "authentication", label: "Authentication", icon: "lock" },
       { id: "mobile-preview", label: "Mobile Preview", icon: "smartphone" },
       { id: "component-states", label: "Component States", icon: "checklist" },
       { id: "personal-concept", label: "Personal UI Concept", icon: "account_balance_wallet" },

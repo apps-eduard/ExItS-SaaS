@@ -98,4 +98,15 @@ describe("playground nav", () => {
     expect(resolveSectionId("dialogs")).toBe("dialogs");
     expect(navLeaves().some((leaf) => leaf.id === "dialogs")).toBe(true);
   });
+
+  it("exposes Authentication in the Previews sidenav", () => {
+    const previews = NAV_GROUPS.find((group) => group.label === "Previews");
+    const auth = previews?.items.find((entry) => !isNavBranch(entry) && entry.id === "authentication");
+    expect(auth && !isNavBranch(auth)).toBe(true);
+    if (!auth || isNavBranch(auth)) return;
+    expect(auth.label).toBe("Authentication");
+    expect(auth.icon).toBe("lock");
+    expect(resolveSectionId("authentication")).toBe("authentication");
+    expect(navLeaves().some((leaf) => leaf.id === "authentication")).toBe(true);
+  });
 });

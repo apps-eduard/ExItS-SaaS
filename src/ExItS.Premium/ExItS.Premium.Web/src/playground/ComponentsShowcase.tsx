@@ -26,6 +26,7 @@ import { SelectionInputReview } from "./hig/SelectionInputReview";
 import { StatusReview } from "./hig/StatusReview";
 import { SystemExperiencesReview } from "./hig/SystemExperiencesReview";
 import { MotionReview } from "./hig/MotionReview";
+import { AuthenticationPlayground } from "./authentication/AuthenticationPlayground";
 import { ToastPlayground } from "./toast/ToastPlayground";
 import styles from "./Playground.module.scss";
 
@@ -74,6 +75,7 @@ export function ComponentsShowcase({ id }: { id: SectionId }) {
   if (id === "system-experiences") return <SystemExperiencesReview />;
   if (id === "hig-motion") return <MotionReview />;
   if (id === "component-states") return <StatesSection />;
+  if (id === "authentication") return <AuthenticationPlayground />;
   return null;
 }
 

@@ -426,4 +426,6 @@ Material Symbols Rounded through `ExIcon`. See `ICON_STANDARDS.md`.
 
 ## Playground
 
-`http://127.0.0.1:5180/design-system` shows foundations, components, and the sample personal concept. Colors and Elevation are the visual reference for later Personal work. The concept uses labeled sample data and does not call an API.
+`http://127.0.0.1:5180/design-system` shows foundations, components, Apple HIG reviews, and the sample personal concept. Colors and Elevation are the visual reference for later Personal work. The concept uses labeled sample data and does not call an API.
+
+Data Table at `#data-table` is integrated and stays **unlocked** until visual approval. Personal Home and the login screen are integrated and stay **unlocked** until visual approval. Motion at `#hig-motion` stays unlocked. Foundations Motion stays at `#motion`.

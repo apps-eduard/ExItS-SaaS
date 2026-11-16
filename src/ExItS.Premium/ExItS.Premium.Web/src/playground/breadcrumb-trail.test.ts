@@ -62,6 +62,13 @@ describe("playgroundBreadcrumbTrail", () => {
     ]);
   });
 
+  it("maps Authentication through the Previews group", () => {
+    const trail = playgroundBreadcrumbTrail("authentication");
+    expect(trail.map((item) => item.label)).toEqual(["Design System", "Previews", "Authentication"]);
+    expect(trail[2]?.href).toBeUndefined();
+    expect(resolveSectionId("authentication")).toBe("authentication");
+  });
+
   it("treats overview as the Design System root", () => {
     const trail = playgroundBreadcrumbTrail("overview");
     expect(trail).toHaveLength(1);
