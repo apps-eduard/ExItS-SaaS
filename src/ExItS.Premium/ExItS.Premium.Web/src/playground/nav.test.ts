@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { playgroundBreadcrumbTrail } from "./breadcrumb-trail";
 import { NAV_GROUPS, branchContains, isNavBranch, navLeaves, resolveSectionId } from "./nav";
 
 describe("playground nav", () => {
@@ -66,6 +67,25 @@ describe("playground nav", () => {
     expect(resolveSectionId("navigation-search")).toBe("navigation-search");
     const components = NAV_GROUPS.find((group) => group.label === "Components");
     expect(components?.items.some((entry) => !isNavBranch(entry) && entry.id === "date-time")).toBe(true);
+  });
+
+  it("exposes Data Table in the Components sidenav", () => {
+    const components = NAV_GROUPS.find((group) => group.label === "Components");
+    const table = components?.items.find((entry) => !isNavBranch(entry) && entry.id === "data-table");
+    const checkboxes = components?.items.findIndex((entry) => !isNavBranch(entry) && entry.id === "checkboxes");
+    const tableIndex = components?.items.findIndex((entry) => !isNavBranch(entry) && entry.id === "data-table");
+    expect(table && !isNavBranch(table)).toBe(true);
+    if (!table || isNavBranch(table)) return;
+    expect(table.label).toBe("Data Table");
+    expect(table.icon).toBe("table");
+    expect(tableIndex).toBe((checkboxes ?? -1) + 1);
+    expect(resolveSectionId("data-table")).toBe("data-table");
+    expect(navLeaves().some((leaf) => leaf.id === "data-table")).toBe(true);
+    expect(playgroundBreadcrumbTrail("data-table").map((item) => item.label)).toEqual([
+      "Design System",
+      "Components",
+      "Data Table",
+    ]);
   });
 
   it("exposes Dialogs in the Components sidenav", () => {

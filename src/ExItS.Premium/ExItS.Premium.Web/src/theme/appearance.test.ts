@@ -4,6 +4,7 @@ import {
   DEFAULT_APPEARANCE,
   PREMIUM_STORAGE_KEYS,
   V1_UI_PREFERENCES_KEY,
+  appearancesMatch,
   applyAppearanceAttributes,
   readAppearance,
   resolveTheme,
@@ -35,6 +36,11 @@ describe("premium appearance storage", () => {
     expect(readAppearance(storage).palette).toBe("teal");
     storage.setItem(PREMIUM_STORAGE_KEYS.palette, "violet");
     expect(readAppearance(storage).palette).toBe("violet");
+  });
+
+  it("treats the same appearance as unchanged so a preview frame does not echo storage writes", () => {
+    expect(appearancesMatch(DEFAULT_APPEARANCE, { ...DEFAULT_APPEARANCE })).toBe(true);
+    expect(appearancesMatch(DEFAULT_APPEARANCE, { ...DEFAULT_APPEARANCE, theme: "dark" })).toBe(false);
   });
 
   it("ignores invalid stored values", () => {
