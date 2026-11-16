@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { Breadcrumb } from "../components/breadcrumb";
 import { Button } from "../components/button/Button";
+import { Tooltip } from "../components/tooltip/Tooltip";
 import { AppIcon } from "../icons/ExIcon";
 import { AppearanceControls } from "./AppearanceControls";
 import { playgroundBreadcrumbTrail } from "./breadcrumb-trail";
@@ -188,15 +189,22 @@ export function Playground() {
             aria-label="Appearance"
             onClick={() => setAppearanceOpen(true)}
           />
-          <a className={styles.homeLink} href="/personal/home" aria-label="Personal home">
-            <AppIcon name="dashboard" />
-          </a>
+          <Tooltip content="Personal home">
+            <a className={styles.homeLink} href="/personal/home" aria-label="Personal home">
+              <AppIcon name="dashboard" />
+            </a>
+          </Tooltip>
         </div>
       </aside>
       <div className={styles.center}>
         <header className={styles.topbar}>
           <Button variant="ghost" iconOnly icon={<AppIcon name="menu" />} aria-label="Open sections" onClick={() => setNavOpen(true)} />
           <p className={styles.topTitle}>{current?.label ?? "Design system"}</p>
+          <Tooltip content="Personal home">
+            <a className={styles.homeLink} href="/personal/home" aria-label="Personal home">
+              <AppIcon name="dashboard" />
+            </a>
+          </Tooltip>
           <Button variant="ghost" iconOnly icon={<AppIcon name="tune" />} aria-label="Appearance" onClick={() => setAppearanceOpen(true)} />
         </header>
         <main id="content" tabIndex={-1} className={styles.main}>

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { listEligibleOrganizations, selectOrganization, type EligibleOrganization, type PlatformSession } from "../auth/platform-client";
+import { PERSONAL_HOME_PATH } from "../auth/model";
+import { listAccountProfiles, listEligibleOrganizations, selectOrganization, type EligibleOrganization, type PlatformSession } from "../auth/platform-client";
+import { switchToAuthorizedPersonalProfile } from "../auth/profile-preference";
 import { Button } from "../components/button/Button";
 import { friendlyLoadError } from "./home-data";
 import styles from "./WorkspaceUnavailable.module.scss";
 
 export function WorkspaceUnavailable({ session, onLogout }: { session: PlatformSession; onLogout: () => void }) {
   const [orgs, setOrgs] = useState<EligibleOrganization[] | null>(null);
+  const [canSwitchPersonal, setCanSwitchPersonal] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -22,6 +25,20 @@ export function WorkspaceUnavailable({ session, onLogout }: { session: PlatformS
       active = false;
     };
   }, [session.selectedOrganizationId]);
+
+  useEffect(() => {
+    if (session.organizationContextLocked) return;
+    let active = true;
+    void listAccountProfiles().then((profiles) => {
+      if (!active) return;
+      setCanSwitchPersonal(profiles.some((profile) => profile.accountClass.trim().toLowerCase() === "personal" && profile.status.trim().toLowerCase() === "active"));
+    }).catch(() => {
+      if (active) setCanSwitchPersonal(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session.organizationContextLocked]);
 
   const selected = session.selectedOrganizationDisplayName;
   const several = (orgs?.length ?? session.activeOrganizationCount) > 1;
@@ -62,7 +79,32 @@ export function WorkspaceUnavailable({ session, onLogout }: { session: PlatformS
             ))}
           </ul>
         ) : null}
-        <Button type="button" variant="danger" appearance="outline" onClick={onLogout}>Log out</Button>
+        {canSwitchPersonal && !session.organizationContextLocked ? (
+          <Button
+            type="button"
+            variant="secondary"
+            appearance="outline"
+            loading={busy === "personal"}
+            disabled={busy !== null}
+            onClick={() => {
+              setBusy("personal");
+              void switchToAuthorizedPersonalProfile().then((moved) => {
+                if (moved) {
+                  window.location.replace(PERSONAL_HOME_PATH);
+                  return;
+                }
+                setBusy(null);
+                setProblem("That account profile is not available.");
+              }).catch((error: unknown) => {
+                setBusy(null);
+                setProblem(friendlyLoadError(error));
+              });
+            }}
+          >
+            Switch to Personal
+          </Button>
+        ) : null}
+        <Button type="button" variant="danger" appearance="outline" disabled={busy !== null} onClick={onLogout}>Log out</Button>
       </section>
     </main>
   );

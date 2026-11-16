@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { listAccountProfiles } from "../auth/platform-client";
+import { switchToAuthorizedOrganizationProfile } from "../auth/profile-preference";
 import { useSession } from "../auth/SessionProvider";
-import { AUTH_PREVIEW_PATH } from "../auth/model";
+import { AUTH_PREVIEW_PATH, WORKSPACE_PATH } from "../auth/model";
 import { Button } from "../components/button/Button";
 import { AppIcon } from "../icons/ExIcon";
 import type { IconName } from "../icons/registry";
@@ -42,19 +44,21 @@ export function PersonalHome({
   email,
   snapshot,
   onLogout,
+  onSwitchProfile,
   onRetry,
 }: {
   name: string;
   email: string;
   snapshot: HomeSnapshot;
   onLogout: () => void;
+  onSwitchProfile?: () => Promise<boolean>;
   onRetry?: () => void;
 }) {
   const [actionNote, setActionNote] = useState<string | null>(null);
   const failed = Object.values(snapshot.unavailable)[0];
 
   return (
-    <PersonalShell title="Home" name={name} email={email} onLogout={onLogout}>
+    <PersonalShell title="Home" name={name} email={email} onLogout={onLogout} onSwitchProfile={onSwitchProfile}>
       <section className={styles.welcome}>
         <p className={styles.kicker}>Personal</p>
         <h2>Hello, {name}</h2>
@@ -131,6 +135,21 @@ export function PersonalHomeScreen() {
   const { session, logout } = useSession();
   const [snapshot, setSnapshot] = useState<HomeSnapshot | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [canSwitchProfile, setCanSwitchProfile] = useState(false);
+
+  useEffect(() => {
+    if (!session || session.organizationContextLocked) return;
+    let active = true;
+    void listAccountProfiles().then((profiles) => {
+      if (!active) return;
+      setCanSwitchProfile(profiles.some((profile) => profile.accountClass.trim().toLowerCase() === "organization" && profile.status.trim().toLowerCase() === "active"));
+    }).catch(() => {
+      if (active) setCanSwitchProfile(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   useEffect(() => {
     let active = true;
@@ -155,6 +174,11 @@ export function PersonalHomeScreen() {
       email={session.email}
       snapshot={snapshot}
       onRetry={() => setAttempt((value) => value + 1)}
+      onSwitchProfile={canSwitchProfile && !session.organizationContextLocked ? async () => {
+        const moved = await switchToAuthorizedOrganizationProfile();
+        if (moved) window.location.replace(WORKSPACE_PATH);
+        return moved;
+      } : undefined}
       onLogout={() => {
         void logout().finally(() => window.location.replace(AUTH_PREVIEW_PATH));
       }}

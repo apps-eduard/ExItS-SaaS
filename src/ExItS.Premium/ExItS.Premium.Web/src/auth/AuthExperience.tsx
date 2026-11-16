@@ -8,7 +8,8 @@ import {
   type AuthDemonstration,
   type AuthScreenId,
 } from "./model";
-import { currentSession, loginWithPassword, registerPersonalAccount, requestPasswordReset, resetPassword, resetTokenFromLocation } from "./platform-client";
+import { preferAuthorizedPersonalProfile } from "./profile-preference";
+import { loginWithPassword, registerPersonalAccount, requestPasswordReset, resetPassword, resetTokenFromLocation } from "./platform-client";
 import styles from "./AuthExperience.module.scss";
 
 type AuthView = "form" | "instructions" | "updated";
@@ -121,7 +122,7 @@ export function AuthExperience({
     ? {
         login: async (input: { email: string; password: string }) => {
           await loginWithPassword(input.email, input.password);
-          const session = await currentSession();
+          const session = await preferAuthorizedPersonalProfile();
           window.location.replace(accountHome(session?.accountClass));
         },
         register: async (input: { name: string; email: string }) => {

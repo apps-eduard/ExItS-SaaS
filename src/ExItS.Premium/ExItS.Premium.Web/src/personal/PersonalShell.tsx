@@ -31,12 +31,14 @@ export function PersonalShell({
   name,
   email,
   onLogout,
+  onSwitchProfile,
   children,
 }: {
   title: string;
   name: string;
   email: string;
   onLogout: () => void;
+  onSwitchProfile?: () => Promise<boolean>;
   children: ReactNode;
 }) {
   const appearance = useAppearance();
@@ -132,6 +134,21 @@ export function PersonalShell({
                 <Button type="button" variant="secondary" appearance="outline" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
                   Appearance
                 </Button>
+                {onSwitchProfile ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    appearance="outline"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      void onSwitchProfile().then((moved) => {
+                        if (!moved) setNotice("That account profile is not available.");
+                      });
+                    }}
+                  >
+                    Switch profile
+                  </Button>
+                ) : null}
                 <Button type="button" variant="danger" appearance="outline" onClick={onLogout}>
                   Log out
                 </Button>

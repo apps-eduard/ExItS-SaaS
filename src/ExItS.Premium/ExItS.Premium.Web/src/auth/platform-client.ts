@@ -22,6 +22,13 @@ export type PlatformSession = {
   organizationSelectionState: string | null;
   activeOrganizationCount: number;
   homeOrganizationId: string | null;
+  organizationContextLocked: boolean;
+};
+
+export type AccountProfile = {
+  id: string;
+  accountClass: string;
+  status: string;
 };
 
 export type EligibleOrganization = {
@@ -77,6 +84,7 @@ function sessionFrom(body: {
   organizationSelectionState?: string | null;
   activeOrganizationCount?: number;
   homeOrganizationId?: string | null;
+  organizationContextLocked?: boolean;
 }): PlatformSession {
   return {
     userId: body.userId ?? "",
@@ -88,6 +96,7 @@ function sessionFrom(body: {
     organizationSelectionState: body.organizationSelectionState ?? null,
     activeOrganizationCount: body.activeOrganizationCount ?? 0,
     homeOrganizationId: body.homeOrganizationId ?? null,
+    organizationContextLocked: body.organizationContextLocked === true,
   };
 }
 
@@ -103,6 +112,21 @@ export async function currentSession(): Promise<PlatformSession | null> {
   if (response.status === 401 || response.status === 403) return null;
   if (!response.ok) await problem(response);
   return sessionFrom((await response.json()) as Parameters<typeof sessionFrom>[0]);
+}
+
+export async function listAccountProfiles(): Promise<AccountProfile[]> {
+  const rows = await readJson<Array<{ id?: string; accountClass?: string; status?: string }>>("/api/v1/platform/auth/account-profiles");
+  return rows.flatMap((row) => {
+    if (!row.id || !row.accountClass) return [];
+    return [{ id: row.id, accountClass: row.accountClass, status: row.status ?? "" }];
+  });
+}
+
+/** Rebinds the current cookie session. The returned token is discarded. */
+export async function selectAccountProfile(accountProfileId: string) {
+  const response = await send("/api/v1/platform/auth/account-profiles/select", "POST", { accountProfileId });
+  if (!response.ok) await problem(response);
+  await response.json().catch(() => null);
 }
 
 export async function listEligibleOrganizations(): Promise<EligibleOrganization[]> {
