@@ -12,6 +12,7 @@ import {
   type FieldErrors,
 } from "./model";
 import { PasswordField } from "./PasswordField";
+import { persistRememberedEmail, readRememberedEmail } from "./remember-login";
 import styles from "./AuthExperience.module.scss";
 
 type Shared = {
@@ -129,9 +130,10 @@ function SocialSignIn() {
 }
 
 export function LoginForm({ seed, submitDelayMs, onForgot, onRegister, live }: Shared) {
-  const [email, setEmail] = useState(seed.email);
+  const remembered = live?.login && !seed.email ? readRememberedEmail() : "";
+  const [email, setEmail] = useState(seed.email || remembered);
   const [password, setPassword] = useState(seed.password);
-  const [remember, setRemember] = useState(seed.remember);
+  const [remember, setRemember] = useState(seed.remember || Boolean(remembered));
   const [errors, setErrors] = useState<FieldErrors>(() => (seed.showErrors ? validateLogin(seed) : {}));
   const [busy, setBusy] = useBusy(seed.loading);
   const [notice, setNotice] = useState<string | null>(null);
@@ -153,6 +155,7 @@ export function LoginForm({ seed, submitDelayMs, onForgot, onRegister, live }: S
     }
     setBusy(true);
     if (live?.login) {
+      persistRememberedEmail(email.trim(), remember);
       void live.login({ email: email.trim(), password }).catch((error: unknown) => {
         setBusy(false);
         setProblem(failureText(error));

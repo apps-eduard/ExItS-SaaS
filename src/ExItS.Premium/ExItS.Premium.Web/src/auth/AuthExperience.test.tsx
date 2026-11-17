@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { AuthExperience } from "./AuthExperience";
+import { LoginForm } from "./AuthForms";
+import { authSeed } from "./model";
 
 function renderAuth(props: Partial<Parameters<typeof AuthExperience>[0]> = {}) {
   return render(<AuthExperience frame="preview" submitDelayMs={0} {...props} />);
@@ -104,5 +106,28 @@ describe("authentication screens", () => {
     expect(screen.getAllByText("Met.").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByRole("status")).toHaveTextContent(/nothing was sent, saved, or changed/i);
+  });
+
+  it("remembers the email for the next live sign-in and never stores the password", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+    const login = vi.fn(async () => undefined);
+    const { unmount } = render(<LoginForm seed={authSeed()} submitDelayMs={0} live={{ login }} />);
+
+    await user.type(inputByLabel(/^email/i), "ada@example.com");
+    await user.type(inputByLabel(/^password/i), "ledger-1947");
+    await user.click(screen.getByRole("checkbox", { name: "Remember me" }));
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(login).toHaveBeenCalledWith({ email: "ada@example.com", password: "ledger-1947" });
+    expect(window.localStorage.getItem("exits.premium.auth.remembered-email.v1")).toBe("ada@example.com");
+    expect(JSON.stringify(window.localStorage)).not.toContain("ledger-1947");
+
+    unmount();
+    render(<LoginForm seed={authSeed()} submitDelayMs={0} live={{ login }} />);
+    expect(inputByLabel(/^email/i)).toHaveValue("ada@example.com");
+    expect(screen.getByRole("checkbox", { name: "Remember me" })).toBeChecked();
+    expect(inputByLabel(/^password/i)).toHaveValue("");
+    window.localStorage.clear();
   });
 });
