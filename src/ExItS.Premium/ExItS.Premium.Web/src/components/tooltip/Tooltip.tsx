@@ -1,14 +1,16 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { hideOverlay, placeTooltip, showOverlay } from "../overlay/overlay";
+import { hideOverlay, placeTooltip, showOverlay, type TooltipPlacement } from "../overlay/overlay";
 import styles from "./Tooltip.module.scss";
 
 type TooltipProps = {
   content: string;
   children: ReactNode;
+  /** Default top. Use `end` for icon rails so the tip sits beside the control. */
+  placement?: TooltipPlacement;
 };
 
-export function Tooltip({ content, children }: TooltipProps) {
+export function Tooltip({ content, children, placement = "top" }: TooltipProps) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const tipRef = useRef<HTMLSpanElement>(null);
@@ -27,7 +29,7 @@ export function Tooltip({ content, children }: TooltipProps) {
       const anchor = anchorRef.current;
       if (!tip || !anchor) return;
       showOverlay(tip);
-      placeTooltip(anchor, tip);
+      placeTooltip(anchor, tip, placement);
       setOpen(true);
     }, delay);
   }
@@ -37,7 +39,7 @@ export function Tooltip({ content, children }: TooltipProps) {
     function place() {
       const tip = tipRef.current;
       const anchor = anchorRef.current;
-      if (tip && anchor) placeTooltip(anchor, tip);
+      if (tip && anchor) placeTooltip(anchor, tip, placement);
     }
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
@@ -45,7 +47,7 @@ export function Tooltip({ content, children }: TooltipProps) {
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [open]);
+  }, [open, placement]);
 
   function hide() {
     clearTimer();

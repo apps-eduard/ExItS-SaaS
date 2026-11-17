@@ -31,16 +31,30 @@
   &::after {
     content: "";
     position: absolute;
-    left: var(--tooltip-tail, 1rem);
     pointer-events: none;
     background: var(--color-surface-elevated);
-    transform: translateX(-50%);
+  }
+
+  &[data-side="top"]::before,
+  &[data-side="bottom"]::before,
+  &[data-side="end"]::before,
+  &[data-side="start"]::before {
+    z-index: 1;
+  }
+
+  &[data-side="top"]::after,
+  &[data-side="bottom"]::after,
+  &[data-side="end"]::after,
+  &[data-side="start"]::after {
+    z-index: 0;
+    width: 10px;
+    height: 10px;
   }
 
   /* Cover the panel border where the tail joins, so the border does not cut the tail. */
   &[data-side="top"]::before,
   &[data-side="bottom"]::before {
-    z-index: 1;
+    left: var(--tooltip-tail, 1rem);
     width: 10px;
     height: 2px;
     transform: translateX(-50%);
@@ -49,9 +63,7 @@
   /* 10px diamond. The outer point sits about 6px past the edge, overlapping the border. */
   &[data-side="top"]::after,
   &[data-side="bottom"]::after {
-    z-index: 0;
-    width: 10px;
-    height: 10px;
+    left: var(--tooltip-tail, 1rem);
     transform: translateX(-50%) rotate(45deg);
   }
 
@@ -73,6 +85,40 @@
     top: -4px;
     border-top: 1px solid var(--color-border);
     border-left: 1px solid var(--color-border);
+  }
+
+  &[data-side="end"]::before,
+  &[data-side="start"]::before {
+    top: var(--tooltip-tail, 1rem);
+    width: 2px;
+    height: 10px;
+    transform: translateY(-50%);
+  }
+
+  &[data-side="end"]::after,
+  &[data-side="start"]::after {
+    top: var(--tooltip-tail, 1rem);
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  &[data-side="end"]::before {
+    left: -1px;
+  }
+
+  &[data-side="end"]::after {
+    left: -4px;
+    border-bottom: 1px solid var(--color-border);
+    border-left: 1px solid var(--color-border);
+  }
+
+  &[data-side="start"]::before {
+    right: -1px;
+  }
+
+  &[data-side="start"]::after {
+    right: -4px;
+    border-top: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
   }
 }
 

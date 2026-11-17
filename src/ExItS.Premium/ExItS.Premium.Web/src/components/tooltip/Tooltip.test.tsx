@@ -33,8 +33,23 @@ describe("Tooltip", () => {
     expect(tooltipCss).toMatch(/border-radius:\s*min\(var\(--radius-control\), 12px\)/);
     expect(tooltipCss).toContain('[data-side="top"]::after');
     expect(tooltipCss).toContain('[data-side="bottom"]::after');
+    expect(tooltipCss).toContain('[data-side="end"]::after');
     expect(popoverCss).not.toContain("tooltip-tail");
     expect(popoverCss).not.toContain("data-side");
+  });
+
+  it("places rail tooltips beside the trigger", () => {
+    const anchor = document.createElement("button");
+    const tip = document.createElement("span");
+    document.body.append(anchor, tip);
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 900 });
+    vi.spyOn(tip, "getBoundingClientRect").mockReturnValue(rect({ width: 120, height: 32, top: 0, left: 0, bottom: 32, right: 120 }));
+    vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue(rect({ top: 120, bottom: 152, left: 12, width: 40, height: 32, right: 52 }));
+    placeTooltip(anchor, tip, "end");
+    expect(tip.dataset.side).toBe("end");
+    expect(tip.style.left).toBe("62px");
+    expect(tip.style.top).toBe("120px");
   });
 
   it("points the tail at the trigger, including a flipped and shifted tip", () => {
