@@ -3,6 +3,7 @@ import { Breadcrumb } from "../components/breadcrumb";
 import { Button } from "../components/button/Button";
 import { Tooltip } from "../components/tooltip/Tooltip";
 import { AppIcon } from "../icons/ExIcon";
+import { useAppearance } from "../theme/AppearanceProvider";
 import { AppearanceControls } from "./AppearanceControls";
 import { playgroundBreadcrumbTrail } from "./breadcrumb-trail";
 import { ComponentsShowcase } from "./ComponentsShowcase";
@@ -129,10 +130,13 @@ function Sidebar({
 }
 
 export function Playground() {
+  const appearance = useAppearance();
   const [section, setSection] = useState<SectionId>(sectionFromLocation);
   const [collapsed, setCollapsed] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const themeLabel = appearance.resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  const themeIcon = appearance.resolvedTheme === "dark" ? "light_mode" : "dark_mode";
 
   useEffect(() => {
     const onHash = () => setSection(sectionFromLocation());
@@ -181,6 +185,16 @@ export function Playground() {
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => setCollapsed((value) => !value)}
           />
+          <Tooltip content={appearance.resolvedTheme === "dark" ? "Switch to light" : "Switch to dark"}>
+            <Button
+              variant="ghost"
+              iconOnly
+              icon={<AppIcon name={themeIcon} />}
+              aria-label={themeLabel}
+              aria-pressed={appearance.resolvedTheme === "dark"}
+              onClick={() => appearance.setTheme(appearance.resolvedTheme === "dark" ? "light" : "dark")}
+            />
+          </Tooltip>
           <Button
             className={styles.appearanceLauncher}
             variant="ghost"
@@ -204,6 +218,16 @@ export function Playground() {
             <a className={styles.homeLink} href="/personal/home" aria-label="Personal home">
               <AppIcon name="dashboard" />
             </a>
+          </Tooltip>
+          <Tooltip content={appearance.resolvedTheme === "dark" ? "Switch to light" : "Switch to dark"}>
+            <Button
+              variant="ghost"
+              iconOnly
+              icon={<AppIcon name={themeIcon} />}
+              aria-label={themeLabel}
+              aria-pressed={appearance.resolvedTheme === "dark"}
+              onClick={() => appearance.setTheme(appearance.resolvedTheme === "dark" ? "light" : "dark")}
+            />
           </Tooltip>
           <Button variant="ghost" iconOnly icon={<AppIcon name="tune" />} aria-label="Appearance" onClick={() => setAppearanceOpen(true)} />
         </header>
