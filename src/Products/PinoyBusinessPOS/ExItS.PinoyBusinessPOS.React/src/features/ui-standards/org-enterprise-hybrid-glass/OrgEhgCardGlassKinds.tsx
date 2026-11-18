@@ -1,14 +1,29 @@
 import { useId } from "react";
 import {
   ArrowRight,
+  Bell,
   Boxes,
   Building2,
+  CalendarDays,
   CheckCircle2,
+  CircleAlert,
+  CreditCard,
+  ImageIcon,
+  Inbox,
+  ListTodo,
+  Mail,
+  MapPin,
   Package,
+  Pencil,
+  Phone,
+  Receipt,
   ShoppingCart,
+  Sparkles,
   TrendingDown,
   TrendingUp,
   Truck,
+  UserPlus,
+  UserRound,
   Wallet,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -20,7 +35,20 @@ export type OrgEhgCardGlassKind =
   | "solid"
   | "timeline"
   | "table"
-  | "settings";
+  | "settings"
+  | "empty"
+  | "edit"
+  | "confirm"
+  | "profile"
+  | "checklist"
+  | "notification"
+  | "pricing"
+  | "invoice"
+  | "invite"
+  | "schedule"
+  | "media"
+  | "comparison"
+  | "loading";
 
 export const ORG_EHG_CARD_GLASS_KINDS: readonly OrgEhgCardGlassKind[] = [
   "menu",
@@ -30,6 +58,19 @@ export const ORG_EHG_CARD_GLASS_KINDS: readonly OrgEhgCardGlassKind[] = [
   "timeline",
   "table",
   "settings",
+  "empty",
+  "edit",
+  "confirm",
+  "profile",
+  "checklist",
+  "notification",
+  "pricing",
+  "invoice",
+  "invite",
+  "schedule",
+  "media",
+  "comparison",
+  "loading",
 ];
 
 export function parseOrgEhgCardGlassKind(
@@ -478,6 +519,507 @@ export function OrgEhgCardGlassSettings() {
           Save changes
         </button>
       </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassEmpty() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--empty">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <Inbox className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">No activity yet</h3>
+            <p className="org-ehg-card-glass__subtitle">This card is waiting for data</p>
+          </div>
+        </div>
+      </header>
+      <div className="org-ehg-card-glass__empty-body">
+        <p className="org-ehg-card-glass__empty-title">Nothing to show</p>
+        <p className="org-ehg-card-glass__empty-hint">
+          Add a record or connect a source to fill this glass card.
+        </p>
+      </div>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          Add first item
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassEditForm() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--edit">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <Pencil className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Edit product</h3>
+            <p className="org-ehg-card-glass__subtitle">SKU · RICE-25KG-WHT</p>
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__pill">Draft</span>
+      </header>
+      <div className="org-ehg-card-glass__fields">
+        <label className="org-ehg-card-glass__field">
+          <span>Product name</span>
+          <input defaultValue="Rice 25kg · White" readOnly />
+        </label>
+        <div className="org-ehg-card-glass__field-row">
+          <label className="org-ehg-card-glass__field">
+            <span>Category</span>
+            <select defaultValue="grocery" disabled>
+              <option value="grocery">Grocery</option>
+              <option value="produce">Produce</option>
+            </select>
+          </label>
+          <label className="org-ehg-card-glass__field">
+            <span>Unit price</span>
+            <div className="org-ehg-card-glass__input-affix">
+              <em>₱</em>
+              <input defaultValue="1,250.00" readOnly />
+            </div>
+          </label>
+        </div>
+        <label className="org-ehg-card-glass__field">
+          <span>Notes</span>
+          <input defaultValue="Keep near dry goods aisle" readOnly />
+        </label>
+      </div>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Cancel
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          Save product
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassConfirm() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--confirm">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span
+            className="org-ehg-card-glass__icon-chip org-ehg-card-glass__icon-chip--danger"
+            aria-hidden
+          >
+            <CircleAlert className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Archive transfer TR-918?</h3>
+            <p className="org-ehg-card-glass__subtitle">This removes it from the live ops board</p>
+          </div>
+        </div>
+      </header>
+      <p className="org-ehg-card-glass__confirm-body">
+        Makati → Quezon City hub will stay in history. Staff on shift will no longer see this transfer
+        in Active moves.
+      </p>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Keep active
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--danger">
+          Archive transfer
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassProfile() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--profile">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__avatar org-ehg-card-glass__avatar--lg" aria-hidden>
+            AR
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Ana Reyes</h3>
+            <p className="org-ehg-card-glass__subtitle">Floor lead · Main branch</p>
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__pill">
+          <CheckCircle2 className="size-3.5" aria-hidden />
+          On shift
+        </span>
+      </header>
+      <ul className="org-ehg-card-glass__profile-facts">
+        <li>
+          <UserRound className="size-3.5" aria-hidden />
+          <span>Staff ID · ST-1042</span>
+        </li>
+        <li>
+          <Mail className="size-3.5" aria-hidden />
+          <span>ana.reyes@store.local</span>
+        </li>
+        <li>
+          <Phone className="size-3.5" aria-hidden />
+          <span>+63 917 555 0142</span>
+        </li>
+      </ul>
+      <footer className="org-ehg-card-glass__actions" style={{ justifyContent: "start" }}>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Message
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          View schedule
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassChecklist() {
+  const items = [
+    { label: "Count dry goods aisle A", done: true },
+    { label: "Confirm PO #4421 put-away", done: true },
+    { label: "Restock Rice 25kg · White", done: false },
+    { label: "Post end-of-shift notes", done: false },
+  ] as const;
+
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--checklist">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <ListTodo className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Closing checklist</h3>
+            <p className="org-ehg-card-glass__subtitle">Main branch · today</p>
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__pill">2 of 4</span>
+      </header>
+      <ul className="org-ehg-card-glass__checklist">
+        {items.map((item) => (
+          <li key={item.label} data-done={item.done ? "true" : "false"}>
+            <span className="org-ehg-card-glass__check" aria-hidden>
+              {item.done ? <CheckCircle2 className="size-4" /> : <span />}
+            </span>
+            <span>{item.label}</span>
+          </li>
+        ))}
+      </ul>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          Mark next done
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassNotification() {
+  const notes = [
+    {
+      tone: "warn",
+      title: "Low stock: Rice 25kg",
+      detail: "Shelf A-12 · 6 bags left",
+      time: "Now",
+    },
+    {
+      tone: "info",
+      title: "Shift handoff ready",
+      detail: "Ana Reyes posted notes",
+      time: "12m",
+    },
+    {
+      tone: "success",
+      title: "PO #4421 matched",
+      detail: "48 lines confirmed",
+      time: "1h",
+    },
+  ] as const;
+
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--notification">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <Bell className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Notifications</h3>
+            <p className="org-ehg-card-glass__subtitle">3 unread · Main branch</p>
+          </div>
+        </div>
+        <button type="button" className="org-ehg-card-glass__link">
+          Mark all read
+        </button>
+      </header>
+      <ul className="org-ehg-card-glass__notify-list">
+        {notes.map((note) => (
+          <li key={note.title} data-tone={note.tone}>
+            <span className="org-ehg-card-glass__dot" aria-hidden />
+            <div>
+              <div className="org-ehg-card-glass__timeline-top">
+                <strong>{note.title}</strong>
+                <span className="org-ehg-card-glass__time">{note.time}</span>
+              </div>
+              <p className="org-ehg-card-glass__timeline-detail">{note.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassPricing() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--pricing">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <Sparkles className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Growth plan</h3>
+            <p className="org-ehg-card-glass__subtitle">Multi-branch · billed monthly</p>
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__pill">Popular</span>
+      </header>
+      <p className="org-ehg-card-glass__metric">
+        ₱2,490
+        <span className="org-ehg-card-glass__metric-unit">/ mo</span>
+      </p>
+      <ul className="org-ehg-card-glass__feature-list">
+        <li>Up to 5 branches</li>
+        <li>Shift + inventory alerts</li>
+        <li>CSV / Excel export</li>
+        <li>Priority support</li>
+      </ul>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Compare plans
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          Start trial
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassInvoice() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--invoice">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <Receipt className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Invoice INV-2084</h3>
+            <p className="org-ehg-card-glass__subtitle">Due Oct 31 · Ana Reyes</p>
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__status" data-tone="warn">
+          Unpaid
+        </span>
+      </header>
+      <ul className="org-ehg-card-glass__invoice-rows">
+        <li>
+          <span>Subtotal</span>
+          <strong>₱4,120.00</strong>
+        </li>
+        <li>
+          <span>VAT (12%)</span>
+          <strong>₱494.40</strong>
+        </li>
+        <li data-total="true">
+          <span>Total due</span>
+          <strong>₱4,614.40</strong>
+        </li>
+      </ul>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Download PDF
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          <CreditCard className="size-3.5" aria-hidden />
+          Record payment
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassInvite() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--invite">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <UserPlus className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Invite staff</h3>
+            <p className="org-ehg-card-glass__subtitle">Main branch · cashier role</p>
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__pill">Pending</span>
+      </header>
+      <div className="org-ehg-card-glass__fields">
+        <label className="org-ehg-card-glass__field">
+          <span>Contact email</span>
+          <input defaultValue="carlo.lim@example.com" readOnly />
+        </label>
+        <label className="org-ehg-card-glass__field">
+          <span>Display name</span>
+          <input defaultValue="Carlo Lim" readOnly />
+        </label>
+      </div>
+      <p className="org-ehg-card-glass__hint">Invite expires in 7 days. Login is org-scoped.</p>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Cancel
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          Send invite
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassSchedule() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--schedule">
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__icon-chip" aria-hidden>
+            <CalendarDays className="size-4" strokeWidth={2.25} />
+          </span>
+          <div>
+            <h3 className="org-ehg-card-glass__title">Stock count</h3>
+            <p className="org-ehg-card-glass__subtitle">Thu · Oct 31</p>
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__status" data-tone="info">
+          Scheduled
+        </span>
+      </header>
+      <ul className="org-ehg-card-glass__schedule-facts">
+        <li>
+          <strong>2:00 PM – 4:30 PM</strong>
+          <span>Warehouse B</span>
+        </li>
+        <li>
+          <MapPin className="size-3.5" aria-hidden />
+          <span>Aisle A–C · dry goods</span>
+        </li>
+        <li>
+          <UserRound className="size-3.5" aria-hidden />
+          <span>Lead · Ana Reyes + 2</span>
+        </li>
+      </ul>
+      <footer className="org-ehg-card-glass__actions" style={{ justifyContent: "start" }}>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Reschedule
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          Open brief
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassMedia() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--media">
+      <div className="org-ehg-card-glass__media-frame" aria-hidden>
+        <ImageIcon className="size-8" strokeWidth={1.75} />
+        <span>Product photo</span>
+      </div>
+      <header className="org-ehg-card-glass__header">
+        <div>
+          <h3 className="org-ehg-card-glass__title">Rice 25kg · White</h3>
+          <p className="org-ehg-card-glass__subtitle">SKU · RICE-25KG-WHT</p>
+        </div>
+        <span className="org-ehg-card-glass__pill">In catalog</span>
+      </header>
+      <p className="org-ehg-card-glass__hint">Last updated today · 1.2 MB JPEG</p>
+      <footer className="org-ehg-card-glass__actions">
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--ghost">
+          Replace
+        </button>
+        <button type="button" className="org-ehg-card-glass__btn org-ehg-card-glass__btn--primary">
+          Use photo
+        </button>
+      </footer>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassComparison() {
+  return (
+    <article className="org-ehg-card-glass org-ehg-card-glass--comparison">
+      <header className="org-ehg-card-glass__header">
+        <div>
+          <h3 className="org-ehg-card-glass__title">Branch comparison</h3>
+          <p className="org-ehg-card-glass__subtitle">Sales · last 7 days</p>
+        </div>
+      </header>
+      <div className="org-ehg-card-glass__compare-grid">
+        <div>
+          <span className="org-ehg-card-glass__compare-label">Main</span>
+          <p className="org-ehg-card-glass__metric org-ehg-card-glass__metric--sm">₱186k</p>
+          <span className="org-ehg-card-glass__badge org-ehg-card-glass__badge--up">
+            <TrendingUp className="size-3.5" aria-hidden />
+            +12.4%
+          </span>
+        </div>
+        <div>
+          <span className="org-ehg-card-glass__compare-label">Quezon</span>
+          <p className="org-ehg-card-glass__metric org-ehg-card-glass__metric--sm">₱142k</p>
+          <span className="org-ehg-card-glass__badge org-ehg-card-glass__badge--down">
+            <TrendingDown className="size-3.5" aria-hidden />
+            −3.1%
+          </span>
+        </div>
+      </div>
+      <p className="org-ehg-card-glass__hint">Main leads by ₱44,200 this week</p>
+    </article>
+  );
+}
+
+export function OrgEhgCardGlassLoading() {
+  return (
+    <article
+      className="org-ehg-card-glass org-ehg-card-glass--loading"
+      aria-busy="true"
+      aria-label="Loading card"
+    >
+      <header className="org-ehg-card-glass__header">
+        <div className="org-ehg-card-glass__lead">
+          <span className="org-ehg-card-glass__skeleton org-ehg-card-glass__skeleton--chip" />
+          <div className="org-ehg-card-glass__skeleton-stack">
+            <span className="org-ehg-card-glass__skeleton org-ehg-card-glass__skeleton--title" />
+            <span className="org-ehg-card-glass__skeleton org-ehg-card-glass__skeleton--sub" />
+          </div>
+        </div>
+        <span className="org-ehg-card-glass__skeleton org-ehg-card-glass__skeleton--pill" />
+      </header>
+      <span className="org-ehg-card-glass__skeleton org-ehg-card-glass__skeleton--metric" />
+      <span className="org-ehg-card-glass__skeleton org-ehg-card-glass__skeleton--hint" />
+      <span className="org-ehg-card-glass__skeleton org-ehg-card-glass__skeleton--bar" />
     </article>
   );
 }

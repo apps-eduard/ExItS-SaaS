@@ -685,6 +685,7 @@ export function OrgEhgButtonGlassPlayground({ defaultFab = false }: { defaultFab
                               className={[
                                 "org-ehg-btn-glass",
                                 `org-ehg-btn-glass--${intensity}`,
+                                `org-ehg-btn-glass--appearance-${appearance}`,
                                 `org-ehg-btn-glass--tone-${action.tone}`,
                                 `org-ehg-btn-glass--size-${childSize}`,
                                 isExtended ? "org-ehg-btn-glass--fab-extended" : "org-ehg-btn-glass--icon-only",

@@ -8306,6 +8306,12 @@ export const hilPH: Record<keyof typeof en, string> = {
   "people.search": "[HIL] Search people",
 
   "people.searchPlaceholder": "[HIL] Search people...",
+  "people.sort.label": "[HIL] Sort",
+  "people.sort.name": "[HIL] Name",
+  "people.sort.amount": "[HIL] Amount",
+  "people.summaryBar.count": "[HIL] {count} People",
+  "people.summaryBar.meta": "[HIL] {connected} Connected · {local} Local",
+  "people.summaryBar.download": "[HIL] Download",
 
   "people.status.blocked": "[HIL] Blocked",
 

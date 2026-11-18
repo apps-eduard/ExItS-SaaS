@@ -17,6 +17,15 @@ type MenuAlign = "start" | "end" | "center";
 const DEFAULT_COLLISION_PADDING = 10;
 /** Below dialogs (z-80); above sticky table chrome (z-2) and elevated surfaces. */
 const DROPDOWN_Z_INDEX = 70;
+/** Soft Glass / Select menu exit (scale, flip, jump) duration. */
+const MENU_EXIT_MS = 300;
+
+function menuExitDurationMs(): number {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return MENU_EXIT_MS;
+  }
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : MENU_EXIT_MS;
+}
 
 export function useDismissibleOpen(initial = false) {
   const [open, setOpen] = useState(initial);
@@ -54,6 +63,10 @@ type DropdownMenuProps = {
    * Menu opens “between” — options above and below the current value.
    */
   coverSelected?: boolean;
+  /** Gap in px between trigger and menu (default 6). Use 0–2 to sit near a thick bottom border. */
+  menuGapPx?: number;
+  /** Open transition name (e.g. Soft Glass Select `scale`). Sets data-transition + data-state. */
+  menuTransition?: string;
   /** Override default menu z-index (70). Use above modals when needed. */
   menuZIndex?: number;
 };
@@ -81,15 +94,24 @@ function computeMenuPosition(options: {
   collisionPadding: number;
   matchTriggerWidth: boolean;
   coverSelected: boolean;
+  menuGapPx: number;
 }): MenuCoords {
-  const { trigger, menu, align, collisionPadding: pad, matchTriggerWidth, coverSelected } = options;
+  const {
+    trigger,
+    menu,
+    align,
+    collisionPadding: pad,
+    matchTriggerWidth,
+    coverSelected,
+    menuGapPx,
+  } = options;
   const rect = trigger.getBoundingClientRect();
   const width = matchTriggerWidth ? Math.max(rect.width, 1) : undefined;
   const menuWidth = width ?? menu.offsetWidth;
   const menuHeight = menu.offsetHeight;
   const viewportW = window.innerWidth;
   const viewportH = window.innerHeight;
-  const gap = 6;
+  const gap = Number.isFinite(menuGapPx) ? Math.max(0, menuGapPx) : 6;
 
   const selected = menu.querySelector<HTMLElement>(
     '[data-selected="true"], [aria-checked="true"], [aria-current="true"]',
@@ -162,6 +184,8 @@ export function DropdownMenu({
   collisionPadding = DEFAULT_COLLISION_PADDING,
   matchTriggerWidth = false,
   coverSelected = false,
+  menuGapPx = 6,
+  menuTransition,
   menuZIndex = DROPDOWN_Z_INDEX,
 }: DropdownMenuProps) {
   const triggerId = useId();
@@ -169,7 +193,11 @@ export function DropdownMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const exitTimerRef = useRef<number | null>(null);
   const [coords, setCoords] = useState<MenuCoords | null>(null);
+  /** Keep mounted during close so menuTransition can play reverse (data-state=closed). */
+  const [mounted, setMounted] = useState(open);
+  const menuState = open ? "open" : "closed";
 
   function syncTriggerRef() {
     const el = resolveTriggerElement(rootRef.current, triggerId);
@@ -177,6 +205,19 @@ export function DropdownMenu({
       triggerRef.current = el;
     }
     return el;
+  }
+
+  function clearExitTimer() {
+    if (exitTimerRef.current != null) {
+      window.clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+  }
+
+  function finishExit() {
+    clearExitTimer();
+    setMounted(false);
+    setCoords(null);
   }
 
   function reposition() {
@@ -197,20 +238,39 @@ export function DropdownMenu({
         collisionPadding,
         matchTriggerWidth,
         coverSelected,
+        menuGapPx,
       }),
     );
   }
 
+  // Mount before paint when opening so reposition can measure the menu in the same turn.
   useLayoutEffect(() => {
-    if (!open) {
-      setCoords(null);
+    if (open) {
+      clearExitTimer();
+      setMounted(true);
       return;
     }
+    if (!mounted) return;
+    if (!menuTransition) {
+      finishExit();
+      return;
+    }
+    exitTimerRef.current = window.setTimeout(finishExit, menuExitDurationMs());
+    return clearExitTimer;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount/exit only tracks open + transition
+  }, [open, menuTransition]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      if (!menuTransition) setCoords(null);
+      return;
+    }
+    if (!mounted) return;
     syncTriggerRef();
     reposition();
     // Position after open/align change; content height changes are handled on scroll/resize.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-running on new children identity each render
-  }, [open, align, collisionPadding, matchTriggerWidth, coverSelected]);
+  }, [open, mounted, align, collisionPadding, matchTriggerWidth, coverSelected, menuGapPx]);
 
   useEffect(() => {
     if (!open) {
@@ -281,7 +341,7 @@ export function DropdownMenu({
       window.removeEventListener("resize", onRepositionEvent);
       window.removeEventListener("scroll", onRepositionEvent, true);
     };
-  }, [onOpenChange, open, align, collisionPadding, matchTriggerWidth, coverSelected]);
+  }, [onOpenChange, open, align, collisionPadding, matchTriggerWidth, coverSelected, menuGapPx]);
 
   useEffect(() => {
     if (!open) {
@@ -303,6 +363,8 @@ export function DropdownMenu({
     }
   }
 
+  const positioned = Boolean(coords);
+  const interactive = open && positioned && menuState === "open";
   const menuStyle: CSSProperties | undefined = portal
     ? {
         position: "fixed",
@@ -314,12 +376,12 @@ export function DropdownMenu({
         minWidth: coords?.width,
         // VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.
         // visibility:hidden still hit-tests — disable pointer events until positioned.
-        visibility: coords ? "visible" : "hidden",
-        pointerEvents: coords ? "auto" : "none",
+        visibility: positioned ? "visible" : "hidden",
+        pointerEvents: interactive ? "auto" : "none",
       }
     : undefined;
 
-  const menuSurface = open ? (
+  const menuSurface = mounted ? (
     <div
       ref={menuRef}
       id={menuId}
@@ -328,6 +390,8 @@ export function DropdownMenu({
       aria-label={menuLabel}
       data-exits-dropdown-portal={portal ? "true" : undefined}
       data-placement={coords?.placement}
+      data-transition={menuTransition}
+      data-state={menuTransition ? menuState : undefined}
       style={menuStyle}
       className={cn(
         "overflow-y-auto overflow-x-hidden rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] py-1 shadow-[var(--exits-shadow-md)]",
@@ -339,6 +403,11 @@ export function DropdownMenu({
             ),
         menuClassName,
       )}
+      onAnimationEnd={(event) => {
+        if (!menuTransition || open) return;
+        if (event.target !== menuRef.current) return;
+        finishExit();
+      }}
     >
       {children}
     </div>
@@ -354,7 +423,7 @@ export function DropdownMenu({
         onKeyDown: onTriggerKeyDown,
       })}
       {portal
-        ? open && typeof document !== "undefined"
+        ? mounted && typeof document !== "undefined"
           ? createPortal(menuSurface, document.body)
           : null
         : menuSurface}

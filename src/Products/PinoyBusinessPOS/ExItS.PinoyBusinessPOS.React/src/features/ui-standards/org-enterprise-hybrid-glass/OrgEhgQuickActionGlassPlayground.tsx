@@ -48,6 +48,7 @@ import {
 } from "@/lib/preferences/ui-preferences";
 
 type QaIconId =
+  | "none"
   | "plus"
   | "file"
   | "cart"
@@ -120,7 +121,8 @@ const CARD_SHAPES: ReadonlyArray<{ label: string; value: ControlShapePreference 
     value,
   }));
 
-const ICONS: ReadonlyArray<{ label: string; value: QaIconId; Icon: LucideIcon }> = [
+const ICONS: ReadonlyArray<{ label: string; value: QaIconId; Icon: LucideIcon | null }> = [
+  { label: "None", value: "none", Icon: null },
   { label: "Plus", value: "plus", Icon: Plus },
   { label: "Document", value: "file", Icon: FileText },
   { label: "Cart", value: "cart", Icon: ShoppingCart },
@@ -158,6 +160,7 @@ function qaGlassCommand(
   iconShape: OrgEhgQaGlassIconShape,
   size: OrgEhgQaGlassSize,
   cardShape: ControlShapePreference,
+  iconNone: boolean,
   iconOnly: boolean,
   badge: boolean,
   ghost: boolean,
@@ -171,16 +174,16 @@ function qaGlassCommand(
     "qa-glass",
     tone,
     size,
-    `icon-${iconShape}`,
+    iconNone ? "icon-none" : `icon-${iconShape}`,
     `card-${cardShape}`,
   ];
-  if (iconOnly) parts.push("icon-only");
-  else parts.push(`trail-${trailing}`);
+  if (!iconNone && iconOnly) parts.push("icon-only");
+  else if (!iconOnly) parts.push(`trail-${trailing}`);
   if (badge) parts.push("badge");
   if (ghost) parts.push("ghost");
   if (split) parts.push("split");
   if (!shadow) parts.push("no-shadow");
-  if (!iconShadow) parts.push("no-icon-shadow");
+  if (!iconNone && !iconShadow) parts.push("no-icon-shadow");
   return parts.join(" ");
 }
 
@@ -205,10 +208,12 @@ export function OrgEhgQuickActionGlassPlayground() {
   const [iconFilled, setIconFilled] = useState(DEFAULTS.iconFilled);
   const [toggled, setToggled] = useState(false);
 
-  const Icon = ICONS.find((item) => item.value === iconId)?.Icon ?? Plus;
+  const Icon = ICONS.find((item) => item.value === iconId)?.Icon ?? null;
+  const iconNone = iconId === "none" || Icon == null;
   const displayLabel = label.trim() || "Quick action";
   const iconNoShadowClass = iconShadow ? "" : " org-ehg-qa-glass-icon--no-shadow";
   const chipNoShadowClass = iconShadow ? "" : " org-ehg-qa-glass__icon--no-shadow";
+  const showIconOnly = iconOnly && !iconNone;
 
   function resetPreview() {
     setTone(DEFAULTS.tone);
@@ -229,11 +234,22 @@ export function OrgEhgQuickActionGlassPlayground() {
     setBackground(ORG_EHG_PLAYGROUND_BG_DEFAULT);
   }
 
+  function onIconChange(next: QaIconId) {
+    setIconId(next);
+    if (next === "none") {
+      setIconOnly(false);
+      setIconFilled(true);
+      setIconShadow(false);
+      setBadge(false);
+    }
+  }
+
   function onIconOnlyChange(next: boolean) {
     setIconOnly(next);
     if (next) {
       setSplit(false);
       setGhost(false);
+      if (iconId === "none") setIconId("plus");
     }
   }
 
@@ -293,18 +309,19 @@ export function OrgEhgQuickActionGlassPlayground() {
     </div>
   );
 
-  const trailingActionIcon = (
-    <button
-      type="button"
-      className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action ${actionToneClass}${actionSizeClass}${actionIconShapeClass}${iconNoShadowClass}`}
-      aria-label={displayLabel}
-      data-testid="ui-standard-org-ehg-qa-pg-preview-action-icon"
-      data-icon-shape={iconShape}
-      data-size={size}
-    >
-      <Icon className="org-ehg-qa-glass__glyph" aria-hidden strokeWidth={2.25} />
-    </button>
-  );
+  const trailingActionIcon =
+    Icon == null ? null : (
+      <button
+        type="button"
+        className={`org-ehg-qa-glass-icon org-ehg-qa-glass-icon--action ${actionToneClass}${actionSizeClass}${actionIconShapeClass}${iconNoShadowClass}`}
+        aria-label={displayLabel}
+        data-testid="ui-standard-org-ehg-qa-pg-preview-action-icon"
+        data-icon-shape={iconShape}
+        data-size={size}
+      >
+        <Icon className="org-ehg-qa-glass__glyph" aria-hidden strokeWidth={2.25} />
+      </button>
+    );
 
   const rowClass = [
     "org-ehg-qa-glass",
@@ -317,21 +334,22 @@ export function OrgEhgQuickActionGlassPlayground() {
     .filter(Boolean)
     .join(" ");
 
-  const iconChip = (
-    <span
-      className={
-        "org-ehg-qa-glass__icon" +
-        (iconShape === "rounded" ? " org-ehg-qa-glass__icon--rounded" : "") +
-        chipNoShadowClass
-      }
-      data-testid="ui-standard-org-ehg-qa-pg-preview-chip"
-      data-icon-shape={iconShape}
-      aria-hidden="true"
-    >
-      <Icon className="org-ehg-qa-glass__glyph" strokeWidth={2.25} />
-      {badge ? <span className="org-ehg-qa-glass__dot" /> : null}
-    </span>
-  );
+  const iconChip =
+    iconNone || Icon == null ? null : (
+      <span
+        className={
+          "org-ehg-qa-glass__icon" +
+          (iconShape === "rounded" ? " org-ehg-qa-glass__icon--rounded" : "") +
+          chipNoShadowClass
+        }
+        data-testid="ui-standard-org-ehg-qa-pg-preview-chip"
+        data-icon-shape={iconShape}
+        aria-hidden="true"
+      >
+        <Icon className="org-ehg-qa-glass__glyph" strokeWidth={2.25} />
+        {badge ? <span className="org-ehg-qa-glass__dot" /> : null}
+      </span>
+    );
 
   const leadAction =
     trailing === "action-group"
@@ -428,7 +446,7 @@ export function OrgEhgQuickActionGlassPlayground() {
               label="Icon"
               value={iconId}
               options={ICONS.map((item) => ({ label: item.label, value: item.value }))}
-              onChange={setIconId}
+              onChange={onIconChange}
               testId="ui-standard-org-ehg-qa-pg-icon"
             />
             <CompactSelect
@@ -436,6 +454,7 @@ export function OrgEhgQuickActionGlassPlayground() {
               value={iconShape}
               options={[...ICON_SHAPES]}
               onChange={setIconShape}
+              disabled={iconNone}
               testId="ui-standard-org-ehg-qa-pg-icon-shape"
             />
             <CompactSelect
@@ -470,10 +489,12 @@ export function OrgEhgQuickActionGlassPlayground() {
           <div className="col-span-full flex flex-row flex-wrap items-center gap-6">
             <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
               <Switch
-                checked={iconOnly}
+                checked={showIconOnly}
                 onCheckedChange={onIconOnlyChange}
                 aria-label="Icon only"
-                disabled={trailing === "action-group" || trailing === "action-icon"}
+                disabled={
+                  iconNone || trailing === "action-group" || trailing === "action-icon"
+                }
                 data-testid="ui-standard-org-ehg-qa-pg-icon-only"
               />
               Icon only
@@ -483,7 +504,9 @@ export function OrgEhgQuickActionGlassPlayground() {
                 checked={iconFilled}
                 onCheckedChange={setIconFilled}
                 aria-label="Filled icon"
-                disabled={!iconOnly || trailing === "action-group" || trailing === "action-icon"}
+                disabled={
+                  !showIconOnly || trailing === "action-group" || trailing === "action-icon"
+                }
                 data-testid="ui-standard-org-ehg-qa-pg-icon-filled"
               />
               Filled icon
@@ -493,7 +516,7 @@ export function OrgEhgQuickActionGlassPlayground() {
                 checked={badge}
                 onCheckedChange={setBadge}
                 aria-label="Badge"
-                disabled={iconOnly}
+                disabled={iconNone || showIconOnly}
                 data-testid="ui-standard-org-ehg-qa-pg-badge"
               />
               Badge
@@ -525,7 +548,7 @@ export function OrgEhgQuickActionGlassPlayground() {
                 checked={shadow}
                 onCheckedChange={setShadow}
                 aria-label="Shadow"
-                disabled={iconOnly}
+                disabled={showIconOnly}
                 data-testid="ui-standard-org-ehg-qa-pg-shadow"
               />
               Shadow
@@ -535,6 +558,7 @@ export function OrgEhgQuickActionGlassPlayground() {
                 checked={iconShadow}
                 onCheckedChange={setIconShadow}
                 aria-label="Icon shadow"
+                disabled={iconNone}
                 data-testid="ui-standard-org-ehg-qa-pg-icon-shadow"
               />
               Icon shadow
@@ -553,7 +577,7 @@ export function OrgEhgQuickActionGlassPlayground() {
               data-testid="ui-standard-org-ehg-qa-pg-preview"
               data-preview-theme={theme}
             >
-              {iconOnly ? (
+              {showIconOnly && Icon ? (
                 <button
                   type="button"
                   className={[
@@ -640,7 +664,8 @@ export function OrgEhgQuickActionGlassPlayground() {
               iconShape,
               size,
               cardShape,
-              iconOnly,
+              iconNone,
+              showIconOnly,
               badge,
               ghost,
               split,

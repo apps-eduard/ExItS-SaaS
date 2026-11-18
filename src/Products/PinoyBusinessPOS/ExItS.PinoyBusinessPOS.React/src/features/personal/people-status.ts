@@ -13,9 +13,18 @@ export type PeopleConnectionStatus =
   | "blocked";
 
 export type PeopleUtangSnapshot = {
+  relationshipId: string;
   direction: "lent" | "owe";
   balance: number;
   dueDateUtc: string | null;
+  isLedgerOwner: boolean;
+  isSharedLedger: boolean;
+};
+
+export type PeopleClosedUtangSnapshot = {
+  relationshipId: string;
+  direction: "lent" | "owe";
+  updatedAtUtc: string;
   isLedgerOwner: boolean;
   isSharedLedger: boolean;
 };
@@ -27,6 +36,8 @@ export type PeopleRowModel = {
   publicUserId?: string;
   pendingConnectionRequest?: PersonalConnectionRequestDto;
   utang?: PeopleUtangSnapshot;
+  /** Settled/closed I lent / I owe cycles for this contact (newest first). */
+  previousClosed: PeopleClosedUtangSnapshot[];
   lentTotal: number;
   lentCount: number;
   oweTotal: number;
@@ -136,6 +147,7 @@ export function buildPeopleRows(input: {
     const utang: PeopleUtangSnapshot | undefined =
       open && open.currentBalance !== 0
         ? {
+            relationshipId: open.id,
             direction: open.perspective.toLowerCase().includes("borrow") ? "owe" : "lent",
             balance: open.currentBalance,
             dueDateUtc: open.dueDateUtc ?? null,
@@ -143,6 +155,18 @@ export function buildPeopleRows(input: {
             isSharedLedger: open.isSharedLedger === true,
           }
         : undefined;
+    const previousClosed: PeopleClosedUtangSnapshot[] = related
+      .filter((rel) => rel.status.toLowerCase() === "closed")
+      .map((rel) => ({
+        relationshipId: rel.id,
+        direction: rel.perspective.toLowerCase().includes("borrow")
+          ? ("owe" as const)
+          : ("lent" as const),
+        updatedAtUtc: rel.updatedAtUtc,
+        isLedgerOwner: rel.isLedgerOwner !== false,
+        isSharedLedger: rel.isSharedLedger === true,
+      }))
+      .sort((a, b) => b.updatedAtUtc.localeCompare(a.updatedAtUtc));
 
     return {
       contact,
@@ -151,6 +175,7 @@ export function buildPeopleRows(input: {
       publicUserId,
       pendingConnectionRequest,
       utang,
+      previousClosed,
       lentTotal,
       lentCount,
       oweTotal,

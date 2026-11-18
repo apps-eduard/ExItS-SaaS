@@ -776,6 +776,15 @@
  * - Fill clipped to padding-box so blur/fill does not bleed under the border
  */
 .org-ehg-btn-glass {
+  /* Size / radius tokens — product use (no gallery parent required). */
+  --org-ehg-btn-r-sm: 8px;
+  --org-ehg-btn-r-md: 10px;
+  --org-ehg-btn-r-lg: 12px;
+  --org-ehg-btn-h-xs: 1.75rem;
+  --org-ehg-btn-h-sm: 2rem;
+  --org-ehg-btn-h-md: 2.5rem;
+  --org-ehg-btn-h-lg: 3rem;
+  --org-ehg-btn-h-xl: 3.5rem;
   --org-ehg-btn-glass-ink: #1e3a8a;
   --org-ehg-btn-glass-accent: #3b82f6;
   --org-ehg-btn-glass-fill: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 28%, transparent);
@@ -942,12 +951,52 @@
   --org-ehg-btn-glass-glow: 0 0 26px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 42%, transparent);
 }
 
+/*
+ * Solid intensity — hold full accent in dark.
+ * Dark base `.org-ehg-btn-glass` (28% wash) must not win over solid.
+ */
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--solid {
+  --org-ehg-btn-glass-fill: var(--org-ehg-btn-glass-accent);
+  --org-ehg-btn-glass-ink: #ffffff;
+  --org-ehg-btn-glass-edge: color-mix(in srgb, var(--org-ehg-btn-glass-accent) 72%, #0f172a);
+  --org-ehg-btn-glass-specular: rgba(255, 255, 255, 0.32);
+  --org-ehg-btn-glass-blur: 0px;
+  --org-ehg-btn-glass-glow: 0 6px 14px color-mix(in srgb, var(--org-ehg-btn-glass-accent) 32%, transparent);
+  background:
+    linear-gradient(180deg, var(--org-ehg-btn-glass-specular) 0%, rgba(255, 255, 255, 0) 48%),
+    var(--org-ehg-btn-glass-accent);
+  background-clip: padding-box;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    inset 0 1px 0 var(--org-ehg-btn-glass-specular),
+    var(--org-ehg-btn-glass-glow);
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--intent-amber.org-ehg-btn-glass--solid,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--intent-lime.org-ehg-btn-glass--solid,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--intent-orange.org-ehg-btn-glass--solid,
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--intent-inventory.org-ehg-btn-glass--solid {
+  --org-ehg-btn-glass-ink: #0f172a;
+}
+
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass--intent-standard.org-ehg-btn-glass--solid {
+  --org-ehg-btn-glass-fill: #ffffff;
+  --org-ehg-btn-glass-edge: #cbd5e1;
+  --org-ehg-btn-glass-ink: #0f172a;
+  --org-ehg-btn-glass-accent: #64748b;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 48%),
+    #ffffff;
+  background-clip: padding-box;
+}
+
 /* ??? Intent (color) ? same set as normal Button playground ??? */
 .org-ehg-btn-glass--intent-standard {
   --org-ehg-btn-glass-accent: #64748b;
 }
 .org-ehg-btn-glass--intent-primary {
-  --org-ehg-btn-glass-accent: #1976d2;
+  --org-ehg-btn-glass-accent: var(--exits-primary, #1976d2);
 }
 .org-ehg-btn-glass--intent-secondary {
   --org-ehg-btn-glass-accent: #26a69a;
@@ -1186,7 +1235,7 @@
 
 /* Legacy tone-* aliases (gallery / speed-dial) */
 .org-ehg-btn-glass--tone-primary {
-  --org-ehg-btn-glass-accent: #3b82f6;
+  --org-ehg-btn-glass-accent: var(--exits-primary, #3b82f6);
 }
 .org-ehg-btn-glass--tone-primary.org-ehg-btn-glass--solid {
   --org-ehg-btn-glass-fill: var(--org-ehg-btn-glass-accent);
@@ -1579,13 +1628,6 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.org-ehg-btn-glass-fab-scene > .org-ehg-btn-glass-sample {
-  position: absolute;
-  inset-inline-end: 1rem;
-  bottom: 1rem;
-  margin: 0;
-}
-
 .org-ehg-btn-glass-fab-scene .org-ehg-btn-glass-sample__caption {
   color: #475569;
   text-shadow: none;
@@ -1605,12 +1647,6 @@
   border-radius: var(--exits-radius-lg, 12px);
   background: transparent;
   box-shadow: none;
-}
-
-.org-ehg-btn-glass-fab-scene--playground > .org-ehg-btn-glass {
-  position: absolute;
-  inset-inline-end: 1rem;
-  bottom: 1rem;
 }
 
 /* Speed dial preview ? centered in the scene */
@@ -1712,13 +1748,17 @@
     0 1px 4px rgba(15, 23, 42, 0.14);
 }
 
-.org-ehg-btn-glass-speed-dial__trigger .org-ehg-btn-glass__icon {
+.org-ehg-btn-glass-speed-dial__trigger .org-ehg-btn-glass__icon,
+.org-ehg-btn-glass-speed-dial__trigger .org-ehg-qa-glass__glyph {
   transition: transform 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 .org-ehg-btn-glass-speed-dial[data-open="true"]
   .org-ehg-btn-glass-speed-dial__trigger
-  .org-ehg-btn-glass__icon {
+  .org-ehg-btn-glass__icon,
+.org-ehg-btn-glass-speed-dial[data-open="true"]
+  .org-ehg-btn-glass-speed-dial__trigger
+  .org-ehg-qa-glass__glyph {
   transform: rotate(45deg);
 }
 
@@ -2011,19 +2051,12 @@
   box-shadow: 1px 1px 2px color-mix(in srgb, #0f172a 5%, transparent);
 }
 
-/* Label tooltip ? Soft Glass tip + caret toward the action FAB */
+/* Label tooltip — solid tip + caret toward the action FAB (no gradient) */
 .org-ehg-btn-glass-speed-dial[data-label-type="label-tooltip"] .org-ehg-btn-glass-speed-dial__label {
   padding: 0.35rem 0.65rem;
   border-radius: 0.5rem;
   border: 1px solid var(--org-ehg-speed-dial-tip-edge);
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--org-ehg-speed-dial-tip-chip) 14%, transparent) 0%,
-      color-mix(in srgb, var(--org-ehg-speed-dial-tip-fill) 92%, transparent) 55%,
-      color-mix(in srgb, var(--org-ehg-speed-dial-tip-fill) 96%, transparent) 100%
-    ),
-    var(--org-ehg-speed-dial-tip-fill);
+  background: var(--org-ehg-speed-dial-tip-fill);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent),
     0 1px 2px color-mix(in srgb, #0f172a 6%, transparent),
@@ -2086,31 +2119,44 @@
   align-self: flex-end;
 }
 
+/*
+ * Dark speed-dial labels — Button glass panel + QA / Speed dial glass panel
+ * (playground + gallery both use data-org-ehg-theme on these hosts).
+ */
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="label-tooltip"]
+  .org-ehg-btn-glass-speed-dial__label,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="label-tooltip"]
+  .org-ehg-btn-glass-speed-dial__label,
+.org-ehg[data-org-ehg-theme="dark"]
   .org-ehg-btn-glass-speed-dial[data-label-type="label-tooltip"]
   .org-ehg-btn-glass-speed-dial__label {
   --org-ehg-speed-dial-tip-fill: #1e293b;
   --org-ehg-speed-dial-tip-edge: color-mix(in srgb, #94a3b8 40%, var(--org-ehg-speed-dial-tip-chip));
   color: #e2e8f0;
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--org-ehg-speed-dial-tip-chip) 18%, transparent) 0%,
-      color-mix(in srgb, #1e293b 88%, transparent) 55%,
-      color-mix(in srgb, #0f172a 94%, transparent) 100%
-    ),
-    var(--org-ehg-speed-dial-tip-fill);
+  background: var(--org-ehg-speed-dial-tip-fill);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent),
     0 1px 2px color-mix(in srgb, #000 35%, transparent),
     0 8px 18px color-mix(in srgb, var(--org-ehg-speed-dial-tip-chip) 16%, transparent);
 }
 
-.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-speed-dial__label-caret {
+.org-ehg-btn-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-speed-dial__label-caret,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-btn-glass-speed-dial__label-caret,
+.org-ehg[data-org-ehg-theme="dark"] .org-ehg-btn-glass-speed-dial__label-caret {
+  background: var(--org-ehg-speed-dial-tip-fill);
+  border-color: var(--org-ehg-speed-dial-tip-edge);
   box-shadow: 1px -1px 2px color-mix(in srgb, #000 30%, transparent);
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="rounded-label"]
+  .org-ehg-btn-glass-speed-dial__label,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="rounded-label"]
+  .org-ehg-btn-glass-speed-dial__label,
+.org-ehg[data-org-ehg-theme="dark"]
   .org-ehg-btn-glass-speed-dial[data-label-type="rounded-label"]
   .org-ehg-btn-glass-speed-dial__label {
   color: #e2e8f0;
@@ -2120,6 +2166,12 @@
 }
 
 .org-ehg-btn-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="flat-label"]
+  .org-ehg-btn-glass-speed-dial__label,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-btn-glass-speed-dial[data-label-type="flat-label"]
+  .org-ehg-btn-glass-speed-dial__label,
+.org-ehg[data-org-ehg-theme="dark"]
   .org-ehg-btn-glass-speed-dial[data-label-type="flat-label"]
   .org-ehg-btn-glass-speed-dial__label {
   color: #e2e8f0;
@@ -4376,7 +4428,32 @@
   color: #f8fafc;
 }
 
-.org-ehg-card-glass--solid {
+/* Fill: Soft Glass = base .org-ehg-card-glass. Hybrid / Solid / Outline / Ghost below. */
+.org-ehg-card-glass--hybrid,
+.org-ehg-glass-card-pg__sample[data-fill="hybrid"] > .org-ehg-card-glass {
+  border-color: color-mix(in srgb, #6366f1 34%, #cbd5e1);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(239, 246, 255, 0.55) 42%, rgba(238, 242, 255, 0.72) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 color-mix(in srgb, #6366f1 12%, transparent),
+    0 14px 32px rgba(79, 70, 229, 0.14);
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass--hybrid,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-glass-card-pg__sample[data-fill="hybrid"]
+  > .org-ehg-card-glass {
+  border-color: color-mix(in srgb, #818cf8 42%, #334155);
+  background:
+    linear-gradient(145deg, rgba(99, 102, 241, 0.22) 0%, rgba(15, 23, 42, 0.55) 48%, rgba(30, 41, 59, 0.88) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+.org-ehg-card-glass--solid,
+.org-ehg-glass-card-pg__sample[data-fill="solid"] > .org-ehg-card-glass {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: #ffffff;
@@ -4384,16 +4461,473 @@
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
-.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass--solid {
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass--solid,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-glass-card-pg__sample[data-fill="solid"]
+  > .org-ehg-card-glass {
   background: #1e293b;
   border-color: #334155;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
 }
 
+.org-ehg-card-glass--outline,
+.org-ehg-glass-card-pg__sample[data-fill="outline"] > .org-ehg-card-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: transparent;
+  border-color: color-mix(in srgb, #3b82f6 42%, #94a3b8);
+  box-shadow: none;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass--outline,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-glass-card-pg__sample[data-fill="outline"]
+  > .org-ehg-card-glass {
+  background: transparent;
+  border-color: color-mix(in srgb, #60a5fa 48%, #64748b);
+  box-shadow: none;
+}
+
+.org-ehg-card-glass--ghost,
+.org-ehg-glass-card-pg__sample[data-fill="ghost"] > .org-ehg-card-glass {
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
+  background: color-mix(in srgb, #ffffff 28%, transparent);
+  border-color: color-mix(in srgb, #94a3b8 28%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass--ghost,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-glass-card-pg__sample[data-fill="ghost"]
+  > .org-ehg-card-glass {
+  background: color-mix(in srgb, #0f172a 35%, transparent);
+  border-color: color-mix(in srgb, #64748b 36%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
 .org-ehg-card-glass--table,
 .org-ehg-card-glass--settings,
-.org-ehg-card-glass--timeline {
+.org-ehg-card-glass--timeline,
+.org-ehg-card-glass--empty,
+.org-ehg-card-glass--edit,
+.org-ehg-card-glass--confirm,
+.org-ehg-card-glass--profile,
+.org-ehg-card-glass--checklist,
+.org-ehg-card-glass--notification,
+.org-ehg-card-glass--pricing,
+.org-ehg-card-glass--invoice,
+.org-ehg-card-glass--invite,
+.org-ehg-card-glass--schedule,
+.org-ehg-card-glass--media,
+.org-ehg-card-glass--comparison,
+.org-ehg-card-glass--loading {
   min-width: 0;
+}
+
+.org-ehg-card-glass__metric-unit {
+  margin-inline-start: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__metric-unit {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__metric--sm {
+  font-size: 1.35rem;
+  margin: 0.15rem 0 0.45rem;
+}
+
+.org-ehg-card-glass__feature-list,
+.org-ehg-card-glass__invoice-rows,
+.org-ehg-card-glass__schedule-facts,
+.org-ehg-card-glass__notify-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-ehg-card-glass__feature-list li {
+  position: relative;
+  padding-inline-start: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.org-ehg-card-glass__feature-list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.45rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__feature-list li {
+  color: #cbd5e1;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__feature-list li::before {
+  background: #93c5fd;
+}
+
+.org-ehg-card-glass__invoice-rows li,
+.org-ehg-card-glass__schedule-facts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__invoice-rows li,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__schedule-facts li {
+  color: #cbd5e1;
+}
+
+.org-ehg-card-glass__invoice-rows li[data-total="true"] {
+  margin-top: 0.25rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid color-mix(in srgb, #94a3b8 28%, transparent);
+  color: inherit;
+  font-size: 0.9375rem;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__invoice-rows li[data-total="true"] {
+  border-top-color: color-mix(in srgb, #64748b 40%, transparent);
+}
+
+.org-ehg-card-glass__schedule-facts li {
+  justify-content: flex-start;
+}
+
+.org-ehg-card-glass__schedule-facts strong {
+  min-width: 8.5rem;
+}
+
+.org-ehg-card-glass__notify-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.45rem 0.2rem;
+  border-bottom: 1px solid color-mix(in srgb, #94a3b8 22%, transparent);
+}
+
+.org-ehg-card-glass__notify-list li:last-child {
+  border-bottom: 0;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__notify-list li {
+  border-bottom-color: color-mix(in srgb, #64748b 36%, transparent);
+}
+
+.org-ehg-card-glass__media-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 8.5rem;
+  margin-bottom: 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px dashed color-mix(in srgb, #94a3b8 42%, transparent);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, #3b82f6 10%, #ffffff) 0%, color-mix(in srgb, #94a3b8 8%, #f8fafc) 100%);
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__media-frame {
+  border-color: color-mix(in srgb, #64748b 48%, transparent);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, #3b82f6 18%, #0f172a) 0%, color-mix(in srgb, #1e293b 80%, #0f172a) 100%);
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.15rem 0 0.65rem;
+}
+
+.org-ehg-card-glass__compare-grid > div {
+  padding: 0.65rem 0.7rem;
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, #94a3b8 26%, transparent);
+  background: color-mix(in srgb, #ffffff 40%, transparent);
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__compare-grid > div {
+  border-color: color-mix(in srgb, #64748b 40%, transparent);
+  background: color-mix(in srgb, #0f172a 42%, transparent);
+}
+
+.org-ehg-card-glass__compare-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__compare-label {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__skeleton {
+  display: block;
+  border-radius: 0.45rem;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #94a3b8 18%, transparent) 0%,
+    color-mix(in srgb, #cbd5e1 38%, transparent) 50%,
+    color-mix(in srgb, #94a3b8 18%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: org-ehg-card-glass-skeleton 1.35s ease-in-out infinite;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__skeleton {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #334155 55%, transparent) 0%,
+    color-mix(in srgb, #64748b 40%, transparent) 50%,
+    color-mix(in srgb, #334155 55%, transparent) 100%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes org-ehg-card-glass-skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.org-ehg-card-glass__skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.org-ehg-card-glass__skeleton--chip {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+}
+
+.org-ehg-card-glass__skeleton--title {
+  width: 9rem;
+  height: 0.85rem;
+}
+
+.org-ehg-card-glass__skeleton--sub {
+  width: 6.5rem;
+  height: 0.7rem;
+}
+
+.org-ehg-card-glass__skeleton--pill {
+  width: 3.5rem;
+  height: 1.35rem;
+  border-radius: 999px;
+}
+
+.org-ehg-card-glass__skeleton--metric {
+  width: 7.5rem;
+  height: 1.6rem;
+  margin: 0.35rem 0 0.55rem;
+}
+
+.org-ehg-card-glass__skeleton--hint {
+  width: 12rem;
+  height: 0.7rem;
+  margin-bottom: 0.75rem;
+}
+
+.org-ehg-card-glass__skeleton--bar {
+  width: 100%;
+  height: 0.55rem;
+  border-radius: 999px;
+}
+
+.org-ehg-card-glass__icon-chip--danger {
+  background: color-mix(in srgb, #ef4444 16%, #ffffff);
+  color: #dc2626;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__icon-chip--danger {
+  background: color-mix(in srgb, #ef4444 28%, #0f172a);
+  color: #fca5a5;
+}
+
+.org-ehg-card-glass__confirm-body {
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__confirm-body {
+  color: #cbd5e1;
+}
+
+.org-ehg-card-glass__btn--danger {
+  background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 14px color-mix(in srgb, #dc2626 35%, transparent);
+}
+
+.org-ehg-card-glass__avatar--lg {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.8125rem;
+}
+
+.org-ehg-card-glass__profile-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-ehg-card-glass__profile-facts li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__profile-facts li {
+  color: #cbd5e1;
+}
+
+.org-ehg-card-glass__profile-facts svg {
+  flex: 0 0 auto;
+  color: #2563eb;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__profile-facts svg {
+  color: #93c5fd;
+}
+
+.org-ehg-card-glass__checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-ehg-card-glass__checklist li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.55rem;
+  border: 1px solid color-mix(in srgb, #94a3b8 24%, transparent);
+  background: color-mix(in srgb, #ffffff 42%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__checklist li {
+  border-color: color-mix(in srgb, #64748b 40%, transparent);
+  background: color-mix(in srgb, #0f172a 42%, transparent);
+}
+
+.org-ehg-card-glass__checklist li[data-done="true"] {
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__checklist li[data-done="true"] {
+  color: #94a3b8;
+}
+
+.org-ehg-card-glass__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: #16a34a;
+}
+
+.org-ehg-card-glass__check > span {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, #94a3b8 55%, transparent);
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__check > span {
+  border-color: color-mix(in srgb, #94a3b8 55%, transparent);
+}
+
+.org-ehg-card-glass__empty-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 7.5rem;
+  margin: 0.15rem 0 0.35rem;
+  padding: 1.1rem 0.85rem;
+  border: 1px dashed color-mix(in srgb, #94a3b8 45%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, #ffffff 35%, transparent);
+  text-align: center;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__empty-body {
+  border-color: color-mix(in srgb, #64748b 50%, transparent);
+  background: color-mix(in srgb, #0f172a 40%, transparent);
+}
+
+.org-ehg-card-glass__empty-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.org-ehg-card-glass__empty-hint {
+  margin: 0;
+  max-width: 16rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-card-glass__empty-hint {
+  color: #94a3b8;
 }
 
 .org-ehg-card-glass__header {
@@ -4953,6 +5487,10 @@
 }
 
 .org-ehg-card-glass__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   min-height: 2.25rem;
   min-width: 6.5rem;
   padding: 0.4rem 0.9rem;
@@ -4974,6 +5512,105 @@
   background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
   color: #ffffff;
   box-shadow: 0 6px 14px color-mix(in srgb, #2563eb 35%, transparent);
+}
+
+/* Glass card playground (Card / Header / Footer) */
+.org-ehg-glass-card-pg__preview {
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem 0 1rem;
+}
+
+.org-ehg-glass-card-pg__preview--split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .org-ehg-glass-card-pg__preview--split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-ehg-glass-card-pg__lane {
+  position: relative;
+  min-width: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.org-ehg-glass-card-pg__lane-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 0.85rem 1rem;
+}
+
+.org-ehg-glass-card-pg__lane-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.org-ehg-glass-card-pg__lane[data-org-ehg-theme="dark"] .org-ehg-glass-card-pg__lane-label {
+  color: #94a3b8;
+}
+
+.org-ehg-glass-card-pg__sample,
+.org-ehg-glass-card-pg__card {
+  width: min(100%, 22rem);
+  min-height: 0;
+  margin-inline: auto;
+}
+
+.org-ehg-glass-card-pg__sample[data-sample="table"],
+.org-ehg-glass-card-pg__sample[data-sample="timeline"],
+.org-ehg-glass-card-pg__sample[data-sample="settings"],
+.org-ehg-glass-card-pg__sample[data-sample="notification"],
+.org-ehg-glass-card-pg__sample[data-sample="invoice"] {
+  width: min(100%, 28rem);
+}
+
+.org-ehg-glass-card-pg__sample .org-ehg-card-glass {
+  width: 100%;
+}
+
+.org-ehg-glass-card-pg__card--shape-soft {
+  border-radius: 1.1rem;
+}
+
+.org-ehg-glass-card-pg__card--shape-pill {
+  border-radius: 1.5rem;
+}
+
+.org-ehg-glass-card-pg__card--no-shadow,
+.org-ehg-glass-card-pg__card--no-shadow.org-ehg-card-glass--solid,
+.org-ehg-glass-card-pg__card--no-shadow.org-ehg-card-glass--hybrid,
+.org-ehg-glass-card-pg__sample.org-ehg-glass-card-pg__card--no-shadow > .org-ehg-card-glass {
+  box-shadow: none;
+}
+
+.org-ehg-glass-card-pg__footer-caption {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, #94a3b8 28%, transparent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.org-ehg[data-org-ehg-theme="dark"] .org-ehg-glass-card-pg__footer-caption,
+.org-ehg-card-glass-panel[data-org-ehg-theme="dark"] .org-ehg-glass-card-pg__footer-caption {
+  border-top-color: color-mix(in srgb, #64748b 40%, transparent);
+  color: #94a3b8;
 }
 
 /* --- Date Glass (UI Standards / DEV only) --- */
@@ -6657,7 +7294,7 @@
   --org-ehg-qa-edge: color-mix(in srgb, #ffffff 78%, #94a3b8);
   --org-ehg-qa-ink: #1e293b;
   --org-ehg-qa-muted: #64748b;
-  --org-ehg-qa-accent: #3b82f6;
+  --org-ehg-qa-accent: var(--exits-primary, #3b82f6);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -6753,7 +7390,7 @@
 }
 
 .org-ehg-qa-glass {
-  --org-ehg-qa-accent: #3b82f6;
+  --org-ehg-qa-accent: var(--exits-primary, #3b82f6);
   --org-ehg-qa-glass-blur: 12px;
   display: inline-flex;
   align-items: center;
@@ -6778,13 +7415,20 @@
     box-shadow 120ms ease;
 }
 
-/* Card shape = global Control Shape tokens (playground data-card-shape). */
+/*
+ * Card shape ladder (Input / Select glass):
+ * Square → Small (control) → Standard (middle, md) → Soft → Pill.
+ */
 .org-ehg-qa-glass[data-card-shape="square"] {
   --org-ehg-qa-radius: 0;
 }
 
-.org-ehg-qa-glass[data-card-shape="standard"] {
+.org-ehg-qa-glass[data-card-shape="small"] {
   --org-ehg-qa-radius: var(--exits-radius-control);
+}
+
+.org-ehg-qa-glass[data-card-shape="standard"] {
+  --org-ehg-qa-radius: var(--exits-radius-md);
 }
 
 .org-ehg-qa-glass[data-card-shape="soft"] {
@@ -6795,7 +7439,8 @@
   --org-ehg-qa-radius: 9999px;
 }
 
-.org-ehg-qa-glass:hover {
+/* Hover gated by data-hover — omit or "on" enables; "off" keeps rest styles. */
+.org-ehg-qa-glass:not([data-hover="off"]):hover {
   border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 42%, var(--org-ehg-qa-edge));
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #fff 78%, transparent),
@@ -6818,14 +7463,34 @@
     0 1px 2px color-mix(in srgb, #000 40%, transparent);
 }
 
+/* Dark hover needs a stronger step — light deltas wash out on dark fill. */
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass:not([data-hover="off"]):hover {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 52%, var(--org-ehg-qa-edge));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 14%, transparent), transparent 45%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 22%, var(--org-ehg-qa-fill));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 16%, transparent),
+    0 12px 30px color-mix(in srgb, var(--org-ehg-qa-accent) 28%, #000),
+    0 1px 2px color-mix(in srgb, #000 45%, transparent);
+}
+
 .org-ehg-qa-glass--no-shadow,
 .org-ehg-qa-glass--no-shadow:hover,
+.org-ehg-qa-glass--no-shadow:focus-visible,
 .org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass--no-shadow,
-.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass--no-shadow:hover {
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass--no-shadow:hover,
+[data-theme="dark"] .org-ehg-qa-glass--no-shadow,
+[data-theme="dark"] .org-ehg-qa-glass--no-shadow:hover,
+.org-ehg-qa-input-glass[data-shell="org-ehg"] .org-ehg-qa-input-glass__field.org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-input-glass[data-shell="org-ehg"] .org-ehg-qa-input-glass__field.org-ehg-qa-glass--no-shadow:hover,
+[data-theme="dark"] .org-ehg-qa-input-glass[data-shell="org-ehg"] .org-ehg-qa-input-glass__field.org-ehg-qa-glass--no-shadow,
+[data-theme="dark"] .org-ehg-qa-input-glass[data-shell="org-ehg"] .org-ehg-qa-input-glass__field.org-ehg-qa-glass--no-shadow:hover {
   box-shadow: none;
 }
 
-.org-ehg-qa-glass--tone-primary { --org-ehg-qa-accent: #3b82f6; }
+.org-ehg-qa-glass--tone-primary { --org-ehg-qa-accent: var(--exits-primary, #3b82f6); }
 .org-ehg-qa-glass--tone-secondary { --org-ehg-qa-accent: #64748b; }
 .org-ehg-qa-glass--tone-success { --org-ehg-qa-accent: #10b981; }
 .org-ehg-qa-glass--tone-info { --org-ehg-qa-accent: #0ea5e9; }
@@ -7112,6 +7777,7 @@
 
 .org-ehg-qa-glass-icon {
   --org-ehg-qa-accent: #64748b;
+  --org-ehg-qa-radius: var(--org-ehg-qa-chip-radius, 0.65rem);
   appearance: none;
   display: inline-flex;
   align-items: center;
@@ -7121,8 +7787,8 @@
   margin: 0;
   padding: 0;
   border: 1px solid var(--org-ehg-qa-edge);
-  /* Soft square is default for action-group chips; rounded = circle. */
-  border-radius: var(--org-ehg-qa-chip-radius, 0.65rem);
+  /* Shape dropdown (data-card-shape) owns radius; soft chip is the default token. */
+  border-radius: var(--org-ehg-qa-radius);
   background:
     linear-gradient(180deg, color-mix(in srgb, #fff 50%, transparent), transparent 50%),
     var(--org-ehg-qa-fill);
@@ -7131,6 +7797,26 @@
     inset 0 1px 0 color-mix(in srgb, #fff 65%, transparent),
     0 6px 16px color-mix(in srgb, #0f172a 8%, transparent);
   cursor: pointer;
+}
+
+.org-ehg-qa-glass-icon[data-card-shape="square"] {
+  --org-ehg-qa-radius: 0;
+}
+
+.org-ehg-qa-glass-icon[data-card-shape="small"] {
+  --org-ehg-qa-radius: var(--exits-radius-control);
+}
+
+.org-ehg-qa-glass-icon[data-card-shape="standard"] {
+  --org-ehg-qa-radius: var(--exits-radius-md);
+}
+
+.org-ehg-qa-glass-icon[data-card-shape="soft"] {
+  --org-ehg-qa-radius: var(--exits-radius-soft);
+}
+
+.org-ehg-qa-glass-icon[data-card-shape="pill"] {
+  --org-ehg-qa-radius: 9999px;
 }
 
 .org-ehg-qa-glass-icon--soft {
@@ -7152,7 +7838,7 @@
     0 8px 18px color-mix(in srgb, #000 35%, transparent);
 }
 
-.org-ehg-qa-glass-icon--tone-primary { --org-ehg-qa-accent: #3b82f6; }
+.org-ehg-qa-glass-icon--tone-primary { --org-ehg-qa-accent: var(--exits-primary, #3b82f6); }
 .org-ehg-qa-glass-icon--tone-secondary { --org-ehg-qa-accent: #64748b; }
 .org-ehg-qa-glass-icon--tone-success { --org-ehg-qa-accent: #10b981; }
 .org-ehg-qa-glass-icon--tone-info { --org-ehg-qa-accent: #0ea5e9; }
@@ -7197,6 +7883,114 @@
 
 .org-ehg-qa-glass__icon--no-shadow {
   box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent);
+}
+
+/* Ghost icon — transparent wash, accent glyph (not solid filled). After no-shadow so it wins. */
+.org-ehg-qa-glass__icon--ghost,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--ghost {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--org-ehg-qa-accent) 28%, transparent);
+  color: var(--org-ehg-qa-accent);
+  box-shadow: none;
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass__icon--ghost,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--ghost {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 36%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 72%, #f8fafc);
+  box-shadow: none;
+}
+
+/* Outline icon — empty fill, accent ring, accent glyph. */
+.org-ehg-qa-glass__icon--outline,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--outline {
+  background: transparent;
+  border: 1.5px solid color-mix(in srgb, var(--org-ehg-qa-accent) 72%, transparent);
+  color: var(--org-ehg-qa-accent);
+  box-shadow: none;
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass__icon--outline,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--outline {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 78%, #f8fafc);
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 72%, #f8fafc);
+  box-shadow: none;
+}
+
+/* Soft icon — light tinted chip, accent glyph (not solid block). */
+.org-ehg-qa-glass__icon--soft-fill,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--soft-fill {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 16%, #fff);
+  border: 1px solid color-mix(in srgb, var(--org-ehg-qa-accent) 28%, transparent);
+  color: var(--org-ehg-qa-accent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass__icon--soft-fill,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--soft-fill {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 22%, #0f172a);
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 36%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 78%, #f8fafc);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent);
+}
+
+/* Glossy icon — solid accent + top specular. */
+.org-ehg-qa-glass__icon--glossy,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--glossy {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 42%, transparent), transparent 52%),
+    var(--org-ehg-qa-accent);
+  border: 1px solid color-mix(in srgb, var(--org-ehg-qa-accent) 70%, #0f172a);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 50%, transparent),
+    0 6px 14px color-mix(in srgb, var(--org-ehg-qa-accent) 38%, transparent);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-glass__icon--glossy,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--glossy {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 28%, transparent), transparent 52%),
+    var(--org-ehg-qa-accent);
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 55%, #000);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 30%, transparent),
+    0 8px 16px color-mix(in srgb, #000 40%, transparent);
+}
+
+.org-ehg-qa-glass__icon--glossy.org-ehg-qa-glass__icon--no-shadow,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--glossy.org-ehg-qa-glass-icon--no-shadow {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 50%, transparent);
+}
+
+/* Bare icon — glyph only, no chip wrap. */
+.org-ehg-qa-glass__glyph--bare {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--org-ehg-qa-accent);
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--bare {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--org-ehg-qa-accent);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--bare {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 72%, #f8fafc);
 }
 
 .org-ehg-qa-glass-group,
@@ -7322,7 +8116,7 @@
 
 
 .org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-primary {
-  --org-ehg-qa-accent: #3b82f6;
+  --org-ehg-qa-accent: var(--exits-primary, #3b82f6);
 }
 
 .org-ehg-qa-glass-icon--action.org-ehg-qa-glass-icon--tone-success {
@@ -7464,4 +8258,1648 @@
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
+}
+
+/* =============================================================================
+ * Button glass + Input glass — same surface recipe as Quick Action glass
+ * ============================================================================= */
+
+.org-ehg-qa-btn-glass {
+  min-width: 8.5rem;
+  justify-content: center;
+  /* Same type as shared Button (default size). */
+  font-family: inherit;
+  font-size: var(--exits-text-sm, 0.875rem);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
+  /*
+   * Whisper primary wash — Preferences primary hue at a very low mix so the
+   * control reads as glass/neutral, not a solid primary CTA.
+   * Border keeps a slightly stronger whisper so the edge stays noticeable.
+   */
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 22%, var(--org-ehg-qa-edge));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 5%, var(--org-ehg-qa-fill));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent),
+    0 8px 22px color-mix(in srgb, var(--org-ehg-qa-accent) 6%, transparent),
+    0 1px 2px color-mix(in srgb, #0f172a 8%, transparent);
+  /* Label / ink follow the same accent (Preferences primary when tone is primary). */
+  color: var(--org-ehg-qa-accent);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--tone-primary {
+  --org-ehg-qa-accent: var(--exits-primary, #3b82f6);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-btn-glass {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 26%, var(--org-ehg-qa-edge));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent),
+    0 10px 28px color-mix(in srgb, var(--org-ehg-qa-accent) 8%, #000),
+    0 1px 2px color-mix(in srgb, #000 40%, transparent);
+  color: var(--org-ehg-qa-accent);
+}
+
+/*
+ * Dark default fill only when appearance does not set its own background.
+ * Otherwise glossy / soft / outline lose to this higher-specificity dark rule.
+ */
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass:not(
+    .org-ehg-qa-btn-glass--appearance-flat,
+    .org-ehg-qa-btn-glass--appearance-soft,
+    .org-ehg-qa-btn-glass--appearance-soft-outline,
+    .org-ehg-qa-btn-glass--appearance-outline,
+    .org-ehg-qa-btn-glass--appearance-glossy,
+    .org-ehg-qa-btn-glass--appearance-glossy-glass,
+    .org-ehg-qa-btn-glass--appearance-glossy-raise,
+    .org-ehg-qa-btn-glass--appearance-gradient,
+    .org-ehg-qa-btn-glass--appearance-gradient-glass,
+    .org-ehg-qa-btn-glass--appearance-text
+  ) {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 8%, var(--org-ehg-qa-fill));
+}
+
+/* Appearances — same set as Button / Org EHG Button glass, on QA surface. */
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-flat {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  /* Same whisper as base btn glass — barely-there primary, not a filled CTA. */
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 5%, var(--org-ehg-qa-fill));
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 22%, var(--org-ehg-qa-edge));
+  /* Drop shadow follows Shadow switch (no-shadow class); do not force none here. */
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-flat {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 8%, var(--org-ehg-qa-fill));
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 26%, var(--org-ehg-qa-edge));
+}
+
+/*
+ * Glass btn hover — same whisper primary, one step stronger.
+ * Color only (fill + border). No lift, scale, or translate.
+ * Playground Hover switch: data-hover="off" disables.
+ */
+.org-ehg-qa-btn-glass:not([data-hover="off"]):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 32%, var(--org-ehg-qa-edge));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 9%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-flat:not([data-hover="off"]):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 9%, var(--org-ehg-qa-fill));
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 32%, var(--org-ehg-qa-edge));
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass:not([data-hover="off"]):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 48%, var(--org-ehg-qa-edge));
+}
+
+/* Dark hover fill — skip appearances that own their background (glossy, soft, …). */
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass:not([data-hover="off"]):hover:not(:disabled):not(
+    .org-ehg-qa-btn-glass--appearance-flat,
+    .org-ehg-qa-btn-glass--appearance-soft,
+    .org-ehg-qa-btn-glass--appearance-soft-outline,
+    .org-ehg-qa-btn-glass--appearance-outline,
+    .org-ehg-qa-btn-glass--appearance-glossy,
+    .org-ehg-qa-btn-glass--appearance-glossy-glass,
+    .org-ehg-qa-btn-glass--appearance-glossy-raise,
+    .org-ehg-qa-btn-glass--appearance-gradient,
+    .org-ehg-qa-btn-glass--appearance-gradient-glass,
+    .org-ehg-qa-btn-glass--appearance-text
+  ) {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 14%, transparent), transparent 45%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 20%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-flat:not([data-hover="off"]):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 20%, var(--org-ehg-qa-fill));
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 48%, var(--org-ehg-qa-edge));
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-soft {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 40%, transparent), transparent 42%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 6%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-soft-outline {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 55%, var(--org-ehg-qa-edge));
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 82%, #0f172a);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-soft-glass {
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-outline {
+  border-color: var(--org-ehg-qa-accent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 50%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 6%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 88%, #0f172a);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-raised {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent),
+    0 1px 0 color-mix(in srgb, #fff 40%, transparent),
+    0 10px 24px color-mix(in srgb, var(--org-ehg-qa-accent) 28%, transparent);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 72%, transparent), transparent 48%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 22%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy-glass {
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  backdrop-filter: blur(16px) saturate(1.35);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 78%, transparent), transparent 48%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 16%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy-raise {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 72%, transparent), transparent 48%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 22%, var(--org-ehg-qa-fill));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 78%, transparent),
+    0 2px 0 color-mix(in srgb, #fff 35%, transparent),
+    0 12px 28px color-mix(in srgb, var(--org-ehg-qa-accent) 32%, transparent);
+}
+
+/* Dark glossy — stronger sheen so the gloss reads on dark fill. */
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 36%, transparent), transparent 55%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 30%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy-glass {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 40%, transparent), transparent 55%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 24%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy-raise {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 36%, transparent), transparent 55%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 30%, var(--org-ehg-qa-fill));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 28%, transparent),
+    0 2px 0 color-mix(in srgb, #fff 12%, transparent),
+    0 12px 28px color-mix(in srgb, var(--org-ehg-qa-accent) 36%, #000);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-soft {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 18%, transparent), transparent 45%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 14%, var(--org-ehg-qa-fill));
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-soft-outline {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 58%, var(--org-ehg-qa-edge));
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 14%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 88%, #f8fafc);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-outline {
+  border-color: var(--org-ehg-qa-accent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 12%, transparent);
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 92%, #f8fafc);
+}
+
+/*
+ * Shadow switch — rest stays flat when off.
+ * Hover still gets elevation when Hover is on (Shadow off = rest only).
+ */
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-raised.org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy-raise.org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"] .org-ehg-qa-btn-glass.org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-raised.org-ehg-qa-glass--no-shadow,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-glossy-raise.org-ehg-qa-glass--no-shadow {
+  box-shadow: none;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--no-shadow:not([data-hover="off"]):hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 78%, transparent),
+    0 10px 26px color-mix(in srgb, var(--org-ehg-qa-accent) 20%, transparent),
+    0 1px 2px color-mix(in srgb, #0f172a 10%, transparent);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-btn-glass.org-ehg-qa-glass--no-shadow:not([data-hover="off"]):hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 16%, transparent),
+    0 12px 30px color-mix(in srgb, var(--org-ehg-qa-accent) 28%, #000),
+    0 1px 2px color-mix(in srgb, #000 45%, transparent);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-gradient {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 55%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--org-ehg-qa-accent) 88%, #fff) 0%,
+    var(--org-ehg-qa-accent) 48%,
+    color-mix(in srgb, var(--org-ehg-qa-accent) 72%, #0f172a) 100%
+  );
+  color: #ffffff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-gradient
+  .org-ehg-qa-glass__label {
+  color: #ffffff;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-gradient-glass {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 70%, transparent), transparent 42%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--org-ehg-qa-accent) 35%, transparent) 0%,
+      color-mix(in srgb, var(--org-ehg-qa-accent) 18%, transparent) 100%
+    );
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-rounded {
+  border-radius: 9999px;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-text {
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  padding: 0.2rem 0.35rem;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--org-ehg-qa-accent);
+  font-weight: 600;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-text .org-ehg-qa-glass__icon {
+  display: none;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-text .org-ehg-qa-glass__label {
+  color: inherit;
+  font-weight: inherit;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--appearance-medallion {
+  border-radius: 9999px;
+}
+
+.org-ehg-qa-btn-glass .org-ehg-qa-glass__label {
+  flex: 0 1 auto;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-align: center;
+  color: inherit;
+}
+
+.org-ehg-qa-btn-glass .org-ehg-qa-glass__trail {
+  color: inherit;
+}
+
+/* Content align — icon + label cluster: Start / Center / End */
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--align-start {
+  justify-content: flex-start;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--align-center {
+  justify-content: center;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--align-end {
+  justify-content: flex-end;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--align-start .org-ehg-qa-glass__label {
+  text-align: start;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--align-end .org-ehg-qa-glass__label {
+  text-align: end;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--split.org-ehg-qa-btn-glass--align-start
+  .org-ehg-qa-glass__split-main {
+  justify-content: flex-start;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--split.org-ehg-qa-btn-glass--align-center
+  .org-ehg-qa-glass__split-main {
+  justify-content: center;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--split.org-ehg-qa-btn-glass--align-end
+  .org-ehg-qa-glass__split-main {
+  justify-content: flex-end;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--size-sm {
+  min-width: 7rem;
+  font-size: var(--exits-text-xs, 0.75rem);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-glass--size-lg {
+  min-width: 10rem;
+  font-size: var(--exits-text-md, 0.9375rem);
+}
+
+/*
+ * Floating action — circular QA Button glass (same whisper surface as btn glass).
+ * Opt-in via --fab; base qa-btn-glass stays rounded-rect.
+ */
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab {
+  /* Radius follows Shape (data-card-shape → --org-ehg-qa-radius). Default seed is pill. */
+  /* relative: badge anchor when the FAB is not staged in a fab-scene */
+  position: relative;
+  min-width: 0;
+  width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+  border-radius: var(--org-ehg-qa-radius);
+}
+
+/*
+ * FAB stage placement — MUST follow `--fab { position: relative }` so absolute
+ * wins by source order. Physical left/right (not inset-inline) so right-* clears
+ * a prior left/center choice. Scene + button data-fab-position both drive anchors.
+ */
+.org-ehg-btn-glass-fab-scene[data-fab-position] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position] > .org-ehg-btn-glass-sample,
+.org-ehg-btn-glass-fab-scene--playground > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene--playground > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene--playground > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-qa-btn-glass--fab[data-fab-position],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position] {
+  position: absolute;
+  margin: 0;
+  inset: auto;
+  transform: none;
+}
+
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-top"] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-top"] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-top"] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-top"] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-top"] > .org-ehg-btn-glass-sample,
+.org-ehg-qa-btn-glass--fab[data-fab-position="left-top"],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position="left-top"] {
+  top: 1rem;
+  right: auto;
+  bottom: auto;
+  left: 1rem;
+}
+
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-top"] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-top"] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-top"] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-top"] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-top"] > .org-ehg-btn-glass-sample,
+.org-ehg-qa-btn-glass--fab[data-fab-position="center-top"],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position="center-top"] {
+  top: 1rem;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-top"] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-top"] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-top"] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-top"] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-top"] > .org-ehg-btn-glass-sample,
+.org-ehg-qa-btn-glass--fab[data-fab-position="right-top"],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position="right-top"] {
+  top: 1rem;
+  right: 1rem;
+  bottom: auto;
+  left: auto;
+}
+
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-bottom"] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-bottom"] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-bottom"] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-bottom"] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position="left-bottom"] > .org-ehg-btn-glass-sample,
+.org-ehg-qa-btn-glass--fab[data-fab-position="left-bottom"],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position="left-bottom"] {
+  top: auto;
+  right: auto;
+  bottom: 1rem;
+  left: 1rem;
+}
+
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-bottom"] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-bottom"] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-bottom"] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-bottom"] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position="center-bottom"] > .org-ehg-btn-glass-sample,
+.org-ehg-qa-btn-glass--fab[data-fab-position="center-bottom"],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position="center-bottom"] {
+  top: auto;
+  right: auto;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-bottom"] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-bottom"] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-bottom"] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-bottom"] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position="right-bottom"] > .org-ehg-btn-glass-sample,
+.org-ehg-btn-glass-fab-scene--playground:not([data-fab-position]) > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene--playground:not([data-fab-position]) > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-qa-btn-glass--fab[data-fab-position="right-bottom"],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position="right-bottom"] {
+  top: auto;
+  right: 1rem;
+  bottom: 1rem;
+  left: auto;
+}
+
+.org-ehg-btn-glass-fab-scene[data-fab-position="middle"] > .org-ehg-btn-glass,
+.org-ehg-btn-glass-fab-scene[data-fab-position="middle"] > .org-ehg-qa-btn-glass--fab,
+.org-ehg-btn-glass-fab-scene[data-fab-position="middle"] > .org-ehg-qa-glass-icon[data-fab="true"],
+.org-ehg-btn-glass-fab-scene[data-fab-position="middle"] > .org-ehg-qa-glass-sample,
+.org-ehg-btn-glass-fab-scene[data-fab-position="middle"] > .org-ehg-btn-glass-sample,
+.org-ehg-qa-btn-glass--fab[data-fab-position="middle"],
+.org-ehg-qa-glass-icon[data-fab="true"][data-fab-position="middle"] {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md {
+  width: 2.85rem;
+  height: 2.85rem;
+  min-height: 2.85rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-lg {
+  width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab .org-ehg-qa-glass__glyph {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm .org-ehg-qa-glass__glyph {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md .org-ehg-qa-glass__glyph {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-lg .org-ehg-qa-glass__glyph {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab-extended {
+  width: auto;
+  min-width: 7.5rem;
+  padding-inline: 1rem 1.15rem;
+  gap: 0.55rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab-extended .org-ehg-qa-glass__glyph {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.org-ehg-qa-btn-glass__badge {
+  position: absolute;
+  top: -0.2rem;
+  inset-inline-end: -0.15rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  background: var(--org-ehg-qa-accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 3px color-mix(in srgb, #0f172a 25%, transparent);
+}
+
+.org-ehg-qa-glass-panel--playground-fab {
+  position: relative;
+  display: block;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 11rem;
+  padding: 0;
+  overflow: hidden;
+}
+
+.org-ehg-qa-glass-panel--playground-fab .org-ehg-btn-glass-fab-scene--playground {
+  position: absolute;
+  inset: 0.65rem;
+  min-height: 0;
+}
+
+/*
+ * Density — same ladder as Button playground / Preferences control height:
+ * Compact 2rem · Standard (balance) 2.25rem · Comfort 2.75rem
+ */
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-compact {
+  gap: 0.45rem;
+  min-height: 2rem;
+  height: 2rem;
+  padding: 0.2rem 0.5rem 0.2rem 0.35rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-compact .org-ehg-qa-glass__icon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-compact .org-ehg-qa-glass__glyph {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-balance {
+  gap: 0.55rem;
+  min-height: 2.25rem;
+  height: 2.25rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.45rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-balance .org-ehg-qa-glass__icon {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-balance .org-ehg-qa-glass__glyph {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-comfort {
+  gap: 0.7rem;
+  min-height: 2.75rem;
+  height: 2.75rem;
+  padding: 0.4rem 0.75rem 0.4rem 0.5rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-comfort .org-ehg-qa-glass__icon {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--density-comfort .org-ehg-qa-glass__glyph {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-btn-glass--density-compact {
+  width: 2rem;
+  height: 2rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-btn-glass--density-balance {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-btn-glass--density-comfort {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+/*
+ * Size ladder beats density on icon-only / floating icon (same sm/md/lg as Size dropdown).
+ * Density alone still sizes when no --size-* class is present.
+ */
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-sm.org-ehg-qa-btn-glass--density-compact,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-sm.org-ehg-qa-btn-glass--density-balance,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-sm.org-ehg-qa-btn-glass--density-comfort {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-md.org-ehg-qa-btn-glass--density-compact,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-md.org-ehg-qa-btn-glass--density-balance,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-md.org-ehg-qa-btn-glass--density-comfort {
+  width: 2.65rem;
+  height: 2.65rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-lg.org-ehg-qa-btn-glass--density-compact,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-lg.org-ehg-qa-btn-glass--density-balance,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-lg.org-ehg-qa-btn-glass--density-comfort {
+  width: 3.1rem;
+  height: 3.1rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-sm.org-ehg-qa-btn-glass--density-compact
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-sm.org-ehg-qa-btn-glass--density-balance
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-sm.org-ehg-qa-btn-glass--density-comfort
+  .org-ehg-qa-glass__glyph {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-md.org-ehg-qa-btn-glass--density-compact
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-md.org-ehg-qa-btn-glass--density-balance
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-md.org-ehg-qa-btn-glass--density-comfort
+  .org-ehg-qa-glass__glyph {
+  width: 1rem;
+  height: 1rem;
+}
+
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-lg.org-ehg-qa-btn-glass--density-compact
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-lg.org-ehg-qa-btn-glass--density-balance
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-glass-icon.org-ehg-qa-glass-icon--size-lg.org-ehg-qa-btn-glass--density-comfort
+  .org-ehg-qa-glass__glyph {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/*
+ * FAB after density — density sets asymmetric pad + fixed height that shove the
+ * glyph off-center. Reset pad/align and restore circular size + glyph ladder.
+ */
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-btn-glass--density-compact,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-btn-glass--density-balance,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-btn-glass--density-comfort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  gap: 0;
+  width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm.org-ehg-qa-btn-glass--density-compact,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm.org-ehg-qa-btn-glass--density-balance,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm.org-ehg-qa-btn-glass--density-comfort {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md.org-ehg-qa-btn-glass--density-compact,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md.org-ehg-qa-btn-glass--density-balance,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md.org-ehg-qa-btn-glass--density-comfort {
+  width: 2.85rem;
+  height: 2.85rem;
+  min-height: 2.85rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-btn-glass--density-compact
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-btn-glass--density-balance
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-btn-glass--density-comfort
+  .org-ehg-qa-glass__glyph {
+  display: block;
+  margin: 0;
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm.org-ehg-qa-btn-glass--density-compact
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm.org-ehg-qa-btn-glass--density-balance
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-sm.org-ehg-qa-btn-glass--density-comfort
+  .org-ehg-qa-glass__glyph {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md.org-ehg-qa-btn-glass--density-compact
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md.org-ehg-qa-btn-glass--density-balance
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-md.org-ehg-qa-btn-glass--density-comfort
+  .org-ehg-qa-glass__glyph {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-lg.org-ehg-qa-btn-glass--density-compact
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-lg.org-ehg-qa-btn-glass--density-balance
+  .org-ehg-qa-glass__glyph,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab.org-ehg-qa-glass--size-lg.org-ehg-qa-btn-glass--density-comfort
+  .org-ehg-qa-glass__glyph {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab-extended.org-ehg-qa-btn-glass--density-compact,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab-extended.org-ehg-qa-btn-glass--density-balance,
+.org-ehg-qa-btn-glass.org-ehg-qa-btn-glass--fab-extended.org-ehg-qa-btn-glass--density-comfort {
+  width: auto;
+  min-width: 7.5rem;
+  height: auto;
+  min-height: 2.85rem;
+  padding-inline: 1rem 1.15rem;
+  gap: 0.55rem;
+}
+
+/*
+ * Input glass — Soft Glass outlined layout:
+ * outer host has top pad for the raised label; inner __field is the glass card.
+ * Type + bottom bar: 13px label, 14px text, 3px bar @ 0.45s.
+ */
+.org-ehg-qa-input-glass {
+  --org-ehg-qa-input-label-size: 13px;
+  --org-ehg-qa-input-text-size: 14px;
+  /* Thick below — same recipe as Org EHG Input Glass / outlined field lock. */
+  --org-ehg-qa-input-bar-thickness: 3px;
+  /* Soft Glass primary-field timing (0.45s) — not the slower 0.9s qinput playground. */
+  --org-ehg-qa-input-bar-duration: 0.45s;
+  --org-ehg-qa-input-label-duration: 0.45s;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 14rem;
+  max-width: 22rem;
+  width: 100%;
+  margin: 0;
+  /* Room above the glass card — Soft Glass float lift (0.85rem) + label half. */
+  padding-top: 1.05rem;
+  cursor: text;
+  overflow: visible;
+}
+
+/*
+ * Product Org EHG Input / Select glass (`ExitsOrgEhgInput` / `ExitsOrgEhgSelect`).
+ * Playground seeds tokens on `.org-ehg-qa-glass-panel`; product hosts use
+ * `data-shell="org-ehg"` so the locked glass card (fill + edge) still paints.
+ */
+.org-ehg-qa-input-glass[data-shell="org-ehg"],
+.org-ehg-qa-select-glass[data-shell="org-ehg"] {
+  --org-ehg-qa-radius: var(--exits-radius-md, 0.5rem);
+  --org-ehg-qa-chip-radius: 0.65rem;
+  --org-ehg-qa-fill: color-mix(in srgb, #ffffff 72%, transparent);
+  --org-ehg-qa-edge: color-mix(in srgb, #ffffff 78%, #94a3b8);
+  --org-ehg-qa-ink: #1e293b;
+  --org-ehg-qa-muted: #64748b;
+  --org-ehg-qa-accent: var(--exits-primary, #3b82f6);
+}
+
+/* Product glass card — no filter containing group (clips stacked float / bar). */
+.org-ehg-qa-input-glass[data-shell="org-ehg"] .org-ehg-qa-input-glass__field {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  filter: none;
+  overflow: visible;
+}
+
+[data-theme="dark"] .org-ehg-qa-input-glass[data-shell="org-ehg"],
+[data-theme="dark"] .org-ehg-qa-select-glass[data-shell="org-ehg"] {
+  --org-ehg-qa-fill: color-mix(in srgb, #ffffff 8%, #1a222d);
+  --org-ehg-qa-edge: color-mix(in srgb, #ffffff 16%, #334155);
+  --org-ehg-qa-ink: #e8eef6;
+  --org-ehg-qa-muted: #9aa8bc;
+}
+
+.org-ehg-qa-input-glass.org-ehg-qa-glass--size-sm,
+.org-ehg-qa-input-glass:has(.org-ehg-qa-glass--size-sm) {
+  min-width: 11.5rem;
+}
+
+.org-ehg-qa-input-glass.org-ehg-qa-glass--size-lg,
+.org-ehg-qa-input-glass:has(.org-ehg-qa-glass--size-lg) {
+  min-width: 16rem;
+}
+
+/* Glass card surface — one border; native input stays borderless inside. */
+.org-ehg-qa-input-glass__field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+  padding-inline: 0.65rem 0.55rem;
+  overflow: visible;
+}
+
+/*
+ * Thick below — locked outlined field focus recipe (Org EHG Input Glass):
+ * inset -1px frame, border-bottom 3px, scaleX from center @ 0.7s.
+ */
+.org-ehg-qa-input-glass__field::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  border-radius: inherit;
+  border-bottom: var(--org-ehg-qa-input-bar-thickness) solid var(--org-ehg-qa-accent);
+  background: transparent;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--org-ehg-qa-input-bar-duration) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.org-ehg-qa-input-glass:focus-within .org-ehg-qa-input-glass__field::after {
+  transform: scaleX(1);
+}
+
+/* Appearances that do not use thick-below (match Input playground). */
+.org-ehg-qa-input-glass[data-appearance="soft"] .org-ehg-qa-input-glass__field::after,
+.org-ehg-qa-input-glass[data-appearance="soft-outline"] .org-ehg-qa-input-glass__field::after,
+.org-ehg-qa-input-glass[data-appearance="standout"] .org-ehg-qa-input-glass__field::after {
+  content: none;
+  display: none;
+  transform: scaleX(0);
+}
+
+/* standard — underline only */
+.org-ehg-qa-input-glass[data-appearance="standard"] .org-ehg-qa-input-glass__field {
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standard"] .org-ehg-qa-input-glass__field::after {
+  inset: auto -1px -1px;
+  border-radius: 0;
+}
+
+/* standard — label on the same start line as the cursor (no outlined chip). */
+.org-ehg-qa-input-glass[data-appearance="standard"] .org-ehg-qa-input-glass__field {
+  padding-inline-start: 0;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standard"] .org-ehg-qa-input-glass__label {
+  inset-inline-start: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standard"][data-icon-look="chip"] .org-ehg-qa-input-glass__field {
+  padding-inline-start: 0.35rem;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standard"][data-icon-look="chip"] .org-ehg-qa-input-glass__label {
+  inset-inline-start: 2.55rem;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standard"][data-icon-look="bare"] .org-ehg-qa-input-glass__field {
+  padding-inline-start: 0.5rem;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standard"][data-icon-look="bare"] .org-ehg-qa-input-glass__label {
+  inset-inline-start: 1.8rem;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standard"]:focus-within .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="standard"][data-raised="true"] .org-ehg-qa-input-glass__label {
+  top: 0;
+  inset-inline-start: 0;
+  padding: 0;
+  color: var(--org-ehg-qa-accent);
+  background: transparent;
+  transform: translateY(calc(-50% - 0.55rem));
+}
+
+/* soft — tinted fill, no border / bar */
+.org-ehg-qa-input-glass[data-appearance="soft"] .org-ehg-qa-input-glass__field {
+  border: 0;
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 14%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.org-ehg-qa-input-glass[data-appearance="soft"] .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="soft"] .org-ehg-qa-input-glass__control,
+.org-ehg-qa-input-glass[data-appearance="soft"] .org-ehg-qa-input-glass__clear {
+  color: var(--org-ehg-qa-accent);
+}
+
+/* soft-outline — tinted fill + accent border, no bar */
+.org-ehg-qa-input-glass[data-appearance="soft-outline"] .org-ehg-qa-input-glass__field {
+  border: 1px solid var(--org-ehg-qa-accent);
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 14%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.org-ehg-qa-input-glass[data-appearance="soft-outline"]:focus-within .org-ehg-qa-input-glass__field {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 22%, transparent);
+}
+
+.org-ehg-qa-input-glass[data-appearance="soft-outline"] .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="soft-outline"] .org-ehg-qa-input-glass__control,
+.org-ehg-qa-input-glass[data-appearance="soft-outline"] .org-ehg-qa-input-glass__clear {
+  color: var(--org-ehg-qa-accent);
+}
+
+/* filled — bottom edge only + thick below */
+.org-ehg-qa-input-glass[data-appearance="filled"] .org-ehg-qa-input-glass__field {
+  border-width: 0 0 1px;
+  border-radius: var(--org-ehg-qa-radius) var(--org-ehg-qa-radius) 0 0;
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 16%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* standout — solid accent fill, no bar */
+.org-ehg-qa-input-glass[data-appearance="standout"] .org-ehg-qa-input-glass__field {
+  border: 0;
+  background: var(--org-ehg-qa-accent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  color: #fff;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standout"] .org-ehg-qa-input-glass__label {
+  color: color-mix(in srgb, #fff 78%, transparent);
+}
+
+.org-ehg-qa-input-glass[data-appearance="standout"]:focus-within .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="standout"][data-raised="true"] .org-ehg-qa-input-glass__label {
+  color: #fff;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standout"] .org-ehg-qa-input-glass__control,
+.org-ehg-qa-input-glass[data-appearance="standout"] .org-ehg-qa-input-glass__clear {
+  color: #fff;
+}
+
+.org-ehg-qa-input-glass[data-appearance="standout"] .org-ehg-qa-input-glass__control::placeholder {
+  color: color-mix(in srgb, #fff 62%, transparent);
+}
+
+/* soft / soft-outline / filled / standout — less host pad (label stays inside field). */
+.org-ehg-qa-input-glass[data-appearance="soft"],
+.org-ehg-qa-input-glass[data-appearance="soft-outline"],
+.org-ehg-qa-input-glass[data-appearance="filled"],
+.org-ehg-qa-input-glass[data-appearance="standout"] {
+  padding-top: 0.15rem;
+}
+
+/* Label above — same pad as normal Input playground stacked. */
+.org-ehg-qa-input-glass[data-appearance="stacked"] {
+  padding-top: 1.5rem;
+}
+
+/*
+ * Density — same ladder as Button glass / Preferences:
+ * Compact 2rem · Standard (balance) 2.25rem · Comfort 2.75rem
+ */
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-compact {
+  gap: 0.4rem;
+  min-height: 2rem;
+  height: 2rem;
+  padding-block: 0;
+  padding-inline: 0.5rem 0.4rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-compact .org-ehg-qa-glass__icon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-compact .org-ehg-qa-glass__glyph,
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-compact .org-ehg-qa-glass__glyph--bare {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-balance {
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  height: 2.25rem;
+  padding-block: 0;
+  padding-inline: 0.65rem 0.5rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-balance .org-ehg-qa-glass__icon {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-balance .org-ehg-qa-glass__glyph,
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-balance .org-ehg-qa-glass__glyph--bare {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-comfort {
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  height: 2.75rem;
+  padding-block: 0;
+  padding-inline: 0.75rem 0.55rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-comfort .org-ehg-qa-glass__icon {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-comfort .org-ehg-qa-glass__glyph,
+.org-ehg-qa-input-glass__field.org-ehg-qa-input-glass--density-comfort .org-ehg-qa-glass__glyph--bare {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/*
+ * Floating label — 0.45s (Soft Glass primary-field / Org EHG Input Glass lock).
+ * Outlined / standard: top 50%→0, translateY(-50%)→calc(-50% - 3px), surface chip.
+ * Label above: idle = placeholder inside field; focus = animates to top -1.5rem.
+ */
+.org-ehg-qa-input-glass__label {
+  position: absolute;
+  inset-inline-start: 0.625rem; /* 10px — same as qinput--outlined */
+  top: 50%;
+  z-index: 3;
+  margin: 0;
+  padding-inline: 0;
+  font-size: var(--org-ehg-qa-input-label-size);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 72%, var(--org-ehg-qa-muted));
+  background: transparent;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  transform-origin: left center;
+  transition:
+    top var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    color var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    font-size var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    line-height var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    inset-inline-start var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    background-color var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    padding var(--org-ehg-qa-input-label-duration) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/*
+ * Soft Glass / Add local person pattern: force duration with !important +
+ * two-class specificity so [data-motion="reduced"] * { 0.01ms !important }
+ * cannot wipe the float / thick-below delay.
+ */
+.org-ehg-qa-input-glass .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass .org-ehg-qa-input-glass__field::after {
+  transition-duration: var(--org-ehg-qa-input-label-duration, 0.45s) !important;
+}
+
+/*
+ * With icon — push idle placeholder / float label clear of the mark
+ * (pad + chip/glyph + gap). Raised Label above still goes flush start.
+ */
+.org-ehg-qa-input-glass[data-icon-look="chip"] .org-ehg-qa-input-glass__field {
+  padding-inline-start: 0.35rem;
+  gap: 0.55rem;
+}
+
+.org-ehg-qa-input-glass[data-icon-look="chip"] .org-ehg-qa-input-glass__label {
+  /* 0.35 pad + ~1.65 chip + 0.55 gap ≈ 2.55rem */
+  inset-inline-start: 2.55rem;
+}
+
+.org-ehg-qa-input-glass[data-icon-look="bare"] .org-ehg-qa-input-glass__field {
+  padding-inline-start: 0.5rem;
+  gap: 0.45rem;
+}
+
+.org-ehg-qa-input-glass[data-icon-look="bare"] .org-ehg-qa-input-glass__label {
+  /* 0.5 pad + ~0.85 glyph + 0.45 gap ≈ 1.8rem */
+  inset-inline-start: 1.8rem;
+}
+
+/* Outlined float raise — surface chip cuts the top border (not standard). */
+.org-ehg-qa-input-glass:not([data-appearance="stacked"]):not([data-appearance="standard"]):not(
+    [data-appearance="soft"]
+  ):not([data-appearance="soft-outline"]):not([data-appearance="filled"]):not(
+    [data-appearance="standout"]
+  ):focus-within
+  .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass:not([data-appearance="stacked"]):not([data-appearance="standard"]):not(
+    [data-appearance="soft"]
+  ):not([data-appearance="soft-outline"]):not([data-appearance="filled"]):not(
+    [data-appearance="standout"]
+  )[data-raised="true"]
+  .org-ehg-qa-input-glass__label {
+  top: 0;
+  padding: 0 0.2rem;
+  color: var(--org-ehg-qa-accent);
+  background: var(--org-ehg-qa-fill, #fff);
+  transform: translateY(calc(-50% - 3px));
+}
+
+/* soft / soft-outline / filled / standout — raised label stays inside the field. */
+.org-ehg-qa-input-glass[data-appearance="soft"]:focus-within .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="soft"][data-raised="true"] .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="soft-outline"]:focus-within .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="soft-outline"][data-raised="true"] .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="filled"]:focus-within .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="filled"][data-raised="true"] .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="standout"]:focus-within .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="standout"][data-raised="true"] .org-ehg-qa-input-glass__label {
+  top: 0.375rem;
+  padding: 0;
+  background: transparent;
+  transform: translateY(0);
+  transform-origin: left top;
+}
+
+/*
+ * Stacked (Label above) — clear backdrop-filter so Soft Glass lift is not
+ * clipped by the glass containing group (same as soft / standard / filled).
+ */
+.org-ehg-qa-input-glass[data-appearance="stacked"] .org-ehg-qa-input-glass__field {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  filter: none;
+  overflow: visible;
+}
+
+/*
+ * Label above — idle = vertically centered placeholder inside the field.
+ * Raised = park in the host padding slot (top: -1.5rem), clear of the glass —
+ * Soft Glass 0.85rem lift is too short for the taller Org EHG field.
+ */
+.org-ehg-qa-input-glass[data-appearance="stacked"] .org-ehg-qa-input-glass__label {
+  top: 50%;
+  color: var(--org-ehg-qa-muted, #64748b);
+  font-size: var(--org-ehg-qa-input-text-size); /* 14px — reads as placeholder text */
+  font-weight: 450;
+  line-height: 1.25;
+  background: none;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+.org-ehg-qa-input-glass[data-appearance="stacked"]:focus-within .org-ehg-qa-input-glass__label,
+.org-ehg-qa-input-glass[data-appearance="stacked"][data-raised="true"] .org-ehg-qa-input-glass__label {
+  top: -1.5rem;
+  inset-inline-start: 0;
+  padding: 0;
+  background: none;
+  color: var(--org-ehg-qa-accent);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25rem;
+  transform: translateY(0);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass:not([data-appearance="stacked"]):focus-within
+  .org-ehg-qa-input-glass__label,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass:not([data-appearance="stacked"])[data-raised="true"]
+  .org-ehg-qa-input-glass__label {
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 72%, #f8fafc);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass:not([data-appearance="stacked"]):not([data-appearance="standard"]):not(
+    [data-appearance="soft"]
+  ):not([data-appearance="soft-outline"]):not([data-appearance="filled"]):not(
+    [data-appearance="standout"]
+  ):focus-within
+  .org-ehg-qa-input-glass__label,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass:not([data-appearance="stacked"]):not([data-appearance="standard"]):not(
+    [data-appearance="soft"]
+  ):not([data-appearance="soft-outline"]):not([data-appearance="filled"]):not(
+    [data-appearance="standout"]
+  )[data-raised="true"]
+  .org-ehg-qa-input-glass__label {
+  background: var(--org-ehg-qa-fill, #1a222d);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass[data-appearance="standard"]:focus-within
+  .org-ehg-qa-input-glass__label,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass[data-appearance="standard"][data-raised="true"]
+  .org-ehg-qa-input-glass__label {
+  background: transparent;
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 72%, #f8fafc);
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass[data-appearance="stacked"]
+  .org-ehg-qa-input-glass__label {
+  color: color-mix(in srgb, #e2e8f0 62%, transparent);
+  background: none;
+}
+
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass[data-appearance="stacked"]:focus-within
+  .org-ehg-qa-input-glass__label,
+.org-ehg-qa-glass-panel[data-org-ehg-theme="dark"]
+  .org-ehg-qa-input-glass[data-appearance="stacked"][data-raised="true"]
+  .org-ehg-qa-input-glass__label {
+  color: color-mix(in srgb, var(--org-ehg-qa-accent) 72%, #f8fafc);
+}
+
+/* Playground / gallery panels must not clip the raised label. */
+.org-ehg-qa-glass-panel--playground,
+.org-ehg-qa-glass-gallery .org-ehg-qa-glass-panel,
+.org-ehg-qa-glass-sample {
+  overflow: visible;
+}
+
+/*
+ * Placeholder:
+ * - Outlined: hide until raised/focused so it does not fight the idle float label.
+ * - Label above: never show a native placeholder — the Search label *is* the placeholder.
+ */
+.org-ehg-qa-input-glass:not([data-appearance="stacked"]):not(:focus-within):not([data-raised="true"])
+  .org-ehg-qa-input-glass__control::placeholder,
+.org-ehg-qa-input-glass[data-appearance="stacked"] .org-ehg-qa-input-glass__control::placeholder {
+  color: transparent;
+}
+
+/* Never show the native search cancel — product uses Org EHG __clear only. */
+.org-ehg-qa-input-glass__control[type="search"]::-webkit-search-decoration,
+.org-ehg-qa-input-glass__control[type="search"]::-webkit-search-cancel-button,
+.org-ehg-qa-input-glass__control[type="search"]::-webkit-search-results-button,
+.org-ehg-qa-input-glass__control[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.org-ehg-qa-input-glass__control {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--org-ehg-qa-ink);
+  font: inherit;
+  font-size: var(--org-ehg-qa-input-text-size);
+  font-weight: 500;
+  line-height: 1.25;
+  /* Kill global *:focus-visible — that was the inner border inside the card. */
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.org-ehg-qa-input-glass.org-ehg-qa-glass--size-sm .org-ehg-qa-input-glass__control,
+.org-ehg-qa-input-glass.org-ehg-qa-glass--size-lg .org-ehg-qa-input-glass__control {
+  font-size: var(--org-ehg-qa-input-text-size);
+}
+
+.org-ehg-qa-input-glass__control::placeholder {
+  color: var(--org-ehg-qa-muted);
+  font-weight: 450;
+  opacity: 1;
+}
+
+.org-ehg-qa-input-glass__control:focus,
+.org-ehg-qa-input-glass__control:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+/* Bare clear — accent × only, no fill chip (same idea as icon-bare). */
+.org-ehg-qa-input-glass__clear {
+  appearance: none;
+  margin: 0;
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--org-ehg-qa-accent);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+.org-ehg-qa-input-glass__clear:hover {
+  background: transparent;
+  opacity: 1;
+}
+
+/* Focus = Soft Glass bottom bar on the glass card (no outline ring). */
+.org-ehg-qa-input-glass:focus-within {
+  outline: none;
+}
+
+.org-ehg-qa-input-glass:focus-within .org-ehg-qa-input-glass__field {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 55%, var(--org-ehg-qa-edge));
+}
+
+/* ── Select glass (Input glass shell + dropdown trigger / chevron / menu) ── */
+
+.org-ehg-qa-select-glass {
+  display: block;
+  width: min(100%, 18rem);
+}
+
+.org-ehg-qa-select-glass__menu-host {
+  display: flex !important;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.org-ehg-qa-select-glass__field {
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center !important;
+  width: 100%;
+  margin: 0;
+  cursor: pointer;
+  text-align: start;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  line-height: 1.25;
+  color: inherit;
+  /* Kill UA button padding so density height centers icon / value / chevron. */
+  padding-block: 0;
+}
+
+.org-ehg-qa-select-glass__field:focus,
+.org-ehg-qa-select-glass__field:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.org-ehg-qa-select-glass__value {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: auto !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.org-ehg-qa-select-glass__value--placeholder {
+  color: var(--org-ehg-qa-muted);
+  font-weight: 450;
+}
+
+/*
+ * Select glass menu — same accent wash / border as the QA select field
+ * (Preferences primary via tone; portaled so tokens live on the menu itself).
+ */
+.org-ehg-qa-select-glass-menu {
+  --org-ehg-qa-fill: color-mix(in srgb, #ffffff 72%, transparent);
+  --org-ehg-qa-edge: color-mix(in srgb, #ffffff 78%, #94a3b8);
+  --org-ehg-qa-ink: #1e293b;
+  --org-ehg-qa-muted: #64748b;
+  --org-ehg-qa-accent: var(--exits-primary, #3b82f6);
+  border: 1px solid color-mix(in srgb, var(--org-ehg-qa-accent) 28%, var(--org-ehg-qa-edge));
+  border-radius: var(--exits-radius-md, 8px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 55%, transparent), transparent 42%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 8%, var(--org-ehg-qa-fill));
+  -webkit-backdrop-filter: blur(12px) saturate(1.25);
+  backdrop-filter: blur(12px) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent),
+    0 8px 22px color-mix(in srgb, var(--org-ehg-qa-accent) 14%, transparent),
+    0 1px 2px color-mix(in srgb, #0f172a 8%, transparent);
+  color: var(--org-ehg-qa-ink);
+}
+
+.org-ehg-qa-select-glass-menu.org-ehg-glass-menu--dark {
+  --org-ehg-qa-fill: color-mix(in srgb, #ffffff 8%, #1a222d);
+  --org-ehg-qa-edge: color-mix(in srgb, #ffffff 16%, #334155);
+  --org-ehg-qa-ink: #f1f5f9;
+  --org-ehg-qa-muted: #94a3b8;
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 28%, var(--org-ehg-qa-edge));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 45%),
+    color-mix(in srgb, var(--org-ehg-qa-accent) 12%, var(--org-ehg-qa-fill));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent),
+    0 10px 28px color-mix(in srgb, var(--org-ehg-qa-accent) 18%, #000),
+    0 1px 2px color-mix(in srgb, #000 40%, transparent);
+  color: var(--org-ehg-qa-ink);
+}
+
+.org-ehg-qa-select-glass-menu .org-ehg-glass-menu__option:hover,
+.org-ehg-qa-select-glass-menu .org-ehg-glass-menu__option:focus-visible {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 12%, transparent) !important;
+}
+
+.org-ehg-qa-select-glass-menu .org-ehg-glass-menu__option--selected,
+.org-ehg-qa-select-glass-menu .org-ehg-glass-menu__option[data-selected="true"] {
+  background: color-mix(in srgb, var(--org-ehg-qa-accent) 16%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--org-ehg-qa-accent);
+  color: var(--org-ehg-qa-accent);
+}
+
+.org-ehg-qa-select-glass-menu.org-ehg-glass-menu--dark .org-ehg-glass-menu__option--selected,
+.org-ehg-qa-select-glass-menu.org-ehg-glass-menu--dark
+  .org-ehg-glass-menu__option[data-selected="true"] {
+  color: #ffffff;
+}
+
+/*
+ * Select glass menu transitions — same set as Select / Dropdown playground
+ * (flip-up, flip-down, scale, jump-up). Open + reverse close. Keyframes in ui-standards.
+ */
+.org-ehg-qa-select-glass-menu[data-transition="scale"] {
+  transform-origin: top center;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="scale"][data-state="open"] {
+  animation: ui-standards-qmenu-scale-in 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="scale"][data-state="closed"] {
+  animation: ui-standards-qmenu-scale-out 0.3s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+  pointer-events: none;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="flip-up"],
+.org-ehg-qa-select-glass-menu[data-transition="flip-down"] {
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="flip-up"][data-state="open"] {
+  animation: ui-standards-qmenu-flip-up-in 0.3s linear;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="flip-up"][data-state="closed"] {
+  animation: ui-standards-qmenu-flip-up-out 0.3s linear forwards;
+  pointer-events: none;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="flip-down"][data-state="open"] {
+  animation: ui-standards-qmenu-flip-down-in 0.3s linear;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="flip-down"][data-state="closed"] {
+  animation: ui-standards-qmenu-flip-down-out 0.3s linear forwards;
+  pointer-events: none;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="jump-up"][data-state="open"] {
+  animation: ui-standards-qmenu-jump-up-in 0.3s linear;
+}
+
+.org-ehg-qa-select-glass-menu[data-transition="jump-up"][data-state="closed"] {
+  animation: ui-standards-qmenu-jump-up-out 0.3s linear forwards;
+  pointer-events: none;
+}
+
+/* Options — normal weight + tighter vertical pad; check mark on the trailing end. */
+.org-ehg-qa-select-glass-menu .org-ehg-glass-menu__option,
+.org-ehg-qa-select-glass-menu .org-ehg-qa-select-glass-menu__option {
+  font-weight: 400 !important;
+  padding-block: 0.3rem !important;
+  padding-inline: 0.65rem !important;
+  min-height: 0;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.org-ehg-qa-select-glass-menu__option-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+}
+
+.org-ehg-qa-select-glass-menu__check {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  color: var(--org-ehg-qa-accent, #3b82f6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-ehg-qa-select-glass-menu[data-transition] {
+    animation: none;
+  }
+}
+
+.org-ehg-qa-select-glass__chevron {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--org-ehg-qa-accent);
+  opacity: 0.85;
+  transition: transform 0.2s ease;
+}
+
+.org-ehg-qa-select-glass[data-open="true"] .org-ehg-qa-select-glass__chevron {
+  transform: rotate(180deg);
+}
+
+.org-ehg-qa-select-glass[data-open="true"] .org-ehg-qa-input-glass__field,
+.org-ehg-qa-select-glass:focus-within .org-ehg-qa-input-glass__field {
+  border-color: color-mix(in srgb, var(--org-ehg-qa-accent) 55%, var(--org-ehg-qa-edge));
+}
+
+.org-ehg-qa-select-glass[data-open="true"] .org-ehg-qa-input-glass__field::after {
+  transform: scaleX(1);
 }

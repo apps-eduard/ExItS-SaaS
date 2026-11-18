@@ -8,8 +8,10 @@ export type UiStandardFilterCategory =
   | "button-dropdown"
   | "inputs"
   | "input-glass"
+  | "select-glass"
   | "date-glass"
   | "quick-action-glass"
+  | "glass-card"
   | "card-glass-menu"
   | "card-glass-soft-kpi"
   | "card-glass-hybrid-kpi"
@@ -40,6 +42,7 @@ export type UiStandardFilterCategory =
   | "data"
   | "states"
   | "lucide"
+  | "icon"
   | "typography"
   /** Organization Enterprise Hybrid Glass (UI Standards live reference — not Personal Soft Glass). */
   | "org-ehg-dashboard"
@@ -50,8 +53,10 @@ export type UiStandardFilterCategory =
   | "org-ehg-button-glass"
   | "org-ehg-fab-glass"
   | "org-ehg-input-glass"
+  | "org-ehg-select-glass"
   | "org-ehg-date-glass"
   | "org-ehg-quick-action-glass"
+  | "org-ehg-glass-card"
   | "org-ehg-card-glass-menu"
   | "org-ehg-card-glass-soft-kpi"
   | "org-ehg-card-glass-hybrid-kpi"
@@ -91,6 +96,7 @@ export type UiStandardLiveCardId =
   | "shadow"
   | "tablePlayground"
   | "typographyPlayground"
+  | "iconPlayground"
   | "states"
   | "dodont";
 
@@ -148,8 +154,9 @@ function navItemsOf(child: UiStandardNavChild): UiStandardNavItem[] {
   return "href" in child ? [] : [child];
 }
 
-/** Card glass kinds under Glass components → Card glass. */
+/** Glass card kinds under Glass components → Glass card (playground first). */
 export const UI_STANDARD_CARD_GLASS_NAV: readonly UiStandardNavItem[] = [
+  { id: "glass-card", label: "Playground" },
   { id: "card-glass-menu", label: "Menu card" },
   { id: "card-glass-soft-kpi", label: "Soft KPI" },
   { id: "card-glass-hybrid-kpi", label: "Hybrid KPI" },
@@ -160,6 +167,7 @@ export const UI_STANDARD_CARD_GLASS_NAV: readonly UiStandardNavItem[] = [
 ];
 
 export const UI_STANDARD_ORG_CARD_GLASS_NAV: readonly UiStandardNavItem[] = [
+  { id: "org-ehg-glass-card", label: "Playground" },
   { id: "org-ehg-card-glass-menu", label: "Menu card" },
   { id: "org-ehg-card-glass-soft-kpi", label: "Soft KPI" },
   { id: "org-ehg-card-glass-hybrid-kpi", label: "Hybrid KPI" },
@@ -212,13 +220,14 @@ export const UI_STANDARD_PERSONAL_NAV: readonly UiStandardNavEntry[] = [
     label: "Glass components",
     children: [
       { id: "button-glass", label: "Button glass" },
-      { id: "fab-glass", label: "Floating action glass" },
+      { id: "fab-glass", label: "Speed dial button glass" },
       { id: "input-glass", label: "Input glass" },
+      { id: "select-glass", label: "Select glass" },
       { id: "date-glass", label: "Date glass" },
       { id: "quick-action-glass", label: "Quick Action glass" },
       {
         id: "card-glass",
-        label: "Card glass",
+        label: "Glass card",
         children: UI_STANDARD_CARD_GLASS_NAV,
       },
     ],
@@ -247,6 +256,7 @@ export const UI_STANDARD_PERSONAL_NAV: readonly UiStandardNavEntry[] = [
     label: "Icons",
     children: [
       { id: "lucide", label: "Lucide" },
+      { id: "icon", label: "Icon" },
       { id: "google-icons", label: "Google icons", href: "https://fonts.google.com/icons" },
     ],
   },
@@ -272,13 +282,14 @@ export const UI_STANDARD_ORG_NAV: readonly UiStandardNavEntry[] = [
         label: "Glass components",
         children: [
           { id: "org-ehg-button-glass", label: "Button glass" },
-          { id: "org-ehg-fab-glass", label: "Floating action glass" },
+          { id: "org-ehg-fab-glass", label: "Speed dial button glass" },
           { id: "org-ehg-input-glass", label: "Input glass" },
+          { id: "org-ehg-select-glass", label: "Select glass" },
           { id: "org-ehg-date-glass", label: "Date glass" },
           { id: "org-ehg-quick-action-glass", label: "Quick Action glass" },
           {
             id: "card-glass",
-            label: "Card glass",
+            label: "Glass card",
             children: UI_STANDARD_ORG_CARD_GLASS_NAV,
           },
         ],
@@ -692,6 +703,25 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     keywords: ["typography", "font", "font-weight", "font-size", "playground"],
   },
   {
+    id: "iconPlayground",
+    title: "Icon",
+    category: "icon",
+    keywords: [
+      "icon",
+      "lucide",
+      "chip",
+      "squircle",
+      "disc",
+      "soft",
+      "primary",
+      "outline",
+      "rounded",
+      "wash",
+      "org-ehg",
+      "playground",
+    ],
+  },
+  {
     id: "states",
     title: "States",
     category: "states",
@@ -1033,6 +1063,32 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     status: "Pilot",
     summary: "Underline / pillBar / vertical route-module destinations",
     keywords: ["module", "subnav", "navigation", "underline", "pill", "pillBar", "vertical"],
+  },
+  {
+    id: "icon-chip",
+    component: "Icon chip",
+    standard: "Icon",
+    category: "icon",
+    status: "Locked",
+    summary:
+      "Lucide icon chip playground — generic Soft / Soft Glass and Org EHG appearance tracks, shape, size, tone, stroke. Default ext icon soft-primary squircle md.",
+    keywords: [
+      "icon",
+      "lucide",
+      "chip",
+      "squircle",
+      "disc",
+      "rounded",
+      "square",
+      "soft",
+      "ghost",
+      "glass",
+      "primary",
+      "outline",
+      "stroke",
+      "tone",
+      "wash",
+    ],
   },
   {
     id: "exits-table",

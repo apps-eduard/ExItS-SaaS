@@ -1,6 +1,19 @@
 import type { ReactNode } from "react";
 import {
+  OrgEhgCardGlassChecklist,
+  OrgEhgCardGlassComparison,
+  OrgEhgCardGlassConfirm,
+  OrgEhgCardGlassEditForm,
+  OrgEhgCardGlassEmpty,
   OrgEhgCardGlassHybridKpi,
+  OrgEhgCardGlassInvite,
+  OrgEhgCardGlassInvoice,
+  OrgEhgCardGlassLoading,
+  OrgEhgCardGlassMedia,
+  OrgEhgCardGlassNotification,
+  OrgEhgCardGlassPricing,
+  OrgEhgCardGlassProfile,
+  OrgEhgCardGlassSchedule,
   OrgEhgCardGlassSettings,
   OrgEhgCardGlassSoftKpi,
   OrgEhgCardGlassSolid,
@@ -38,6 +51,58 @@ const KIND_META: Record<
   settings: {
     title: "Settings form",
     blurb: "Branch alert settings with glass fields, switches, and footer actions.",
+  },
+  empty: {
+    title: "Empty",
+    blurb: "Empty-state glass card with header, placeholder body, and call to action.",
+  },
+  edit: {
+    title: "Edit form",
+    blurb: "Product edit glass card with fields and Cancel / Save footer actions.",
+  },
+  confirm: {
+    title: "Confirm action",
+    blurb: "Destructive confirm glass card with warning lead and danger footer action.",
+  },
+  profile: {
+    title: "Profile",
+    blurb: "Staff profile glass card with avatar, contact facts, and schedule actions.",
+  },
+  checklist: {
+    title: "Checklist",
+    blurb: "Closing checklist glass card with done/pending rows and progress pill.",
+  },
+  notification: {
+    title: "Notifications",
+    blurb: "Unread alert list with severity dots and mark-all-read link.",
+  },
+  pricing: {
+    title: "Pricing plan",
+    blurb: "Plan card with price metric, feature bullets, and trial CTA.",
+  },
+  invoice: {
+    title: "Invoice",
+    blurb: "Invoice summary with totals, unpaid status, and record-payment action.",
+  },
+  invite: {
+    title: "Staff invite",
+    blurb: "Invite form with contact fields and org-scoped login hint.",
+  },
+  schedule: {
+    title: "Schedule event",
+    blurb: "Calendar event card with time, place, lead, and open-brief actions.",
+  },
+  media: {
+    title: "Media preview",
+    blurb: "Product photo frame with replace / use-photo footer actions.",
+  },
+  comparison: {
+    title: "Branch comparison",
+    blurb: "Side-by-side branch sales metrics with up/down badges.",
+  },
+  loading: {
+    title: "Loading skeleton",
+    blurb: "Busy glass card skeleton for async metric placeholders.",
   },
 };
 
@@ -99,6 +164,97 @@ function KindSamples({ kind }: { kind: Exclude<OrgEhgCardGlassKind, "menu"> }) {
     return (
       <Sample caption="Recent customer orders">
         <OrgEhgCardGlassTable />
+      </Sample>
+    );
+  }
+  if (kind === "empty") {
+    return (
+      <Sample caption="No activity yet">
+        <OrgEhgCardGlassEmpty />
+      </Sample>
+    );
+  }
+  if (kind === "edit") {
+    return (
+      <Sample caption="Edit product">
+        <OrgEhgCardGlassEditForm />
+      </Sample>
+    );
+  }
+  if (kind === "confirm") {
+    return (
+      <Sample caption="Archive transfer">
+        <OrgEhgCardGlassConfirm />
+      </Sample>
+    );
+  }
+  if (kind === "profile") {
+    return (
+      <Sample caption="Ana Reyes">
+        <OrgEhgCardGlassProfile />
+      </Sample>
+    );
+  }
+  if (kind === "checklist") {
+    return (
+      <Sample caption="Closing checklist">
+        <OrgEhgCardGlassChecklist />
+      </Sample>
+    );
+  }
+  if (kind === "notification") {
+    return (
+      <Sample caption="Notifications">
+        <OrgEhgCardGlassNotification />
+      </Sample>
+    );
+  }
+  if (kind === "pricing") {
+    return (
+      <Sample caption="Growth plan">
+        <OrgEhgCardGlassPricing />
+      </Sample>
+    );
+  }
+  if (kind === "invoice") {
+    return (
+      <Sample caption="Invoice INV-2084">
+        <OrgEhgCardGlassInvoice />
+      </Sample>
+    );
+  }
+  if (kind === "invite") {
+    return (
+      <Sample caption="Invite staff">
+        <OrgEhgCardGlassInvite />
+      </Sample>
+    );
+  }
+  if (kind === "schedule") {
+    return (
+      <Sample caption="Stock count">
+        <OrgEhgCardGlassSchedule />
+      </Sample>
+    );
+  }
+  if (kind === "media") {
+    return (
+      <Sample caption="Product photo">
+        <OrgEhgCardGlassMedia />
+      </Sample>
+    );
+  }
+  if (kind === "comparison") {
+    return (
+      <Sample caption="Branch comparison">
+        <OrgEhgCardGlassComparison />
+      </Sample>
+    );
+  }
+  if (kind === "loading") {
+    return (
+      <Sample caption="Loading">
+        <OrgEhgCardGlassLoading />
       </Sample>
     );
   }

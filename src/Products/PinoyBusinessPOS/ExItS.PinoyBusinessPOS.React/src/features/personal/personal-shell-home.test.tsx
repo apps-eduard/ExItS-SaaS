@@ -136,7 +136,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.queryByTestId("app-top-bar")).not.toBeInTheDocument();
     expect(screen.getByTestId("shell-connection-button")).toBeInTheDocument();
     expect(screen.getByTestId("personal-theme-mode")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-appearance-menu")).toBeInTheDocument();
+    expect(screen.queryByTestId("personal-appearance-menu")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-notification-bell")).toBeInTheDocument();
     expect(screen.getByTestId("shell-ui-standards-button")).toHaveAttribute(
       "href",
@@ -169,17 +169,74 @@ describe("Personal shell and home (RMAP-22B)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("personal-utang-summary")).toBeInTheDocument();
     });
+    expect(screen.getByTestId("personal-home-kpi-strip")).toBeInTheDocument();
+    const homeLayout = screen.getByTestId("personal-home-layout");
+    const kpiRow = screen.getByTestId("personal-home-layout-kpi");
+    const kpiStrip = screen.getByTestId("personal-home-kpi-strip");
+    const tracker = screen.getByTestId("personal-utang-summary");
+    expect(homeLayout).toContainElement(kpiRow);
+    expect(kpiRow).toContainElement(kpiStrip);
+    expect(homeLayout.firstElementChild).toBe(kpiRow);
+    expect(kpiStrip.compareDocumentPosition(tracker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveAttribute(
+      "href",
+      "/personal/utang/lent",
+    );
+    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveAttribute(
+      "href",
+      "/personal/utang/owe",
+    );
+    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveAttribute(
+      "href",
+      "/personal/utang",
+    );
+    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveAttribute(
+      "href",
+      "/personal/utang",
+    );
+    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("My record");
+    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("I lent");
+    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("500");
+    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("My record");
+    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("I owe");
+    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("150");
+    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("Shared");
+    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("I lent");
+    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("75");
+    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("Shared");
+    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("I owe");
+    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("25");
+    expect(
+      screen.getByTestId("personal-home-kpi-my-record-lent").querySelector(".personal-home-kpi-card__spark"),
+    ).toBeTruthy();
     expect(screen.getByTestId("personal-utang-summary")).toHaveTextContent("Personal Tracker");
     expect(screen.getByTestId("personal-tracker-ribbon")).toHaveTextContent("Personal Tracker");
     expect(screen.getByTestId("personal-tracker-pennant")).toBeInTheDocument();
     expect(screen.queryByText("Welcome,")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-top-bar")).not.toHaveTextContent("Personal Tracker");
     expect(screen.getByTestId("personal-home-avatar")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-home-primary-row")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-home-primary-row")).toContainElement(
+      screen.getByTestId("personal-stores-to-pay"),
+    );
+    expect(screen.getByTestId("personal-home-primary-row")).toContainElement(
+      screen.getByTestId("personal-recent-activity"),
+    );
     expect(screen.getByTestId("personal-stores-to-pay")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stores-to-pay-ribbon")).toHaveTextContent("Stores to Pay");
     expect(screen.getByTestId("personal-stores-to-pay-pennant")).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("0");
+    });
+    expect(screen.getByTestId("personal-recent-activity")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-recent-activity-ribbon")).toHaveTextContent("Recent activity");
+    expect(screen.getByTestId("personal-recent-activity-pennant")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-activity-view-all")).toHaveAttribute(
+      "href",
+      "/personal/notifications",
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-activity-empty")).toHaveTextContent("No activity yet.");
     });
     expect(screen.getByTestId("personal-home-layout")).toBeInTheDocument();
     const homeTitle = screen.getByRole("heading", { name: "Ana Reyes" });
@@ -256,11 +313,11 @@ describe("Personal shell and home (RMAP-22B)", () => {
     );
     expect(screen.getByTestId("personal-utang-owed-to-me")).toHaveAttribute(
       "data-recipe",
-      "ext org-ehg qa-glass lent md card-soft no-shadow",
+      "ext soft-glass pendant lent",
     );
     expect(screen.getByTestId("personal-utang-i-owe")).toHaveAttribute(
       "data-recipe",
-      "ext org-ehg qa-glass owe md card-soft no-shadow",
+      "ext soft-glass pendant owe",
     );
     expect(screen.getByTestId("personal-stat-lent-mine")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();
@@ -270,23 +327,20 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-stat-lent-mine")).toHaveClass(
       "tracker-amount-card",
       "utang-settings-card--lent",
-      "personal-qa-glass--md",
-      "personal-qa-glass--card-soft",
-      "personal-qa-glass--no-shadow",
     );
+    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveAttribute("data-shell", "org-ehg");
     expect(screen.getByTestId("personal-stat-lent-mine")).toHaveAttribute(
       "data-recipe",
-      "ext org-ehg qa-glass lent md card-soft no-shadow",
+      "ext org-ehg amount-card lent md card-soft no-shadow",
     );
     expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveClass(
       "tracker-amount-card",
       "utang-settings-card--owe",
-      "personal-qa-glass--md",
-      "personal-qa-glass--card-soft",
     );
+    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveAttribute("data-shell", "org-ehg");
     expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveAttribute(
       "data-recipe",
-      "ext org-ehg qa-glass owe md card-soft no-shadow",
+      "ext org-ehg amount-card owe md card-soft no-shadow",
     );
     expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveTextContent("I lent");
     expect(screen.getByTestId("personal-stat-lent-mine")).toHaveTextContent("500");
@@ -316,6 +370,15 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-stat-active-shared")).toHaveTextContent("1");
     expect(await screen.findByTestId("personal-needs-attention")).toBeInTheDocument();
     expect(screen.getByTestId("personal-attention-pendingConfirmation")).toBeInTheDocument();
+    const quickActions = screen.getByTestId("personal-quick-actions");
+    const todoSummary = screen.getByTestId("personal-todo-summary");
+    const needsAttention = screen.getByTestId("personal-needs-attention");
+    expect(quickActions.compareDocumentPosition(todoSummary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(todoSummary.compareDocumentPosition(needsAttention) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      screen.getByTestId("personal-stores-to-pay").compareDocumentPosition(needsAttention) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("shows Stores to Pay preview rows from linked merchant balances", async () => {
@@ -351,6 +414,20 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByText("Store B")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("3");
     expect(screen.getByTestId("personal-stat-stores-active")).toHaveTextContent("2");
+    expect(screen.getByTestId("personal-stat-stores")).toHaveClass("personal-qa-glass--primary");
+    expect(screen.getByTestId("personal-stat-stores-active")).toHaveClass("personal-qa-glass--primary");
+    expect(screen.getByTestId("personal-stat-stores")).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass primary md icon-soft card-soft trail-count no-shadow no-icon-shadow",
+    );
+    const storeRow = screen.getByTestId(
+      "personal-store-row-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    );
+    expect(storeRow).toHaveClass("personal-qa-glass--primary");
+    expect(storeRow).toHaveAttribute(
+      "data-recipe",
+      "ext org-ehg qa-glass primary md icon-soft no-icon-shadow",
+    );
   });
 
   it("opens Stores and customer link requests under Personal More", async () => {

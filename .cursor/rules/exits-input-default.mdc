@@ -1,25 +1,33 @@
 ---
-description: Default for a new input is the Input playground lock
+description: Default for a new input/search is Org EHG Input glass
 alwaysApply: true
 ---
 
 # Input default (LOCKED)
 
-When creating an input, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/input-global-default.ts`.
+When creating an input or search, use the Org EHG Input glass lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-input-glass-global-default.ts`.
 
-The locked command is `ext input primary outlined`. Intent is primary (`INPUT_GLOBAL_DEFAULT_INTENT`). Appearance is outlined (`INPUT_GLOBAL_DEFAULT_APPEARANCE`). Shape and density stay Standard unless the user names them.
+## Input
 
-The Form Components submenu **Input** playground has a lock labeled **default global**. That lock is what a new input is expected to use.
+Locked command: `ext org-ehg input-glass qa primary stacked md icon-none shape-standard no-shadow`
 
-Use the locked ExItS input. Do not pick a different intent or appearance unless the user names one. On `/ui-standards`, the locked input is `PlaygroundTextField`, and the locked search is `PlaygroundSearchField`.
+Product component: `ExitsOrgEhgInput` — use this whenever the surface is Org EHG. Do not invent another EHG input recipe.
 
-## Type (LOCKED)
+## Search
 
-The lock in `field-typography-global-default.ts` (same folder) covers every appearance except **Label above**:
+Locked command: `ext org-ehg input-glass qa primary stacked md icon-bare shape-standard no-shadow`
 
-- Label: `FIELD_GLOBAL_LABEL_SIZE` = **13px** (`--qinput-label-size`). It is the same size inside the field and when raised. `FIELD_GLOBAL_FLOAT_SCALE` = 1, so the raised label slides up and does not shrink.
-- Typed text: `FIELD_GLOBAL_TEXT_SIZE` = **14px**.
-- Density changes the typed text only. It does not change the label.
-- Label above keeps its own static 14px label (`FIELD_GLOBAL_STACKED_LABEL_SIZE`). Do not touch it unless the user names Label above.
+Full recipe: `.cursor/rules/exits-org-ehg-input-glass.mdc`.
 
-Change these sizes only when the user asks. Update `field-typography-global-default.ts`, the tokens in `globals.css`, and `field-typography-global-default.test.ts` together.
+UI Standards **Input glass** playground seeds the input lock. Do not invent a flat Material input or Soft Glass field unless the user names Soft Glass primary fields (`exits-soft-glass-primary-fields.mdc`) or another recipe.
+
+## Soft Glass exception
+
+Personal Soft Glass primary field groups still use locked `PlaygroundTextField` / `PlaygroundSearchField` (`ext input primary outlined`) under `exits-soft-glass-primary-fields.mdc`. That Soft Glass path is separate from this global input creation lock.
+
+## Type (when using Soft Glass / Form Components)
+
+The lock in `field-typography-global-default.ts` still covers Soft Glass / Form Components input type (13px label, 14px text). Do not put those type values in the Org EHG input-glass lock file.
+
+Change the Org EHG input/search creation lock only when the user asks. Update `org-ehg-input-glass-global-default.ts`, `org-ehg-input-glass-global-default.test.ts`, `OrgEhgQaInputGlassPlayground.tsx`, `exits-org-ehg-input-glass.mdc`, and this rule together.

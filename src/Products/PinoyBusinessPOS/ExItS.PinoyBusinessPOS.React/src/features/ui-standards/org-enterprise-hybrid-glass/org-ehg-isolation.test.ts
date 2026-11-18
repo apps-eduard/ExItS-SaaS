@@ -45,6 +45,7 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
       "button-glass",
       "fab-glass",
       "input-glass",
+      "select-glass",
       "date-glass",
       "quick-action-glass",
       "card-glass",
@@ -54,8 +55,9 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
     );
     expect(personalCardGlass && isUiStandardNavSubgroup(personalCardGlass)).toBe(true);
     if (!personalCardGlass || !isUiStandardNavSubgroup(personalCardGlass)) return;
-    expect(personalCardGlass.label).toBe("Card glass");
+    expect(personalCardGlass.label).toBe("Glass card");
     expect(personalCardGlass.children.map((c) => ("id" in c ? c.id : ""))).toEqual([
+      "glass-card",
       "card-glass-menu",
       "card-glass-soft-kpi",
       "card-glass-hybrid-kpi",
@@ -100,6 +102,7 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
       "org-ehg-button-glass",
       "org-ehg-fab-glass",
       "org-ehg-input-glass",
+      "org-ehg-select-glass",
       "org-ehg-date-glass",
       "org-ehg-quick-action-glass",
       "card-glass",
@@ -109,7 +112,9 @@ describe("Organization Enterprise Hybrid Glass isolation", () => {
     );
     expect(orgCardGlass && isUiStandardNavSubgroup(orgCardGlass)).toBe(true);
     if (!orgCardGlass || !isUiStandardNavSubgroup(orgCardGlass)) return;
+    expect(orgCardGlass.label).toBe("Glass card");
     expect(orgCardGlass.children.map((c) => ("id" in c ? c.id : ""))).toEqual([
+      "org-ehg-glass-card",
       "org-ehg-card-glass-menu",
       "org-ehg-card-glass-soft-kpi",
       "org-ehg-card-glass-hybrid-kpi",

@@ -1,26 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { symbol } from "@/components/icons/MaterialSymbol";
-
-const ArrowDownwardIcon = symbol("arrow_downward");
-const ArrowUpwardIcon = symbol("arrow_upward");
-const BusinessCenterIcon = symbol("business_center");
-const ChevronRightIcon = symbol("chevron_right");
-const InfoIcon = symbol("info");
-const PaymentsIcon = symbol("payments");
-const ChecklistIcon = symbol("checklist");
-const TodayIcon = symbol("today");
-const OverdueIcon = symbol("event_busy");
-const UpcomingIcon = symbol("event_upcoming");
-const PlaylistAddIcon = symbol("playlist_add");
-const RefreshIcon = symbol("refresh");
-const StoreIcon = symbol("store");
-const PersonAddIcon = symbol("person_add");
-const WalletIcon = symbol("account_balance_wallet");
-const BoltIcon = symbol("bolt");
-const NotificationIcon = symbol("notifications");
+import {
+  ArrowDown,
+  ArrowUp,
+  BellRing,
+  BriefcaseBusiness,
+  Calendar,
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  HandCoins,
+  History,
+  Info,
+  ListPlus,
+  ListTodo,
+  RefreshCw,
+  Store,
+  TriangleAlert,
+  UserPlus,
+  Wallet,
+  Zap,
+} from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
+import { listPersonalNotifications } from "@/api/platform/personal-social-client";
 import {
   listBorrowedRelationships,
   listLentRelationships,
@@ -39,11 +42,15 @@ import { InfoPopover } from "@/components/exits/InfoPopover";
 import { Notice } from "@/components/exits/Notice";
 import { cn } from "@/lib/cn";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
-import { PersonalBusinessSummary } from "@/features/personal/businesses/PersonalBusinessSummary";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
+import { PersonalHomeKpiStrip } from "@/features/personal/PersonalHomeKpiStrip";
 import { PersonalTrackerCard } from "@/features/personal/PersonalTrackerCard";
 import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
 import { profilePhotoSrc } from "@/features/personal/profile-photo";
+import {
+  buildHomeRecentActivityItems,
+  formatHomeActivityWhen,
+} from "@/features/personal/home-recent-activity";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
   buildHomeAttentionItems,
@@ -158,6 +165,12 @@ export function PersonalHomePage() {
     queryFn: ({ signal }) => loadStoresToPayPreview(signal),
     enabled: online,
   });
+  const notificationsQuery = useQuery({
+    queryKey: ["personal", "notifications", "recent"],
+    queryFn: ({ signal }) => listPersonalNotifications(signal),
+    enabled: online,
+    meta: { suppressGlobalError: true, operation: "list personal notifications" },
+  });
 
   const accounts = useMemo(() => {
     if (!contactsQuery.data || !lentQuery.data || !oweQuery.data) {
@@ -175,6 +188,16 @@ export function PersonalHomePage() {
       accounts,
     });
   }, [accounts, dashboardQuery.data?.pendingConfirmationCount]);
+
+  const recentActivityItems = useMemo(
+    () =>
+      buildHomeRecentActivityItems({
+        notifications: notificationsQuery.data,
+        accounts,
+        t,
+      }),
+    [accounts, notificationsQuery.data, t],
+  );
 
   const counts = useMemo(() => {
     if (todosQuery.isSuccess) {
@@ -204,7 +227,7 @@ export function PersonalHomePage() {
             className="personal-error-retry w-full"
             onClick={() => void dashboardQuery.refetch()}
           >
-            <RefreshIcon className="size-4 shrink-0" aria-hidden />
+            <RefreshCw className="size-4 shrink-0" aria-hidden />
             {t("personal.home.retry")}
           </Button>
         </div>
@@ -252,13 +275,10 @@ export function PersonalHomePage() {
           </span>
           <div className="personal-home-hero__copy min-w-0">
             <p className="personal-home-hero__greeting m-0">{t(greetingKey)}</p>
-            <h1 className="personal-home-hero__name m-0 min-w-0 truncate">
-              {displayName}{" "}
-              <span className="personal-home-hero__wave" aria-hidden="true">
-                👋
-              </span>
-            </h1>
+            <h1 className="personal-home-hero__name m-0 min-w-0 truncate">{displayName}</h1>
           </div>
+        </div>
+        <div className="personal-home-hero__end">
           <span ref={infoButtonRef} className="personal-home-hero__info relative inline-flex shrink-0">
             <Button
               type="button"
@@ -272,7 +292,7 @@ export function PersonalHomePage() {
               data-testid="personal-home-info"
               onClick={() => setInfoOpen((open) => !open)}
             >
-              <InfoIcon className="size-5" aria-hidden="true" />
+              <Info className="size-5" aria-hidden="true" />
             </Button>
             {infoOpen ? (
               <InfoPopover
@@ -288,25 +308,34 @@ export function PersonalHomePage() {
               </InfoPopover>
             ) : null}
           </span>
+          <aside className="personal-home-hero__date" data-testid="personal-home-date-chip">
+            <span className="personal-home-hero__date-icon" aria-hidden="true">
+              <CalendarDays className="size-5" />
+            </span>
+            <span className="personal-home-hero__date-copy">
+              <strong className="personal-home-hero__date-label">{dateChipLabel}</strong>
+              <span className="personal-home-hero__date-tail">{t("personal.home.dateChipTail")}</span>
+            </span>
+          </aside>
         </div>
-        <aside className="personal-home-hero__date" data-testid="personal-home-date-chip">
-          <span className="personal-home-hero__date-icon" aria-hidden="true">
-            <TodayIcon className="size-5" />
-          </span>
-          <span className="personal-home-hero__date-copy">
-            <strong className="personal-home-hero__date-label">{dateChipLabel}</strong>
-            <span className="personal-home-hero__date-tail">{t("personal.home.dateChipTail")}</span>
-          </span>
-        </aside>
       </header>
 
       <PersonalGuideHomeCard />
 
       <div className="personal-home-layout" data-testid="personal-home-layout">
+        <div
+          className="personal-home-layout__kpi min-w-0"
+          data-testid="personal-home-layout-kpi"
+        >
+          <PersonalHomeKpiStrip dashboard={dashboard} />
+        </div>
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
-      <PersonalBusinessSummary />
       <PersonalTrackerCard dashboard={dashboard} metricsOutline />
 
+      <div
+        className="personal-home-primary-row"
+        data-testid="personal-home-primary-row"
+      >
       <section
         className="catalog-form-section exits-animate-panel personal-section personal-stores-to-pay gap-3 max-md:gap-1.5"
         aria-label={t("personal.home.storesToPay")}
@@ -319,7 +348,7 @@ export function PersonalHomePage() {
               aria-hidden
               data-testid="personal-stores-to-pay-pennant"
             >
-              <StoreIcon className="personal-stores-to-pay__pennant-icon size-[1.05rem] shrink-0" />
+              <Store className="personal-stores-to-pay__pennant-icon size-[1.05rem] shrink-0" />
             </span>
             {t("personal.home.storesToPay")}
           </h2>
@@ -340,12 +369,12 @@ export function PersonalHomePage() {
             >
               <Link
                 to="/personal/linked-merchants"
-                className="personal-qa-glass personal-qa-glass--stores personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
+                className="personal-qa-glass personal-qa-glass--primary personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-stat-stores"
-                data-recipe="ext org-ehg qa-glass stores md icon-soft card-soft trail-count no-shadow no-icon-shadow"
+                data-recipe="ext org-ehg qa-glass primary md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
                 <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-                  <StoreIcon className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
+                  <Store className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.home.stores")}</span>
                 <strong className="personal-qa-glass__badge tabular-nums">
@@ -354,12 +383,12 @@ export function PersonalHomePage() {
               </Link>
               <Link
                 to="/personal/linked-merchants"
-                className="personal-qa-glass personal-qa-glass--people personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
+                className="personal-qa-glass personal-qa-glass--primary personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-stat-stores-active"
-                data-recipe="ext org-ehg qa-glass people md icon-soft card-soft trail-count no-shadow no-icon-shadow"
+                data-recipe="ext org-ehg qa-glass primary md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
                 <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-                  <WalletIcon className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
+                  <Wallet className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.home.active")}</span>
                 <strong className="personal-qa-glass__badge tabular-nums">
@@ -376,11 +405,13 @@ export function PersonalHomePage() {
                   <li key={`${store.organizationId}:${store.businessCustomerId}`}>
                     <Link
                       to={store.href}
-                      className="personal-stores-to-pay-row personal-home-infodata-card personal-home-infodata-card--row personal-qa-glass--md personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
+                      className="personal-stores-to-pay-row personal-home-infodata-card personal-home-infodata-card--row personal-qa-glass--primary personal-qa-glass--md personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                       data-testid={`personal-store-row-${store.organizationId}`}
+                      data-shell="org-ehg"
+                      data-recipe="ext org-ehg qa-glass primary md icon-soft no-icon-shadow"
                     >
                       <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-                        <StoreIcon className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
+                        <Store className="personal-stores-to-pay__pennant-icon size-[0.95rem] shrink-0" />
                       </span>
                       <span className="personal-home-infodata-card__body">
                         <span className="personal-home-infodata-card__title truncate">{store.displayName}</span>
@@ -406,72 +437,77 @@ export function PersonalHomePage() {
         ) : null}
       </section>
 
+      <section
+        className="catalog-form-section exits-animate-panel personal-section personal-recent-activity gap-3 max-md:gap-1.5"
+        aria-label={t("personal.home.recentActivity")}
+        data-testid="personal-recent-activity"
+      >
+        <div className="personal-recent-activity__header">
+          <h2 className="personal-recent-activity__title" data-testid="personal-recent-activity-ribbon">
+            <span
+              className="personal-recent-activity__pennant"
+              aria-hidden
+              data-testid="personal-recent-activity-pennant"
+            >
+              <History className="personal-recent-activity__pennant-icon size-[1.05rem] shrink-0" />
+            </span>
+            {t("personal.home.recentActivity")}
+          </h2>
+          <Link
+            to="/personal/notifications"
+            className="personal-recent-activity__view-all"
+            data-testid="personal-activity-view-all"
+          >
+            {t("personal.home.viewAllActivity")}
+          </Link>
+        </div>
+        {notificationsQuery.isPending && recentActivityItems.length === 0 ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="personal-activity-loading">
+            {t("personal.home.activityLoading")}
+          </p>
+        ) : notificationsQuery.isError && recentActivityItems.length === 0 ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="personal-activity-unavailable">
+            {t("personal.home.activityUnavailable")}
+          </p>
+        ) : recentActivityItems.length === 0 ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="personal-activity-empty">
+            {t("personal.home.activityEmpty")}
+          </p>
+        ) : (
+          <ul className="personal-recent-activity__list m-0 grid list-none gap-2 p-0" data-testid="personal-activity-list">
+            {recentActivityItems.map((item) => (
+              <li key={item.id}>
+                <Link
+                  to={item.href}
+                  className="personal-recent-activity__row"
+                  data-testid={`personal-activity-item-${item.id}`}
+                >
+                  <span className="personal-recent-activity__row-icon" aria-hidden="true">
+                    <History className="size-[0.95rem] shrink-0" />
+                  </span>
+                  <span className="personal-recent-activity__row-body min-w-0">
+                    <span className="personal-recent-activity__row-title truncate">{item.title}</span>
+                    {item.detail ? (
+                      <span className="personal-recent-activity__row-detail truncate">{item.detail}</span>
+                    ) : null}
+                  </span>
+                  <time className="personal-recent-activity__row-when shrink-0" dateTime={item.at}>
+                    {formatHomeActivityWhen(item.at)}
+                  </time>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      </div>
+
         </div>
 
         <aside
           className="personal-home-layout__aside flex min-w-0 flex-col gap-3"
           aria-label={t("personal.home.quickActions")}
         >
-      {attentionItems.length > 0 ? (
-        <section
-          className="catalog-form-section exits-animate-panel personal-section personal-needs-attention gap-2 max-md:gap-1.5"
-          aria-label={t("personal.home.needsAttention")}
-          data-testid="personal-needs-attention"
-        >
-          <div className="personal-needs-attention__header">
-            <h2 className="personal-needs-attention__title" data-testid="personal-needs-attention-ribbon">
-              <span
-                className="personal-needs-attention__pennant"
-                aria-hidden
-                data-testid="personal-needs-attention-pennant"
-              >
-                <NotificationIcon className="personal-needs-attention__pennant-icon size-[1.05rem] shrink-0" />
-              </span>
-              {t("personal.home.needsAttention")}
-            </h2>
-            <Link
-              to="/personal/utang"
-              className="personal-needs-attention__view-all"
-              data-testid="personal-attention-view-all"
-            >
-              {t("personal.home.viewAllUtang")}
-            </Link>
-          </div>
-          <ul className="personal-needs-attention__list m-0 grid list-none gap-2 p-0">
-            {attentionItems.map((item) => (
-              <li key={item.key}>
-                <Link
-                  to={item.href}
-                  className="personal-attention-row personal-home-infodata-card personal-home-infodata-card--row"
-                  data-testid={`personal-attention-${item.kind}`}
-                >
-                  <span className="personal-attention-row__icon" aria-hidden="true">
-                    <NotificationIcon className="personal-attention-row__bell" />
-                    <span className="personal-attention-row__count tabular-nums">{item.count}</span>
-                  </span>
-                  <span className="personal-home-infodata-card__body">
-                    <span className="personal-home-infodata-card__title personal-attention-row__title">
-                      {item.displayName && item.kind !== "pendingConfirmation" ? (
-                        <>
-                          <span className="personal-attention-row__name">{item.displayName}</span>
-                          {t(
-                            item.kind === "overdue"
-                              ? "personal.home.attentionOverdueOne"
-                              : "personal.home.attentionDueSoonOne",
-                          ).replace("{name}", "")}
-                        </>
-                      ) : (
-                        attentionTitle(item)
-                      )}
-                    </span>
-                  </span>
-                  <ChevronRightIcon className="personal-attention-row__chevron shrink-0" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
       <section
         className="catalog-form-section exits-animate-panel personal-section personal-quick-actions gap-3 max-md:gap-1.5"
         aria-label={t("personal.home.quickActions")}
@@ -484,7 +520,7 @@ export function PersonalHomePage() {
               aria-hidden
               data-testid="personal-quick-actions-pennant"
             >
-              <BoltIcon className="personal-quick-actions__pennant-icon size-[1.05rem] shrink-0" />
+              <Zap className="personal-quick-actions__pennant-icon size-[1.05rem] shrink-0" />
             </span>
             {t("personal.home.quickActions")}
           </h2>
@@ -497,10 +533,10 @@ export function PersonalHomePage() {
             data-recipe="ext org-ehg qa-glass start md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
             <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-              <BusinessCenterIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
+              <BriefcaseBusiness className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionStartBusiness")}</span>
-            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
+            <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/utang/lent"
@@ -509,10 +545,10 @@ export function PersonalHomePage() {
             data-recipe="ext org-ehg qa-glass lent md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
             <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-              <ArrowUpwardIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
+              <ArrowUp className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionLent")}</span>
-            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
+            <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/utang/owe"
@@ -521,10 +557,10 @@ export function PersonalHomePage() {
             data-recipe="ext org-ehg qa-glass owe md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
             <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-              <ArrowDownwardIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
+              <ArrowDown className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionOwe")}</span>
-            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
+            <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/linked-merchants"
@@ -533,10 +569,10 @@ export function PersonalHomePage() {
             data-recipe="ext org-ehg qa-glass stores md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
             <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-              <PaymentsIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
+              <HandCoins className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionStores")}</span>
-            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
+            <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
           </Link>
           <Link
             to="/personal/people?add=1"
@@ -545,10 +581,10 @@ export function PersonalHomePage() {
             data-recipe="ext org-ehg qa-glass people md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
           >
             <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-              <PersonAddIcon className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
+              <UserPlus className="personal-quick-actions__pennant-icon size-[0.95rem] shrink-0" />
             </span>
             <span className="personal-qa-glass__label">{t("personal.home.actionPeople")}</span>
-            <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
+            <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
           </Link>
         </div>
       </section>
@@ -565,7 +601,7 @@ export function PersonalHomePage() {
               aria-hidden
               data-testid="personal-todo-summary-pennant"
             >
-              <ChecklistIcon className="personal-todo-summary__pennant-icon size-[1.05rem] shrink-0" />
+              <ListTodo className="personal-todo-summary__pennant-icon size-[1.05rem] shrink-0" />
             </span>
             {t("personal.home.todoSummary")}
           </h2>
@@ -595,36 +631,36 @@ export function PersonalHomePage() {
             <div className="personal-todo-cards" data-testid="personal-todo-counts" role="list">
               <Link
                 to="/personal/todo?add=1"
-                className="personal-qa-glass personal-qa-glass--todo personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
+                className="personal-qa-glass personal-qa-glass--primary personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-todo-add"
-                data-recipe="ext org-ehg qa-glass todo md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
+                data-recipe="ext org-ehg qa-glass primary md icon-soft card-soft trail-chevron no-shadow no-icon-shadow"
               >
                 <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-                  <PlaylistAddIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
+                  <ListPlus className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.home.actionTodo")}</span>
-                <ChevronRightIcon className="personal-qa-glass__chevron" aria-hidden />
+                <ChevronRight className="personal-qa-glass__chevron" aria-hidden />
               </Link>
               <Link
                 to={todoAgendaTabHref("today")}
-                className="personal-qa-glass personal-qa-glass--todo personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
+                className="personal-qa-glass personal-qa-glass--primary personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-todo-stat-today"
-                data-recipe="ext org-ehg qa-glass todo md icon-soft card-soft trail-count no-shadow no-icon-shadow"
+                data-recipe="ext org-ehg qa-glass primary md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
                 <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-                  <TodayIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
+                  <Clock3 className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.todo.countToday")}</span>
                 <strong className="personal-qa-glass__badge tabular-nums">{counts.today}</strong>
               </Link>
               <Link
                 to={todoAgendaTabHref("upcoming")}
-                className="personal-qa-glass personal-qa-glass--todo personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
+                className="personal-qa-glass personal-qa-glass--primary personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow"
                 data-testid="personal-todo-stat-upcoming"
-                data-recipe="ext org-ehg qa-glass todo md icon-soft card-soft trail-count no-shadow no-icon-shadow"
+                data-recipe="ext org-ehg qa-glass primary md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
                 <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-                  <UpcomingIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
+                  <Calendar className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.todo.countUpcoming")}</span>
                 <strong className="personal-qa-glass__badge tabular-nums">{counts.upcoming}</strong>
@@ -636,7 +672,7 @@ export function PersonalHomePage() {
                 data-recipe="ext org-ehg qa-glass todo-overdue md icon-soft card-soft trail-count no-shadow no-icon-shadow"
               >
                 <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-                  <OverdueIcon className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
+                  <TriangleAlert className="personal-todo-summary__pennant-icon size-[0.95rem] shrink-0" />
                 </span>
                 <span className="personal-qa-glass__label">{t("personal.todo.countOverdue")}</span>
                 <strong className="personal-qa-glass__badge tabular-nums">{counts.overdue}</strong>
@@ -650,6 +686,68 @@ export function PersonalHomePage() {
           </>
         ) : null}
       </section>
+
+      {attentionItems.length > 0 ? (
+        <section
+          className="catalog-form-section exits-animate-panel personal-section personal-needs-attention gap-2 max-md:gap-1.5"
+          aria-label={t("personal.home.needsAttention")}
+          data-testid="personal-needs-attention"
+        >
+          <div className="personal-needs-attention__header">
+            <h2 className="personal-needs-attention__title" data-testid="personal-needs-attention-ribbon">
+              <span
+                className="personal-needs-attention__pennant"
+                aria-hidden
+                data-testid="personal-needs-attention-pennant"
+              >
+                <BellRing className="personal-needs-attention__pennant-icon size-[1.05rem] shrink-0" />
+              </span>
+              {t("personal.home.needsAttention")}
+            </h2>
+            <Link
+              to="/personal/utang"
+              className="personal-needs-attention__view-all"
+              data-testid="personal-attention-view-all"
+            >
+              {t("personal.home.viewAllUtang")}
+            </Link>
+          </div>
+          <ul className="personal-needs-attention__list m-0 grid list-none gap-2 p-0">
+            {attentionItems.map((item) => (
+              <li key={item.key}>
+                <Link
+                  to={item.href}
+                  className="personal-qa-glass personal-qa-glass--warn personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow personal-qa-glass--icon-soft personal-qa-glass--no-icon-shadow personal-attention-row"
+                  data-shell="org-ehg"
+                  data-testid={`personal-attention-${item.kind}`}
+                  data-recipe="ext org-ehg qa-glass warn md icon-soft card-soft trail-count no-shadow no-icon-shadow"
+                >
+                  <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
+                    <BellRing className="size-[0.95rem] shrink-0" />
+                  </span>
+                  <span className="personal-qa-glass__label personal-attention-row__title">
+                    {item.displayName && item.kind !== "pendingConfirmation" ? (
+                      <>
+                        <span className="personal-attention-row__name">{item.displayName}</span>
+                        {t(
+                          item.kind === "overdue"
+                            ? "personal.home.attentionOverdueOne"
+                            : "personal.home.attentionDueSoonOne",
+                        ).replace("{name}", "")}
+                      </>
+                    ) : (
+                      attentionTitle(item)
+                    )}
+                  </span>
+                  <strong className="personal-qa-glass__badge tabular-nums" aria-hidden="true">
+                    {item.count}
+                  </strong>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
         </aside>
       </div>
     </div>

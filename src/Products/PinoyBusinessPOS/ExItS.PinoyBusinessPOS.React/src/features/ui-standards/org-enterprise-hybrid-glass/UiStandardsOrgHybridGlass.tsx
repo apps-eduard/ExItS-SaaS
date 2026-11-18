@@ -2,9 +2,11 @@ import type { UiStandardFilterCategory } from "@/features/ui-standards/ui-standa
 import { OrgEhgButtonGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgButtonGlassGallery";
 import { OrgEhgFabGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgFabGlassGallery";
 import { OrgEhgInputGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgInputGlassGallery";
+import { OrgEhgQaSelectGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQaSelectGlassGallery";
 import { OrgEhgDateGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDateGlassGallery";
 import { OrgEhgQuickActionGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQuickActionGlassGallery";
 import { OrgEhgCardGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgCardGlassGallery";
+import { OrgEhgGlassCardGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgGlassCardGallery";
 import { parseOrgEhgCardGlassKind } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgCardGlassKinds";
 import { OrgEhgDashboardLive } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDashboardLive";
 import { OrgEhgInventoryLive } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgInventoryLive";
@@ -37,8 +39,10 @@ export const ORG_EHG_CATEGORIES = [
   "org-ehg-button-glass",
   "org-ehg-fab-glass",
   "org-ehg-input-glass",
+  "org-ehg-select-glass",
   "org-ehg-date-glass",
   "org-ehg-quick-action-glass",
+  "org-ehg-glass-card",
   ...ORG_EHG_CARD_GLASS_CATEGORIES,
 ] as const;
 
@@ -75,10 +79,14 @@ export function UiStandardsOrgHybridGlass({ category }: { category: OrgEhgCatego
       return <OrgEhgFabGlassGallery />;
     case "org-ehg-input-glass":
       return <OrgEhgInputGlassGallery />;
+    case "org-ehg-select-glass":
+      return <OrgEhgQaSelectGlassGallery />;
     case "org-ehg-date-glass":
       return <OrgEhgDateGlassGallery />;
     case "org-ehg-quick-action-glass":
       return <OrgEhgQuickActionGlassGallery />;
+    case "org-ehg-glass-card":
+      return <OrgEhgGlassCardGallery />;
     default:
       return null;
   }

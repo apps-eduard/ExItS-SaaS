@@ -1,0 +1,34 @@
+---
+description: Org EHG Button glass primary flat global default for new buttons
+alwaysApply: true
+---
+
+# Org EHG Button glass (LOCKED — global)
+
+When creating a button (not Speed dial / FAB), use the lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-btn-glass-global-default.ts`.
+
+The locked command is `ext org-ehg btn-glass qa primary flat md icon-none shape-standard no-shadow`.
+
+- Tone: `primary` (`ORG_EHG_BTN_GLASS_DEFAULT_TONE`)
+- Appearance: `flat` (`ORG_EHG_BTN_GLASS_DEFAULT_APPEARANCE`) — playground Appearance select; default flat
+- Size: `md` (`ORG_EHG_BTN_GLASS_DEFAULT_SIZE`)
+- Icon: `icon-none` (`ORG_EHG_BTN_GLASS_DEFAULT_ICON`)
+- Shape: `standard` (`ORG_EHG_BTN_GLASS_DEFAULT_SHAPE`)
+- Shadow: `no-shadow` (`ORG_EHG_BTN_GLASS_DEFAULT_SHADOW`)
+- Radius: Soft control `0.6875rem` (`ORG_EHG_BTN_GLASS_RADIUS`)
+
+## Speed dial / FAB exception
+
+Speed dial button glass keeps its own seed (people · lg · icon-soft · shape-pill · fab · pos-right-bottom · speed-dial · …). Do not replace FAB defaults with this button lock.
+
+## Product / playground
+
+- UI Standards: Org EHG **Button glass** playground (`OrgEhgQaBtnGlassPlayground`) seeds this lock when `defaultFab` is false
+- Classes: `.org-ehg-qa-btn-glass` / `.org-ehg-qa-glass` with flat appearance
+
+## Scope
+
+Org EHG recipe stays scoped (`.org-ehg-*`). Modal Cancel/Save stay under `exits-modal-default.mdc` unless the user asks for Org EHG btn-glass there.
+
+Change this lock only when the user asks. Update `org-ehg-btn-glass-global-default.ts`, `org-ehg-btn-glass-global-default.test.ts`, `OrgEhgQaBtnGlassPlayground.tsx`, and this rule together.

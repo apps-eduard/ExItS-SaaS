@@ -102,6 +102,22 @@ describe("OrgEhgButtonGlassPlayground", () => {
     );
   });
 
+  it("keeps solid intensity class in dark preview (full accent, not washed)", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgButtonGlassPlayground />));
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-intensity", "solid");
+    const btn = screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn");
+    expect(btn).toHaveClass("org-ehg-btn-glass--solid");
+
+    await user.click(screen.getByTestId("ui-standard-org-ehg-btn-pg-theme"));
+    expect(screen.getByTestId("ui-standard-card-org-ehg-btn-glass-playground")).toHaveAttribute(
+      "data-org-ehg-theme",
+      "dark",
+    );
+    expect(btn).toHaveClass("org-ehg-btn-glass--solid");
+  });
+
   it("supports icon top placement and opens a dropdown menu", async () => {
     const user = userEvent.setup();
     render(wrap(<OrgEhgButtonGlassPlayground />));
@@ -204,6 +220,14 @@ describe("OrgEhgButtonGlassPlayground", () => {
     expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial")).toHaveAttribute(
       "data-open",
       "false",
+    );
+
+    await chooseDropdown(user, "ui-standard-org-ehg-btn-pg-appearance", "outline");
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-btn")).toHaveClass(
+      "org-ehg-btn-glass--appearance-outline",
+    );
+    expect(screen.getByTestId("ui-standard-org-ehg-btn-pg-preview-speed-dial-person")).toHaveClass(
+      "org-ehg-btn-glass--appearance-outline",
     );
   });
 

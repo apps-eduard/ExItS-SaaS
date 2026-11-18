@@ -1,17 +1,12 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
+import { Activity, Handshake, Share2, Users, Wallet } from "lucide-react";
 import type { PersonalDashboardDto } from "@/api/platform/personal-dashboard-client";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
-import { symbol, type IconComponent } from "@/components/icons/MaterialSymbol";
 import { useI18n } from "@/i18n/I18nProvider";
 import { ORG_EHG_QA_GLASS_CLASS_NAME } from "@/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-qa-glass-global-default";
 import { cn } from "@/lib/cn";
-
-const GroupIcon = symbol("group");
-const HandshakeIcon = symbol("handshake");
-const MonitoringIcon = symbol("monitoring");
-const ShareIcon = symbol("share");
-const WalletIcon = symbol("account_balance_wallet");
 
 /** Compact utang settings card: ribbon label and amount. */
 export function TrackerAmountCard({
@@ -37,10 +32,10 @@ export function TrackerAmountCard({
       className={cn(
         "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card tracker-amount-card text-foreground no-underline",
         `utang-settings-card--${identity}`,
-        "personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow",
       )}
       data-testid={testId}
-      data-recipe={`ext org-ehg qa-glass ${identity} md card-soft no-shadow`}
+      data-shell="org-ehg"
+      data-recipe={`ext org-ehg amount-card ${identity} md card-soft no-shadow`}
     >
       <div className="ui-standards-qcard__settings-ribbon">
         <div className="ui-standards-qcard__settings-tab utang-settings-card__tab">
@@ -85,7 +80,7 @@ function TrackerSummaryGroup({
   sharedAmount: number;
   mineTo: string;
   sharedTo: string;
-  icon: IconComponent;
+  icon: LucideIcon;
   tone: "owed" | "owe";
   rowTestId: string;
   mineTestId: string;
@@ -95,9 +90,9 @@ function TrackerSummaryGroup({
 }) {
   return (
     <div
-      className={`tracker-summary tracker-summary--${tone} tracker-summary--pendant tracker-amount-group personal-qa-glass--md personal-qa-glass--card-soft personal-qa-glass--no-shadow`}
+      className={`tracker-summary tracker-summary--${tone} tracker-summary--pendant tracker-amount-group`}
       data-testid={rowTestId}
-      data-recipe={`ext org-ehg qa-glass ${tone === "owed" ? "lent" : "owe"} md card-soft no-shadow`}
+      data-recipe={`ext soft-glass pendant ${tone === "owed" ? "lent" : "owe"}`}
     >
       <div className="tracker-summary__stage">
         <div className="tracker-summary__title-row">
@@ -209,7 +204,7 @@ export function PersonalTrackerCard({
       <div className="personal-tracker-card__header">
         <h2 className="personal-tracker-card__title" data-testid={testIds.ribbon}>
           <span className="personal-tracker-card__pennant" aria-hidden data-testid={testIds.pennant}>
-            <MonitoringIcon className="personal-tracker-card__pennant-icon size-[1.05rem] shrink-0" />
+            <Activity className="personal-tracker-card__pennant-icon size-[1.05rem] shrink-0" aria-hidden />
           </span>
           {t("personal.home.personalTracker")}
         </h2>
@@ -223,7 +218,7 @@ export function PersonalTrackerCard({
           sharedAmount={dashboard.totalLentBalance}
           mineTo="/personal/utang/owe"
           sharedTo="/personal/utang/lent"
-          icon={HandshakeIcon}
+          icon={Handshake}
           tone="owed"
           rowTestId={testIds.myLedger}
           mineTestId={testIds.myLedgerOwe}
@@ -239,7 +234,7 @@ export function PersonalTrackerCard({
           sharedAmount={dashboard.sharedWithMeLentBalance}
           mineTo="/personal/utang/owe"
           sharedTo="/personal/utang/lent"
-          icon={WalletIcon}
+          icon={Wallet}
           tone="owe"
           rowTestId={testIds.sharedLedger}
           mineTestId={testIds.sharedLedgerOwe}
@@ -257,7 +252,7 @@ export function PersonalTrackerCard({
           data-recipe={metricRecipe("people")}
         >
           <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-            <GroupIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+            <Users className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
           </span>
           <span className="personal-qa-glass__label">
             {metricsOutline ? t("personal.home.friends") : t("personal.home.people")}
@@ -272,7 +267,7 @@ export function PersonalTrackerCard({
           data-recipe={metricRecipe("lent")}
         >
           <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-            <HandshakeIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+            <Handshake className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
           </span>
           <span className="personal-qa-glass__label">{t("personal.home.activeMine")}</span>
           <strong className="personal-qa-glass__badge tabular-nums">
@@ -287,7 +282,7 @@ export function PersonalTrackerCard({
           data-recipe={metricRecipe("owe")}
         >
           <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-            <ShareIcon className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
+            <Share2 className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
           </span>
           <span className="personal-qa-glass__label">{t("personal.home.sharedLedgerStat")}</span>
           <strong className="personal-qa-glass__badge tabular-nums">

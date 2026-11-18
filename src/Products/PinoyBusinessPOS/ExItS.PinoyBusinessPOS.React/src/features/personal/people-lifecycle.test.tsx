@@ -169,29 +169,47 @@ describe("People lifecycle UX", () => {
       ),
     );
 
+    const user = userEvent.setup();
     renderPeopleApp("/personal/people");
-    expect(await screen.findByTestId("people-add-toggle")).toHaveTextContent("Add local person");
-    expect(screen.getByTestId("people-add-exits")).toHaveTextContent("Add ExItS person");
+    expect(await screen.findByTestId("people-add-speed-dial-trigger")).toHaveAttribute(
+      "aria-label",
+      "Add person",
+    );
     expect(screen.queryByTestId("people-add-dialog")).not.toBeInTheDocument();
     expect(screen.queryByTestId("person-form-page")).not.toBeInTheDocument();
     expect(screen.queryByText(/with ExItS ID/)).not.toBeInTheDocument();
-    const searchRow = screen.getByTestId("people-search-row");
-    const requests = screen.getByTestId("people-connection-requests");
-    expect(searchRow).toContainElement(requests);
-    expect(requests).toHaveAttribute("href", "/personal/invitations");
-    expect(requests).toHaveAttribute("data-appearance", "glossy");
-    const order = [...searchRow.querySelectorAll("[data-testid]")].map((node) =>
-      node.getAttribute("data-testid"),
+    expect(screen.getByTestId("people-search-row")).toContainElement(
+      screen.getByTestId("people-search"),
     );
-    expect(order.slice(0, 4)).toEqual([
-      "people-add-toggle",
-      "people-add-exits",
-      "people-connection-requests",
-      "people-search",
-    ]);
+    expect(screen.getByTestId("people-list-header-actions")).toContainElement(
+      screen.getByTestId("people-list-ribbon"),
+    );
+    expect(screen.getByTestId("people-list-header-actions")).toContainElement(
+      screen.getByTestId("people-add-speed-dial"),
+    );
+
+    await user.click(screen.getByTestId("people-add-speed-dial-trigger"));
+    expect(await screen.findByTestId("people-add-speed-dial-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("people-add-toggle")).toHaveAttribute(
+      "aria-label",
+      "Add local person",
+    );
+    expect(screen.getByTestId("people-add-exits")).toHaveAttribute(
+      "aria-label",
+      "Add ExItS person",
+    );
+    expect(screen.getByTestId("people-connection-requests")).toHaveAttribute(
+      "aria-label",
+      "Connection requests",
+    );
+    expect(screen.getByTestId("people-list-summary")).toBeInTheDocument();
+    expect(screen.getByTestId("people-list-summary-download")).toHaveAttribute(
+      "aria-label",
+      "Download",
+    );
   });
 
-  it("opens people info popover beside the title", async () => {
+  it("shows People lists card without page header", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(
@@ -211,16 +229,10 @@ describe("People lifecycle UX", () => {
       ),
     );
 
-    const user = userEvent.setup();
     renderPeopleApp("/personal/people");
-    const title = await screen.findByRole("heading", { name: "People" });
-    expect(title).toBeInTheDocument();
-    const infoButton = await screen.findByRole("button", { name: "About People" });
-    expect(infoButton).toHaveAttribute("data-intent", "info");
-    await user.click(infoButton);
-    const popover = await screen.findByRole("dialog", { name: "About People" });
-    expect(popover).not.toHaveAttribute("aria-modal");
-    expect(screen.getByText(/Connection consent and Utang records are separate/i)).toBeInTheDocument();
+    expect(await screen.findByTestId("people-list-ribbon")).toHaveTextContent("People lists");
+    expect(screen.queryByRole("button", { name: "About People" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("page-header-back-people")).not.toBeInTheDocument();
   });
 
   it("submits local contact form without connection request", async () => {
@@ -261,6 +273,7 @@ describe("People lifecycle UX", () => {
     await user.click(screen.getByTestId("people-add-switch-exits"));
     expect(await screen.findByTestId("qr-manual-id")).toBeInTheDocument();
     await user.click(screen.getByTestId("people-add-dialog-close"));
+    await user.click(screen.getByTestId("people-add-speed-dial-trigger"));
     await user.click(screen.getByTestId("people-add-toggle"));
     await user.type(screen.getByLabelText(/^Name/i), "Pedro Cruz");
     await user.click(screen.getByTestId("person-save"));
@@ -277,6 +290,17 @@ describe("People lifecycle UX", () => {
   });
 
   it("renders people rows without destructive list actions", async () => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes("min-width: 1024"),
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
     vi.stubGlobal(
       "fetch",
       vi.fn(
@@ -297,17 +321,15 @@ describe("People lifecycle UX", () => {
     );
 
     renderPeopleApp("/personal/people");
-    const juanRow = await screen.findByTestId("people-row-c1");
-    expect(within(juanRow).getByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(within(juanRow).getByText("Request sent")).toBeInTheDocument();
-    const anaRow = screen.getByTestId("people-row-c2");
-    expect(within(anaRow).getByText("Ana Cruz")).toBeInTheDocument();
-    expect(within(anaRow).getByText("Connected")).toBeInTheDocument();
+    const table = await screen.findByTestId("people-table");
+    expect(within(table).getByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(within(table).getByText("Request sent")).toBeInTheDocument();
+    expect(within(table).getByText("Ana Cruz")).toBeInTheDocument();
+    expect(within(table).getByText("Connected")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /block/i })).not.toBeInTheDocument();
-    const table = screen.getByTestId("people-table");
-    expect(table.querySelector("thead")).toHaveAttribute("data-appearance", "glossy");
-    expect(screen.getByTestId("people-table-footer")).toHaveAttribute("data-appearance", "glossy");
+    expect(table.querySelector("thead")).toHaveAttribute("data-appearance", "glossy-raise");
+    expect(screen.getByTestId("people-table-footer")).toHaveAttribute("data-appearance", "glossy-raise");
     expect(screen.getByTestId("people-table-search")).toBeInTheDocument();
     expect(screen.getByTestId("exits-table-output-csv")).toBeEnabled();
     expect(screen.getByTestId("exits-table-output-xlsx")).toBeEnabled();

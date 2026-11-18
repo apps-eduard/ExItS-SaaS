@@ -65,6 +65,17 @@ describe("OrgEhgQuickActionGlassPlayground", () => {
     expect(icon).toHaveClass("org-ehg-qa-glass-icon--no-shadow");
   });
 
+  it("hides the icon chip when Icon is None", async () => {
+    const user = userEvent.setup();
+    render(wrap(<OrgEhgQuickActionGlassPlayground />));
+    expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-preview-chip")).toBeInTheDocument();
+    const iconRoot = screen.getByTestId("ui-standard-org-ehg-qa-pg-icon");
+    await user.click(within(iconRoot).getByTestId("ui-standard-org-ehg-qa-pg-icon-field"));
+    await user.click(within(iconRoot).getByTestId("ui-standard-org-ehg-qa-pg-icon-option-none"));
+    expect(screen.queryByTestId("ui-standard-org-ehg-qa-pg-preview-chip")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-qa-pg-copy")).toHaveTextContent("icon-none");
+  });
+
   it("switches size sm / lg on the preview row", async () => {
     const user = userEvent.setup();
     render(wrap(<OrgEhgQuickActionGlassPlayground />));

@@ -287,10 +287,10 @@ export function UiStandardsDialogPlayground() {
 type SampleId = "alert" | "confirm" | "delete" | "form" | "scroll" | "persistent";
 
 const SAMPLES: ReadonlyArray<{ id: SampleId; label: string; caption: string; icon: LucideIcon; tone: string }> = [
-  { id: "alert", label: "Alert", caption: "One action to acknowledge", icon: Info, tone: "var(--exits-severity-info, #0ea5e9)" },
-  { id: "confirm", label: "Confirm", caption: "Cancel | Continue", icon: MessageSquare, tone: "var(--exits-primary)" },
-  { id: "delete", label: "Delete", caption: "Danger confirm", icon: Trash2, tone: "var(--exits-severity-danger, #ef4444)" },
-  { id: "form", label: "Form", caption: "Short form with submit", icon: PenLine, tone: "var(--exits-primary)" },
+  { id: "confirm", label: "Confirmation", caption: "Save · Cancel · Confirm", icon: MessageSquare, tone: "var(--exits-primary)" },
+  { id: "form", label: "Form", caption: "Edit · Add · Update sheet", icon: PenLine, tone: "var(--exits-primary)" },
+  { id: "delete", label: "Destructive", caption: "Delete or Remove", icon: Trash2, tone: "var(--exits-severity-danger, #ef4444)" },
+  { id: "alert", label: "Information", caption: "Notices and explanations", icon: Info, tone: "var(--exits-severity-info, #0ea5e9)" },
   { id: "scroll", label: "Long content", caption: "Full height on mobile", icon: ScrollText, tone: "var(--exits-severity-info, #0ea5e9)" },
   { id: "persistent", label: "Persistent", caption: "No backdrop / Esc close", icon: Lock, tone: "var(--exits-warning, #ff5722)" },
 ];
@@ -328,27 +328,10 @@ export function UiStandardsDialogGallery() {
       </div>
 
       <ExitsModal
-        open={isOpen("alert")}
-        onOpenChange={(next) => !next && close()}
-        title="Backup complete"
-        size="sm"
-        testId="ui-standard-dialog-alert"
-        footer={
-          <Button type="button" intent="info" appearance="solid" onClick={close}>
-            Got it
-          </Button>
-        }
-      >
-        <DialogMessage intent="info" showIcon>
-          Your records were saved to this device.
-        </DialogMessage>
-      </ExitsModal>
-
-      <ExitsModal
         open={isOpen("confirm")}
         onOpenChange={(next) => !next && close()}
-        title="Send reminder?"
-        description="Juan will get a notification."
+        title="Save changes?"
+        description="Review before you continue."
         testId="ui-standard-dialog-confirm"
         footer={
           <>
@@ -356,35 +339,13 @@ export function UiStandardsDialogGallery() {
               Cancel
             </Button>
             <Button type="button" intent="primary" appearance="solid" onClick={close}>
-              Continue
+              Confirm
             </Button>
           </>
         }
       >
         <DialogMessage intent="primary" showIcon>
-          A reminder about the ₱1,250.00 balance will be sent now.
-        </DialogMessage>
-      </ExitsModal>
-
-      <ExitsModal
-        open={isOpen("delete")}
-        onOpenChange={(next) => !next && close()}
-        title="Delete this record?"
-        testId="ui-standard-dialog-delete"
-        footer={
-          <>
-            <Button type="button" intent="neutral" appearance="outline" onClick={close}>
-              Cancel
-            </Button>
-            <Button type="button" intent="danger" appearance="solid" onClick={close}>
-              <Trash2 className="size-4" aria-hidden />
-              Delete
-            </Button>
-          </>
-        }
-      >
-        <DialogMessage intent="danger" showIcon>
-          This cannot be undone.
+          Your edits will be saved to this record. You can change them again later.
         </DialogMessage>
       </ExitsModal>
 
@@ -392,6 +353,8 @@ export function UiStandardsDialogGallery() {
         open={isOpen("form")}
         onOpenChange={(next) => !next && close()}
         title="Rename person"
+        description="Update the display name for this contact."
+        fullHeightOnCompact
         testId="ui-standard-dialog-form"
         onSubmit={close}
         footer={
@@ -413,6 +376,47 @@ export function UiStandardsDialogGallery() {
           data-exits-modal-autofocus="true"
           data-testid="ui-standard-dialog-form-name"
         />
+      </ExitsModal>
+
+      <ExitsModal
+        open={isOpen("delete")}
+        onOpenChange={(next) => !next && close()}
+        title="Delete this record?"
+        description="This action cannot be undone."
+        testId="ui-standard-dialog-delete"
+        footer={
+          <>
+            <Button type="button" intent="neutral" appearance="outline" onClick={close}>
+              Cancel
+            </Button>
+            <Button type="button" intent="danger" appearance="solid" onClick={close}>
+              <Trash2 className="size-4" aria-hidden />
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <DialogMessage intent="danger" showIcon>
+          The record and its history will be removed from this device.
+        </DialogMessage>
+      </ExitsModal>
+
+      <ExitsModal
+        open={isOpen("alert")}
+        onOpenChange={(next) => !next && close()}
+        title="Backup complete"
+        description="Your records are up to date."
+        size="sm"
+        testId="ui-standard-dialog-alert"
+        footer={
+          <Button type="button" intent="info" appearance="solid" onClick={close}>
+            Got it
+          </Button>
+        }
+      >
+        <DialogMessage intent="info" showIcon>
+          Your records were saved to this device.
+        </DialogMessage>
       </ExitsModal>
 
       <ExitsModal

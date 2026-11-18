@@ -1,0 +1,41 @@
+# Personal main-card header (LOCKED — global)
+
+When creating or restyling a **Personal main-card title** (icon + label), use the lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/personal-main-card-header-global-default.ts`.
+
+The locked command is `ext personal main-card-header icon-round label`.
+
+CSS: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/styles/personal-main-card-header.css`
+
+## Recipe (one spot)
+
+- Icon disc: `PERSONAL_MAIN_CARD_HEADER_ICON_SIZE` (**2rem**), fully rounded (`999px`)
+- Mark: `PERSONAL_MAIN_CARD_HEADER_ICON_MARK` (**1.05rem**), white
+- Fill: solid identity chip + soft radial highlight (same light + dark — do **not** mute the chip in dark)
+- No border on the disc
+- Label: **1.05rem** / **700** / line-height **1.2** / letter-spacing **-0.01em**
+- Gap icon↔label: **0.55rem**
+- Light label: black **28%** into chip; dark label: `#f1f5f9`
+
+## Color policy (LOCKED)
+
+Each card **keeps** its identity chip via `--personal-main-card-header-chip`:
+
+| Card | Chip |
+| --- | --- |
+| Stores to pay | `var(--exits-primary)` (home primary row) |
+| Recent activity | `var(--exits-primary)` (home primary row) |
+| Needs Attention | `#ff5722` |
+| Quick actions | `#ff5722` |
+| To-do | `var(--exits-primary)` (home primary row) |
+| Personal Tracker | `#22c55e` (or `--personal-tracker-accent`) |
+| People list | `#4169e1` |
+| Money I owe plain | `var(--exits-primary)` |
+
+Do **not** invent a different header icon size, radius, or label type per card. Change tokens in the lock file + CSS together.
+
+## Markup
+
+Reuse existing `*__title` + `*__pennant` + `*__pennant-icon` class names — the shared CSS targets them. New Personal main cards must use the same class pattern (or extend the shared selector list).
+
+Change this lock only when the user asks. Update `personal-main-card-header-global-default.ts`, `personal-main-card-header-global-default.test.ts`, `personal-main-card-header.css`, and this rule together.

@@ -20,7 +20,7 @@ import "@/features/ui-standards/exits-datetime-roll.css";
 const SOFT_GLASS_INK = "#ffffff";
 const OPEN_SKIP_DISMISS_MS = 320;
 const POPOVER_GAP_PX = 8;
-const POPOVER_WIDTH_PX = 320;
+const POPOVER_MIN_WIDTH_PX = 280;
 
 export type SoftGlassDatePopoverProps = {
   open: boolean;
@@ -75,7 +75,7 @@ export function SoftGlassDatePopover({
     const trigger = anchorRef.current;
     if (!trigger) return null;
     const rect = trigger.getBoundingClientRect();
-    const width = Math.min(POPOVER_WIDTH_PX, Math.max(rect.width, 280), window.innerWidth - 16);
+    const width = Math.min(Math.max(rect.width, POPOVER_MIN_WIDTH_PX), window.innerWidth - 16);
     let left = rect.left;
     if (left + width > window.innerWidth - 8) {
       left = Math.max(8, window.innerWidth - 8 - width);

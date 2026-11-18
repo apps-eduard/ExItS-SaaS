@@ -1,0 +1,67 @@
+---
+description: ExItS UI usability for PinoyBusinessPOS React and ExItS Premium Web — keep each frontend's identity; apply Apple HIG for layout, dark mode, touch, motion, and accessibility
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**/*.{tsx,ts,css,scss},src/Products/PinoyBusinessPOS/Docs/UI/**,src/ExItS.Premium/ExItS.Premium.Web/**/*.{tsx,ts,css,scss}
+alwaysApply: false
+---
+
+# ExItS UX + Apple HIG
+
+Apply when adding or changing user-facing UI. Do not restyle existing screens to match this rule.
+
+## Priority
+
+1. ExItS design system owns visual identity. Locked rules win: component priority, button height, modal actions, tables, inputs, selects, Soft Glass, Org EHG, tooltips, warn color, English-only, Personal / Organization / Admin separation.
+2. Apple HIG ([Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/), [Layout](https://developer.apple.com/design/human-interface-guidelines/layout), [Dark Mode](https://developer.apple.com/design/human-interface-guidelines/dark-mode)) guides usability, accessibility, and interaction quality.
+   - PinoyBusinessPOS: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React` and `Docs/UI`.
+   - ExItS Premium (port 5180): `src/ExItS.Premium/ExItS.Premium.Web`. Use Premium tokens and components there. Do not restyle Premium with POS Org EHG or Personal Soft Glass.
+3. Do not change business logic, APIs, or validation behavior to satisfy layout.
+
+## Keep ExItS identity
+
+- Reuse existing components, tokens, and variants. No new UI libraries.
+- Primary color follows Preferences. Support Light, Dark, and System.
+- Icons: Material Symbols Rounded.
+- Soft corners, the existing five elevations, and Compact / Standard / Comfort density.
+- Keep Button, Badge, Toast, Dialog, and Input variants. Soft Glass and custom motion stay opt-in where already locked.
+
+## HIG checks (new or touched UI)
+
+- One primary action per view. Secondary actions are visually quieter. Destructive actions use the locked danger treatment and a confirmation.
+- Icon-only and compact controls keep locked visual height. Give them a hit target of about **44×44 CSS px** via padding or an invisible hit area, not by overriding `--exits-control-height`.
+- Type stays on the existing scale. Body text remains readable; do not shrink below the current caption size to fit more content.
+- Spacing uses existing tokens. Align to the current grid; do not invent a second scale.
+- Navigation stays where the product already puts it. Back, close, and dismiss behave the same on every surface that shares the pattern.
+- Press, hover, focus, and success/error states are visible. Motion is short and explains a change. Honor `prefers-reduced-motion`. On POS also honor `data-motion="reduced"`. On Premium, `useReducedMotion` follows that OS setting.
+- Text and controls meet contrast in light and dark. Focus is visible. Keyboard reaches every action. Name controls for screen readers (`aria-label` on icon-only actions).
+- Respect safe-area insets, dynamic viewport height, and the on-screen keyboard. Long content scrolls inside the available region; headers and primary actions stay reachable.
+- Show field errors next to the field. Do not clear user input on a failed submit.
+
+## Layout
+
+Adapt [Apple Layout](https://developer.apple.com/design/human-interface-guidelines/layout) with ExItS spacing, surfaces, density, and navigation. Do not copy Apple window chrome or Liquid Glass.
+
+- Align to the existing grid. Related fields and actions sit together; separate groups with the current surface and spacing tokens.
+- Show the next decision, not every option. Put secondary detail behind the existing disclosure, drawer, or dialog pattern.
+- Size from the container and viewport. The same action must still work on mobile, tablet, and desktop. Reflow lists, forms, and dialogs instead of keeping a desktop frame on a narrow screen.
+- Keep content inside the safe area. When the keyboard opens, scroll the field into view and leave the primary action reachable.
+- Content wraps or scrolls on the block axis. Do not clip labels or add a horizontal page scrollbar. Avoid a fixed width that overflows its container.
+- Leave room for larger text and longer labels. Do not shrink type to fit. English stays the only catalog until translations are resumed.
+- Navigation, forms, dialogs, cards, and lists keep the locked component for that job so spacing and alignment stay the same across surfaces.
+- Use logical properties (`inline-start`, `margin-inline`, `padding-inline`) so an RTL direction flips alignment. Do not add a direction or language switcher.
+
+## Dark Mode
+
+Use existing ExItS tokens and `[data-theme]`. Do not invent a second dark palette.
+
+- Light, Dark, and System stay available. System follows the OS appearance.
+- Colors are semantic and adaptive: text, border, surface, and elevated surface each have a light and dark value. Do not invert a light hex for dark.
+- Hierarchy stays visible in dark: page background darkest, cards next, elevated overlays (Dialog, Bottom Sheet, Toast, menus) one step lighter than the page. Depth comes from that step plus the existing elevation, not from a bright fill.
+- Text and icons meet contrast on the surface they sit on. Primary stays the Preferences color; use it for actions and focus, not for large fills.
+- Dialogs, Bottom Sheets, Toasts, and Inputs use the same dark surface, border, and text tokens as the rest of the product. Dividers stay subtle. Inputs remain distinguishable from the sheet or dialog behind them.
+- Avoid washed-out gray-on-gray, large pure-white panels, heavy blur, and neon accents. Soft Glass stays on the locked recipe.
+
+## Do not
+
+- Redesign shipped components or swap locked recipes for Material, Fluent, Tailwind, or Liquid Glass.
+- Add dependencies.
+- Weaken or remove tests to match a visual preference.

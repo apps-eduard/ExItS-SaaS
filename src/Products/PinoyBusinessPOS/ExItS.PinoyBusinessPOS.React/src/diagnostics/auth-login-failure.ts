@@ -112,7 +112,10 @@ function isLikelyNetworkFailure(failure: AuthLoginFailureDiagnostic): boolean {
     detail.includes("failed to fetch") ||
     detail.includes("networkerror") ||
     detail.includes("load failed") ||
-    detail.includes("network request failed")
+    detail.includes("network request failed") ||
+    detail.includes("timed out") ||
+    detail.includes("timeout") ||
+    detail.includes("aborted")
   );
 }
 

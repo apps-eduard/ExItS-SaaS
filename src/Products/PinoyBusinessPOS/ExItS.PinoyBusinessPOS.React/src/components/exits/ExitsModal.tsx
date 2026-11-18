@@ -207,7 +207,7 @@ export function ExitsModal({
 
   const body = (
     <>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border pb-3">
+      <div className="exits-modal__header flex shrink-0 items-start justify-between gap-3 border-b border-border pb-3">
         <div className={cn("min-w-0", ribbon && "exits-modal__ribbon-head")}>
           {ribbon ? (
             <h2
@@ -232,18 +232,12 @@ export function ExitsModal({
               {title}
             </h2>
           ) : (
-            <h2
-              id={titleId}
-              className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground"
-            >
+            <h2 id={titleId} className="exits-modal__title m-0 text-foreground">
               {title}
             </h2>
           )}
           {description ? (
-            <p
-              id={descriptionId}
-              className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
-            >
+            <p id={descriptionId} className="exits-modal__description m-0 mt-1 text-muted">
               {description}
             </p>
           ) : null}
@@ -264,9 +258,9 @@ export function ExitsModal({
           {CloseIcon ? <CloseIcon className="size-4" aria-hidden /> : null}
         </Button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto py-1">{children}</div>
+      <div className="exits-modal__body min-h-0 flex-1 overflow-y-auto py-1">{children}</div>
       {footer ? (
-        <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-border pt-3">
+        <div className="exits-modal__footer flex shrink-0 flex-wrap justify-end gap-2 border-t border-border pt-3">
           {footer}
         </div>
       ) : null}
@@ -276,10 +270,10 @@ export function ExitsModal({
   return createPortal(
     <div
       className={cn(
-        "exits-modal-backdrop fixed inset-0 z-[70] flex justify-center bg-black/40",
+        "exits-modal-backdrop fixed inset-0 z-[70] flex justify-center",
         fullHeightOnCompact
           ? "items-stretch p-0 lg:items-center lg:p-4"
-          : "items-center p-4",
+          : "items-end p-4 sm:items-center",
       )}
       ref={backdropRef}
       role="presentation"
@@ -302,19 +296,19 @@ export function ExitsModal({
         aria-busy={busy || undefined}
         tabIndex={-1}
         data-testid={testId}
+        data-mobile-sheet={fullHeightOnCompact ? "true" : undefined}
         className={cn(
-          "flex w-full flex-col gap-3 border border-border bg-surface p-4 shadow-[var(--exits-shadow-lg)]",
+          "exits-modal-panel flex w-full flex-col gap-3 border border-border bg-surface p-4",
           ribbon ? "exits-modal--ribbon relative overflow-visible" : "overflow-hidden",
-          "exits-modal-panel",
           fullHeightOnCompact
             ? cn(
-                "h-[100dvh] max-h-[100dvh] max-w-none rounded-none",
-                "lg:h-auto lg:max-h-[min(90dvh,40rem)] lg:rounded-[var(--exits-radius-md)]",
+                "h-[100dvh] max-h-[100dvh] max-w-none",
+                "lg:h-auto lg:max-h-[min(90dvh,40rem)]",
                 size === "sm" && "lg:max-w-sm",
                 size === "md" && "lg:max-w-md",
                 size === "lg" && "lg:max-w-lg",
               )
-            : cn("max-h-[min(90dvh,40rem)] rounded-[var(--exits-radius-md)]", SIZE_CLASS[size]),
+            : cn("max-h-[min(90dvh,40rem)]", SIZE_CLASS[size]),
           className,
         )}
         onClick={(event) => event.stopPropagation()}

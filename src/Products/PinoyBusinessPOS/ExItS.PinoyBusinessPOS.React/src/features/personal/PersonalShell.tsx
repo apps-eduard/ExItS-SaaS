@@ -20,7 +20,6 @@ import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
 import { PersonalInstallHomeOffer } from "@/features/personal/PersonalInstallOffer";
 import { useNotificationsOverlay } from "@/features/personal/NotificationsOverlay";
 import { PersonalSidebar } from "@/features/personal/PersonalSidebar";
-import { PersonalAppearanceMenu } from "@/features/personal/PersonalAppearanceMenu";
 import { PersonalThemeModeButton } from "@/features/personal/PersonalThemeModeButton";
 import { formatUnreadNotificationBadge } from "@/features/personal/personal-notifications";
 import { usePersonalNotificationUnreadCountQuery } from "@/features/personal/people-queries";
@@ -170,7 +169,6 @@ export function PersonalShell() {
                   className="app-top-bar__action"
                 />
                 <PersonalThemeModeButton className="app-top-bar__action" />
-                <PersonalAppearanceMenu className="app-top-bar__action personal-topbar-secondary" />
                 <ShellConnectionButton className="app-top-bar__action personal-topbar-secondary" />
                 <ShellNotificationButton
                   to="/personal/notifications"

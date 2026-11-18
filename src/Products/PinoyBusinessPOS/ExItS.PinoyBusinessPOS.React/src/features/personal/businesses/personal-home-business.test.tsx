@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResponse } from "@/test/session-context";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { appRoutes } from "@/app/router";
@@ -19,25 +18,9 @@ vi.mock("@/features/personal/stores-to-pay", async (importOriginal) => {
 const personalUserId = "11111111-1111-1111-1111-111111111111";
 const posOrg = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const loanOrg = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+const membershipId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 
-function affiliation(overrides: Record<string, unknown>) {
-  return {
-    productCode: "pinoy-business-pos",
-    productDisplayName: "PinoyBusinessPOS",
-    organizationId: null,
-    organizationDisplayName: null,
-    membershipRole: null,
-    roleDisplay: null,
-    planKey: null,
-    planDisplayName: null,
-    subscriptionStatus: null,
-    trialEndUtc: null,
-    canManageBilling: false,
-    ...overrides,
-  };
-}
-
-function createFetch(affiliations: unknown[] | "error", workplaces: unknown[] = []) {
+function createFetch() {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes("/api/v1/platform/antiforgery/token")) {
@@ -60,13 +43,40 @@ function createFetch(affiliations: unknown[] | "error", workplaces: unknown[] = 
       return jsonResponse(200, []);
     }
     if (url.includes("/api/v1/personal/product-affiliations")) {
-      if (affiliations === "error") {
-        return jsonResponse(500, { title: "unavailable" });
-      }
-      return jsonResponse(200, affiliations);
+      return jsonResponse(200, [
+        {
+          productCode: "pinoy-business-pos",
+          productDisplayName: "PinoyBusinessPOS",
+          organizationId: posOrg,
+          organizationDisplayName: "ABC Grocery",
+          membershipRole: "OrganizationOwner",
+          roleDisplay: "Owner",
+          planKey: "pro",
+          planDisplayName: "Pro",
+          subscriptionStatus: "Active",
+          trialEndUtc: null,
+          canManageBilling: true,
+        },
+      ]);
     }
     if (url.includes("/api/v1/personal/workplaces")) {
-      return jsonResponse(200, workplaces);
+      return jsonResponse(200, [
+        {
+          organizationId: loanOrg,
+          organizationDisplayName: "North Shop",
+          publicOrganizationId: "ORG012345",
+          staffUserId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          staffLogin: "ana@ORG012345",
+          membershipId,
+          membershipRole: "OrganizationMember",
+          membershipRoleDisplay: "Staff",
+          membershipStatus: "Active",
+          productRole: "Cashier",
+          productRoleDisplay: "Cashier",
+          branches: [],
+          planDisplayName: "Basic",
+        },
+      ]);
     }
     if (url.includes("/api/v1/personal/dashboard")) {
       return jsonResponse(200, {
@@ -85,9 +95,6 @@ function createFetch(affiliations: unknown[] | "error", workplaces: unknown[] = 
       });
     }
     if (url.includes("/api/v1/personal/")) {
-      return jsonResponse(200, []);
-    }
-    if (url.includes("/api/v1/personal/notifications")) {
       return jsonResponse(200, []);
     }
     return jsonResponse(404, { detail: `unmocked ${url}` });
@@ -119,162 +126,17 @@ describe("Personal home businesses", () => {
     clearPlatformAntiforgeryToken();
   });
 
-  it("hides the start-a-business card when there are no businesses or workplaces", async () => {
-    vi.stubGlobal("fetch", createFetch([]));
+  it("does not show Your businesses or Your workplace on Personal home", async () => {
+    vi.stubGlobal("fetch", createFetch());
     renderHome();
 
     expect(await screen.findByTestId("personal-utang-summary")).toBeInTheDocument();
-    expect(screen.queryByTestId("personal-home-start-business")).not.toBeInTheDocument();
-    expect(screen.queryByText("Start a business")).not.toBeInTheDocument();
-    expect(screen.queryByText("Use ExItS products for your business.")).not.toBeInTheDocument();
-    expect(screen.queryByText("Start your own business")).not.toBeInTheDocument();
-  });
-
-  it("shows the POS business and an Open action", async () => {
-    vi.stubGlobal(
-      "fetch",
-      createFetch([
-        affiliation({
-          organizationId: posOrg,
-          organizationDisplayName: "ABC Grocery",
-          roleDisplay: "Owner",
-          subscriptionStatus: "Active",
-          canManageBilling: true,
-        }),
-      ]),
-    );
-    renderHome();
-
-    expect(await screen.findByTestId("personal-utang-summary")).toBeInTheDocument();
-    expect(await screen.findByText("ABC Grocery")).toBeInTheDocument();
-    expect(screen.getByText("Businesses you own and manage")).toBeInTheDocument();
-    expect(screen.getAllByText("Your businesses")).toHaveLength(1);
-    const business = screen.getByTestId("personal-business-pinoy-business-pos");
-    expect(business.querySelector(".personal-owned-businesses__meta")).toHaveTextContent(/^Active$/);
-    expect(business.querySelector(".personal-owned-businesses__status")).toHaveTextContent("Active");
-    const open = screen.getByTestId("personal-business-open-pinoy-business-pos");
-    expect(open).toHaveTextContent("Open business");
-    const startAnother = screen.getByTestId("personal-home-start-another");
-    expect(startAnother).toHaveTextContent("Explore products");
-    expect(startAnother).toHaveAttribute("href", "/personal/businesses");
-    expect(startAnother.parentElement).toBe(open.parentElement);
-  });
-
-  it("opens an owned business directly and asks the staff workplace to log in", async () => {
-    const user = userEvent.setup();
-    const membershipId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
-    vi.stubGlobal(
-      "fetch",
-      createFetch(
-        [
-          affiliation({
-            organizationId: posOrg,
-            organizationDisplayName: "My Grocery",
-            membershipRole: "OrganizationOwner",
-            roleDisplay: "POS Owner",
-            planDisplayName: "Pro",
-            subscriptionStatus: "Active",
-            canManageBilling: true,
-          }),
-        ],
-        [
-          {
-            organizationId: loanOrg,
-            organizationDisplayName: "North Shop",
-            publicOrganizationId: "ORG012345",
-            staffUserId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-            staffLogin: "ana@ORG012345",
-            membershipId,
-            membershipRole: "OrganizationMember",
-            membershipRoleDisplay: "Staff",
-            membershipStatus: "Active",
-            productRole: "Cashier",
-            productRoleDisplay: "Cashier",
-            branches: [],
-            planDisplayName: "Basic",
-          },
-        ],
-      ),
-    );
-    renderHome();
-
-    const open = await screen.findByTestId("personal-business-open-pinoy-business-pos");
-    expect(open).toHaveTextContent("Open business");
-    const ownedCard = screen.getByTestId("personal-business-pinoy-business-pos");
-    const ownedSection = screen.getByTestId("personal-owned-businesses");
-    const staffSection = screen.getByTestId("personal-staff-workplaces");
-    const staffCard = screen.getByTestId(`personal-staff-business-${membershipId}`);
-    expect(ownedSection).toHaveTextContent("Your businesses");
-    expect(screen.getAllByText("Your businesses")).toHaveLength(1);
-    expect(ownedCard.querySelector(".personal-owned-businesses__meta")).toHaveTextContent(/^Pro plan · Active$/);
-    expect(ownedCard.querySelector(".personal-owned-businesses__plan")).toHaveTextContent("Pro plan");
-    expect(ownedCard).not.toHaveTextContent("POS Owner");
-    expect(staffCard.querySelector(".personal-owned-businesses__meta")).toHaveTextContent(/^Basic plan · Active$/);
-    expect(staffSection).toHaveClass("personal-owned-businesses");
-    expect(staffSection).toHaveTextContent("Your workplace");
-    expect(staffCard).toHaveTextContent("Cashier");
-    expect(staffCard).not.toHaveTextContent("Your businesses");
-    expect(staffCard).not.toHaveTextContent("POS Owner");
-    expect(ownedSection.parentElement).toBe(staffSection.parentElement);
-    expect(ownedSection.parentElement).toHaveClass("personal-business-cards");
-    expect(screen.getByText("My Grocery")).toBeInTheDocument();
-    expect(screen.getByText("North Shop")).toBeInTheDocument();
-    expect(screen.queryByTestId(`personal-business-open-pinoy-loan-manager`)).not.toBeInTheDocument();
-    await user.click(screen.getByTestId(`personal-staff-login-${membershipId}`));
-    expect(screen.getByTestId("workplace-sign-in-dialog")).toHaveTextContent("North Shop");
-    expect(screen.getByTestId("workplace-sign-in-username")).toHaveValue("ana@ORG012345");
-    expect(screen.getByTestId("workplace-sign-in-forgot")).toBeInTheDocument();
-  });
-
-  it("shows each different product once", async () => {
-    vi.stubGlobal(
-      "fetch",
-      createFetch([
-        affiliation({
-          organizationId: posOrg,
-          organizationDisplayName: "ABC Grocery",
-          roleDisplay: "Owner",
-          subscriptionStatus: "Active",
-          canManageBilling: true,
-        }),
-        affiliation({
-          productCode: "pinoy-loan-manager",
-          productDisplayName: "PinoyLoanManager",
-          organizationId: loanOrg,
-          organizationDisplayName: "ABC Lending",
-          roleDisplay: "Owner",
-          subscriptionStatus: "Trialing",
-          canManageBilling: true,
-        }),
-        affiliation({
-          productCode: "pinoy-business-pos",
-          organizationId: posOrg,
-          organizationDisplayName: "ABC Grocery",
-        }),
-      ]),
-    );
-    renderHome();
-
-    expect(await screen.findByText("ABC Grocery")).toBeInTheDocument();
-    expect(screen.getByText("ABC Lending")).toBeInTheDocument();
-    expect(screen.getAllByText("ABC Grocery")).toHaveLength(1);
-    expect(screen.getAllByText("Your businesses")).toHaveLength(1);
-    expect(
-      screen.getByTestId("personal-business-pinoy-loan-manager").querySelector(".personal-owned-businesses__meta"),
-    ).toHaveTextContent(/^Trialing$/);
-    const ownedSection = screen.getByTestId("personal-owned-businesses");
-    expect(ownedSection).toContainElement(screen.getByTestId("personal-business-pinoy-business-pos"));
-    expect(ownedSection).toContainElement(screen.getByTestId("personal-business-pinoy-loan-manager"));
-  });
-
-  it("keeps Personal home usable when business lookup fails", async () => {
-    vi.stubGlobal("fetch", createFetch("error"));
-    renderHome();
-
-    expect(await screen.findByTestId("personal-utang-summary")).toBeInTheDocument();
-    expect(await screen.findByTestId("personal-business-summary")).toHaveTextContent(
-      "Business information is temporarily unavailable.",
-    );
-    expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
+    expect(screen.queryByTestId("personal-business-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("personal-owned-businesses")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("personal-staff-workplaces")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your businesses")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your workplace")).not.toBeInTheDocument();
+    expect(screen.queryByText("ABC Grocery")).not.toBeInTheDocument();
+    expect(screen.queryByText("North Shop")).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
-import { IdCard, UserPlus } from "lucide-react";
+import { IdCard } from "lucide-react";
 import { ExitsModal } from "@/components/exits/ExitsModal";
+import { AddLocalPersonDrawer } from "@/features/personal/AddLocalPersonDrawer";
 import { PersonCreateForm, type PersonCreateKind } from "@/features/personal/PersonFormPage";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -19,12 +20,19 @@ export function AddPersonDialog({
   onSwitchToLocal?: () => void;
 }) {
   const { t } = useI18n();
+
+  if (initialKind === "walkin") {
+    return (
+      <AddLocalPersonDrawer
+        open={open}
+        onClose={() => onOpenChange(false)}
+        onSwitchToExits={onSwitchToExits}
+      />
+    );
+  }
+
   const title =
-    initialKind === "exits"
-      ? t("people.addExits")
-      : initialKind === "walkin"
-        ? t("people.addLocal")
-        : t("people.newTitle");
+    initialKind === "exits" ? t("people.addExits") : t("people.newTitle");
 
   return (
     <ExitsModal
@@ -39,7 +47,7 @@ export function AddPersonDialog({
       size="lg"
       fullHeightOnCompact
       ribbon
-      ribbonIcon={initialKind === "exits" ? IdCard : UserPlus}
+      ribbonIcon={IdCard}
     >
       <div className="people-add-dialog__body min-w-0 overflow-x-hidden" data-shell="soft-glass">
         <PersonCreateForm

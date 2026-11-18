@@ -62,6 +62,7 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.method).toBe("POST");
       expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBeNull();
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
       return jsonResponse({ sessionId: "s1", username: "cashier" });
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -74,6 +75,23 @@ describe("platformRequest antiforgery", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps hung/aborted Platform fetches to Failed to fetch", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      throw new DOMException("The operation was aborted.", "AbortError");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      platformRequest({
+        method: "POST",
+        path: AUTH_LOGIN_PATH,
+        body: { usernameOrEmail: "cashier", password: "secret" },
+        skipAntiforgery: true,
+      }),
+    ).rejects.toThrow("Failed to fetch");
   });
 
   it("clears in-memory antiforgery token explicitly", async () => {

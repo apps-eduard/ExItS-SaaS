@@ -6,13 +6,17 @@
  * Recipe: md icon-soft card-soft trail-chevron|count no-shadow no-icon-shadow
  */
 
-.personal-quick-actions .personal-qa-glass--md.personal-qa-glass--card-soft,
-.personal-todo-summary .personal-qa-glass--md.personal-qa-glass--card-soft,
-.personal-stores-to-pay .personal-qa-glass--md.personal-qa-glass--card-soft,
-.personal-home-metrics .personal-qa-glass--md.personal-qa-glass--card-soft,
-.personal-tracker-card .personal-qa-glass--md.personal-qa-glass--card-soft,
-.utang-money-page .utang-money-summary .personal-qa-glass--md.personal-qa-glass--card-soft,
-.utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md.personal-qa-glass--card-soft {
+/* Require base `.personal-qa-glass` so Soft Glass amount/pendant cards are not double-shelled. */
+.personal-quick-actions .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.personal-todo-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.personal-needs-attention .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.personal-stores-to-pay .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.personal-home-metrics .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.personal-tracker-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.utang-money-page .utang-money-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.utang-detail-page .utang-detail-qa-cards .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-standard {
   --personal-qa-edge: color-mix(in srgb, #ffffff 78%, #94a3b8);
   --personal-qa-fill: color-mix(in srgb, #ffffff 72%, transparent);
   border-radius: var(--exits-radius-soft, 0.6875rem);
@@ -24,15 +28,28 @@
     color-mix(in srgb, var(--personal-qa-chip) 8%, var(--personal-qa-fill));
 }
 
+.personal-needs-attention .personal-qa-glass--md.personal-qa-glass--card-soft {
+  width: 100%;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.personal-needs-attention .personal-qa-glass--warn.personal-qa-glass--md.personal-qa-glass--card-soft {
+  --personal-qa-chip: #ff5722;
+  --personal-qa-chip-deep: #e64a19;
+  --personal-qa-chip-soft: #ff8a65;
+  --personal-qa-chip-ink: #9a3412;
+}
+
 .personal-stores-to-pay__metrics .personal-qa-glass--md.personal-qa-glass--card-soft {
   border-radius: var(--exits-radius-soft, 0.6875rem);
 }
 
-.personal-todo-summary .personal-qa-glass--todo.personal-qa-glass--md.personal-qa-glass--card-soft {
-  --personal-qa-chip: #0ea5e9;
-  --personal-qa-chip-deep: #0369a1;
-  --personal-qa-chip-soft: #7dd3fc;
-  --personal-qa-chip-ink: #075985;
+.personal-todo-summary .personal-qa-glass--primary.personal-qa-glass--md.personal-qa-glass--card-soft {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: var(--exits-primary-soft, var(--exits-primary));
+  --personal-qa-chip-ink: var(--exits-primary);
 }
 
 .personal-todo-summary .personal-qa-glass--todo-overdue.personal-qa-glass--md.personal-qa-glass--card-soft {
@@ -42,20 +59,26 @@
   --personal-qa-chip-ink: #9a3412;
 }
 
-.personal-quick-actions .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-.personal-quick-actions .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-.personal-todo-summary .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-.personal-todo-summary .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-.personal-stores-to-pay .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-.personal-stores-to-pay .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-.personal-home-metrics .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-.personal-home-metrics .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-.personal-tracker-card .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-.personal-tracker-card .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-.utang-money-page .utang-money-summary .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-.utang-money-page .utang-money-summary .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-.utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-.utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md.personal-qa-glass--card-soft:active {
+.personal-quick-actions .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.personal-quick-actions .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.personal-todo-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.personal-todo-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.personal-needs-attention .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.personal-needs-attention .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.personal-stores-to-pay .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.personal-stores-to-pay .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.personal-home-metrics .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.personal-home-metrics .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.personal-tracker-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.personal-tracker-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.utang-money-page .utang-money-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.utang-money-page .utang-money-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.utang-detail-page .utang-detail-qa-cards .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.utang-detail-page .utang-detail-qa-cards .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+.people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-standard:hover,
+.people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-standard:active {
   border-color: color-mix(in srgb, var(--personal-qa-chip) 42%, var(--personal-qa-edge));
   background:
     linear-gradient(180deg, color-mix(in srgb, #fff 62%, transparent), transparent 45%),
@@ -68,6 +91,9 @@
 .personal-todo-summary .personal-qa-glass--no-shadow,
 .personal-todo-summary .personal-qa-glass--no-shadow:hover,
 .personal-todo-summary .personal-qa-glass--no-shadow:active,
+.personal-needs-attention .personal-qa-glass--no-shadow,
+.personal-needs-attention .personal-qa-glass--no-shadow:hover,
+.personal-needs-attention .personal-qa-glass--no-shadow:active,
 .personal-stores-to-pay .personal-qa-glass--no-shadow,
 .personal-stores-to-pay .personal-qa-glass--no-shadow:hover,
 .personal-stores-to-pay .personal-qa-glass--no-shadow:active,
@@ -83,12 +109,18 @@
 .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--no-shadow,
 .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--no-shadow:hover,
 .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--no-shadow:active,
+.people-page .people-list-card .personal-qa-glass--no-shadow,
+.people-page .people-list-card .personal-qa-glass--no-shadow:hover,
+.people-page .people-list-card .personal-qa-glass--no-shadow:active,
 [data-theme="dark"] .personal-quick-actions .personal-qa-glass--no-shadow,
 [data-theme="dark"] .personal-quick-actions .personal-qa-glass--no-shadow:hover,
 [data-theme="dark"] .personal-quick-actions .personal-qa-glass--no-shadow:active,
 [data-theme="dark"] .personal-todo-summary .personal-qa-glass--no-shadow,
 [data-theme="dark"] .personal-todo-summary .personal-qa-glass--no-shadow:hover,
 [data-theme="dark"] .personal-todo-summary .personal-qa-glass--no-shadow:active,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass--no-shadow,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass--no-shadow:hover,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass--no-shadow:active,
 [data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--no-shadow,
 [data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--no-shadow:hover,
 [data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--no-shadow:active,
@@ -103,7 +135,10 @@
 [data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--no-shadow:active,
 [data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--no-shadow,
 [data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--no-shadow:hover,
-[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--no-shadow:active {
+[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--no-shadow:active,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass--no-shadow,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass--no-shadow:hover,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass--no-shadow:active {
   box-shadow: none;
 }
 
@@ -111,6 +146,8 @@
 .personal-quick-actions .personal-qa-glass--md .personal-qa-glass__chevron,
 .personal-todo-summary .personal-qa-glass--md .personal-qa-glass__label,
 .personal-todo-summary .personal-qa-glass--md .personal-qa-glass__chevron,
+.personal-needs-attention .personal-qa-glass--md .personal-qa-glass__label,
+.personal-needs-attention .personal-qa-glass--md .personal-qa-glass__chevron,
 .personal-stores-to-pay .personal-qa-glass--md .personal-qa-glass__label,
 .personal-stores-to-pay .personal-qa-glass--md .personal-qa-glass__chevron {
   color: var(--personal-qa-chip-ink);
@@ -123,31 +160,35 @@
   --personal-qa-chip-soft: #67e8f9;
 }
 
-[data-theme="dark"] .personal-quick-actions .personal-qa-glass--lent.personal-qa-glass--md {
-  --personal-qa-chip: #10b981;
-  --personal-qa-chip-deep: #047857;
-  --personal-qa-chip-soft: #6ee7b7;
+/* Org EHG dark: keep light Soft Glass identity chips (not muted Soft Glass dark). */
+[data-theme="dark"] .personal-quick-actions .personal-qa-glass--lent.personal-qa-glass--md,
+[data-theme="dark"] .personal-home-metrics .personal-qa-glass--lent.personal-qa-glass--md,
+[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--lent.personal-qa-glass--md {
+  --personal-qa-chip: var(--exits-id-lent-chip);
+  --personal-qa-chip-deep: var(--exits-id-lent-deep);
+  --personal-qa-chip-soft: var(--exits-id-lent-soft);
 }
 
-[data-theme="dark"] .personal-quick-actions .personal-qa-glass--owe.personal-qa-glass--md {
-  --personal-qa-chip: #3b82f6;
-  --personal-qa-chip-deep: #1d4ed8;
-  --personal-qa-chip-soft: #93c5fd;
+[data-theme="dark"] .personal-quick-actions .personal-qa-glass--owe.personal-qa-glass--md,
+[data-theme="dark"] .personal-home-metrics .personal-qa-glass--owe.personal-qa-glass--md,
+[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--owe.personal-qa-glass--md {
+  --personal-qa-chip: var(--exits-id-owe-chip);
+  --personal-qa-chip-deep: var(--exits-id-owe-deep);
+  --personal-qa-chip-soft: var(--exits-id-owe-soft);
 }
 
-[data-theme="dark"] .personal-quick-actions .personal-qa-glass--stores.personal-qa-glass--md,
-[data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--stores.personal-qa-glass--md {
-  --personal-qa-chip: #8b5cf6;
-  --personal-qa-chip-deep: #6d28d9;
-  --personal-qa-chip-soft: #c4b5fd;
+[data-theme="dark"] .personal-quick-actions .personal-qa-glass--stores.personal-qa-glass--md {
+  --personal-qa-chip: var(--exits-id-stores-chip);
+  --personal-qa-chip-deep: var(--exits-id-stores-deep);
+  --personal-qa-chip-soft: var(--exits-id-stores-soft);
 }
 
 [data-theme="dark"] .personal-quick-actions .personal-qa-glass--people.personal-qa-glass--md,
 [data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--people.personal-qa-glass--md,
 [data-theme="dark"] .personal-home-metrics .personal-qa-glass--people.personal-qa-glass--md {
-  --personal-qa-chip: #4169e1;
-  --personal-qa-chip-deep: #1e3a8a;
-  --personal-qa-chip-soft: #a5b4fc;
+  --personal-qa-chip: var(--exits-id-people-chip);
+  --personal-qa-chip-deep: var(--exits-id-people-deep);
+  --personal-qa-chip-soft: var(--exits-id-people-soft);
 }
 
 [data-theme="dark"] .personal-quick-actions .personal-qa-glass--primary.personal-qa-glass--md,
@@ -159,10 +200,10 @@
   --personal-qa-chip-soft: var(--exits-primary-soft, var(--exits-primary));
 }
 
-[data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo.personal-qa-glass--md {
-  --personal-qa-chip: #0ea5e9;
-  --personal-qa-chip-deep: #0369a1;
-  --personal-qa-chip-soft: #7dd3fc;
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass--primary.personal-qa-glass--md {
+  --personal-qa-chip: var(--exits-primary);
+  --personal-qa-chip-deep: var(--exits-primary-hover);
+  --personal-qa-chip-soft: var(--exits-primary-soft, var(--exits-primary));
 }
 
 [data-theme="dark"] .personal-todo-summary .personal-qa-glass--todo-overdue.personal-qa-glass--md {
@@ -171,18 +212,10 @@
   --personal-qa-chip-soft: #ff8a65;
 }
 
-[data-theme="dark"] .personal-home-metrics .personal-qa-glass--lent.personal-qa-glass--md,
-[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--lent.personal-qa-glass--md {
-  --personal-qa-chip: #10b981;
-  --personal-qa-chip-deep: #047857;
-  --personal-qa-chip-soft: #6ee7b7;
-}
-
-[data-theme="dark"] .personal-home-metrics .personal-qa-glass--owe.personal-qa-glass--md,
-[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--owe.personal-qa-glass--md {
-  --personal-qa-chip: #3b82f6;
-  --personal-qa-chip-deep: #1d4ed8;
-  --personal-qa-chip-soft: #93c5fd;
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass--warn.personal-qa-glass--md {
+  --personal-qa-chip: #ff5722;
+  --personal-qa-chip-deep: #e64a19;
+  --personal-qa-chip-soft: #ff8a65;
 }
 
 [data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--info.personal-qa-glass--md {
@@ -191,27 +224,36 @@
   --personal-qa-chip-soft: #7dd3fc;
 }
 
-[data-theme="dark"] .personal-quick-actions .personal-qa-glass--md.personal-qa-glass--card-soft,
-[data-theme="dark"] .personal-quick-actions .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-[data-theme="dark"] .personal-quick-actions .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-[data-theme="dark"] .personal-todo-summary .personal-qa-glass--md.personal-qa-glass--card-soft,
-[data-theme="dark"] .personal-todo-summary .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-[data-theme="dark"] .personal-todo-summary .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-[data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--md.personal-qa-glass--card-soft,
-[data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-[data-theme="dark"] .personal-stores-to-pay .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-[data-theme="dark"] .personal-home-metrics .personal-qa-glass--md.personal-qa-glass--card-soft,
-[data-theme="dark"] .personal-home-metrics .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-[data-theme="dark"] .personal-home-metrics .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-[data-theme="dark"] .personal-tracker-card .personal-qa-glass--md.personal-qa-glass--card-soft,
-[data-theme="dark"] .personal-tracker-card .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-[data-theme="dark"] .personal-tracker-card .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--md.personal-qa-glass--card-soft,
-[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass--md.personal-qa-glass--card-soft:active,
-[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md.personal-qa-glass--card-soft,
-[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md.personal-qa-glass--card-soft:hover,
-[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md.personal-qa-glass--card-soft:active {
+[data-theme="dark"] .personal-quick-actions .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .personal-quick-actions .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .personal-quick-actions .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .personal-todo-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .personal-stores-to-pay .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .personal-stores-to-pay .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .personal-stores-to-pay .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .personal-home-metrics .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .personal-home-metrics .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .personal-home-metrics .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .personal-tracker-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .personal-tracker-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .personal-tracker-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .utang-money-page .utang-money-summary .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .utang-detail-page .utang-detail-qa-cards .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-standard,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-standard:hover,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-standard:active {
   --personal-qa-chip-ink: #f1f5f9;
   --personal-qa-edge: color-mix(in srgb, #ffffff 16%, #334155);
   --personal-qa-fill: color-mix(in srgb, #ffffff 8%, #1a222d);
@@ -228,22 +270,34 @@
 .personal-quick-actions .personal-qa-glass--md .personal-qa-glass__icon--soft,
 .personal-todo-summary .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 .personal-todo-summary .personal-qa-glass--md .personal-qa-glass__icon--soft,
+.personal-needs-attention .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
+.personal-needs-attention .personal-qa-glass--md .personal-qa-glass__icon--soft,
 .personal-home-metrics .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 .personal-home-metrics .personal-qa-glass--md .personal-qa-glass__icon--soft,
 .personal-stores-to-pay__metrics .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 .personal-stores-to-pay__metrics .personal-qa-glass--md .personal-qa-glass__icon--soft,
+.personal-stores-to-pay-list .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
+.personal-stores-to-pay-list .personal-qa-glass--md .personal-qa-glass__icon--soft,
 .utang-money-page .utang-money-summary .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 .utang-money-page .utang-money-summary .personal-qa-glass--md .personal-qa-glass__icon--soft,
 .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 .utang-detail-page .utang-detail-qa-cards .personal-qa-glass--md .personal-qa-glass__icon--soft,
+.people-page .people-list-card .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
+.people-page .people-list-card .personal-qa-glass--md .personal-qa-glass__icon--soft,
 [data-theme="dark"] .personal-quick-actions .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 [data-theme="dark"] .personal-quick-actions .personal-qa-glass--md .personal-qa-glass__icon--soft,
 [data-theme="dark"] .personal-todo-summary .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 [data-theme="dark"] .personal-todo-summary .personal-qa-glass--md .personal-qa-glass__icon--soft,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
+[data-theme="dark"] .personal-needs-attention .personal-qa-glass--md .personal-qa-glass__icon--soft,
 [data-theme="dark"] .personal-home-metrics .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
 [data-theme="dark"] .personal-home-metrics .personal-qa-glass--md .personal-qa-glass__icon--soft,
 [data-theme="dark"] .personal-stores-to-pay__metrics .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
-[data-theme="dark"] .personal-stores-to-pay__metrics .personal-qa-glass--md .personal-qa-glass__icon--soft {
+[data-theme="dark"] .personal-stores-to-pay__metrics .personal-qa-glass--md .personal-qa-glass__icon--soft,
+[data-theme="dark"] .personal-stores-to-pay-list .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
+[data-theme="dark"] .personal-stores-to-pay-list .personal-qa-glass--md .personal-qa-glass__icon--soft,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass--md.personal-qa-glass--icon-soft .personal-qa-glass__icon,
+[data-theme="dark"] .people-page .people-list-card .personal-qa-glass--md .personal-qa-glass__icon--soft {
   display: inline-flex;
   align-items: center;
   justify-content: center;

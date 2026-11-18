@@ -24,12 +24,14 @@ import {
   type UiStandardNavChild,
   type UiStandardsProduct,
 } from "@/features/ui-standards/ui-standard-catalog";
-import { OrgEhgButtonGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgButtonGlassGallery";
 import { OrgEhgFabGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgFabGlassGallery";
-import { OrgEhgInputGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgInputGlassGallery";
 import { OrgEhgDateGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgDateGlassGallery";
+import { OrgEhgQaBtnGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQaBtnGlassGallery";
+import { OrgEhgQaInputGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQaInputGlassGallery";
+import { OrgEhgQaSelectGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQaSelectGlassGallery";
 import { OrgEhgQuickActionGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQuickActionGlassGallery";
 import { OrgEhgCardGlassGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgCardGlassGallery";
+import { OrgEhgGlassCardGallery } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgGlassCardGallery";
 import { parseOrgEhgCardGlassKind } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgCardGlassKinds";
 import {
   isOrgEhgCategory,
@@ -147,8 +149,10 @@ export function UiStandardsPage() {
   const showButtonGlass = product === "personal" && category === "button-glass";
   const showFabGlass = product === "personal" && category === "fab-glass";
   const showInputGlass = product === "personal" && category === "input-glass";
+  const showSelectGlass = product === "personal" && category === "select-glass";
   const showDateGlass = product === "personal" && category === "date-glass";
   const showQuickActionGlass = product === "personal" && category === "quick-action-glass";
+  const showGlassCard = product === "personal" && category === "glass-card";
   const personalCardGlassKind =
     product === "personal" ? parseOrgEhgCardGlassKind(category) : null;
   const showCardGlass = personalCardGlassKind != null;
@@ -160,8 +164,10 @@ export function UiStandardsPage() {
     showButtonGlass ||
     showFabGlass ||
     showInputGlass ||
+    showSelectGlass ||
     showDateGlass ||
     showQuickActionGlass ||
+    showGlassCard ||
     showCardGlass ||
     hasLive ||
     showExitsTableReference ||
@@ -349,7 +355,7 @@ export function UiStandardsPage() {
         </section>
       ) : showButtonGlass ? (
         <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-button-glass-section">
-          <OrgEhgButtonGlassGallery />
+          <OrgEhgQaBtnGlassGallery />
         </section>
       ) : showFabGlass ? (
         <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-fab-glass-section">
@@ -357,7 +363,11 @@ export function UiStandardsPage() {
         </section>
       ) : showInputGlass ? (
         <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-input-glass-section">
-          <OrgEhgInputGlassGallery />
+          <OrgEhgQaInputGlassGallery />
+        </section>
+      ) : showSelectGlass ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-select-glass-section">
+          <OrgEhgQaSelectGlassGallery />
         </section>
       ) : showDateGlass ? (
         <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-date-glass-section">
@@ -369,6 +379,10 @@ export function UiStandardsPage() {
           data-testid="ui-standards-quick-action-glass-section"
         >
           <OrgEhgQuickActionGlassGallery />
+        </section>
+      ) : showGlassCard ? (
+        <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-glass-card-section">
+          <OrgEhgGlassCardGallery />
         </section>
       ) : showCardGlass && personalCardGlassKind ? (
         <section className="flex min-w-0 flex-col gap-2" data-testid="ui-standards-card-glass-section">

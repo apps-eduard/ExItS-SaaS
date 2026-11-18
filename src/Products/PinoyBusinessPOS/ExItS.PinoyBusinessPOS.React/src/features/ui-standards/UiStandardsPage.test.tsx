@@ -1211,11 +1211,13 @@ describe("UiStandardsPage", () => {
     expect(group).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByTestId("ui-standards-filter-button-glass")).toHaveTextContent("Button glass");
     expect(screen.getByTestId("ui-standards-filter-fab-glass")).toHaveTextContent(
-      "Floating action glass",
+      "Speed dial button glass",
     );
     expect(screen.getByTestId("ui-standards-filter-input-glass")).toHaveTextContent("Input glass");
+    expect(screen.getByTestId("ui-standards-filter-select-glass")).toHaveTextContent("Select glass");
     expect(screen.getByTestId("ui-standards-filter-date-glass")).toHaveTextContent("Date glass");
-    expect(screen.getByTestId("ui-standards-filter-card-glass")).toHaveTextContent("Card glass");
+    expect(screen.getByTestId("ui-standards-filter-card-glass")).toHaveTextContent("Glass card");
+    expect(screen.getByTestId("ui-standards-filter-glass-card")).toHaveTextContent("Playground");
     expect(screen.getByTestId("ui-standards-filter-card-glass-menu")).toHaveTextContent("Menu card");
     expect(screen.getByTestId("ui-standards-filter-card-glass-soft-kpi")).toHaveTextContent(
       "Soft KPI",
@@ -1223,7 +1225,7 @@ describe("UiStandardsPage", () => {
 
     await user.click(screen.getByTestId("ui-standards-filter-button-glass"));
     expect(screen.getByTestId("ui-standards-button-glass-section")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-org-ehg-button-glass")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-qa-btn-glass")).toBeInTheDocument();
 
     await user.click(screen.getByTestId("ui-standards-filter-fab-glass"));
     expect(screen.getByTestId("ui-standards-fab-glass-section")).toBeInTheDocument();
@@ -1231,11 +1233,22 @@ describe("UiStandardsPage", () => {
 
     await user.click(screen.getByTestId("ui-standards-filter-input-glass"));
     expect(screen.getByTestId("ui-standards-input-glass-section")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standard-org-ehg-input-glass")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-qa-input-glass")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("ui-standards-filter-select-glass"));
+    expect(screen.getByTestId("ui-standards-select-glass-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-qa-select-glass")).toBeInTheDocument();
 
     await user.click(screen.getByTestId("ui-standards-filter-date-glass"));
     expect(screen.getByTestId("ui-standards-date-glass-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-org-ehg-date-glass")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("ui-standards-filter-glass-card"));
+    expect(screen.getByTestId("ui-standards-glass-card-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-glass-card")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-glass-card-pg-tab-card")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-glass-card-pg-tab-header")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-org-ehg-glass-card-pg-tab-footer")).toBeInTheDocument();
 
     await user.click(screen.getByTestId("ui-standards-filter-card-glass-menu"));
     expect(screen.getByTestId("ui-standards-card-glass-section")).toBeInTheDocument();
@@ -2114,6 +2127,63 @@ describe("UiStandardsPage", () => {
     await user.click(screen.getByTestId("ui-standards-filter-lucide"));
     expect(screen.getByTestId("ui-standards-lucide-frame")).toHaveAttribute("src", "https://lucide.dev/icons");
     expect(screen.getByRole("link", { name: "Open in a new tab" })).toHaveAttribute("href", "https://lucide.dev/icons");
+  });
+
+  it("opens Icon playground from the Icons submenu", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const item = screen.getByTestId("ui-standards-filter-icon");
+    expect(item).toHaveTextContent("Icon");
+
+    await user.click(item);
+    expect(item).toHaveAttribute("data-selected", "true");
+    const card = screen.getByTestId("ui-standard-card-icon-playground");
+    expect(within(screen.getByTestId("ui-standards-live-section")).getByTestId("ui-standard-card-icon-playground")).toBe(
+      card,
+    );
+    expect(within(card).getByTestId("ui-standards-icon-preview")).toBeInTheDocument();
+    expect(within(card).getByTestId("ui-standards-icon-preview-only")).toBeInTheDocument();
+    expect(within(card).getByTestId("ui-standards-icon-preview-context")).toBeInTheDocument();
+    expect(within(card).getByTestId("ui-standards-icon-preview-host-action")).toHaveAttribute(
+      "data-preview-host",
+      "action",
+    );
+    expect(within(card).getByTestId("ui-standards-icon-chip-qa-preview")).toBeInTheDocument();
+    expect(within(card).queryByTestId("ui-standards-icon-preview-host-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-icon-token-stroke")).toHaveTextContent("stroke: 2");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext icon soft-primary squircle md",
+    );
+
+    const appearanceRoot = screen.getByTestId("ui-standards-icon-appearance");
+    await user.click(within(appearanceRoot).getByTestId("ui-standards-icon-appearance-field"));
+    await user.click(within(appearanceRoot).getByTestId("ui-standards-icon-appearance-option-soft-fill"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext icon soft-fill squircle md",
+    );
+
+    const shapeRoot = screen.getByTestId("ui-standards-icon-shape");
+    await user.click(within(shapeRoot).getByTestId("ui-standards-icon-shape-field"));
+    await user.click(within(shapeRoot).getByTestId("ui-standards-icon-shape-option-disc"));
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext icon soft-fill disc md",
+    );
+
+    expect(within(card).getByTestId("ui-standards-icon-variant-soft-primary")).toBeInTheDocument();
+    expect(within(card).getByTestId("ui-standards-icon-variant-outline")).toBeInTheDocument();
+    expect(within(card).getByTestId("ui-standards-icon-variant-ghost")).toBeInTheDocument();
+
+    const strokeRoot = screen.getByTestId("ui-standards-icon-stroke");
+    await user.click(within(strokeRoot).getByTestId("ui-standards-icon-stroke-field"));
+    await user.click(within(strokeRoot).getByTestId("ui-standards-icon-stroke-option-1.75"));
+    expect(screen.getByTestId("ui-standards-icon-token-stroke")).toHaveTextContent("stroke: 1.75");
+    expect(screen.getByTestId("ui-standards-copy-command")).toHaveAttribute(
+      "data-command",
+      "ext icon soft-fill disc md stroke-1-75",
+    );
   });
 
   it("nests Input, Radio, and Checkbox under Form Components", async () => {
@@ -3045,10 +3115,10 @@ describe("UiStandardsPage Organization Hybrid Glass", () => {
     );
   });
 
-  it("opens Organization Hybrid Glass → Floating action glass", () => {
+  it("opens Organization Hybrid Glass → Speed dial button glass", () => {
     renderPage("/ui-standards?product=organization&category=org-ehg-fab-glass");
     expect(screen.getByTestId("ui-standards-filter-org-ehg-fab-glass")).toHaveTextContent(
-      "Floating action glass",
+      "Speed dial button glass",
     );
     expect(screen.getByTestId("ui-standards-filter-org-ehg-fab-glass")).toHaveAttribute(
       "data-selected",

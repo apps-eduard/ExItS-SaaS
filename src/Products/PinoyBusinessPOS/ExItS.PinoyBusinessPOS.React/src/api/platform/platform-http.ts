@@ -3,6 +3,9 @@ import { maybeNotifyAuthenticationLost } from "@/session/session-expiry";
 
 export const PLATFORM_API_BASE_PATH = "/platform-api";
 
+/** Default ceiling so hung Vite proxies / dead Platform hosts do not leave Sign in stuck forever. */
+export const PLATFORM_REQUEST_TIMEOUT_MS = 15_000;
+
 const ABSOLUTE_API_PATTERN = /^https?:\/\//i;
 
 export type PlatformProblemDetails = {
@@ -126,6 +129,75 @@ function isMutationMethod(method: string): boolean {
   return method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
 }
 
+function createTimeoutSignal(timeoutMs: number): AbortSignal {
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+    return AbortSignal.timeout(timeoutMs);
+  }
+  const controller = new AbortController();
+  setTimeout(() => {
+    controller.abort(new DOMException("Platform API request timed out.", "TimeoutError"));
+  }, timeoutMs);
+  return controller.signal;
+}
+
+/** Merge an optional caller signal with the default Platform request timeout. */
+export function resolvePlatformRequestSignal(
+  external?: AbortSignal,
+  timeoutMs: number = PLATFORM_REQUEST_TIMEOUT_MS,
+): AbortSignal {
+  const timeoutSignal = createTimeoutSignal(timeoutMs);
+  if (!external) {
+    return timeoutSignal;
+  }
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.any === "function") {
+    return AbortSignal.any([external, timeoutSignal]);
+  }
+  if (external.aborted) {
+    return external;
+  }
+  const controller = new AbortController();
+  const abortFrom = (source: AbortSignal) => {
+    if (!controller.signal.aborted) {
+      controller.abort(source.reason);
+    }
+  };
+  external.addEventListener("abort", () => abortFrom(external), { once: true });
+  timeoutSignal.addEventListener("abort", () => abortFrom(timeoutSignal), { once: true });
+  return controller.signal;
+}
+
+function isAbortOrTimeoutError(error: unknown): boolean {
+  // Duck-type: happy-dom / some runtimes throw DOMException that is not `instanceof Error`.
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+  const record = error as { name?: unknown; message?: unknown };
+  const name = typeof record.name === "string" ? record.name.toLowerCase() : "";
+  const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
+  return (
+    name === "aborterror" ||
+    name === "timeouterror" ||
+    message.includes("aborted") ||
+    message.includes("timed out") ||
+    message.includes("timeout")
+  );
+}
+
+async function fetchPlatform(
+  input: string,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    // Normalize hangs/timeouts to the same network failure path Sign-in already shows.
+    if (isAbortOrTimeoutError(error)) {
+      throw new TypeError("Failed to fetch");
+    }
+    throw error;
+  }
+}
+
 export function clearPlatformAntiforgeryToken(): void {
   inMemoryAntiforgeryToken = null;
 }
@@ -177,7 +249,7 @@ export function isPlatformAntiforgeryValidationError(error: PlatformApiError): b
 
 async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<AntiforgeryBootstrap> {
   assertRelativePlatformBase(PLATFORM_API_BASE_PATH);
-  const response = await fetch(
+  const response = await fetchPlatform(
     `${PLATFORM_API_BASE_PATH}${PlatformAntiforgeryDefaults.tokenPath}`,
     {
       method: "GET",
@@ -186,7 +258,7 @@ async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<Antiforg
         Accept: "application/json",
         "X-Correlation-Id": createCorrelationId(),
       },
-      signal,
+      signal: resolvePlatformRequestSignal(signal),
     },
   );
 
@@ -261,12 +333,12 @@ async function executePlatformRequest<T>(
     headers.set(inMemoryAntiforgeryHeaderName, inMemoryAntiforgeryToken);
   }
 
-  const response = await fetch(`${PLATFORM_API_BASE_PATH}${options.path}`, {
+  const response = await fetchPlatform(`${PLATFORM_API_BASE_PATH}${options.path}`, {
     method,
     credentials: "include",
     headers,
     body: options.formData ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
-    signal: options.signal,
+    signal: resolvePlatformRequestSignal(options.signal),
   });
 
   if (!response.ok) {

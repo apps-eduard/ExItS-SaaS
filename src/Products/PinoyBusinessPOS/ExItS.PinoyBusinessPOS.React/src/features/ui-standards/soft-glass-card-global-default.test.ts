@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   SOFT_GLASS_BORDER_SLATE,
@@ -65,8 +67,8 @@ describe("Soft Glass card global default", () => {
     expect(UI_STANDARDS_CRYSTAL_BORDER_SLATE_PCT).toBe(SOFT_GLASS_BORDER_SLATE_PCT);
     expect(UI_STANDARDS_CRYSTAL_BORDER_DARK_CHIP_PCT).toBe(SOFT_GLASS_DARK_BORDER_CHIP_PCT);
     expect(UI_STANDARDS_CRYSTAL_SHADOW_ACCENT_PCT).toBe(SOFT_GLASS_SHADOW_ACCENT_PCT);
-    expect(UI_STANDARDS_CRYSTAL_SCREEN_INSET).toBe("0.45rem");
-    expect(UI_STANDARDS_CRYSTAL_SCREEN_RADIUS).toBe(SOFT_GLASS_RADIUS);
+    expect(UI_STANDARDS_CRYSTAL_SCREEN_INSET).toBe("0");
+    expect(UI_STANDARDS_CRYSTAL_SCREEN_RADIUS).toBe("0");
   });
 
   it("locks light Quick Action color identities", () => {
@@ -82,6 +84,20 @@ describe("Soft Glass card global default", () => {
     expect(SOFT_GLASS_DARK.owe.chip).toBe("#1d4ed8");
     expect(SOFT_GLASS_DARK.label).toBe("#e2e8f0");
     expect(SOFT_GLASS_DARK.surfaceMid).toBe("#1e293b");
+  });
+
+  it("mirrors lent/owe/stores/people identity tokens in globals.css", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles/globals.css"), "utf8");
+    expect(css).toContain(`--exits-id-lent-chip: ${SOFT_GLASS_LIGHT.lent.chip}`);
+    expect(css).toContain(`--exits-id-owe-chip: ${SOFT_GLASS_LIGHT.owe.chip}`);
+    expect(css).toContain(`--exits-id-stores-chip: ${SOFT_GLASS_LIGHT.stores.chip}`);
+    expect(css).toContain(`--exits-id-people-chip: ${SOFT_GLASS_LIGHT.people.chip}`);
+    expect(css).toContain(`--exits-id-lent-chip-muted: ${SOFT_GLASS_DARK.lent.chip}`);
+    expect(css).toContain(`--exits-id-owe-chip-muted: ${SOFT_GLASS_DARK.owe.chip}`);
+    expect(css).toContain(`--exits-id-stores-chip-muted: ${SOFT_GLASS_DARK.stores.chip}`);
+    expect(css).toContain(`--exits-id-people-chip-muted: ${SOFT_GLASS_DARK.people.chip}`);
+    expect(css).toContain("--personal-qa-chip: var(--exits-id-lent-chip)");
+    expect(css).toContain("--personal-qa-chip: var(--exits-id-lent-chip-muted)");
   });
 
   it("locks Soft Glass Quick Action trailing ends", () => {

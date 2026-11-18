@@ -212,8 +212,8 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: str
       data-tone={toast.tone}
       data-placement={toast.placement}
     >
-      <span className="exits-toast__icon" aria-hidden>
-        <Icon className="size-4" />
+      <span className="exits-toast__icon" aria-hidden="true">
+        <Icon className="exits-toast__glyph" strokeWidth={2} />
       </span>
       <div className="exits-toast__body">
         <div className="exits-toast__title">{toast.title}</div>
@@ -231,7 +231,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: str
         aria-label="Close"
         onClick={() => onDismiss(toast.id)}
       >
-        <X className="size-4" aria-hidden />
+        <X className="exits-toast__close-glyph" aria-hidden="true" strokeWidth={2} />
       </button>
     </div>
   );

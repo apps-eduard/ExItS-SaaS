@@ -1,10 +1,12 @@
-import { HandCoins, Pencil, Search, UserPlus, Users, Wallet } from "lucide-react";
+import { Check, Download, HandCoins, Pencil, SlidersHorizontal, Users, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { ExitsOrgEhgInput } from "@/components/exits/ExitsOrgEhgInput";
 import {
+  ExitsFileFormatIcon,
   ExitsTable,
   ExitsTableBody,
   ExitsTableCell,
@@ -17,18 +19,18 @@ import {
   ExitsTableToolbar,
 } from "@/components/exits/ExitsTable";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
-import { ExitsOutlineInput } from "@/components/exits/ExitsOutlineField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { DropdownMenu, MenuItem, useDismissibleOpen } from "@/components/ui/dropdown-menu";
+import { PeopleAddGlassSpeedDial } from "@/features/personal/PeopleAddGlassSpeedDial";
+import { PeopleMobileRow } from "@/features/personal/PeopleMobileRow";
 import {
   type PeopleConnectionStatus,
   type PeopleRowModel,
 } from "@/features/personal/people-status";
-import { UtangDueCaption } from "@/features/personal/utang/UtangListMeta";
-import { UTANG_READ_ONLY_CHIP } from "@/features/personal/utang/utang-ownership-ui";
 import { EditLocalContactDialog } from "@/features/personal/EditLocalContactDialog";
-import { formatDueLabel } from "@/api/platform/personal-utang-client";
 import { useMediaMin } from "@/hooks/useMediaQuery";
 import {
   buildPeopleTableExportModel,
@@ -38,7 +40,6 @@ import {
   printPeopleTable,
   type PeopleTableExportLabels,
 } from "@/features/personal/people-table-output";
-import { INTENT_GLOBAL_STANDARD } from "@/features/ui-standards/intent-color-global-default";
 import {
   TABLE_GLOBAL_DEFAULT_FOOTER_APPEARANCE,
   TABLE_GLOBAL_DEFAULT_FOOTER_INTENT,
@@ -46,18 +47,9 @@ import {
   TABLE_GLOBAL_DEFAULT_HEADER_INTENT,
 } from "@/features/ui-standards/table-global-default";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
-
-/** Locked `ext btn glossy`: standard fill, glossy sheen, control height. */
-const EXT_BTN_GLOSSY_CLASS =
-  "shrink-0 rounded-[6px] border shadow-[0_1px_5px_rgba(0,0,0,0.2),0_2px_2px_rgba(0,0,0,0.14),0_3px_1px_-2px_rgba(0,0,0,0.12)]";
-const EXT_BTN_GLOSSY_STYLE: CSSProperties = {
-  backgroundColor: INTENT_GLOBAL_STANDARD,
-  color: "#000000",
-  borderColor: "rgba(0, 0, 0, 0.2)",
-};
 
 export type PeopleListFilter = "all" | "connected" | "pending" | "local" | "not_connected";
+export type PeopleListSort = "name" | "amount";
 
 const FILTERS: ReadonlyArray<{
   key: PeopleListFilter;
@@ -110,10 +102,15 @@ function matchesFilter(row: PeopleRowModel, filter: PeopleListFilter): boolean {
   }
 }
 
+function peopleRowAmount(row: PeopleRowModel): number {
+  return row.utang?.balance ?? 0;
+}
+
 export function filterPeopleRows(
   rows: PeopleRowModel[],
   filter: PeopleListFilter,
   search: string,
+  sort: PeopleListSort = "name",
 ): PeopleRowModel[] {
   const needle = search.trim().toLowerCase();
   return rows
@@ -125,122 +122,15 @@ export function filterPeopleRows(
       const hay = `${row.contact.displayName} ${row.publicUserId ?? ""}`.toLowerCase();
       return hay.includes(needle);
     })
-    .sort((a, b) => a.contact.displayName.localeCompare(b.contact.displayName));
-}
-
-function PeopleListRow({
-  row,
-  statusLabel,
-}: {
-  row: PeopleRowModel;
-  statusLabel: string;
-}) {
-  const { t } = useI18n();
-
-  const utang = row.utang;
-  const owned = utang?.isLedgerOwner !== false;
-
-  return (
-    <li>
-      <Link
-        to={`/personal/people/${row.contact.id}`}
-        className={cn(
-          "ui-standards-qcard ui-standards-qcard--settings-card utang-account-card utang-account-card--standard utang-settings-card people-list-card text-foreground no-underline",
-          utang
-            ? utang.direction === "lent"
-              ? "utang-settings-card--lent"
-              : "utang-settings-card--owe"
-            : "utang-settings-card--people",
-          utang && (owned ? "utang-account-card--mine" : "utang-account-card--shared"),
-        )}
-        data-testid={`people-row-${row.contact.id}`}
-      >
-        <div className="ui-standards-qcard__settings-ribbon">
-          {utang ? (
-            <div className="ui-standards-qcard__settings-tab utang-settings-card__tab" data-utang-ownership="">
-              <span className="truncate">
-                {owned
-                  ? t("personal.utang.ownershipMine")
-                  : t("personal.utang.ownershipSharedWithMe")}
-              </span>
-              {formatDueLabel(utang.dueDateUtc).kind !== "none" ? (
-                <>
-                  <span className="utang-settings-card__tab-divider" aria-hidden />
-                  <UtangDueCaption
-                    dueDateUtc={utang.dueDateUtc}
-                    className={cn(
-                      "utang-settings-card__tab-text",
-                      formatDueLabel(utang.dueDateUtc).kind === "overdue" &&
-                        "utang-settings-card__tab-text--danger",
-                    )}
-                    testId={`people-row-due-${row.contact.id}`}
-                  />
-                </>
-              ) : null}
-              <span className="ui-standards-qcard__settings-fold" aria-hidden />
-            </div>
-          ) : null}
-          <div className="utang-settings-card__content">
-            <div className="utang-settings-card__meta min-w-0 flex-1">
-              <div className="utang-settings-card__headline">
-                <p className="utang-settings-card__name m-0 truncate">{row.contact.displayName}</p>
-                {utang ? (
-                  <span className="utang-settings-card__amount">
-                    <MoneyDisplay
-                      amount={utang.balance}
-                      testId={`people-row-balance-${row.contact.id}`}
-                    />
-                  </span>
-                ) : null}
-              </div>
-              <span className="utang-settings-card__tags">
-                {utang ? (
-                  <>
-                    <StatusChip
-                      tone={utang.direction === "lent" ? "success" : "info"}
-                      appearance="emphasis"
-                      shape="square"
-                    >
-                      {utang.direction === "lent"
-                        ? t("personal.utang.owesYou")
-                        : t("personal.utang.youOwe")}
-                    </StatusChip>
-                    <StatusChip
-                      tone={utang.isSharedLedger ? "success" : "info"}
-                      appearance="emphasis"
-                      shape="square"
-                      data-testid={`people-row-linked-${row.contact.id}`}
-                    >
-                      {utang.isSharedLedger ? t("people.status.connected") : t("people.localContact")}
-                    </StatusChip>
-                  </>
-                ) : (
-                  <StatusChip
-                    tone={statusTone(row.connectionStatus)}
-                    appearance="emphasis"
-                    shape="square"
-                  >
-                    {statusLabel}
-                  </StatusChip>
-                )}
-                {utang && !owned ? (
-                  <StatusChip
-                    tone={UTANG_READ_ONLY_CHIP.tone}
-                    appearance={UTANG_READ_ONLY_CHIP.appearance}
-                    shape={UTANG_READ_ONLY_CHIP.shape}
-                    className="max-md:hidden"
-                    data-testid={`people-row-readonly-${row.contact.id}`}
-                  >
-                    {t("personal.utang.readOnly")}
-                  </StatusChip>
-                ) : null}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    </li>
-  );
+    .sort((a, b) => {
+      if (sort === "amount") {
+        const amountDelta = peopleRowAmount(b) - peopleRowAmount(a);
+        if (amountDelta !== 0) {
+          return amountDelta;
+        }
+      }
+      return a.contact.displayName.localeCompare(b.contact.displayName);
+    });
 }
 
 function PeopleUtangTotal({
@@ -320,11 +210,187 @@ function PeopleTableOutput({
   );
 }
 
+function PeopleSearchSort({
+  sort,
+  onSort,
+  open,
+  onOpenChange,
+  testId = "people-sort",
+}: {
+  sort: PeopleListSort;
+  onSort: (next: PeopleListSort) => void;
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
+  testId?: string;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <DropdownMenu
+      open={open}
+      onOpenChange={onOpenChange}
+      align="end"
+      menuLabel={t("people.sort.label")}
+      className="people-search-sort-wrap"
+      menuClassName="people-search-sort-menu"
+      trigger={({ id, expanded, controls, onClick, onKeyDown }) => (
+        <ExitsTooltip content={t("people.sort.label")}>
+          <button
+            type="button"
+            id={id}
+            className="people-search-sort"
+            aria-label={t("people.sort.label")}
+            aria-haspopup="menu"
+            aria-expanded={expanded}
+            aria-controls={controls}
+            data-testid={testId}
+            onClick={onClick}
+            onKeyDown={onKeyDown}
+          >
+            <SlidersHorizontal className="size-[0.95rem] shrink-0" strokeWidth={2.25} aria-hidden />
+          </button>
+        </ExitsTooltip>
+      )}
+    >
+      <MenuItem
+        data-testid={`${testId}-name`}
+        onSelect={() => {
+          onSort("name");
+          onOpenChange(false);
+        }}
+      >
+        <span className="people-search-sort-menu__check" aria-hidden>
+          {sort === "name" ? <Check className="size-3.5" strokeWidth={2.5} /> : null}
+        </span>
+        {t("people.sort.name")}
+      </MenuItem>
+      <MenuItem
+        data-testid={`${testId}-amount`}
+        onSelect={() => {
+          onSort("amount");
+          onOpenChange(false);
+        }}
+      >
+        <span className="people-search-sort-menu__check" aria-hidden>
+          {sort === "amount" ? <Check className="size-3.5" strokeWidth={2.5} /> : null}
+        </span>
+        {t("people.sort.amount")}
+      </MenuItem>
+    </DropdownMenu>
+  );
+}
+
+function PeopleListSummaryBar({
+  total,
+  connected,
+  local,
+  downloadDisabled,
+  onCsv,
+  onXlsx,
+  onPdf,
+}: {
+  total: number;
+  connected: number;
+  local: number;
+  downloadDisabled: boolean;
+  onCsv: () => void;
+  onXlsx: () => void;
+  onPdf: () => void;
+}) {
+  const { t } = useI18n();
+  const downloadMenu = useDismissibleOpen(false);
+
+  return (
+    <div className="people-list-summary" data-testid="people-list-summary">
+      <div className="people-list-summary__info">
+        <span className="people-list-summary__icon" aria-hidden>
+          <Users className="size-[1.05rem] shrink-0" strokeWidth={2.25} />
+        </span>
+        <div className="people-list-summary__text">
+          <p className="people-list-summary__count">
+            {t("people.summaryBar.count").replace("{count}", String(total))}
+          </p>
+          <p className="people-list-summary__meta">
+            {t("people.summaryBar.meta")
+              .replace("{connected}", String(connected))
+              .replace("{local}", String(local))}
+          </p>
+        </div>
+      </div>
+      <DropdownMenu
+        open={downloadMenu.open}
+        onOpenChange={downloadMenu.setOpen}
+        align="end"
+        menuLabel={t("people.summaryBar.download")}
+        className="people-list-summary__download-wrap"
+        menuClassName="people-list-summary__download-menu"
+        trigger={({ id, expanded, controls, onClick, onKeyDown }) => (
+          <ExitsTooltip content={t("people.summaryBar.download")}>
+            <button
+              type="button"
+              id={id}
+              className="people-list-summary__download"
+              aria-label={t("people.summaryBar.download")}
+              aria-haspopup="menu"
+              aria-expanded={expanded}
+              aria-controls={controls}
+              data-testid="people-list-summary-download"
+              disabled={downloadDisabled}
+              onClick={onClick}
+              onKeyDown={onKeyDown}
+            >
+              <Download className="size-[1.05rem] shrink-0" strokeWidth={2.25} aria-hidden />
+            </button>
+          </ExitsTooltip>
+        )}
+      >
+        <MenuItem
+          data-testid="people-list-summary-csv"
+          disabled={downloadDisabled}
+          onSelect={() => {
+            onCsv();
+            downloadMenu.setOpen(false);
+          }}
+        >
+          <ExitsFileFormatIcon format="csv" />
+          {t("exitsTable.exportCsv")}
+        </MenuItem>
+        <MenuItem
+          data-testid="people-list-summary-xlsx"
+          disabled={downloadDisabled}
+          onSelect={() => {
+            onXlsx();
+            downloadMenu.setOpen(false);
+          }}
+        >
+          <ExitsFileFormatIcon format="xlsx" />
+          {t("exitsTable.exportExcel")}
+        </MenuItem>
+        <MenuItem
+          data-testid="people-list-summary-pdf"
+          disabled={downloadDisabled}
+          onSelect={() => {
+            onPdf();
+            downloadMenu.setOpen(false);
+          }}
+        >
+          <ExitsFileFormatIcon format="pdf" />
+          {t("exitsTable.exportPdf")}
+        </MenuItem>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 function PeopleTable({
   rows,
   statusLabel,
   search,
   onSearch,
+  sort,
+  onSort,
+  sortMenuOpen,
+  onSortMenuOpenChange,
   empty,
   showOutput = true,
 }: {
@@ -332,6 +398,10 @@ function PeopleTable({
   statusLabel: (status: PeopleConnectionStatus) => string;
   search: string;
   onSearch: (value: string) => void;
+  sort: PeopleListSort;
+  onSort: (next: PeopleListSort) => void;
+  sortMenuOpen: boolean;
+  onSortMenuOpenChange: (next: boolean) => void;
   empty: { title: string; detail: string; variant: "default" | "filtered" } | null;
   showOutput?: boolean;
 }) {
@@ -364,17 +434,24 @@ function PeopleTable({
     >
       <ExitsTableToolbar
         search={
-          <ExitsOutlineInput
-            label={t("people.search")}
-            placeholder={t("people.search")}
-            placeholderOnly
-            icon={Search}
-            type="search"
-            value={search}
-            onChange={onSearch}
-            clearable
-            testId="people-table-search"
-          />
+          <div className="people-search-with-sort">
+            <ExitsOrgEhgInput
+              variant="search"
+              label={t("people.search")}
+              value={search}
+              onChange={onSearch}
+              clearable
+              className="people-org-ehg-search"
+              testId="people-table-search"
+            />
+            <PeopleSearchSort
+              sort={sort}
+              onSort={onSort}
+              open={sortMenuOpen}
+              onOpenChange={onSortMenuOpenChange}
+              testId="people-table-sort"
+            />
+          </div>
         }
         output={
           showOutput ? (
@@ -578,20 +655,35 @@ function PeopleTable({
 export function PeopleListSection({
   rows,
   toolbarStart,
+  onAddLocal,
+  onAddExits,
 }: {
   rows: PeopleRowModel[];
   toolbarStart?: ReactNode;
+  onAddLocal: () => void;
+  onAddExits: () => void;
 }) {
   const { t } = useI18n();
-  const compactSearch = !useMediaMin(640);
   const tableLayout = useMediaMin(1024);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PeopleListFilter>("all");
+  const [sort, setSort] = useState<PeopleListSort>("name");
+  const sortMenu = useDismissibleOpen(false);
+  const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
 
   const filteredRows = useMemo(
-    () => filterPeopleRows(rows, filter, search),
-    [filter, rows, search],
+    () => filterPeopleRows(rows, filter, search, sort),
+    [filter, rows, search, sort],
   );
+
+  useEffect(() => {
+    if (!expandedContactId) {
+      return;
+    }
+    if (!filteredRows.some((row) => row.contact.id === expandedContactId)) {
+      setExpandedContactId(null);
+    }
+  }, [expandedContactId, filteredRows]);
 
   function statusLabel(status: PeopleConnectionStatus): string {
     switch (status) {
@@ -608,6 +700,19 @@ export function PeopleListSection({
       default:
         return t("people.status.notConnected");
     }
+  }
+
+  const exportLabels: PeopleTableExportLabels = {
+    name: t("people.displayName"),
+    contact: t("people.column.contact"),
+    email: t("people.column.email"),
+    status: t("people.column.status"),
+    lent: t("people.detail.iLentAction"),
+    owe: t("people.detail.iOweAction"),
+  };
+
+  function exportModel() {
+    return buildPeopleTableExportModel(filteredRows, statusLabel);
   }
 
   const filterCounts = useMemo(() => {
@@ -644,110 +749,132 @@ export function PeopleListSection({
       data-testid="people-list-section"
       aria-label={t("people.listTitle")}
     >
-      {!tableLayout ? (
+      <Card
+        className="people-list-card people-list-main-glass flex flex-col gap-2"
+        data-shell="soft-glass"
+        data-testid="people-list-card"
+        padding="none"
+        radius="soft"
+      >
         <div
-          className="people-list-section__export"
-          data-testid="people-list-export"
+          className="personal-tracker-card__header people-list-card__header"
+          data-testid="people-list-header-actions"
         >
-          <PeopleTableOutput
+          <h2 className="personal-tracker-card__title" data-testid="people-list-ribbon">
+            <span className="personal-tracker-card__pennant" aria-hidden>
+              <Users className="personal-tracker-card__pennant-icon size-[1.05rem] shrink-0" />
+            </span>
+            {t("people.listTitle")}
+          </h2>
+          <PeopleAddGlassSpeedDial onAddLocal={onAddLocal} onAddExits={onAddExits} />
+        </div>
+        <div className="people-search-row flex min-w-0 flex-nowrap items-end gap-2" data-testid="people-search-row">
+          {toolbarStart}
+          <div className="people-search-field people-search-with-sort min-w-0 flex-1">
+            <ExitsOrgEhgInput
+              variant="search"
+              label={t("people.search")}
+              value={search}
+              onChange={setSearch}
+              clearable
+              className="people-org-ehg-search"
+              testId="people-search"
+            />
+            <PeopleSearchSort
+              sort={sort}
+              onSort={setSort}
+              open={sortMenu.open}
+              onOpenChange={sortMenu.setOpen}
+            />
+          </div>
+        </div>
+
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("people.filter.label")}
+          testId="people-status-filters"
+          className="exits-animate-toolbar exits-chip-bar--scroll people-page__filters"
+          items={FILTERS.map((item) => ({
+            key: item.key,
+            label: t(item.labelKey),
+            count: filterCounts[item.key],
+            state: filter === item.key ? "active" : "idle",
+            testId: `people-filter-${item.key}`,
+            onSelect: () => setFilter(item.key),
+          }))}
+        />
+
+        {rows.length === 0 ? (
+          <EmptyState
+            align="center"
+            shell="soft-glass"
+            icon={<Users className="size-5" strokeWidth={1.75} />}
+            title={t("people.emptyTitle")}
+            detail={t("people.emptyBody")}
+            className="people-list-empty"
+          />
+        ) : filteredRows.length === 0 ? (
+          <EmptyState
+            variant="filtered"
+            align="center"
+            shell="soft-glass"
+            icon={<Users className="size-5" strokeWidth={1.75} />}
+            title={t("people.noResultsTitle")}
+            detail={t("people.noResultsBody")}
+            className="people-list-empty"
+          />
+        ) : (
+          <ul
+            className="exits-list people-list-cards people-mobile-list m-0 flex list-none flex-col gap-0 p-0"
+            data-testid="people-list"
+          >
+            {filteredRows.map((row) => (
+              <PeopleMobileRow
+                key={row.contact.id}
+                row={row}
+                statusLabel={statusLabel(row.connectionStatus)}
+                expanded={expandedContactId === row.contact.id}
+                onExpandedChange={(next) =>
+                  setExpandedContactId(next ? row.contact.id : null)
+                }
+              />
+            ))}
+          </ul>
+        )}
+        {tableLayout ? (
+          <PeopleTable
             rows={filteredRows}
             statusLabel={statusLabel}
-            appearance="icons"
+            search={search}
+            onSearch={setSearch}
+            sort={sort}
+            onSort={setSort}
+            sortMenuOpen={sortMenu.open}
+            onSortMenuOpenChange={sortMenu.setOpen}
+            showOutput={false}
+            empty={
+              rows.length === 0
+                ? { title: t("people.emptyTitle"), detail: t("people.emptyBody"), variant: "default" }
+                : filteredRows.length === 0
+                  ? {
+                      title: t("people.noResultsTitle"),
+                      detail: t("people.noResultsBody"),
+                      variant: "filtered",
+                    }
+                  : null
+            }
           />
-        </div>
-      ) : null}
-      <div className="people-search-row flex min-w-0 flex-wrap items-end gap-2" data-testid="people-search-row">
-        {toolbarStart}
-        <Button
-          asChild
-          intent="neutral"
-          appearance="glossy"
-          className={EXT_BTN_GLOSSY_CLASS}
-          style={EXT_BTN_GLOSSY_STYLE}
-        >
-          <Link to="/personal/invitations" data-testid="people-connection-requests">
-            <UserPlus className="size-4 shrink-0" aria-hidden="true" />
-            {t("people.connectionInbox")}
-          </Link>
-        </Button>
-        <div className="ui-standards-playground-search min-w-[12rem] flex-1">
-          <ExitsOutlineInput
-            label={t("people.search")}
-            placeholder={t("people.searchPlaceholder")}
-            placeholderOnly={compactSearch}
-            value={search}
-            onChange={setSearch}
-            clearable
-            icon={Search}
-            type="search"
-            testId="people-search"
-          />
-        </div>
-      </div>
-
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("people.filter.label")}
-        testId="people-status-filters"
-        className="exits-animate-toolbar exits-chip-bar--scroll people-page__filters"
-        items={FILTERS.map((item) => ({
-          key: item.key,
-          label: t(item.labelKey),
-          count: filterCounts[item.key],
-          state: filter === item.key ? "active" : "idle",
-          testId: `people-filter-${item.key}`,
-          onSelect: () => setFilter(item.key),
-        }))}
-      />
-
-      {rows.length === 0 ? (
-        <EmptyState
-          align="center"
-          icon={<Users className="size-5" strokeWidth={1.75} />}
-          title={t("people.emptyTitle")}
-          detail={t("people.emptyBody")}
-          className="people-list-empty"
+        ) : null}
+        <PeopleListSummaryBar
+          total={rows.length}
+          connected={filterCounts.connected}
+          local={filterCounts.local}
+          downloadDisabled={filteredRows.length === 0}
+          onCsv={() => downloadPeopleTableCsv(exportModel(), exportLabels)}
+          onXlsx={() => downloadPeopleTableXlsx(exportModel(), exportLabels)}
+          onPdf={() => downloadPeopleTablePdf(exportModel(), exportLabels)}
         />
-      ) : filteredRows.length === 0 ? (
-        <EmptyState
-          variant="filtered"
-          align="center"
-          icon={<Users className="size-5" strokeWidth={1.75} />}
-          title={t("people.noResultsTitle")}
-          detail={t("people.noResultsBody")}
-          className="people-list-empty"
-        />
-      ) : (
-        <ul className="exits-list people-list-cards utang-relationship-list m-0 grid list-none gap-4 p-0" data-testid="people-list">
-          {filteredRows.map((row) => (
-            <PeopleListRow
-              key={row.contact.id}
-              row={row}
-              statusLabel={statusLabel(row.connectionStatus)}
-            />
-          ))}
-        </ul>
-      )}
-      {tableLayout ? (
-        <PeopleTable
-          rows={filteredRows}
-          statusLabel={statusLabel}
-          search={search}
-          onSearch={setSearch}
-          showOutput
-          empty={
-            rows.length === 0
-              ? { title: t("people.emptyTitle"), detail: t("people.emptyBody"), variant: "default" }
-              : filteredRows.length === 0
-                ? {
-                    title: t("people.noResultsTitle"),
-                    detail: t("people.noResultsBody"),
-                    variant: "filtered",
-                  }
-                : null
-          }
-        />
-      ) : null}
+      </Card>
     </section>
   );
 }

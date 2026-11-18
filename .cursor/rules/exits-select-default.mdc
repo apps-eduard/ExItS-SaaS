@@ -1,28 +1,34 @@
 ---
-description: Default for a new select is the Select playground lock
+description: Default for a new select is Org EHG Select glass (stacked)
 alwaysApply: true
 ---
 
 # Select default (LOCKED)
 
-When creating a select, use the lock in `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/select-global-default.ts`.
+When creating a select, use the Org EHG Select glass lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-select-glass-global-default.ts`.
 
-The locked command is `ext dropdown primary outlined`. Intent is primary (`SELECT_GLOBAL_DEFAULT_INTENT`). Appearance is outlined (`SELECT_GLOBAL_DEFAULT_APPEARANCE`). Shape and density stay Standard unless the user names them.
+The locked command is `ext org-ehg select-glass qa primary stacked md icon-none shape-standard no-shadow`.
 
-The Form Components submenu **Select** playground has a lock labeled **default global**. That lock is what a new select is expected to use.
+Product component: `ExitsOrgEhgSelect` — use this whenever the surface is Org EHG. Do not invent another EHG select recipe.
 
-Use `ExitsSelect` for one choice and `ExitsMultiSelect` for more than one. Do not pick a different intent or appearance unless the user names one. On `/ui-standards`, the locked select is `CompactSelect`.
+Full recipe: `.cursor/rules/exits-org-ehg-select-glass.mdc`.
 
-## Type and open bar (LOCKED)
+- Tone: primary
+- Appearance: stacked (Label above)
+- Size: md
+- Icon: none
+- Shape: standard
+- Shadow: off
 
-The lock in `field-typography-global-default.ts` (same folder) matches the input lock. It covers every appearance except **Label above**:
+UI Standards **Select glass** playground seeds this lock. Do not invent a flat Material select or Soft Glass CompactSelect unless the user names Soft Glass primary fields (`exits-soft-glass-primary-fields.mdc`) or another recipe.
 
-- Label: `FIELD_GLOBAL_LABEL_SIZE` = **13px** (`--qdropdown-label-size`). The label does not shrink.
-- Selected value: `FIELD_GLOBAL_TEXT_SIZE` = **14px**.
-- Open bar: every appearance shows a thick bottom edge that grows from the center. Thickness is `SELECT_GLOBAL_BAR_THICKNESS` = **3px**, and duration is `SELECT_GLOBAL_BAR_DURATION` = **0.7s**. Do not hide the bar on any appearance.
-- In the playground, the Label above field height matches the input at every density.
-- Label above keeps its own static 14px label (`FIELD_GLOBAL_STACKED_LABEL_SIZE`). Do not touch it unless the user names Label above.
+## Soft Glass exception
 
-Do not put type values in `select-global-default.ts`. The playground lock button rewrites that file.
+Personal Soft Glass primary field groups still use locked `CompactSelect` (`ext dropdown primary outlined`) under `exits-soft-glass-primary-fields.mdc`. That Soft Glass path is separate from this global select creation lock.
 
-Change these values only when the user asks. Update `field-typography-global-default.ts`, the tokens in `globals.css`, and `field-typography-global-default.test.ts` together.
+## Type (when using Soft Glass / Form Components CompactSelect)
+
+The lock in `field-typography-global-default.ts` still covers Soft Glass / Form Components select type (13px label, 14px value, open bar). Do not put those type values in the Org EHG select-glass lock file.
+
+Change the Org EHG select creation lock only when the user asks. Update `org-ehg-select-glass-global-default.ts`, `org-ehg-select-glass-global-default.test.ts`, `OrgEhgQaSelectGlassPlayground.tsx`, `exits-org-ehg-select-glass.mdc`, and this rule together.

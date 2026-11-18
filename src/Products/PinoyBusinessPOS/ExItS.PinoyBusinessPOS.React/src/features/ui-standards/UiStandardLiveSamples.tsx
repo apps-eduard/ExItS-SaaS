@@ -74,6 +74,7 @@ import {
 import { UiStandardsShadowPlayground } from "@/features/ui-standards/UiStandardsShadowPlayground";
 import { UiStandardsTablePlayground } from "@/features/ui-standards/UiStandardsTablePlayground";
 import { UiStandardsSidenavTypography } from "@/features/ui-standards/UiStandardsSidenavTypography";
+import { UiStandardsIconPlayground } from "@/features/ui-standards/UiStandardsIconPlayground";
 import { Button, buttonIconMotion } from "@/components/ui/button";
 import {
   Card,
@@ -1901,6 +1902,20 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           >
             <CardTitle>Typography</CardTitle>
             <UiStandardsSidenavTypography />
+          </Card>
+        ) : null}
+
+        {show("iconPlayground") ? (
+          <Card
+            className="flex w-full min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-icon-playground"
+          >
+            <CardTitle>Icon</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              Lucide inside rounded chrome — soft primary wash (Org EHG card chip), soft fill (QA icon-soft), outline, or
+              bare. Toggle size, shape, and mark.
+            </p>
+            <UiStandardsIconPlayground />
           </Card>
         ) : null}
 

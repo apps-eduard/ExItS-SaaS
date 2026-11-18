@@ -8273,6 +8273,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "people.search": "Search people",
 
   "people.searchPlaceholder": "Search people...",
+  "people.sort.label": "Sort",
+  "people.sort.name": "Name",
+  "people.sort.amount": "Amount",
+  "people.summaryBar.count": "{count} People",
+  "people.summaryBar.meta": "{connected} Connected · {local} Local",
+  "people.summaryBar.download": "Download",
 
   "people.status.blocked": "Naka-block",
 

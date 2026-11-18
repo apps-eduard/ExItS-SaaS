@@ -1,0 +1,44 @@
+---
+description: Org EHG Input and Search glass global defaults for new fields
+alwaysApply: true
+---
+
+# Org EHG Input / Search glass (LOCKED — global)
+
+When creating an **input** or **search** field, use the lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-input-glass-global-default.ts`.
+
+## Input
+
+Locked command: `ext org-ehg input-glass qa primary stacked md icon-none shape-standard no-shadow`
+
+- Tone: `primary` (`ORG_EHG_INPUT_GLASS_DEFAULT_TONE`)
+- Appearance: `stacked` — Label above (`ORG_EHG_INPUT_GLASS_DEFAULT_APPEARANCE`)
+- Size: `md` (`ORG_EHG_INPUT_GLASS_DEFAULT_SIZE`)
+- Icon: `icon-none` (`ORG_EHG_INPUT_GLASS_DEFAULT_ICON`)
+- Shape: `standard` (`ORG_EHG_INPUT_GLASS_DEFAULT_SHAPE`)
+- Shadow: `no-shadow` (`ORG_EHG_INPUT_GLASS_DEFAULT_SHADOW`)
+- Field radius: Soft control `0.6875rem` (`ORG_EHG_INPUT_GLASS_RADIUS`)
+
+## Search
+
+Locked command: `ext org-ehg input-glass qa primary stacked md icon-bare shape-standard no-shadow`
+
+Same as input except:
+
+- Icon: `icon-bare` (`ORG_EHG_SEARCH_GLASS_DEFAULT_ICON`)
+- Glyph: search mark (`ORG_EHG_SEARCH_GLASS_DEFAULT_ICON_ID` = `search`)
+- Clear mark (when clearable): locked primary **X** (`exits-search-clear-default.mdc`)
+
+## Product / playground
+
+- **Product (LOCKED):** use `ExitsOrgEhgInput` in `components/exits/ExitsOrgEhgInput.tsx` — this command only; do not freestyle Org EHG input chrome when using EHG
+- UI Standards: Org EHG **Input glass** playground (`OrgEhgQaInputGlassPlayground`) seeds the **input** lock
+- Classes: `.org-ehg-qa-input-glass` with stacked appearance
+- Prefer Org EHG input-glass chrome for new inputs/searches unless the user names Soft Glass primary fields (`exits-soft-glass-primary-fields.mdc`) or another recipe
+
+## Scope
+
+Org EHG recipe stays scoped (`.org-ehg-*`). Do **not** restyle Personal Soft Glass fields unless the user asks.
+
+Change this lock only when the user asks. Update `org-ehg-input-glass-global-default.ts`, `org-ehg-input-glass-global-default.test.ts`, `OrgEhgQaInputGlassPlayground.tsx`, `ExitsOrgEhgInput.tsx`, `exits-input-default.mdc`, and this rule together.

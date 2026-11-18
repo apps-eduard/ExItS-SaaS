@@ -150,8 +150,9 @@ export function ConfirmActionDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className="exits-modal-backdrop fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center"
       role="presentation"
+      data-state="open"
       data-testid={`${testId}-backdrop`}
       onClick={() => {
         if (!pending) {
@@ -169,7 +170,8 @@ export function ConfirmActionDialog({
         tabIndex={-1}
         data-testid={testId}
         data-variant={variant}
-        className="w-full max-w-md rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 shadow-[var(--exits-shadow-lg)]"
+        data-state="open"
+        className="exits-modal-panel w-full max-w-md overflow-hidden border border-border bg-surface p-4"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex gap-3">
@@ -183,19 +185,19 @@ export function ConfirmActionDialog({
             <Icon className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+            <h2 id={titleId} className="exits-modal__title m-0 text-foreground">
               {title}
             </h2>
             <p
               id={descriptionId}
-              className="m-0 mt-2 whitespace-pre-line text-[length:var(--exits-text-sm)] text-muted"
+              className="exits-modal__description m-0 mt-2 whitespace-pre-line text-muted"
             >
               {description}
             </p>
             {children ? <div className="mt-3">{children}</div> : null}
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <div className="exits-modal__footer mt-4 flex flex-wrap justify-end gap-2">
           <Button
             type="button"
             variant="outline"

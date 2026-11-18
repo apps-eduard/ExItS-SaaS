@@ -38,6 +38,24 @@ if (childEnv.VITE_ALLOW_INSECURE_OFFLINE_PIN === "true") {
   );
 }
 
+// Fast local (:5178) → host APIs :5288/:5290. Public preview (:5177) → Docker LV :8091/:8092.
+// Without this, a bare `npm run dev` on 5178 proxies to hung Docker :8091 and Sign-in hangs.
+const isFastLocalDev = devPort === 5178;
+if (!childEnv.EXITS_PLATFORM_API_PROXY_TARGET?.trim()) {
+  childEnv.EXITS_PLATFORM_API_PROXY_TARGET = isFastLocalDev
+    ? "http://127.0.0.1:5288"
+    : "http://127.0.0.1:8091";
+}
+if (!childEnv.EXITS_POS_API_PROXY_TARGET?.trim()) {
+  childEnv.EXITS_POS_API_PROXY_TARGET = isFastLocalDev
+    ? "http://127.0.0.1:5290"
+    : "http://127.0.0.1:8092";
+}
+console.log(
+  `[pos-dev] Platform API proxy → ${childEnv.EXITS_PLATFORM_API_PROXY_TARGET}`,
+);
+console.log(`[pos-dev] POS API proxy → ${childEnv.EXITS_POS_API_PROXY_TARGET}`);
+
 const viteBin = path.join(clientRoot, "node_modules", "vite", "bin", "vite.js");
 const vite = spawn(
   process.execPath,

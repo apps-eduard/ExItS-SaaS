@@ -32,10 +32,10 @@ export const UI_STANDARDS_CRYSTAL_BORDER_SLATE_PCT = 62 as const;
 export const UI_STANDARDS_CRYSTAL_BORDER_DARK_CHIP_PCT = 16 as const;
 /** Soft elevation accent mix % (matches `SOFT_GLASS_SHADOW_ACCENT_PCT`). */
 export const UI_STANDARDS_CRYSTAL_SHADOW_ACCENT_PCT = 8 as const;
-/** Inset from viewport so the screen rim is visible (CSS `--ui-standards-crystal-inset`). */
-export const UI_STANDARDS_CRYSTAL_SCREEN_INSET = "0.45rem" as const;
-/** Frame corner radius — Soft Glass shell (CSS `--ui-standards-crystal-radius`). */
-export const UI_STANDARDS_CRYSTAL_SCREEN_RADIUS = "1.1rem" as const;
+/** Inset from viewport (CSS `--ui-standards-crystal-inset`). Locked flush — no grey margin around shell. */
+export const UI_STANDARDS_CRYSTAL_SCREEN_INSET = "0" as const;
+/** Frame corner radius — flush screen uses 0 (CSS `--ui-standards-crystal-radius`). */
+export const UI_STANDARDS_CRYSTAL_SCREEN_RADIUS = "0" as const;
 
 /** @deprecated Use `UI_STANDARDS_CRYSTAL_BORDER_SLATE_PCT` — Soft Glass edge, not white/primary mix. */
 export const UI_STANDARDS_CRYSTAL_BORDER_WHITE_PCT = UI_STANDARDS_CRYSTAL_BORDER_SLATE_PCT;

@@ -8306,6 +8306,12 @@ export const cebPH: Record<keyof typeof en, string> = {
   "people.search": "[CEB] Search people",
 
   "people.searchPlaceholder": "[CEB] Search people...",
+  "people.sort.label": "[CEB] Sort",
+  "people.sort.name": "[CEB] Name",
+  "people.sort.amount": "[CEB] Amount",
+  "people.summaryBar.count": "[CEB] {count} People",
+  "people.summaryBar.meta": "[CEB] {connected} Connected · {local} Local",
+  "people.summaryBar.download": "[CEB] Download",
 
   "people.status.blocked": "[CEB] Blocked",
 

@@ -1,11 +1,8 @@
-import { IdCard, Plus, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { PageHeader } from "@/components/exits/PageHeader";
 import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { AddPersonDialog } from "@/features/personal/AddPersonDialog";
@@ -18,7 +15,6 @@ import {
 import { PeopleListSection } from "@/features/personal/PeopleListSection";
 import { buildPeopleRows } from "@/features/personal/people-status";
 import { useI18n } from "@/i18n/I18nProvider";
-import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 export function PeoplePage() {
   const { t } = useI18n();
@@ -101,80 +97,29 @@ export function PeoplePage() {
 
   return (
     <section className="personal-page people-page exits-page flex w-full min-w-0 flex-col gap-4">
-      <PageHeader
-        title={t("people.title")}
-        description={`${t("people.info.body1")} ${t("people.info.body2")} ${t("people.info.body3")}`}
-        infoToggleLabel={t("people.info.open")}
-        infoTitle={t("people.info.title")}
-        backTo={personalPageBackNav.home.to}
-        backLabel={t(personalPageBackNav.home.labelKey)}
-        backTestId="page-header-back-people"
-      />
-
       {isRefreshing ? <BackgroundRefreshIndicator active label={t("loading.updating")} /> : null}
       {isInitialLoading ? <PageSkeleton label={t("loading.label")} /> : null}
       {!isInitialLoading ? (
-        <Card
-          className="person-ribbon-card people-list-card people-list-main-glass flex flex-col gap-3"
-          data-shell="soft-glass"
-          data-testid="people-list-card"
-        >
-          <h2 className="personal-tracker-card__ribbon" data-testid="people-list-ribbon">
-            <span className="personal-tracker-card__pennant" aria-hidden>
-              <Users className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" />
-            </span>
-            {t("people.listTitle")}
-          </h2>
-      <AddPersonDialog
-        open={addOpen}
-        initialKind={urlKind}
-        linkPublicId={linkPublicId}
-        onOpenChange={(next) => {
-          if (!next) {
-            closeAddPanel();
-          }
-        }}
-        onSwitchToExits={() => openAddPanel("exits")}
-        onSwitchToLocal={() => openAddPanel("walkin")}
-      />
+        <>
+          <AddPersonDialog
+            open={addOpen}
+            initialKind={urlKind}
+            linkPublicId={linkPublicId}
+            onOpenChange={(next) => {
+              if (!next) {
+                closeAddPanel();
+              }
+            }}
+            onSwitchToExits={() => openAddPanel("exits")}
+            onSwitchToLocal={() => openAddPanel("walkin")}
+          />
 
-      <PeopleListSection
-        rows={rows}
-        toolbarStart={
-          <>
-            <Button
-              type="button"
-              intent="primary"
-              appearance="glossy"
-              className="shrink-0"
-              data-testid="people-add-toggle"
-              aria-label={t("people.addLocal")}
-              aria-expanded={addOpen && urlKind === "walkin"}
-              aria-controls="people-add-dialog"
-              onClick={() => openAddPanel("walkin")}
-            >
-              <Plus className="size-4 shrink-0" aria-hidden="true" />
-              {t("people.addLocal")}
-            </Button>
-            <Button
-              type="button"
-              intent="info"
-              appearance="glossy"
-              emphasis="strong"
-              className="shrink-0"
-              data-testid="people-add-exits"
-              aria-label={t("people.addExits")}
-              aria-expanded={addOpen && urlKind === "exits"}
-              aria-controls="people-add-dialog"
-              onClick={() => openAddPanel("exits")}
-            >
-              <IdCard className="size-4 shrink-0" aria-hidden="true" />
-              {t("people.addExits")}
-            </Button>
-          </>
-        }
-      />
-        </Card>
+          <PeopleListSection
+            rows={rows}
+            onAddLocal={() => openAddPanel("walkin")}
+            onAddExits={() => openAddPanel("exits")}
+          />
+        </>
       ) : null}
     </section>
   );

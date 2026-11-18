@@ -8306,6 +8306,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "people.search": "[ILO] Search people",
 
   "people.searchPlaceholder": "[ILO] Search people...",
+  "people.sort.label": "[ILO] Sort",
+  "people.sort.name": "[ILO] Name",
+  "people.sort.amount": "[ILO] Amount",
+  "people.summaryBar.count": "[ILO] {count} People",
+  "people.summaryBar.meta": "[ILO] {connected} Connected · {local} Local",
+  "people.summaryBar.download": "[ILO] Download",
 
   "people.status.blocked": "[ILO] Blocked",
 

@@ -7,7 +7,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { OrgEhgButtonGlassPlayground } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgButtonGlassPlayground";
+import { OrgEhgQaBtnGlassPlayground } from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQaBtnGlassPlayground";
+import type {
+  OrgEhgQaGlassSize,
+  OrgEhgQaGlassTone,
+} from "@/features/ui-standards/org-enterprise-hybrid-glass/OrgEhgQuickActionGlassGallery";
 import {
   ORG_EHG_SPEED_DIAL_LABEL_TYPES,
   ORG_EHG_SPEED_DIAL_SHOW_DEFAULT,
@@ -18,16 +22,13 @@ import {
   type OrgEhgSpeedDialTransition,
 } from "@/features/ui-standards/org-enterprise-hybrid-glass/orgEhgSpeedDial";
 
-type GlassIntensity = "solid" | "soft" | "medium" | "strong" | "ultra";
-type GlassTone =
-  | "primary"
-  | "secondary"
-  | "success"
-  | "warning"
-  | "danger"
-  | "info"
-  | "neutral";
-type GlassSize = "sm" | "md" | "lg" | "xl";
+type FabAppearance =
+  | "flat"
+  | "soft"
+  | "outline"
+  | "glossy"
+  | "glossy-raise"
+  | "raised";
 
 const SPEED_DIAL_ACTIONS = [
   { label: "New person", Icon: UserPlus, tone: "info" as const },
@@ -35,10 +36,36 @@ const SPEED_DIAL_ACTIONS = [
   { label: "Cart", Icon: ShoppingCart, tone: "secondary" as const },
 ] as const;
 
+function fabClassName({
+  tone = "primary",
+  appearance = "flat",
+  size = "lg",
+  extended = false,
+}: {
+  tone?: OrgEhgQaGlassTone;
+  appearance?: FabAppearance;
+  size?: OrgEhgQaGlassSize;
+  extended?: boolean;
+}): string {
+  return [
+    "org-ehg-qa-glass",
+    "org-ehg-qa-btn-glass",
+    "org-ehg-qa-btn-glass--fab",
+    "org-ehg-qa-glass--no-shadow",
+    `org-ehg-qa-glass--tone-${tone}`,
+    `org-ehg-qa-glass--size-${size}`,
+    "org-ehg-qa-btn-glass--density-balance",
+    `org-ehg-qa-btn-glass--appearance-${appearance}`,
+    extended ? "org-ehg-qa-btn-glass--fab-extended" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 function FabBtn({
   label,
-  intensity = "medium",
   tone = "primary",
+  appearance = "flat",
   size = "lg",
   icon: Icon,
   badge,
@@ -46,34 +73,37 @@ function FabBtn({
   testId,
 }: {
   label: string;
-  intensity?: GlassIntensity;
-  tone?: GlassTone;
-  size?: GlassSize;
+  tone?: OrgEhgQaGlassTone;
+  appearance?: FabAppearance;
+  size?: OrgEhgQaGlassSize;
   icon: LucideIcon;
   badge?: string;
   caption?: string;
   testId?: string;
 }) {
-  const className = [
-    "org-ehg-btn-glass",
-    `org-ehg-btn-glass--${intensity}`,
-    `org-ehg-btn-glass--tone-${tone}`,
-    `org-ehg-btn-glass--size-${size}`,
-    "org-ehg-btn-glass--icon-only",
-    "org-ehg-btn-glass--fab",
-  ].join(" ");
-
   return (
-    <div className="org-ehg-btn-glass-sample">
-      <button type="button" className={className} data-testid={testId} aria-label={label}>
-        <Icon className="org-ehg-btn-glass__icon" aria-hidden strokeWidth={2.25} />
+    <div className="org-ehg-qa-glass-sample">
+      <button
+        type="button"
+        className={fabClassName({ tone, appearance, size })}
+        data-testid={testId}
+        data-card-shape="pill"
+        data-hover="on"
+        data-fab="true"
+        aria-label={label}
+      >
+        <Icon
+          className="org-ehg-qa-glass__glyph org-ehg-qa-glass__glyph--bare"
+          aria-hidden
+          strokeWidth={2.25}
+        />
         {badge ? (
-          <span className="org-ehg-btn-glass__badge" aria-hidden>
+          <span className="org-ehg-qa-btn-glass__badge" aria-hidden>
             {badge}
           </span>
         ) : null}
       </button>
-      {caption ? <span className="org-ehg-btn-glass-sample__caption">{caption}</span> : null}
+      {caption ? <span className="org-ehg-qa-glass-sample__caption">{caption}</span> : null}
     </div>
   );
 }
@@ -97,7 +127,7 @@ function SpeedDialSample({
 }) {
   const isExtended = labelType === "extended";
   return (
-    <div className="org-ehg-btn-glass-sample org-ehg-btn-glass-sample--speed-dial">
+    <div className="org-ehg-qa-glass-sample org-ehg-btn-glass-sample--speed-dial">
       <div
         className="org-ehg org-ehg-btn-glass-speed-dial"
         data-org-ehg-theme={theme}
@@ -125,18 +155,22 @@ function SpeedDialSample({
                 <button
                   type="button"
                   role="menuitem"
-                  className={[
-                    "org-ehg-btn-glass",
-                    "org-ehg-btn-glass--medium",
-                    `org-ehg-btn-glass--tone-${action.tone}`,
-                    "org-ehg-btn-glass--size-md",
-                    isExtended ? "org-ehg-btn-glass--fab-extended" : "org-ehg-btn-glass--icon-only",
-                    "org-ehg-btn-glass--fab",
-                  ].join(" ")}
+                  className={fabClassName({
+                    tone: action.tone,
+                    size: "md",
+                    extended: isExtended,
+                  })}
+                  data-card-shape="pill"
+                  data-hover="on"
+                  data-fab="true"
                   aria-label={action.label}
                   tabIndex={open ? 0 : -1}
                 >
-                  <ActionIcon className="org-ehg-btn-glass__icon" aria-hidden strokeWidth={2.25} />
+                  <ActionIcon
+                    className="org-ehg-qa-glass__glyph org-ehg-qa-glass__glyph--bare"
+                    aria-hidden
+                    strokeWidth={2.25}
+                  />
                   {isExtended ? (
                     <span className="org-ehg-btn-glass-speed-dial__extended-text">{action.label}</span>
                   ) : null}
@@ -147,32 +181,34 @@ function SpeedDialSample({
         </div>
         <button
           type="button"
-          className={[
-            "org-ehg-btn-glass",
-            "org-ehg-btn-glass--medium",
-            "org-ehg-btn-glass--tone-primary",
-            "org-ehg-btn-glass--size-lg",
-            "org-ehg-btn-glass--icon-only",
-            "org-ehg-btn-glass--fab",
-            "org-ehg-btn-glass-speed-dial__trigger",
-          ].join(" ")}
+          className={
+            fabClassName({ tone: "primary", size: "lg" }) +
+            " org-ehg-btn-glass-speed-dial__trigger"
+          }
+          data-card-shape="pill"
+          data-hover="on"
+          data-fab="true"
           aria-label="Add"
           aria-expanded={open}
           aria-haspopup="menu"
         >
-          <Plus className="org-ehg-btn-glass__icon" aria-hidden strokeWidth={2.25} />
+          <Plus
+            className="org-ehg-qa-glass__glyph org-ehg-qa-glass__glyph--bare"
+            aria-hidden
+            strokeWidth={2.25}
+          />
         </button>
       </div>
-      <span className="org-ehg-btn-glass-sample__caption">{caption}</span>
+      <span className="org-ehg-qa-glass-sample__caption">{caption}</span>
     </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="org-ehg-btn-glass-panel__section">
-      <h3 className="org-ehg-btn-glass-panel__section-title">{title}</h3>
-      <div className="org-ehg-btn-glass-panel__row org-ehg-btn-glass-panel__row--fab">{children}</div>
+    <section className="org-ehg-qa-glass-panel__section">
+      <h3 className="org-ehg-qa-glass-panel__section-title">{title}</h3>
+      <div className="org-ehg-qa-glass-panel__row org-ehg-btn-glass-panel__row--fab">{children}</div>
     </section>
   );
 }
@@ -188,21 +224,24 @@ function ModePanel({
 }) {
   return (
     <div
-      className="org-ehg org-ehg-btn-glass-panel"
+      className="org-ehg org-ehg-qa-glass-panel"
       data-org-ehg-theme={theme}
       data-testid={testId}
     >
-      <header className="org-ehg-btn-glass-panel__header">
-        <h2 className="org-ehg-btn-glass-panel__title">{title} – Floating Action Glass</h2>
+      <header className="org-ehg-qa-glass-panel__header">
+        <h2 className="org-ehg-qa-glass-panel__title">{title} – Speed dial button glass</h2>
       </header>
 
-      <section className="org-ehg-btn-glass-panel__section">
-        <h3 className="org-ehg-btn-glass-panel__section-title">1. Corner placement</h3>
-        <div className="org-ehg-btn-glass-fab-scene" data-testid={`${testId}-fab-scene`}>
+      <section className="org-ehg-qa-glass-panel__section">
+        <h3 className="org-ehg-qa-glass-panel__section-title">1. Corner placement</h3>
+        <div
+          className="org-ehg-btn-glass-fab-scene"
+          data-testid={`${testId}-fab-scene`}
+          data-fab-position="right-bottom"
+        >
           <FabBtn
             label="Add"
             size="lg"
-            intensity="medium"
             tone="primary"
             icon={Plus}
             caption="Corner FAB"
@@ -211,8 +250,8 @@ function ModePanel({
         </div>
       </section>
 
-      <section className="org-ehg-btn-glass-panel__section">
-        <h3 className="org-ehg-btn-glass-panel__section-title">2. Speed dial</h3>
+      <section className="org-ehg-qa-glass-panel__section">
+        <h3 className="org-ehg-qa-glass-panel__section-title">2. Speed dial</h3>
         <div
           className="org-ehg-btn-glass-fab-scene org-ehg-btn-glass-fab-scene--speed-dial"
           data-testid={`${testId}-speed-dial-scene`}
@@ -225,7 +264,7 @@ function ModePanel({
             caption="Label tooltip"
           />
         </div>
-        <div className="org-ehg-btn-glass-panel__row org-ehg-btn-glass-panel__row--fab">
+        <div className="org-ehg-qa-glass-panel__row org-ehg-btn-glass-panel__row--fab">
           <SpeedDialSample
             open={false}
             theme={theme}
@@ -263,7 +302,6 @@ function ModePanel({
         <FabBtn label="Add SM" size="sm" icon={Plus} caption="FAB SM" />
         <FabBtn label="Add MD" size="md" icon={Plus} caption="FAB MD" />
         <FabBtn label="Add LG" size="lg" icon={Plus} caption="FAB LG" />
-        <FabBtn label="Add XL" size="xl" icon={Plus} caption="FAB XL" />
       </Section>
 
       <Section title="4. Tones">
@@ -271,7 +309,7 @@ function ModePanel({
         <FabBtn
           label="Success"
           tone="success"
-          intensity="soft"
+          appearance="soft"
           icon={ShoppingCart}
           badge="3"
           caption="Success · badge"
@@ -283,31 +321,33 @@ function ModePanel({
         <FabBtn label="Neutral" tone="neutral" icon={Plus} caption="Neutral" />
       </Section>
 
-      <Section title="5. Intensity">
-        <FabBtn label="Solid" intensity="solid" icon={Plus} caption="Solid" />
-        <FabBtn label="Soft" intensity="soft" icon={Plus} caption="Soft" />
-        <FabBtn label="Medium" intensity="medium" icon={Plus} caption="Medium" />
-        <FabBtn label="Strong" intensity="strong" icon={Plus} caption="Strong" />
-        <FabBtn label="Ultra" intensity="ultra" icon={Plus} caption="Ultra" />
+      <Section title="5. Appearance">
+        <FabBtn label="Flat" appearance="flat" icon={Plus} caption="Flat" />
+        <FabBtn label="Soft" appearance="soft" icon={Plus} caption="Soft" />
+        <FabBtn label="Outline" appearance="outline" icon={Plus} caption="Outline" />
+        <FabBtn label="Glossy" appearance="glossy" icon={Plus} caption="Glossy" />
+        <FabBtn label="Glossy raise" appearance="glossy-raise" icon={Plus} caption="Glossy raise" />
+        <FabBtn label="Raised" appearance="raised" icon={Plus} caption="Raised" />
       </Section>
     </div>
   );
 }
 
 /**
- * Organization — Enterprise Hybrid Glass Floating Action (UI Standards / DEV only).
+ * Organization — Enterprise Hybrid Glass Speed dial button glass (UI Standards / DEV only).
+ * Uses the same QA btn glass recipe as Button glass (circular FAB).
  */
 export function OrgEhgFabGlassGallery() {
   return (
-    <div className="org-ehg-btn-glass-gallery" data-testid="ui-standard-org-ehg-fab-glass">
+    <div className="org-ehg-qa-glass-gallery" data-testid="ui-standard-org-ehg-fab-glass">
       <p className="org-ehg__banner m-0">
-        <strong>Enterprise Hybrid Glass · Floating Action</strong>
+        <strong>Enterprise Hybrid Glass · Speed dial button glass</strong>
         {" — "}
-        Circular Hybrid Glass FAB. Speed dial types: icon only, label tooltip, rounded label, flat
-        label, extended.
+        Circular QA Button glass FAB. Same surface recipe as Button glass. Speed dial types: icon
+        only, label tooltip, rounded label, flat label, extended.
       </p>
-      <OrgEhgButtonGlassPlayground defaultFab />
-      <div className="org-ehg-btn-glass-gallery__columns">
+      <OrgEhgQaBtnGlassPlayground defaultFab />
+      <div className="org-ehg-qa-glass-gallery__columns">
         <ModePanel theme="light" title="Light Mode" testId="org-ehg-fab-glass-light" />
         <ModePanel theme="dark" title="Dark Mode" testId="org-ehg-fab-glass-dark" />
       </div>

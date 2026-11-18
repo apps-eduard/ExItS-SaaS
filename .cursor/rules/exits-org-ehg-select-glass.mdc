@@ -1,0 +1,33 @@
+---
+description: Org EHG Select glass primary stacked global default for new selects
+alwaysApply: true
+---
+
+# Org EHG Select glass (LOCKED — global)
+
+When creating a select, use the lock in
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/ui-standards/org-enterprise-hybrid-glass/org-ehg-select-glass-global-default.ts`.
+
+The locked command is `ext org-ehg select-glass qa primary stacked md icon-none shape-standard no-shadow`.
+
+- Tone: `primary` (`ORG_EHG_SELECT_GLASS_DEFAULT_TONE`)
+- Appearance: `stacked` — Label above (`ORG_EHG_SELECT_GLASS_DEFAULT_APPEARANCE`)
+- Size: `md` (`ORG_EHG_SELECT_GLASS_DEFAULT_SIZE`)
+- Icon: `icon-none` (`ORG_EHG_SELECT_GLASS_DEFAULT_ICON`)
+- Shape: `standard` (`ORG_EHG_SELECT_GLASS_DEFAULT_SHAPE`)
+- Shadow: `no-shadow` (`ORG_EHG_SELECT_GLASS_DEFAULT_SHADOW`)
+- Field radius: Soft control `0.6875rem` (`ORG_EHG_SELECT_GLASS_RADIUS`) — not Soft Glass shell `1.1rem`
+- Menu transition default: Scale (`ORG_EHG_SELECT_GLASS_DEFAULT_MENU_TRANSITION`) — omitted from the locked command
+
+## Product / playground
+
+- **Product (LOCKED):** use `ExitsOrgEhgSelect` in `components/exits/ExitsOrgEhgSelect.tsx` — this command only; do not freestyle Org EHG select chrome when using EHG
+- UI Standards: Org EHG **Select glass** playground (`OrgEhgQaSelectGlassPlayground`) seeds this lock
+- Classes: `.org-ehg-qa-select-glass` / `.org-ehg-qa-select-glass__field` with stacked appearance
+- Prefer Org EHG select-glass chrome for new selects unless the user names Soft Glass primary fields (`exits-soft-glass-primary-fields.mdc`) or another recipe
+
+## Scope
+
+Org EHG recipe stays scoped (`.org-ehg-*`). Do **not** restyle Personal Soft Glass CompactSelect fields unless the user asks.
+
+Change this lock only when the user asks. Update `org-ehg-select-glass-global-default.ts`, `org-ehg-select-glass-global-default.test.ts`, `OrgEhgQaSelectGlassPlayground.tsx`, `ExitsOrgEhgSelect.tsx`, `exits-select-default.mdc`, and this rule together.
