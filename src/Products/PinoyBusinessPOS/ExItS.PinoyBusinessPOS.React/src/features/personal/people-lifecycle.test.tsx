@@ -289,18 +289,57 @@ describe("People lifecycle UX", () => {
     ).toBe(false);
   });
 
-  it("renders people rows without destructive list actions", async () => {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query: string) => ({
-        matches: query.includes("min-width: 1024"),
-        media: query,
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
+  it("renders compact people rows without destructive list actions", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, [contactA, contactConnected]);
+          }
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, [pendingConnection]);
+          }
+          if (url.includes("/relationships/")) {
+            return jsonResponse(200, []);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
+    );
+
+    renderPeopleApp("/personal/people");
+    const list = await screen.findByTestId("people-list");
+    expect(within(list).getByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(within(list).getByText("Pending")).toBeInTheDocument();
+    expect(within(list).getByText("Ana Cruz")).toBeInTheDocument();
+    expect(within(list).getByText("Connected")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /block/i })).not.toBeInTheDocument();
+    // jsdom default matchMedia is below lg — table mounts only at ≥1024px.
+    expect(screen.queryByTestId("people-table")).not.toBeInTheDocument();
+    expect(screen.queryByText(/I Lent/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/I Owe/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId("people-search")).toBeInTheDocument();
+    expect(screen.getByTestId("people-list-summary-download")).toBeEnabled();
+    expect(screen.getByTestId("people-row-c1")).toBeInTheDocument();
+    expect(screen.getByTestId("people-row-c2")).toBeInTheDocument();
+    expect(screen.getByTestId("people-row-open-c1")).toBeInTheDocument();
+  });
+
+  it("renders compact desktop people table without financial columns at lg+", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("min-width: 1024px"),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
     vi.stubGlobal(
       "fetch",
       vi.fn(
@@ -322,21 +361,14 @@ describe("People lifecycle UX", () => {
 
     renderPeopleApp("/personal/people");
     const table = await screen.findByTestId("people-table");
-    expect(within(table).getByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(within(table).getByText("Request sent")).toBeInTheDocument();
-    expect(within(table).getByText("Ana Cruz")).toBeInTheDocument();
-    expect(within(table).getByText("Connected")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /block/i })).not.toBeInTheDocument();
-    expect(table.querySelector("thead")).toHaveAttribute("data-appearance", "glossy-raise");
-    expect(screen.getByTestId("people-table-footer")).toHaveAttribute("data-appearance", "glossy-raise");
+    expect(within(table).getByTestId("people-table-name-c1")).toHaveTextContent("Juan Dela Cruz");
+    expect(within(table).getByTestId("people-table-status-c1")).toHaveTextContent("Pending");
+    expect(within(table).getByTestId("people-table-name-c2")).toHaveTextContent("Ana Cruz");
+    expect(within(table).getByTestId("people-table-status-c2")).toHaveTextContent("Connected");
+    expect(within(table).queryByText(/I Lent/i)).not.toBeInTheDocument();
+    expect(within(table).queryByText(/I Owe/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("people-table-search")).toBeInTheDocument();
-    expect(screen.getByTestId("exits-table-output-csv")).toBeEnabled();
-    expect(screen.getByTestId("exits-table-output-xlsx")).toBeEnabled();
-    expect(screen.getByTestId("exits-table-output-pdf")).toBeEnabled();
-    expect(screen.getByTestId("exits-table-output-print")).toBeEnabled();
-    expect(screen.getByTestId("people-table-row-c1")).toBeInTheDocument();
-    expect(screen.getByTestId("people-table-row-c2")).toBeInTheDocument();
+    expect(screen.getByTestId("people-list")).toBeInTheDocument();
   });
 
   it("persists resolved identity on add without a separate client connection-request call", async () => {
@@ -611,7 +643,7 @@ describe("People lifecycle UX", () => {
     expect(notifications[0]?.isRead).toBe(true);
   });
 
-  it("People row shows Request sent after outgoing pending request without treating it as Utang invitation", async () => {
+  it("People row shows Pending after outgoing pending request without treating it as Utang invitation", async () => {
     const connections: PersonalConnectionRequestDto[] = [pendingConnection];
     vi.stubGlobal(
       "fetch",
@@ -638,7 +670,8 @@ describe("People lifecycle UX", () => {
     renderPeopleApp("/personal/people");
     const juanRow = await screen.findByTestId("people-row-c1");
     expect(within(juanRow).getByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(within(juanRow).getByText("Request sent")).toBeInTheDocument();
+    expect(within(juanRow).getByTestId("people-row-status-c1")).toHaveTextContent("Pending");
+    expect(juanRow).toHaveAttribute("data-status", "request_sent");
     expect(screen.queryByText(/Utang invitation/i)).not.toBeInTheDocument();
   });
 });

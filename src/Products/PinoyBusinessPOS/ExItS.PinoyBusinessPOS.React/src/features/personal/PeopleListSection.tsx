@@ -1,7 +1,5 @@
-import { Check, Download, HandCoins, Pencil, SlidersHorizontal, Users, Wallet } from "lucide-react";
+import { Check, Download, SlidersHorizontal, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { ExitsOrgEhgInput } from "@/components/exits/ExitsOrgEhgInput";
@@ -13,15 +11,14 @@ import {
   ExitsTableContainer,
   ExitsTableHead,
   ExitsTableHeader,
-  ExitsTableOutputActions,
   ExitsTablePagination,
   ExitsTableRow,
   ExitsTableToolbar,
 } from "@/components/exits/ExitsTable";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
-import { Button } from "@/components/ui/button";
+import { symbol } from "@/components/icons/MaterialSymbol";
 import { Card } from "@/components/ui/card";
 import { DropdownMenu, MenuItem, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { PeopleAddGlassSpeedDial } from "@/features/personal/PeopleAddGlassSpeedDial";
@@ -30,14 +27,12 @@ import {
   type PeopleConnectionStatus,
   type PeopleRowModel,
 } from "@/features/personal/people-status";
-import { EditLocalContactDialog } from "@/features/personal/EditLocalContactDialog";
-import { useMediaMin } from "@/hooks/useMediaQuery";
+import { PersonalContactStackedSheet } from "@/features/personal/PersonalContactStackedSheet";
 import {
   buildPeopleTableExportModel,
   downloadPeopleTableCsv,
   downloadPeopleTablePdf,
   downloadPeopleTableXlsx,
-  printPeopleTable,
   type PeopleTableExportLabels,
 } from "@/features/personal/people-table-output";
 import {
@@ -46,10 +41,17 @@ import {
   TABLE_GLOBAL_DEFAULT_HEADER_APPEARANCE,
   TABLE_GLOBAL_DEFAULT_HEADER_INTENT,
 } from "@/features/ui-standards/table-global-default";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { TranslateFn } from "@/i18n/messages";
+
+const ChevronRightIcon = symbol("chevron_right");
 
 export type PeopleListFilter = "all" | "connected" | "pending" | "local" | "not_connected";
-export type PeopleListSort = "name" | "amount";
+export type PeopleListSort = "name" | "amount" | "status";
+
+const PEOPLE_PAGE_SIZES = [10, 25, 50, 100, 200, 500] as const;
+const PEOPLE_TABLE_MIN_PX = 1024;
 
 const FILTERS: ReadonlyArray<{
   key: PeopleListFilter;
@@ -111,6 +113,7 @@ export function filterPeopleRows(
   filter: PeopleListFilter,
   search: string,
   sort: PeopleListSort = "name",
+  statusLabel: (status: PeopleConnectionStatus) => string = () => "",
 ): PeopleRowModel[] {
   const needle = search.trim().toLowerCase();
   return rows
@@ -129,85 +132,51 @@ export function filterPeopleRows(
           return amountDelta;
         }
       }
+      if (sort === "status") {
+        const statusDelta = statusLabel(a.connectionStatus).localeCompare(
+          statusLabel(b.connectionStatus),
+        );
+        if (statusDelta !== 0) {
+          return statusDelta;
+        }
+      }
       return a.contact.displayName.localeCompare(b.contact.displayName);
     });
 }
 
-function PeopleUtangTotal({
-  total,
-  count,
-  testId,
-  href,
-  owe = false,
-}: {
-  total: number;
-  count: number;
-  testId: string;
-  href: string;
-  owe?: boolean;
-}) {
-  if (count === 0) {
-    return (
-      <Link to={href} className="people-table-amount people-table-amount--empty text-muted no-underline" data-testid={testId}>
-        —
-      </Link>
-    );
+/** Compact list labels: Connected / Pending / Local Contact. */
+export function peopleListStatusLabel(status: PeopleConnectionStatus, t: TranslateFn): string {
+  switch (status) {
+    case "connected":
+      return t("people.status.connected");
+    case "request_sent":
+    case "request_received":
+      return t("people.filter.pending");
+    case "local":
+      return t("people.contactSheet.localContact");
+    case "blocked":
+      return t("people.status.blocked");
+    default:
+      return t("people.status.notConnected");
   }
-  return (
-    <Link to={href} className="people-table-amount inline-flex items-center gap-2 no-underline" data-testid={`${testId}-link`}>
-      <MoneyDisplay
-        amount={total}
-        testId={testId}
-        className={owe && total > 0 ? "text-[var(--exits-warning)]" : undefined}
-      />
-      <CountBadge count={count} tone={owe ? "warning" : "neutral"} />
-    </Link>
-  );
 }
 
-const PEOPLE_PAGE_SIZES = [10, 25, 50, 100, 200, 500] as const;
-
-function PeopleTableOutput({
-  rows,
-  statusLabel,
-  appearance = "auto",
-  className,
-}: {
-  rows: PeopleRowModel[];
-  statusLabel: (status: PeopleConnectionStatus) => string;
-  appearance?: "auto" | "icons";
-  className?: string;
-}) {
-  const { t } = useI18n();
-  const exportLabels: PeopleTableExportLabels = {
-    name: t("people.displayName"),
-    contact: t("people.column.contact"),
-    email: t("people.column.email"),
-    status: t("people.column.status"),
-    lent: t("people.detail.iLentAction"),
-    owe: t("people.detail.iOweAction"),
-  };
-
-  function exportModel() {
-    return buildPeopleTableExportModel(rows, statusLabel);
+/** Detailed labels for export / stacked sheet. */
+function peopleDetailStatusLabel(status: PeopleConnectionStatus, t: TranslateFn): string {
+  switch (status) {
+    case "connected":
+      return t("people.status.connected");
+    case "request_sent":
+      return t("people.status.requestSent");
+    case "request_received":
+      return t("people.status.requestReceived");
+    case "blocked":
+      return t("people.status.blocked");
+    case "local":
+      return t("people.status.local");
+    default:
+      return t("people.status.notConnected");
   }
-
-  return (
-    <ExitsTableOutputActions
-      appearance={appearance}
-      className={className}
-      csvLabel={t("exitsTable.exportCsv")}
-      xlsxLabel={t("exitsTable.exportExcel")}
-      pdfLabel={t("exitsTable.exportPdf")}
-      printLabel={t("exitsTable.print")}
-      menuLabel={t("exitsTable.exportPrintMenu")}
-      disabled={rows.length === 0}
-      onCsv={() => downloadPeopleTableCsv(exportModel(), exportLabels)}
-      onXlsx={() => downloadPeopleTableXlsx(exportModel(), exportLabels)}
-      onPdf={() => downloadPeopleTablePdf(exportModel(), exportLabels)}
-      onPrint={printPeopleTable}
-    />
-  );
 }
 
 function PeopleSearchSort({
@@ -263,6 +232,18 @@ function PeopleSearchSort({
           {sort === "name" ? <Check className="size-3.5" strokeWidth={2.5} /> : null}
         </span>
         {t("people.sort.name")}
+      </MenuItem>
+      <MenuItem
+        data-testid={`${testId}-status`}
+        onSelect={() => {
+          onSort("status");
+          onOpenChange(false);
+        }}
+      >
+        <span className="people-search-sort-menu__check" aria-hidden>
+          {sort === "status" ? <Check className="size-3.5" strokeWidth={2.5} /> : null}
+        </span>
+        {t("people.column.status")}
       </MenuItem>
       <MenuItem
         data-testid={`${testId}-amount`}
@@ -382,7 +363,7 @@ function PeopleListSummaryBar({
   );
 }
 
-function PeopleTable({
+function PeopleCompactTable({
   rows,
   statusLabel,
   search,
@@ -392,7 +373,7 @@ function PeopleTable({
   sortMenuOpen,
   onSortMenuOpenChange,
   empty,
-  showOutput = true,
+  onOpenContact,
 }: {
   rows: PeopleRowModel[];
   statusLabel: (status: PeopleConnectionStatus) => string;
@@ -403,10 +384,9 @@ function PeopleTable({
   sortMenuOpen: boolean;
   onSortMenuOpenChange: (next: boolean) => void;
   empty: { title: string; detail: string; variant: "default" | "filtered" } | null;
-  showOutput?: boolean;
+  onOpenContact: (contactId: string) => void;
 }) {
   const { t } = useI18n();
-  const [editingContact, setEditingContact] = useState<PeopleRowModel["contact"] | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<(typeof PEOPLE_PAGE_SIZES)[number]>(10);
 
@@ -453,11 +433,6 @@ function PeopleTable({
             />
           </div>
         }
-        output={
-          showOutput ? (
-            <PeopleTableOutput rows={rows} statusLabel={statusLabel} />
-          ) : undefined
-        }
       />
       <ExitsTable>
         <ExitsTableHeader
@@ -471,13 +446,25 @@ function PeopleTable({
           }
         >
           <ExitsTableRow>
-            <ExitsTableHead colSize="flex">{t("people.displayName")}</ExitsTableHead>
-            <ExitsTableHead>{t("people.column.contact")}</ExitsTableHead>
-            <ExitsTableHead>{t("people.column.email")}</ExitsTableHead>
-            <ExitsTableHead>{t("people.column.status")}</ExitsTableHead>
-            <ExitsTableHead>{t("people.detail.iLentAction")}</ExitsTableHead>
-            <ExitsTableHead>{t("people.detail.iOweAction")}</ExitsTableHead>
-            <ExitsTableHead cellAlign="center" colSize="actions" className="people-table-actions">
+            <ExitsTableHead
+              colSize="flex"
+              sortDirection={sort === "name" ? "asc" : null}
+              onSort={() => onSort("name")}
+            >
+              {t("people.displayName")}
+            </ExitsTableHead>
+            <ExitsTableHead
+              sortDirection={sort === "status" ? "asc" : null}
+              onSort={() => onSort("status")}
+            >
+              {t("people.column.status")}
+            </ExitsTableHead>
+            <ExitsTableHead
+              cellAlign="center"
+              colSize="actions"
+              sortable={false}
+              className="people-table-actions"
+            >
               {t("people.column.actions")}
             </ExitsTableHead>
           </ExitsTableRow>
@@ -485,7 +472,7 @@ function PeopleTable({
         <ExitsTableBody>
           {pageRows.length === 0 && empty ? (
             <ExitsTableRow>
-              <ExitsTableCell colSpan={7}>
+              <ExitsTableCell colSpan={3}>
                 <EmptyState
                   align="center"
                   size="compact"
@@ -500,109 +487,61 @@ function PeopleTable({
             </ExitsTableRow>
           ) : (
             pageRows.map((row) => {
-            const href = `/personal/people/${row.contact.id}`;
-            const phone = row.contact.phone?.trim() || "—";
-            const email = row.contact.email?.trim() || "—";
-            return (
-              <ExitsTableRow key={row.contact.id} data-testid={`people-table-row-${row.contact.id}`}>
-                <ExitsTableCell emphasis="semibold" truncate title={row.contact.displayName}>
-                  <Link to={href} className="people-table-name truncate no-underline">
-                    {row.contact.displayName}
-                  </Link>
-                </ExitsTableCell>
-                <ExitsTableCell truncate title={phone === "—" ? undefined : phone}>
-                  {phone}
-                </ExitsTableCell>
-                <ExitsTableCell truncate title={email === "—" ? undefined : email}>
-                  {email}
-                </ExitsTableCell>
-                <ExitsTableCell>
-                  <StatusChip
-                    tone={statusTone(row.connectionStatus)}
-                    appearance="emphasis"
-                    shape="square"
+              const openLabel = `${t("people.contactSheet.open")} ${row.contact.displayName}`;
+              return (
+                <ExitsTableRow
+                  key={row.contact.id}
+                  interactive
+                  className="people-table-row--open"
+                  data-testid={`people-table-row-${row.contact.id}`}
+                  data-status={row.connectionStatus}
+                  onClick={() => onOpenContact(row.contact.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onOpenContact(row.contact.id);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="link"
+                  aria-label={openLabel}
+                >
+                  <ExitsTableCell emphasis="semibold" truncate title={row.contact.displayName}>
+                    <span className="people-table-identity">
+                      <PersonAvatar
+                        name={row.contact.displayName}
+                        size="sm"
+                        className="people-table-identity__avatar"
+                      />
+                      <span
+                        className="people-table-name truncate"
+                        data-testid={`people-table-name-${row.contact.id}`}
+                      >
+                        {row.contact.displayName}
+                      </span>
+                    </span>
+                  </ExitsTableCell>
+                  <ExitsTableCell>
+                    <StatusChip
+                      tone={statusTone(row.connectionStatus)}
+                      appearance="emphasis"
+                      shape="square"
+                      data-testid={`people-table-status-${row.contact.id}`}
+                    >
+                      {statusLabel(row.connectionStatus)}
+                    </StatusChip>
+                  </ExitsTableCell>
+                  <ExitsTableCell
+                    cellAlign="center"
+                    colSize="actions"
+                    className="people-table-actions"
                   >
-                    {statusLabel(row.connectionStatus)}
-                  </StatusChip>
-                </ExitsTableCell>
-                <ExitsTableCell>
-                  <PeopleUtangTotal
-                    total={row.lentTotal}
-                    count={row.lentCount}
-                    href={`/personal/utang/lent?contact=${row.contact.id}`}
-                    testId={`people-table-lent-${row.contact.id}`}
-                  />
-                </ExitsTableCell>
-                <ExitsTableCell>
-                  <PeopleUtangTotal
-                    total={row.oweTotal}
-                    count={row.oweCount}
-                    href={`/personal/utang/owe?contact=${row.contact.id}`}
-                    testId={`people-table-owe-${row.contact.id}`}
-                    owe
-                  />
-                </ExitsTableCell>
-                <ExitsTableCell cellAlign="center" colSize="actions" className="people-table-actions">
-                  <span className="people-table-actions__cluster inline-flex flex-nowrap items-center justify-center gap-1.5">
-                    {row.connectionStatus === "local" ? (
-                      <ExitsTooltip
-                        content={`${t("people.action.edit")} ${row.contact.displayName}`}
-                      >
-                        <Button
-                          type="button"
-                          intent="primary"
-                          appearance="outline"
-                          shape="round"
-                          size="icon"
-                          className="people-table-action people-table-action--edit people-table-edit"
-                          data-testid={`people-edit-${row.contact.id}`}
-                          aria-label={`${t("people.action.edit")} ${row.contact.displayName}`}
-                          onClick={() => setEditingContact(row.contact)}
-                        >
-                          <Pencil className="size-4" aria-hidden />
-                        </Button>
-                      </ExitsTooltip>
-                    ) : null}
-                    <ExitsTooltip content={t("personal.utang.filterOwedToMe")}>
-                      <Button
-                        asChild
-                        intent="success"
-                        appearance="outline"
-                        shape="round"
-                        size="icon"
-                        className="people-table-action people-table-action--lent"
-                      >
-                        <Link
-                          to={`/personal/utang/lent?contact=${row.contact.id}`}
-                          data-testid={`people-lent-${row.contact.id}`}
-                          aria-label={t("personal.utang.filterOwedToMe")}
-                        >
-                          <Wallet className="size-4" aria-hidden />
-                        </Link>
-                      </Button>
-                    </ExitsTooltip>
-                    <ExitsTooltip content={t("personal.utang.filterIOwe")}>
-                      <Button
-                        asChild
-                        intent="info"
-                        appearance="outline"
-                        shape="round"
-                        size="icon"
-                        className="people-table-action people-table-action--owe"
-                      >
-                        <Link
-                          to={`/personal/utang/owe?contact=${row.contact.id}`}
-                          data-testid={`people-owe-${row.contact.id}`}
-                          aria-label={t("personal.utang.filterIOwe")}
-                        >
-                          <HandCoins className="size-4" aria-hidden />
-                        </Link>
-                      </Button>
-                    </ExitsTooltip>
-                  </span>
-                </ExitsTableCell>
-              </ExitsTableRow>
-            );
+                    <span className="people-table-open-chevron" aria-hidden>
+                      <ChevronRightIcon className="people-table-open-chevron__icon" />
+                    </span>
+                  </ExitsTableCell>
+                </ExitsTableRow>
+              );
             })
           )}
         </ExitsTableBody>
@@ -637,17 +576,6 @@ function PeopleTable({
           rowCountLabel={t("exitsTable.rowCount")}
         />
       </div>
-      {editingContact ? (
-        <EditLocalContactDialog
-          open
-          contact={editingContact}
-          onOpenChange={(open) => {
-            if (!open) {
-              setEditingContact(null);
-            }
-          }}
-        />
-      ) : null}
     </ExitsTableContainer>
   );
 }
@@ -664,43 +592,33 @@ export function PeopleListSection({
   onAddExits: () => void;
 }) {
   const { t } = useI18n();
-  const tableLayout = useMediaMin(1024);
+  const tableLayout = useMediaMin(PEOPLE_TABLE_MIN_PX);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PeopleListFilter>("all");
   const [sort, setSort] = useState<PeopleListSort>("name");
   const sortMenu = useDismissibleOpen(false);
-  const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
+  const [stackedContactId, setStackedContactId] = useState<string | null>(null);
+
+  const listStatusLabel = (status: PeopleConnectionStatus) => peopleListStatusLabel(status, t);
 
   const filteredRows = useMemo(
-    () => filterPeopleRows(rows, filter, search, sort),
-    [filter, rows, search, sort],
+    () => filterPeopleRows(rows, filter, search, sort, listStatusLabel),
+    [filter, rows, search, sort, t],
+  );
+
+  const stackedRow = useMemo(
+    () => filteredRows.find((row) => row.contact.id === stackedContactId) ?? null,
+    [filteredRows, stackedContactId],
   );
 
   useEffect(() => {
-    if (!expandedContactId) {
+    if (!stackedContactId) {
       return;
     }
-    if (!filteredRows.some((row) => row.contact.id === expandedContactId)) {
-      setExpandedContactId(null);
+    if (!filteredRows.some((row) => row.contact.id === stackedContactId)) {
+      setStackedContactId(null);
     }
-  }, [expandedContactId, filteredRows]);
-
-  function statusLabel(status: PeopleConnectionStatus): string {
-    switch (status) {
-      case "connected":
-        return t("people.status.connected");
-      case "request_sent":
-        return t("people.status.requestSent");
-      case "request_received":
-        return t("people.status.requestReceived");
-      case "blocked":
-        return t("people.status.blocked");
-      case "local":
-        return t("people.status.local");
-      default:
-        return t("people.status.notConnected");
-    }
-  }
+  }, [filteredRows, stackedContactId]);
 
   const exportLabels: PeopleTableExportLabels = {
     name: t("people.displayName"),
@@ -712,7 +630,7 @@ export function PeopleListSection({
   };
 
   function exportModel() {
-    return buildPeopleTableExportModel(filteredRows, statusLabel);
+    return buildPeopleTableExportModel(filteredRows, (status) => peopleDetailStatusLabel(status, t));
   }
 
   const filterCounts = useMemo(() => {
@@ -832,29 +750,31 @@ export function PeopleListSection({
               <PeopleMobileRow
                 key={row.contact.id}
                 row={row}
-                statusLabel={statusLabel(row.connectionStatus)}
-                expanded={expandedContactId === row.contact.id}
-                onExpandedChange={(next) =>
-                  setExpandedContactId(next ? row.contact.id : null)
-                }
+                statusLabel={listStatusLabel(row.connectionStatus)}
+                onOpenContact={() => setStackedContactId(row.contact.id)}
               />
             ))}
           </ul>
         )}
+
         {tableLayout ? (
-          <PeopleTable
+          <PeopleCompactTable
             rows={filteredRows}
-            statusLabel={statusLabel}
+            statusLabel={listStatusLabel}
             search={search}
             onSearch={setSearch}
             sort={sort}
             onSort={setSort}
             sortMenuOpen={sortMenu.open}
             onSortMenuOpenChange={sortMenu.setOpen}
-            showOutput={false}
+            onOpenContact={setStackedContactId}
             empty={
               rows.length === 0
-                ? { title: t("people.emptyTitle"), detail: t("people.emptyBody"), variant: "default" }
+                ? {
+                    title: t("people.emptyTitle"),
+                    detail: t("people.emptyBody"),
+                    variant: "default",
+                  }
                 : filteredRows.length === 0
                   ? {
                       title: t("people.noResultsTitle"),
@@ -865,6 +785,7 @@ export function PeopleListSection({
             }
           />
         ) : null}
+
         <PeopleListSummaryBar
           total={rows.length}
           connected={filterCounts.connected}
@@ -875,6 +796,20 @@ export function PeopleListSection({
           onPdf={() => downloadPeopleTablePdf(exportModel(), exportLabels)}
         />
       </Card>
+      <PersonalContactStackedSheet
+        open={stackedRow != null}
+        row={stackedRow}
+        statusLabel={
+          stackedRow
+            ? peopleDetailStatusLabel(stackedRow.connectionStatus, t)
+            : t("people.status.notConnected")
+        }
+        onOpenChange={(next) => {
+          if (!next) {
+            setStackedContactId(null);
+          }
+        }}
+      />
     </section>
   );
 }

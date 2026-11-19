@@ -17,6 +17,7 @@ const PERSONAL_SYMBOLS = [
   "business_center",
   "check_box",
   "chevron_left",
+  "chevron_right",
   "dark_mode",
   "edit",
   "expand_more",
