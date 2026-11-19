@@ -1,0 +1,419 @@
+/*
+ * Personal shell premium chrome — background atmosphere, topbar, sidebar.
+ * Scoped to Personal only. Uses Preferences primary (--exits-primary) and
+ * Personal palette companions (--personal-theme / --personal-bg-*).
+ * Layered-solid surfaces (not a new glass system). No continuous animation.
+ */
+
+.personal-crystal-screen {
+  --personal-chrome-radius: var(--exits-radius-lg, 0.75rem);
+  --personal-chrome-surface: color-mix(
+    in srgb,
+    #ffffff 90%,
+    var(--exits-shell-content-bg, #e8ecf2)
+  );
+  --personal-chrome-border: color-mix(
+    in srgb,
+    #cbd5e1 78%,
+    var(--exits-primary) 14%
+  );
+  --personal-chrome-elev:
+    0 1px 0 color-mix(in srgb, #ffffff 88%, transparent) inset,
+    0 1px 2px color-mix(in srgb, #64748b 7%, transparent),
+    0 6px 16px color-mix(in srgb, #64748b 8%, transparent);
+  --personal-chrome-divider: color-mix(in srgb, #e2e8f0 82%, var(--exits-primary) 8%);
+  /* Neutral page canvas (slightly less cool than shell default); primary tint is upper-only. */
+  --personal-atmosphere-canvas: #eef1f4;
+  /* Topbar blends into canvas — transparent so atmosphere wash is continuous (no bar strip). */
+  --personal-topbar-surface: transparent;
+  --personal-topbar-border: transparent;
+  --personal-topbar-elev: none;
+  /*
+   * Mix into the canvas (not `transparent`). `transparent` is rgba(0,0,0,0), so
+   * color-mix can resolve toward black — catastrophic when paired with SVG's
+   * default fill (#000) on large closed paths.
+   */
+  --personal-atmosphere-wave-a: color-mix(
+    in srgb,
+    var(--exits-primary) 28%,
+    var(--personal-atmosphere-canvas)
+  );
+  --personal-atmosphere-wave-b: color-mix(
+    in srgb,
+    var(--exits-primary) 20%,
+    var(--personal-atmosphere-canvas)
+  );
+  --personal-atmosphere-wave-c: color-mix(
+    in srgb,
+    var(--exits-primary) 14%,
+    var(--personal-atmosphere-canvas)
+  );
+  background-color: var(--personal-atmosphere-canvas);
+}
+
+[data-theme="dark"] .personal-crystal-screen {
+  --personal-chrome-surface: color-mix(
+    in srgb,
+    #1e293b 78%,
+    var(--exits-shell-sidebar-bg, #12161e)
+  );
+  --personal-chrome-border: color-mix(
+    in srgb,
+    #475569 72%,
+    var(--exits-primary) 18%
+  );
+  --personal-chrome-elev:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 1px 2px color-mix(in srgb, #000 28%, transparent),
+    0 8px 20px color-mix(in srgb, #000 32%, transparent);
+  --personal-chrome-divider: color-mix(in srgb, #334155 80%, var(--exits-primary) 12%);
+  --personal-atmosphere-canvas: var(--exits-bg, #0f141b);
+  /* Topbar blends into canvas — transparent so atmosphere wash is continuous (no bar strip). */
+  --personal-topbar-surface: transparent;
+  --personal-topbar-border: transparent;
+  --personal-topbar-elev: none;
+  --personal-atmosphere-wave-a: color-mix(
+    in srgb,
+    var(--exits-primary) 32%,
+    var(--personal-atmosphere-canvas)
+  );
+  --personal-atmosphere-wave-b: color-mix(
+    in srgb,
+    var(--exits-primary) 22%,
+    var(--personal-atmosphere-canvas)
+  );
+  --personal-atmosphere-wave-c: color-mix(
+    in srgb,
+    var(--exits-primary) 15%,
+    var(--personal-atmosphere-canvas)
+  );
+  background-color: var(--personal-atmosphere-canvas);
+}
+
+/* Atmospheric wash + SVG waves — upper greeting zone only, fades downward. */
+.personal-shell-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Out of flow — never participate in crystal flex sizing / height growth. */
+  flex: none;
+  width: auto;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+}
+
+.personal-shell-atmosphere__canvas {
+  position: absolute;
+  inset: 0;
+  /* Upper greeting wash only — fade to neutral canvas by / below KPI strip. */
+  background:
+    radial-gradient(
+      90% 40% at 14% 0%,
+      color-mix(in srgb, var(--exits-primary) 15%, transparent) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      62% 34% at 86% 2%,
+      color-mix(in srgb, var(--exits-primary) 8%, transparent) 0%,
+      transparent 52%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--exits-primary-soft) 34%, transparent) 0%,
+      color-mix(in srgb, var(--exits-primary-soft) 12%, transparent) 14%,
+      transparent 32%
+    );
+}
+
+[data-theme="dark"] .personal-shell-atmosphere__canvas {
+  background:
+    radial-gradient(
+      90% 40% at 16% -6%,
+      color-mix(in srgb, var(--exits-primary) 22%, transparent) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      62% 34% at 90% 2%,
+      color-mix(in srgb, var(--exits-primary) 11%, transparent) 0%,
+      transparent 52%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--exits-primary) 10%, transparent) 0%,
+      color-mix(in srgb, var(--exits-primary) 4%, transparent) 16%,
+      transparent 34%
+    );
+}
+
+.personal-shell-atmosphere__waves {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  width: 100%;
+  /* Compact upper band only — absolute so it never pushes shell content. */
+  height: min(18vh, 9.5rem);
+  max-height: 9.5rem;
+  color: var(--exits-primary);
+  opacity: 1;
+  /* SVG initial fill is black — neutralize before path fills apply. */
+  fill: none;
+  overflow: hidden;
+  display: block;
+  /* Visible under topbar / greeting; fade before KPI strip. */
+  mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 88%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 88%);
+}
+
+.personal-shell-atmosphere__wave {
+  fill: currentColor;
+}
+
+.personal-shell-atmosphere__wave--a {
+  opacity: 0.26;
+  color: var(--personal-atmosphere-wave-a);
+  fill: var(--personal-atmosphere-wave-a);
+}
+
+.personal-shell-atmosphere__wave--b {
+  opacity: 0.32;
+  color: var(--personal-atmosphere-wave-b);
+  fill: var(--personal-atmosphere-wave-b);
+}
+
+.personal-shell-atmosphere__wave--c {
+  opacity: 0.2;
+  color: var(--personal-atmosphere-wave-c);
+  fill: var(--personal-atmosphere-wave-c);
+}
+
+[data-theme="dark"] .personal-shell-atmosphere__wave--a {
+  opacity: 0.34;
+}
+
+[data-theme="dark"] .personal-shell-atmosphere__wave--b {
+  opacity: 0.28;
+}
+
+[data-theme="dark"] .personal-shell-atmosphere__wave--c {
+  opacity: 0.2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-shell-atmosphere__waves,
+  .personal-shell-atmosphere__canvas {
+    transition: none;
+  }
+}
+
+/* Keep shell content above atmosphere. */
+.personal-crystal-screen > .personal-shell,
+.personal-crystal-screen > .personal-bottom-nav {
+  position: relative;
+  z-index: 1;
+}
+
+/* Topbar — blend only: transparent fill, no border/elevation/radius (continuous with canvas). */
+.personal-shell .app-top-bar--personal {
+  isolation: isolate;
+  background: var(--personal-topbar-surface, transparent) !important;
+  background-color: var(--personal-topbar-surface, transparent) !important;
+  border-bottom: none !important;
+  border-bottom-color: transparent !important;
+  box-shadow: var(--personal-topbar-elev, none) !important;
+  border-radius: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* No Soft Glass edge lips — atmosphere wash shows through the transparent topbar. */
+.personal-shell .app-top-bar--personal::before,
+.personal-shell .app-top-bar--personal::after {
+  content: none;
+  display: none;
+}
+
+[data-theme="dark"] .personal-shell .app-top-bar--personal::before,
+[data-theme="dark"] .personal-shell .app-top-bar--personal::after {
+  content: none;
+  display: none;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__actions--personal {
+  gap: 0.2rem;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action,
+.personal-shell .app-top-bar--personal .shell-connection-trigger,
+.personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"],
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"],
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"],
+.personal-shell .app-top-bar--personal [data-testid="shell-ui-standards-button"] {
+  color: color-mix(in srgb, var(--exits-text-muted, #64748b) 88%, var(--exits-primary) 8%);
+  border-radius: var(--exits-radius-md, 0.5rem);
+  transition:
+    color var(--exits-shell-transition, 130ms) ease,
+    background-color var(--exits-shell-transition, 130ms) ease,
+    box-shadow var(--exits-shell-transition, 130ms) ease;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action:hover,
+.personal-shell .app-top-bar--personal .shell-connection-trigger:hover,
+.personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"]:hover,
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"]:hover,
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover,
+.personal-shell .app-top-bar--personal [data-testid="shell-ui-standards-button"]:hover {
+  color: color-mix(in srgb, var(--exits-text, #0f172a) 82%, var(--exits-primary) 12%);
+  background: color-mix(in srgb, var(--exits-primary) 8%, #ffffff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exits-primary) 12%, transparent);
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action:focus-visible,
+.personal-shell .app-top-bar--personal .shell-connection-trigger:focus-visible,
+.personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"]:focus-visible,
+.personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"]:focus-visible,
+.personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:focus-visible,
+.personal-shell .app-top-bar--personal [data-testid="shell-ui-standards-button"]:focus-visible,
+.personal-shell .app-top-bar--personal [data-testid="shell-sidebar-mode-button"]:focus-visible,
+.personal-shell .app-top-bar--personal [data-testid="personal-mobile-nav-toggle"]:focus-visible {
+  outline: 2px solid var(--exits-focus, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__action[aria-current="page"],
+.personal-shell .app-top-bar--personal .app-top-bar__action[data-active="true"] {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 12%, #ffffff);
+}
+
+[data-theme="dark"] .personal-shell .app-top-bar--personal .app-top-bar__action:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal .shell-connection-trigger:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-theme-mode"]:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="personal-notification-bell"]:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-preferences-button"]:hover,
+[data-theme="dark"] .personal-shell .app-top-bar--personal [data-testid="shell-ui-standards-button"]:hover {
+  color: #f8fafc;
+  background: color-mix(in srgb, var(--exits-primary) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exits-primary) 22%, transparent);
+}
+
+/* Sidebar — flush to crystal when --ui-standards-crystal-radius is 0 (locked). */
+.personal-shell .personal-sidebar.admin-sidebar {
+  background: var(--personal-chrome-surface) !important;
+  border: 0 !important;
+  border-inline-end: 1px solid var(--personal-chrome-divider) !important;
+  /* Follow crystal frame radius — flush screen uses 0 (no floating top inset look). */
+  border-radius: var(--ui-standards-crystal-radius, 0) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Flush crystal: no Soft Glass side lips (floating-card look reads as top/side gap). */
+.personal-shell .personal-sidebar.admin-sidebar::before,
+.personal-shell .personal-sidebar.admin-sidebar::after {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+[data-theme="dark"] .personal-shell .personal-sidebar.admin-sidebar {
+  background: var(--personal-chrome-surface) !important;
+}
+
+[data-theme="dark"] .personal-shell .personal-sidebar.admin-sidebar::before,
+[data-theme="dark"] .personal-shell .personal-sidebar.admin-sidebar::after {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__brand {
+  border-bottom: 1px solid var(--personal-chrome-divider);
+  padding-inline: 0.85rem;
+  /*
+   * Top-align brand flush to chrome top. Vertical centering left ~14px empty white
+   * above the logo that reads as a false “gray top gap” in screenshots.
+   * Only safe-area (notches) may inset — Playwright/desktop stay at 0.
+   */
+  align-items: flex-start;
+  padding-block-start: env(safe-area-inset-top, 0px);
+  padding-block-end: 0.35rem;
+}
+
+.personal-shell .app-top-bar--personal .app-top-bar__row--personal {
+  /* Match brand: controls flush to top; notch via safe-area only. */
+  align-items: flex-start;
+  padding-block-start: env(safe-area-inset-top, 0px);
+  padding-block-end: 0.35rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__nav {
+  padding-block: 0.55rem;
+  padding-inline: 0.45rem;
+  gap: 0.15rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link {
+  min-height: 2.5rem;
+  gap: 0.65rem;
+  padding-inline: 0.7rem;
+  border-radius: var(--exits-radius-md, 0.5rem);
+  border-inline-start-width: 3px;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link--active {
+  background: color-mix(in srgb, var(--exits-primary) 12%, #ffffff);
+  color: var(--exits-primary);
+  border-inline-start-color: var(--exits-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exits-primary) 10%, transparent);
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link--active .admin-sidebar__icon {
+  color: var(--exits-primary);
+}
+
+[data-theme="dark"] .personal-shell .personal-sidebar .admin-sidebar__link--active {
+  background: color-mix(in srgb, var(--exits-primary) 18%, transparent);
+  color: color-mix(in srgb, #fff 78%, var(--exits-primary));
+  border-inline-start-color: var(--exits-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exits-primary) 20%, transparent);
+}
+
+[data-theme="dark"] .personal-shell .personal-sidebar .admin-sidebar__link--active .admin-sidebar__icon {
+  color: color-mix(in srgb, #fff 70%, var(--exits-primary));
+}
+
+.personal-shell .personal-sidebar .admin-sidebar__link:hover:not(.admin-sidebar__link--active) {
+  background: color-mix(in srgb, var(--exits-primary) 6%, transparent);
+  color: color-mix(in srgb, var(--exits-text) 90%, var(--exits-primary));
+}
+
+@media (min-width: 1024px) {
+  .personal-shell .personal-sidebar.admin-sidebar {
+    border-radius: var(--ui-standards-crystal-radius, 0) !important;
+  }
+
+  /* Keep topbar flush with canvas — no chrome radius that reads as a bar. */
+  .personal-shell .app-top-bar--personal {
+    border-radius: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+}

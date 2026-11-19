@@ -1,0 +1,316 @@
+/*
+ * Personal Home surface style toggle (page-scoped only).
+ * data-surface-style="modern-solid" | "ehg-glass" on .personal-home-page
+ * Does NOT restyle shell atmosphere, topbar, sidebar, or mobile nav.
+ * Reuses Org EHG QA glass wash / Modern Solid layered fills — no new component trees.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Modern Solid (default) — solid / layered-solid cards; flatten home QAs     */
+/* -------------------------------------------------------------------------- */
+
+.personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+.personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+.personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active {
+  --personal-qa-edge: color-mix(in srgb, #e2e8f0 86%, #94a3b8);
+  --personal-qa-fill: #ffffff;
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 22%, var(--personal-qa-edge));
+  background: #fff;
+  background-image: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.88) inset,
+    0 1px 2px color-mix(in srgb, #64748b 6%, transparent),
+    0 4px 12px color-mix(in srgb, #64748b 7%, transparent);
+}
+
+.personal-home-page[data-surface-style="modern-solid"] .personal-qa-glass--no-shadow,
+.personal-home-page[data-surface-style="modern-solid"] .personal-qa-glass--no-shadow:hover,
+.personal-home-page[data-surface-style="modern-solid"] .personal-qa-glass--no-shadow:active {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.88) inset,
+    0 1px 2px color-mix(in srgb, #64748b 6%, transparent),
+    0 4px 12px color-mix(in srgb, #64748b 7%, transparent);
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft,
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:hover,
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass.personal-qa-glass--md.personal-qa-glass--card-soft:active {
+  --personal-qa-edge: #475569;
+  --personal-qa-fill: #1e293b;
+  --personal-qa-chip-ink: #f1f5f9;
+  border-color: color-mix(in srgb, var(--personal-qa-chip) 22%, #475569);
+  color: var(--personal-qa-chip-ink);
+  background: #1e293b;
+  background-image: none;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset,
+    0 1px 2px color-mix(in srgb, #000 24%, transparent),
+    0 6px 16px color-mix(in srgb, #000 28%, transparent);
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass--no-shadow,
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass--no-shadow:hover,
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="modern-solid"]
+  .personal-qa-glass--no-shadow:active {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset,
+    0 1px 2px color-mix(in srgb, #000 24%, transparent),
+    0 6px 16px color-mix(in srgb, #000 28%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* EHG Glass — quiet premium layered-glass (Home only; no blur)               */
+/* Near-white translucent shells, neutral borders, soft elevation.            */
+/* Semantic accents stay on chips / icons / warn / selected — not every edge. */
+/* -------------------------------------------------------------------------- */
+
+.personal-home-page[data-surface-style="ehg-glass"] {
+  --personal-home-ehg-shell-border: color-mix(in srgb, #e2e8f0 86%, #94a3b8);
+  --personal-home-ehg-shell-fill: color-mix(in srgb, #ffffff 92%, transparent);
+  --personal-home-ehg-shell-elev:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 1px 2px color-mix(in srgb, #64748b 5%, transparent),
+    0 6px 18px color-mix(in srgb, #64748b 8%, transparent);
+  --personal-home-ehg-inner-border: color-mix(in srgb, #e2e8f0 90%, #94a3b8);
+  --personal-home-ehg-inner-fill: #ffffff;
+  --personal-home-ehg-inner-elev:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 1px 2px color-mix(in srgb, #64748b 4%, transparent),
+    0 4px 12px color-mix(in srgb, #64748b 6%, transparent);
+  --personal-home-ehg-kpi-elev:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px color-mix(in srgb, #64748b 5%, transparent),
+    0 8px 20px color-mix(in srgb, #64748b 9%, transparent);
+}
+
+[data-theme="dark"] .personal-home-page[data-surface-style="ehg-glass"] {
+  --personal-home-ehg-shell-border: color-mix(in srgb, #64748b 38%, transparent);
+  --personal-home-ehg-shell-fill: color-mix(in srgb, #1e293b 88%, transparent);
+  --personal-home-ehg-shell-elev:
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent),
+    0 1px 2px color-mix(in srgb, #000 22%, transparent),
+    0 8px 22px color-mix(in srgb, #000 30%, transparent);
+  --personal-home-ehg-inner-border: color-mix(in srgb, #64748b 34%, transparent);
+  --personal-home-ehg-inner-fill: color-mix(in srgb, #fff 4%, #1e293b);
+  --personal-home-ehg-inner-elev:
+    inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent),
+    0 1px 2px color-mix(in srgb, #000 20%, transparent),
+    0 6px 16px color-mix(in srgb, #000 28%, transparent);
+  --personal-home-ehg-kpi-elev:
+    inset 0 1px 0 color-mix(in srgb, #fff 9%, transparent),
+    0 1px 2px color-mix(in srgb, #000 22%, transparent),
+    0 10px 24px color-mix(in srgb, #000 34%, transparent);
+}
+
+/* Outer section shells — near-white / quiet dark translucent; neutral edge. */
+.personal-home-page[data-surface-style="ehg-glass"] .personal-section.catalog-form-section {
+  border-color: var(--personal-home-ehg-shell-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 42%, transparent), transparent 48%),
+    var(--personal-home-ehg-shell-fill) !important;
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, #fff 42%, transparent), transparent 48%),
+    linear-gradient(0deg, var(--personal-home-ehg-shell-fill), var(--personal-home-ehg-shell-fill)) !important;
+  box-shadow: var(--personal-home-ehg-shell-elev) !important;
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-section.catalog-form-section {
+  border-color: var(--personal-home-ehg-shell-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 7%, transparent), transparent 46%),
+    var(--personal-home-ehg-shell-fill) !important;
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, #fff 7%, transparent), transparent 46%),
+    linear-gradient(0deg, var(--personal-home-ehg-shell-fill), var(--personal-home-ehg-shell-fill)) !important;
+  box-shadow: var(--personal-home-ehg-shell-elev) !important;
+}
+
+/* Needs Attention — keep a restrained warn edge only. */
+.personal-home-page[data-surface-style="ehg-glass"]
+  .personal-section.personal-needs-attention.catalog-form-section {
+  border-color: color-mix(
+    in srgb,
+    #e2e8f0 78%,
+    var(--personal-attention-warn, #ff5722)
+  ) !important;
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-section.personal-needs-attention.catalog-form-section {
+  border-color: color-mix(
+    in srgb,
+    var(--personal-attention-warn, #ff5722) 18%,
+    #475569
+  ) !important;
+}
+
+/*
+ * KPI cards — prominent via elevation + soft layered fill.
+ * Accent stays on chip / hover whisper, not a strong outline wash.
+ */
+.personal-home-page[data-surface-style="ehg-glass"] .personal-home-kpi-card {
+  border-color: color-mix(in srgb, #e2e8f0 88%, var(--personal-home-kpi-accent));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 58%, transparent), transparent 46%),
+    color-mix(in srgb, var(--personal-home-kpi-accent) 3.5%, var(--personal-home-ehg-inner-fill));
+  box-shadow: var(--personal-home-ehg-kpi-elev);
+}
+
+.personal-home-page[data-surface-style="ehg-glass"] .personal-home-kpi-card:hover {
+  border-color: color-mix(in srgb, var(--personal-home-kpi-accent) 22%, #cbd5e1);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 64%, transparent), transparent 48%),
+    color-mix(in srgb, var(--personal-home-kpi-accent) 5.5%, var(--personal-home-ehg-inner-fill));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 2px 4px color-mix(in srgb, #64748b 5%, transparent),
+    0 10px 22px color-mix(in srgb, #64748b 10%, transparent);
+}
+
+[data-theme="dark"] .personal-home-page[data-surface-style="ehg-glass"] .personal-home-kpi-card {
+  border-color: color-mix(in srgb, var(--personal-home-kpi-accent) 12%, #475569);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 8%, transparent), transparent 46%),
+    color-mix(in srgb, var(--personal-home-kpi-accent) 5%, #1e293b);
+  box-shadow: var(--personal-home-ehg-kpi-elev);
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-home-kpi-card:hover {
+  border-color: color-mix(in srgb, var(--personal-home-kpi-accent) 22%, #64748b);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 10%, transparent), transparent 46%),
+    color-mix(in srgb, var(--personal-home-kpi-accent) 7%, #1e293b);
+}
+
+/* Your Records tiles — white / lightly tinted; restrained border. */
+.personal-home-page[data-surface-style="ehg-glass"] .personal-your-records-tile {
+  border-color: color-mix(in srgb, #e2e8f0 90%, var(--personal-your-records-accent));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 48%, transparent), transparent 50%),
+    color-mix(in srgb, var(--personal-your-records-accent) 2.5%, var(--personal-home-ehg-inner-fill));
+  box-shadow: var(--personal-home-ehg-inner-elev);
+}
+
+.personal-home-page[data-surface-style="ehg-glass"] .personal-your-records-tile:hover {
+  border-color: color-mix(in srgb, var(--personal-your-records-accent) 18%, #cbd5e1);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 56%, transparent), transparent 50%),
+    color-mix(in srgb, var(--personal-your-records-accent) 4.5%, var(--personal-home-ehg-inner-fill));
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-your-records-tile {
+  border-color: color-mix(in srgb, var(--personal-your-records-accent) 10%, #475569);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 6%, transparent), transparent 48%),
+    color-mix(in srgb, var(--personal-your-records-accent) 4%, #1e293b);
+  box-shadow: var(--personal-home-ehg-inner-elev);
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-your-records-tile:hover {
+  border-color: color-mix(in srgb, var(--personal-your-records-accent) 18%, #64748b);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 8%, transparent), transparent 48%),
+    color-mix(in srgb, var(--personal-your-records-accent) 6%, #1e293b);
+}
+
+/* Stores to Pay + Recent Activity rows — quiet inner glass; no primary wash. */
+.personal-home-page[data-surface-style="ehg-glass"]
+  .personal-stores-to-pay-row.personal-home-infodata-card--row,
+.personal-home-page[data-surface-style="ehg-glass"] .personal-recent-activity__row {
+  border-color: var(--personal-home-ehg-inner-border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 40%, transparent), transparent 52%),
+    var(--personal-home-ehg-inner-fill);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, #fff 40%, transparent), transparent 52%),
+    linear-gradient(0deg, var(--personal-home-ehg-inner-fill), var(--personal-home-ehg-inner-fill));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.personal-home-page[data-surface-style="ehg-glass"]
+  .personal-stores-to-pay-row.personal-home-infodata-card--row:hover,
+.personal-home-page[data-surface-style="ehg-glass"] .personal-recent-activity__row:hover {
+  border-color: color-mix(in srgb, #cbd5e1 72%, #94a3b8);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 48%, transparent), transparent 52%),
+    color-mix(in srgb, #f8fafc 70%, var(--personal-home-ehg-inner-fill));
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, #fff 48%, transparent), transparent 52%),
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, #f8fafc 70%, var(--personal-home-ehg-inner-fill)),
+      color-mix(in srgb, #f8fafc 70%, var(--personal-home-ehg-inner-fill))
+    );
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-stores-to-pay-row.personal-home-infodata-card--row,
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-recent-activity__row {
+  border-color: var(--personal-home-ehg-inner-border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 5%, transparent), transparent 48%),
+    var(--personal-home-ehg-inner-fill);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, #fff 5%, transparent), transparent 48%),
+    linear-gradient(0deg, var(--personal-home-ehg-inner-fill), var(--personal-home-ehg-inner-fill));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+}
+
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-stores-to-pay-row.personal-home-infodata-card--row:hover,
+[data-theme="dark"]
+  .personal-home-page[data-surface-style="ehg-glass"]
+  .personal-recent-activity__row:hover {
+  border-color: color-mix(in srgb, #64748b 48%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff 7%, transparent), transparent 48%),
+    color-mix(in srgb, #fff 5.5%, #1e293b);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, #fff 7%, transparent), transparent 48%),
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, #fff 5.5%, #1e293b),
+      color-mix(in srgb, #fff 5.5%, #1e293b)
+    );
+}
+
+/* Toolbar control width — compact beside Trend period. */
+.personal-home-kpi-strip__surface-style {
+  width: min(100%, 12.5rem);
+  min-width: 0;
+}
+
+.personal-home-kpi-strip__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}

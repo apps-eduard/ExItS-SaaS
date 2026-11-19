@@ -15,12 +15,15 @@ import {
   Info,
   ListPlus,
   ListTodo,
+  PenLine,
   RefreshCw,
+  Share2,
   Store,
   TriangleAlert,
   UserPlus,
   Wallet,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 import { listPersonalNotifications } from "@/api/platform/personal-social-client";
@@ -44,6 +47,7 @@ import { cn } from "@/lib/cn";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { PersonalHomeKpiStrip } from "@/features/personal/PersonalHomeKpiStrip";
+import { usePersonalHomeSurfaceStyle } from "@/features/personal/personal-home-surface-style";
 import { PersonalYourRecordsCard } from "@/features/personal/PersonalYourRecordsCard";
 import {
   countActivePersonalHomeKpiRelationships,
@@ -55,7 +59,9 @@ import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import {
   buildHomeRecentActivityItems,
   formatHomeActivityWhen,
+  type HomeRecentActivityIcon,
 } from "@/features/personal/home-recent-activity";
+import { useHomeRecentActivitySources } from "@/features/personal/use-home-recent-activity-sources";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
   buildHomeAttentionItems,
@@ -69,9 +75,64 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import { listCachedPersonalTodos } from "@/offline/personal-todo-cache";
 
+function homeRecentActivityIcon(kind: HomeRecentActivityIcon): LucideIcon {
+  switch (kind) {
+    case "notification":
+      return BellRing;
+    case "utang-loan":
+      return HandCoins;
+    case "utang-payment":
+      return Wallet;
+    case "utang-adjustment":
+      return PenLine;
+    case "utang-shared":
+      return Share2;
+    case "order":
+      return Store;
+    case "todo":
+      return ListTodo;
+    default:
+      return History;
+  }
+}
+
+/** Greeting avatar — photo with initials fallback when the image fails to load. */
+function PersonalHomeHeroAvatar({
+  name,
+  photoSrc,
+}: {
+  name: string;
+  photoSrc: string | null;
+}) {
+  const [photoFailed, setPhotoFailed] = useState(false);
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [photoSrc]);
+
+  const showPhoto = Boolean(photoSrc) && !photoFailed;
+
+  return (
+    <span className="personal-home-hero__avatar" data-testid="personal-home-avatar">
+      {showPhoto ? (
+        <img
+          className="personal-home-hero__photo"
+          src={photoSrc!}
+          alt=""
+          data-testid="personal-home-avatar-photo"
+          onError={() => setPhotoFailed(true)}
+        />
+      ) : (
+        <PersonAvatar name={name} size="lg" className="personal-home-hero__avatar-fallback" />
+      )}
+    </span>
+  );
+}
+
 export function PersonalHomePage() {
   const { t } = useI18n();
   const { session } = useSession();
+  const [surfaceStyle, setSurfaceStyle] = usePersonalHomeSurfaceStyle();
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
   const avatarPhotoSrc = profilePhotoSrc(usePersonalAvatarPhoto());
   const greetingKey = useMemo(() => {
@@ -211,15 +272,44 @@ export function PersonalHomePage() {
     });
   }, [accounts, dashboardQuery.data?.pendingConfirmationCount]);
 
+  const activitySources = useHomeRecentActivitySources(accounts);
+  const todoActivityRows = todosQuery.isSuccess
+    ? todosQuery.data
+    : cachedTodos.length > 0
+      ? cachedTodos
+      : undefined;
+
   const recentActivityItems = useMemo(
     () =>
       buildHomeRecentActivityItems({
         notifications: notificationsQuery.data,
         accounts,
+        history: activitySources.history,
+        orders: activitySources.orders,
+        todos: todoActivityRows,
         t,
       }),
-    [accounts, notificationsQuery.data, t],
+    [
+      accounts,
+      activitySources.history,
+      activitySources.orders,
+      notificationsQuery.data,
+      t,
+      todoActivityRows,
+    ],
   );
+  const recentActivityLoading =
+    recentActivityItems.length === 0 &&
+    (notificationsQuery.isPending ||
+      activitySources.historyLoading ||
+      activitySources.ordersLoading);
+  const recentActivityUnavailable =
+    recentActivityItems.length === 0 &&
+    !recentActivityLoading &&
+    notificationsQuery.isError &&
+    !activitySources.hasHistoryData &&
+    !activitySources.hasOrdersData &&
+    !(todoActivityRows && todoActivityRows.length > 0);
 
   const counts = useMemo(() => {
     if (todosQuery.isSuccess) {
@@ -279,6 +369,7 @@ export function PersonalHomePage() {
     <div
       className="personal-page personal-home-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="personal-home-page"
+      data-surface-style={surfaceStyle}
     >
       <header
         ref={infoRootRef}
@@ -287,13 +378,7 @@ export function PersonalHomePage() {
       >
         <div className="personal-home-hero__main min-w-0">
           <span className="personal-home-hero__avatar-wrap" aria-hidden="true">
-            <span className="personal-home-hero__avatar" data-testid="personal-home-avatar">
-              {avatarPhotoSrc ? (
-                <img className="personal-home-hero__photo" src={avatarPhotoSrc} alt="" />
-              ) : (
-                <PersonAvatar name={displayName} size="lg" className="personal-home-hero__avatar-fallback" />
-              )}
-            </span>
+            <PersonalHomeHeroAvatar name={displayName} photoSrc={avatarPhotoSrc} />
           </span>
           <div className="personal-home-hero__copy min-w-0">
             <p className="personal-home-hero__greeting m-0">{t(greetingKey)}</p>
@@ -349,7 +434,11 @@ export function PersonalHomePage() {
           className="personal-home-layout__kpi min-w-0"
           data-testid="personal-home-layout-kpi"
         >
-          <PersonalHomeKpiStrip dashboard={dashboard} />
+          <PersonalHomeKpiStrip
+            dashboard={dashboard}
+            surfaceStyle={surfaceStyle}
+            onSurfaceStyleChange={setSurfaceStyle}
+          />
         </div>
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
       <PersonalYourRecordsCard
@@ -488,11 +577,11 @@ export function PersonalHomePage() {
             {t("personal.home.viewAllActivity")}
           </Link>
         </div>
-        {notificationsQuery.isPending && recentActivityItems.length === 0 ? (
+        {recentActivityLoading ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="personal-activity-loading">
             {t("personal.home.activityLoading")}
           </p>
-        ) : notificationsQuery.isError && recentActivityItems.length === 0 ? (
+        ) : recentActivityUnavailable ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="personal-activity-unavailable">
             {t("personal.home.activityUnavailable")}
           </p>
@@ -502,7 +591,9 @@ export function PersonalHomePage() {
           </p>
         ) : (
           <ul className="personal-recent-activity__list m-0 grid list-none gap-2 p-0" data-testid="personal-activity-list">
-            {recentActivityItems.map((item) => (
+            {recentActivityItems.map((item) => {
+              const Icon = homeRecentActivityIcon(item.icon);
+              return (
               <li key={item.id}>
                 <Link
                   to={item.href}
@@ -510,7 +601,7 @@ export function PersonalHomePage() {
                   data-testid={`personal-activity-item-${item.id}`}
                 >
                   <span className="personal-recent-activity__row-icon" aria-hidden="true">
-                    <History className="size-[0.95rem] shrink-0" />
+                    <Icon className="size-[0.95rem] shrink-0" />
                   </span>
                   <span className="personal-recent-activity__row-body min-w-0">
                     <span className="personal-recent-activity__row-title truncate">{item.title}</span>
@@ -523,7 +614,8 @@ export function PersonalHomePage() {
                   </time>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </section>

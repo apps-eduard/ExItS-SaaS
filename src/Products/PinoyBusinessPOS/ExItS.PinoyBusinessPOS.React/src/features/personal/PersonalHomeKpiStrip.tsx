@@ -19,6 +19,10 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey, TranslateFn } from "@/i18n/messages";
 import type { ReportDateRangeValue } from "@/features/reports/report-date-range";
 import { personalHomeKpiPeriodDeltaView } from "@/features/personal/personal-home-kpi-period-delta";
+import {
+  PERSONAL_HOME_SURFACE_STYLES,
+  type PersonalHomeSurfaceStyle,
+} from "@/features/personal/personal-home-surface-style";
 import { cn } from "@/lib/cn";
 
 type PersonalHomeKpiIdentity = "lent" | "owe";
@@ -122,13 +126,22 @@ function PersonalHomeKpiCard({
 export const PERSONAL_HOME_KPI_TEST_IDS = {
   strip: "personal-home-kpi-strip",
   trendRange: "personal-home-kpi-trend-range",
+  surfaceStyle: "personal-home-surface-style",
   myRecordLent: "personal-home-kpi-my-record-lent",
   myRecordOwe: "personal-home-kpi-my-record-owe",
   sharedLent: "personal-home-kpi-shared-lent",
   sharedOwe: "personal-home-kpi-shared-owe",
 } as const;
 
-export function PersonalHomeKpiStrip({ dashboard }: { dashboard: PersonalDashboardDto }) {
+export function PersonalHomeKpiStrip({
+  dashboard,
+  surfaceStyle,
+  onSurfaceStyleChange,
+}: {
+  dashboard: PersonalDashboardDto;
+  surfaceStyle?: PersonalHomeSurfaceStyle;
+  onSurfaceStyleChange?: (next: PersonalHomeSurfaceStyle) => void;
+}) {
   const { t } = useI18n();
   const [preset, setPreset] = useState<PersonalHomeKpiDatePreset>(PERSONAL_HOME_KPI_DEFAULT_PRESET);
   const [customRange, setCustomRange] = useState<ReportDateRangeValue>(() =>
@@ -153,6 +166,20 @@ export function PersonalHomeKpiStrip({ dashboard }: { dashboard: PersonalDashboa
       })),
     [t],
   );
+
+  const surfaceStyleOptions = useMemo(
+    () =>
+      PERSONAL_HOME_SURFACE_STYLES.map((key) => ({
+        value: key,
+        label:
+          key === "modern-solid"
+            ? t("personal.home.surfaceStyle.modernSolid")
+            : t("personal.home.surfaceStyle.ehgGlass"),
+      })),
+    [t],
+  );
+
+  const showSurfaceStyle = surfaceStyle !== undefined && onSurfaceStyleChange !== undefined;
 
   const cards: PersonalHomeKpiCardConfig[] = [
     {
@@ -229,19 +256,35 @@ export function PersonalHomeKpiStrip({ dashboard }: { dashboard: PersonalDashboa
     <div className="personal-home-kpi-strip-shell" data-testid="personal-home-kpi-strip-shell">
       <div className="personal-home-kpi-strip__toolbar">
         <p className="personal-home-kpi-strip__hint m-0">{t("personal.home.kpiTrendRangeHint")}</p>
-        <div className="personal-home-kpi-strip__range">
-          <ExitsOrgEhgSelect
-            label={t("personal.home.kpiTrendRangeLabel")}
-            value={preset}
-            options={presetOptions}
-            onChange={(value) => {
-              if (value) {
-                setPreset(value as PersonalHomeKpiDatePreset);
-              }
-            }}
-            testId={PERSONAL_HOME_KPI_TEST_IDS.trendRange}
-            className="personal-home-kpi-strip__range-select"
-          />
+        <div className="personal-home-kpi-strip__controls">
+          <div className="personal-home-kpi-strip__range">
+            <ExitsOrgEhgSelect
+              label={t("personal.home.kpiTrendRangeLabel")}
+              value={preset}
+              options={presetOptions}
+              onChange={(value) => {
+                if (value) {
+                  setPreset(value as PersonalHomeKpiDatePreset);
+                }
+              }}
+              testId={PERSONAL_HOME_KPI_TEST_IDS.trendRange}
+              className="personal-home-kpi-strip__range-select"
+            />
+          </div>
+          {showSurfaceStyle ? (
+            <ExitsOrgEhgSelect
+              label={t("personal.home.surfaceStyleLabel")}
+              value={surfaceStyle}
+              options={surfaceStyleOptions}
+              onChange={(value) => {
+                if (value === "modern-solid" || value === "ehg-glass") {
+                  onSurfaceStyleChange?.(value);
+                }
+              }}
+              testId={PERSONAL_HOME_KPI_TEST_IDS.surfaceStyle}
+              className="personal-home-kpi-strip__surface-style"
+            />
+          ) : null}
         </div>
         {preset === "custom" ? (
           <div

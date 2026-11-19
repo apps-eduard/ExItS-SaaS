@@ -83,17 +83,49 @@ export function PersonalShell() {
   return (
     <PersonalAvatarProvider>
       <div className="personal-crystal-screen" data-testid="personal-crystal-screen">
+        <div className="personal-shell-atmosphere" aria-hidden="true" data-testid="personal-shell-atmosphere">
+          <div className="personal-shell-atmosphere__canvas" />
+          <svg
+            className="personal-shell-atmosphere__waves"
+            viewBox="0 0 1440 200"
+            preserveAspectRatio="none"
+            fill="none"
+            focusable="false"
+          >
+            {/*
+              Thin ribbons in the UPPER greeting zone only.
+              Keep geometry near y=0..120 so the top of the viewport is not an empty band.
+              Do not close paths to the viewBox floor (oversized black slabs).
+            */}
+            <path
+              className="personal-shell-atmosphere__wave personal-shell-atmosphere__wave--a"
+              d="M0 36C168 12 312 4 480 20C696 44 816 92 1008 100C1176 108 1320 76 1440 52L1440 76C1320 100 1176 132 1008 124C816 116 696 68 480 52C312 40 168 48 0 64Z"
+            />
+            <path
+              className="personal-shell-atmosphere__wave personal-shell-atmosphere__wave--b"
+              d="M0 72C192 48 336 40 528 56C744 76 864 120 1040 128C1200 136 1320 112 1440 92L1440 112C1320 132 1200 156 1040 148C864 140 744 96 528 80C336 64 192 72 0 92Z"
+            />
+            <path
+              className="personal-shell-atmosphere__wave personal-shell-atmosphere__wave--c"
+              d="M0 108C216 92 360 88 552 100C768 116 900 148 1080 156C1248 164 1344 148 1440 136L1440 156C1344 168 1248 184 1080 176C900 168 768 136 552 124C360 116 216 120 0 132Z"
+            />
+          </svg>
+        </div>
         <div
           className={cn(
             "personal-shell admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
-            /* Small: no horizontal shell pad so top bar can be true full-bleed; gutters live on body. */
-            "px-0 pt-[env(safe-area-inset-top)]",
+            /*
+             * Flush chrome to viewport top — do NOT pad the shell with safe-area-inset-top.
+             * Atmosphere would show through that pad as a gray band above sidebar/topbar.
+             * Notch clearance lives on brand / topbar row (inner padding), not the shell.
+             */
+            "px-0 pt-0",
             /* Reserve space for absolute bottom nav inside the crystal frame. */
             isDesktop
               ? "pb-[env(safe-area-inset-bottom)]"
               : "pb-[calc(3.05rem+env(safe-area-inset-bottom))]",
             /* Desktop: full-height sidenav beside top bar + main. */
-            "lg:flex-row lg:gap-0 lg:pt-[env(safe-area-inset-top)] lg:pb-[env(safe-area-inset-bottom)] lg:ps-[env(safe-area-inset-left)] lg:pe-[env(safe-area-inset-right)]",
+            "lg:flex-row lg:gap-0 lg:pt-0 lg:pb-[env(safe-area-inset-bottom)] lg:ps-[env(safe-area-inset-left)] lg:pe-[env(safe-area-inset-right)]",
           )}
           data-testid="personal-shell"
         >

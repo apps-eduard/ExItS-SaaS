@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResponse } from "@/test/session-context";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -132,6 +132,23 @@ describe("Personal shell and home (RMAP-22B)", () => {
       expect(screen.getByTestId("personal-shell")).toBeInTheDocument();
     });
     expect(screen.getByTestId("personal-crystal-screen")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-shell-atmosphere")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-shell-atmosphere")).toHaveAttribute("aria-hidden", "true");
+    const waves = screen.getByTestId("personal-shell-atmosphere").querySelector("svg.personal-shell-atmosphere__waves");
+    expect(waves).not.toBeNull();
+    expect(waves).toHaveAttribute("fill", "none");
+    expect(waves).toHaveAttribute("viewBox", "0 0 1440 200");
+    const pathD = Array.from(waves!.querySelectorAll("path.personal-shell-atmosphere__wave")).map(
+      (p) => p.getAttribute("d") ?? "",
+    );
+    expect(pathD.length).toBe(3);
+    // Must stay thin ribbons — closing to the viewBox floor painted oversized black slabs.
+    for (const d of pathD) {
+      expect(d).not.toMatch(/V\s*420|V420/i);
+      expect(d.toUpperCase()).not.toContain("H0V");
+      // Ribbons stay in the upper greeting zone (not parked mid/lower viewBox).
+      expect(d).toMatch(/M0\s+(3[0-9]|[4-9]\d|1[0-3]\d)(?!\d)/);
+    }
     expect(screen.getByTestId("personal-bottom-nav")).toBeInTheDocument();
     expect(screen.queryByTestId("app-top-bar")).not.toBeInTheDocument();
     expect(screen.getByTestId("shell-connection-button")).toBeInTheDocument();
@@ -218,6 +235,11 @@ describe("Personal shell and home (RMAP-22B)", () => {
     );
     expect(screen.queryByText("Trend unavailable")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-home-kpi-trend-range")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-home-surface-style")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-home-page")).toHaveAttribute(
+      "data-surface-style",
+      "modern-solid",
+    );
     expect(screen.getByText("Balances above are current. Charts use the selected period only.")).toBeInTheDocument();
     await waitFor(() => {
       expect(
@@ -541,6 +563,43 @@ describe("Personal shell and home (RMAP-22B)", () => {
     const user = userEvent.setup();
     await user.type(screen.getByTestId("start-business-display-name"), "Ana's Sari-Sari");
     expect(slugInput).toHaveValue("ana-s-sari-sari");
+  });
+
+  it("falls back to initials when home avatar photo fails to load", async () => {
+    const base = createPersonalFetchMock();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/api/v1/personal/profile")) {
+          return jsonResponse(200, {
+            userIdentityId: personalUserId,
+            accountProfileId: personalProfileId,
+            username: "ana",
+            displayName: "Ana Reyes",
+            email: "ana@example.com",
+            accountClass: "Personal",
+            status: "Active",
+            phone: null,
+            profilePhotoUrl: "https://example.invalid/broken-avatar.jpg",
+          });
+        }
+        return base(input);
+      }),
+    );
+
+    renderAt("/personal");
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-home-page")).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-home-avatar-photo")).toBeInTheDocument();
+    });
+    fireEvent.error(screen.getByTestId("personal-home-avatar-photo"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("personal-home-avatar-photo")).not.toBeInTheDocument();
+      expect(screen.getByTestId("person-avatar")).toHaveTextContent("AR");
+    });
   });
 
   it("renders Stores and customer links routes inside Personal shell", async () => {
