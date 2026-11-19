@@ -50,6 +50,11 @@
   --personal-main-card-header-chip: var(--personal-tracker-accent, #22c55e);
 }
 
+.personal-home-page .personal-section.personal-your-records.catalog-form-section,
+.personal-your-records {
+  --personal-main-card-header-chip: var(--exits-primary);
+}
+
 .utang-money-page .utang-money-glass--owe.utang-money-glass--plain {
   --personal-main-card-header-chip: var(--exits-primary);
 }
@@ -75,6 +80,7 @@
 .personal-todo-summary__title,
 .personal-recent-activity__title,
 .personal-tracker-card__title,
+.personal-your-records__title,
 .personal-stores-to-pay__title {
   display: inline-flex;
   align-items: center;
@@ -97,6 +103,7 @@
 [data-theme="dark"] .personal-todo-summary__title,
 [data-theme="dark"] .personal-recent-activity__title,
 [data-theme="dark"] .personal-tracker-card__title,
+[data-theme="dark"] .personal-your-records__title,
 [data-theme="dark"] .personal-stores-to-pay__title {
   color: var(--personal-main-card-header-dark-ink);
 }
@@ -107,12 +114,16 @@
 .personal-todo-summary__pennant,
 .personal-recent-activity__pennant,
 .personal-tracker-card__title .personal-tracker-card__pennant,
+.personal-your-records__title .personal-your-records__pennant,
+.personal-your-records__title .personal-tracker-card__pennant,
 .personal-stores-to-pay__pennant,
 [data-theme="dark"] .personal-needs-attention__pennant,
 [data-theme="dark"] .personal-quick-actions__pennant,
 [data-theme="dark"] .personal-todo-summary__pennant,
 [data-theme="dark"] .personal-recent-activity__pennant,
 [data-theme="dark"] .personal-tracker-card__title .personal-tracker-card__pennant,
+[data-theme="dark"] .personal-your-records__title .personal-your-records__pennant,
+[data-theme="dark"] .personal-your-records__title .personal-tracker-card__pennant,
 [data-theme="dark"] .personal-stores-to-pay__pennant {
   display: inline-flex;
   align-items: center;
@@ -134,12 +145,14 @@
 .personal-todo-summary__pennant-icon,
 .personal-recent-activity__pennant-icon,
 .personal-tracker-card__pennant-icon,
+.personal-your-records__pennant-icon,
 .personal-stores-to-pay__pennant-icon,
 .personal-shell .personal-needs-attention__pennant-icon svg,
 .personal-shell .personal-quick-actions__pennant-icon svg,
 .personal-shell .personal-todo-summary__pennant-icon svg,
 .personal-shell .personal-recent-activity__pennant-icon svg,
 .personal-shell .personal-tracker-card__pennant-icon svg,
+.personal-shell .personal-your-records__pennant-icon svg,
 .personal-shell .personal-stores-to-pay__pennant-icon svg {
   width: var(--personal-main-card-header-icon-mark);
   height: var(--personal-main-card-header-icon-mark);

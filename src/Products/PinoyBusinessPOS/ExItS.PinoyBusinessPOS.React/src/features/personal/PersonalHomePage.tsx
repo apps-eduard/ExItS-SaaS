@@ -44,7 +44,12 @@ import { cn } from "@/lib/cn";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { PersonalHomeKpiStrip } from "@/features/personal/PersonalHomeKpiStrip";
-import { PersonalTrackerCard } from "@/features/personal/PersonalTrackerCard";
+import { PersonalYourRecordsCard } from "@/features/personal/PersonalYourRecordsCard";
+import {
+  countActivePersonalHomeKpiRelationships,
+  mergePersonalUtangRelationships,
+  summarizePersonalYourRecordCounts,
+} from "@/features/personal/personal-home-kpi-balance-history";
 import { usePersonalAvatarPhoto } from "@/features/personal/personal-avatar-context";
 import { profilePhotoSrc } from "@/features/personal/profile-photo";
 import {
@@ -180,6 +185,23 @@ export function PersonalHomePage() {
       isActiveUtangAccount,
     );
   }, [contactsQuery.data, lentQuery.data, oweQuery.data]);
+
+  const yourRecordCounts = useMemo(() => {
+    if (lentQuery.data && oweQuery.data) {
+      const relationships = mergePersonalUtangRelationships(lentQuery.data, oweQuery.data);
+      const active = countActivePersonalHomeKpiRelationships(relationships);
+      return summarizePersonalYourRecordCounts(active);
+    }
+    if (!dashboardQuery.data) {
+      return { myRecords: 0, shared: 0 };
+    }
+    return {
+      myRecords: dashboardQuery.data.activeRelationshipCount,
+      shared: dashboardQuery.data.sharedWithMeActiveCount ?? 0,
+    };
+  }, [dashboardQuery.data, lentQuery.data, oweQuery.data]);
+
+  const storeCountForRecords = storesToPayQuery.data?.storeCount ?? 0;
 
   const attentionItems = useMemo(() => {
     const pending = dashboardQuery.data?.pendingConfirmationCount ?? 0;
@@ -330,7 +352,12 @@ export function PersonalHomePage() {
           <PersonalHomeKpiStrip dashboard={dashboard} />
         </div>
         <div className="personal-home-layout__main flex min-w-0 flex-col gap-3">
-      <PersonalTrackerCard dashboard={dashboard} metricsOutline />
+      <PersonalYourRecordsCard
+        peopleCount={dashboard.contactCount}
+        myRecordsCount={yourRecordCounts.myRecords}
+        sharedCount={yourRecordCounts.shared}
+        storeCount={storeCountForRecords}
+      />
 
       <div
         className="personal-home-primary-row"

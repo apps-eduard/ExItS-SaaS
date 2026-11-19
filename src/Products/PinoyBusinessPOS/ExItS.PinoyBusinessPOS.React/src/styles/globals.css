@@ -29965,25 +29965,293 @@ html:has(.operations-shell) #root,
   box-shadow: none;
 }
 
-/* Personal home KPI strip — Open pipeline style (Personal scope only). */
-/* Small <640: 1 col; medium 640–1023: 2×2; large ≥1024: 4 in one row (matches personal-home-primary-row). */
-.personal-home-kpi-strip {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.75rem;
-  width: 100%;
+/* Personal home — Your Records (Soft Glass index tiles, 2-col mobile). */
+.personal-home-page .personal-section.personal-your-records.catalog-form-section {
+  --personal-tracker-accent: var(--exits-primary);
+  --personal-main-card-header-chip: var(--exits-primary);
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--exits-primary));
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  background: #fff;
+  box-shadow: none;
+  /* ~17% tighter shell padding vs prior 1 / 1.05 rem stack */
+  padding: 0.82rem 0.88rem 0.88rem;
+  gap: 0.7rem;
+}
+
+[data-theme="dark"] .personal-home-page .personal-section.personal-your-records.catalog-form-section {
+  border-color: color-mix(in srgb, var(--exits-primary) 16%, #475569);
+  background: #1e293b;
+}
+
+.personal-your-records__header {
   min-width: 0;
 }
 
-@media (max-width: 639px) {
-  .personal-home-kpi-strip {
+.personal-your-records__tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .personal-your-records__tiles {
     gap: 0.65rem;
   }
 }
 
+@media (min-width: 1024px) {
+  .personal-your-records__tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.personal-your-records-tile {
+  --personal-your-records-accent: var(--exits-primary);
+  --personal-your-records-chip-wash: color-mix(in srgb, var(--exits-primary) 10%, #fff);
+  --personal-your-records-chip-ink: color-mix(in srgb, #000 22%, var(--exits-primary));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.1rem;
+  min-width: 0;
+  /* Content-driven height (≥44px); prior 7.5rem min forced empty middle. */
+  min-height: 2.75rem;
+  padding: 0.48rem 0.55rem 0.4rem;
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-your-records-accent));
+  background: #fff;
+  color: var(--exits-text);
+  text-decoration: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 4px 12px color-mix(in srgb, var(--personal-your-records-accent) 8%, transparent);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.personal-your-records-tile:hover {
+  border-color: color-mix(in srgb, var(--personal-your-records-accent) 42%, #cbd5e1);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 4px 14px color-mix(in srgb, var(--personal-your-records-accent) 11%, transparent);
+}
+
+.personal-your-records-tile:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.personal-your-records-tile--people {
+  --personal-your-records-accent: var(--exits-id-people-chip, #2563eb);
+  --personal-your-records-chip-wash: var(--exits-id-people-wash, #eff6ff);
+  --personal-your-records-chip-ink: var(--exits-id-people-ink, #1d4ed8);
+}
+
+.personal-your-records-tile--lent {
+  --personal-your-records-accent: var(--exits-id-lent-chip, #22c55e);
+  --personal-your-records-chip-wash: var(--exits-id-lent-wash, #f0fdf4);
+  --personal-your-records-chip-ink: var(--exits-id-lent-ink, #15803d);
+}
+
+.personal-your-records-tile--owe {
+  --personal-your-records-accent: var(--exits-id-owe-chip, #0ea5e9);
+  --personal-your-records-chip-wash: var(--exits-id-owe-wash, #f0f9ff);
+  --personal-your-records-chip-ink: var(--exits-id-owe-ink, #0369a1);
+}
+
+.personal-your-records-tile--stores {
+  --personal-your-records-accent: var(--exits-id-stores-chip, #9333ea);
+  --personal-your-records-chip-wash: color-mix(in srgb, var(--exits-id-stores-chip, #9333ea) 12%, #fff);
+  --personal-your-records-chip-ink: color-mix(in srgb, #000 18%, var(--exits-id-stores-chip, #9333ea));
+}
+
+[data-theme="dark"] .personal-your-records-tile {
+  background: #1e293b;
+  border-color: color-mix(
+    in srgb,
+    var(--personal-your-records-accent) 16%,
+    #475569
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 4px 14px color-mix(in srgb, #000 40%, transparent);
+}
+
+[data-theme="dark"] .personal-your-records-tile:hover {
+  border-color: color-mix(in srgb, var(--personal-your-records-accent) 28%, #64748b);
+}
+
+[data-theme="dark"] .personal-your-records-tile--people {
+  --personal-your-records-chip-wash: color-mix(in srgb, var(--exits-id-people-chip, #60a5fa) 18%, #1e293b);
+  --personal-your-records-chip-ink: #bfdbfe;
+}
+
+[data-theme="dark"] .personal-your-records-tile--lent {
+  --personal-your-records-chip-wash: color-mix(in srgb, var(--exits-id-lent-chip, #4ade80) 18%, #1e293b);
+  --personal-your-records-chip-ink: #bbf7d0;
+}
+
+[data-theme="dark"] .personal-your-records-tile--owe {
+  --personal-your-records-chip-wash: color-mix(in srgb, var(--exits-id-owe-chip, #38bdf8) 18%, #1e293b);
+  --personal-your-records-chip-ink: #bae6fd;
+}
+
+[data-theme="dark"] .personal-your-records-tile--stores {
+  --personal-your-records-chip-wash: color-mix(in srgb, var(--exits-id-stores-chip, #c084fc) 18%, #1e293b);
+  --personal-your-records-chip-ink: #e9d5ff;
+}
+
+[data-theme="dark"] .personal-your-records-tile__title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .personal-your-records-tile__count {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .personal-your-records-tile__footer {
+  color: #94a3b8;
+}
+
+.personal-your-records-tile__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+  min-width: 0;
+  min-height: 1.75rem;
+}
+
+.personal-your-records-tile__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  background: var(--personal-your-records-chip-wash);
+  color: var(--personal-your-records-chip-ink);
+}
+
+.personal-your-records-tile__chip-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.personal-your-records-tile__chevron {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: color-mix(in srgb, var(--exits-text-muted, #64748b) 88%, var(--personal-your-records-accent));
+}
+
+.personal-your-records-tile__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: color-mix(in srgb, var(--exits-text) 90%, var(--personal-your-records-accent));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-your-records-tile__count {
+  margin-block-start: 0.02rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--exits-text);
+}
+
+.personal-your-records-tile__footer {
+  margin-block-start: 0.06rem;
+  padding-block-start: 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--exits-text-muted, #64748b);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Personal home KPI strip — Soft Glass cards (Personal scope only). */
+/* Mobile/tablet: 2×2; large ≥1024: 4 in one row. */
+.personal-home-kpi-strip-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.personal-home-kpi-strip__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.personal-home-kpi-strip__hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--exits-text-muted, #64748b);
+}
+
+.personal-home-kpi-strip__range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.personal-home-kpi-strip__range-select {
+  width: min(100%, 16.5rem);
+  min-width: 0;
+}
+
+.personal-home-kpi-strip__custom {
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, 22rem);
+  min-width: 0;
+}
+
+.personal-home-kpi-strip__custom .exits-sg-datetime {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .personal-home-kpi-strip__custom {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.personal-home-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
 @media (min-width: 640px) {
   .personal-home-kpi-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
   }
 }
 
@@ -30000,18 +30268,21 @@ html:has(.operations-shell) #root,
   position: relative;
   display: flex;
   align-items: stretch;
-  min-height: 7.25rem;
+  container-type: inline-size;
+  container-name: personal-home-kpi-card;
+  /* ~20% shorter than prior 7.25rem; still ≥44px touch */
+  min-height: 5.75rem;
   min-width: 0;
-  padding: 0.95rem 0.85rem 0.85rem;
-  border-radius: 1.1rem;
-  border: 1px solid color-mix(in srgb, #e2e8f0 72%, var(--personal-home-kpi-accent));
+  padding: 0.62rem 0.65rem 0.55rem;
+  border-radius: var(--soft-glass-radius, 1.1rem);
+  border: 1px solid color-mix(in srgb, #e2e8f0 62%, var(--personal-home-kpi-accent));
   background: #fff;
   color: var(--exits-text);
   text-decoration: none;
   overflow: hidden;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.85) inset,
-    0 6px 18px color-mix(in srgb, var(--personal-home-kpi-accent) 10%, transparent);
+    0 4px 12px color-mix(in srgb, var(--personal-home-kpi-accent) 8%, transparent);
   transition:
     border-color 120ms ease,
     background-color 120ms ease,
@@ -30022,7 +30293,7 @@ html:has(.operations-shell) #root,
   border-color: color-mix(in srgb, var(--personal-home-kpi-accent) 42%, #cbd5e1);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 8px 22px color-mix(in srgb, var(--personal-home-kpi-accent) 14%, transparent);
+    0 4px 14px color-mix(in srgb, var(--personal-home-kpi-accent) 11%, transparent);
 }
 
 .personal-home-kpi-card:focus-visible {
@@ -30059,16 +30330,18 @@ html:has(.operations-shell) #root,
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
+  gap: 0.14rem;
   min-width: 0;
-  max-width: 58%;
-  padding-inline-end: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  padding-inline-end: 0.15rem;
+  padding-block-end: 0.05rem;
 }
 
 .personal-home-kpi-card__head {
   display: flex;
   align-items: flex-start;
-  gap: 0.42rem;
+  gap: 0.35rem;
   min-width: 0;
 }
 
@@ -30077,30 +30350,30 @@ html:has(.operations-shell) #root,
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 1.85rem;
-  height: 1.85rem;
-  margin-block-start: 0.05rem;
-  border-radius: 0.55rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin-block-start: 0.02rem;
+  border-radius: 0.5rem;
   background: var(--personal-home-kpi-chip-wash);
   color: var(--personal-home-kpi-chip-ink);
 }
 
 .personal-home-kpi-card__chip-icon {
-  width: 1rem;
-  height: 1rem;
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .personal-home-kpi-card__labels {
   display: flex;
   flex-direction: column;
-  gap: 0.05rem;
+  gap: 0.02rem;
   min-width: 0;
 }
 
 .personal-home-kpi-card__label-scope {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.15;
   color: color-mix(in srgb, var(--exits-text) 88%, var(--personal-home-kpi-accent));
   overflow: hidden;
   text-overflow: ellipsis;
@@ -30110,7 +30383,7 @@ html:has(.operations-shell) #root,
 .personal-home-kpi-card__label-role {
   font-size: 0.75rem;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.2;
   color: var(--exits-text-muted, #64748b);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -30118,36 +30391,126 @@ html:has(.operations-shell) #root,
 }
 
 .personal-home-kpi-card__metric {
-  font-size: 1.45rem;
+  /* Keep financial weight; scale only inside KPI cards so large PHP amounts fit 2-col mobile. */
+  font-size: clamp(0.95rem, 12cqi, 1.45rem);
   font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   color: var(--exits-text);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-inline-end: 0.1rem;
+}
+
+/* MoneyDisplay pins --exits-text-sm; force inherit so KPI cqi clamp applies. */
+.personal-home-kpi-card .personal-home-kpi-card__metric > span,
+.personal-home-kpi-card .personal-home-kpi-card__money {
+  font-size: inherit !important;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: inherit;
 }
 
 .personal-home-kpi-card__meta {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.3;
+  color: var(--exits-text-muted, #64748b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-home-kpi-card__trend {
+  position: absolute;
+  z-index: 2;
+  inset-inline-end: 0.5rem;
+  inset-block-start: 0.5rem;
+  max-width: 44%;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-surface, #fff) 72%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-align: end;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.personal-home-kpi-card__trend--good {
+  color: var(--exits-severity-success, #22c55e);
+}
+
+.personal-home-kpi-card__trend--caution {
+  color: var(--exits-severity-warn, #ff5722);
+}
+
+.personal-home-kpi-card__trend--neutral {
   color: var(--exits-text-muted, #64748b);
 }
 
 .personal-home-kpi-card__spark {
   position: absolute;
-  inset-inline-end: 0;
-  inset-block-end: 0;
-  width: 52%;
-  height: 62%;
+  z-index: 0;
+  inset-inline-end: 0.35rem;
+  inset-block-end: 0.18rem;
+  width: calc(44% - 0.1rem);
+  height: calc(34% - 0.08rem);
   color: var(--personal-home-kpi-accent);
+  opacity: 0.48;
   pointer-events: none;
 }
 
+/* Narrow phones: denser tiles + compact trend; metric uses cqi clamp above. */
+@media (max-width: 389px) {
+  .personal-home-kpi-card {
+    min-height: 5.45rem;
+    padding: 0.55rem 0.55rem 0.48rem;
+  }
+
+  .personal-home-kpi-card__trend {
+    inset-inline-end: 0.35rem;
+    inset-block-start: 0.35rem;
+    max-width: 46%;
+    font-size: 0.625rem;
+    padding: 0.06rem 0.28rem;
+  }
+
+  .personal-home-kpi-card__label-scope {
+    font-size: 0.8125rem;
+  }
+
+  .personal-home-kpi-card__label-role {
+    font-size: 0.6875rem;
+  }
+
+  .personal-your-records-tile {
+    padding: 0.42rem 0.48rem 0.36rem;
+  }
+
+  .personal-your-records-tile__count {
+    font-size: 1.25rem;
+  }
+}
+
 [data-theme="dark"] .personal-home-kpi-card {
-  border-color: color-mix(in srgb, #64748b 38%, var(--personal-home-kpi-accent));
+  border-color: color-mix(in srgb, var(--personal-home-kpi-accent) 16%, #475569);
   background: #1e293b;
   box-shadow:
     0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
-    0 8px 22px rgba(0, 0, 0, 0.28);
+    0 4px 14px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .personal-home-kpi-card__trend {
+  background: color-mix(in srgb, #1e293b 78%, transparent);
 }
 
 [data-theme="dark"] .personal-home-kpi-card--lent {
@@ -30181,6 +30544,22 @@ html:has(.operations-shell) #root,
 
 [data-theme="dark"] .personal-home-kpi-card__meta {
   color: #94a3b8;
+}
+
+[data-theme="dark"] .personal-home-kpi-card__trend--good {
+  color: var(--exits-severity-success, #4ade80);
+}
+
+[data-theme="dark"] .personal-home-kpi-card__trend--caution {
+  color: var(--exits-severity-warn, #ff5722);
+}
+
+[data-theme="dark"] .personal-home-kpi-card__trend--neutral {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .personal-home-kpi-card__spark {
+  opacity: 0.92;
 }
 
 .personal-tracker-card__header {

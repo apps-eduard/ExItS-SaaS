@@ -795,7 +795,8 @@ test.describe("RMAP-22H Personal ↔ Business integrated E2E (mock)", () => {
     await signInAs(page, "ana@example.com");
     await expect(page.getByTestId("personal-shell")).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId("personal-bottom-nav")).toBeVisible();
-    await expect(page.getByTestId("personal-utang-summary")).toBeVisible();
+    await expect(page.getByTestId("personal-home-page")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("personal-home-kpi-strip")).toBeVisible({ timeout: 15000 });
 
     await clientNavigate(page, "/personal/people");
     await expect(page.getByTestId("people-list-section")).toBeVisible({ timeout: 15000 });

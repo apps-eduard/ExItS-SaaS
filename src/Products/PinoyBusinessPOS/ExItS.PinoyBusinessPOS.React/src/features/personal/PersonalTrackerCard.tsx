@@ -181,12 +181,15 @@ export function PersonalTrackerCard({
   testIds = PERSONAL_HOME_TRACKER_TEST_IDS,
   footer,
   metricsOutline = false,
+  showIndexMetrics = true,
 }: {
   dashboard: PersonalDashboardDto;
   testIds?: PersonalTrackerTestIds;
   footer?: ReactNode;
   /** Home page uses outline index cards. */
   metricsOutline?: boolean;
+  /** People / active utang index row (hidden when Your Records is on home). */
+  showIndexMetrics?: boolean;
 }) {
   const { t } = useI18n();
   /** Global Quick Action lock — Org EHG (Stores to pay). */
@@ -243,53 +246,55 @@ export function PersonalTrackerCard({
           sharedLabelTestId={testIds.sharedLedgerLentLabel}
         />
       </div>
-      <div className="personal-home-metrics" data-testid={testIds.meta}>
-        <Link
-          to="/personal/people"
-          className={metricClass("people")}
-          data-testid={testIds.people}
-          data-shell="org-ehg"
-          data-recipe={metricRecipe("people")}
-        >
-          <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-            <Users className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
-          </span>
-          <span className="personal-qa-glass__label">
-            {metricsOutline ? t("personal.home.friends") : t("personal.home.people")}
-          </span>
-          <strong className="personal-qa-glass__badge tabular-nums">{dashboard.contactCount}</strong>
-        </Link>
-        <Link
-          to="/personal/utang"
-          className={metricClass("lent")}
-          data-testid={testIds.activeMine}
-          data-shell="org-ehg"
-          data-recipe={metricRecipe("lent")}
-        >
-          <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-            <Handshake className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
-          </span>
-          <span className="personal-qa-glass__label">{t("personal.home.activeMine")}</span>
-          <strong className="personal-qa-glass__badge tabular-nums">
-            {dashboard.activeRelationshipCount}
-          </strong>
-        </Link>
-        <Link
-          to="/personal/utang"
-          className={metricClass("owe")}
-          data-testid={testIds.activeShared}
-          data-shell="org-ehg"
-          data-recipe={metricRecipe("owe")}
-        >
-          <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
-            <Share2 className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
-          </span>
-          <span className="personal-qa-glass__label">{t("personal.home.sharedLedgerStat")}</span>
-          <strong className="personal-qa-glass__badge tabular-nums">
-            {dashboard.sharedWithMeActiveCount ?? 0}
-          </strong>
-        </Link>
-      </div>
+      {showIndexMetrics ? (
+        <div className="personal-home-metrics" data-testid={testIds.meta}>
+          <Link
+            to="/personal/people"
+            className={metricClass("people")}
+            data-testid={testIds.people}
+            data-shell="org-ehg"
+            data-recipe={metricRecipe("people")}
+          >
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
+              <Users className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
+            </span>
+            <span className="personal-qa-glass__label">
+              {metricsOutline ? t("personal.home.friends") : t("personal.home.people")}
+            </span>
+            <strong className="personal-qa-glass__badge tabular-nums">{dashboard.contactCount}</strong>
+          </Link>
+          <Link
+            to="/personal/utang"
+            className={metricClass("lent")}
+            data-testid={testIds.activeMine}
+            data-shell="org-ehg"
+            data-recipe={metricRecipe("lent")}
+          >
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
+              <Handshake className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
+            </span>
+            <span className="personal-qa-glass__label">{t("personal.home.activeMine")}</span>
+            <strong className="personal-qa-glass__badge tabular-nums">
+              {dashboard.activeRelationshipCount}
+            </strong>
+          </Link>
+          <Link
+            to="/personal/utang"
+            className={metricClass("owe")}
+            data-testid={testIds.activeShared}
+            data-shell="org-ehg"
+            data-recipe={metricRecipe("owe")}
+          >
+            <span className="personal-qa-glass__icon personal-qa-glass__icon--soft" aria-hidden="true">
+              <Share2 className="personal-tracker-card__pennant-icon size-[0.95rem] shrink-0" aria-hidden />
+            </span>
+            <span className="personal-qa-glass__label">{t("personal.home.sharedLedgerStat")}</span>
+            <strong className="personal-qa-glass__badge tabular-nums">
+              {dashboard.sharedWithMeActiveCount ?? 0}
+            </strong>
+          </Link>
+        </div>
+      ) : null}
       {footer}
     </section>
   );

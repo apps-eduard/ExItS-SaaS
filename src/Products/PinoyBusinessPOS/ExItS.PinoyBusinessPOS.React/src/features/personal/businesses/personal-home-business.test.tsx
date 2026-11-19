@@ -130,7 +130,7 @@ describe("Personal home businesses", () => {
     vi.stubGlobal("fetch", createFetch());
     renderHome();
 
-    expect(await screen.findByTestId("personal-utang-summary")).toBeInTheDocument();
+    expect(await screen.findByTestId("personal-home-kpi-strip")).toBeInTheDocument();
     expect(screen.queryByTestId("personal-business-summary")).not.toBeInTheDocument();
     expect(screen.queryByTestId("personal-owned-businesses")).not.toBeInTheDocument();
     expect(screen.queryByTestId("personal-staff-workplaces")).not.toBeInTheDocument();

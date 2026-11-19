@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResponse } from "@/test/session-context";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -162,22 +162,20 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-mobile-nav-backdrop")).toBeInTheDocument();
   });
 
-  it("loads Utang-first home summary and quick actions", async () => {
+  it("loads home KPI strip, records, and quick actions", async () => {
     vi.stubGlobal("fetch", createPersonalFetchMock());
     renderAt("/personal");
 
     await waitFor(() => {
-      expect(screen.getByTestId("personal-utang-summary")).toBeInTheDocument();
+      expect(screen.getByTestId("personal-home-kpi-strip")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("personal-home-kpi-strip")).toBeInTheDocument();
+    expect(screen.queryByTestId("personal-utang-summary")).not.toBeInTheDocument();
     const homeLayout = screen.getByTestId("personal-home-layout");
     const kpiRow = screen.getByTestId("personal-home-layout-kpi");
     const kpiStrip = screen.getByTestId("personal-home-kpi-strip");
-    const tracker = screen.getByTestId("personal-utang-summary");
     expect(homeLayout).toContainElement(kpiRow);
     expect(kpiRow).toContainElement(kpiStrip);
     expect(homeLayout.firstElementChild).toBe(kpiRow);
-    expect(kpiStrip.compareDocumentPosition(tracker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveAttribute(
       "href",
       "/personal/utang/lent",
@@ -194,24 +192,39 @@ describe("Personal shell and home (RMAP-22B)", () => {
       "href",
       "/personal/utang",
     );
-    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("My record");
-    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("I lent");
+    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("I Lent");
+    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("My Records");
     expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent("500");
-    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("My record");
-    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("I owe");
+    expect(screen.getByTestId("personal-home-kpi-my-record-lent")).toHaveTextContent(
+      "No active records",
+    );
+    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("I Owe");
+    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("My Records");
     expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent("150");
-    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("Shared");
-    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("I lent");
+    expect(screen.getByTestId("personal-home-kpi-my-record-owe")).toHaveTextContent(
+      "No active records",
+    );
+    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("I Lent");
+    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("Shared with Me");
     expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent("75");
-    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("Shared");
-    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("I owe");
+    expect(screen.getByTestId("personal-home-kpi-shared-lent")).toHaveTextContent(
+      "No active shared records",
+    );
+    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("I Owe");
+    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("Shared with Me");
     expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent("25");
-    expect(
-      screen.getByTestId("personal-home-kpi-my-record-lent").querySelector(".personal-home-kpi-card__spark"),
-    ).toBeTruthy();
-    expect(screen.getByTestId("personal-utang-summary")).toHaveTextContent("Personal Tracker");
-    expect(screen.getByTestId("personal-tracker-ribbon")).toHaveTextContent("Personal Tracker");
-    expect(screen.getByTestId("personal-tracker-pennant")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-home-kpi-shared-owe")).toHaveTextContent(
+      "No active shared records",
+    );
+    expect(screen.queryByText("Trend unavailable")).not.toBeInTheDocument();
+    expect(screen.getByTestId("personal-home-kpi-trend-range")).toBeInTheDocument();
+    expect(screen.getByText("Balances above are current. Charts use the selected period only.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("personal-home-kpi-my-record-lent").querySelector(".personal-home-kpi-card__spark"),
+      ).toBeNull();
+    });
+    expect(screen.queryByTestId("personal-tracker-ribbon")).not.toBeInTheDocument();
     expect(screen.queryByText("Welcome,")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-top-bar")).not.toHaveTextContent("Personal Tracker");
     expect(screen.getByTestId("personal-home-avatar")).toBeInTheDocument();
@@ -286,91 +299,53 @@ describe("Personal shell and home (RMAP-22B)", () => {
     );
     expect(screen.getByTestId("personal-qa-people").querySelector(".personal-qa-glass__plus")).toBeNull();
     expect(screen.queryByTestId("personal-qa-todo")).not.toBeInTheDocument();
-    expect(screen.getByTestId("personal-stat-people")).toHaveClass(
-      "personal-qa-glass",
-      "personal-qa-glass--people",
-      "personal-qa-glass--md",
-      "personal-qa-glass--card-soft",
-      "personal-qa-glass--icon-soft",
+    expect(screen.queryByTestId("personal-home-meta")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-your-records")).toBeInTheDocument();
+    });
+    const yourRecords = screen.getByTestId("personal-your-records");
+    expect(
+      kpiStrip.compareDocumentPosition(yourRecords) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByTestId("personal-your-records-ribbon")).toHaveTextContent("Your Records");
+    expect(screen.getByTestId("personal-your-records-pennant")).toBeInTheDocument();
+    const quickActions = screen.getByTestId("personal-quick-actions");
+    expect(yourRecords.compareDocumentPosition(quickActions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("personal-your-records-tile-people")).toHaveAttribute(
+      "href",
+      "/personal/people",
     );
-    expect(screen.getByTestId("personal-stat-people")).toHaveAttribute(
-      "data-recipe",
-      "ext org-ehg qa-glass people md icon-soft card-soft trail-count no-shadow no-icon-shadow",
+    expect(screen.getByTestId("personal-your-records-tile-people")).toHaveTextContent("People");
+    expect(screen.getByTestId("personal-your-records-tile-people")).toHaveTextContent("2");
+    expect(screen.getByTestId("personal-your-records-tile-people")).toHaveTextContent("Total contacts");
+    expect(screen.getByTestId("personal-your-records-tile-my-records")).toHaveAttribute(
+      "href",
+      "/personal/utang",
     );
-    expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("People");
-    expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
-    expect(screen.getByTestId("personal-stat-active")).toHaveClass(
-      "personal-qa-glass",
-      "personal-qa-glass--lent",
-      "personal-qa-glass--md",
-      "personal-qa-glass--card-soft",
+    expect(screen.getByTestId("personal-your-records-tile-my-records")).toHaveTextContent("My Records");
+    expect(screen.getByTestId("personal-your-records-tile-my-records")).toHaveTextContent("Your utang records");
+    expect(screen.getByTestId("personal-your-records-tile-my-records")).toHaveTextContent("0");
+    expect(screen.getByTestId("personal-your-records-tile-shared")).toHaveAttribute("href", "/personal/utang");
+    expect(screen.getByTestId("personal-your-records-tile-shared")).toHaveTextContent("Shared with Me");
+    expect(screen.getByTestId("personal-your-records-tile-shared")).toHaveTextContent(
+      "Records shared by others",
     );
-    expect(screen.getByTestId("personal-stat-active-shared")).toHaveClass(
-      "personal-qa-glass",
-      "personal-qa-glass--owe",
-      "personal-qa-glass--md",
-      "personal-qa-glass--card-soft",
+    expect(screen.getByTestId("personal-your-records-tile-shared")).toHaveTextContent("0");
+    expect(screen.getByTestId("personal-your-records-tile-stores")).toHaveAttribute(
+      "href",
+      "/personal/linked-merchants",
     );
-    expect(screen.getByTestId("personal-utang-owed-to-me")).toHaveAttribute(
-      "data-recipe",
-      "ext soft-glass pendant lent",
+    expect(screen.getByTestId("personal-your-records-tile-stores")).toHaveTextContent("Stores");
+    expect(screen.getByTestId("personal-your-records-tile-stores")).toHaveTextContent("Linked stores");
+    expect(screen.getByTestId("personal-your-records-tile-stores")).toHaveTextContent("0");
+    expect(screen.queryByTestId("personal-utang-owed-to-me")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("personal-stat-lent-mine")).not.toBeInTheDocument();
+    expect(within(screen.getByTestId("personal-home-kpi-strip")).getAllByText("Shared with Me")).toHaveLength(
+      2,
     );
-    expect(screen.getByTestId("personal-utang-i-owe")).toHaveAttribute(
-      "data-recipe",
-      "ext soft-glass pendant owe",
-    );
-    expect(screen.getByTestId("personal-stat-lent-mine")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-stat-lent-shared")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-stat-borrowed-mine")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-stat-borrowed-shared")).toBeInTheDocument();
-    expect(screen.queryByTestId("personal-owed-divider")).not.toBeInTheDocument();
-    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveClass(
-      "tracker-amount-card",
-      "utang-settings-card--lent",
-    );
-    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveAttribute("data-shell", "org-ehg");
-    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveAttribute(
-      "data-recipe",
-      "ext org-ehg amount-card lent md card-soft no-shadow",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveClass(
-      "tracker-amount-card",
-      "utang-settings-card--owe",
-    );
-    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveAttribute("data-shell", "org-ehg");
-    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveAttribute(
-      "data-recipe",
-      "ext org-ehg amount-card owe md card-soft no-shadow",
-    );
-    expect(screen.getByTestId("personal-stat-lent-mine-label")).toHaveTextContent("I lent");
-    expect(screen.getByTestId("personal-stat-lent-mine")).toHaveTextContent("500");
-    expect(screen.getByTestId("personal-stat-borrowed-mine-label")).toHaveTextContent("I owed");
-    expect(screen.getByTestId("personal-stat-borrowed-mine")).toHaveTextContent("150");
-    expect(screen.getByTestId("personal-stat-lent-shared-label")).toHaveTextContent("I lent");
-    expect(screen.getByTestId("personal-stat-lent-shared")).toHaveTextContent("75");
-    expect(screen.getByTestId("personal-stat-borrowed-shared-label")).toHaveTextContent("I owed");
-    expect(screen.getByTestId("personal-stat-borrowed-shared")).toHaveTextContent("25");
-    expect(screen.getByTestId("personal-utang-owed-to-me")).toHaveClass(
-      "tracker-summary--pendant",
-      "tracker-amount-group",
-    );
-    expect(screen.getByTestId("personal-utang-owed-to-me-pendant")).toBeInTheDocument();
-    expect(screen.getByTestId("personal-utang-i-owe")).toHaveClass(
-      "tracker-summary--pendant",
-      "tracker-amount-group",
-    );
-    expect(screen.getByTestId("personal-utang-i-owe-pendant")).toBeInTheDocument();
-    expect(screen.getAllByText("My Record")).toHaveLength(2);
-    expect(screen.getByTestId("personal-home-meta").querySelector(".personal-home-metric__caret")).toBeNull();
-    expect(screen.getAllByText("Shared with Me")).toHaveLength(2);
-    expect(screen.getByTestId("personal-utang-owed-to-me").querySelector(".tracker-balance__rule")).toBeTruthy();
-    expect(screen.getByTestId("personal-utang-i-owe").querySelector(".tracker-balance__rule")).toBeTruthy();
-    expect(screen.getByTestId("personal-stat-borrowed-mine").querySelector(".utang-account-card__caret")).toBeNull();
-    expect(screen.getByTestId("personal-stat-lent-mine").querySelector(".utang-account-card__caret")).toBeNull();
-    expect(screen.getByTestId("personal-stat-active-shared")).toHaveTextContent("1");
+    expect(screen.getAllByText("Shared with Me")).toHaveLength(3);
     expect(await screen.findByTestId("personal-needs-attention")).toBeInTheDocument();
     expect(screen.getByTestId("personal-attention-pendingConfirmation")).toBeInTheDocument();
-    const quickActions = screen.getByTestId("personal-quick-actions");
     const todoSummary = screen.getByTestId("personal-todo-summary");
     const needsAttention = screen.getByTestId("personal-needs-attention");
     expect(quickActions.compareDocumentPosition(todoSummary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -414,6 +389,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByText("Store B")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("3");
     expect(screen.getByTestId("personal-stat-stores-active")).toHaveTextContent("2");
+    expect(screen.getByTestId("personal-your-records-tile-stores")).toHaveTextContent("3");
     expect(screen.getByTestId("personal-stat-stores")).toHaveClass("personal-qa-glass--primary");
     expect(screen.getByTestId("personal-stat-stores-active")).toHaveClass("personal-qa-glass--primary");
     expect(screen.getByTestId("personal-stat-stores")).toHaveAttribute(
